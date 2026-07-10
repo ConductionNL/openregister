@@ -3141,6 +3141,9 @@ class ObjectService
      * @param string      $identifier Object ID or UUID
      * @param string|null $process    Process ID (for tracking who locked it)
      * @param int|null    $duration   Lock duration in seconds
+     * @param bool        $advisory   When true, treat the identifier as a synthetic
+     *                                pre-creation key and take the appConfig-backed
+     *                                advisory lock without scanning object tables
      *
      * @return array Lock information
      *
@@ -3148,9 +3151,9 @@ class ObjectService
      *
      * @spec exclude One-line delegation to lock handler; lock behavior owned by object-lifecycle.
      */
-    public function lockObject(string $identifier, ?string $process=null, ?int $duration=null): array
+    public function lockObject(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
     {
-        return $this->lockHandler->lock(identifier: $identifier, process: $process, duration: $duration);
+        return $this->lockHandler->lock(identifier: $identifier, process: $process, duration: $duration, advisory: $advisory);
     }//end lockObject()
 
     /**
@@ -3159,6 +3162,8 @@ class ObjectService
      * Removes the lock from an object, allowing other processes to modify it.
      *
      * @param string|int $identifier The object to unlock
+     * @param bool       $advisory   When true, release the appConfig-backed advisory
+     *                               lock for this synthetic key without scanning tables
      *
      * @return true True if unlocked successfully
      *
@@ -3166,9 +3171,9 @@ class ObjectService
      *
      * @spec exclude One-line delegation to lock handler; unlock behavior owned by object-lifecycle.
      */
-    public function unlockObject(string|int $identifier): bool
+    public function unlockObject(string|int $identifier, bool $advisory=false): bool
     {
-        return $this->lockHandler->unlock(identifier: (string) $identifier);
+        return $this->lockHandler->unlock(identifier: (string) $identifier, advisory: $advisory);
     }//end unlockObject()
 
     /**
