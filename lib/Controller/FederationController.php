@@ -29,10 +29,12 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FederatedShare;
 use OCA\OpenRegister\Db\FederatedShareMapper;
+use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
@@ -68,10 +70,81 @@ class FederationController extends Controller
         IRequest $request,
         private readonly FederatedShareMapper $shareMapper,
         private readonly ObjectService $objectService,
+        private readonly FederationShareService $shareService,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+
+    /**
+     * List the active organisation's federated shares.
+     *
+     * @return JSONResponse `{ results, total }`.
+     */
+    #[NoAdminRequired]
+    public function shares(): JSONResponse
+    {
+        $direction = $this->request->getParam('direction');
+        $shares    = $this->shareService->listShares(direction: ($direction !== null ? (string) $direction : null));
+
+        return new JSONResponse(data: ['results' => $shares, 'total' => count($shares)]);
+    }//end shares()
+
+
+    /**
+     * Create an outgoing federated share and return it (with its token).
+     *
+     * @return JSONResponse The created share, or a validation error.
+     */
+    #[NoAdminRequired]
+    public function createShare(): JSONResponse
+    {
+        $params = [
+            'scope'             => $this->request->getParam('scope', 'schema'),
+            'register'          => $this->request->getParam('register'),
+            'schema'            => $this->request->getParam('schema'),
+            'objectUri'         => $this->request->getParam('objectUri'),
+            'queryFilter'       => $this->request->getParam('queryFilter'),
+            'permissions'       => $this->request->getParam('permissions', 'read'),
+            'sharedWith'        => $this->request->getParam('sharedWith'),
+            'remoteInstanceUrl' => $this->request->getParam('remoteInstanceUrl'),
+        ];
+
+        try {
+            $share = $this->shareService->createOutgoingShare(params: $params);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: Http::STATUS_BAD_REQUEST);
+        } catch (Throwable $e) {
+            $this->logger->error('[Federation] create share failed: '.$e->getMessage());
+            return new JSONResponse(data: ['error' => 'Could not create share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: $share, statusCode: Http::STATUS_CREATED);
+    }//end createShare()
+
+
+    /**
+     * Revoke a federated share.
+     *
+     * @param int $id The share id.
+     *
+     * @return JSONResponse The revoked share, or an error.
+     */
+    #[NoAdminRequired]
+    public function revokeShare(int $id): JSONResponse
+    {
+        try {
+            $share = $this->shareService->setStatus(id: $id, status: 'revoked');
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(data: ['error' => 'Not found'], statusCode: Http::STATUS_NOT_FOUND);
+        } catch (Throwable $e) {
+            $this->logger->error('[Federation] revoke share failed: '.$e->getMessage());
+            return new JSONResponse(data: ['error' => 'Could not revoke share'], statusCode: Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse(data: $share);
+    }//end revokeShare()
 
 
     /**

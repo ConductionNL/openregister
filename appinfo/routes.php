@@ -19,6 +19,10 @@ return [
         ['name' => 'federation#objects', 'url' => '/api/federation/{shareToken}/objects',      'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
         ['name' => 'federation#object',  'url' => '/api/federation/{shareToken}/objects/{id}', 'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+', 'id' => '[^/]+']],
         ['name' => 'federation#meta',    'url' => '/api/federation/{shareToken}/meta',         'verb' => 'GET', 'requirements' => ['shareToken' => '[^/]+']],
+        // Federation share management (authenticated, organisation-scoped).
+        ['name' => 'federation#shares',      'url' => '/api/federation/shares',      'verb' => 'GET'],
+        ['name' => 'federation#createShare', 'url' => '/api/federation/shares',      'verb' => 'POST'],
+        ['name' => 'federation#revokeShare', 'url' => '/api/federation/shares/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 
         // Credential broker (credential-broker-service) — owner-scoped credential
         // metadata CRUD + per-app signing-secret registration + the guarded broker
