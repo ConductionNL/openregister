@@ -41,7 +41,6 @@ use Throwable;
  */
 class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
 {
-
     /**
      * Constructor.
      *
@@ -54,7 +53,6 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
     ) {
     }//end __construct()
 
-
     /**
      * {@inheritDoc}
      *
@@ -65,7 +63,6 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
         return 'openregister';
     }//end getShareType()
 
-
     /**
      * {@inheritDoc}
      *
@@ -75,7 +72,6 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
     {
         return ['user', 'group'];
     }//end getSupportedShareTypes()
-
 
     /**
      * {@inheritDoc}
@@ -100,7 +96,7 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
                 params: [
                     'remoteInstanceUrl' => ($options['apiUrl'] ?? null),
                     'remoteProviderId'  => $share->getProviderId(),
-                    'shareToken'        => (string) ($options['token'] ?? ($share->getShareSecret() ?? '')),
+                    'shareToken'        => (string) ($options['token'] ?? $share->getShareSecret()),
                     'scope'             => (string) ($options['scope'] ?? 'schema'),
                     'register'          => ($options['register'] ?? null),
                     'schema'            => ($options['schema'] ?? null),
@@ -114,9 +110,8 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
         } catch (Throwable $e) {
             $this->logger->error('[Federation] shareReceived failed: '.$e->getMessage());
             throw new ProviderCouldNotAddShareException('Could not record OpenRegister federated share');
-        }
+        }//end try
     }//end shareReceived()
-
 
     /**
      * {@inheritDoc}
@@ -124,15 +119,15 @@ class OpenRegisterCloudFederationProvider implements ICloudFederationProvider
      * Handle OCM notifications: an unshare/revoke marks the local share revoked;
      * accept/decline update the status. Unknown types are ignored.
      *
-     * @param string               $notificationType The OCM notification type.
-     * @param string               $providerId       The remote provider/share id.
+     * @param mixed                $notificationType The OCM notification type.
+     * @param mixed                $providerId       The remote provider/share id.
      * @param array<string, mixed> $notification     The notification payload.
      *
-     * @return array<string, mixed> The response payload (empty on success).
+     * @return array<array-key, string> The response payload (empty on success).
      */
-    public function notificationReceived(string $notificationType, string $providerId, array $notification): array
+    public function notificationReceived($notificationType, $providerId, array $notification): array
     {
-        $this->logger->info('[Federation] OCM notification '.$notificationType.' for '.$providerId);
+        $this->logger->info('[Federation] OCM notification '.((string) $notificationType).' for '.((string) $providerId));
 
         // Status transitions are applied by the share-management service in a
         // follow-up; this hook currently acknowledges receipt so the remote does

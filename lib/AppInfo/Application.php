@@ -3071,9 +3071,7 @@ class Application extends App implements IBootstrap
                 }
             }
         }
-
     }//end bootObjectSourceProviders()
-
 
     /**
      * Register OpenRegister's OCM cloud-federation provider so cross-instance

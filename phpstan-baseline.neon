@@ -3379,6 +3379,16 @@ parameters:
 			path: lib/Db/SourceMapper.php
 
 		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\FederatedShare\\>\\:\\:insert\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\FederatedShare, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/FederatedShareMapper.php
+
+		-
+			message: "#^Parameter \\$entity of method OCP\\\\AppFramework\\\\Db\\\\QBMapper\\<OCA\\\\OpenRegister\\\\Db\\\\FederatedShare\\>\\:\\:update\\(\\) expects OCA\\\\OpenRegister\\\\Db\\\\FederatedShare, OCP\\\\AppFramework\\\\Db\\\\Entity given\\.$#"
+			count: 1
+			path: lib/Db/FederatedShareMapper.php
+
+		-
 			message: "#^Strict comparison using \\=\\=\\= between non\\-empty\\-string and null will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Db/TranslationMapper.php

@@ -68,10 +68,10 @@ class FlowActionService
     /**
      * Constructor.
      *
-     * @param SchemaMapper         $schemaMapper         Resolves a schema by id.
-     * @param CalendarEventService $calendarEventService Creates calendar events (agenda tasks).
-     * @param IMailer              $mailer               Sends email notifications.
-     * @param IConfig              $config               Reads the instance mail-from address.
+     * @param SchemaMapper           $schemaMapper           Resolves a schema by id.
+     * @param CalendarEventService   $calendarEventService   Creates calendar events (agenda tasks).
+     * @param IMailer                $mailer                 Sends email notifications.
+     * @param IConfig                $config                 Reads the instance mail-from address.
      * @param LoggerInterface        $logger                 Logs flow execution + failures.
      * @param IEventDispatcher       $eventDispatcher        Dispatches AgentRunRequestedEvent (ADR-041).
      * @param FederationShareService $federationShareService Creates federated shares (federate-share action).
@@ -269,7 +269,7 @@ class FlowActionService
                         context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $type, 'flow' => $flowName]
                     );
                     return;
-            }
+            }//end switch
 
             $this->logger->info(
                 message: '[FlowActionService] Flow action executed',
@@ -319,7 +319,6 @@ class FlowActionService
             permissions: $permissions
         );
     }//end runFederateShare()
-
 
     /**
      * Create a calendar event (agenda task) linked to the object.

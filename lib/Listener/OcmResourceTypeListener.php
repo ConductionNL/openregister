@@ -32,16 +32,19 @@ use OCP\OCM\Events\ResourceTypeRegisterEvent;
 
 /**
  * Registers the `openregister` resource type in the OCM discovery document.
+ *
+ * @spec exclude federation ships without a formal openspec change; spec to be added in a follow-up ADR
  */
 class OcmResourceTypeListener implements IEventListener
 {
-
     /**
      * Handle the resource-type registration event.
      *
      * @param Event $event The dispatched event.
      *
      * @return void
+     *
+     * @spec exclude federation ships without a formal openspec change; spec to be added in a follow-up ADR
      */
     public function handle(Event $event): void
     {

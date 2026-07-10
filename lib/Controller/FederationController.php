@@ -55,15 +55,15 @@ class FederationController extends Controller
      */
     private const PUBLIC_CONFIDENTIALITY = ['', 'openbaar', 'public', 'open'];
 
-
     /**
      * Constructor.
      *
-     * @param string               $appName       App name.
-     * @param IRequest             $request       Current request.
-     * @param FederatedShareMapper $shareMapper   Federated-share persistence.
-     * @param ObjectService        $objectService Object read service.
-     * @param LoggerInterface      $logger        Logger.
+     * @param string                 $appName       App name.
+     * @param IRequest               $request       Current request.
+     * @param FederatedShareMapper   $shareMapper   Federated-share persistence.
+     * @param ObjectService          $objectService Object read service.
+     * @param FederationShareService $shareService  Share management (list/create/revoke).
+     * @param LoggerInterface        $logger        Logger.
      */
     public function __construct(
         string $appName,
@@ -76,7 +76,6 @@ class FederationController extends Controller
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
 
-
     /**
      * List the active organisation's federated shares.
      *
@@ -86,11 +85,14 @@ class FederationController extends Controller
     public function shares(): JSONResponse
     {
         $direction = $this->request->getParam('direction');
-        $shares    = $this->shareService->listShares(direction: ($direction !== null ? (string) $direction : null));
+        if ($direction !== null) {
+            $direction = (string) $direction;
+        }
+
+        $shares = $this->shareService->listShares(direction: $direction);
 
         return new JSONResponse(data: ['results' => $shares, 'total' => count($shares)]);
     }//end shares()
-
 
     /**
      * Create an outgoing federated share and return it (with its token).
@@ -123,7 +125,6 @@ class FederationController extends Controller
         return new JSONResponse(data: $share, statusCode: Http::STATUS_CREATED);
     }//end createShare()
 
-
     /**
      * Revoke a federated share.
      *
@@ -145,7 +146,6 @@ class FederationController extends Controller
 
         return new JSONResponse(data: $share);
     }//end revokeShare()
-
 
     /**
      * Serve the objects a share grants (paginated).
@@ -185,7 +185,6 @@ class FederationController extends Controller
 
         return new JSONResponse(data: ['results' => $objects, 'total' => count($objects)]);
     }//end objects()
-
 
     /**
      * Serve a single shared object by id/uuid.
@@ -229,7 +228,6 @@ class FederationController extends Controller
         return new JSONResponse(data: $visible[0]);
     }//end object()
 
-
     /**
      * Create an object in a shared register/schema (read-write shares only).
      *
@@ -246,11 +244,11 @@ class FederationController extends Controller
             return new JSONResponse(data: ['error' => 'Invalid share or read-only'], statusCode: Http::STATUS_FORBIDDEN);
         }
 
-        $data                 = (array) $this->request->getParams();
+        $data = (array) $this->request->getParams();
         unset($data['shareToken'], $data['_route']);
         // Pin the object to the sharing organisation — a federated writer can
         // never plant an object into another organisation.
-        $data['@self']        = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
+        $data['@self'] = (($data['@self'] ?? []) + ['organisation' => $share->getOrganisation()]);
 
         try {
             $saved = $this->objectService->saveObject(
@@ -267,7 +265,6 @@ class FederationController extends Controller
 
         return new JSONResponse(data: $saved->jsonSerialize(), statusCode: Http::STATUS_CREATED);
     }//end createObject()
-
 
     /**
      * Update a shared object (read-write shares only).
@@ -307,7 +304,6 @@ class FederationController extends Controller
         return new JSONResponse(data: $saved->jsonSerialize());
     }//end updateObject()
 
-
     /**
      * Delete a shared object (read-write shares only).
      *
@@ -341,7 +337,6 @@ class FederationController extends Controller
         return new JSONResponse(data: ['deleted' => $ok]);
     }//end deleteObject()
 
-
     /**
      * Resolve a share that grants write access (accepted + read-write), or null.
      *
@@ -358,7 +353,6 @@ class FederationController extends Controller
 
         return $share;
     }//end resolveWritableShare()
-
 
     /**
      * Describe a share (scope, register/schema, permissions) so the receiving
@@ -386,7 +380,6 @@ class FederationController extends Controller
             ]
         );
     }//end meta()
-
 
     /**
      * Resolve an outgoing, accepted share by token, or null.
@@ -418,7 +411,6 @@ class FederationController extends Controller
         return $share;
     }//end resolveAcceptedShare()
 
-
     /**
      * Build the ObjectService findAll config for a share's scope.
      *
@@ -428,14 +420,17 @@ class FederationController extends Controller
      */
     private function buildScopeConfig(FederatedShare $share): array
     {
-        // Register/schema are set as ObjectService CONTEXT (setServeContext), not
-        // as domain filters: a magic table's system columns are underscore-prefixed
-        // (_register/_schema/_organisation), so they are not valid domain filters.
-        // The organisation + confidentiality guards run in PHP (applyShareVisibility).
+        /*
+         * Register/schema are set as ObjectService CONTEXT (setServeContext), not
+         * as domain filters: a magic table's system columns are underscore-prefixed
+         * (_register/_schema/_organisation), so they are not valid domain filters.
+         * The organisation + confidentiality guards run in PHP (applyShareVisibility).
+         */
+
         $filters = [];
 
         if ($share->getScope() === 'object' && $share->getObjectUri() !== null && $share->getObjectUri() !== '') {
-            // objectUri stores the object uuid for an object-scope share.
+            // The objectUri stores the object uuid for an object-scope share.
             $filters['uuid'] = $this->uuidFromUri(uri: $share->getObjectUri());
         }
 
@@ -445,7 +440,6 @@ class FederationController extends Controller
 
         return ['filters' => $filters];
     }//end buildScopeConfig()
-
 
     /**
      * Set the register/schema context on ObjectService for a share.
@@ -464,7 +458,6 @@ class FederationController extends Controller
             $this->objectService->setSchema(schema: $share->getSchema());
         }
     }//end setServeContext()
-
 
     /**
      * Normalise a findAll result to plain arrays (entities → jsonSerialize).
@@ -490,7 +483,6 @@ class FederationController extends Controller
             $objects
         );
     }//end normalize()
-
 
     /**
      * Enforce confidentiality visibility for the share scope.
@@ -534,7 +526,6 @@ class FederationController extends Controller
             )
         );
     }//end applyShareVisibility()
-
 
     /**
      * Extract the trailing uuid from a canonical object uri (or return it as-is).
