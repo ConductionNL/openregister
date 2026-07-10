@@ -1426,16 +1426,35 @@ class MagicMapper extends AbstractObjectMapper
 
         // Get metadata column names, checking each exists in this table.
         // Newer metadata columns (e.g. _tmlo) may not exist in older tables.
-        // Cast to text for UNION type compatibility (some columns are jsonb, others text).
+        // Cast to text for UNION type compatibility (some columns are jsonb/json,
+        // others datetime/bigint/text). Cast syntax is database-specific:
+        // PostgreSQL uses `col::text`, MariaDB/MySQL requires `CAST(col AS CHAR)`.
+        // Bug WOO-520: the unconditional `::text` form crashed on MariaDB with
+        // `SQLSTATE[42000]: Syntax error near '::text AS _id, _uuid::text AS ...'`
+        // as soon as WOO-506's multi-schema `_schemas` search fired this path.
         $metadataColumns = $this->getMetadataColumns();
         $selectColumns   = [];
         foreach (array_keys($metadataColumns) as $metaCol) {
-            if ($this->columnExistsInTable(tableName: $tableName, columnName: $metaCol) === true) {
-                $selectColumns[] = "{$metaCol}::text AS {$metaCol}";
+            $columnInTable = $this->columnExistsInTable(
+                tableName: $tableName,
+                columnName: $metaCol
+            );
+            if ($columnInTable === true) {
+                $colExpr = "CAST({$metaCol} AS CHAR) AS {$metaCol}";
+                if ($isPostgres === true) {
+                    $colExpr = "{$metaCol}::text AS {$metaCol}";
+                }
+
+                $selectColumns[] = $colExpr;
                 continue;
             }
 
-            $selectColumns[] = "NULL::text AS {$metaCol}";
+            $colExpr = "NULL AS {$metaCol}";
+            if ($isPostgres === true) {
+                $colExpr = "NULL::text AS {$metaCol}";
+            }
+
+            $selectColumns[] = $colExpr;
         }
 
         /*
