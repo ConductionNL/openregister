@@ -4832,6 +4832,28 @@ class MagicMapper extends AbstractObjectMapper
     }//end findInRegisterSchemaTable()
 
     /**
+     * Fetch the set of existing integer primary keys from a metadata table.
+     *
+     * Used to filter out orphaned magic tables in findAcrossAllMagicTables: a
+     * magic table whose register or schema row was deleted can never hold a
+     * resolvable object, so we skip it instead of querying it.
+     *
+     * @param string $table Unprefixed table name (e.g. `openregister_registers`).
+     *
+     * @return int[] The `id` values present in the table.
+     *
+     * @throws \OCP\DB\Exception If a database error occurs.
+     */
+    private function getExistingIds(string $table): array
+    {
+        $qb  = $this->db->getQueryBuilder();
+        $qb->select('id')->from($table);
+        $ids = $qb->executeQuery()->fetchAll(\PDO::FETCH_COLUMN);
+
+        return array_map('intval', $ids);
+    }//end getExistingIds()
+
+    /**
      * Find an object across all magic tables without knowing register/schema upfront.
      *
      * This method searches all existing magic tables for an object by its identifier.
@@ -4887,6 +4909,16 @@ class MagicMapper extends AbstractObjectMapper
         $registerMapper = \OC::$server->get(RegisterMapper::class);
         $schemaMapper   = \OC::$server->get(SchemaMapper::class);
 
+        // PERF: skip orphaned magic tables. A table `oc_openregister_table_{r}_{s}`
+        // is only a live source when both its register row `{r}` and schema row `{s}`
+        // still exist; deleting a register or schema leaves its magic table behind,
+        // and dev/CI instances accumulate thousands of these. A stored object always
+        // lives in a table whose register AND schema rows exist, so filtering to
+        // live ids is coverage-safe while cutting the per-lookup query count from
+        // "every table ever created" down to "tables with live parents".
+        $validRegisterIds = array_flip($this->getExistingIds(table: 'openregister_registers'));
+        $validSchemaIds   = array_flip($this->getExistingIds(table: 'openregister_schemas'));
+
         // Search each magic table.
         foreach ($tables as $tableRow) {
             $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
@@ -4902,6 +4934,12 @@ class MagicMapper extends AbstractObjectMapper
 
             $registerId = (int) $matches[1];
             $schemaId   = (int) $matches[2];
+
+            // Orphaned table (register or schema row deleted) — cannot hold a
+            // resolvable object; skip without querying it.
+            if (isset($validRegisterIds[$registerId]) === false || isset($validSchemaIds[$schemaId]) === false) {
+                continue;
+            }
 
             try {
                 // Build query to search this table.
