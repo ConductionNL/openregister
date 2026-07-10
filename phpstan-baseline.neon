@@ -4392,7 +4392,7 @@ parameters:
 
 		-
 			message: "#^Call to an undefined method OCP\\\\Files\\\\Node\\:\\:getContent\\(\\)\\.$#"
-			count: 2
+			count: 3
 			path: lib/Service/File/DocumentProcessingHandler.php
 
 		-

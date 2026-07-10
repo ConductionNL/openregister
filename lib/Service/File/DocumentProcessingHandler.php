@@ -102,6 +102,12 @@ class DocumentProcessingHandler
     private array $lastResidualEntities = [];
 
     /**
+     * ODF `text:` XML namespace URI, used to locate paragraph containers
+     * (`text:p`, `text:h`) and text nodes when redacting ODT parts in place.
+     */
+    private const ODF_TEXT_NS = 'urn:oasis:names:tc:opendocument:xmlns:text:1.0';
+
+    /**
      * Per-entity placeholder map from the most recent anonymisation.
      *
      * Maps the internal global entity id (`openregister_entities.id`, stringified)
@@ -192,7 +198,8 @@ class DocumentProcessingHandler
      * Replace words in a document.
      *
      * This method replaces specified words/phrases in a document file. It supports
-     * Word documents (.doc, .docx) using PHPWord and text files using simple string replacement.
+     * Word documents (.doc, .docx) using PHPWord, OpenDocument Text (.odt) via in-place XML
+     * replacement, and text files using simple string replacement.
      * For Word documents, replacements are applied recursively across all sections, headers,
      * footers, tables, and lists.
      *
@@ -228,6 +235,18 @@ class DocumentProcessingHandler
             if (empty($fileExtension) === false) {
                 $outputName .= '.'.$fileExtension;
             }
+        }
+
+        // ODT (OpenDocument Text) is a ZIP container whose text lives in
+        // content.xml (body/tables) and styles.xml (headers/footers). It is
+        // redacted by rewriting those XML parts in place (Strategy B). It MUST
+        // NOT reach the raw-byte str_ireplace fallback (which matches nothing
+        // in the compressed case → silent PII leak, or breaks the ZIP in the
+        // stored case → corrupt file), and it MUST NOT use PhpWord's ODText
+        // reader (which silently drops tables, headers, and footers on load,
+        // destroying that content). See the `odt-anonymisation-writeback` change.
+        if ($fileExtension === 'odt') {
+            return $this->replaceWordsInOdtDocument(node: $node, replacements: $replacements, outputName: $outputName);
         }
 
         // Process based on file type.
@@ -1295,7 +1314,6 @@ class DocumentProcessingHandler
         }//end try
     }//end replaceWordsInWordDocument()
 
-
     /**
      * Wrap bare `<w:br/>` soft line breaks in a run inside a saved .docx.
      *
@@ -1344,7 +1362,6 @@ class DocumentProcessingHandler
         $zip->close();
 
     }//end wrapSoftLineBreaksInRuns()
-
 
     /**
      * Wrap bare `<w:br .../>` elements in a `<w:r>` within a WordprocessingML
@@ -1428,6 +1445,537 @@ class DocumentProcessingHandler
 
         return $newFile;
     }//end replaceWordsInTextDocument()
+
+    /**
+     * Replace words in an OpenDocument Text (.odt) file (Strategy B).
+     *
+     * An ODT is a ZIP container whose visible text lives in `content.xml`
+     * (body, tables, lists) and `styles.xml` (page headers/footers). Rather
+     * than PhpWord's ODText reader — which silently drops tables, headers and
+     * footers on load, destroying that content — this rewrites those two XML
+     * parts in place: it parses each part, walks the text nodes of every
+     * paragraph, and substitutes entity text with its `[<TYPE>: <id>]`
+     * placeholder (handling entities split across `<text:span>` runs), leaving
+     * all structure and formatting untouched. A fail-loud validation gate then
+     * re-reads the rewritten parts and records any surviving entity via
+     * {@see getLastResidualEntities} — an unredacted or unreadable ODT is never
+     * reported as a clean success. The file is still written (best-effort
+     * policy, matching the PDF/DOCX paths).
+     *
+     * @param Node   $node         The .odt file node to process.
+     * @param array  $replacements Map: entity-text (needle) => `[<TYPE>: <id>]`.
+     * @param string $outputName   Name for the output file.
+     *
+     * @throws Exception If the node content is unreadable or the ZIP cannot be opened.
+     *
+     * @phpstan-param  array<string, string> $replacements
+     * @psalm-param    array<string, string> $replacements
+     * @phpstan-return File
+     * @psalm-return   File
+     *
+     * @return File The anonymised ODT.
+     */
+    private function replaceWordsInOdtDocument(
+        Node $node,
+        array $replacements,
+        string $outputName
+    ): File {
+        $content = $node->getContent();
+        if (is_string($content) === false) {
+            throw new Exception('Failed to get content from file: '.$node->getPath());
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'openregister_odt_');
+        if ($tempFile === false) {
+            throw new Exception('Failed to create temporary file');
+        }
+
+        file_put_contents($tempFile, $content);
+
+        try {
+            $zip = new \ZipArchive();
+            if ($zip->open($tempFile) !== true) {
+                throw new Exception('Failed to open ODT container');
+            }
+
+            // Redact the two ODF parts that carry visible text. content.xml
+            // holds the body, tables and lists; styles.xml holds page
+            // headers/footers. Every other entry (images, settings, mimetype)
+            // is left untouched, preserving structure and formatting.
+            foreach (['content.xml', 'styles.xml'] as $part) {
+                $xml = $zip->getFromName($part);
+                if (is_string($xml) === false || $xml === '') {
+                    continue;
+                }
+
+                $fixed = $this->replaceTextInOdfXml(xml: $xml, replacements: $replacements);
+                if ($fixed !== $xml) {
+                    $zip->addFromString($part, $fixed);
+                }
+            }
+
+            $zip->close();
+        } catch (\Throwable $e) {
+            if (file_exists($tempFile) === true) {
+                unlink($tempFile);
+            }
+
+            $this->logger->error(
+                message: '[DocumentProcessingHandler] Failed to replace words in ODT document: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'exception' => $e,
+                ]
+            );
+            throw new Exception('Failed to replace words in ODT document: '.$e->getMessage(), 0, $e);
+        }//end try
+
+        // Fail-loud validation gate: re-read the rewritten ODF parts and record
+        // any entity whose original text survives (or an unreadable container)
+        // as residual — never report an unredacted ODT as a clean success.
+        $this->recordOdtResidualEntities(odtPath: $tempFile, replacements: $replacements);
+
+        // Write the redacted ODT to the target folder.
+        $parentFolder = $node->getParent();
+        if ($parentFolder->nodeExists($outputName) === true) {
+            $parentFolder->get($outputName)->delete();
+        }
+
+        $outputStream = fopen($tempFile, 'r');
+        $newFile      = $parentFolder->newFile(path: $outputName, content: $outputStream);
+        // Do NOT call fclose($outputStream); Nextcloud handles the stream lifecycle internally.
+        unlink($tempFile);
+
+        $this->logger->debug(
+            message: '[DocumentProcessingHandler] Words replaced in ODT document',
+            context: [
+                'file'         => __FILE__,
+                'line'         => __LINE__,
+                'originalFile' => $node->getPath(),
+                'outputFile'   => $newFile->getPath(),
+                'replacements' => count($replacements),
+            ]
+        );
+
+        return $newFile;
+    }//end replaceWordsInOdtDocument()
+
+    /**
+     * Rewrite entity text inside a single ODF XML part (content.xml/styles.xml).
+     *
+     * Parses the XML and processes each paragraph container (`text:p`,
+     * `text:h`) independently: it concatenates the paragraph's text nodes,
+     * finds entity occurrences across the concatenation (so an entity split
+     * across `<text:span>` runs is still caught), and rewrites the underlying
+     * text nodes so each occurrence becomes its placeholder. All markup,
+     * attributes and non-text elements are preserved. Pure string transform —
+     * no I/O — for testability. Returns the input unchanged when it cannot be
+     * parsed (the validation gate then flags any residual).
+     *
+     * @param string $xml          A parsed-as-XML ODF part.
+     * @param array  $replacements Map: entity-text (needle) => placeholder.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return string The rewritten XML (or the original on parse failure).
+     */
+    private function replaceTextInOdfXml(string $xml, array $replacements): string
+    {
+        if (empty($replacements) === true || trim($xml) === '') {
+            return $xml;
+        }
+
+        $dom = new \DOMDocument();
+        $dom->preserveWhiteSpace = true;
+        $dom->formatOutput       = false;
+
+        $previous = libxml_use_internal_errors(true);
+        $loaded   = $dom->loadXML($xml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if ($loaded === false) {
+            return $xml;
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $xpath->registerNamespace('text', self::ODF_TEXT_NS);
+
+        $paragraphs = $xpath->query('//text:p | //text:h');
+        if ($paragraphs === false) {
+            return $xml;
+        }
+
+        foreach ($paragraphs as $paragraph) {
+            $this->replaceTextInOdfParagraph(xpath: $xpath, paragraph: $paragraph, replacements: $replacements);
+        }
+
+        $out = $dom->saveXML();
+        return ($out === false) ? $xml : $out;
+
+    }//end replaceTextInOdfXml()
+
+    /**
+     * Apply replacements to the text nodes of a single ODF paragraph.
+     *
+     * Concatenates the paragraph's descendant text nodes into one string (with
+     * a byte→node ownership map), computes non-overlapping replacement ranges
+     * over that string, then rebuilds each text node: bytes inside a replaced
+     * range are dropped and the placeholder is emitted once, on the node owning
+     * the range's start. This handles entities split across multiple runs.
+     *
+     * @param \DOMXPath $xpath        Namespace-registered XPath over the document.
+     * @param \DOMNode  $paragraph    The `text:p` / `text:h` node.
+     * @param array     $replacements Map: entity-text (needle) => placeholder.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return void
+     */
+    private function replaceTextInOdfParagraph(\DOMXPath $xpath, \DOMNode $paragraph, array $replacements): void
+    {
+        $textNodes = $xpath->query('.//text()', $paragraph);
+        if ($textNodes === false || $textNodes->length === 0) {
+            return;
+        }
+
+        $segments = [];
+        $full     = '';
+        foreach ($textNodes as $textNode) {
+            $data = (string) $textNode->nodeValue;
+            if ($data === '') {
+                continue;
+            }
+
+            $segments[] = [
+                'node'   => $textNode,
+                'start'  => strlen($full),
+                'length' => strlen($data),
+            ];
+            $full      .= $data;
+        }
+
+        if ($full === '') {
+            return;
+        }
+
+        $ranges = $this->computeOdfReplacementRanges(haystack: $full, replacements: $replacements);
+        if (empty($ranges) === true) {
+            return;
+        }
+
+        $newValues = $this->rebuildOdfSegmentValues(full: $full, segments: $segments, ranges: $ranges);
+        foreach ($segments as $index => $segment) {
+            $node = $segment['node'];
+            if ($node instanceof \DOMNode && array_key_exists($index, $newValues) === true) {
+                $node->nodeValue = $newValues[$index];
+            }
+        }
+
+    }//end replaceTextInOdfParagraph()
+
+    /**
+     * Compute non-overlapping replacement ranges over a concatenated string.
+     *
+     * Needles are processed longest-first so a shorter variant cannot pre-empt
+     * a longer one, and matching is case-insensitive to mirror the
+     * `str_ireplace` semantics used on the DOCX/text paths. Overlapping matches
+     * are skipped (first writer wins).
+     *
+     * @param string $haystack     The concatenated paragraph text.
+     * @param array  $replacements Map: entity-text (needle) => placeholder.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return array<int, array{start: int, end: int, text: string}> Sorted by start.
+     */
+    private function computeOdfReplacementRanges(string $haystack, array $replacements): array
+    {
+        $needles = array_keys($replacements);
+        usort(
+            $needles,
+            static function ($a, $b): int {
+                return (strlen((string) $b) <=> strlen((string) $a));
+            }
+        );
+
+        $ranges   = [];
+        $consumed = [];
+        foreach ($needles as $needle) {
+            $needleStr = (string) $needle;
+            if ($needleStr === '') {
+                continue;
+            }
+
+            $placeholder = (string) ($replacements[$needle] ?? '');
+            $length      = strlen($needleStr);
+            $offset      = 0;
+            while (($pos = stripos($haystack, $needleStr, $offset)) !== false) {
+                $end     = ($pos + $length);
+                $overlap = false;
+                for ($byte = $pos; $byte < $end; $byte++) {
+                    if (isset($consumed[$byte]) === true) {
+                        $overlap = true;
+                        break;
+                    }
+                }
+
+                if ($overlap === false) {
+                    for ($byte = $pos; $byte < $end; $byte++) {
+                        $consumed[$byte] = true;
+                    }
+
+                    $ranges[] = [
+                        'start' => $pos,
+                        'end'   => $end,
+                        'text'  => $placeholder,
+                    ];
+                }
+
+                $offset = ($pos + 1);
+            }//end while
+        }//end foreach
+
+        usort(
+            $ranges,
+            static function (array $a, array $b): int {
+                return ($a['start'] <=> $b['start']);
+            }
+        );
+
+        return $ranges;
+
+    }//end computeOdfReplacementRanges()
+
+    /**
+     * Rebuild each text-node string after applying replacement ranges.
+     *
+     * Walks the concatenated string byte by byte, attributing each surviving
+     * byte to its owning node and emitting each placeholder once on the node
+     * owning its range start. Bytes inside a replaced range are dropped from
+     * whichever nodes they belonged to.
+     *
+     * @param string $full     The concatenated paragraph text.
+     * @param array  $segments Ordered [node, start, length] segment descriptors.
+     * @param array  $ranges   Sorted replacement ranges [start, end, text].
+     *
+     * @phpstan-param array<int, array{node: \DOMNode, start: int, length: int}> $segments
+     * @phpstan-param array<int, array{start: int, end: int, text: string}>      $ranges
+     *
+     * @return array<int, string> Map of segment index => new text-node value.
+     */
+    private function rebuildOdfSegmentValues(string $full, array $segments, array $ranges): array
+    {
+        $owner = [];
+        foreach ($segments as $index => $segment) {
+            $end = ($segment['start'] + $segment['length']);
+            for ($byte = $segment['start']; $byte < $end; $byte++) {
+                $owner[$byte] = $index;
+            }
+        }
+
+        $newValues = [];
+        foreach (array_keys($segments) as $index) {
+            $newValues[$index] = '';
+        }
+
+        $firstIndex = (array_key_first($segments) ?? 0);
+        $total      = strlen($full);
+        $rangeCount = count($ranges);
+        $rangeIndex = 0;
+        $byte       = 0;
+        while ($byte < $total) {
+            if ($rangeIndex < $rangeCount && $byte === $ranges[$rangeIndex]['start']) {
+                $ownerIndex = ($owner[$byte] ?? $firstIndex);
+                $newValues[$ownerIndex] .= $ranges[$rangeIndex]['text'];
+                $byte = $ranges[$rangeIndex]['end'];
+                $rangeIndex++;
+                continue;
+            }
+
+            $ownerIndex = ($owner[$byte] ?? $firstIndex);
+            $newValues[$ownerIndex] .= $full[$byte];
+            $byte++;
+        }
+
+        return $newValues;
+
+    }//end rebuildOdfSegmentValues()
+
+    /**
+     * Fail-loud validation gate for the ODT writeback path.
+     *
+     * Re-opens the just-written ODT and re-extracts the concatenated paragraph
+     * text of content.xml + styles.xml (the same within-paragraph concatenation
+     * the replacement used), then asserts every entity's original text is
+     * absent. Any survivor — or an unreadable container / missing content.xml,
+     * which means redaction cannot be proven — is recorded via
+     * {@see getLastResidualEntities} using the same {text, type, id} record
+     * shape and `[<TYPE>: <id>]` placeholder parsing as the PDF path. Never
+     * throws; never deletes the output.
+     *
+     * @param string $odtPath      Absolute path to the just-written .odt file.
+     * @param array  $replacements Map: entity-text (needle) => `[<TYPE>: <id>]`.
+     *
+     * @phpstan-param array<string, string> $replacements
+     * @psalm-param   array<string, string> $replacements
+     *
+     * @return void
+     */
+    private function recordOdtResidualEntities(string $odtPath, array $replacements): void
+    {
+        if (empty($replacements) === true) {
+            return;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($odtPath) !== true) {
+            // Cannot re-open the container → redaction cannot be proven.
+            $this->recordResidualNeedles(needles: array_keys($replacements), replacements: $replacements);
+            return;
+        }
+
+        $contentXml = $zip->getFromName('content.xml');
+        $stylesXml  = $zip->getFromName('styles.xml');
+        $zip->close();
+
+        if (is_string($contentXml) === false || $contentXml === '') {
+            // A valid ODT always has content.xml; its absence means we cannot
+            // verify redaction, so fail loud.
+            $this->recordResidualNeedles(needles: array_keys($replacements), replacements: $replacements);
+            return;
+        }
+
+        $extracted = $this->extractOdfConcatenatedText(xml: $contentXml);
+        if (is_string($stylesXml) === true && $stylesXml !== '') {
+            $extracted .= "\n".$this->extractOdfConcatenatedText(xml: $stylesXml);
+        }
+
+        $survivors = array_keys(
+            array_filter(
+                $replacements,
+                static function ($needle) use ($extracted): bool {
+                    return (stripos($extracted, (string) $needle) !== false);
+                },
+                ARRAY_FILTER_USE_KEY
+            )
+        );
+
+        $this->recordResidualNeedles(needles: $survivors, replacements: $replacements);
+
+    }//end recordOdtResidualEntities()
+
+    /**
+     * Record a set of surviving needles as residual entities.
+     *
+     * Maps each surviving needle back to a {text, type, id} record via its
+     * `[<TYPE>: <id>]` placeholder — identical shape to the PDF path — and
+     * stores them in {@see $lastResidualEntities}. A no-op (and no log) when
+     * there are no survivors, so a clean run reports nothing.
+     *
+     * @param array $needles      Surviving entity needles.
+     * @param array $replacements Map: entity-text (needle) => `[<TYPE>: <id>]`.
+     *
+     * @phpstan-param array<int, int|string>  $needles
+     * @phpstan-param array<string, string>   $replacements
+     *
+     * @return void
+     */
+    private function recordResidualNeedles(array $needles, array $replacements): void
+    {
+        if (empty($needles) === true) {
+            return;
+        }
+
+        $records = [];
+        foreach ($needles as $needle) {
+            $placeholder = (string) ($replacements[$needle] ?? '');
+            $type        = 'UNKNOWN';
+            $id          = '';
+            if (preg_match('/^\[([^:\]]+):\s*([^\]]*)\]$/', $placeholder, $matches) === 1) {
+                $type = trim($matches[1]);
+                $id   = trim($matches[2]);
+            }
+
+            $records[] = [
+                'text' => (string) $needle,
+                'type' => $type,
+                'id'   => $id,
+            ];
+        }
+
+        $this->lastResidualEntities = $records;
+
+        // PII-free warning (ADR-005): count only, never the residual text.
+        $this->logger->warning(
+            message: '[DocumentProcessingHandler] ODT anonymisation left residual entities; output written best-effort.',
+            context: [
+                'file'          => __FILE__,
+                'line'          => __LINE__,
+                'residualCount' => count($records),
+            ]
+        );
+
+    }//end recordResidualNeedles()
+
+    /**
+     * Extract the concatenated paragraph text of an ODF XML part.
+     *
+     * Mirrors the replacement pass: for each paragraph container it concatenates
+     * the descendant text nodes with no separator (so a split entity reads as
+     * one string), joining paragraphs with a newline. Used only by the
+     * validation gate. Returns '' when the XML cannot be parsed.
+     *
+     * @param string $xml An ODF XML part (content.xml / styles.xml).
+     *
+     * @return string The concatenated visible text.
+     */
+    private function extractOdfConcatenatedText(string $xml): string
+    {
+        if (trim($xml) === '') {
+            return '';
+        }
+
+        $dom      = new \DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        $loaded   = $dom->loadXML($xml);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+        if ($loaded === false) {
+            return '';
+        }
+
+        $xpath = new \DOMXPath($dom);
+        $xpath->registerNamespace('text', self::ODF_TEXT_NS);
+
+        $paragraphs = $xpath->query('//text:p | //text:h');
+        if ($paragraphs === false) {
+            return '';
+        }
+
+        $parts = [];
+        foreach ($paragraphs as $paragraph) {
+            $textNodes = $xpath->query('.//text()', $paragraph);
+            if ($textNodes === false) {
+                continue;
+            }
+
+            $buffer = '';
+            foreach ($textNodes as $textNode) {
+                $buffer .= (string) $textNode->nodeValue;
+            }
+
+            if ($buffer !== '') {
+                $parts[] = $buffer;
+            }
+        }
+
+        return implode("\n", $parts);
+
+    }//end extractOdfConcatenatedText()
 
     /**
      * Replace words in a PDF document via the SAPP byte-level pipeline.
