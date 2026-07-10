@@ -169,6 +169,7 @@ use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
 use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -1215,6 +1216,16 @@ class Application extends App implements IBootstrap
             ObjectSourceRegistry::class,
             function (ContainerInterface $container) {
                 return new ObjectSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            FederatedObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new FederatedObjectSourceProvider(
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
                     logger: $container->get('Psr\Log\LoggerInterface')
                 );
             }
@@ -2899,6 +2910,7 @@ class Application extends App implements IBootstrap
             FilesObjectSourceProvider::class,
             DeckObjectSourceProvider::class,
             TalkObjectSourceProvider::class,
+            FederatedObjectSourceProvider::class,
         ];
         foreach ($providerClasses as $providerClass) {
             try {
