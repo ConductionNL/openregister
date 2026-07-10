@@ -2614,6 +2614,25 @@
         "The active policy pack supplies no denial-letter template reference for this jurisdiction.": "The active policy pack supplies no denial-letter template reference for this jurisdiction.",
         "The letter body is rendered from this template reference (a document leaf); it is not stored in this form.": "The letter body is rendered from this template reference (a document leaf); it is not stored in this form.",
         "Unassigned": "Unassigned",
-        "Verify identity": "Verify identity"
+        "Verify identity": "Verify identity",
+        "Allow writes (create, update and delete push through to the external database)": "Allow writes (create, update and delete push through to the external database)",
+        "Chunks vectorized": "Chunks vectorized",
+        "Create virtual register": "Create virtual register",
+        "Credential (UUID from the credential store)": "Credential (UUID from the credential store)",
+        "Database file path *": "Database file path *",
+        "Database name *": "Database name *",
+        "Driver": "Driver",
+        "HNSW index": "HNSW index",
+        "Host *": "Host *",
+        "Hybrid search readiness": "Hybrid search readiness",
+        "Keyword GIN index": "Keyword GIN index",
+        "pgvector ANN sidecar": "pgvector ANN sidecar",
+        "Templates are coming soon": "Templates are coming soon",
+        "The action failed": "The action failed",
+        "The database password is never stored on the source; reference a credential from the credential store instead.": "The database password is never stored on the source; reference a credential from the credential store instead.",
+        "The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.": "The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.",
+        "Vectors on pgvector fast path": "Vectors on pgvector fast path",
+        "Virtual register created: {created} new and {updated} updated schemas": "Virtual register created: {created} new and {updated} updated schemas",
+        "Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run \"Create virtual register\" to unlock existing schemas.": "Warning: writes are executed directly on the external database. Use a database user with least-privilege grants. Re-run \"Create virtual register\" to unlock existing schemas."
     }
 }
