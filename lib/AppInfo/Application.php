@@ -177,6 +177,8 @@ use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
 use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
 use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
+use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
+use OCP\Federation\ICloudFederationProviderManager;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -2283,6 +2285,12 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
+        $context->registerEventListener(
+            \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
+            \OCA\OpenRegister\Listener\OcmResourceTypeListener::class
+        );
+
         // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
@@ -2824,6 +2832,7 @@ class Application extends App implements IBootstrap
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
         $this->bootObjectSourceProviders(server: $server);
+        $this->bootFederation(server: $server);
 
         // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
         // component can render submitter faces alongside the issues
@@ -3064,4 +3073,37 @@ class Application extends App implements IBootstrap
         }
 
     }//end bootObjectSourceProviders()
+
+
+    /**
+     * Register OpenRegister's OCM cloud-federation provider so cross-instance
+     * shares of registers/schemas/objects ride Nextcloud's Open Cloud Mesh
+     * transport. Guarded: if the federation stack is unavailable, OpenRegister
+     * still runs (federation simply won't be offered).
+     *
+     * @param mixed $server Server container (passed from boot()).
+     *
+     * @return void
+     */
+    private function bootFederation($server): void
+    {
+        try {
+            $manager = $server->get(ICloudFederationProviderManager::class);
+            $manager->addCloudFederationProvider(
+                'openregister',
+                'OpenRegister',
+                function () use ($server) {
+                    return $server->get(OpenRegisterCloudFederationProvider::class);
+                }
+            );
+        } catch (\Throwable $e) {
+            try {
+                $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    '[Federation] could not register OCM provider: '.$e->getMessage()
+                );
+            } catch (\Throwable $inner) {
+                // Logging unavailable — never take the app down over federation.
+            }
+        }
+    }//end bootFederation()
 }//end class
