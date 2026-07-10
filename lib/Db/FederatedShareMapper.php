@@ -143,6 +143,38 @@ class FederatedShareMapper extends QBMapper
 
 
     /**
+     * Find an existing outgoing object-scope share for a uri + target, or null.
+     *
+     * Used by the federate-share flow action to stay idempotent (one share per
+     * object per target). Bypasses the organisation filter — the flow that
+     * created the share owns the dedup decision, not the acting session.
+     *
+     * @param string $objectUri  The shared object's uri/uuid.
+     * @param string $sharedWith The federated target (slug@host).
+     *
+     * @return FederatedShare|null The existing share, or null.
+     */
+    public function findOutgoingObjectShare(string $objectUri, string $sharedWith): ?FederatedShare
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_federated_shares')
+            ->where($qb->expr()->eq('direction', $qb->createNamedParameter('outgoing')))
+            ->andWhere($qb->expr()->eq('scope', $qb->createNamedParameter('object')))
+            ->andWhere($qb->expr()->eq('object_uri', $qb->createNamedParameter($objectUri)))
+            ->andWhere($qb->expr()->eq('shared_with', $qb->createNamedParameter($sharedWith)))
+            ->setMaxResults(1);
+
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }//end findOutgoingObjectShare()
+
+
+    /**
      * Find all federated shares, optionally filtered.
      *
      * @param int|null                  $limit   Maximum number of results.

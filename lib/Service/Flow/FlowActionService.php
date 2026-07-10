@@ -37,6 +37,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCP\IConfig;
 use OCP\Mail\IMailer;
+use OCA\OpenRegister\Service\FederationShareService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,14 +52,16 @@ class FlowActionService
      * @param CalendarEventService $calendarEventService Creates calendar events (agenda tasks).
      * @param IMailer              $mailer               Sends email notifications.
      * @param IConfig              $config               Reads the instance mail-from address.
-     * @param LoggerInterface      $logger               Logs flow execution + failures.
+     * @param LoggerInterface        $logger               Logs flow execution + failures.
+     * @param FederationShareService $federationShareService Creates federated shares (federate-share action).
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly CalendarEventService $calendarEventService,
         private readonly IMailer $mailer,
         private readonly IConfig $config,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly FederationShareService $federationShareService
     ) {
     }//end __construct()
 
@@ -232,6 +235,9 @@ class FlowActionService
                 case 'mail':
                     $this->runEmail(action: $action, data: $data);
                     break;
+                case 'federate-share':
+                    $this->runFederateShare(action: $action, object: $object);
+                    break;
                 default:
                     $this->logger->warning(
                         message: '[FlowActionService] Unknown flow action type',
@@ -251,6 +257,44 @@ class FlowActionService
             );
         }//end try
     }//end runAction()
+
+    /**
+     * Share the triggering object with a federated organisation (rule-based).
+     *
+     * Config keys: `sharedWith` (slug@host, required), `permissions`
+     * (read|read-write, default read). Idempotent — one object-scope share per
+     * object per target — so it can fire on every matching save. The flow's own
+     * conditions (`x-openregister-flows`) decide WHICH objects qualify (e.g.
+     * `confidentiality == public && status == published`).
+     *
+     * @param array<string, mixed> $action The action config.
+     * @param ObjectEntity         $object The triggering object.
+     *
+     * @return void
+     */
+    private function runFederateShare(array $action, ObjectEntity $object): void
+    {
+        $sharedWith = trim((string) ($action['sharedWith'] ?? ''));
+        if ($sharedWith === '') {
+            $this->logger->warning(
+                message: '[FlowActionService] federate-share action missing sharedWith',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return;
+        }
+
+        $permissions = (string) ($action['permissions'] ?? 'read');
+        $objectUri   = (string) ($object->getUri() ?? $object->getUuid());
+
+        $this->federationShareService->ensureObjectShare(
+            objectUri: $objectUri,
+            register: (string) $object->getRegister(),
+            schema: (string) $object->getSchema(),
+            sharedWith: $sharedWith,
+            permissions: $permissions
+        );
+    }//end runFederateShare()
+
 
     /**
      * Create a calendar event (agenda task) linked to the object.
