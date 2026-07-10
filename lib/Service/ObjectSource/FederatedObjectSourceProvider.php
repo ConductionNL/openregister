@@ -40,7 +40,6 @@ use Throwable;
  */
 class FederatedObjectSourceProvider implements ObjectSourceProvider
 {
-
     /**
      * Constructor.
      *
@@ -53,7 +52,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
     ) {
     }//end __construct()
 
-
     /**
      * {@inheritDoc}
      *
@@ -63,7 +61,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
     {
         return 'federated';
     }//end getId()
-
 
     /**
      * {@inheritDoc}
@@ -76,7 +73,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
     {
         return true;
     }//end isEnabled()
-
 
     /**
      * {@inheritDoc}
@@ -110,7 +106,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
 
         return $this->toObjectEntity(register: $register, schema: $schema, record: $body);
     }//end find()
-
 
     /**
      * {@inheritDoc}
@@ -157,7 +152,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
         return $results;
     }//end findAll()
 
-
     /**
      * {@inheritDoc}
      *
@@ -172,7 +166,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
     {
         return count($this->findAll(register: $register, schema: $schema, query: $query, config: $config));
     }//end count()
-
 
     /**
      * Build the remote federation base URL from the source config.
@@ -193,7 +186,6 @@ class FederatedObjectSourceProvider implements ObjectSourceProvider
 
         return rtrim($remoteUrl, '/').'/apps/openregister/api/federation/'.rawurlencode($token);
     }//end baseUrl()
-
 
     /**
      * Project a remote rendered record onto a non-persisted local ObjectEntity.

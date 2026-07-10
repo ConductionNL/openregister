@@ -180,7 +180,6 @@ class FederatedShare extends Entity implements JsonSerializable
      */
     protected ?DateTime $updated = null;
 
-
     /**
      * Constructor: registers field types.
      */
@@ -204,7 +203,6 @@ class FederatedShare extends Entity implements JsonSerializable
         $this->addType(fieldName: 'updated', type: 'datetime');
     }//end __construct()
 
-
     /**
      * Get the JSON field names on this entity.
      *
@@ -224,7 +222,6 @@ class FederatedShare extends Entity implements JsonSerializable
         );
     }//end getJsonFields()
 
-
     /**
      * Get the local owning organisation UUID.
      *
@@ -234,7 +231,6 @@ class FederatedShare extends Entity implements JsonSerializable
     {
         return $this->organisation;
     }//end getOrganisation()
-
 
     /**
      * Set the local owning organisation UUID.
@@ -248,7 +244,6 @@ class FederatedShare extends Entity implements JsonSerializable
         $this->organisation = $organisation;
         $this->markFieldUpdated(attribute: 'organisation');
     }//end setOrganisation()
-
 
     /**
      * Hydrate the entity from an array.
@@ -277,7 +272,6 @@ class FederatedShare extends Entity implements JsonSerializable
 
         return $this;
     }//end hydrate()
-
 
     /**
      * Serialize the entity to a JSON-ready array.

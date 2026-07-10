@@ -72,7 +72,6 @@ class FederatedShareMapper extends QBMapper
      */
     protected IAppConfig $appConfig;
 
-
     /**
      * Constructor.
      *
@@ -96,7 +95,6 @@ class FederatedShareMapper extends QBMapper
         $this->appConfig          = $appConfig;
     }//end __construct()
 
-
     /**
      * Find a federated share by database id.
      *
@@ -116,7 +114,6 @@ class FederatedShareMapper extends QBMapper
 
         return $this->findEntity(query: $qb);
     }//end find()
-
 
     /**
      * Find a federated share by its scoped share token.
@@ -140,7 +137,6 @@ class FederatedShareMapper extends QBMapper
 
         return $this->findEntity(query: $qb);
     }//end findByToken()
-
 
     /**
      * Find an existing outgoing object-scope share for a uri + target, or null.
@@ -173,7 +169,6 @@ class FederatedShareMapper extends QBMapper
         }
     }//end findOutgoingObjectShare()
 
-
     /**
      * Find all federated shares, optionally filtered.
      *
@@ -203,7 +198,6 @@ class FederatedShareMapper extends QBMapper
         return $this->findEntities(query: $qb);
     }//end findAll()
 
-
     /**
      * Insert a new federated share, stamping uuid/timestamps/organisation.
      *
@@ -229,7 +223,6 @@ class FederatedShareMapper extends QBMapper
         return parent::insert(entity: $entity);
     }//end insert()
 
-
     /**
      * Update an existing federated share, refreshing the updated timestamp.
      *
@@ -246,7 +239,6 @@ class FederatedShareMapper extends QBMapper
         return parent::update(entity: $entity);
     }//end update()
 
-
     /**
      * Create a share from an array of data.
      *
@@ -261,7 +253,6 @@ class FederatedShareMapper extends QBMapper
 
         return $this->insert(entity: $share);
     }//end createFromArray()
-
 
     /**
      * Update a share from an array of data.

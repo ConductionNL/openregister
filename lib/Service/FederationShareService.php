@@ -52,7 +52,6 @@ class FederationShareService
      */
     private const PERMISSIONS = ['read', 'read-write'];
 
-
     /**
      * Constructor.
      *
@@ -68,7 +67,6 @@ class FederationShareService
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
-
 
     /**
      * Create an outgoing federated share and mint its scoped token.
@@ -116,7 +114,6 @@ class FederationShareService
         return $this->shareMapper->createFromArray(data: $data);
     }//end createOutgoingShare()
 
-
     /**
      * Record an incoming federated share (a remote shared with an org here).
      *
@@ -146,7 +143,6 @@ class FederationShareService
 
         return $this->shareMapper->createFromArray(data: $data);
     }//end recordIncomingShare()
-
 
     /**
      * Ensure an outgoing object-scope share exists for a uri + target.
@@ -186,7 +182,6 @@ class FederationShareService
         );
     }//end ensureObjectShare()
 
-
     /**
      * List federated shares, optionally by direction.
      *
@@ -204,7 +199,6 @@ class FederationShareService
         return $this->shareMapper->findAll(limit: null, offset: null, filters: $filters);
     }//end listShares()
 
-
     /**
      * Set the status of a share (e.g. accept, decline, revoke).
      *
@@ -217,7 +211,6 @@ class FederationShareService
     {
         return $this->shareMapper->updateFromArray(id: $id, data: ['status' => $status]);
     }//end setStatus()
-
 
     /**
      * Resolve the active organisation UUID (null when none).
@@ -237,7 +230,6 @@ class FederationShareService
 
         return null;
     }//end activeOrganisationUuid()
-
 
     /**
      * Mint a scoped bearer share token.
