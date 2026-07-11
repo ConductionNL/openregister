@@ -3836,6 +3836,17 @@ class SaveObject
             $objectEntity->setFolder($folderValue);
         }//end if
 
+        // Propagate @self.geo — the object's geographical metadata (a GeoJSON-ish
+        // array rendered/edited by map widgets, e.g. CnObjectGeoWidget). Unlike
+        // organisation/tmlo this is plain descriptive data driving no security or
+        // lifecycle decisions, so it is client-writable. An explicit null clears it.
+        if (array_key_exists('geo', $selfData) === true) {
+            $geoValue = $selfData['geo'];
+            if ($geoValue === null || is_array($geoValue) === true) {
+                $objectEntity->setGeo($geoValue);
+            }
+        }
+
         // SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
         // from client input on CREATE.  The destruction pipeline keys off archiefstatus;
         // a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
