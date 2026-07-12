@@ -129,8 +129,14 @@ webpackConfig.resolve.extensions = [
 // Set OR_SKIP_LOCAL_NCVUE=1 in the env to bypass this alias when the
 // apps-extra/nextcloud-vue submodule is on an unrelated branch (e.g. during
 // dist-based verification of feature/integration-leaves-consolidated).
+// `USE_LOCAL_LIB=false` is the fleet-wide switch (OR_SKIP_LOCAL_NCVUE stays for
+// compatibility): it forces the published package even when a sibling checkout is
+// present, so a local build can reproduce what CI and production build — they have
+// no sibling, so they always resolve the npm dist.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib) && !process.env.OR_SKIP_LOCAL_NCVUE
+const useLocalLib = fs.existsSync(localLib)
+	&& !process.env.OR_SKIP_LOCAL_NCVUE
+	&& process.env.USE_LOCAL_LIB !== 'false'
 
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
