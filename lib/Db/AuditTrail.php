@@ -70,6 +70,12 @@ use OCP\AppFramework\Db\Entity;
  * @method void setHash(?string $hash)
  * @method string|null getPreviousHash()
  * @method void setPreviousHash(?string $previousHash)
+ * @method string|null getToolId()
+ * @method void setToolId(?string $toolId)
+ * @method string|null getParamsDigest()
+ * @method void setParamsDigest(?string $paramsDigest)
+ * @method array|null getResultSummary()
+ * @method void setResultSummary(?array $resultSummary)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -294,6 +300,43 @@ class AuditTrail extends Entity implements JsonSerializable
     protected ?string $importJobId = null;
 
     /**
+     * The full namespaced MCP tool id this row records an invocation of
+     * (e.g. `pipelinq.lead.search`), when this row is an MCP tool-invocation
+     * audit entry (ADR-063 chain 2/3). Null on ordinary object-CRUD rows.
+     *
+     * @var string|null Namespaced MCP tool id.
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     */
+    protected ?string $toolId = null;
+
+    /**
+     * A digest (never the raw values) of the MCP tool invocation's
+     * arguments — a SHA-256 hex digest of their canonical JSON form.
+     * Deliberately excludes raw argument values so this immutable row never
+     * persists PII (ADR-063 chain 2/3, EU AI Act art.12/14).
+     *
+     * @var string|null SHA-256 hex digest of the invocation arguments.
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — A params digest, not raw params, is stored)
+     */
+    protected ?string $paramsDigest = null;
+
+    /**
+     * A small structured summary of an MCP tool invocation's outcome
+     * (e.g. object count / affected ids / `isError` + error class). Null on
+     * ordinary object-CRUD rows.
+     *
+     * @var array|null Result summary of an MCP tool invocation.
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     */
+    protected ?array $resultSummary = null;
+
+    /**
      * Constructor for the AuditTrail class
      *
      * Sets up field types for all properties
@@ -328,6 +371,9 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'hash', type: 'string');
         $this->addType(fieldName: 'previousHash', type: 'string');
         $this->addType(fieldName: 'importJobId', type: 'string');
+        $this->addType(fieldName: 'toolId', type: 'string');
+        $this->addType(fieldName: 'paramsDigest', type: 'string');
+        $this->addType(fieldName: 'resultSummary', type: 'json');
     }//end __construct()
 
     /**
@@ -426,7 +472,10 @@ class AuditTrail extends Entity implements JsonSerializable
      *     size: int|null,
      *     expires: null|string,
      *     hash: null|string,
-     *     previousHash: null|string
+     *     previousHash: null|string,
+     *     toolId: null|string,
+     *     paramsDigest: null|string,
+     *     resultSummary: array|null
      * }
      */
     public function jsonSerialize(): array
@@ -470,6 +519,9 @@ class AuditTrail extends Entity implements JsonSerializable
             'expires'               => $expires,
             'hash'                  => $this->hash,
             'previousHash'          => $this->previousHash,
+            'toolId'                => $this->toolId,
+            'paramsDigest'          => $this->paramsDigest,
+            'resultSummary'         => $this->resultSummary,
         ];
     }//end jsonSerialize()
 

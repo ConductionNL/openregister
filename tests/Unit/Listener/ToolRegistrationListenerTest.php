@@ -86,4 +86,41 @@ class ToolRegistrationListenerTest extends TestCase
         $this->assertContains('openregister.application', $registeredIds);
         $this->assertContains('openregister.agent', $registeredIds);
     }
+
+    /**
+     * ADR-063 chain 2/3: a schema-derived provider's three-segment
+     * `{appId}.{schema}.{verb}` ids must pass the listener's id-format gate
+     * and be bridged onto the chat/facade surface (the previous regex only
+     * accepted two segments and would have silently dropped every derived
+     * tool from the facade surface).
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     */
+    public function testBridgesThreeSegmentSchemaDerivedIds(): void
+    {
+        $provider = $this->createMock(\OCA\OpenRegister\Mcp\IMcpToolProvider::class);
+        $provider->method('getAppId')->willReturn('pipelinq');
+        $provider->method('getTools')->willReturn([
+            [
+                'id'          => 'pipelinq.lead.search',
+                'name'        => 'lead_search',
+                'description' => 'Search lead objects in pipelinq.',
+                'inputSchema' => ['type' => 'object', 'properties' => []],
+            ],
+        ]);
+
+        $this->mcpToolsService->method('getProviders')->willReturn([$provider]);
+
+        $event = $this->createMock(ToolRegistrationEvent::class);
+
+        $registeredIds = [];
+        $event->method('registerTool')
+            ->willReturnCallback(function (string $id) use (&$registeredIds) {
+                $registeredIds[] = $id;
+            });
+
+        $this->listener->handle($event);
+
+        $this->assertContains('pipelinq.lead.search', $registeredIds);
+    }
 }

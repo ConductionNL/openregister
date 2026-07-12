@@ -72,6 +72,19 @@ class ToolRegistryTest extends TestCase
         $this->registry->registerTool('App.Tool', $this->createToolMock(), $this->validMetadata());
     }
 
+    // ADR-063 chain 2/3: schema-derived tool ids are `{appId}.{schema}.{verb}`
+    // — three segments / two dots — unlike the pre-existing `{appId}.{toolName}`
+    // convention. registerTool()'s format check must accept both.
+    public function testRegisterToolAcceptsThreeSegmentSchemaDerivedId(): void
+    {
+        $tool = $this->createToolMock();
+        $this->registry->registerTool('pipelinq.lead.search', $tool, $this->validMetadata());
+
+        $this->eventDispatcher->method('dispatchTyped');
+        $allTools = $this->registry->getAllTools();
+        $this->assertArrayHasKey('pipelinq.lead.search', $allTools);
+    }
+
     public function testRegisterToolThrowsForDuplicateId(): void
     {
         $this->registry->registerTool('testapp.tool1', $this->createToolMock(), $this->validMetadata());

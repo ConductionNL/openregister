@@ -30,7 +30,9 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -241,6 +243,7 @@ use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -2640,6 +2643,17 @@ class Application extends App implements IBootstrap
                     providers: $providers
                 );
 
+                // Schema-derived providers (ADR-063 chain 2/3) MUST be
+                // appended LAST — McpToolsService is first-wins on tool
+                // name, so ordering after every hand-written per-app
+                // provider makes hand-written tools win automatically on a
+                // collision (REQ-DERIVED-003).
+                $this->collectSchemaDerivedMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
                 return new McpToolsService(
                     providers: $providers,
                     logger: $logger
@@ -2647,6 +2661,197 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerMcpToolProviders()
+
+    /**
+     * Derive one SchemaDerivedToolProvider per owning app that has at least
+     * one schema with a validated `x-openregister-mcp.enabled:true` block,
+     * and append it to $providers AFTER every hand-written provider already
+     * collected (built-ins + collectPerAppMcpProviders()).
+     *
+     * Fail-soft: enumeration or resolution failures are logged and leave
+     * $providers untouched — a broken derivation must never break MCP tool
+     * discovery for the rest of the instance.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+     */
+    private function collectSchemaDerivedMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $schemaMapper   = $container->get(SchemaMapper::class);
+            $registerMapper = $container->get(RegisterMapper::class);
+
+            // Catalog enumeration, not data access: every enabled schema
+            // MUST be considered regardless of the resolving request's org
+            // context, or the derived tool catalog would silently vary by
+            // caller — unlike SchemasToolProvider's user-facing `list`
+            // action, RBAC/multitenancy is deliberately bypassed here.
+            $schemas = $schemaMapper->findAll(_rbac: false, _multitenancy: false);
+
+            $schemasByApp = $this->groupOptedInSchemasByApp(
+                schemas: $schemas,
+                registerMapper: $registerMapper,
+                logger: $logger
+            );
+
+            foreach ($schemasByApp as $appId => $schemaEntries) {
+                $suppressedIds = $this->collectExistingToolIds(providers: $providers, appId: $appId);
+
+                $providers[] = new SchemaDerivedToolProvider(
+                    appId: $appId,
+                    schemaEntries: $schemaEntries,
+                    suppressedIds: $suppressedIds,
+                    objectService: $container->get(ObjectService::class),
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    logger: $logger
+                );
+            }
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Schema-derived provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectSchemaDerivedMcpProviders()
+
+    /**
+     * Group every schema with a validated `x-openregister-mcp.enabled:true`
+     * block by its owning app id, each paired with its owning register.
+     *
+     * Owning app id resolution mirrors {@see \OCA\OpenRegister\Service\SemanticTypeResolver::owningAppId()}:
+     * the schema's own `application` field, else the owning register's
+     * `application`. A schema that resolves to no owning app is skipped —
+     * the ABI requires a concrete `getAppId()` per provider instance.
+     *
+     * @param array<int, Schema>       $schemas        Every schema on the instance.
+     * @param RegisterMapper           $registerMapper Register mapper (owning-app + owning-register resolution).
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return array<string, list<array{schema: Schema, register: Register|null}>> Opted-in schemas grouped by owning app id.
+     */
+    private function groupOptedInSchemasByApp(
+        array $schemas,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): array {
+        $schemasByApp = [];
+
+        foreach ($schemas as $schema) {
+            $configuration = ($schema->getConfiguration() ?? []);
+            $annotation    = ($configuration['x-openregister-mcp'] ?? null);
+            if (is_array($annotation) === false || ($annotation['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $register  = $this->resolveSchemaRegister(schema: $schema, registerMapper: $registerMapper, logger: $logger);
+            $owningApp = $this->resolveOwningAppId(schema: $schema, register: $register);
+            if ($owningApp === null) {
+                $logger->debug(
+                    '[McpToolsService] Opted-in schema has no resolvable owning app — skipped',
+                    ['schemaId' => $schema->getId()]
+                );
+                continue;
+            }
+
+            $schemasByApp[$owningApp][] = ['schema' => $schema, 'register' => $register];
+        }//end foreach
+
+        return $schemasByApp;
+    }//end groupOptedInSchemasByApp()
+
+    /**
+     * Resolve a schema's owning register (the first register whose
+     * `schemas` id-list contains it), or null when the schema is orphaned.
+     *
+     * @param Schema                   $schema         The schema.
+     * @param RegisterMapper           $registerMapper Register mapper.
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return Register|null The owning register, or null when none is found.
+     */
+    private function resolveSchemaRegister(
+        Schema $schema,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): ?Register {
+        try {
+            $registerId = $registerMapper->getFirstRegisterWithSchema(schemaId: (int) $schema->getId());
+            if ($registerId === null) {
+                return null;
+            }
+
+            return $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[McpToolsService] Owning-register resolution failed for schema '.$schema->getId().': '.$e->getMessage()
+            );
+            return null;
+        }
+    }//end resolveSchemaRegister()
+
+    /**
+     * Resolve the owning app id: the schema's own `application` field
+     * (present and reliable on real fleet schemas), else the owning
+     * register's `application`. Null when neither names an app.
+     *
+     * @param Schema        $schema   The candidate schema.
+     * @param Register|null $register The schema's owning register, when resolvable.
+     *
+     * @return string|null The owning app id, or null when undeclared.
+     */
+    private function resolveOwningAppId(Schema $schema, ?Register $register): ?string
+    {
+        $appId = $schema->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            return $appId;
+        }
+
+        if ($register !== null) {
+            $registerApp = $register->getApplication();
+            if (is_string($registerApp) === true && $registerApp !== '') {
+                return $registerApp;
+            }
+        }
+
+        return null;
+    }//end resolveOwningAppId()
+
+    /**
+     * Collect every tool id already exposed, on the providers list built so
+     * far, by a provider for the given app id — the derived provider's
+     * self-suppression set (REQ-DERIVED-003).
+     *
+     * @param array<IMcpToolProvider> $providers Providers collected so far.
+     * @param string                  $appId     The owning app id.
+     *
+     * @return list<string> Tool ids already claimed for this app.
+     */
+    private function collectExistingToolIds(array $providers, string $appId): array
+    {
+        $ids = [];
+
+        foreach ($providers as $provider) {
+            if ($provider->getAppId() !== $appId) {
+                continue;
+            }
+
+            foreach ($provider->getTools() as $descriptor) {
+                if (isset($descriptor['id']) === true) {
+                    $ids[] = (string) $descriptor['id'];
+                }
+            }
+        }
+
+        return $ids;
+    }//end collectExistingToolIds()
 
     /**
      * Iterate over all installed apps and append any discovered
