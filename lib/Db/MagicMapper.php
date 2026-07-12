@@ -445,7 +445,8 @@ class MagicMapper extends AbstractObjectMapper
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
             organizationHandler: $this->organizationHandler,
-            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class)
+            schemaTypeConverter: $this->container->get(\OCA\OpenRegister\Service\Object\SchemaTypeConverter::class),
+            dateTimeNormalizer: $this->container->get(\OCA\OpenRegister\Service\DateTimeNormalizer::class)
         );
 
         $this->bulkHandler = new MagicBulkHandler(

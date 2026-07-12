@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -102,13 +103,15 @@ class MagicSearchHandler
      * @param MagicRbacHandler         $rbacHandler         RBAC handler for access control
      * @param MagicOrganizationHandler $organizationHandler Organization handler for multi-tenancy
      * @param SchemaTypeConverter      $schemaTypeConverter Schema-driven type converter for row values
+     * @param DateTimeNormalizer       $dateTimeNormalizer  Normaliser for date/date-time property formats
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly MagicRbacHandler $rbacHandler,
         private readonly MagicOrganizationHandler $organizationHandler,
-        private readonly SchemaTypeConverter $schemaTypeConverter
+        private readonly SchemaTypeConverter $schemaTypeConverter,
+        private readonly DateTimeNormalizer $dateTimeNormalizer
     ) {
     }//end __construct()
 
@@ -1798,17 +1801,26 @@ class MagicSearchHandler
         }
 
         $propertyTypes       = [];
+        $propertyFormats     = [];
         $columnToPropertyMap = [];
         $properties          = $schema->getProperties();
         if (is_array($properties) === true) {
             foreach ($properties as $propName => $propDef) {
                 $propertyTypes[$propName] = ($propDef['type'] ?? 'string');
+                if (isset($propDef['format']) === true) {
+                    $propertyFormats[$propName] = $propDef['format'];
+                }
+
                 $columnName = $this->sanitizeColumnName(name: $propName);
                 $columnToPropertyMap[$columnName] = $propName;
             }
         }
 
-        $maps = ['types' => $propertyTypes, 'columns' => $columnToPropertyMap];
+        $maps = [
+            'types'   => $propertyTypes,
+            'formats' => $propertyFormats,
+            'columns' => $columnToPropertyMap,
+        ];
         if ($schemaId !== null) {
             $this->schemaColumnMapCache[$schemaId] = $maps;
         }
@@ -1850,6 +1862,7 @@ class MagicSearchHandler
             // schema rather than once per property per row.
             $schemaMaps          = $this->getSchemaColumnMaps(schema: $schema);
             $propertyTypes       = $schemaMaps['types'];
+            $propertyFormats     = ($schemaMaps['formats'] ?? []);
             $columnToPropertyMap = $schemaMaps['columns'];
 
             foreach ($row as $column => $value) {
@@ -1868,10 +1881,32 @@ class MagicSearchHandler
                 // Delegates to the shared SchemaTypeConverter so this handler and
                 // MagicStatisticsHandler agree on type semantics across read paths.
                 $propertyType = $propertyTypes[$propertyName] ?? 'string';
-                $objectData[$propertyName] = $this->schemaTypeConverter->convertValue(
+                $value        = $this->schemaTypeConverter->convertValue(
                     value: $value,
                     schemaType: $propertyType
                 );
+
+                // Then agree on FORMAT semantics too. A `date`/`date-time` property
+                // lives in a DATETIME column, so the driver returns 'Y-m-d H:i:s' —
+                // which fails the schema's own `date-time` format when the object is
+                // written straight back (every UI edit is a read-modify-write, so any
+                // object with a populated date-time 400'd). MagicStatisticsHandler
+                // already normalises here; this path did not, and this is the path
+                // findAll() actually uses.
+                $propertyFormat = ($propertyFormats[$propertyName] ?? null);
+                if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
+                    if ($propertyFormat === 'date') {
+                        $normalised = $this->dateTimeNormalizer->normalize($value);
+                        $value      = null;
+                        if ($normalised !== null) {
+                            $value = $normalised->format('Y-m-d');
+                        }
+                    } else if ($propertyFormat === 'date-time') {
+                        $value = $this->dateTimeNormalizer->formatForIso8601($value);
+                    }
+                }
+
+                $objectData[$propertyName] = $value;
             }//end foreach
 
             // Set metadata properties.

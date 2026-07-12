@@ -22,6 +22,7 @@ use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -65,7 +66,8 @@ class MagicSearchHandlerRelationsFilterTest extends TestCase
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
             organizationHandler: $this->organizationHandler,
-            schemaTypeConverter: new SchemaTypeConverter()
+            schemaTypeConverter: new SchemaTypeConverter(),
+            dateTimeNormalizer: new DateTimeNormalizer($this->logger)
         );
     }//end setUp()
 
