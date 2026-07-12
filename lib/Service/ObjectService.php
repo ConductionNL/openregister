@@ -3548,8 +3548,14 @@ class ObjectService
     /**
      * Delete all objects belonging to a specific schema
      *
-     * This method efficiently deletes all objects that belong to the specified schema.
-     * It uses bulk operations for optimal performance and maintains data integrity.
+     * Every object is snapshotted to the (hash-chained) audit trail before its row is
+     * touched, then the rows are removed in one bulk statement via MagicMapper.
+     *
+     * The work itself lives in SchemaDeletionService, which is shared with the schema
+     * cascade (`DELETE /api/schemas/{id}?deleteObjects=true`). It is resolved lazily
+     * from the container rather than constructor-injected: ObjectService is
+     * constructed on virtually every request, and this is the only method that needs
+     * it.
      *
      * @param int  $registerId The ID of the register
      * @param int  $schemaId   The ID of the schema whose objects should be deleted
@@ -3563,13 +3569,19 @@ class ObjectService
      *
      * @psalm-return array{deleted_count: int<min, max>, deleted_uuids: array<int, string>, schema_id: int}
      *
-     * @spec exclude Deprecated throwing stub; schema-wide delete awaits MagicMapper reimplementation (blob table retired).
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The hard/soft toggle mirrors the mapper primitive it wraps.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     public function deleteObjectsBySchema(int $registerId, int $schemaId, bool $hardDelete=false): array
     {
-        // TODO: Reimplement using MagicMapper for schema-wide delete on magic tables.
-        throw new RuntimeException(
-            'deleteObjectsBySchema needs reimplementation using MagicMapper (blob objects table retired)'
+        $schemaDeletionService = $this->container->get(\OCA\OpenRegister\Service\SchemaDeletionService::class);
+
+        return $schemaDeletionService->deleteObjectsBySchema(
+            registerId: $registerId,
+            schemaId: $schemaId,
+            hardDelete: $hardDelete,
+            triggeredBy: \OCA\OpenRegister\Service\SchemaDeletionService::TRIGGER_BULK_DELETE
         );
     }//end deleteObjectsBySchema()
 

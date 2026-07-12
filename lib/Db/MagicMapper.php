@@ -1455,7 +1455,7 @@ class MagicMapper extends AbstractObjectMapper
             }
 
             $selectColumns[] = $colExpr;
-        }
+        }//end foreach
 
         /*
          * Every SELECT in the UNION must have identical columns in the same order.
@@ -4699,9 +4699,18 @@ class MagicMapper extends AbstractObjectMapper
         try {
             // Use direct SQL to drop table (Nextcloud 32 compatible).
             $qb            = $this->db->getQueryBuilder();
+            $connection    = $qb->getConnection();
             $fullTableName = $this->getFullTableName(tableName: $tableName);
-            $quotedTable   = $qb->getConnection()->quoteIdentifier($fullTableName);
-            $qb->getConnection()->executeStatement('DROP TABLE IF EXISTS '.$quotedTable);
+
+            // Quote via the PLATFORM, not the connection: Nextcloud's
+            // ConnectionAdapter has no quoteIdentifier(), so the previous
+            // $connection->quoteIdentifier() threw "Call to undefined method"
+            // on EVERY call — dropTable() could never actually drop anything,
+            // which is why deleted schemas kept leaving their magic table behind.
+            // getDatabasePlatform()->quoteIdentifier() is the pattern the rest of
+            // the codebase already uses (DbalObjectSourceProvider, DatabaseIntrospectionService).
+            $quotedTable = $connection->getDatabasePlatform()->quoteIdentifier($fullTableName);
+            $connection->executeStatement('DROP TABLE IF EXISTS '.$quotedTable);
 
             // Clear from cache - need to clear by table name pattern.
             foreach (array_keys(self::$tableExistsCache) as $cacheKey) {
@@ -4958,7 +4967,7 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function getExistingIds(string $table): array
     {
-        $qb  = $this->db->getQueryBuilder();
+        $qb = $this->db->getQueryBuilder();
         $qb->select('id')->from($table);
         $ids = $qb->executeQuery()->fetchAll(\PDO::FETCH_COLUMN);
 
@@ -8529,8 +8538,7 @@ class MagicMapper extends AbstractObjectMapper
         // through to the (empty) central table and returned nothing. When no
         // register filter is present, registerIds is left empty and
         // searchObjectsPaginatedMultiSchema resolves each schema's real owning
-        // register from a schema->register map.
-        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+        // register from a schema->register map. See the method docblock's spec tag.
         $isMultiSchemaSearch = $schemaId === null
             && $schemaIds !== null
             && is_array($schemaIds) === true
@@ -8762,8 +8770,7 @@ class MagicMapper extends AbstractObjectMapper
         // organisation filter (even with _multitenancy:false the trait's active-
         // org resolution can collapse the result to a single register), which
         // would hide most schemas' owning registers and make cross-schema
-        // search return nothing.
-        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+        // search return nothing. See the method docblock's spec tag.
         $registers          = [];
         $schemaToRegisterId = [];
 
@@ -8831,7 +8838,7 @@ class MagicMapper extends AbstractObjectMapper
         // rather than forced onto an unrelated register, which is what produced
         // the "Register+schema table does not exist" empties. Register ENTITIES
         // are loaded lazily below — only for the registers actually matched.
-        // @spec openspec/changes/unified-search-index/specs/unified-search-provider/spec.md
+        // See the method docblock's spec tag.
         $registerSchemaPairs = [];
         $totalCount          = 0;
 

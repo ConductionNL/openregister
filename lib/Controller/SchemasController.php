@@ -25,6 +25,7 @@
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use RuntimeException;
 use DateTime;
 use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\Register;
@@ -39,6 +40,7 @@ use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\JsonLd\JsonLdContextService;
 use OCA\OpenRegister\Service\SemanticTypeResolver;
 use OCA\OpenRegister\Exception\BreakingSchemaChangeException;
+use OCA\OpenRegister\Service\SchemaDeletionService;
 use OCA\OpenRegister\Service\SchemaService;
 use OCA\OpenRegister\Service\SchemaImport\ImportOptions;
 use OCA\OpenRegister\Service\SchemaImport\SchemaImportService;
@@ -808,34 +810,53 @@ class SchemasController extends Controller
     /**
      * Deletes a schema
      *
-     * This method deletes a schema based on its ID.
+     * This method deletes a schema based on its ID. Three dispositions exist for a
+     * schema that still holds objects, and they are mutually exclusive:
+     *
+     * - no flag              → HTTP 409 `{error: schema-has-objects, objectCount: N}`
+     * - `?deleteObjects=true` → CASCADE: audit + hard-delete every object, drop the
+     *                          magic table, then delete the schema. No orphans.
+     * - `?force=true`         → legacy: delete the schema and ORPHAN its objects.
+     *                          Retained for API back-compat; never exposed in the UI.
+     *
+     * Passing both flags is HTTP 400 — an ambiguous destructive intent is refused
+     * rather than silently resolved.
      *
      * @param int $id The ID of the schema to delete
      *
      * @throws Exception If there is an error deleting the schema
      *
-     * @return JSONResponse An empty JSON response
+     * @return JSONResponse An empty JSON response, or the cascade result
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|409|500, array{error?: string}, array<never, never>>
-     *
      * @SuppressWarnings(PHPMD.ShortVariable)        $id matches the {id} URL route parameter; renaming breaks route binding.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Force-flag and orphan-count branches are inherent to a safe delete endpoint.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Force/cascade dispositions and the orphan-count branch are inherent to a safe delete endpoint.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
         // **DELETE SAFETY (runtime-schema-api)**: Count attached objects FIRST.
-        // If N > 0 and ?force=true is not set, refuse with HTTP 409 so the caller
+        // If N > 0 and no disposition flag is set, refuse with HTTP 409 so the caller
         // gets a structured error containing the orphan count and can decide
         // whether to escalate. A bare DELETE on a schema with objects is the
         // canonical foot-gun that this guard closes.
-        $forceParam = $this->request->getParam(key: 'force', default: null);
-        $force      = (string) $forceParam === 'true' || $forceParam === true || $forceParam === '1';
+        $force         = $this->isFlagEnabled(key: 'force');
+        $deleteObjects = $this->isFlagEnabled(key: 'deleteObjects');
+
+        if ($force === true && $deleteObjects === true) {
+            return new JSONResponse(
+                data: [
+                    'error'   => 'conflicting-delete-dispositions',
+                    'message' => 'force and deleteObjects are mutually exclusive: force orphans the objects, '
+                        .'deleteObjects removes them. Pick one.',
+                ],
+                statusCode: Http::STATUS_BAD_REQUEST
+            );
+        }
 
         try {
             // Find the schema first (also validates existence and access).
@@ -858,45 +879,15 @@ class SchemasController extends Controller
             $objectStats = $this->objectEntityMapper->getStatistics(registerId: null, schemaId: $schemaToDelete->getId());
             $objectCount = (int) ($objectStats['total'] ?? 0);
 
-            if ($objectCount > 0 && $force === false) {
-                // Refuse: structured 409 with the orphan count for the caller.
-                return new JSONResponse(
-                    data: [
-                        'error'       => 'schema-has-objects',
-                        'objectCount' => $objectCount,
-                    ],
-                    statusCode: 409
-                );
+            if ($deleteObjects === true) {
+                return $this->cascadeDeleteSchema(schema: $schemaToDelete);
             }
 
-            if ($objectCount > 0 && $force === true) {
-                // Force-delete with audit trail at WARNING level: a misused force flag
-                // orphans every object referencing this schema, so log who did it.
-                $this->logger->warning(
-                    message: '[SchemasController] Force-deleting schema with attached objects',
-                    context: [
-                        'file'        => __FILE__,
-                        'line'        => __LINE__,
-                        'schemaId'    => $schemaToDelete->getId(),
-                        'schemaSlug'  => $schemaToDelete->getSlug(),
-                        'objectCount' => $objectCount,
-                    ]
-                );
-            }
-
-            $this->schemaMapper->delete($schemaToDelete);
-
-            // **CACHE INVALIDATION (runtime-schema-api)**: invalidate() is the
-            // canonical entry point — covers in-memory, persistent cache table,
-            // AND the request-scoped find cache on the mapper.
-            $this->schemaCacheService->invalidate(schemaId: $schemaToDelete->getId());
-            $this->facetCacheSvc->invalidateForSchemaChange(
-                schemaId: $schemaToDelete->getId(),
-                operation: 'delete'
+            return $this->deleteSchemaKeepingObjects(
+                schema: $schemaToDelete,
+                objectCount: $objectCount,
+                force: $force
             );
-
-            // Return an empty response.
-            return new JSONResponse(data: []);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             // Return 409 Conflict for cascade protection (objects still attached).
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 409);
@@ -905,6 +896,163 @@ class SchemasController extends Controller
             return $this->errorResponse(e: $e);
         }//end try
     }//end destroy()
+
+    /**
+     * Delete a schema WITHOUT deleting its objects — the no-flag and ?force=true paths.
+     *
+     * With objects attached and no force flag this refuses (HTTP 409). With ?force=true
+     * it deletes the schema and orphans the objects, which is unchanged legacy behaviour
+     * retained for API back-compat and never surfaced in the UI.
+     *
+     * @param Schema $schema      The schema to delete (already authorized).
+     * @param int    $objectCount The number of live objects referencing the schema.
+     * @param bool   $force       Whether ?force=true was passed.
+     *
+     * @throws Exception If the delete fails.
+     *
+     * @return JSONResponse Empty body on success, or the structured 409 refusal.
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    private function deleteSchemaKeepingObjects(Schema $schema, int $objectCount, bool $force): JSONResponse
+    {
+        if ($objectCount > 0 && $force === false) {
+            // Refuse: structured 409 with the orphan count for the caller.
+            return new JSONResponse(
+                data: [
+                    'error'       => 'schema-has-objects',
+                    'objectCount' => $objectCount,
+                ],
+                statusCode: 409
+            );
+        }
+
+        if ($objectCount > 0) {
+            // Force-delete with audit trail at WARNING level: a misused force flag
+            // orphans every object referencing this schema, so log who did it.
+            $this->logger->warning(
+                message: '[SchemasController] Force-deleting schema with attached objects',
+                context: [
+                    'file'        => __FILE__,
+                    'line'        => __LINE__,
+                    'schemaId'    => $schema->getId(),
+                    'schemaSlug'  => $schema->getSlug(),
+                    'objectCount' => $objectCount,
+                ]
+            );
+        }
+
+        // Only a deliberate ?force=true may bypass the mapper-level guard and orphan
+        // the objects. The magic table is deliberately LEFT IN PLACE on that path —
+        // its rows are the orphans, and dropping it would destroy them unaudited.
+        $this->schemaMapper->delete(entity: $schema, force: $force);
+
+        if ($objectCount === 0) {
+            // Nothing referenced this schema, so reclaim its (empty) magic table
+            // instead of leaving an orphan table behind forever. Best effort.
+            $this->getSchemaDeletionService()->dropEmptyTablesForSchema(schema: $schema);
+        }
+
+        $this->invalidateSchemaCaches(schemaId: (int) $schema->getId());
+
+        // Return an empty response.
+        return new JSONResponse(data: []);
+    }//end deleteSchemaKeepingObjects()
+
+    /**
+     * Run the cascade disposition of DELETE /api/schemas/{id}.
+     *
+     * Phase 1 (transactional) audits and hard-deletes every object and then the schema
+     * itself; phase 2 drops the magic table post-commit. A phase-2 failure does NOT
+     * fail the request — the caller's intent is already satisfied — it is reported as
+     * `tableDropped: false`. See SchemaDeletionService for the full rationale.
+     *
+     * @param Schema $schema The schema to tear down (already authorized).
+     *
+     * @throws Exception If phase 1 fails; the caller maps it to HTTP 500 and nothing is deleted.
+     *
+     * @return JSONResponse The cascade result.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    private function cascadeDeleteSchema(Schema $schema): JSONResponse
+    {
+        $schemaId = (int) $schema->getId();
+        $result   = $this->getSchemaDeletionService()->cascadeDeleteSchema(schema: $schema);
+
+        $this->invalidateSchemaCaches(schemaId: $schemaId);
+
+        return new JSONResponse(
+            data: [
+                'success'      => true,
+                'schemaId'     => $schemaId,
+                'deletedCount' => $result['deletedCount'],
+                'deletedUuids' => $result['deletedUuids'],
+                'tableDropped' => $result['tableDropped'],
+            ]
+        );
+    }//end cascadeDeleteSchema()
+
+    /**
+     * Invalidate every cache that holds a copy of a now-deleted schema.
+     *
+     * **CACHE INVALIDATION (runtime-schema-api)**: invalidate() is the canonical entry
+     * point — it covers the in-memory cache, the persistent cache table, AND the
+     * request-scoped find cache on the mapper. Runs on every disposition.
+     *
+     * @param int $schemaId The id of the deleted schema.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    private function invalidateSchemaCaches(int $schemaId): void
+    {
+        $this->schemaCacheService->invalidate(schemaId: $schemaId);
+        $this->facetCacheSvc->invalidateForSchemaChange(
+            schemaId: $schemaId,
+            operation: 'delete'
+        );
+    }//end invalidateSchemaCaches()
+
+    /**
+     * Read a boolean query flag from the request.
+     *
+     * Accepts `true`, `'true'` and `'1'` — the shapes a query string can deliver.
+     *
+     * @param string $key The query parameter name.
+     *
+     * @return bool True when the flag is explicitly enabled.
+     */
+    private function isFlagEnabled(string $key): bool
+    {
+        $value = $this->request->getParam(key: $key, default: null);
+
+        return ((string) $value === 'true' || $value === true || $value === '1');
+    }//end isFlagEnabled()
+
+    /**
+     * Resolve the schema deletion service.
+     *
+     * Lazily resolved from the container: it is only needed by the delete path, and
+     * SchemasController is constructed on every schema read.
+     *
+     * @throws \RuntimeException If the service cannot be resolved.
+     *
+     * @return SchemaDeletionService The service.
+     */
+    private function getSchemaDeletionService(): SchemaDeletionService
+    {
+        $service = $this->container->get(SchemaDeletionService::class);
+
+        if (($service instanceof SchemaDeletionService) === false) {
+            throw new RuntimeException('SchemaDeletionService could not be resolved');
+        }
+
+        return $service;
+    }//end getSchemaDeletionService()
 
     /**
      * Updates an existing Schema object using a json text/string as input

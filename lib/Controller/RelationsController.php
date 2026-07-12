@@ -58,19 +58,71 @@ class RelationsController extends Controller
      * @var array<string,array{class:class-string,available:?string,method:string}>
      */
     private const LEAF_INTEGRATIONS = [
-        'talk'        => ['class' => \OCA\OpenRegister\Service\TalkLinkService::class,        'available' => 'isTalkAvailable',          'method' => 'getLinkedRooms'],
-        'forms'       => ['class' => \OCA\OpenRegister\Service\FormLinkService::class,        'available' => null,                        'method' => 'getLinkedForms'],
-        'maps'        => ['class' => \OCA\OpenRegister\Service\MapLinkService::class,         'available' => 'isMapsAvailable',          'method' => 'getLinkedPois'],
-        'polls'       => ['class' => \OCA\OpenRegister\Service\PollLinkService::class,        'available' => 'isPollsAvailable',         'method' => 'getLinkedPolls'],
-        'bookmarks'   => ['class' => \OCA\OpenRegister\Service\BookmarkLinkService::class,    'available' => 'isBookmarksAvailable',     'method' => 'getLinkedBookmarks'],
-        'collectives' => ['class' => \OCA\OpenRegister\Service\CollectiveLinkService::class,  'available' => 'isCollectivesAvailable',   'method' => 'getLinkedPages'],
-        'photos'      => ['class' => \OCA\OpenRegister\Service\PhotoLinkService::class,       'available' => 'isPhotosAvailable',        'method' => 'getLinkedAlbums'],
-        'cospend'     => ['class' => \OCA\OpenRegister\Service\CospendLinkService::class,     'available' => 'isCospendAvailable',       'method' => 'getLinkedEntries'],
-        'timetracker' => ['class' => \OCA\OpenRegister\Service\TimeTrackerLinkService::class, 'available' => 'isTimeManagerAvailable',   'method' => 'getLinkedEntries'],
-        'analytics'   => ['class' => \OCA\OpenRegister\Service\AnalyticsLinkService::class,   'available' => 'isAnalyticsAvailable',     'method' => 'getLinkedReports'],
-        'flow'        => ['class' => \OCA\OpenRegister\Service\FlowLinkService::class,        'available' => 'isFlowAvailable',          'method' => 'getLinkedOperations'],
-        'openproject' => ['class' => \OCA\OpenRegister\Service\OpenProjectLinkService::class, 'available' => 'isOpenConnectorAvailable', 'method' => 'getLinkedWorkPackages'],
-        'xwiki'       => ['class' => \OCA\OpenRegister\Service\XwikiLinkService::class,       'available' => 'isOpenConnectorAvailable', 'method' => 'getLinkedPages'],
+        'talk'        => [
+            'class'     => \OCA\OpenRegister\Service\TalkLinkService::class,
+            'available' => 'isTalkAvailable',
+            'method'    => 'getLinkedRooms',
+        ],
+        'forms'       => [
+            'class'     => \OCA\OpenRegister\Service\FormLinkService::class,
+            'available' => null,
+            'method'    => 'getLinkedForms',
+        ],
+        'maps'        => [
+            'class'     => \OCA\OpenRegister\Service\MapLinkService::class,
+            'available' => 'isMapsAvailable',
+            'method'    => 'getLinkedPois',
+        ],
+        'polls'       => [
+            'class'     => \OCA\OpenRegister\Service\PollLinkService::class,
+            'available' => 'isPollsAvailable',
+            'method'    => 'getLinkedPolls',
+        ],
+        'bookmarks'   => [
+            'class'     => \OCA\OpenRegister\Service\BookmarkLinkService::class,
+            'available' => 'isBookmarksAvailable',
+            'method'    => 'getLinkedBookmarks',
+        ],
+        'collectives' => [
+            'class'     => \OCA\OpenRegister\Service\CollectiveLinkService::class,
+            'available' => 'isCollectivesAvailable',
+            'method'    => 'getLinkedPages',
+        ],
+        'photos'      => [
+            'class'     => \OCA\OpenRegister\Service\PhotoLinkService::class,
+            'available' => 'isPhotosAvailable',
+            'method'    => 'getLinkedAlbums',
+        ],
+        'cospend'     => [
+            'class'     => \OCA\OpenRegister\Service\CospendLinkService::class,
+            'available' => 'isCospendAvailable',
+            'method'    => 'getLinkedEntries',
+        ],
+        'timetracker' => [
+            'class'     => \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
+            'available' => 'isTimeManagerAvailable',
+            'method'    => 'getLinkedEntries',
+        ],
+        'analytics'   => [
+            'class'     => \OCA\OpenRegister\Service\AnalyticsLinkService::class,
+            'available' => 'isAnalyticsAvailable',
+            'method'    => 'getLinkedReports',
+        ],
+        'flow'        => [
+            'class'     => \OCA\OpenRegister\Service\FlowLinkService::class,
+            'available' => 'isFlowAvailable',
+            'method'    => 'getLinkedOperations',
+        ],
+        'openproject' => [
+            'class'     => \OCA\OpenRegister\Service\OpenProjectLinkService::class,
+            'available' => 'isOpenConnectorAvailable',
+            'method'    => 'getLinkedWorkPackages',
+        ],
+        'xwiki'       => [
+            'class'     => \OCA\OpenRegister\Service\XwikiLinkService::class,
+            'available' => 'isOpenConnectorAvailable',
+            'method'    => 'getLinkedPages',
+        ],
     ];
 
     /**
@@ -330,8 +382,8 @@ class RelationsController extends Controller
                     continue;
                 }
 
-                $items              = $service->{$spec['method']}($objectUuid);
-                $relations[$key]    = ['results' => $items, 'total' => count($items)];
+                $items           = $service->{$spec['method']}($objectUuid);
+                $relations[$key] = ['results' => $items, 'total' => count($items)];
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     '[RelationsController::gatherRelations] {type} lookup failed for object {uuid}: {error}',

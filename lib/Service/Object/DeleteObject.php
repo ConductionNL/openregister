@@ -120,15 +120,17 @@ class DeleteObject
     /**
      * Constructor for DeleteObject handler.
      *
-     * @param MagicMapper                 $objectEntityMapper Object entity data mapper.
-     * @param CacheHandler                $cacheHandler       Object cache service for entity and query caching
-     * @param IUserSession                $userSession        User session service for tracking who deletes
-     * @param AuditTrailMapper            $auditTrailMapper   Audit trail mapper for logs
-     * @param SettingsService             $settingsService    Settings service for accessing trail settings
-     * @param LoggerInterface             $logger             Logger for error handling
-     * @param ReferentialIntegrityService $integrityService   Referential integrity service
-     * @param IDBConnection               $db                 Database connection for transactions
-     * @param FileService|null            $fileService        File service for cleaning up object folders on delete
+     * @param MagicMapper                                                      $objectEntityMapper   Object entity data mapper.
+     * @param CacheHandler                                                     $cacheHandler         Object entity and query cache
+     * @param IUserSession                                                     $userSession          User session service
+     * @param AuditTrailMapper                                                 $auditTrailMapper     Audit trail mapper for logs
+     * @param SettingsService                                                  $settingsService      Settings service for trail settings
+     * @param LoggerInterface                                                  $logger               Logger for error handling
+     * @param ReferentialIntegrityService                                      $integrityService     Referential integrity service
+     * @param IDBConnection                                                    $db                   Database connection for transactions
+     * @param FileService|null                                                 $fileService          File service for object folder cleanup
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry Writable object-source provider registry
+     * @param \OCA\OpenRegister\Db\RegisterMapper|null                         $registerMapper       Register mapper for register lookups
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */

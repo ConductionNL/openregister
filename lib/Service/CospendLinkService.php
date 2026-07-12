@@ -502,13 +502,17 @@ class CospendLinkService
             // /p/{projectId}/b/{billId} (routes cospend.page.indexProject/indexBill).
             $projectId = ($row['projectId'] ?? '');
             if ($projectId !== '') {
-                $billId     = ($row['billId'] ?? '');
-                $row['url'] = '/apps/cospend/p/'.rawurlencode((string) $projectId)
-                    .($billId !== '' && $billId !== null ? '/b/'.rawurlencode((string) $billId) : '');
+                $billId   = ($row['billId'] ?? '');
+                $billPath = '';
+                if ($billId !== '' && $billId !== null) {
+                    $billPath = '/b/'.rawurlencode((string) $billId);
+                }
+
+                $row['url'] = '/apps/cospend/p/'.rawurlencode((string) $projectId).$billPath;
             }
 
             $results[] = $row;
-        }
+        }//end foreach
 
         return $results;
     }//end getLinkedEntries()

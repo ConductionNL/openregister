@@ -48,7 +48,7 @@ trait RelationDetectionTrait
      * Decide whether a scalar value should be recorded as a relation.
      *
      * @param string     $value          The scalar value scanned from the object data.
-     * @param array|null $propertyConfig  The schema property definition for this value, if known.
+     * @param array|null $propertyConfig The schema property definition for this value, if known.
      *
      * @return bool True when the value is a genuine, recordable reference.
      */
