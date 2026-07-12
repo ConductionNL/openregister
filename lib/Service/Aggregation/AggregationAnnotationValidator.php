@@ -125,8 +125,16 @@ final class AggregationAnnotationValidator
             }
 
             // Intra-schema aggregation: full property-existence checks.
-            // Support `select` as alias for `metric`.
-            $metric = (string) ($spec['metric'] ?? $spec['select'] ?? '');
+            // Support `select` as alias for `metric`. Non-scalar values (a
+            // schema author passing an array) must not reach the string cast —
+            // PHP emits "Array to string conversion" — so they collapse to ''
+            // and fail the metric check with a proper validation error.
+            $metric = ($spec['metric'] ?? $spec['select'] ?? '');
+            if (is_scalar($metric) === false) {
+                $metric = '';
+            }
+
+            $metric = (string) $metric;
             if (in_array($metric, self::VALID_METRICS, true) === false) {
                 $errors[] = [
                     'code'    => 'aggregation-bad-metric',

@@ -2758,6 +2758,8 @@ class Application extends App implements IBootstrap
      * @param string                   $key       The candidate lookup key.
      *
      * @return IMcpToolProvider|null The resolved provider or null.
+     *
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
     private function tryResolveMcpProviderCandidate(
         ContainerInterface $container,
@@ -2771,7 +2773,10 @@ class Application extends App implements IBootstrap
                 // non-existent class would throw NotFoundExceptionInterface for every
                 // installed app (noisy).
                 if (class_exists($key) === false) {
-                    $logger->warning(
+                    // Expected for every installed app that ships no MCP tool
+                    // provider — debug, not warning, or each MCP request logs
+                    // one line per enabled app.
+                    $logger->debug(
                         '[McpToolsService] Class does not exist',
                         ['appId' => $appId, 'fqcn' => $key]
                     );
@@ -2781,7 +2786,7 @@ class Application extends App implements IBootstrap
 
             $appProvider = $container->get($key);
             if ($appProvider instanceof IMcpToolProvider) {
-                $logger->warning(
+                $logger->info(
                     '[McpToolsService] Discovered per-app tool provider',
                     ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
                 );
@@ -2792,6 +2797,13 @@ class Application extends App implements IBootstrap
             $logger->warning(
                 '[McpToolsService] Resolved but not IMcpToolProvider',
                 ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
+            );
+        } catch (\Psr\Container\NotFoundExceptionInterface $e) {
+            // Alias key not registered — the expected case for apps without an
+            // MCP provider; debug to keep per-request logs quiet.
+            $logger->debug(
+                '[McpToolsService] Resolve failed',
+                ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
             );
         } catch (\Throwable $e) {
             $logger->warning(

@@ -146,18 +146,30 @@ class PropertyValidatorHandler
             throw new Exception("Property at '$path' must have a 'type' field");
         }
 
-        // Validate type.
+        // Validate type. Union types arrive as arrays — render them as JSON in
+        // the message instead of letting string interpolation emit a PHP
+        // "Array to string conversion" warning.
         if (in_array($property['type'], $this->validTypes) === false) {
+            $typeLabel = $property['type'];
+            if (is_string($typeLabel) === false) {
+                $typeLabel = (string) json_encode($typeLabel);
+            }
+
             throw new Exception(
-                "Invalid type '{$property['type']}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
+                "Invalid type '{$typeLabel}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
             );
         }
 
         // Validate string format if present.
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
+                $formatLabel = $property['format'];
+                if (is_string($formatLabel) === false) {
+                    $formatLabel = (string) json_encode($formatLabel);
+                }
+
                 $validFormats = implode(', ', $this->validStringFormats);
-                $message      = "Invalid string format '{$property['format']}' at '$path'. Must be one of: $validFormats";
+                $message      = "Invalid string format '{$formatLabel}' at '$path'. Must be one of: $validFormats";
                 throw new Exception($message);
             }
         }
