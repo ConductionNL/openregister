@@ -1003,7 +1003,10 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
                 $parts[] = (string) $values[$idColumn];
             }
 
-            $connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
+            $connection->insert(
+                $this->quote(connection: $connection, identifier: $table),
+                $this->quoteColumns(connection: $connection, values: $values)
+            );
             return implode(DatabaseIntrospectionService::COMPOSITE_ID_SEPARATOR, $parts);
         }
 
@@ -1011,7 +1014,10 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
 
         // Caller-supplied primary key wins (no generation round-trip needed).
         if ($idColumn !== null && isset($values[$idColumn]) === true) {
-            $connection->insert($this->quote(connection: $connection, identifier: $table), $this->quoteColumns(connection: $connection, values: $values));
+            $connection->insert(
+                $this->quote(connection: $connection, identifier: $table),
+                $this->quoteColumns(connection: $connection, values: $values)
+            );
             return (string) $values[$idColumn];
         }
 

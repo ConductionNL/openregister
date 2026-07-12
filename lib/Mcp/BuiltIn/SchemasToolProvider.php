@@ -216,9 +216,19 @@ class SchemasToolProvider implements IMcpToolProvider
     /**
      * Delete a schema.
      *
+     * **DELETE SAFETY (runtime-schema-api)**: this is an LLM-invokable schema-destruction
+     * surface with no controller in front of it. It deliberately does NOT pass
+     * `force: true` — SchemaMapper::delete() refuses a schema that still holds objects,
+     * and a model acting on an ambiguous instruction must not be able to orphan a user's
+     * data. The ValidationException surfaces to the model as a tool error naming the
+     * object count; deleting the objects is a separate, explicit human decision
+     * (`DELETE /api/schemas/{id}?deleteObjects=true`).
+     *
      * @param array<string, mixed> $arguments Must contain id
      *
      * @return array<string, mixed> Success message
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     private function deleteSchema(array $arguments): array
     {

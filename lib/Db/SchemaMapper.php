@@ -81,7 +81,7 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
  * @method Schema insert(Entity $entity)
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
- * @method Schema delete(Entity $entity)
+ * @method Schema delete(Entity $entity, bool $force=false)
  * @method Schema find(int|string $id)
  * @method Schema findEntity(IQueryBuilder $query)
  * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
@@ -1574,46 +1574,55 @@ class SchemaMapper extends QBMapper
     /**
      * Delete a schema
      *
+     * **DELETE SAFETY (runtime-schema-api)**: refuses to delete a schema that still
+     * holds objects, unless the caller explicitly asks to orphan them ($force).
+     *
+     * This guard is enforced HERE, at the mapper, rather than only in
+     * SchemasController::destroy(), because the mapper is the choke point every
+     * deletion caller shares — including the AI/LLM-invokable SchemasToolProvider
+     * and SchemaTool surfaces, which have no controller in front of them.
+     *
      * @param Entity $entity The schema entity to delete
+     * @param bool   $force  Bypass the object-count guard and deliberately orphan the
+     *                       objects. Only the `?force=true` disposition of
+     *                       `DELETE /api/schemas/{id}` may pass true. The cascade
+     *                       disposition needs no bypass: it deletes the rows first, so
+     *                       the guard naturally counts 0.
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws ValidationException If objects are still attached and $force is false
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
-    public function delete(Entity $entity): Schema
+    public function delete(Entity $entity, bool $force=false): Schema
     {
         // Verify RBAC permission to delete.
         $this->verifyRbacPermission(action: 'delete', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
-        // Check for attached objects before deleting (using direct database query to avoid circular dependency).
         $schemaId = $entity->id;
         if (method_exists($entity, 'getId') === true) {
             $schemaId = $entity->getId();
         }
 
-        // Count objects that reference this schema (excluding soft-deleted objects).
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*'))
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT))
-            )
-            ->andWhere($qb->expr()->isNull('deleted'));
-
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        if ($count > 0) {
-            throw new ValidationException(message: 'Cannot delete schema: objects are still attached.');
+        if ($force === false) {
+            $count = $this->countAttachedObjects(schemaId: (int) $schemaId);
+            if ($count > 0) {
+                throw new ValidationException(
+                    message: 'Cannot delete schema: '.$count.' objects are still attached.'
+                );
+            }
         }
 
-        // Proceed with deletion if no objects are attached.
+        // Proceed with deletion.
         $result = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
@@ -1623,6 +1632,96 @@ class SchemaMapper extends QBMapper
 
         return $result;
     }//end delete()
+
+    /**
+     * Count the objects still attached to a schema.
+     *
+     * Objects live in the per-register/schema MAGIC tables
+     * (`openregister_table_{registerId}_{schemaId}`). The previous implementation of
+     * this guard counted rows in the retired `openregister_objects` blob table, which
+     * is always empty for magic-table objects — so it counted 0 and waved every
+     * deletion through.
+     *
+     * This is a direct DB query, not a call into MagicMapper/MagicStatisticsHandler,
+     * and that is deliberate: MagicStatisticsHandler injects SchemaMapper, so injecting
+     * it back here would be a genuine circular dependency. The table name is
+     * deterministic, so the count can be taken without the mapper.
+     *
+     * Soft-deleted rows are excluded, matching the object count the controller's guard
+     * reports to the caller.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return int The number of live objects attached to the schema.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    private function countAttachedObjects(int $schemaId): int
+    {
+        $total = 0;
+
+        foreach ($this->getRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
+            $tableName = MagicMapper::TABLE_PREFIX.$registerId.'_'.$schemaId;
+
+            if ($this->db->tableExists($tableName) === false) {
+                continue;
+            }
+
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*'))
+                ->from($tableName)
+                ->where($qb->expr()->isNull('_deleted'));
+
+            $result = $qb->executeQuery();
+            $total += (int) $result->fetchOne();
+            $result->closeCursor();
+        }
+
+        return $total;
+    }//end countAttachedObjects()
+
+    /**
+     * Find the ids of every register that references a schema.
+     *
+     * Direct query + decode in PHP, mirroring RegisterMapper::getAllRegisterIdsWithSchema():
+     * the `schemas` column is JSON on Postgres and text elsewhere, so there is no
+     * portable SQL predicate for "array contains N". Registers are O(10s) per install,
+     * so the cost is trivial. RegisterMapper itself cannot be injected here — it
+     * injects SchemaMapper.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return array<int, int> The register ids.
+     */
+    private function getRegisterIdsWithSchema(int $schemaId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        $needle      = (string) $schemaId;
+        $registerIds = [];
+
+        foreach ($rows as $row) {
+            $schemas = json_decode(($row['schemas'] ?? '[]'), true);
+            if (is_array($schemas) === false) {
+                continue;
+            }
+
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    $registerIds[] = (int) $row['id'];
+                    break;
+                }
+            }
+        }
+
+        return $registerIds;
+    }//end getRegisterIdsWithSchema()
 
     /**
      * Get the number of registers associated with each schema

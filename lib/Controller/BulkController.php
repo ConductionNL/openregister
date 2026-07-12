@@ -431,6 +431,11 @@ class BulkController extends Controller
     /**
      * Delete all objects belonging to a specific schema
      *
+     * Despite its name and its route (`/api/bulk/{register}/{schema}/delete-schema`),
+     * this endpoint does NOT delete the schema — it deletes the schema's OBJECTS. It
+     * is a near-duplicate of deleteSchemaObjects(), differing only in that it requires
+     * numeric ids instead of resolving slugs.
+     *
      * @param string $register The register identifier
      * @param string $schema   The schema identifier
      *
@@ -439,7 +444,12 @@ class BulkController extends Controller
      *
      * @return JSONResponse JSON response with schema delete result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-15
+     * @deprecated Use bulk#deleteSchemaObjects (`/api/bulk/{register}/{schema}/delete-objects`)
+     *             to delete a schema's objects, or `DELETE /api/schemas/{id}?deleteObjects=true`
+     *             to delete the schema AND its objects. Retained only for API back-compat;
+     *             the misleading name is documented rather than changed.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     public function deleteSchema(string $register, string $schema): JSONResponse
     {
@@ -472,9 +482,11 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data.
+            // Get request data. A JSON body delivers a real bool, but a form/query
+            // request delivers the string "true" — which would be a TypeError against
+            // the bool-typed service parameter, so normalize here.
             $data       = $this->request->getParams();
-            $hardDelete = $data['hardDelete'] ?? false;
+            $hardDelete = filter_var(($data['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
             // Set register and schema context.
             $this->objectService->setRegister($register);
@@ -557,9 +569,11 @@ class BulkController extends Controller
                 );
             }
 
-            // Get request data.
+            // Get request data. A JSON body delivers a real bool, but a form/query
+            // request delivers the string "true" — which would be a TypeError against
+            // the bool-typed service parameter, so normalize here.
             $data       = $this->request->getParams();
-            $hardDelete = $data['hardDelete'] ?? false;
+            $hardDelete = filter_var(($data['hardDelete'] ?? false), FILTER_VALIDATE_BOOLEAN);
 
             // Set register and schema context using resolved IDs.
             $this->objectService->setRegister((string) $resolved['register']);

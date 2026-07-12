@@ -521,9 +521,16 @@ class FileTextController extends Controller
             // HTTP 400). Any value other than 'dossier' normalises to
             // per-document so existing callers are unaffected.
             $scopeParam = (string) $this->request->getParam('scope', 'document');
-            $scope      = ($scopeParam === 'dossier') ? 'dossier' : 'document';
+            $scope      = 'document';
+            if ($scopeParam === 'dossier') {
+                $scope = 'dossier';
+            }
+
             $dossierKeyParam = $this->request->getParam('dossierKey', null);
-            $dossierKey      = ($dossierKeyParam === null || $dossierKeyParam === '') ? null : (string) $dossierKeyParam;
+            $dossierKey      = null;
+            if ($dossierKeyParam !== null && $dossierKeyParam !== '') {
+                $dossierKey = (string) $dossierKeyParam;
+            }
 
             $anonymizedFile = $this->fileService->anonymizeDocument(
                 node: $fileNode,
