@@ -246,6 +246,26 @@ Before delivering the in-app/push channel, the dispatcher resolves `schema-defau
 
 > The earlier per-`(register, schema)` `NotificationSubscription` table + controller are **deprecated**; existing rows are migrated to user-config overrides by a one-shot repair step and the table is scheduled for removal.
 
+### Delivery Windows (Quiet Hours) & Fixed-Time Digest Schedules
+
+Independently of the per-`(schema, notification)` on/off override above, a user MAY configure a global **delivery window** (quiet hours) via `NotificationDeliveryWindowService` — stored the same override-only way, under a distinct per-user app-config key (`notification_delivery_window`), so a user who never configures one keeps today's immediate-delivery behaviour (zero-migration).
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/notification-delivery-window` | The current user's stored window, or `{enabled: false}` when none is configured. |
+| `PUT /api/notification-delivery-window` | Store (`{enabled: true, start: "HH:MM", end: "HH:MM", timezone?, days?: [0-6]}`) or clear (`{enabled: false}`) the window for the current user only. `timezone` is an IANA name (e.g. `Europe/Amsterdam`); when absent it defaults to the Nextcloud server timezone. `start`/`end` wrap past midnight (e.g. `18:00`-`08:00`). |
+
+Two new dialect keys on a notification rule work with the delivery window:
+
+| Key | Shape | Behaviour |
+|-----|-------|-----------|
+| `critical` | `bool`, default `false` | When `true`, the rule bypasses quiet-hours queuing and always dispatches immediately (still subject to the preference-off / rate-limit / coalesce gates). Does NOT bypass a recipient's per-`(schema, notification)` opt-out. |
+| `digest` | `{schedule: "daily"\|"weekly", at: "HH:MM", timezone?, weekday?: 0-6}` | A FIXED time-of-day batching schedule, distinct from the rolling `coalesce` window. A rule may declare at most one of `coalesce` or `digest` (mutually exclusive, HTTP 422). `weekday` (0=Sunday) is required for `schedule: "weekly"`, forbidden for `"daily"`. |
+
+**Dispatcher behaviour**: before delivering a per-recipient channel (`nc-notification`, `email`, `activity`), the dispatcher checks whether the recipient is inside their configured delivery window, or the rule's `digest` schedule has not yet reached its next fire time. When either applies and the rule is not `critical: true`, the event is **persisted as a `QueuedNotification` row — never dropped** — and notification history records `queued-quiet-hours` or `queued-digest` instead of `dispatched`. Broadcast channels (`webhook`, `talk`) are unaffected — they still fire once per dispatch.
+
+`NotificationQueueFlushJob` (a 60s `TimedJob`) scans the queue every tick and **re-evaluates each row's condition live** against the current wall clock in the window's/schedule's declared timezone — never a precomputed instant — so DST transitions are handled correctly by PHP's tz database. Rows sharing `(schema, rule, recipient)` are grouped into one summary notification per flush. This replaces the earlier `NotificationDigest`/`BatchNotificationJob` in-memory primitives, which were never wired to the dispatcher and could not survive the process boundary between the enqueuing request and the flush tick.
+
 ### VNG Notificaties API Compliance
 
 For Dutch government interoperability, webhook payloads can be formatted according to the VNG Notificaties API standard via a Twig mapping configuration. This enables OpenRegister to act as a notificatiecomponent in a ZGW API landscape.

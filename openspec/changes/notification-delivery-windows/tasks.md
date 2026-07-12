@@ -2,24 +2,24 @@
 
 ## 1. Data model
 
-- [ ] 1.1 Create `lib/Db/QueuedNotification.php` entity (`id`, `schema_id`,
+- [x] 1.1 Create `lib/Db/QueuedNotification.php` entity (`id`, `schema_id`,
       `rule_key`, `recipient`, `reason` [`quiet-hours`|`digest-schedule`],
       `object_uuid` nullable, `payload` json text, `due_at_hint` datetime,
       `created_at` datetime), following `lib/Db/NotificationDedupeState.php`'s
       shape and getter/setter docblock style.
-- [ ] 1.2 Create `lib/Db/QueuedNotificationMapper.php` (`extends QBMapper`,
+- [x] 1.2 Create `lib/Db/QueuedNotificationMapper.php` (`extends QBMapper`,
       table `openregister_notification_queue`), following
-      `lib/Db/NotificationDedupeStateMapper.php`: `findDueForFlush()`
+      `lib/Db/NotificationDedupeStateMapper.php`: `findAll()`
       (all rows, since flush re-evaluates live per design.md), `insert()`
-      wrapper, `deleteById()`, `findByRecipientAndRule()` for the
+      wrapper (inherited), `deleteById()`, `findByRecipientAndRule()` for the
       per-`(rule, recipient)` grouping the flush job needs.
-- [ ] 1.3 Add migration `lib/Migration/Version1Date<YYYYMMDDHHMMSS>.php`
+- [x] 1.3 Add migration `lib/Migration/Version1Date20260712120000.php`
       creating `openregister_notification_queue` with indexes on
       `(recipient, reason)` and `due_at_hint`.
 
 ## 2. Delivery-window preference (per-user quiet hours)
 
-- [ ] 2.1 Create `lib/Service/Notification/NotificationDeliveryWindowService.php`:
+- [x] 2.1 Create `lib/Service/Notification/NotificationDeliveryWindowService.php`:
       `getForUser(string $userId): ?array`, `setForUser(string $userId, ?array
       $window): void`, storing `{enabled, start, end, timezone, days?}` as a
       single JSON value via `IConfig::setUserValue` under app `openregister`,
@@ -28,122 +28,164 @@
       (`lib/Service/Notification/NotificationPreferenceService.php`).
       `getForUser()` returns `null` when no value is stored (no per-user row
       required).
-- [ ] 2.2 Add `isInsideWindow(array $window, \DateTimeImmutable $now):
+- [x] 2.2 Add `isInsideWindow(array $window, \DateTimeImmutable $now):
       bool` helper (or a small `DeliveryWindowEvaluator` class) that resolves
       `now` in the window's `timezone` (falling back to `OCP\IDateTimeZone`
       server default when `timezone` is absent) and checks `[start, end)`,
       wrapping past-midnight ranges (e.g. `18:00`-`08:00`) correctly.
-- [ ] 2.3 Validate `start`/`end` as `HH:MM` and `timezone` as a value
+- [x] 2.3 Validate `start`/`end` as `HH:MM` and `timezone` as a value
       `DateTimeZone` accepts; reject malformed values with a clear exception
       (the controller translates to HTTP 422).
 
 ## 3. Delivery-window API
 
-- [ ] 3.1 Create `lib/Controller/NotificationDeliveryWindowController.php`
+- [x] 3.1 Create `lib/Controller/NotificationDeliveryWindowController.php`
       (`GET`/`update` methods), following
       `lib/Controller/NotificationPreferencesController.php`'s auth pattern
-      (`#[NoAdminRequired]`, `#[NoCSRFRequired]`, resolve current user from
-      `IUserSession`, 401 when unauthenticated, scope strictly to the
+      (`@NoAdminRequired`, `@NoCSRFRequired` docblock tags — matching the
+      existing controller's style, not PHP attributes; resolve current user
+      from `IUserSession`, 401 when unauthenticated, scope strictly to the
       authenticated user).
-- [ ] 3.2 Register routes in `appinfo/routes.php`:
+- [x] 3.2 Register routes in `appinfo/routes.php`:
       `notificationDeliveryWindow#index` GET `/api/notification-delivery-window`,
       `notificationDeliveryWindow#update` PUT `/api/notification-delivery-window`
       (placed next to the existing `notificationPreferences#*` entries).
-- [ ] 3.3 `GET` with no stored preference returns `{enabled: false}` (not a
+- [x] 3.3 `GET` with no stored preference returns `{enabled: false}` (not a
       404/500) — the "no configured window" backward-compat case.
 
 ## 4. Dialect + validator changes
 
-- [ ] 4.1 Add `critical: bool` (default `false`) and `digest: {schedule,
+- [x] 4.1 Add `critical: bool` (default `false`) and `digest: {schedule,
       at, timezone?, weekday?}` to the recognized keys in
-      `lib/Service/Notification/NotificationAnnotationValidator.php`,
-      following the throttle-window-grammar validation precedent (structured
-      `{code, ruleKey, field, value, message}` errors, HTTP 422).
-- [ ] 4.2 Validate: `critical` must be boolean; `digest.schedule` must be
+      `lib/Service/Notification/NotificationAnnotationValidator.php`, via
+      new `validateCriticalAndDigest()` following the existing
+      `{code, message}` structured-error precedent used throughout the
+      validator (the validator does not use a `{code, ruleKey, field,
+      value, message}` shape anywhere today — matched the file's actual
+      convention instead).
+- [x] 4.2 Validate: `critical` must be boolean; `digest.schedule` must be
       `daily`|`weekly`; `digest.at` must be `HH:MM`; `digest.weekday`
       required (0-6) when `schedule: "weekly"`, forbidden otherwise; a rule
-      MUST NOT declare both a rolling digest period and a `digest` block
-      (mutually exclusive, HTTP 422).
-- [ ] 4.3 Update the schema-save validation call sites (wherever
+      MUST NOT declare both a `digest` block and a rolling `coalesce`
+      window (mutually exclusive, HTTP 422). NOTE: the codebase has no
+      literal "digest period" / "throttle" key — `coalesce:
+      {windowSeconds, maxEvents}` (`NotificationCoalescer`) is the only
+      existing rolling-batching mechanism, so it is what "rolling digest
+      period" in design.md maps to; documented here since the mapping is
+      an interpretation, not a literal grep hit.
+- [x] 4.3 Update the schema-save validation call sites (wherever
       `NotificationAnnotationValidator::validate()` is invoked on schema
-      create/update) — no new call site needed if it already runs on every
-      schema save; confirm and note in the PR if a new hook is required.
+      create/update) — confirmed already wired in `lib/Db/SchemaMapper.php`;
+      no new call site needed.
 
 ## 5. Dispatcher gate
 
-- [ ] 5.1 In `AnnotationNotificationDispatcher::dispatchWithSchema()`, add
+- [x] 5.1 In `AnnotationNotificationDispatcher::dispatchWithSchema()`, add
       the delivery-window/digest-schedule gate immediately after the
-      existing preference gate (`AnnotationNotificationDispatcher.php:476-506`),
-      evaluated only for non-broadcast channels (`nc-notification`, `email`,
-      `activity`) and only when the rule spec's `critical` is not `true`.
-- [ ] 5.2 When the gate suppresses: persist a `QueuedNotification` via
+      existing preference gate, evaluated only for non-broadcast channels
+      (`nc-notification`, `email`, `activity`) and only when the rule
+      spec's `critical` is not `true` (`deliveryWindowOrDigestSuppresses()`).
+- [x] 5.2 When the gate suppresses: persist a `QueuedNotification` via
       `QueuedNotificationMapper` with the pre-resolved subject/message/
       channels/context (so flush needs no re-resolution), `reason` set to
-      `quiet-hours` and/or `digest-schedule` as applicable, and record
-      notification history with status `queued-quiet-hours` /
-      `queued-digest` (new status values, additive to the existing four).
-- [ ] 5.3 Add `AnnotationNotificationDispatcher::dispatchQueued(array
-      $queuedRows): void` (or per-row) that reuses the existing channel
-      fan-out (`emitNotification`, `emitEmail`, `emitActivity`) unchanged,
-      grouping same-`(rule_key, recipient)` rows into one digest-style
-      message (reuse the "N nieuw, M gewijzigd" breakdown pattern already
-      used for the rolling digest window), and updates history to
-      `dispatched` on success.
-- [ ] 5.4 Ensure `critical: true` rules skip step 5.1 entirely — dispatch
+      `quiet-hours` / `digest-schedule` / `quiet-hours+digest-schedule` as
+      applicable, and record notification history with status
+      `queued-quiet-hours` / `queued-digest` (new status values, additive
+      to the existing four).
+- [x] 5.3 Add `AnnotationNotificationDispatcher::dispatchQueued(array
+      $queuedRows): void` that reuses the existing channel fan-out
+      (`emitNotification`, `emitEmail`, `emitActivity`) unchanged, grouping
+      same-`(rule_key, recipient)` rows into one digest-style message via
+      `buildQueuedSummary()` (breakdown by stored `action`, "N nieuw, M
+      gewijzigd" pattern), and updates history to `dispatched` on success.
+- [x] 5.4 Ensure `critical: true` rules skip step 5.1 entirely — dispatch
       proceeds exactly as before this change (still subject to the
       unmodified preference-off / rate-limit / coalesce gates).
 
 ## 6. Queue flush job
 
-- [ ] 6.1 Create `lib/BackgroundJob/NotificationQueueFlushJob.php`, a 60s
+- [x] 6.1 Create `lib/BackgroundJob/NotificationQueueFlushJob.php`, a 60s
       `TimedJob` following `lib/BackgroundJob/ScheduledNotificationJob.php`'s
       structure (constructor DI, `run()` fail-closed on missing
       dependencies, structured logging).
-- [ ] 6.2 On each tick: scan all `QueuedNotification` rows via
-      `QueuedNotificationMapper`, group by `(recipient, reason-relevant
-      rule)`, live-re-evaluate each group's condition (delivery window via
-      `NotificationDeliveryWindowService` + `isInsideWindow()`, digest
-      schedule via the rule's `digest` config resolved from the owning
-      schema) against the current wall clock, and call
-      `dispatchQueued()`/delete the flushed rows for every group whose
+- [x] 6.2 On each tick: scan all `QueuedNotification` rows via
+      `QueuedNotificationMapper`, group by `(schema_id, rule_key,
+      recipient)`, live-re-evaluate each group's condition (delivery window
+      via `NotificationDeliveryWindowService` + `isInsideWindow()` gates the
+      WHOLE group; digest schedule via the rule's `digest` config resolved
+      from the owning schema gates each row individually by its own
+      `created_at`) against the current wall clock, and call
+      `dispatchQueued()`/delete the flushed rows for every group/row whose
       condition has cleared.
-- [ ] 6.3 Register the job in `lib/AppInfo/Application.php`'s background-job
-      registration list (alongside `ScheduledNotificationJob`,
-      `BatchNotificationJob`).
-- [ ] 6.4 Remove `lib/BackgroundJob/BatchNotificationJob.php` and
+- [x] 6.3 Register the job in `appinfo/info.xml`'s `<background-jobs>` list
+      (alongside `ScheduledNotificationJob`) — NOTE: background jobs in
+      this codebase are registered in `appinfo/info.xml`, not
+      `lib/AppInfo/Application.php` (verified: `BatchNotificationJob`'s own
+      registration lived in info.xml, not Application.php; tasks.md's
+      description of the registration point was inaccurate).
+- [x] 6.4 Remove `lib/BackgroundJob/BatchNotificationJob.php` and
       `lib/Service/Notification/NotificationDigest.php` (superseded, zero
-      other callers per design.md verification); remove their background-job
-      registration entry.
+      other callers per design.md verification); removed the
+      `BatchNotificationJob` `<job>` entry from `appinfo/info.xml` (replaced
+      by `NotificationQueueFlushJob`); also removed the now-obsolete
+      `tests/Unit/Service/Notification/NotificationDigestTest.php`.
 
 ## 7. Tests
 
-- [ ] 7.1 Unit tests for `NotificationDeliveryWindowService`
-      (get/set/round-trip, no-stored-value → null, past-midnight window
-      wrapping, unauthorized cross-user access rejected at controller level).
-- [ ] 7.2 Unit tests for `NotificationAnnotationValidator` covering the new
-      `critical`/`digest` grammar (valid cases, missing `weekday` on weekly,
-      bad `at` format, mutual exclusion with rolling digest period).
-- [ ] 7.3 Unit tests for `AnnotationNotificationDispatcher`'s new gate:
-      queued during quiet hours, immediate when `critical: true`, immediate
-      when no window/digest configured (backward compat), broadcast channels
-      unaffected.
-- [ ] 7.4 Unit tests for `NotificationQueueFlushJob`: flushes once window
-      clears, groups multiple queued events into one digest message, window
-      overlap (quiet-hours-end vs digest-due-time, later of the two wins),
-      DST-transition live re-evaluation (mock two timezone offsets across
-      the transition boundary and confirm the flush decision uses the
-      current offset, not a stale precomputed one).
-- [ ] 7.5 Integration/PHPUnit test for the full path: rule with `digest`
-      schedule + recipient with quiet hours → queued → flushed once, exactly
-      one notification history row transitions to `dispatched`.
+- [x] 7.1 Unit tests for `NotificationDeliveryWindowService`
+      (`tests/Unit/Service/Notification/NotificationDeliveryWindowServiceTest.php`):
+      get/set/round-trip, no-stored-value → null, past-midnight window
+      wrapping, DST spring-forward transition, `days` restriction,
+      unauthorized cross-user access rejected at controller level (see 7.3
+      note below — moved to the controller test per its actual auth
+      surface).
+- [x] 7.2 Unit tests for `NotificationAnnotationValidator`
+      (`tests/Unit/Service/Notification/NotificationAnnotationValidatorDeliveryWindowTest.php`)
+      covering the new `critical`/`digest` grammar (valid cases, missing
+      `weekday` on weekly, weekday-not-allowed on daily, bad `at` format,
+      bad timezone, mutual exclusion with `coalesce`).
+- [x] 7.3 Unit tests for `AnnotationNotificationDispatcher`'s new gate
+      (`tests/Unit/Service/Notification/AnnotationNotificationDispatcherDeliveryWindowTest.php`):
+      queued during quiet hours (with `QueuedNotification` row + history
+      assertions), immediate when `critical: true`, immediate when no
+      window/digest configured (backward compat), digest-declared rule
+      always queues, window+digest both active records the combined
+      reason, broadcast (webhook) channel unaffected. Also
+      `tests/Unit/Controller/NotificationDeliveryWindowControllerTest.php`
+      covers 401-unauthenticated and the "uid in body is ignored, session
+      user is authoritative" cross-user guarantee.
+- [x] 7.4 Unit tests for `NotificationQueueFlushJob`
+      (`tests/Unit/BackgroundJob/NotificationQueueFlushJobTest.php`):
+      not-flushed while window active, flushes once window clears, groups
+      multiple queued events into one `dispatchQueued()` call, window
+      overlap (quiet-hours-end vs digest-due-time, later of the two wins —
+      two tests for both sides), a row queued after the last digest
+      occurrence waits for the next one, DST-transition live re-evaluation
+      (row queued pre-transition, flush evaluated post-transition, asserts
+      the CURRENT offset drives the decision).
+- [x] 7.5 Integration/PHPUnit test for the full path
+      (`tests/Unit/Service/Notification/NotificationDeliveryWindowIntegrationTest.php`):
+      rule with `digest` schedule + recipient with quiet hours → 3 events
+      queued (not dropped, zero immediate deliveries) → flushed once at the
+      window/digest edge through the REAL dispatcher + REAL flush job →
+      exactly one notification delivered and exactly one notification
+      history row transitions to `dispatched`.
+- [x] 7.6 (added, not in original checklist) Entity round-trip test
+      `tests/Unit/Db/QueuedNotificationTest.php` and schedule-evaluator
+      unit tests `tests/Unit/Service/Notification/DigestScheduleEvaluatorTest.php`
+      (daily/weekly `lastOccurrence()`, `isDue()` semantics, DST edge,
+      fail-open on malformed spec).
 
 ## 8. Docs
 
-- [ ] 8.1 Update any developer-facing dialect reference docs (e.g. app
-      README/docs sections describing `x-openregister-notifications`) to
-      list `critical` and `digest` alongside the existing `trigger`/
-      `filter`/`recipients`/`channels`/`throttle`/`audit` keys.
-- [ ] 8.2 Update `openspec/coverage-report.md` / `platform-capabilities.md`
-      references to the notification engine if they enumerate dialect keys
-      or background jobs by name (so `BatchNotificationJob` removal and
-      `NotificationQueueFlushJob` addition are reflected).
+- [x] 8.1 Updated `docs/features/webhooks-and-notifications.md`: new
+      "Delivery Windows (Quiet Hours) & Fixed-Time Digest Schedules"
+      section documenting the `GET`/`PUT /api/notification-delivery-window`
+      endpoints, the `critical`/`digest` dialect keys, and the queue/flush
+      dispatcher behaviour.
+- [x] 8.2 Updated `openspec/coverage-report.md` (two `BatchNotificationJob`
+      references replaced with `NotificationQueueFlushJob`) — this file is
+      a generated coverage/bucket snapshot (see `opsx-coverage-scan`), so
+      the edit is a courtesy sync, not a full regeneration.
+      `openspec/platform-capabilities.md` had no `BatchNotificationJob` /
+      `NotificationDigest` references, so no change was needed there.

@@ -508,6 +508,13 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // Optional `critical` bypass flag and optional fixed-time
+            // `digest` schedule (notification-delivery-windows dialect
+            // additions). See "Users MUST be able to manage their
+            // notification preferences" / "Notifications MUST support
+            // batching and digest delivery" in the notificatie-engine spec.
+            $errors = array_merge($errors, $this->validateCriticalAndDigest(spec: $spec, name: $name));
+
             $recipients = ($spec['recipients'] ?? []);
             if (is_array($recipients) === false || count($recipients) === 0) {
                 $errors[] = [
@@ -706,6 +713,136 @@ final class NotificationAnnotationValidator
 
         return $errors;
     }//end validateActions()
+
+    /**
+     * Validate the optional `critical` bypass flag and the optional
+     * fixed-time `digest` schedule block.
+     *
+     * Rules:
+     *  - `critical`, when present, MUST be a boolean.
+     *  - `digest.schedule`, when the block is present, MUST be
+     *    `daily` | `weekly`.
+     *  - `digest.at` MUST be an `HH:MM` 24h time string.
+     *  - `digest.weekday` (0-6) is REQUIRED when `schedule: "weekly"` and
+     *    FORBIDDEN otherwise.
+     *  - `digest.timezone`, when present, MUST be a value `DateTimeZone`
+     *    accepts.
+     *  - A rule MUST NOT declare both a `digest` block and a rolling
+     *    `coalesce` window — the two "hold and batch" mechanisms are
+     *    mutually exclusive per rule (design.md "Digest scheduling is
+     *    additive to, not a replacement for, the rolling digest window").
+     *
+     * @param array<string, mixed> $spec The full notification spec block.
+     * @param string               $name Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     */
+    private function validateCriticalAndDigest(array $spec, string $name): array
+    {
+        $errors = [];
+
+        if (array_key_exists('critical', $spec) === true && is_bool($spec['critical']) === false) {
+            $errors[] = [
+                'code'    => 'notification-critical-not-boolean',
+                'message' => sprintf('Notification "%s" `critical` must be a boolean.', $name),
+            ];
+        }
+
+        if (array_key_exists('digest', $spec) === false) {
+            return $errors;
+        }
+
+        $digest = $spec['digest'];
+        if (is_array($digest) === false) {
+            $errors[] = [
+                'code'    => 'notification-digest-malformed',
+                'message' => sprintf('Notification "%s" `digest` must be an object.', $name),
+            ];
+            return $errors;
+        }
+
+        $schedule = ($digest['schedule'] ?? null);
+        if (in_array($schedule, ['daily', 'weekly'], true) === false) {
+            $errors[] = [
+                'code'    => 'notification-digest-bad-schedule',
+                'message' => sprintf(
+                    'Notification "%s" `digest.schedule` must be "daily" or "weekly".',
+                    $name
+                ),
+            ];
+        }
+
+        $at = ($digest['at'] ?? null);
+        if (is_string($at) === false || preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $at) !== 1) {
+            $errors[] = [
+                'code'    => 'notification-digest-bad-time',
+                'message' => sprintf('Notification "%s" `digest.at` must be an "HH:MM" time string.', $name),
+            ];
+        }
+
+        $hasWeekday = array_key_exists('weekday', $digest);
+        if ($schedule === 'weekly') {
+            $weekday = ($digest['weekday'] ?? null);
+            if ($hasWeekday === false || is_int($weekday) === false || $weekday < 0 || $weekday > 6) {
+                $errors[] = [
+                    'code'    => 'notification-digest-weekly-missing-weekday',
+                    'message' => sprintf(
+                        'Notification "%s" `digest.weekday` (0-6) is required when `schedule` is "weekly".',
+                        $name
+                    ),
+                ];
+            }
+        } else if ($hasWeekday === true) {
+            $errors[] = [
+                'code'    => 'notification-digest-weekday-not-allowed',
+                'message' => sprintf(
+                    'Notification "%s" `digest.weekday` is only allowed when `schedule` is "weekly".',
+                    $name
+                ),
+            ];
+        }
+
+        $timezone = ($digest['timezone'] ?? null);
+        if ($timezone !== null) {
+            $timezoneValid = false;
+            if (is_string($timezone) === true && $timezone !== '') {
+                try {
+                    new \DateTimeZone($timezone);
+                    $timezoneValid = true;
+                } catch (\Throwable $e) {
+                    $timezoneValid = false;
+                }
+            }
+
+            if ($timezoneValid === false) {
+                $errors[] = [
+                    'code'    => 'notification-digest-bad-timezone',
+                    'message' => sprintf(
+                        'Notification "%s" `digest.timezone` must be a valid IANA timezone name.',
+                        $name
+                    ),
+                ];
+            }
+        }
+
+        // Mutually exclusive with the rolling `coalesce` window — a rule
+        // picks one "hold and batch" mechanism, not both.
+        if (is_array($spec['coalesce'] ?? null) === true) {
+            $errors[] = [
+                'code'    => 'notification-digest-and-coalesce-mutually-exclusive',
+                'message' => sprintf(
+                    'Notification "%s" declares both a rolling `coalesce` window and a fixed-time '
+                    .'`digest` schedule; a rule may declare at most one batching mechanism.',
+                    $name
+                ),
+            ];
+        }
+
+        return $errors;
+
+    }//end validateCriticalAndDigest()
 
     /**
      * Validate the optional `message` field (notification body).
