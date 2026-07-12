@@ -1,3 +1,46 @@
+## MODIFIED Requirements
+
+### Requirement: REQ-002 — Tool id format and metadata validation
+
+`ToolRegistry::registerTool` MUST enforce a dotted id format with a lowercase
+Nextcloud app id as the first segment and one or more mixed-case identifier
+segments after it (regex `^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$`), rejecting ids that
+fail the pattern. Two-segment ids (`{appId}.{toolName}`, e.g.
+`openbuild.createApp`) and three-segment schema-derived ids
+(`{appId}.{schema}.{verb}`, e.g. `pipelinq.lead.search` — ADR-063 chain 2/3)
+are both valid. Registrations MUST NOT silently overwrite — re-registering an
+already-known id MUST throw `InvalidArgumentException`. The metadata array MUST
+contain the four required keys `name`, `description`, `icon`, `app`; missing
+any key MUST also throw `InvalidArgumentException`. The same widened pattern
+MUST govern `ToolRegistrationListener`'s bridge-side id gate so a derived
+provider's tools are not silently dropped from the chat surface.
+
+#### Scenario: Valid dotted id with camelCase right side is accepted
+- **GIVEN** the registry has not yet seen tool id `openbuild.createApp`
+- **WHEN** a listener calls `registerTool('openbuild.createApp', $tool, $fullMetadata)`
+- **THEN** the registry MUST store the tool under that id
+- **AND** the registry MUST log `'[ToolRegistry] Tool registered'` at info level with id, name, app fields
+
+#### Scenario: Three-segment schema-derived id is accepted
+- **GIVEN** the registry has not yet seen tool id `pipelinq.lead.search`
+- **WHEN** a listener calls `registerTool('pipelinq.lead.search', $tool, $fullMetadata)`
+- **THEN** the registry MUST store the tool under that id
+
+#### Scenario: Malformed id is rejected
+- **GIVEN** an id with no dot (`invalid-format`) or an uppercase app segment (`App.Tool`)
+- **WHEN** `registerTool` is called with it
+- **THEN** the registry MUST throw `InvalidArgumentException` naming the invalid format
+
+#### Scenario: Duplicate registration is rejected
+- **GIVEN** a tool already registered under an id
+- **WHEN** `registerTool` is called again with the same id
+- **THEN** the registry MUST throw `InvalidArgumentException` (`Tool already registered`)
+
+#### Scenario: Missing metadata key is rejected
+- **GIVEN** metadata lacking any of `name`, `description`, `icon`, `app`
+- **WHEN** `registerTool` is called
+- **THEN** the registry MUST throw `InvalidArgumentException` naming the missing field
+
 ## ADDED Requirements
 
 ### Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools through the existing ABI

@@ -1551,6 +1551,76 @@ class AuditTrailMapper extends QBMapper
     }//end createAuditTrailEntry()
 
     /**
+     * Create one immutable, hash-chained audit record for an MCP tool
+     * invocation (ADR-063 chain 2/3, EU AI Act art.12/14).
+     *
+     * Reuses the existing `AuditTrail` table and `AuditHashService` hash
+     * chain unchanged — `action` is namespaced `mcp.{verb}` (e.g.
+     * `mcp.search`) so it never collides with the plain `create` / `update`
+     * / `delete` / `read` object-CRUD actions that statistics code buckets
+     * on. Acting identity is resolved from the ambient Nextcloud session,
+     * exactly like {@see createAuditTrail()} — the IMcpToolProvider ABI does
+     * not thread an acting-agent identity into `invokeTool()`, so a
+     * non-human agent principal cannot be distinguished from the session's
+     * human user yet (tracked as a DEFERRED_QUESTION coordinated with
+     * Hermiq's `agent-tool-governance-and-disclosure` change).
+     *
+     * @param string      $toolId        Full namespaced tool id, e.g. `pipelinq.lead.search`.
+     * @param string      $paramsDigest  SHA-256 hex digest of the invocation's canonical arguments (never raw values).
+     * @param array       $resultSummary Structured outcome summary (count/ids/isError/errorClass).
+     * @param int|null    $register      Register id touched by the invocation, when known.
+     * @param int|null    $schema        Schema id touched by the invocation, when known.
+     * @param int|null    $object        Object id touched by the invocation, when known (writes / get).
+     * @param string|null $objectUuid    Object uuid touched by the invocation, when known (writes / get).
+     *
+     * @return AuditTrail The persisted, hash-chained entry.
+     *
+     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     */
+    public function createToolInvocationEntry(
+        string $toolId,
+        string $paramsDigest,
+        array $resultSummary,
+        ?int $register=null,
+        ?int $schema=null,
+        ?int $object=null,
+        ?string $objectUuid=null
+    ): AuditTrail {
+        $user   = $this->userSession->getUser();
+        $userId = 'system';
+        if ($user !== null) {
+            $userId = $user->getUID();
+        }
+
+        $userName = 'System';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+        }
+
+        $verb = $toolId;
+        if (str_contains($toolId, '.') === true) {
+            $verb = substr($toolId, (strrpos($toolId, '.') + 1));
+        }
+
+        $auditTrail = new AuditTrail();
+        $auditTrail->setUuid((string) Uuid::v4());
+        $auditTrail->setAction('mcp.'.$verb);
+        $auditTrail->setToolId($toolId);
+        $auditTrail->setParamsDigest($paramsDigest);
+        $auditTrail->setResultSummary($resultSummary);
+        $auditTrail->setRegister($register);
+        $auditTrail->setSchema($schema);
+        $auditTrail->setObject($object);
+        $auditTrail->setObjectUuid($objectUuid);
+        $auditTrail->setUser($userId);
+        $auditTrail->setUserName($userName);
+        $auditTrail->setCreated(new DateTime());
+
+        return $this->insertHashChained(auditTrail: $auditTrail);
+    }//end createToolInvocationEntry()
+
+    /**
      * Get processing activities from audit trail entries.
      *
      * Groups audit trail entries by processing activity ID and returns
