@@ -17,20 +17,20 @@ This capability sits between `mcp-discovery` (the JSON-RPC MCP server — see `o
 
 Per **ADR-063** (hydra), apps stop shipping their own MCP tool code; OpenRegister
 becomes the single MCP registry + server, deriving tools from schema declarations
-and PHP attributes. Three chained changes deliver OpenRegister's half (status
-**in-progress**):
+and PHP attributes. Three chained changes deliver OpenRegister's half:
 
-- `or-mcp-schema-dialect` — defines the declarative `x-openregister-mcp` schema
-  dialect (opt-in, coarse CRUD verb template) + its save-time validation.
-- `or-mcp-derived-tool-provider` — `SchemaDerivedToolProvider` emits
-  `{appId}.{schema}.{verb}` tools through the existing `IMcpToolProvider` ABI,
-  feeding both this bridge and the JSON-RPC surface; hand-written > derived
+- `or-mcp-schema-dialect` — **shipped** (see `REQ-DIALECT-001`–`REQ-DIALECT-003`
+  below). Defines the declarative `x-openregister-mcp` schema dialect (opt-in,
+  coarse CRUD verb template) + its save-time validation. Emits no tools yet.
+- `or-mcp-derived-tool-provider` — **in-progress**. `SchemaDerivedToolProvider`
+  emits `{appId}.{schema}.{verb}` tools through the existing `IMcpToolProvider`
+  ABI, feeding both this bridge and the JSON-RPC surface; hand-written > derived
   precedence; writes via `ObjectService` (RBAC intact); every invocation audited
   (EU AI Act art.12/14).
-- `or-mcp-tool-attribute` — net-new `#[McpTool]` attribute + reflection scanner
-  registering annotated service methods as `{appId}.{toolName}`, executed
-  in-process in the owning app (ADR-041, no cross-app RPC), same audit + RBAC.
-
+- `or-mcp-tool-attribute` — **in-progress**. Net-new `#[McpTool]` attribute +
+  reflection scanner registering annotated service methods as
+  `{appId}.{toolName}`, executed in-process in the owning app (ADR-041, no
+  cross-app RPC), same audit + RBAC.
 ## Requirements
 ### Requirement: REQ-001 — Event-dispatched cross-app tool registration
 
@@ -198,4 +198,106 @@ The bridge MUST expose each MCP tool under two function names: the raw dotted MC
 - The safe-alias indirection exists because OpenAI and Ollama function-name validators reject `.` (and several Ollama models reject `:` too). LLPhant inherits those validators, so even though MCP ids are dotted by spec, the chat path must round-trip through an underscore alias. The mapping is bidirectional and lossless when the raw id contains no underscores; ambiguity is acceptable because the bridge is per-provider and providers don't typically use both `.` and `_` in the same id.
 - The `isError` envelope shape mirrors `McpToolsService::callTool`'s soft-error shape so downstream consumers (the SSE streaming wrapper, the chat orchestrator, the LLM follow-up message) can detect failures uniformly.
 - Observed-but-suspicious: the `'unknown_function'` and `'internal_error'` envelopes use different shapes from `McpToolsService::callTool` (which wraps errors in a `content` array). This is an inconsistency that should be reconciled in a future spec — the bridge envelope is currently consumed by LLPhant's tool result path, not by an MCP client, so the divergence is not user-visible.
+
+### Requirement: REQ-DIALECT-001 — The `x-openregister-mcp` schema dialect
+
+OpenRegister MUST recognise a top-level `x-openregister-mcp` annotation key on
+each schema, a member of the `x-openregister-*` dialect family (ADR-031), used to
+declare — per schema, opt-in — which coarse CRUD MCP tools that schema exposes.
+The key MUST be added to `Schema::ANNOTATION_VOCABULARY` so it is folded into the
+schema's `configuration` on import rather than dropped as an unknown key. This
+change defines and validates the declaration only; it MUST NOT emit any MCP tool
+or alter any serving surface (that is the `or-mcp-derived-tool-provider` change).
+
+The dialect object shape is:
+
+- `enabled` (boolean, REQUIRED when the block is present) — the opt-in gate.
+- `tools` (object, OPTIONAL) — keys MUST be a subset of the fixed verb set
+  `{search, get, create, update, delete}`. Per-verb value is an object with
+  optional `description` (string), `scope` (enum `read|create|update|delete`),
+  and boolean MCP annotation hints `readOnlyHint` / `destructiveHint` /
+  `idempotentHint`. The `search` verb additionally accepts `filters` (a list of
+  strings, each naming an existing property on the schema).
+
+The default posture MUST be OFF: a schema with no `x-openregister-mcp` block, or
+with `enabled:false`, exposes no MCP tools.
+
+#### Scenario: Dialect key is retained into configuration on import
+- **GIVEN** a register seed schema carrying a top-level `x-openregister-mcp` block
+- **WHEN** the schema is imported
+- **THEN** `x-openregister-mcp` MUST be folded into the schema's `configuration`
+- **AND** it MUST NOT appear in the dropped-unknown-key warning emitted by `SchemaMapper::logDroppedAnnotationKeys()`
+
+#### Scenario: Default OFF — absent block exposes nothing
+- **GIVEN** a schema with no `x-openregister-mcp` key
+- **WHEN** the schema is saved
+- **THEN** the save MUST succeed
+- **AND** the schema's `configuration` MUST NOT contain an `x-openregister-mcp` entry
+
+#### Scenario: enabled:false is a valid opt-out
+- **GIVEN** a schema whose `x-openregister-mcp` block is `{ "enabled": false }`
+- **WHEN** the schema is saved
+- **THEN** the save MUST succeed
+- **AND** the block MUST be stored verbatim in `configuration`
+
+### Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape
+
+OpenRegister MUST validate the `x-openregister-mcp` block at schema-save time via
+a dedicated `McpAnnotationValidator`, invoked from `SchemaMapper::cleanObject()`
+alongside the sibling dialect validators. A malformed block MUST fail the schema
+save with a single aggregated, human-readable error message, consistent with the
+existing `x-openregister-*` validators. The validator MUST check *types and
+shape only* — it MUST NOT treat any MCP hint value as a security decision.
+
+#### Scenario: enabled must be boolean
+- **GIVEN** a schema whose `x-openregister-mcp` block sets `"enabled": "yes"`
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error naming the schema and the `enabled` type violation
+
+#### Scenario: Unknown verb key is rejected
+- **GIVEN** a `tools` object containing a key `list` (not in `{search,get,create,update,delete}`)
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error identifying the unrecognised verb `list`
+
+#### Scenario: search filter must reference an existing property
+- **GIVEN** a `search` verb whose `filters` lists `assignee`, but the schema has no `assignee` property
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error naming the unknown filter property `assignee`
+
+#### Scenario: filters are permitted only on the search verb
+- **GIVEN** a `create` verb config that includes a `filters` array
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error stating `filters` is valid on `search` only
+
+#### Scenario: scope must be a known enum value
+- **GIVEN** a verb config whose `scope` is `"admin"`
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error naming the invalid `scope` value
+
+#### Scenario: MCP hints are validated by type, not trusted by value
+- **GIVEN** a `delete` verb declaring `"destructiveHint": false`
+- **WHEN** the schema is saved
+- **THEN** the save MUST succeed (the boolean type is valid)
+- **AND** the specification MUST record that the authoritative destructiveness gate at invoke time is OpenRegister RBAC, not this hint
+
+#### Scenario: A well-formed full block saves and round-trips
+- **GIVEN** a schema with `enabled:true` and all five verbs configured with valid `description`, `scope`, hints, and (for `search`) `filters` referencing real properties
+- **WHEN** the schema is saved and re-read
+- **THEN** the save MUST succeed
+- **AND** the `x-openregister-mcp` block MUST be returned unchanged from `configuration`
+
+### Requirement: REQ-DIALECT-003 — Coarse CRUD template, not per-endpoint
+
+The dialect MUST express only a fixed, coarse five-verb CRUD template per schema
+(`search`, `get`, `create`, `update`, `delete`) reusing the schema itself as the
+tool input/output schema. It MUST NOT provide a mechanism to declare arbitrary
+per-REST-endpoint tools. Non-CRUD, behaviour-specific tools are out of scope for
+this declarative dialect and are the domain of the `#[McpTool]` service attribute
+(`or-mcp-tool-attribute`).
+
+#### Scenario: The verb set is closed
+- **GIVEN** any `x-openregister-mcp.tools` object
+- **WHEN** it is validated
+- **THEN** only keys within `{search, get, create, update, delete}` MUST be accepted
+- **AND** there MUST be no supported syntax for declaring a custom-named CRUD tool in this change
 

@@ -1945,6 +1945,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-survivorship',
         'x-openregister-merge',
         'x-openregister-handoff',
+        'x-openregister-mcp',
     ];
 
     /**

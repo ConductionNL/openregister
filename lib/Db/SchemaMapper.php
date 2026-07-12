@@ -53,6 +53,7 @@ use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
 use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
 use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
@@ -639,6 +640,7 @@ class SchemaMapper extends QBMapper
         $this->validateArchivalAnnotation(schema: $schema);
         $this->validateHandoffAnnotation(schema: $schema);
         $this->validateHandoffContractBinding(schema: $schema);
+        $this->validateMcpAnnotation(schema: $schema);
         $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
 
@@ -1130,6 +1132,47 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
         throw new Exception('handoffContract: '.implode(' ', $messages));
     }//end validateHandoffContractBinding()
+
+    /**
+     * Validate the optional `x-openregister-mcp` annotation (ADR-063).
+     *
+     * The annotation is stored under `configuration['x-openregister-mcp']`.
+     * This change defines and validates the declaration only — no MCP tool
+     * is emitted and no serving surface is altered by this validator (that
+     * is the `or-mcp-derived-tool-provider` change). A malformed block
+     * fails the schema save loudly, consistent with every sibling
+     * `x-openregister-*` dialect validator.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
+     */
+    private function validateMcpAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-mcp'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'         => ($schema->getProperties() ?? []),
+            'x-openregister-mcp' => $annotation,
+        ];
+
+        $errors = (new McpAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('x-openregister-mcp: '.implode(' ', $messages));
+    }//end validateMcpAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
