@@ -19,9 +19,10 @@ tools OpenRegister derives centrally rather than tools each app hand-writes:
   `{appId}.{schema}.{verb}` CRUD tools (from the `x-openregister-mcp` dialect)
   over JSON-RPC, obeying hand-written > derived precedence and auditing every
   `tools/call`.
-- `or-mcp-tool-attribute` — **in-progress**. Serves `#[McpTool]`-annotated
-  `{appId}.{toolName}` service tools, invoked in-process in the owning app
-  (ADR-041, no cross-app RPC).
+- `or-mcp-tool-attribute` — **shipped** (see "Attributed service tools are
+  served over the JSON-RPC MCP surface" below; ADR-063 chain 3/3 — the chain
+  is now COMPLETE). Serves `#[McpTool]`-annotated `{appId}.{toolName}` service
+  tools, invoked in-process in the owning app (ADR-041, no cross-app RPC).
 
 ## Requirements
 
@@ -412,6 +413,24 @@ colliding ids). No change to the JSON-RPC envelope, session handling, or the
 - **WHEN** an MCP client calls `tools/call` with name `pipelinq.lead.get`
 - **THEN** the call MUST route to the derived provider's `invokeTool()`
 - **AND** the invocation MUST be audited per the `ai-mcp` invocation-audit requirement
+
+### Requirement: Attributed service tools are served over the JSON-RPC MCP surface
+
+The JSON-RPC MCP server (`POST /api/mcp`, `tools/list` + `tools/call` via `McpToolsService`) MUST serve tools declared by the `#[McpTool]` attribute, namespaced `{appId}.{toolName}`, alongside built-in, hand-written, and schema-derived tools. `tools/call` on an attributed tool MUST route to an
+in-process invocation of the owning app's method (ADR-041 — no cross-app RPC) and
+MUST be audited per the `ai-mcp` invocation-audit requirement. No change to the
+JSON-RPC envelope or method contracts is required.
+
+#### Scenario: tools/list includes attributed tools
+- **GIVEN** an installed app exposes a `#[McpTool]`-annotated service method
+- **WHEN** an MCP client calls `tools/list`
+- **THEN** the attributed `{appId}.{toolName}` tool MUST appear in the catalog
+
+#### Scenario: tools/call invokes the owning app's method in-process
+- **GIVEN** an attributed tool `pipelinq.createLead` in the catalog
+- **WHEN** an MCP client calls `tools/call` with name `pipelinq.createLead`
+- **THEN** the call MUST resolve and invoke pipelinq's own service method in-process
+- **AND** the invocation MUST be audited
 
 ## Current Implementation Status
 - **Fully implemented -- Discovery API**: `McpDiscoveryService` (`lib/Service/McpDiscoveryService.php`) provides Tier 1 public catalog via `getCatalog()` and Tier 2 authenticated detail via `getCapabilityDetail()`. Routes registered at `/api/mcp/v1/discover` and `/api/mcp/v1/discover/{capability}` in `appinfo/routes.php`.
