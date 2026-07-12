@@ -191,7 +191,7 @@ class MagicTableHandler
                 currentColumns: $currentColumns,
                 requiredColumns: $requiredColumns
             );
-            $retypeColumns   = $this->magicMapper->findJsonbColumnsNeedingRetype(
+            $retypeColumns  = $this->magicMapper->findJsonbColumnsNeedingRetype(
                 currentColumns: $currentColumns,
                 requiredColumns: $requiredColumns
             );
