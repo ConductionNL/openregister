@@ -1,5 +1,5 @@
 ---
-status: done
+status: in-progress
 ---
 
 # MCP Discovery
@@ -8,6 +8,18 @@ status: done
 
 @e2e exclude MCP/REST discovery API — covered by Newman
 Provides AI agents and MCP-compatible clients with two complementary interfaces to the OpenRegister platform: a tiered REST-based discovery API for token-efficient API exploration, and a full MCP standard protocol endpoint implementing JSON-RPC 2.0 over Streamable HTTP for native tool and resource access. Together these interfaces allow any LLM or MCP client to discover capabilities, establish sessions, and perform CRUD operations on registers, schemas, and objects without prior knowledge of the API surface.
+
+## In-flight Changes (ADR-063 — MCP as Platform Abstraction)
+
+Per **ADR-063** (hydra), the JSON-RPC `tools/list` / `tools/call` surface gains
+tools OpenRegister derives centrally rather than tools each app hand-writes
+(status **in-progress**):
+
+- `or-mcp-derived-tool-provider` — serves schema-derived `{appId}.{schema}.{verb}`
+  CRUD tools (from the `x-openregister-mcp` dialect) over JSON-RPC, obeying
+  hand-written > derived precedence and auditing every `tools/call`.
+- `or-mcp-tool-attribute` — serves `#[McpTool]`-annotated `{appId}.{toolName}`
+  service tools, invoked in-process in the owning app (ADR-041, no cross-app RPC).
 
 ## Requirements
 
