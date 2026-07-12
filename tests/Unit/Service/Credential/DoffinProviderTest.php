@@ -114,7 +114,12 @@ class DoffinProviderTest extends TestCase
         $this->assertIsArray($github);
         $this->assertSame('https://api.github.com', $github['baseUrl']);
         $this->assertSame('token {secret}', $github['authScheme']['template']);
-        $this->assertCount(10, $github['allowRules']);
+
+        // 11 since 2026-07-12: `POST /repos/*\/pulls` was added so OpenBuild's
+        // export-to-GitHub can run through the broker instead of holding the user's
+        // PAT. Opening a PR is strictly less dangerous than the repo-write grants
+        // already in the list, and it retires an app-held credential.
+        $this->assertCount(11, $github['allowRules']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);
