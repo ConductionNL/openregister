@@ -66,6 +66,8 @@ class SchemasControllerTest extends TestCase
 
     private \Psr\Container\ContainerInterface&MockObject $container;
 
+    private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
+
     /**
      * The user the mocked session resolves to. SchemasController resolves the
      * session + group manager lazily via the container, so the container's
@@ -103,15 +105,26 @@ class SchemasControllerTest extends TestCase
         $groupManager->method('isAdmin')->willReturnCallback(fn() => $this->currentUser !== null);
         $groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
+        // destroy() also resolves SchemaDeletionService lazily (cascade + reclaim of an
+        // empty magic table on the zero-object path).
+        $this->schemaDeletionService = $this->createMock(
+            \OCA\OpenRegister\Service\SchemaDeletionService::class
+        );
+        $schemaDeletionService       = $this->schemaDeletionService;
+
         $this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
         $this->container->method('get')->willReturnCallback(
-                function ($id) use ($userSession, $groupManager) {
+                function ($id) use ($userSession, $groupManager, $schemaDeletionService) {
                     if ($id === \OCP\IUserSession::class) {
                         return $userSession;
                     }
 
                     if ($id === \OCP\IGroupManager::class) {
                         return $groupManager;
+                    }
+
+                    if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
+                        return $schemaDeletionService;
                     }
 
                     return null;

@@ -290,6 +290,26 @@ class TablesSchemaSyncService
                 continue;
             }
 
+            // **DELETE SAFETY (runtime-schema-api)**: no `force: true` here.
+            //
+            // These schemas are read-only MIRRORS of Nextcloud Tables tables — their
+            // objects live in Tables, not in a magic table — so the repaired
+            // SchemaMapper guard normally counts 0 and retiring a mirror of a
+            // now-deleted table proceeds exactly as before. If a magic table DOES hold
+            // rows for such a schema, that is real user data that this sync job has no
+            // mandate to destroy; refusing (and leaving the schema linked) is the safe
+            // outcome. Forcing here would silently orphan it.
+            try {
+                $this->schemaMapper->delete($schema);
+                $retired++;
+            } catch (Throwable $e) {
+                $this->logger->warning('[ObjectSource:tables] could not retire schema '.$schema->getSlug().': '.$e->getMessage());
+                // Do NOT unlink a schema we failed to delete: that would detach a
+                // surviving schema from its register and hide it from every editor —
+                // the precise data-corruption pattern this change exists to close.
+                continue;
+            }
+
             $schemaIds = array_values(
                 array_filter(
                     $schemaIds,
@@ -298,13 +318,6 @@ class TablesSchemaSyncService
                 )
             );
             $changed   = true;
-
-            try {
-                $this->schemaMapper->delete($schema);
-                $retired++;
-            } catch (Throwable $e) {
-                $this->logger->warning('[ObjectSource:tables] could not retire schema '.$schema->getSlug().': '.$e->getMessage());
-            }
         }//end foreach
 
         if ($changed === true) {

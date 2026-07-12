@@ -431,6 +431,14 @@ class SchemaTool extends AbstractTool
     /**
      * Delete a schema
      *
+     * **DELETE SAFETY (runtime-schema-api)**: this is an LLM-invokable schema-destruction
+     * surface with no controller in front of it. It deliberately does NOT pass
+     * `force: true` — SchemaMapper::delete() refuses a schema that still holds objects,
+     * and a model acting on an ambiguous instruction must not be able to orphan a user's
+     * data. The ValidationException surfaces to the model as a tool error naming the
+     * object count; deleting the objects is a separate, explicit human decision
+     * (`DELETE /api/schemas/{id}?deleteObjects=true`).
+     *
      * @param string $id Schema ID
      *
      * @return (mixed|string|true)[] Result of deletion
@@ -439,7 +447,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     public function deleteSchema(string $id): array
     {

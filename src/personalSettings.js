@@ -1,11 +1,20 @@
 import Vue from 'vue'
 import { translate, translatePlural } from '@nextcloud/l10n'
-import BrowserNotificationsSection from './components/userSettings/BrowserNotificationsSection.vue'
+import PersonalRoot from './components/userSettings/PersonalRoot.vue'
 
-// Personal-settings bundle (openregister-web-push-engine): mounts the per-user
-// browser Web Push opt-in toggle into the "Additional settings" personal
-// section. The toggle drives window.OCA.OpenRegister.WebPush, which the
-// always-loaded push client installs on every page.
+// Personal-settings bundle. Mounts the per-user browser Web Push opt-in toggle
+// (openregister-web-push-engine; it drives window.OCA.OpenRegister.WebPush, which
+// the always-loaded push client installs on every page) AND the credential-broker
+// wallet.
+//
+// The broker had shipped with no UI at all: CnCredentials existed in the library
+// and the REST surface existed on the server, but nothing mounted the component,
+// so the only way to create a credential was to hand-craft a POST. That is a large
+// part of why every app in the fleet kept custody of its own secrets — the
+// sanctioned path was not reachable from a browser.
+//
+// CnCredentials talks straight to /apps/openregister/api/credentials over axios and
+// holds no store, so this entry needs no Pinia.
 
 Vue.mixin({
 	methods: {
@@ -15,5 +24,5 @@ Vue.mixin({
 })
 
 new Vue({
-	render: h => h(BrowserNotificationsSection),
+	render: h => h(PersonalRoot),
 }).$mount('#openregister-personal-settings')
