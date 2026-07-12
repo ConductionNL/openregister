@@ -4121,6 +4121,38 @@ class MagicMapper extends AbstractObjectMapper
     }//end updateTableStructure()
 
     /**
+     * Identify required columns whose physical column is absent from the live table.
+     *
+     * Required columns are keyed by schema PROPERTY name (camelCase) while
+     * getExistingTableColumns() keys by PHYSICAL column name (snake_case). A raw
+     * array_diff_key() between the two therefore reports every multi-word
+     * camelCase property (e.g. `allowedApps` → `allowed_apps`) as missing on
+     * every request, forcing a table sync that can never converge. Resolve the
+     * physical name first — the same resolution addMissingColumns() applies.
+     *
+     * @param array $currentColumns  Live column definitions keyed by physical name (see
+     *                               getExistingTableColumns()).
+     * @param array $requiredColumns Required column definitions keyed by property name (see
+     *                               buildTableColumnsFromSchema()).
+     *
+     * @return array Missing column definitions keyed by property name.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+     */
+    public function findMissingColumns(array $currentColumns, array $requiredColumns): array
+    {
+        $missing = [];
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            $columnName = ($columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName));
+            if (isset($currentColumns[$columnName]) === false) {
+                $missing[$propertyName] = $columnDef;
+            }
+        }
+
+        return $missing;
+    }//end findMissingColumns()
+
+    /**
      * Identify object-typed columns still backed by PostgreSQL JSONB that need retyping
      * to JSON for key-order preservation (issue #1720).
      *

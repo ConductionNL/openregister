@@ -1705,9 +1705,12 @@ class ImportHandler
 
                 $schemaSlug = $schemaData['slug'] ?? $key;
 
-                // Find the schema we created in Pass 1.
+                // Find the schema we created in Pass 1. Schemas Pass 1 skipped
+                // as up-to-date (or already reported as failed) are not in the
+                // map — the expected case on every boot of an unchanged config,
+                // so debug rather than one warning per schema per import.
                 if (($this->schemasMap[$schemaSlug] ?? null) === null) {
-                    $this->logger->warning(
+                    $this->logger->debug(
                         message: '[ImportHandler] Schema not found in map for Pass 2 - skipping cross-reference resolution',
                         context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
                     );

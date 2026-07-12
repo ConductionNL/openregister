@@ -183,7 +183,14 @@ class MagicTableHandler
             // columns aren't still on the legacy JSONB storage type (issue #1720).
             $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
             $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-            $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
+            // Compare on PHYSICAL column names: required columns are keyed by
+            // property name (camelCase) while the live table reports snake_case,
+            // so a raw array_diff_key() flags every camelCase property as missing
+            // and the forced sync below re-fires on every request forever.
+            $missingColumns = $this->magicMapper->findMissingColumns(
+                currentColumns: $currentColumns,
+                requiredColumns: $requiredColumns
+            );
             $retypeColumns   = $this->magicMapper->findJsonbColumnsNeedingRetype(
                 currentColumns: $currentColumns,
                 requiredColumns: $requiredColumns
