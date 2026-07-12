@@ -38,7 +38,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
  */
 
@@ -66,7 +66,7 @@ final class McpTool
      * @param string|null $name        Local tool name; defaults to the method name when null.
      * @param string|null $description LLM-facing description; defaults to the docblock summary when null.
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
      */
     public function __construct(

@@ -34,9 +34,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
  */
 
@@ -76,7 +76,7 @@ final class AttributeToolScanner
      * @return list<array{id: string, name: string, description: string, inputSchema: array,
      *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}>
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
      */
     public function scanClasses(string $appId, array $classNames, LoggerInterface $logger): array
@@ -187,7 +187,7 @@ final class AttributeToolScanner
      * @return array{id: string, name: string, description: string, inputSchema: array,
      *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-001 — Attribute with defaults infers name and description)
      */
     private function buildDescriptor(string $appId, string $className, ReflectionMethod $method, McpTool $attribute): array
@@ -233,7 +233,7 @@ final class AttributeToolScanner
      *
      * @return array<string, mixed> JSON-Schema-shaped input schema.
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-001 — inputSchema is inferred from type hints and @param)
      */
     private function inferInputSchema(ReflectionMethod $method, array $docParams): array
@@ -295,7 +295,7 @@ final class AttributeToolScanner
      *
      * @return array<string, mixed>|null The output schema, or null when not inferable.
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-001 — outputSchema inferred from return type / @return where available)
      */
     private function inferOutputSchema(ReflectionMethod $method, ?string $docReturn): ?array

@@ -45,7 +45,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class AttributeToolProvider implements IMcpToolProvider
      *
      * @return list<array{id: string, name: string, description: string, inputSchema: array, outputSchema?: array}>
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-002 — Attributed method becomes a catalog tool on both surfaces)
      */
     public function getTools(): array
@@ -149,9 +149,9 @@ class AttributeToolProvider implements IMcpToolProvider
      *
      * @throws InvalidArgumentException If the tool id is unknown.
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-003 — Invocation is a direct in-process method call)
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-004 — Attributed-tool invocations obey the same audit + RBAC rules as derived tools)
      */
     public function invokeTool(string $toolId, array $arguments): array
@@ -254,7 +254,7 @@ class AttributeToolProvider implements IMcpToolProvider
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-004 — Attributed invocation is audited identically to a derived invocation)
      */
     private function writeAudit(string $toolId, string $paramsDigest, array $resultSummary, ?array $result): void

@@ -2694,7 +2694,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
      */
     private function collectSchemaDerivedMcpProviders(
@@ -2902,7 +2902,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
      */
     private function collectAttributeMcpProviders(

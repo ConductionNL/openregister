@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
  */
 
