@@ -1220,4 +1220,53 @@ class PermissionHandlerRbacTest extends TestCase
             'Authenticated create behaviour MUST be unchanged by the anonymous fail-closed gate'
         );
     }
+
+    public function testAuthenticatedPseudoGroupGrantsAnyLoggedInUser(): void
+    {
+        // A schema that grants 'read' to the 'authenticated' pseudo-group must
+        // allow any logged-in user at the PHP layer — symmetric with the SQL
+        // MagicRbacHandler — even when the user's real groups don't match.
+        $this->mockUser('user1', ['unrelated-group']);
+
+        $schema   = $this->createSchema(1, ['read' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'read'),
+            "'authenticated' MUST grant any logged-in user regardless of group membership"
+        );
+    }
+
+    public function testAuthenticatedPseudoGroupGrantsUserWithNoGroups(): void
+    {
+        // The grant is evaluated independently of the per-group foreach, so a
+        // user with zero groups still qualifies.
+        $this->mockUser('user2', []);
+
+        $schema   = $this->createSchema(1, ['update' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'update'),
+            "'authenticated' MUST grant a logged-in user who belongs to no groups"
+        );
+    }
+
+    public function testAuthenticatedPseudoGroupDeniesAnonymous(): void
+    {
+        // Anonymous callers are NOT 'authenticated' — a schema granting an
+        // action only to 'authenticated' must deny the unauthenticated principal.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['read' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'read'),
+            "'authenticated' MUST NOT grant an anonymous caller"
+        );
+    }
 }

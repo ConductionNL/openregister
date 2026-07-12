@@ -405,6 +405,12 @@ class Application extends App implements IBootstrap
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
 
+        // Register the PublicApiCorsMiddleware: reflects the request Origin onto
+        // `@PublicPage` responses so browsers on other origins (e.g. a marketing
+        // site posting a lead into a public-create schema) can read the result.
+        // Scoped to public endpoints only and never sets allow-credentials.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\PublicApiCorsMiddleware::class);
+
         // Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
         // Deprecation/Sunset/Link response headers to every chat/agents/
         // conversations controller response, and — only when an operator
