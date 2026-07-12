@@ -1,6 +1,6 @@
 ---
 retrofit: true
-status: done
+status: in-progress
 ---
 
 # AI MCP — LLPhant Tool Bridge
@@ -12,6 +12,24 @@ status: done
 OpenRegister exposes Model Context Protocol (MCP) tools to LLPhant-driven chat agents through two cooperating mechanisms: (1) an event-driven `ToolRegistry` that lets every installed Nextcloud app contribute LLPhant `ToolInterface` instances to the chat agent's tool-loop, and (2) an `McpProviderBridge` adapter that lifts `IMcpToolProvider` implementations (the per-app MCP plugin contract) into LLPhant function descriptors. The bridge handles the impedance mismatch between MCP's dot-namespaced tool ids and LLPhant/OpenAI/Ollama function-name constraints (no dots), and collapses JSON-Schema nullable types into the scalar strings LLPhant's `Parameter` accepts.
 
 This capability sits between `mcp-discovery` (the JSON-RPC MCP server — see `openspec/specs/mcp-discovery/spec.md`) and `chat-ai` (the chat orchestrator — see `openspec/specs/chat-ai/spec.md` and the in-flight `ai-chat-companion-orchestrator` change). Where `mcp-discovery` exposes tools to external MCP clients over JSON-RPC, `ai-mcp` exposes the same tools to the local chat orchestrator via LLPhant.
+
+## In-flight Changes (ADR-063 — MCP as Platform Abstraction)
+
+Per **ADR-063** (hydra), apps stop shipping their own MCP tool code; OpenRegister
+becomes the single MCP registry + server, deriving tools from schema declarations
+and PHP attributes. Three chained changes deliver OpenRegister's half (status
+**in-progress**):
+
+- `or-mcp-schema-dialect` — defines the declarative `x-openregister-mcp` schema
+  dialect (opt-in, coarse CRUD verb template) + its save-time validation.
+- `or-mcp-derived-tool-provider` — `SchemaDerivedToolProvider` emits
+  `{appId}.{schema}.{verb}` tools through the existing `IMcpToolProvider` ABI,
+  feeding both this bridge and the JSON-RPC surface; hand-written > derived
+  precedence; writes via `ObjectService` (RBAC intact); every invocation audited
+  (EU AI Act art.12/14).
+- `or-mcp-tool-attribute` — net-new `#[McpTool]` attribute + reflection scanner
+  registering annotated service methods as `{appId}.{toolName}`, executed
+  in-process in the owning app (ADR-041, no cross-app RPC), same audit + RBAC.
 
 ## Requirements
 ### Requirement: REQ-001 — Event-dispatched cross-app tool registration
