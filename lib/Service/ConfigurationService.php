@@ -568,11 +568,18 @@ class ConfigurationService
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
-        return $this->getImportHandler()->importFromApp(
-            appId: $appId,
-            data: $data,
-            version: $version,
-            force: $force
+        // App config imports are code-initiated (the data is the app's own
+        // shipped register config) but frequently run without a user session:
+        // app boot happens before session resolution and webcron never has
+        // one. Run them as a scoped system operation so RBAC treats them like
+        // the CLI cron path instead of denying them as anonymous every boot.
+        return SystemOperationContext::run(
+            fn (): array => $this->getImportHandler()->importFromApp(
+                appId: $appId,
+                data: $data,
+                version: $version,
+                force: $force
+            )
         );
     }//end importFromApp()
 
