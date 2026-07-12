@@ -41,6 +41,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
@@ -227,6 +228,15 @@ class PermissionHandler
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($_rbac === false) {
+            return true;
+        }
+
+        // Explicitly-scoped system operations (config imports at app boot,
+        // repair steps, webcron jobs run via ObjectService::runAsSystem())
+        // are trusted the same way CLI cron already is: these run without a
+        // user session, and the anonymous fail-closed policy (#1955) would
+        // otherwise deny the app maintaining its own objects on every boot.
+        if (SystemOperationContext::isActive() === true) {
             return true;
         }
 

@@ -130,6 +130,7 @@ class MagicTableHandlerTest extends TestCase
         $this->magicMapper->method('hasRegisterSchemaChanged')->willReturn(false);
         $this->magicMapper->method('buildTableColumnsFromSchema')->willReturn($required);
         $this->magicMapper->method('getExistingTableColumns')->willReturn($existing);
+        $this->magicMapper->method('findMissingColumns')->willReturn(['_tmlo' => $required['_tmlo']]);
 
         // Partial mock: intercept syncTableForRegisterSchema on the handler itself.
         $handler = $this->getMockBuilder(MagicTableHandler::class)

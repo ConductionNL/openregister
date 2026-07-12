@@ -810,6 +810,15 @@ trait MultiTenancyTrait
                 return true;
             }
 
+            // Explicitly-scoped system operations (app config imports at boot,
+            // webcron jobs) are equally trusted: app boot runs BEFORE the
+            // session user is resolved and webcron never has one, so without
+            // this the same operations that succeed under CLI cron are denied
+            // as anonymous under webcron on every request.
+            if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+                return true;
+            }
+
             return false;
         }
 

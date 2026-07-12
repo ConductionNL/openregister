@@ -343,6 +343,31 @@ class ObjectService
     }//end checkPermission()
 
     /**
+     * Run a callable as a trusted system operation.
+     *
+     * For app-initiated maintenance that legitimately runs without a user
+     * session — repair steps triggered from web requests, event listeners
+     * reacting to webcron-created objects, boot-time migrations. Inside the
+     * callable, RBAC treats the caller as a trusted system principal
+     * (mirroring the existing CLI-cron trust) instead of denying every write
+     * as anonymous. The elevation is scoped strictly to the callable and is
+     * released even when it throws.
+     *
+     * Only pass operations whose inputs originate from code or the app's own
+     * shipped data — never wrap handling of user-supplied request data.
+     *
+     * @param callable $operation The trusted operation to execute.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     */
+    public function runAsSystem(callable $operation)
+    {
+        return SystemOperationContext::run($operation);
+    }//end runAsSystem()
+
+    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID
