@@ -322,6 +322,49 @@ class RenderObject
     }//end getSchema()
 
     /**
+     * The names of a schema's write-only properties.
+     *
+     * `writeOnly: true` is JSON Schema's marker for a value a client may send but the
+     * server must never return — a password, an API key, a TOTP seed. renderEntity()
+     * strips these at the API boundary (openregister#380, ocon#147); the engine's internal
+     * `getObject()` is unaffected, so the value is still available to code that legitimately
+     * needs it (a synchronisation, the credential engine).
+     *
+     * Resolved through the same cached `getSchema()` used elsewhere in the renderer, so it
+     * adds no query on the hot path once the schema is cached. Returns an empty array when
+     * the schema cannot be resolved or declares no write-only property — i.e. the default
+     * for every existing schema, which is why this changes no behaviour until a schema opts
+     * in.
+     *
+     * @param int|string|null $schemaId The object's schema id/uuid/slug.
+     *
+     * @return array<int, string> The write-only property names.
+     */
+    private function getWriteOnlyProperties(int | string | null $schemaId): array
+    {
+        if ($schemaId === null || $schemaId === '') {
+            return [];
+        }
+
+        $schema = $this->getSchema(id: $schemaId);
+        if ($schema === null) {
+            return [];
+        }
+
+        $writeOnly = [];
+        foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? false) === true
+                && is_string($propertyName) === true
+            ) {
+                $writeOnly[] = $propertyName;
+            }
+        }
+
+        return $writeOnly;
+    }//end getWriteOnlyProperties()
+
+    /**
      * Enrich `recurrence`-typed properties with their upcoming occurrences.
      *
      * For every property declared as `type: recurrence` whose value is a non-empty
@@ -1507,6 +1550,64 @@ class RenderObject
 
             $entity->setObject($objectData);
         }
+
+        // Redact write-only properties (openregister#380, ocon#147).
+        //
+        // This runs AFTER every caller-controlled manipulation above (`fields`, `filter`,
+        // `unset`) precisely so that none of them can widen it: a caller cannot ask for a
+        // write-only field back the way it can with `fields`. It is server-side and
+        // schema-driven, which is the whole point — the lesson from the OpenConnector leak
+        // (ocon#147) was that controller-side redaction is bypassed the moment a second
+        // read path exists, and renderEntity() is the one path every API read renders through.
+        //
+        // `writeOnly` is JSON Schema's own word for "may be sent by the client, never
+        // returned by the server" — the exact semantic for a secret (a source's apikey, a
+        // portal account's mfaSecret). A property is affected only once its schema marks it
+        // `writeOnly: true`, so no existing schema changes behaviour until it opts in.
+        //
+        // Gated on `$_rbac`: a caller passing `_rbac: false` is trusted internal code
+        // reading in system context — the synchronisation engine, the credential engine,
+        // configuration import/export. That path MUST get the full object, or every
+        // integration that needs the secret breaks (it was reading through find(), which
+        // always renders). A real user-facing API read runs with `_rbac: true` (the
+        // default), and only that path is redacted. `_rbac: false` is already OR's marker
+        // for "access control is bypassed here"; reusing it keeps one trust boundary, not two.
+        if ($_rbac === true && is_array($objectData) === true && empty($objectData) === false) {
+            $writeOnly = $this->getWriteOnlyProperties(schemaId: $entity->getSchema());
+            if (empty($writeOnly) === false) {
+                $redacted = false;
+                foreach ($writeOnly as $property) {
+                    if (array_key_exists($property, $objectData) === true) {
+                        unset($objectData[$property]);
+                        $redacted = true;
+                    }
+                }
+
+                if ($redacted === true) {
+                    $entity->setObject($objectData);
+                }
+
+                // The object body is not the only copy. OpenRegister mirrors every scalar
+                // property into the `relations` search index, which `jsonSerialize()`
+                // surfaces as `@self.relations` — so a write-only secret leaks there even
+                // after the body is redacted (this is the "written to more than one place"
+                // half of ocon#147). Strip it from the index copy too.
+                $relations = $entity->getRelations();
+                if (is_array($relations) === true && empty($relations) === false) {
+                    $relationsRedacted = false;
+                    foreach ($writeOnly as $property) {
+                        if (array_key_exists($property, $relations) === true) {
+                            unset($relations[$property]);
+                            $relationsRedacted = true;
+                        }
+                    }
+
+                    if ($relationsRedacted === true) {
+                        $entity->setRelations($relations);
+                    }
+                }//end if
+            }//end if
+        }//end if
 
         // Handle inversed properties ONLY if we're extending an inverse property.
         // This is a performance optimization: inverse lookups are expensive (search all magic tables),
