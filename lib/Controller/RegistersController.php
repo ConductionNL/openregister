@@ -334,23 +334,39 @@ class RegistersController extends Controller
             && in_array('@self.stats', $extend, true) === true
         ) {
             $statsByRegisterId = [];
+
+            // Resolve every schema across every register in ONE query. This used to call
+            // schemaMapper->find() per schema id inside the loop below — on an instance
+            // with 76 registers and 1,231 schemas that is 1,231 round trips to render one
+            // list. Orphan ids simply do not come back from the bulk read, which is the
+            // same "skip it" outcome the old DoesNotExistException catch produced.
+            $allSchemaIds = [];
+            foreach ($registers as $register) {
+                foreach (($register->getSchemas() ?? []) as $schemaId) {
+                    $allSchemaIds[] = (int) $schemaId;
+                }
+            }
+
+            $schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
+
             foreach ($registers as $register) {
                 $expandedSchemas = [];
                 foreach (($register->getSchemas() ?? []) as $schemaId) {
-                    try {
-                        $expandedSchemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
-                    } catch (DoesNotExistException $e) {
-                        // Orphan IDs cannot contribute to stats; skip.
+                    $schema = ($schemasById[(int) $schemaId] ?? null);
+                    if ($schema === null) {
+                        // Orphan ID — cannot contribute to stats.
                         continue;
                     }
+
+                    $expandedSchemas[] = $schema;
                 }
 
                 $statsByRegisterId[(int) $register->getId()] = $this->registerService->getSchemaObjectCounts(
                     registerId: (int) $register->getId(),
                     schemas: $expandedSchemas
                 );
-            }
-        }
+            }//end foreach
+        }//end if
 
         $registersArr = $this->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
 

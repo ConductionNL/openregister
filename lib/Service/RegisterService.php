@@ -89,6 +89,16 @@ class RegisterService
     private readonly IDBConnection $db;
 
     /**
+     * Every magic table that exists, as a name => true lookup. Null until first read.
+     *
+     * Populated once per request by {@see magicTableExists()}. See that method for why
+     * this cache has to exist at all.
+     *
+     * @var array<string, true>|null
+     */
+    private ?array $magicTableNames = null;
+
+    /**
      * File service
      *
      * Handles file operations related to registers.
@@ -599,7 +609,7 @@ class RegisterService
                 }
 
                 $tableName   = 'openregister_table_'.$registerId.'_'.$schemaId;
-                $tableExists = $this->db->tableExists($tableName);
+                $tableExists = $this->magicTableExists(tableName: $tableName);
 
                 if ($tableExists !== true) {
                     // Table doesn't exist yet, return 0 for all stats.
@@ -663,6 +673,80 @@ class RegisterService
 
         return $result;
     }//end getSchemaObjectCounts()
+
+    /**
+     * Whether a magic table exists, answered from a single cached catalog read.
+     *
+     * IDBConnection::tableExists() looks cheap and is not: it goes to Doctrine's schema
+     * manager, which re-reads `information_schema.tables` on EVERY call. Called once per
+     * schema inside getSchemaObjectCounts()'s loop, that is one full catalog scan per
+     * schema — on a dev instance with 76 registers / 1,231 schemas / 1,960 magic tables
+     * it made `GET /api/registers?_extend[]=schemas&_extend[]=@self.stats` take **76
+     * seconds**, ~90% of it inside that one introspection query. The same call without
+     * the extend took 0.9s.
+     *
+     * So read the catalog ONCE and answer from memory. The cache is per-request (the
+     * service is request-scoped), which is the right lifetime: a magic table created by
+     * a concurrent request is irrelevant to a stats snapshot already in flight, and a
+     * table created by THIS request goes through MagicMapper, not here.
+     *
+     * @param string $tableName The unprefixed magic table name (`openregister_table_1_2`).
+     *
+     * @return bool True when the table exists.
+     *
+     * @spec exclude performance cache over information_schema; behaviour identical to tableExists()
+     */
+    private function magicTableExists(string $tableName): bool
+    {
+        if ($this->magicTableNames === null) {
+            $this->magicTableNames = [];
+
+            try {
+                // One catalog read for every magic table, prefix included — the caller
+                // passes unprefixed names, so strip the prefix back off on the way in.
+                $prefix = $this->db->getQueryBuilder()->getTableName('');
+                $prefix = trim($prefix, '`"');
+
+                $sql  = 'SELECT table_name FROM information_schema.tables';
+                $sql .= ' WHERE table_name LIKE :pattern';
+
+                $stmt = $this->db->prepare($sql);
+                $stmt->bindValue('pattern', $prefix.'openregister\_table\_%');
+                $stmt->execute();
+
+                while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
+                    $name = (string) ($row['table_name'] ?? '');
+                    if ($name === '') {
+                        continue;
+                    }
+
+                    // Key on the unprefixed name so callers need not know the prefix.
+                    if (str_starts_with($name, $prefix) === true) {
+                        $name = substr($name, strlen($prefix));
+                    }
+
+                    $this->magicTableNames[$name] = true;
+                }
+
+                $stmt->closeCursor();
+            } catch (\Throwable $e) {
+                // A failed catalog read must not become "no tables exist" — that would
+                // silently report every schema as having zero objects. Fall back to the
+                // slow-but-correct per-table check for the rest of this request. Catch
+                // \Throwable, not just \Exception: a stats read is not worth a fatal if
+                // the platform's query builder is unavailable.
+                $this->logger->warning(
+                    message: '[RegisterService] Could not list magic tables, falling back to per-table checks: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                $this->magicTableNames = null;
+
+                return $this->db->tableExists($tableName);
+            }//end try
+        }//end if
+
+        return isset($this->magicTableNames[$tableName]);
+    }//end magicTableExists()
 
     /**
      * Get a zero-initialized count stats array, optionally populated from a database row.
