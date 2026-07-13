@@ -4,57 +4,99 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 </script>
 
 <template>
-	<CnSchemaFormDialog
-		ref="schemaFormDialog"
-		:item="schemaStore.schemaItem"
-		:dialog-title="schemaStore.schemaItem?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
-		:available-schemas="computedAvailableSchemas"
-		:available-registers="computedAvailableRegisters"
-		:inherited-properties="computedInheritedProperties"
-		:user-groups="userGroups"
-		:loading-groups="loadingGroups"
-		:available-tags="availableTags"
-		:object-count="schemaStore.schemaItem?.stats?.objects?.total || 0"
-		show-extend-schema
-		show-analyze-properties
-		show-validate-objects
-		show-delete-objects
-		show-delete
-		:cancel-label="t('openregister', 'Cancel')"
-		:close-label="t('openregister', 'Close')"
-		:confirm-label="schemaStore.schemaItem?.id ? t('openregister', 'Save') : t('openregister', 'Create')"
-		:success-text="schemaStore.schemaItem?.id
-			? t('openregister', 'Schema successfully updated')
-			: t('openregister', 'Schema successfully created')"
-		:extend-schema-label="t('openregister', 'Extend Schema')"
-		:analyze-properties-label="t('openregister', 'Analyze Properties')"
-		:validate-objects-label="t('openregister', 'Validate Objects')"
-		:delete-objects-label="t('openregister', 'Delete Objects')"
-		:delete-label="t('openregister', 'Delete')"
-		:delete-objects-tooltip="t('openregister', 'Delete all objects in this schema')"
-		:cannot-delete-tooltip="t('openregister', 'Cannot delete: objects are still attached')"
-		@confirm="onConfirm"
-		@close="closeModal"
-		@extend-schema="extendSchema"
-		@analyze-properties="analyzeProperties"
-		@validate-objects="validateObjects"
-		@delete-objects="deleteObjects"
-		@delete-schema="deleteSchema" />
+	<!-- Vue 2 needs a single root; both dialogs teleport out of it anyway. -->
+	<div class="edit-schema">
+		<CnSchemaFormDialog
+			ref="schemaFormDialog"
+			:item="schemaStore.schemaItem"
+			:dialog-title="schemaStore.schemaItem?.id ? t('openregister', 'Edit Schema') : t('openregister', 'Add Schema')"
+			:available-schemas="computedAvailableSchemas"
+			:available-registers="computedAvailableRegisters"
+			:inherited-properties="computedInheritedProperties"
+			:user-groups="userGroups"
+			:loading-groups="loadingGroups"
+			:available-tags="availableTags"
+			:object-count="schemaStore.schemaItem?.stats?.objects?.total || 0"
+			show-extend-schema
+			show-analyze-properties
+			show-validate-objects
+			show-delete-objects
+			show-delete
+			:cancel-label="t('openregister', 'Cancel')"
+			:close-label="t('openregister', 'Close')"
+			:confirm-label="schemaStore.schemaItem?.id ? t('openregister', 'Save') : t('openregister', 'Create')"
+			:success-text="schemaStore.schemaItem?.id
+				? t('openregister', 'Schema successfully updated')
+				: t('openregister', 'Schema successfully created')"
+			:extend-schema-label="t('openregister', 'Extend Schema')"
+			:analyze-properties-label="t('openregister', 'Analyze Properties')"
+			:validate-objects-label="t('openregister', 'Validate Objects')"
+			:delete-objects-label="t('openregister', 'Delete Objects')"
+			:delete-label="t('openregister', 'Delete')"
+			:delete-objects-tooltip="t('openregister', 'Delete all objects in this schema')"
+			:cannot-delete-tooltip="t('openregister', 'Cannot delete: objects are still attached')"
+			@confirm="onConfirm"
+			@close="closeModal"
+			@extend-schema="extendSchema"
+			@analyze-properties="analyzeProperties"
+			@validate-objects="validateObjects"
+			@delete-objects="deleteObjects"
+			@delete-schema="deleteSchema" />
+
+		<!--
+			The server classified the edit as BREAKING and will not apply it until it is
+			acknowledged. Without this the edit was simply impossible from this app: the
+			store's fetch threw the response body away and the dialog showed
+			"HTTP error! status: 409". The wording comes from nc-vue's shared
+			describeSchemaChange, so this app and OpenBuild cannot say different things
+			about the same refusal.
+		-->
+		<NcDialog v-if="pendingBreaking"
+			:name="t('openregister', 'Breaking change')"
+			size="normal"
+			class="cn-dialog--nested"
+			@closing="cancelBreaking">
+			<p class="breaking-lead">
+				<strong>{{ t('openregister', 'This change breaks the existing data model:') }}</strong>
+			</p>
+			<ul class="breaking-changes">
+				<li v-for="(change, i) in pendingBreaking.changes" :key="`bc-${i}`">
+					{{ describeChange(change) }}
+				</li>
+			</ul>
+			<p>{{ t('openregister', 'Objects already stored under this schema may no longer match it. Save anyway?') }}</p>
+			<template #actions>
+				<NcButton type="tertiary" :disabled="savingBreaking" @click="cancelBreaking">
+					{{ t('openregister', 'Back to editing') }}
+				</NcButton>
+				<NcButton type="warning" :disabled="savingBreaking" @click="confirmBreaking">
+					{{ t('openregister', 'Save anyway') }}
+				</NcButton>
+			</template>
+		</NcDialog>
+	</div>
 </template>
 
 <script>
-import { CnSchemaFormDialog } from '@conduction/nextcloud-vue'
+import { NcDialog, NcButton } from '@nextcloud/vue'
+import { CnSchemaFormDialog, describeSchemaChange, SchemaBreakingChangeError } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'EditSchema',
 	components: {
 		CnSchemaFormDialog,
+		NcDialog,
+		NcButton,
 	},
 	data() {
 		return {
 			userGroups: [],
 			loadingGroups: false,
 			availableTags: [],
+			// Set when the server refused the save as a breaking change:
+			// `{ schema, changes }`. Drives the acknowledgement dialog.
+			pendingBreaking: null,
+			savingBreaking: false,
 		}
 	},
 	computed: {
@@ -194,21 +236,73 @@ export default {
 			}
 		},
 		/**
-		 * @param schemaData
+		 * Save the schema. A breaking change comes back as a question rather than a
+		 * failure — see the catch below.
+		 *
+		 * @param {object} schemaData - The schema payload from the editor.
+		 * @param {boolean} [acknowledgeBreaking] - Re-save accepting the breaking change.
+		 * @return {Promise<void>}
 		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
 		 */
-		async onConfirm(schemaData) {
+		async onConfirm(schemaData, acknowledgeBreaking = false) {
 			try {
-				const { response } = await schemaStore.saveSchema(schemaData)
+				const { response } = await schemaStore.saveSchema(schemaData, { acknowledgeBreaking })
+				this.pendingBreaking = null
 				this.$refs.schemaFormDialog.setResult({
 					success: response.ok,
 					error: response.ok ? undefined : 'Failed to save schema',
 				})
 			} catch (error) {
+				// A breaking change is a QUESTION, not a failure: show what the server
+				// objected to and let the user decide. Never acknowledge on their behalf —
+				// the first save always goes without the flag.
+				//
+				// The shared contract only raises this when the attempt was NOT already
+				// acknowledged, so an acknowledged save that is still refused falls through
+				// to the error branch instead of re-opening this prompt forever.
+				if (error instanceof SchemaBreakingChangeError) {
+					this.pendingBreaking = { schema: schemaData, changes: error.changes }
+					return
+				}
+				this.pendingBreaking = null
 				this.$refs.schemaFormDialog.setResult({
 					error: error.message || 'An error occurred while saving the schema',
 				})
 			}
+		},
+		/**
+		 * Re-save, this time accepting the breaking change.
+		 *
+		 * @spec exclude modal submit handler delegating to schemaStore.saveSchema
+		 */
+		async confirmBreaking() {
+			const pending = this.pendingBreaking
+			if (!pending) return
+			this.savingBreaking = true
+			try {
+				await this.onConfirm(pending.schema, true)
+			} finally {
+				this.savingBreaking = false
+			}
+		},
+		/**
+		 * Abandon the acknowledgement; the editor stays open with the edits intact.
+		 *
+		 * @spec exclude modal close UI handler
+		 */
+		cancelBreaking() {
+			this.pendingBreaking = null
+		},
+		/**
+		 * Render one flagged change. Shared with OpenBuild's editor so the two apps
+		 * describe the same refusal identically.
+		 *
+		 * @param {object} change - One change descriptor from the server.
+		 * @return {string} The description.
+		 * @spec exclude pure presentation helper
+		 */
+		describeChange(change) {
+			return describeSchemaChange(change, t)
 		},
 		/**
 		 * @spec exclude modal close UI handler
