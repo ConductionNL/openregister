@@ -61,10 +61,12 @@ class DocumentProcessingHandler
      * The enumerated entity-type labels that get localised in the placeholder.
      *
      * Canonical source = the `EntityRecognitionHandler::ENTITY_TYPE_*`
-     * constants. Each value is registered as a translatable string in `l10n/`
-     * (en + nl), so `IL10N::t()` returns the localised label on a Dutch
-     * instance (`PERSON` → `PERSOON`). A type NOT in this set falls back to its
-     * raw string (no translation, no error).
+     * constants, plus the GLiNER / OpenAnonymiser tags that are emitted without
+     * a dedicated constant (see `EntityRecognitionHandler::mapToPresidioEntityTypes`).
+     * Each value is registered as a translatable string in `l10n/` (en + nl),
+     * so `IL10N::t()` returns the localised label on a Dutch instance
+     * (`PERSON` → `PERSOON`). A type NOT in this set falls back to its raw
+     * string (no translation, no error).
      *
      * @var array<int, string>
      */
@@ -79,6 +81,14 @@ class DocumentProcessingHandler
         EntityRecognitionHandler::ENTITY_TYPE_IBAN,
         EntityRecognitionHandler::ENTITY_TYPE_SSN,
         EntityRecognitionHandler::ENTITY_TYPE_IP_ADDRESS,
+        // GLiNER / OpenAnonymiser tags emitted without a dedicated constant.
+        // Listed as literals so their placeholder label is localised too;
+        // DocuDesk's l10n carries the matching translations (resolve-identically).
+        'STREET_ADDRESS',
+        'BSN',
+        'KENTEKEN',
+        'INCOME',
+        'EDUCATION_LEVEL',
     ];
 
     /**
