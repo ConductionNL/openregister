@@ -45,6 +45,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Mcp;
 
 use OCA\OpenRegister\Mcp\Attribute\McpTool;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
@@ -165,6 +166,20 @@ final class AttributeToolScanner
                 continue;
             }
 
+            if ($this->hasUnknownScope(attribute: $attributeInstance) === true) {
+                $logger->warning(
+                    '[AttributeToolScanner] #[McpTool] declares an unrecognised `scope`; tool skipped',
+                    [
+                        'appId'         => $appId,
+                        'class'         => $className,
+                        'method'        => $method->getName(),
+                        'scope'         => $attributeInstance->scope,
+                        'allowedScopes' => McpAnnotationValidator::SCOPES,
+                    ]
+                );
+                continue;
+            }
+
             $descriptors[] = $this->buildDescriptor(
                 appId: $appId,
                 className: $className,
@@ -185,10 +200,13 @@ final class AttributeToolScanner
      * @param McpTool          $attribute The resolved attribute instance.
      *
      * @return array{id: string, name: string, description: string, inputSchema: array,
-     *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>}
+     *         outputSchema?: array, class: class-string, method: string, paramNames: list<string>,
+     *         readOnlyHint?: bool, destructiveHint?: bool, idempotentHint?: bool, scope?: string}
      *
      * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-001 — Attribute with defaults infers name and description)
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
      */
     private function buildDescriptor(string $appId, string $className, ReflectionMethod $method, McpTool $attribute): array
     {
@@ -220,8 +238,64 @@ final class AttributeToolScanner
             $descriptor['outputSchema'] = $outputSchema;
         }
 
+        // MCP 2025-11-25 annotation hints + advisory `scope` (REQ-ATTR-005).
+        // Forwarded additively — a key is present ONLY when the author set
+        // it on the attribute; nothing here ever infers or fabricates a
+        // value (an invented `readOnlyHint: true` on an unannotated write
+        // tool would be a dangerous lie). Both are advisory UX metadata
+        // only — OpenRegister RBAC and the owning method's own
+        // authorization remain the sole authoritative invoke-time gate.
+        foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
+            $hintValue = $this->hintValue(attribute: $attribute, hintKey: $hintKey);
+            if ($hintValue !== null) {
+                $descriptor[$hintKey] = $hintValue;
+            }
+        }
+
+        if ($attribute->scope !== null) {
+            $descriptor['scope'] = $attribute->scope;
+        }
+
         return $descriptor;
     }//end buildDescriptor()
+
+    /**
+     * Read one boolean hint property off the attribute by its
+     * {@see McpAnnotationValidator::HINT_KEYS} name.
+     *
+     * @param McpTool $attribute The resolved attribute instance.
+     * @param string  $hintKey   One of `readOnlyHint`/`destructiveHint`/`idempotentHint`.
+     *
+     * @return bool|null The declared hint value, or null when the author did not set it.
+     */
+    private function hintValue(McpTool $attribute, string $hintKey): ?bool
+    {
+        return match ($hintKey) {
+            'readOnlyHint'    => $attribute->readOnlyHint,
+            'destructiveHint' => $attribute->destructiveHint,
+            'idempotentHint'  => $attribute->idempotentHint,
+            default           => null,
+        };
+    }//end hintValue()
+
+    /**
+     * True when the attribute declares a non-null `scope` that is not one
+     * of {@see McpAnnotationValidator::SCOPES} (REQ-ATTR-005 — an unknown
+     * scope is rejected at scan time, mirroring how this scanner already
+     * fail-softs on other malformed attribute input).
+     *
+     * @param McpTool $attribute The resolved attribute instance.
+     *
+     * @return bool True when `scope` is set to an unrecognised value.
+     */
+    private function hasUnknownScope(McpTool $attribute): bool
+    {
+        if ($attribute->scope === null) {
+            return false;
+        }
+
+        return in_array($attribute->scope, McpAnnotationValidator::SCOPES, true) === false;
+    }//end hasUnknownScope()
 
     /**
      * Infer the `inputSchema` from the method's parameter type hints and
