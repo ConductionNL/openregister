@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\UrnService;
@@ -1633,10 +1634,25 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
-        // Apply property-level RBAC filtering.
-        // This filters out properties that the current user is not authorized to read.
-        $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
-        if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
+        // Apply property-level read stripping (writeOnly secrets + property
+        // `authorization.read`). This removes properties the caller must not see.
+        //
+        // Fail-safe ordering: this runs AFTER caller-supplied `fields`/`unset`
+        // selection above, so a caller can never re-surface a stripped property
+        // by naming it (e.g. ?fields=apiToken).
+        //
+        // Bypass for trusted internal reads — mirrors PermissionHandler::hasPermission().
+        // $_rbac === false is an explicit internal/service render that must see the
+        // full object (including writeOnly secrets it operates on), and
+        // SystemOperationContext::isActive() covers config boot / repair steps.
+        // A normal authenticated session always renders with $_rbac = true (the
+        // default), so end-user responses are always stripped.
+        $stripForRead = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+        $schema       = $readSchema ?? $this->getSchema(id: $entity->getSchema());
+        if ($stripForRead === true
+            && $schema !== null
+            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true)
+        ) {
             // Ensure @self metadata is available for property-level RBAC checks.
             // Property authorization can reference @self.organisation or _organisation,
             // which needs to be accessible during filtering (before jsonSerialize adds @self).

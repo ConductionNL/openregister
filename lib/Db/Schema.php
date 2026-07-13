@@ -633,6 +633,61 @@ class Schema extends Entity implements JsonSerializable
     }//end getPropertiesWithAuthorization()
 
     /**
+     * Check if any property in the schema is declared write-only.
+     *
+     * A property carrying the JSON Schema / OpenAPI keyword `writeOnly: true`
+     * is a write-only secret: it may be written but is NEVER returned on read,
+     * for anyone (including admin). This is used to decide whether the render
+     * path must apply write-only stripping (see PropertyRbacHandler).
+     *
+     * @return bool True if at least one property has writeOnly === true
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     */
+    public function hasWriteOnlyProperties(): bool
+    {
+        if (empty($this->properties) === true) {
+            return false;
+        }
+
+        foreach ($this->properties as $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? null) === true
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasWriteOnlyProperties()
+
+    /**
+     * Get the names of all properties declared write-only (`writeOnly: true`).
+     *
+     * @return array<int, string> List of write-only property names
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     */
+    public function getWriteOnlyProperties(): array
+    {
+        $result = [];
+
+        if (empty($this->properties) === true) {
+            return $result;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? null) === true
+            ) {
+                $result[] = (string) $propertyName;
+            }
+        }
+
+        return $result;
+    }//end getWriteOnlyProperties()
+
+    /**
      * Get the archive data
      *
      * @return array The archive data or empty array if null
