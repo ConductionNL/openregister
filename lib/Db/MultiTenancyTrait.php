@@ -763,6 +763,16 @@ trait MultiTenancyTrait
                 return true;
             }
 
+            // Explicitly-scoped system operations (app config imports at boot,
+            // webcron jobs run via ObjectService::runAsSystem()) are trusted the
+            // same way CLI is: app boot runs BEFORE the session user is resolved
+            // and webcron never has one. This is the effective anonymous guard
+            // for entity-level RBAC — it short-circuits before the later
+            // userSession check, exactly as the CLI branch does.
+            if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+                return true;
+            }
+
             // No user logged in, deny access.
             return false;
         }
