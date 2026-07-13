@@ -1344,17 +1344,22 @@ parameters:
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…'\\|'text/csv', array\\> but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/json', array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/pdf'\\|'application/vnd…'\\|'text/csv', array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/json', array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…'\\|'text/csv', array\\> but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…', array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/pdf'\\|'application/vnd…'\\|'text/csv', array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/pdf', array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
 		-
-			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…'\\|'text/csv', array\\> but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'text/csv', array\\{\\}\\>\\.$#"
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/pdf'\\|'application/vnd…'\\|'text/csv', array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/vnd…', array\\{\\}\\>\\.$#"
+			count: 1
+			path: lib/Controller/ObjectsController.php
+
+		-
+			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ObjectsController\\:\\:export\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'application/pdf'\\|'application/vnd…'\\|'text/csv', array\\>\\|OCP\\\\AppFramework\\\\Http\\\\JSONResponse but returns OCP\\\\AppFramework\\\\Http\\\\DataDownloadResponse\\<200, 'text/csv', array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ObjectsController.php
 
@@ -4525,6 +4530,11 @@ parameters:
 
 		-
 			message: "#^Property OCA\\\\OpenRegister\\\\Service\\\\ExportService\\:\\:\\$translationHandler is never read, only written\\.$#"
+			count: 1
+			path: lib/Service/ExportService.php
+
+		-
+			message: "#^Variable \\$output on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/ExportService.php
 
