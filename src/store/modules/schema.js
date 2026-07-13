@@ -1,4 +1,10 @@
 import { defineStore } from 'pinia'
+// The OpenRegister schema API contract lives in nc-vue, shared with OpenBuild's
+// editor, so the two cannot drift on what a 409 means (breaking change / schema
+// still has objects). See @conduction/nextcloud-vue src/utils/schemaApi.js.
+// Aliased: this store's own actions are also called saveSchema/deleteSchema, and an
+// unaliased call inside them would read like recursion.
+import { saveSchema as apiSaveSchema, deleteSchema as apiDeleteSchema } from '@conduction/nextcloud-vue'
 import { Schema } from '../../entities/index.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -157,78 +163,71 @@ export const useSchemaStore = defineStore('schema', {
 		/**
 		 * Delete a schema.
 		 *
+		 * Goes through nc-vue's shared schema API contract. When objects still use the
+		 * schema the server refuses, and that surfaces as `SchemaHasObjectsError`
+		 * carrying `.objectCount` — callers show it and re-invoke with
+		 * `deleteObjects: true` to cascade. It is never cascaded on the user's behalf:
+		 * that permanently deletes their data.
+		 *
 		 * @param {object} schemaItem - The schema to delete
+		 * @param {object} [options] - Options.
+		 * @param {boolean} [options.deleteObjects] - Also delete the objects (irreversible).
 		 * @return {Promise} Promise with response and data
+		 * @throws {Error} A `SchemaHasObjectsError` (from nc-vue) when objects remain and
+		 *   no cascade was asked for; it carries `.objectCount`.
 		 * @spec exclude API passthrough to DELETE /api/schemas/{id}
 		 */
-		async deleteSchema(schemaItem) {
+		async deleteSchema(schemaItem, options = {}) {
 			if (!schemaItem.id) {
 				throw new Error('No schema item to delete')
 			}
 
-			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
+			// NOTE: deliberately NOT wrapped in a try/catch that rebuilds the error. The
+			// typed refusals ARE the contract — flattening them into `new Error(...)`
+			// would strip `.objectCount` and leave the caller unable to offer the
+			// cascade, which is exactly the dead end this refactor removes.
+			const responseData = await apiDeleteSchema(schemaItem.id, {
+				deleteObjects: options.deleteObjects === true,
+			})
 
-			try {
-				const response = await fetch(endpoint, {
-					method: 'DELETE',
-				})
+			await this.refreshSchemaList()
+			this.setSchemaItem(null)
 
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				await this.refreshSchemaList()
-				this.setSchemaItem(null)
-
-				return { response, data: responseData }
-			} catch (error) {
-				console.error('Error deleting schema:', error)
-				throw new Error(`Failed to delete schema: ${error.message}`)
-			}
+			return { response: { ok: true }, data: responseData }
 		},
 		/**
 		 * Create or save a schema from store.
 		 *
+		 * Goes through nc-vue's shared schema API contract rather than a hand-rolled
+		 * fetch, so this editor and OpenBuild's cannot drift on what the server's
+		 * refusals mean. The raw fetch here threw away the response body entirely
+		 * (`HTTP error! status: 409`), which is why a breaking change surfaced as an
+		 * unexplained failure and could not be saved from this app at all.
+		 *
+		 * A breaking change raises `SchemaBreakingChangeError` carrying the
+		 * `changes[]` the server objected to — callers show those and re-invoke with
+		 * `acknowledgeBreaking: true`. It is never acknowledged on the user's behalf.
+		 *
 		 * @param {object} schemaItem - The schema to save
+		 * @param {object} [options] - Options.
+		 * @param {boolean} [options.acknowledgeBreaking] - Accept a breaking change.
 		 * @return {Promise} Promise with response and data
+		 * @throws {Error} A `SchemaBreakingChangeError` (from nc-vue) when the change is
+		 *   breaking and unacknowledged; it carries `.changes`.
 		 * @spec exclude API passthrough to POST/PUT /api/schemas
 		 */
-		async saveSchema(schemaItem) {
+		async saveSchema(schemaItem, options = {}) {
 			if (!schemaItem) {
 				throw new Error('No schema item to save')
 			}
 
-			const isNewSchema = !schemaItem?.id
-			const endpoint = isNewSchema
-				? '/index.php/apps/openregister/api/schemas'
-				: `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
-			const method = isNewSchema ? 'POST' : 'PUT'
-
 			// Clean the schema data before sending
 			const cleanedSchema = this.cleanSchemaForSave(schemaItem)
 
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedSchema),
-				},
-			)
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
+			const responseData = await apiSaveSchema(cleanedSchema, {
+				id: schemaItem?.id,
+				acknowledgeBreaking: options.acknowledgeBreaking === true,
+			})
 
 			if (!responseData || typeof responseData !== 'object') {
 				throw new Error('Invalid response data')
@@ -239,7 +238,7 @@ export const useSchemaStore = defineStore('schema', {
 			this.setSchemaItem(data)
 			this.refreshSchemaList()
 
-			return { response, data }
+			return { response: { ok: true }, data }
 
 		},
 		/**
