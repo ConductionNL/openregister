@@ -1107,6 +1107,17 @@ return [
 		['name' => 'webhooks#allLogs', 'url' => '/api/webhooks/logs', 'verb' => 'GET'],
 		['name' => 'webhooks#retry', 'url' => '/api/webhooks/logs/{logId}/retry', 'verb' => 'POST', 'requirements' => ['logId' => '\d+']],
 
+		// Scheduled reports (scheduled-report-jobs): owner-scoped recurring
+		// ExportService exports, delivered to Files + notification. Admin may
+		// list all via ?all=true. run-now queues ScheduledReportRunNowJob and
+		// never runs the export inline in the request.
+		['name' => 'scheduledReports#index', 'url' => '/api/scheduled-reports', 'verb' => 'GET'],
+		['name' => 'scheduledReports#show', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'scheduledReports#create', 'url' => '/api/scheduled-reports', 'verb' => 'POST'],
+		['name' => 'scheduledReports#update', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'scheduledReports#destroy', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'scheduledReports#runNow', 'url' => '/api/scheduled-reports/{id}/run-now', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+
 		// Workflow Engines - CRUD and health check.
 		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
 		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
