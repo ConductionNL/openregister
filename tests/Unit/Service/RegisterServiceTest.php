@@ -592,15 +592,15 @@ class RegisterServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($queryBuilder);
 
-        // Both tables exist.
-        $this->db->method('tableExists')
-            ->willReturn(true);
+        // Existence is now answered from a single information_schema read, cached per
+        // request — see RegisterService::magicTableExists(). Two prepared statements run:
+        // the catalog listing (which tables exist) and the UNION count. Dispatch on the
+        // SQL so the test does not depend on call order.
+        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_10', '*PREFIX*openregister_table_1_20']);
 
-        // Mock the prepared statement and its results.
-        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
-        $stmt->expects($this->once())
-            ->method('execute');
-        $stmt->method('fetch')
+        $countStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $countStmt->method('execute');
+        $countStmt->method('fetch')
             ->willReturnOnConsecutiveCalls(
                 [
                     'schema_id' => '10',
@@ -612,12 +612,14 @@ class RegisterServiceTest extends TestCase
                 ],
                 false
             );
-        $stmt->expects($this->once())
-            ->method('closeCursor');
+        $countStmt->method('closeCursor');
 
-        $this->db->expects($this->once())
-            ->method('prepare')
-            ->willReturn($stmt);
+        $this->db->method('prepare')
+            ->willReturnCallback(
+                function ($sql) use ($catalogStmt, $countStmt) {
+                    return (strpos($sql, 'information_schema') !== false) ? $catalogStmt : $countStmt;
+                }
+            );
 
         $result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
@@ -649,13 +651,12 @@ class RegisterServiceTest extends TestCase
         $this->db->method('getQueryBuilder')
             ->willReturn($queryBuilder);
 
-        // Table exists for schema 10.
-        $this->db->method('tableExists')
-            ->willReturn(true);
+        // Table exists for schema 10 (answered from the cached catalog listing).
+        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_10']);
 
-        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
-        $stmt->method('execute');
-        $stmt->method('fetch')
+        $countStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $countStmt->method('execute');
+        $countStmt->method('fetch')
             ->willReturnOnConsecutiveCalls(
                 [
                     'schema_id' => '10',
@@ -667,10 +668,14 @@ class RegisterServiceTest extends TestCase
                 ],
                 false
             );
-        $stmt->method('closeCursor');
+        $countStmt->method('closeCursor');
 
         $this->db->method('prepare')
-            ->willReturn($stmt);
+            ->willReturnCallback(
+                function ($sql) use ($catalogStmt, $countStmt) {
+                    return (strpos($sql, 'information_schema') !== false) ? $catalogStmt : $countStmt;
+                }
+            );
 
         $result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
@@ -694,11 +699,16 @@ class RegisterServiceTest extends TestCase
             ],
         ];
 
-        // Table does not exist.
-        $this->db->expects($this->once())
-            ->method('tableExists')
-            ->with('openregister_table_1_30')
-            ->willReturn(false);
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')
+            ->willReturnCallback(fn ($name) => '*PREFIX*'.$name);
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+
+        // The catalog listing comes back WITHOUT table _1_30, so it does not exist and
+        // no UNION count runs — the schema gets zero stats. (A non-existent table is
+        // answered from the cached listing, not a per-table tableExists() probe.)
+        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_99']);
+        $this->db->method('prepare')->willReturn($catalogStmt);
 
         $result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
 
@@ -735,4 +745,31 @@ class RegisterServiceTest extends TestCase
         // Should return empty array on exception (error is logged, not thrown).
         $this->assertIsArray($result);
     }
+
+    /**
+     * Build a prepared-statement mock that answers RegisterService::magicTableExists()'s
+     * information_schema listing: it fetches one `['table_name' => ...]` row per given
+     * table, then false.
+     *
+     * @param string[] $tableNames Prefixed magic table names the catalog should report.
+     *
+     * @return \OCP\DB\IPreparedStatement&\PHPUnit\Framework\MockObject\MockObject
+     */
+    private function makeCatalogStmt(array $tableNames)
+    {
+        $rows = [];
+        foreach ($tableNames as $name) {
+            $rows[] = ['table_name' => $name];
+        }
+
+        $rows[] = false;
+
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $stmt->method('bindValue');
+        $stmt->method('execute');
+        $stmt->method('fetch')->willReturnOnConsecutiveCalls(...$rows);
+        $stmt->method('closeCursor');
+
+        return $stmt;
+    }//end makeCatalogStmt()
 }
