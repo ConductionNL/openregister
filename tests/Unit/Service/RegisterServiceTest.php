@@ -596,7 +596,7 @@ class RegisterServiceTest extends TestCase
         // request — see RegisterService::magicTableExists(). Two prepared statements run:
         // the catalog listing (which tables exist) and the UNION count. Dispatch on the
         // SQL so the test does not depend on call order.
-        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_10', '*PREFIX*openregister_table_1_20']);
+        $catalogStmt = $this->makeCatalogStmt(['oc_openregister_table_1_10', 'oc_openregister_table_1_20']);
 
         $countStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $countStmt->method('execute');
@@ -652,7 +652,7 @@ class RegisterServiceTest extends TestCase
             ->willReturn($queryBuilder);
 
         // Table exists for schema 10 (answered from the cached catalog listing).
-        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_10']);
+        $catalogStmt = $this->makeCatalogStmt(['oc_openregister_table_1_10']);
 
         $countStmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
         $countStmt->method('execute');
@@ -684,6 +684,47 @@ class RegisterServiceTest extends TestCase
     }
 
     /**
+     * Regression: a real, db-prefixed catalog row must be recognised.
+     *
+     * magicTableExists() first tried to derive the prefix from
+     * `getQueryBuilder()->getTableName('')`, which returns the literal `*PREFIX*`
+     * placeholder — only resolved to the real prefix when a query is EXECUTED through the
+     * NC layer, never for a raw information_schema string. The resulting LIKE matched zero
+     * tables, so every schema was reported as having zero objects even when its table was
+     * full. The catalog here returns a normally-prefixed `oc_openregister_table_1_10`; the
+     * count must still come through.
+     *
+     * @return void
+     */
+    public function testCountsResolveWhenCatalogRowsCarryTheDbPrefix(): void
+    {
+        $schemas = [['id' => 10, 'properties' => []]];
+
+        $queryBuilder = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $queryBuilder->method('getTableName')
+            ->willReturnCallback(fn ($name) => '*PREFIX*'.$name);
+        $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
+
+        $catalogStmt = $this->makeCatalogStmt(['oc_openregister_table_1_10']);
+        $countStmt   = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $countStmt->method('execute');
+        $countStmt->method('fetch')->willReturnOnConsecutiveCalls(
+            ['schema_id' => '10', 'total' => '7', 'deleted' => '0', 'invalid' => '0', 'locked' => '0', 'size' => '0'],
+            false
+        );
+        $countStmt->method('closeCursor');
+
+        $this->db->method('prepare')->willReturnCallback(
+            fn ($sql) => (strpos($sql, 'information_schema') !== false) ? $catalogStmt : $countStmt
+        );
+
+        $result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);
+
+        // The prefixed catalog row was recognised, so the real count came through — not 0.
+        $this->assertSame(7, $result[10]['total']);
+    }
+
+    /**
      * Test getSchemaObjectCounts() handles magic table schemas when table does not exist.
      *
      * @return void
@@ -707,7 +748,7 @@ class RegisterServiceTest extends TestCase
         // The catalog listing comes back WITHOUT table _1_30, so it does not exist and
         // no UNION count runs — the schema gets zero stats. (A non-existent table is
         // answered from the cached listing, not a per-table tableExists() probe.)
-        $catalogStmt = $this->makeCatalogStmt(['*PREFIX*openregister_table_1_99']);
+        $catalogStmt = $this->makeCatalogStmt(['oc_openregister_table_1_99']);
         $this->db->method('prepare')->willReturn($catalogStmt);
 
         $result = $this->service->getSchemaObjectCounts(registerId: 1, schemas: $schemas);

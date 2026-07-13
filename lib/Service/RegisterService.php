@@ -702,16 +702,20 @@ class RegisterService
             $this->magicTableNames = [];
 
             try {
-                // One catalog read for every magic table, prefix included — the caller
-                // passes unprefixed names, so strip the prefix back off on the way in.
-                $prefix = $this->db->getQueryBuilder()->getTableName('');
-                $prefix = trim($prefix, '`"');
-
+                // Match on the `openregister_table_` marker itself, NOT on a computed
+                // prefix. The obvious `getQueryBuilder()->getTableName('')` returns the
+                // literal `*PREFIX*` placeholder — it is only resolved to the real prefix
+                // (`oc_`) when a query is EXECUTED through the NC DB layer, which a raw
+                // information_schema string never is. Building the LIKE from that
+                // placeholder matched zero tables, so every schema was reported as having
+                // zero objects. Anchoring on the marker sidesteps the prefix completely:
+                // the caller passes `openregister_table_R_S`, which is exactly the suffix
+                // we key on.
                 $sql  = 'SELECT table_name FROM information_schema.tables';
                 $sql .= ' WHERE table_name LIKE :pattern';
 
                 $stmt = $this->db->prepare($sql);
-                $stmt->bindValue('pattern', $prefix.'openregister\_table\_%');
+                $stmt->bindValue('pattern', '%openregister\_table\_%');
                 $stmt->execute();
 
                 while (($row = $stmt->fetch(\PDO::FETCH_ASSOC)) !== false) {
@@ -720,12 +724,14 @@ class RegisterService
                         continue;
                     }
 
-                    // Key on the unprefixed name so callers need not know the prefix.
-                    if (str_starts_with($name, $prefix) === true) {
-                        $name = substr($name, strlen($prefix));
+                    // Key on the unprefixed marker onwards, so callers need not know the
+                    // prefix: `oc_openregister_table_1_2` => `openregister_table_1_2`.
+                    $pos = strpos($name, 'openregister_table_');
+                    if ($pos === false) {
+                        continue;
                     }
 
-                    $this->magicTableNames[$name] = true;
+                    $this->magicTableNames[substr($name, $pos)] = true;
                 }
 
                 $stmt->closeCursor();
