@@ -67,6 +67,9 @@ use Throwable;
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
  * @psalm-suppress UnusedClass - Instantiated by Application::registerMcpToolProviders()
+ *
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
  */
 class SchemaDerivedToolProvider implements IMcpToolProvider
 {
@@ -118,6 +121,11 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      * Returns the owning app id.
      *
      * @return string The owning app id this instance was constructed for.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-001 — one derived provider instance per owning app,
+     *   getAppId() returning that owning app id so every emitted tool id keeps the
+     *   IMcpToolProvider ABI's "id prefix == getAppId()" invariant)
      */
     public function getAppId(): string
     {
@@ -127,9 +135,17 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
     /**
      * Returns one tool descriptor per declared verb of every opted-in schema.
      *
-     * @return list<array{id: string, name: string, description: string, inputSchema: array}>
+     * Each descriptor additionally carries the verb's declared MCP annotation
+     * hints and `scope` when the dialect set them (omitted when it didn't —
+     * no defaults are invented). Both are ADVISORY metadata for the LLM/UX
+     * only; OpenRegister RBAC via `ObjectService` remains the authoritative
+     * invoke-time gate (REQ-DERIVED-005, ADR-063).
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @return list<array{id: string, name: string, description: string, inputSchema: array,
+     *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
+     *         idempotentHint?: bool, scope?: string}>
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
      */
     public function getTools(): array
@@ -463,7 +479,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      * @param array<string, mixed> $verbConfig That verb's dialect config (description/scope/filters/hints).
      * @param string               $id         The fully-namespaced tool id.
      *
-     * @return array{id: string, name: string, description: string, inputSchema: array}
+     * @return array{id: string, name: string, description: string, inputSchema: array,
+     *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
+     *         idempotentHint?: bool, scope?: string}
      */
     private function buildDescriptor(Schema $schema, string $slug, string $verb, array $verbConfig, string $id): array
     {
@@ -485,6 +503,17 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
             if (isset($verbConfig[$hintKey]) === true) {
                 $descriptor[$hintKey] = $verbConfig[$hintKey];
             }
+        }
+
+        // The dialect's per-verb `scope` (REQ-DIALECT-001, validated against
+        // McpAnnotationValidator::SCOPES at save time). Emitted additively,
+        // omitted entirely when the verb didn't declare one — no default is
+        // invented, because an invented `read` would be a claim the dialect
+        // never made. Like the hints above it is ADVISORY metadata only:
+        // ObjectService RBAC remains the authoritative invoke-time gate
+        // (REQ-DERIVED-005), and nothing in this class reads `scope` back.
+        if (isset($verbConfig['scope']) === true) {
+            $descriptor['scope'] = $verbConfig['scope'];
         }
 
         return $descriptor;
