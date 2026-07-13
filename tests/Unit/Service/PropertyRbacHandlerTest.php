@@ -283,4 +283,136 @@ class PropertyRbacHandlerTest extends TestCase
 
         $this->assertFalse($this->handler->canReadProperty($schema, 'field1', ['_organisation' => 'wrong']));
     }
+
+    // ── writeOnly stripping (property-level-read-rbac / closes #380) ──
+
+    public function testWriteOnlyPropertyStrippedForNonAdmin(): void
+    {
+        $this->mockUser('user1', ['users']);
+        $schema = $this->createSchema([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+        $object = ['name' => 'prod', 'apiToken' => 's3cr3t'];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayNotHasKey('apiToken', $result);
+    }
+
+    public function testWriteOnlyPropertyStrippedForAdmin(): void
+    {
+        // Admin is NOT exempt from writeOnly stripping — a write-only secret
+        // is never returned on read to anyone.
+        $this->mockUser('admin', ['admin']);
+        $schema = $this->createSchema([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+        $object = ['name' => 'prod', 'apiToken' => 's3cr3t'];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayNotHasKey('apiToken', $result);
+    }
+
+    public function testWriteOnlyStrippedEvenWhenExplicitlyPresent(): void
+    {
+        // Field re-widening defence: even if the caller selected the writeOnly
+        // property (so it is present in the object handed to the filter), it is
+        // still removed because stripping is applied after field selection.
+        $this->mockUser('user1', ['users']);
+        $schema = $this->createSchema([
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        $result = $this->handler->filterReadableProperties($schema, ['apiToken' => 'leak']);
+        $this->assertSame([], $result);
+    }
+
+    public function testStripWriteOnlyPropertiesShortCircuitsWhenNone(): void
+    {
+        $schema = $this->createSchema([
+            'name' => ['type' => 'string'],
+        ]);
+        $object = ['name' => 'prod', 'extra' => 'x'];
+
+        $result = $this->handler->stripWriteOnlyProperties($schema, $object);
+        $this->assertSame($object, $result);
+    }
+
+    public function testWriteOnlyPropertyRemainsWritable(): void
+    {
+        // writeOnly restricts READ only; a writeOnly property with no update
+        // authorization is freely writable (not reported as unauthorized).
+        $this->mockUser('user1', ['users']);
+        $schema = $this->createSchema([
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        $result = $this->handler->getUnauthorizedProperties($schema, [], ['apiToken' => 'new'], false);
+        $this->assertSame([], $result);
+    }
+
+    // ── property authorization.read: member vs non-member vs admin ──
+
+    public function testPropertyAuthReadReturnedForGroupMember(): void
+    {
+        $this->mockUser('user1', ['secret-readers']);
+        $schema = $this->createSchema([
+            'internalNote' => [
+                'type'          => 'string',
+                'authorization' => ['read' => ['secret-readers']],
+            ],
+        ]);
+        $object = ['internalNote' => 'sensitive'];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertArrayHasKey('internalNote', $result);
+    }
+
+    public function testPropertyAuthReadStrippedForNonMember(): void
+    {
+        $this->mockUser('user1', ['users']);
+        $schema = $this->createSchema([
+            'internalNote' => [
+                'type'          => 'string',
+                'authorization' => ['read' => ['secret-readers']],
+            ],
+        ]);
+        $object = ['internalNote' => 'sensitive'];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertArrayNotHasKey('internalNote', $result);
+    }
+
+    public function testPropertyAuthReadReturnedForAdmin(): void
+    {
+        $this->mockUser('admin', ['admin']);
+        $schema = $this->createSchema([
+            'internalNote' => [
+                'type'          => 'string',
+                'authorization' => ['read' => ['secret-readers']],
+            ],
+        ]);
+        $object = ['internalNote' => 'sensitive'];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertArrayHasKey('internalNote', $result);
+    }
+
+    public function testObjectWithNeitherMechanismUnchanged(): void
+    {
+        // Regression: a schema with neither writeOnly nor read-authorization
+        // serialises identically for a plain user.
+        $this->mockUser('user1', ['users']);
+        $schema = $this->createSchema([
+            'name'  => ['type' => 'string'],
+            'count' => ['type' => 'integer'],
+        ]);
+        $object = ['name' => 'prod', 'count' => 3];
+
+        $result = $this->handler->filterReadableProperties($schema, $object);
+        $this->assertSame($object, $result);
+    }
 }

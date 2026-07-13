@@ -172,6 +172,26 @@ class MagicMapper extends AbstractObjectMapper
     private const METADATA_PREFIX = '_';
 
     /**
+     * Number of magic tables probed per UNION ALL query in the locate phase.
+     *
+     * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
+     * which on a live instance with ~1,000 live tables meant ~1,000 queries for
+     * a SINGLE bare-identifier lookup. The locate phase now probes tables in
+     * chunks of this size with one narrow UNION ALL query per chunk.
+     *
+     * Why 100:
+     * - Bounds the SQL text (~100 branches, ~20KB) and the bind-parameter count
+     *   (4 per branch = 400), far below the PostgreSQL 65535-parameter limit and
+     *   any practical MySQL packet limit.
+     * - Bounds the blast radius of a structurally broken table: a chunk whose
+     *   UNION fails degrades to a per-table probe for THAT chunk only (100
+     *   queries worst case) instead of poisoning the whole scan.
+     * - Larger chunks buy little: 1,000 tables need 10 queries at 100/chunk vs
+     *   2 at 500/chunk, while quadrupling the fallback cost and the SQL size.
+     */
+    private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
+
+    /**
      * Cache timeout for table existence checks (5 minutes)
      *
      * @internal Used by MagicTableHandler
@@ -1430,9 +1450,6 @@ class MagicMapper extends AbstractObjectMapper
         // Cast to text for UNION type compatibility (some columns are jsonb/json,
         // others datetime/bigint/text). Cast syntax is database-specific:
         // PostgreSQL uses `col::text`, MariaDB/MySQL requires `CAST(col AS CHAR)`.
-        // Bug WOO-520: the unconditional `::text` form crashed on MariaDB with
-        // `SQLSTATE[42000]: Syntax error near '::text AS _id, _uuid::text AS ...'`
-        // as soon as WOO-506's multi-schema `_schemas` search fired this path.
         $metadataColumns = $this->getMetadataColumns();
         $selectColumns   = [];
         foreach (array_keys($metadataColumns) as $metaCol) {
@@ -2511,16 +2528,21 @@ class MagicMapper extends AbstractObjectMapper
                 if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
                     foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
                         if (isset($oneOfItem['objectConfiguration']['handling']) === true
-                            && $oneOfItem['objectConfiguration']['handling'] === 'related-object'
+                            && ObjectHandling::relates($oneOfItem['objectConfiguration']['handling']) === true
                         ) {
-                            $handling = 'related-object';
+                            $handling = $oneOfItem['objectConfiguration']['handling'];
                             $hasRef   = isset($oneOfItem['$ref']);
                             break;
                         }
                     }
                 }
 
-                if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
+                // A relating property stores a bare UUID STRING, so it needs a VARCHAR
+                // column — never a json one. `related-schema` used to miss this branch and
+                // got a json column, into which the save path then wrote a raw UUID:
+                // "SQLSTATE[22P02]: invalid input syntax for type json ... Token
+                // "b25f5f9c" is invalid", surfaced to the user as a bare 403.
+                if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
                     // This is a reference to another object - store as UUID string.
                     $this->logger->debug(
                         message: '[MagicMapper] Detected object reference property, using VARCHAR for UUID storage',
@@ -3151,7 +3173,7 @@ class MagicMapper extends AbstractObjectMapper
                     $type         = $propertyConfig['type'] ?? 'string';
 
                     // Index single object references (stored as VARCHAR UUID).
-                    if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
+                    if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
                         $idxName = "{$tableName}_{$columnName}_rel_idx";
                         try {
                             $this->db->executeStatement(
@@ -4200,6 +4222,132 @@ class MagicMapper extends AbstractObjectMapper
     }//end findJsonbColumnsNeedingRetype()
 
     /**
+     * Find columns that must become a UUID reference but are still stored as JSON.
+     *
+     * When a property is turned INTO a relation (its handling becomes related-schema /
+     * related-object), it stops holding a document and starts holding a bare UUID
+     * string. A pre-existing `json` / `jsonb` column then rejects every write:
+     *
+     *     SQLSTATE[22P02]: invalid input syntax for type json
+     *     DETAIL: Token "b25f5f9c" is invalid.
+     *
+     * Without this the table is broken FOREVER after such an edit: the sync only ever
+     * added missing columns and migrated jsonb→json, so it never noticed that an
+     * existing column's type no longer matches what the property now stores.
+     *
+     * @param array $currentColumns  Live columns, keyed by physical column name.
+     * @param array $requiredColumns Desired columns, keyed by property name.
+     *
+     * @return array<string> Physical column names needing a JSON → VARCHAR retype.
+     *
+     * @spec exclude schema-drift detection for the magic-table sync
+     */
+    public function findRelationColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array
+    {
+        $needsRetype = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            // A relating property is declared as a plain string column (the UUID).
+            if (($columnDef['type'] ?? null) !== 'string') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if (in_array($currentType, ['json', 'jsonb'], true) === true) {
+                $needsRetype[] = $columnName;
+            }
+        }
+
+        return $needsRetype;
+    }//end findRelationColumnsNeedingRetype()
+
+    /**
+     * Convert JSON columns that now hold a UUID reference to VARCHAR.
+     *
+     * Deliberately NON-destructive. The ALTER is attempted inside a try/catch, and a
+     * failure is logged rather than swallowed or forced: a column that still holds real
+     * documents (because the property used to be `nested-*`) cannot become a 255-char
+     * UUID without losing data, and quietly truncating a user's objects to make a schema
+     * edit "work" would be far worse than the edit failing loudly.
+     *
+     * `#>> '{}'` extracts a JSON scalar as text, so a column that already holds only
+     * UUID strings (or nulls) converts cleanly.
+     *
+     * @param string $tableName       The magic table.
+     * @param array  $currentColumns  Live columns, keyed by physical column name.
+     * @param array  $requiredColumns Desired columns, keyed by property name.
+     *
+     * @return array<string> The column names actually retyped.
+     *
+     * @spec exclude magic-table DDL sync
+     */
+    public function migrateRelationColumnsToVarchar(string $tableName, array $currentColumns, array $requiredColumns): array
+    {
+        $platform = $this->db->getDatabasePlatform();
+        if (($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) === false) {
+            return [];
+        }
+
+        $columnsRetyped = [];
+
+        // The magic tables carry the Nextcloud table prefix (oc_). Quoting the bare
+        // name yields `relation "openregister_table_..." does not exist`.
+        $tableNameQuoted = $this->quoteIdentifier(
+            name: $this->getFullTableName(tableName: $tableName),
+            isPostgres: true
+        );
+
+        $relationColumns = $this->findRelationColumnsNeedingRetype(
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns
+        );
+
+        foreach ($relationColumns as $columnName) {
+            $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
+
+            $sql  = 'ALTER TABLE '.$tableNameQuoted;
+            $sql .= ' ALTER COLUMN '.$colNameQuoted;
+            $sql .= " TYPE VARCHAR(255) USING ".$colNameQuoted." #>> '{}'";
+
+            try {
+                $this->db->executeStatement($sql);
+                $columnsRetyped[] = $columnName;
+                $this->logger->info(
+                    message: '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                    ]
+                );
+            } catch (Exception $e) {
+                // The column still holds documents that will not fit a UUID. Say so —
+                // do NOT truncate the user's data to make the schema edit succeed.
+                $this->logger->warning(
+                    message: '[MagicMapper] Could not retype relation column to VARCHAR; it still holds data '
+                        .'that is not a UUID reference. Saves to this property will keep failing until '
+                        .'the existing values are migrated.',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        return $columnsRetyped;
+    }//end migrateRelationColumnsToVarchar()
+
+    /**
      * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
      *
      * PostgreSQL JSONB stores keys in hashed/normalised order, which silently drops
@@ -5039,6 +5187,134 @@ class MagicMapper extends AbstractObjectMapper
             ]
                 );
 
+        // Live (non-orphaned) magic tables, keyed by unprefixed table name.
+        $candidates = $this->getLiveMagicTables();
+
+        $this->logger->debug(
+            message: '[MagicMapper] findAcrossAllMagicTables: Found magic tables',
+            context: [
+                'file'  => __FILE__,
+                'line'  => __LINE__,
+                'count' => count($candidates),
+            ]
+                );
+
+        // Get register and schema mappers.
+        $registerMapper = \OC::$server->get(RegisterMapper::class);
+        $schemaMapper   = \OC::$server->get(SchemaMapper::class);
+
+        // `_id` is a bigint column, so a non-numeric identifier (a UUID, slug or URI)
+        // must never be bound against it — it would type-error on PostgreSQL. -1 is a
+        // sentinel that can never match a real row, leaving the string columns to match.
+        $idParam = -1;
+        if (is_numeric($identifier) === true) {
+            $idParam = (int) $identifier;
+        }
+
+        // PERF (N+1): this used to run one `SELECT *` PER magic table — ~1,000 queries
+        // for a single bare-identifier lookup on a live instance. It is now two phases.
+        // Phase 1 LOCATE: probe the tables in chunks of MAGIC_TABLE_SCAN_CHUNK_SIZE with
+        // one UNION ALL query per chunk that selects ONLY (table name, _id).
+        // Phase 2 FETCH: one `SELECT *` from the single table that actually holds the row.
+        // Every magic table shares the `_id`/`_uuid`/`_slug`/`_uri`/`_deleted` metadata
+        // columns, which is what makes the union across heterogeneous tables well-typed.
+        $chunks = array_chunk($candidates, self::MAGIC_TABLE_SCAN_CHUNK_SIZE, true);
+
+        foreach ($chunks as $chunk) {
+            $hit = $this->locateIdentifierInMagicTables(
+                tables: array_keys($chunk),
+                identifier: (string) $identifier,
+                idParam: $idParam,
+                includeDeleted: $includeDeleted
+            );
+
+            if ($hit === null) {
+                continue;
+            }
+
+            $tableName = $hit['table'];
+
+            // PHASE 2: fetch the full row from the one matching table.
+            $row = $this->fetchMagicRowById(
+                tableName: $tableName,
+                id: $hit['id'],
+                includeDeleted: $includeDeleted
+            );
+
+            if ($row === null) {
+                // The row vanished between locate and fetch (concurrent hard delete), or
+                // the table turned out to be unreadable. Keep scanning the other chunks.
+                continue;
+            }
+
+            $registerId = $chunk[$tableName]['registerId'];
+            $schemaId   = $chunk[$tableName]['schemaId'];
+
+            // Found the object! Get register and schema entities.
+            $register = null;
+            $schema   = null;
+
+            try {
+                $register = $registerMapper->find(id: $registerId, _multitenancy: false);
+                $schema   = $schemaMapper->find(id: $schemaId, _multitenancy: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[MagicMapper] findAcrossAllMagicTables: Could not load register/schema',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $registerId,
+                        'schemaId'   => $schemaId,
+                        'error'      => $e->getMessage(),
+                    ]
+                        );
+            }
+
+            // Convert row to ObjectEntity.
+            $object = $this->convertRowToObjectEntity(
+                row: $row,
+                _register: $register,
+                _schema: $schema
+            );
+
+            $this->logger->debug(
+                message: '[MagicMapper] findAcrossAllMagicTables: Found object',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'uuid'       => $object->getUuid(),
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                ]
+            );
+
+            return [
+                'object'   => $object,
+                'register' => $register,
+                'schema'   => $schema,
+            ];
+        }//end foreach
+
+        // Not found in any magic table.
+        throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
+    }//end findAcrossAllMagicTables()
+
+    /**
+     * List the live (non-orphaned) magic tables on this instance.
+     *
+     * A table `{prefix}openregister_table_{registerId}_{schemaId}` is only a live
+     * source when BOTH its register row and its schema row still exist; deleting a
+     * register or schema leaves its magic table behind, and dev/CI instances
+     * accumulate thousands of these. A stored object always lives in a table whose
+     * register AND schema rows exist, so filtering to live ids is coverage-safe.
+     *
+     * @return array<string, array{registerId: int, schemaId: int}> Unprefixed table
+     *                                                              name => parent ids.
+     *
+     * @throws \OCP\DB\Exception If a database error occurs.
+     */
+    private function getLiveMagicTables(): array
+    {
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
@@ -5050,30 +5326,12 @@ class MagicMapper extends AbstractObjectMapper
         $result = $stmt->execute([$tablePattern]);
         $tables = $result->fetchAll();
 
-        $this->logger->debug(
-            message: '[MagicMapper] findAcrossAllMagicTables: Found magic tables',
-            context: [
-                'file'  => __FILE__,
-                'line'  => __LINE__,
-                'count' => count($tables),
-            ]
-                );
-
-        // Get register and schema mappers.
-        $registerMapper = \OC::$server->get(RegisterMapper::class);
-        $schemaMapper   = \OC::$server->get(SchemaMapper::class);
-
-        // PERF: skip orphaned magic tables. A table `oc_openregister_table_{r}_{s}`
-        // is only a live source when both its register row `{r}` and schema row `{s}`
-        // still exist; deleting a register or schema leaves its magic table behind,
-        // and dev/CI instances accumulate thousands of these. A stored object always
-        // lives in a table whose register AND schema rows exist, so filtering to
-        // live ids is coverage-safe while cutting the per-lookup query count from
-        // "every table ever created" down to "tables with live parents".
+        // PERF: skip orphaned magic tables instead of querying them.
         $validRegisterIds = array_flip($this->getExistingIds(table: 'openregister_registers'));
         $validSchemaIds   = array_flip($this->getExistingIds(table: 'openregister_schemas'));
 
-        // Search each magic table.
+        $liveTables = [];
+
         foreach ($tables as $tableRow) {
             $fullTableName = $tableRow['table_name'] ?? $tableRow['TABLE_NAME'] ?? null;
             if ($fullTableName === null) {
@@ -5095,23 +5353,186 @@ class MagicMapper extends AbstractObjectMapper
                 continue;
             }
 
+            $liveTables[$tableName] = [
+                'registerId' => $registerId,
+                'schemaId'   => $schemaId,
+            ];
+        }//end foreach
+
+        return $liveTables;
+    }//end getLiveMagicTables()
+
+    /**
+     * Locate which magic table in a chunk holds an identifier (phase 1 of the scan).
+     *
+     * Probes every table in the chunk with a SINGLE `UNION ALL` query instead of one
+     * query per table.
+     *
+     * MEMORY SAFETY: each union branch selects only two scalar columns — the table
+     * name and the bigint `_id` — and the whole union is capped with `LIMIT 1`. It
+     * never selects full object rows. A `SELECT *` union across every magic table
+     * materialises every matching object body at once and has previously caused an
+     * out-of-memory event on this codebase; the narrow projection plus the chunking
+     * plus the LIMIT keep the result set at a single tiny row regardless of how many
+     * tables exist.
+     *
+     * @param string[] $tables         Unprefixed magic table names to probe.
+     * @param string   $identifier     The identifier to match against _uuid/_slug/_uri.
+     * @param int      $idParam        Numeric identifier for the bigint _id column, or -1.
+     * @param bool     $includeDeleted Whether to include soft-deleted objects.
+     *
+     * @return array{table: string, id: int}|null The matching table and row id, or null.
+     */
+    private function locateIdentifierInMagicTables(
+        array $tables,
+        string $identifier,
+        int $idParam,
+        bool $includeDeleted
+    ): ?array {
+        if (empty($tables) === true) {
+            return null;
+        }
+
+        $prefix     = $this->getTablePrefix();
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
+        $idCol      = $this->quoteIdentifier(name: self::METADATA_PREFIX.'id', isPostgres: $isPostgres);
+        $uuidCol    = $this->quoteIdentifier(name: self::METADATA_PREFIX.'uuid', isPostgres: $isPostgres);
+        $slugCol    = $this->quoteIdentifier(name: self::METADATA_PREFIX.'slug', isPostgres: $isPostgres);
+        $uriCol     = $this->quoteIdentifier(name: self::METADATA_PREFIX.'uri', isPostgres: $isPostgres);
+        $deletedCol = $this->quoteIdentifier(name: self::METADATA_PREFIX.'deleted', isPostgres: $isPostgres);
+
+        // Exclude deleted unless requested.
+        $deletedCondition = ' AND '.$deletedCol.' IS NULL';
+        if ($includeDeleted === true) {
+            $deletedCondition = '';
+        }
+
+        $branches = [];
+
+        foreach ($tables as $tableName) {
+            // SAFETY GATE: only ever embed a table name that matches the strict magic
+            // table pattern. Names originate from information_schema and are re-validated
+            // here, so neither the FROM clause nor the src_table literal can be injected.
+            // The identifier itself is NEVER interpolated — it is always bound (below).
+            if (preg_match('/^openregister_table_(\d+)_(\d+)$/', $tableName) !== 1) {
+                continue;
+            }
+
+            $quotedTable = $this->quoteIdentifier(name: $prefix.$tableName, isPostgres: $isPostgres);
+
+            $branches[] = sprintf(
+                "(SELECT '%s' AS src_table, %s AS hit_id FROM %s WHERE (%s = ? OR %s = ? OR %s = ? OR %s = ?)%s)",
+                $tableName,
+                $idCol,
+                $quotedTable,
+                $idCol,
+                $uuidCol,
+                $slugCol,
+                $uriCol,
+                $deletedCondition
+            );
+        }//end foreach
+
+        if (empty($branches) === true) {
+            return null;
+        }
+
+        $sql = implode(' UNION ALL ', $branches).' LIMIT 1';
+
+        try {
+            $stmt        = $this->db->prepare($sql);
+            $branchCount = count($branches);
+            $position    = 1;
+
+            // Bind 4 parameters per branch, in branch order. The _id placeholder is bound
+            // as a true integer so a UUID never reaches the bigint column.
+            for ($branch = 0; $branch < $branchCount; $branch++) {
+                $stmt->bindValue($position, $idParam, IQueryBuilder::PARAM_INT);
+                $position++;
+                $stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
+                $position++;
+                $stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
+                $position++;
+                $stmt->bindValue($position, $identifier, IQueryBuilder::PARAM_STR);
+                $position++;
+            }
+
+            $result = $stmt->execute();
+            $row    = $result->fetch();
+            $result->closeCursor();
+        } catch (\Exception $e) {
+            // One structurally broken table fails the whole chunk query. Degrade to a
+            // per-table probe for THIS chunk only, so a single bad table cannot hide the
+            // other live tables in the chunk (the old code skipped bad tables one by one).
+            $this->logger->debug(
+                message: '[MagicMapper] findAcrossAllMagicTables: UNION locate failed, probing chunk per table',
+                context: [
+                    'file'   => __FILE__,
+                    'line'   => __LINE__,
+                    'tables' => count($branches),
+                    'error'  => $e->getMessage(),
+                ]
+            );
+
+            return $this->locateIdentifierPerTable(
+                tables: $tables,
+                identifier: $identifier,
+                idParam: $idParam,
+                includeDeleted: $includeDeleted
+            );
+        }//end try
+
+        if ($row === false || $row === null) {
+            return null;
+        }
+
+        $hitTable = ($row['src_table'] ?? $row['SRC_TABLE'] ?? null);
+        $hitId    = ($row['hit_id'] ?? $row['HIT_ID'] ?? null);
+
+        if ($hitTable === null || $hitId === null) {
+            return null;
+        }
+
+        return [
+            'table' => (string) $hitTable,
+            'id'    => (int) $hitId,
+        ];
+    }//end locateIdentifierInMagicTables()
+
+    /**
+     * Locate an identifier by probing each magic table separately (chunk fallback).
+     *
+     * Used only when the chunked UNION query fails — typically because one table in
+     * the chunk lacks the expected metadata columns. Mirrors the original per-table
+     * behaviour: a table that errors is logged and skipped. Still selects only `_id`,
+     * never the full row.
+     *
+     * @param string[] $tables         Unprefixed magic table names to probe.
+     * @param string   $identifier     The identifier to match against _uuid/_slug/_uri.
+     * @param int      $idParam        Numeric identifier for the bigint _id column, or -1.
+     * @param bool     $includeDeleted Whether to include soft-deleted objects.
+     *
+     * @return array{table: string, id: int}|null The matching table and row id, or null.
+     */
+    private function locateIdentifierPerTable(
+        array $tables,
+        string $identifier,
+        int $idParam,
+        bool $includeDeleted
+    ): ?array {
+        $idCol      = self::METADATA_PREFIX.'id';
+        $uuidCol    = self::METADATA_PREFIX.'uuid';
+        $slugCol    = self::METADATA_PREFIX.'slug';
+        $uriCol     = self::METADATA_PREFIX.'uri';
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+
+        foreach ($tables as $tableName) {
             try {
-                // Build query to search this table.
-                // NOTE: Use $tableName (without prefix) because QueryBuilder adds prefix automatically.
+                // NOTE: Use the unprefixed name because QueryBuilder adds the prefix.
                 $searchQb = $this->db->getQueryBuilder();
-                $searchQb->select('*')->from($tableName);
-
-                // Build identifier conditions.
-                $idCol      = self::METADATA_PREFIX.'id';
-                $uuidCol    = self::METADATA_PREFIX.'uuid';
-                $slugCol    = self::METADATA_PREFIX.'slug';
-                $uriCol     = self::METADATA_PREFIX.'uri';
-                $deletedCol = self::METADATA_PREFIX.'deleted';
-
-                $idParam = -1;
-                if (is_numeric($identifier) === true) {
-                    $idParam = (int) $identifier;
-                }
+                $searchQb->select($idCol)->from($tableName);
 
                 $idExpr   = $searchQb->expr()->eq(
                     $idCol,
@@ -5138,55 +5559,18 @@ class MagicMapper extends AbstractObjectMapper
                     $searchQb->andWhere($searchQb->expr()->isNull($deletedCol));
                 }
 
+                $searchQb->setMaxResults(1);
+
                 $searchResult = $searchQb->executeQuery();
                 $row          = $searchResult->fetch();
                 $searchResult->closeCursor();
 
-                if ($row !== false) {
-                    // Found the object! Get register and schema entities.
-                    $register = null;
-                    $schema   = null;
-
-                    try {
-                        $register = $registerMapper->find(id: $registerId, _multitenancy: false);
-                        $schema   = $schemaMapper->find(id: $schemaId, _multitenancy: false);
-                    } catch (\Exception $e) {
-                        $this->logger->warning(
-                            message: '[MagicMapper] findAcrossAllMagicTables: Could not load register/schema',
-                            context: [
-                                'file'       => __FILE__,
-                                'line'       => __LINE__,
-                                'registerId' => $registerId,
-                                'schemaId'   => $schemaId,
-                                'error'      => $e->getMessage(),
-                            ]
-                                );
-                    }
-
-                    // Convert row to ObjectEntity.
-                    $object = $this->convertRowToObjectEntity(
-                        row: $row,
-                        _register: $register,
-                        _schema: $schema
-                    );
-
-                    $this->logger->debug(
-                        message: '[MagicMapper] findAcrossAllMagicTables: Found object',
-                        context: [
-                            'file'       => __FILE__,
-                            'line'       => __LINE__,
-                            'uuid'       => $object->getUuid(),
-                            'registerId' => $registerId,
-                            'schemaId'   => $schemaId,
-                        ]
-                    );
-
+                if ($row !== false && $row !== null && isset($row[$idCol]) === true) {
                     return [
-                        'object'   => $object,
-                        'register' => $register,
-                        'schema'   => $schema,
+                        'table' => $tableName,
+                        'id'    => (int) $row[$idCol],
                     ];
-                }//end if
+                }
             } catch (\Exception $e) {
                 // Table might not have the expected structure, skip it.
                 $this->logger->debug(
@@ -5194,7 +5578,7 @@ class MagicMapper extends AbstractObjectMapper
                     context: [
                         'file'  => __FILE__,
                         'line'  => __LINE__,
-                        'table' => $fullTableName,
+                        'table' => $tableName,
                         'error' => $e->getMessage(),
                     ]
                 );
@@ -5202,9 +5586,68 @@ class MagicMapper extends AbstractObjectMapper
             }//end try
         }//end foreach
 
-        // Not found in any magic table.
-        throw new DoesNotExistException("Object with identifier '$identifier' not found in any magic table");
-    }//end findAcrossAllMagicTables()
+        return null;
+    }//end locateIdentifierPerTable()
+
+    /**
+     * Fetch one full magic-table row by its primary key (phase 2 of the scan).
+     *
+     * This is the only place the scan selects `*`, and it runs against exactly ONE
+     * table — the one the locate phase matched.
+     *
+     * @param string $tableName      Unprefixed magic table name.
+     * @param int    $id             The `_id` primary key of the row to fetch.
+     * @param bool   $includeDeleted Whether to include soft-deleted objects.
+     *
+     * @return array<string, mixed>|null The row, or null when it is gone/unreadable.
+     */
+    private function fetchMagicRowById(string $tableName, int $id, bool $includeDeleted): ?array
+    {
+        $idCol      = self::METADATA_PREFIX.'id';
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+
+        try {
+            // NOTE: Use the unprefixed name because QueryBuilder adds the prefix.
+            $fetchQb = $this->db->getQueryBuilder();
+            $fetchQb->select('*')->from($tableName);
+            $fetchQb->where(
+                $fetchQb->expr()->eq(
+                    $idCol,
+                    $fetchQb->createNamedParameter($id, IQueryBuilder::PARAM_INT)
+                )
+            );
+
+            // Exclude deleted unless requested — the locate phase already applied this,
+            // re-applying it keeps the semantics exact under concurrent soft deletes.
+            if ($includeDeleted === false) {
+                $fetchQb->andWhere($fetchQb->expr()->isNull($deletedCol));
+            }
+
+            $fetchQb->setMaxResults(1);
+
+            $fetchResult = $fetchQb->executeQuery();
+            $row         = $fetchResult->fetch();
+            $fetchResult->closeCursor();
+        } catch (\Exception $e) {
+            $this->logger->debug(
+                message: '[MagicMapper] findAcrossAllMagicTables: Error fetching row',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'table' => $tableName,
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return null;
+        }//end try
+
+        if ($row === false || $row === null) {
+            return null;
+        }
+
+        return $row;
+    }//end fetchMagicRowById()
 
     /**
      * Find multiple objects by UUIDs across ALL magic tables.

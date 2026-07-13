@@ -33,10 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 
 /**
  * Adapter from IMcpToolProvider to ToolInterface.
+ *
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-DERIVED-002 — Both serving surfaces are fed from one derivation)
  */
 class McpProviderBridge implements ToolInterface
 {
@@ -119,9 +123,21 @@ class McpProviderBridge implements ToolInterface
     /**
      * Each MCP descriptor becomes one LLphant function definition.
      *
+     * Additively forwards the ADR-063 annotation hints
+     * (`readOnlyHint` / `destructiveHint` / `idempotentHint`) and `scope`
+     * onto the LLphant descriptor when the provider set them, so chat-surface
+     * consumers reached through {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::listTools()}
+     * see the same annotations the JSON-RPC `tools/list` surface already
+     * carries (previously dropped here — OR#369). A key is omitted entirely
+     * when the provider descriptor didn't set it; no defaults are invented.
+     * These hints are ADVISORY UX metadata only — OpenRegister's
+     * `ObjectService` RBAC enforcement remains the sole authoritative
+     * invoke-time gate, unaffected by this or any hint value (ADR-063).
+     *
      * @return array<int,array<string,mixed>> LLphant-shaped function descriptors.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-002 — Both serving surfaces are fed from one derivation)
      */
     public function getFunctions(): array
     {
@@ -140,12 +156,24 @@ class McpProviderBridge implements ToolInterface
             // expose the raw MCP id as the function name AND rewrite a
             // safe alias (underscore) so both forms route back the same way.
             $inputSchema = $descriptor['inputSchema'] ?? ['type' => 'object', 'properties' => []];
-            $functions[] = [
+            $function    = [
                 'name'        => $this->safeFunctionName(mcpId: $rawId),
                 'mcpId'       => $rawId,
                 'description' => (string) ($descriptor['description'] ?? $descriptor['name'] ?? $rawId),
                 'parameters'  => $this->sanitiseSchema(schema: $inputSchema),
             ];
+
+            foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
+                if (array_key_exists($hintKey, $descriptor) === true) {
+                    $function[$hintKey] = $descriptor[$hintKey];
+                }
+            }
+
+            if (array_key_exists('scope', $descriptor) === true) {
+                $function['scope'] = $descriptor['scope'];
+            }
+
+            $functions[] = $function;
         }//end foreach
 
         return $functions;

@@ -92,7 +92,19 @@ class SchemaDerivedDualSurfaceTest extends TestCase
                         'get'    => [],
                         'create' => [],
                         'update' => [],
-                        'delete' => [],
+                        'delete' => [
+                            // ADR-063 annotation hints + `scope` on this verb
+                            // ONLY — used by
+                            // testDerivedToolHintsSurviveTheFacadeBridge() to
+                            // prove neither is dropped anywhere between the
+                            // derived provider and the facade (OR#369), and
+                            // that the OTHER verbs — which declare no hints and
+                            // no scope — stay phantom-key-free.
+                            'readOnlyHint'    => false,
+                            'destructiveHint' => true,
+                            'idempotentHint'  => true,
+                            'scope'           => 'delete',
+                        ],
                     ],
                 ],
             ]
@@ -277,6 +289,92 @@ class SchemaDerivedDualSurfaceTest extends TestCase
         $this->assertContains('pipelinq.lead.get', $mcpIds);
 
     }//end testDerivedToolIsVisibleOnFacadeSurface()
+
+
+    /**
+     * Regression test for OR#369 (both halves): McpProviderBridge::getFunctions()
+     * used to build every LLphant descriptor from exactly four keys (`name`,
+     * `mcpId`, `description`, `parameters`), silently dropping the ADR-063
+     * annotation hints SchemaDerivedToolProvider sets — AND
+     * SchemaDerivedToolProvider::buildDescriptor() never emitted the dialect's
+     * per-verb `scope` onto the descriptor at all, so `scope` was absent on
+     * BOTH surfaces. This wires the REAL registry → listener → bridge → facade
+     * chain (no bridge mocking) and asserts the hints AND `scope` declared on
+     * `pipelinq.lead.delete` (see {@see leadSchema()}) survive all the way to
+     * `ToolRegistryFacade::listTools()`, while a verb declaring neither
+     * (`pipelinq.lead.get`) gains no phantom keys and the pre-existing four
+     * descriptor keys are unchanged.
+     */
+    public function testDerivedToolHintsSurviveTheFacadeBridge(): void
+    {
+        $facade = $this->buildFacade();
+
+        $descriptors = $facade->listTools();
+
+        $deleteIndex = array_search('pipelinq.lead.delete', array_column($descriptors, 'mcpId'), true);
+        $this->assertIsInt($deleteIndex);
+        $delete = $descriptors[$deleteIndex];
+
+        $this->assertArrayHasKey('readOnlyHint', $delete);
+        $this->assertFalse($delete['readOnlyHint']);
+        $this->assertArrayHasKey('destructiveHint', $delete);
+        $this->assertTrue($delete['destructiveHint']);
+        $this->assertArrayHasKey('idempotentHint', $delete);
+        $this->assertTrue($delete['idempotentHint']);
+
+        // The dialect's per-verb `scope` reaches the facade too — emitted by
+        // the derived provider, forwarded by the bridge.
+        $this->assertArrayHasKey('scope', $delete);
+        $this->assertSame('delete', $delete['scope']);
+
+        // The pre-existing four keys are unchanged by the hint/scope forwarding.
+        $this->assertSame('pipelinq_lead_delete', $delete['name']);
+        $this->assertSame('pipelinq.lead.delete', $delete['mcpId']);
+        $this->assertArrayHasKey('description', $delete);
+        $this->assertArrayHasKey('parameters', $delete);
+
+        // A verb declaring no hints and no scope gains no phantom keys.
+        $getIndex = array_search('pipelinq.lead.get', array_column($descriptors, 'mcpId'), true);
+        $this->assertIsInt($getIndex);
+        $get = $descriptors[$getIndex];
+
+        $this->assertArrayNotHasKey('readOnlyHint', $get);
+        $this->assertArrayNotHasKey('destructiveHint', $get);
+        $this->assertArrayNotHasKey('idempotentHint', $get);
+        $this->assertArrayNotHasKey('scope', $get);
+
+    }//end testDerivedToolHintsSurviveTheFacadeBridge()
+
+
+    /**
+     * The dialect's per-verb `scope` must also reach the JSON-RPC surface —
+     * `SchemaDerivedToolProvider::buildDescriptor()` emits it, so
+     * `McpToolsService::listTools()` carries it verbatim. Pairs with the
+     * facade assertion above to prove REQ-DERIVED-002's "one derivation feeds
+     * both surfaces" holds for `scope`, not just for the hints.
+     */
+    public function testDerivedToolScopeIsEmittedOnJsonRpcSurface(): void
+    {
+        $service = new McpToolsService(
+            providers: [$this->derivedProvider()],
+            logger: $this->logger
+        );
+
+        $tools = $service->listTools()['tools'];
+        $ids   = array_column($tools, 'id');
+
+        $deleteIndex = array_search('pipelinq.lead.delete', $ids, true);
+        $this->assertIsInt($deleteIndex);
+        $this->assertSame('delete', $tools[$deleteIndex]['scope']);
+        $this->assertTrue($tools[$deleteIndex]['destructiveHint']);
+
+        // The hint-less / scope-less verb stays clean on this surface too.
+        $getIndex = array_search('pipelinq.lead.get', $ids, true);
+        $this->assertIsInt($getIndex);
+        $this->assertArrayNotHasKey('scope', $tools[$getIndex]);
+        $this->assertArrayNotHasKey('destructiveHint', $tools[$getIndex]);
+
+    }//end testDerivedToolScopeIsEmittedOnJsonRpcSurface()
 
 
     public function testFacadeInvocationRoutesThroughTheSameDerivedProvider(): void

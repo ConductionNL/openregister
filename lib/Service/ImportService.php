@@ -31,6 +31,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectHandling;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -1667,7 +1668,7 @@ class ImportService
             case 'object':
                 // Check if this is a related-object that should store UUID strings directly.
                 if (($propertyDef['objectConfiguration']['handling'] ?? null) !== null
-                    && ($propertyDef['objectConfiguration']['handling'] === 'related-object') === true
+                    && ObjectHandling::relates($propertyDef['objectConfiguration']['handling']) === true
                 ) {
                     // For related objects, store UUID strings directly instead of wrapping in objects.
                     return (string) $value;

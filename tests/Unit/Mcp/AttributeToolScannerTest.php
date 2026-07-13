@@ -16,18 +16,23 @@ declare(strict_types=1);
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp;
 
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 require_once __DIR__.'/Fixtures/AttributeFixtureService.php';
+require_once __DIR__.'/Fixtures/HintScopeFixtureService.php';
 
 /**
  * Unit tests for AttributeToolScanner.
@@ -254,4 +259,77 @@ class AttributeToolScannerTest extends TestCase
         $this->assertContains('computeScore', $names);
 
     }//end testScanClassesAggregatesAcrossMultipleClassesAndSkipsInvalidNames()
+
+
+    // ── Hint/scope forwarding (REQ-ATTR-005) ──────────────────────────
+
+
+    /**
+     * @return array<string, array<string, mixed>> descriptor keyed by `name`
+     */
+    private function scanHintScopeFixture(): array
+    {
+        $descriptors = $this->scanner->scanClass(
+            appId: 'pipelinq',
+            className: HintScopeFixtureService::class,
+            logger: $this->logger
+        );
+
+        $byName = [];
+        foreach ($descriptors as $descriptor) {
+            $byName[$descriptor['name']] = $descriptor;
+        }
+
+        return $byName;
+
+    }//end scanHintScopeFixture()
+
+
+    public function testDescriptorForwardsDeclaredHintsAndScope(): void
+    {
+        $descriptors = $this->scanHintScopeFixture();
+        $descriptor  = $descriptors['deleteLead'];
+
+        $this->assertFalse($descriptor['readOnlyHint']);
+        $this->assertTrue($descriptor['destructiveHint']);
+        $this->assertFalse($descriptor['idempotentHint']);
+        $this->assertSame('delete', $descriptor['scope']);
+
+    }//end testDescriptorForwardsDeclaredHintsAndScope()
+
+
+    public function testUnannotatedHintsAndScopeStayOmittedNeverDefaulted(): void
+    {
+        $descriptors = $this->scanHintScopeFixture();
+        $descriptor  = $descriptors['getLead'];
+
+        $this->assertArrayNotHasKey('readOnlyHint', $descriptor);
+        $this->assertArrayNotHasKey('destructiveHint', $descriptor);
+        $this->assertArrayNotHasKey('idempotentHint', $descriptor);
+        $this->assertArrayNotHasKey('scope', $descriptor);
+
+    }//end testUnannotatedHintsAndScopeStayOmittedNeverDefaulted()
+
+
+    public function testUnknownScopeIsRejectedAndLogged(): void
+    {
+        $this->logger->expects($this->atLeastOnce())
+            ->method('warning')
+            ->with($this->stringContains('unrecognised `scope`'));
+
+        $descriptors = $this->scanHintScopeFixture();
+
+        $this->assertArrayNotHasKey('badScopeLead', $descriptors);
+
+    }//end testUnknownScopeIsRejectedAndLogged()
+
+
+    public function testUnknownScopeDoesNotSuppressSiblingValidTools(): void
+    {
+        $descriptors = $this->scanHintScopeFixture();
+
+        $this->assertArrayHasKey('deleteLead', $descriptors);
+        $this->assertArrayHasKey('getLead', $descriptors);
+
+    }//end testUnknownScopeDoesNotSuppressSiblingValidTools()
 }//end class

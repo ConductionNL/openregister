@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Serializer;
 
 use OCA\OpenRegister\Db\Register;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -56,6 +57,14 @@ use Psr\Log\LoggerInterface;
  */
 final class RegisterSerializer
 {
+
+    /**
+     * Schemas already fetched this request, keyed by identifier.
+     *
+     * @var array<string, Schema>
+     */
+    private array $schemaCache = [];
+
     /**
      * Wire mappers + logger via constructor DI.
      *
@@ -157,7 +166,7 @@ final class RegisterSerializer
                 // register may legitimately reference a schema that is
                 // not directly visible in the caller's tenant — the
                 // expansion is read-only metadata).
-                $schema     = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+                $schema     = $this->findSchemaCached(schemaId: $schemaId);
                 $schemaJson = $schema->jsonSerialize();
             } catch (DoesNotExistException $e) {
                 // Preserve the orphan ID at its original position +
@@ -198,4 +207,36 @@ final class RegisterSerializer
         return $expanded;
 
     }//end expandSchemas()
+
+    /**
+     * Find a Schema, reusing the entity within this request.
+     *
+     * Registers share schemas, and a list response expands the schemas of EVERY register
+     * — so the same schema was re-fetched once per register that references it, and
+     * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
+     * id = ?`, which no index covers. On a dev instance with 76 registers / 1,231 schemas
+     * this was the single hottest query in the whole request.
+     *
+     * Schemas do not change mid-request, so hold on to them. A miss still throws
+     * DoesNotExistException, keeping the orphan-ID retention contract in expandSchemas()
+     * exactly as it was.
+     *
+     * @param int|string $schemaId The schema identifier.
+     *
+     * @return Schema The schema entity.
+     *
+     * @throws DoesNotExistException When no schema matches the identifier.
+     *
+     * @spec exclude request-scoped identity cache; no behaviour change
+     */
+    private function findSchemaCached(int|string $schemaId): Schema
+    {
+        $key = (string) $schemaId;
+
+        if (isset($this->schemaCache[$key]) === false) {
+            $this->schemaCache[$key] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
+        }
+
+        return $this->schemaCache[$key];
+    }//end findSchemaCached()
 }//end class

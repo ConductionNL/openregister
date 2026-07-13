@@ -210,6 +210,39 @@ class SchemaTest extends TestCase
         $this->assertSame($auth, $result['secret']);
     }
 
+    // --- writeOnly properties (property-level-read-rbac) ---
+
+    public function testHasWriteOnlyPropertiesFalseWhenEmpty(): void
+    {
+        $this->assertFalse($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testHasWriteOnlyPropertiesFalseWhenNone(): void
+    {
+        $this->schema->setProperties(['name' => ['type' => 'string']]);
+        $this->assertFalse($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testHasWriteOnlyPropertiesTrue(): void
+    {
+        $this->schema->setProperties([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+        $this->assertTrue($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testGetWriteOnlyProperties(): void
+    {
+        $this->schema->setProperties([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+            'other'    => ['type' => 'string', 'writeOnly' => false],
+        ]);
+        $result = $this->schema->getWriteOnlyProperties();
+        $this->assertSame(['apiToken'], $result);
+    }
+
     // --- Archive ---
 
     public function testGetArchiveReturnsEmptyArrayOnNull(): void
