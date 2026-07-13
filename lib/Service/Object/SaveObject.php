@@ -55,6 +55,7 @@ use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
@@ -1816,8 +1817,8 @@ class SaveObject
                     || (($property['items']['inversedBy'] ?? null) !== null);
                 $objHandling   = $property['objectConfiguration']['handling'] ?? null;
                 $itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-                $hasCascade    = $objHandling === 'cascade' || $objHandling === 'related-object'
-                    || $itemsHandling === 'cascade' || $itemsHandling === 'related-object';
+                $hasCascade    = $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
+                    || $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
 
                 return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
             }
@@ -1889,7 +1890,7 @@ class SaveObject
             // Determine handling type for orphan cleanup.
             $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
             $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
-            $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
+            $isRelatedObject = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
             $isCascade       = $objHandling === 'cascade' || $itemsHandling === 'cascade';
 
             // Capture old UUIDs from the existing object for orphan detection.
