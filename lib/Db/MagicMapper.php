@@ -2528,16 +2528,21 @@ class MagicMapper extends AbstractObjectMapper
                 if ($handling === null && isset($propertyConfig['items']['oneOf']) === true) {
                     foreach ($propertyConfig['items']['oneOf'] as $oneOfItem) {
                         if (isset($oneOfItem['objectConfiguration']['handling']) === true
-                            && $oneOfItem['objectConfiguration']['handling'] === 'related-object'
+                            && ObjectHandling::relates($oneOfItem['objectConfiguration']['handling']) === true
                         ) {
-                            $handling = 'related-object';
+                            $handling = $oneOfItem['objectConfiguration']['handling'];
                             $hasRef   = isset($oneOfItem['$ref']);
                             break;
                         }
                     }
                 }
 
-                if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
+                // A relating property stores a bare UUID STRING, so it needs a VARCHAR
+                // column — never a json one. `related-schema` used to miss this branch and
+                // got a json column, into which the save path then wrote a raw UUID:
+                // "SQLSTATE[22P02]: invalid input syntax for type json ... Token
+                // "b25f5f9c" is invalid", surfaced to the user as a bare 403.
+                if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
                     // This is a reference to another object - store as UUID string.
                     $this->logger->debug(
                         message: '[MagicMapper] Detected object reference property, using VARCHAR for UUID storage',
@@ -3168,7 +3173,7 @@ class MagicMapper extends AbstractObjectMapper
                     $type         = $propertyConfig['type'] ?? 'string';
 
                     // Index single object references (stored as VARCHAR UUID).
-                    if ($type === 'object' && $hasRef === true && $handling === 'related-object') {
+                    if ($type === 'object' && $hasRef === true && ObjectHandling::relates($handling) === true) {
                         $idxName = "{$tableName}_{$columnName}_rel_idx";
                         try {
                             $this->db->executeStatement(

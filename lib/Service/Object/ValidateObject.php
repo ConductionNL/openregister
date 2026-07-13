@@ -38,6 +38,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
@@ -463,6 +464,7 @@ class ValidateObject
         }
 
         switch ($handling) {
+            case 'related-schema':
             case 'related-object':
                 // For related objects, expect UUID strings instead of full objects.
                 $this->transformToUuidProperty(objectSchema: $objectSchema);
@@ -761,7 +763,7 @@ class ValidateObject
                 // UUID pattern for related object references.
                 $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
 
-                if ($config !== null && $handling === 'related-object') {
+                if ($config !== null && ObjectHandling::relates($handling) === true) {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
                         // For inversedBy properties, allow objects, UUIDs, or null
