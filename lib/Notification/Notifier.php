@@ -35,6 +35,8 @@ use OCP\Notification\INotifier;
  * Handles the preparation of notifications for display in Nextcloud.
  *
  * @package OCA\OpenRegister\Notification
+ *
+ * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
  */
 class Notifier implements INotifier
 {
@@ -70,6 +72,8 @@ class Notifier implements INotifier
      * Human readable name describing the notifier.
      *
      * @return string The notifier name
+     *
+     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
      */
     public function getName(): string
     {
@@ -102,6 +106,12 @@ class Notifier implements INotifier
 
             case 'handoff_drain_failed':
                 return $this->prepareHandoffDrainFailed(notification: $notification, l: $l);
+
+            case 'scheduled_report_delivered':
+                return $this->prepareScheduledReportDelivered(notification: $notification, l: $l);
+
+            case 'scheduled_report_failed':
+                return $this->prepareScheduledReportFailed(notification: $notification, l: $l);
 
             default:
                 // Unknown subject. Object-lifecycle subjects
@@ -207,4 +217,88 @@ class Notifier implements INotifier
 
         return $notification;
     }//end prepareHandoffDrainFailed()
+
+    /**
+     * Prepare the scheduled-report success notification (scheduled-report-jobs):
+     * a recurring export ran and its output was delivered to the owner's
+     * Nextcloud Files.
+     *
+     * @param INotification $notification The notification to prepare
+     * @param mixed         $l            The localization instance
+     *
+     * @return INotification The prepared notification
+     *
+     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     */
+    private function prepareScheduledReportDelivered(INotification $notification, $l): INotification
+    {
+        $parameters = $notification->getSubjectParameters();
+
+        $reportName = $parameters['reportName'] ?? 'Scheduled report';
+        $folder     = $parameters['folder'] ?? 'Reports/';
+        $filename   = $parameters['filename'] ?? '';
+
+        $notification->setParsedSubject(
+            $l->t('Scheduled report "%s" delivered', [$reportName])
+        );
+
+        $notification->setParsedMessage(
+            $l->t(
+                'Your scheduled report "%s" ran and was saved to %s%s',
+                [$reportName, $folder, $filename]
+            )
+        );
+
+        $notification->setIcon(
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        $action = $notification->createAction();
+        $action->setLabel($l->t('Open Files'))
+            ->setPrimary(true)
+            ->setLink(
+                link: $this->urlGenerator->linkToRouteAbsolute(
+                    routeName: 'files.view.index'
+                ).'?dir='.rawurlencode('/'.trim((string) $folder, '/')),
+                requestType: 'GET'
+            );
+
+        $notification->addAction($action);
+
+        return $notification;
+    }//end prepareScheduledReportDelivered()
+
+    /**
+     * Prepare the scheduled-report failure notification (scheduled-report-jobs):
+     * a recurring export failed (row-cap exceeded or any other error) and was
+     * not retried automatically.
+     *
+     * @param INotification $notification The notification to prepare
+     * @param mixed         $l            The localization instance
+     *
+     * @return INotification The prepared notification
+     *
+     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     */
+    private function prepareScheduledReportFailed(INotification $notification, $l): INotification
+    {
+        $parameters = $notification->getSubjectParameters();
+
+        $reportName = $parameters['reportName'] ?? 'Scheduled report';
+        $reason     = $parameters['reason'] ?? 'Unknown error';
+
+        $notification->setParsedSubject(
+            $l->t('Scheduled report "%s" failed', [$reportName])
+        );
+
+        $notification->setParsedMessage(
+            $l->t('Your scheduled report "%s" could not be generated: %s', [$reportName, $reason])
+        );
+
+        $notification->setIcon(
+            $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')
+        );
+
+        return $notification;
+    }//end prepareScheduledReportFailed()
 }//end class
