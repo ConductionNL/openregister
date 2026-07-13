@@ -4222,6 +4222,132 @@ class MagicMapper extends AbstractObjectMapper
     }//end findJsonbColumnsNeedingRetype()
 
     /**
+     * Find columns that must become a UUID reference but are still stored as JSON.
+     *
+     * When a property is turned INTO a relation (its handling becomes related-schema /
+     * related-object), it stops holding a document and starts holding a bare UUID
+     * string. A pre-existing `json` / `jsonb` column then rejects every write:
+     *
+     *     SQLSTATE[22P02]: invalid input syntax for type json
+     *     DETAIL: Token "b25f5f9c" is invalid.
+     *
+     * Without this the table is broken FOREVER after such an edit: the sync only ever
+     * added missing columns and migrated jsonb→json, so it never noticed that an
+     * existing column's type no longer matches what the property now stores.
+     *
+     * @param array $currentColumns  Live columns, keyed by physical column name.
+     * @param array $requiredColumns Desired columns, keyed by property name.
+     *
+     * @return array<string> Physical column names needing a JSON → VARCHAR retype.
+     *
+     * @spec exclude schema-drift detection for the magic-table sync
+     */
+    public function findRelationColumnsNeedingRetype(array $currentColumns, array $requiredColumns): array
+    {
+        $needsRetype = [];
+
+        foreach ($requiredColumns as $propertyName => $columnDef) {
+            // A relating property is declared as a plain string column (the UUID).
+            if (($columnDef['type'] ?? null) !== 'string') {
+                continue;
+            }
+
+            $columnName = $columnDef['name'] ?? $this->sanitizeColumnName(name: $propertyName);
+            if (isset($currentColumns[$columnName]) === false) {
+                continue;
+            }
+
+            $currentType = strtolower((string) ($currentColumns[$columnName]['type'] ?? ''));
+            if (in_array($currentType, ['json', 'jsonb'], true) === true) {
+                $needsRetype[] = $columnName;
+            }
+        }
+
+        return $needsRetype;
+    }//end findRelationColumnsNeedingRetype()
+
+    /**
+     * Convert JSON columns that now hold a UUID reference to VARCHAR.
+     *
+     * Deliberately NON-destructive. The ALTER is attempted inside a try/catch, and a
+     * failure is logged rather than swallowed or forced: a column that still holds real
+     * documents (because the property used to be `nested-*`) cannot become a 255-char
+     * UUID without losing data, and quietly truncating a user's objects to make a schema
+     * edit "work" would be far worse than the edit failing loudly.
+     *
+     * `#>> '{}'` extracts a JSON scalar as text, so a column that already holds only
+     * UUID strings (or nulls) converts cleanly.
+     *
+     * @param string $tableName       The magic table.
+     * @param array  $currentColumns  Live columns, keyed by physical column name.
+     * @param array  $requiredColumns Desired columns, keyed by property name.
+     *
+     * @return array<string> The column names actually retyped.
+     *
+     * @spec exclude magic-table DDL sync
+     */
+    public function migrateRelationColumnsToVarchar(string $tableName, array $currentColumns, array $requiredColumns): array
+    {
+        $platform = $this->db->getDatabasePlatform();
+        if (($platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform) === false) {
+            return [];
+        }
+
+        $columnsRetyped = [];
+
+        // The magic tables carry the Nextcloud table prefix (oc_). Quoting the bare
+        // name yields `relation "openregister_table_..." does not exist`.
+        $tableNameQuoted = $this->quoteIdentifier(
+            name: $this->getFullTableName(tableName: $tableName),
+            isPostgres: true
+        );
+
+        $relationColumns = $this->findRelationColumnsNeedingRetype(
+            currentColumns: $currentColumns,
+            requiredColumns: $requiredColumns
+        );
+
+        foreach ($relationColumns as $columnName) {
+            $colNameQuoted = $this->quoteIdentifier(name: $columnName, isPostgres: true);
+
+            $sql  = 'ALTER TABLE '.$tableNameQuoted;
+            $sql .= ' ALTER COLUMN '.$colNameQuoted;
+            $sql .= " TYPE VARCHAR(255) USING ".$colNameQuoted." #>> '{}'";
+
+            try {
+                $this->db->executeStatement($sql);
+                $columnsRetyped[] = $columnName;
+                $this->logger->info(
+                    message: '[MagicMapper] Retyped relation column from JSON to VARCHAR (it now holds a UUID reference)',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                    ]
+                );
+            } catch (Exception $e) {
+                // The column still holds documents that will not fit a UUID. Say so —
+                // do NOT truncate the user's data to make the schema edit succeed.
+                $this->logger->warning(
+                    message: '[MagicMapper] Could not retype relation column to VARCHAR; it still holds data '
+                        .'that is not a UUID reference. Saves to this property will keep failing until '
+                        .'the existing values are migrated.',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'tableName'  => $tableName,
+                        'columnName' => $columnName,
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        return $columnsRetyped;
+    }//end migrateRelationColumnsToVarchar()
+
+    /**
      * Migrate object-typed JSONB columns to JSON to preserve client-supplied key order.
      *
      * PostgreSQL JSONB stores keys in hashed/normalised order, which silently drops

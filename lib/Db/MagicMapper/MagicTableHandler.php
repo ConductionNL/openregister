@@ -196,6 +196,23 @@ class MagicTableHandler
                 requiredColumns: $requiredColumns
             );
 
+            // A property that BECOMES a relation stops holding a document and starts
+            // holding a bare UUID, so its column must go from json to VARCHAR. Without
+            // this the table stays broken forever after such an edit — every save is
+            // rejected with "invalid input syntax for type json".
+            $relationRetype = $this->magicMapper->findRelationColumnsNeedingRetype(
+                currentColumns: $currentColumns,
+                requiredColumns: $requiredColumns
+            );
+            if (empty($relationRetype) === false) {
+                $this->magicMapper->migrateRelationColumnsToVarchar(
+                    tableName: $tableName,
+                    currentColumns: $currentColumns,
+                    requiredColumns: $requiredColumns
+                );
+                $retypeColumns = array_merge($retypeColumns, $relationRetype);
+            }
+
             if (empty($missingColumns) === true && empty($retypeColumns) === true) {
                 MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
                 $this->logger->debug(
