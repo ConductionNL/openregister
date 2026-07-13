@@ -92,7 +92,26 @@ class SchemaDerivedDualSurfaceTest extends TestCase
                         'get'    => [],
                         'create' => [],
                         'update' => [],
-                        'delete' => [],
+                        'delete' => [
+                            // ADR-063 annotation hints on this verb only —
+                            // used by testDerivedToolHintsSurviveTheFacadeBridge()
+                            // to prove they aren't dropped anywhere between the
+                            // derived provider and the facade (OR#369), and
+                            // that the OTHER (hint-less) verbs stay
+                            // phantom-key-free. `scope` is included here too
+                            // (valid dialect shape per REQ-DIALECT-001) but is
+                            // NOT asserted below: SchemaDerivedToolProvider::
+                            // buildDescriptor() does not copy `scope` onto the
+                            // tool descriptor on EITHER surface today — a
+                            // separate, pre-existing gap outside OR#369's
+                            // "bridge drops hints" scope. `scope` forwarding
+                            // through the bridge itself is covered directly in
+                            // McpProviderBridgeTest.
+                            'readOnlyHint'    => false,
+                            'destructiveHint' => true,
+                            'idempotentHint'  => true,
+                            'scope'           => 'delete',
+                        ],
                     ],
                 ],
             ]
@@ -277,6 +296,54 @@ class SchemaDerivedDualSurfaceTest extends TestCase
         $this->assertContains('pipelinq.lead.get', $mcpIds);
 
     }//end testDerivedToolIsVisibleOnFacadeSurface()
+
+
+    /**
+     * Regression test for OR#369: McpProviderBridge::getFunctions() used to
+     * build every LLphant descriptor from exactly four keys (`name`,
+     * `mcpId`, `description`, `parameters`), silently dropping the
+     * ADR-063 annotation hints SchemaDerivedToolProvider sets on the
+     * `delete` verb (see {@see leadSchema()}). This wires the REAL
+     * registry → listener → bridge → facade chain (no bridge mocking) and
+     * asserts the hints on `pipelinq.lead.delete` survive all the way to
+     * `ToolRegistryFacade::listTools()`, while a hint-less verb
+     * (`pipelinq.lead.get`) gains no phantom hint keys and the pre-existing
+     * four descriptor keys are unchanged.
+     */
+    public function testDerivedToolHintsSurviveTheFacadeBridge(): void
+    {
+        $facade = $this->buildFacade();
+
+        $descriptors = $facade->listTools();
+
+        $deleteIndex = array_search('pipelinq.lead.delete', array_column($descriptors, 'mcpId'), true);
+        $this->assertIsInt($deleteIndex);
+        $delete = $descriptors[$deleteIndex];
+
+        $this->assertArrayHasKey('readOnlyHint', $delete);
+        $this->assertFalse($delete['readOnlyHint']);
+        $this->assertArrayHasKey('destructiveHint', $delete);
+        $this->assertTrue($delete['destructiveHint']);
+        $this->assertArrayHasKey('idempotentHint', $delete);
+        $this->assertTrue($delete['idempotentHint']);
+
+        // The pre-existing four keys are unchanged by the hint forwarding.
+        $this->assertSame('pipelinq_lead_delete', $delete['name']);
+        $this->assertSame('pipelinq.lead.delete', $delete['mcpId']);
+        $this->assertArrayHasKey('description', $delete);
+        $this->assertArrayHasKey('parameters', $delete);
+
+        // A verb with no declared hints gains no phantom hint keys.
+        $getIndex = array_search('pipelinq.lead.get', array_column($descriptors, 'mcpId'), true);
+        $this->assertIsInt($getIndex);
+        $get = $descriptors[$getIndex];
+
+        $this->assertArrayNotHasKey('readOnlyHint', $get);
+        $this->assertArrayNotHasKey('destructiveHint', $get);
+        $this->assertArrayNotHasKey('idempotentHint', $get);
+        $this->assertArrayNotHasKey('scope', $get);
+
+    }//end testDerivedToolHintsSurviveTheFacadeBridge()
 
 
     public function testFacadeInvocationRoutesThroughTheSameDerivedProvider(): void
