@@ -114,9 +114,12 @@ dialect family alongside `x-openregister-lifecycle`,
 `x-openregister-calculations`, `x-openregister-notifications`, etc. This is
 the **declaration** step of a three-change arc — this change (validation +
 storage only) is followed by a derived tool provider that emits the actual
-MCP tools, then a `#[McpTool]` service attribute for non-CRUD behaviour.
-Until the derived provider ships, an opted-in schema saves and round-trips
-but adds no entry to the MCP catalog.
+MCP tools, then a `#[McpTool]` service attribute for non-CRUD behaviour. All
+three chain changes have since shipped: schema-derived tools go live the
+moment `enabled: true` is saved, and `#[McpTool]` now accepts the same
+`readOnlyHint`/`destructiveHint`/`idempotentHint`/`scope` vocabulary shown
+below, forwarded to both serving surfaces when a service author sets them
+(`or-mcp-attribute-hints`).
 
 ### Shape
 

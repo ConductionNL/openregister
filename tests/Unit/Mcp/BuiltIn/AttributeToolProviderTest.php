@@ -18,7 +18,10 @@ declare(strict_types=1);
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-002 — Attributed method becomes a catalog tool on both surfaces)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\BuiltIn;
@@ -29,6 +32,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\ThrowingFixtureService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -36,6 +40,7 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 require_once __DIR__.'/../Fixtures/AttributeFixtureService.php';
+require_once __DIR__.'/../Fixtures/HintScopeFixtureService.php';
 require_once __DIR__.'/../Fixtures/ThrowingFixtureService.php';
 
 /**
@@ -131,6 +136,66 @@ class AttributeToolProviderTest extends TestCase
         }
 
     }//end testGetToolsExposesCatalogFieldsOnly()
+
+
+    // ── getTools: hint/scope forwarding (REQ-ATTR-005) ───────────────
+
+
+    public function testGetToolsForwardsDeclaredHintsAndScope(): void
+    {
+        $entries  = $this->entriesFor(new HintScopeFixtureService());
+        $provider = $this->provider($entries);
+
+        $tools = $provider->getTools();
+        $byId  = [];
+        foreach ($tools as $tool) {
+            $byId[$tool['id']] = $tool;
+        }
+
+        $deleteLead = $byId['pipelinq.deleteLead'];
+        $this->assertFalse($deleteLead['readOnlyHint']);
+        $this->assertTrue($deleteLead['destructiveHint']);
+        $this->assertFalse($deleteLead['idempotentHint']);
+        $this->assertSame('delete', $deleteLead['scope']);
+
+    }//end testGetToolsForwardsDeclaredHintsAndScope()
+
+
+    public function testGetToolsOmitsHintsAndScopeWhenUndeclared(): void
+    {
+        $entries  = $this->entriesFor(new HintScopeFixtureService());
+        $provider = $this->provider($entries);
+
+        $tools = $provider->getTools();
+        $byId  = [];
+        foreach ($tools as $tool) {
+            $byId[$tool['id']] = $tool;
+        }
+
+        $getLead = $byId['pipelinq.getLead'];
+        $this->assertArrayNotHasKey('readOnlyHint', $getLead);
+        $this->assertArrayNotHasKey('destructiveHint', $getLead);
+        $this->assertArrayNotHasKey('idempotentHint', $getLead);
+        $this->assertArrayNotHasKey('scope', $getLead);
+
+    }//end testGetToolsOmitsHintsAndScopeWhenUndeclared()
+
+
+    public function testGetToolsExposesNoHintScopeKeysForUnannotatedFixture(): void
+    {
+        // AttributeFixtureService declares none of the four new params on
+        // any method — its descriptors must carry no phantom hint/scope keys.
+        $entries  = $this->entriesFor(new AttributeFixtureService());
+        $provider = $this->provider($entries);
+
+        foreach ($provider->getTools() as $tool) {
+            $this->assertArrayNotHasKey('readOnlyHint', $tool);
+            $this->assertArrayNotHasKey('destructiveHint', $tool);
+            $this->assertArrayNotHasKey('idempotentHint', $tool);
+            $this->assertArrayNotHasKey('scope', $tool);
+        }
+
+    }//end testGetToolsExposesNoHintScopeKeysForUnannotatedFixture()
 
 
     // ── invokeTool: in-process dispatch (ADR-041) ────────────────────

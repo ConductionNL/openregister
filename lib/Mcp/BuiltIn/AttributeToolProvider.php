@@ -55,6 +55,7 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -76,8 +77,12 @@ class AttributeToolProvider implements IMcpToolProvider
      *
      * `$entries` is a `list<array{id: string, name: string, description: string,
      * inputSchema: array, outputSchema?: array, instance: object, method: string,
-     * paramNames: list<string>}>` — one entry per attributed method already
-     * resolved to a live service instance (ADR-041 in-process invocation).
+     * paramNames: list<string>, readOnlyHint?: bool, destructiveHint?: bool,
+     * idempotentHint?: bool, scope?: string}>` — one entry per attributed
+     * method already resolved to a live service instance (ADR-041 in-process
+     * invocation). The optional hint/scope keys are set only when
+     * {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} forwarded them from
+     * the `#[McpTool]` declaration (REQ-ATTR-005).
      *
      * @param string           $appId            The owning app id; `getAppId()` and every id prefix.
      * @param array            $entries          Resolved attributed-tool entries (see above).
@@ -105,10 +110,22 @@ class AttributeToolProvider implements IMcpToolProvider
     /**
      * Returns one tool descriptor per attributed method.
      *
-     * @return list<array{id: string, name: string, description: string, inputSchema: array, outputSchema?: array}>
+     * Additively forwards the MCP 2025-11-25 annotation hints
+     * (`readOnlyHint`/`destructiveHint`/`idempotentHint`) and `scope` when
+     * {@see \OCA\OpenRegister\Mcp\AttributeToolScanner} set them on the
+     * entry — omitted entirely otherwise, never defaulted (REQ-ATTR-005).
+     * These are ADVISORY UX metadata only; OpenRegister RBAC and the owning
+     * method's own authorization remain the sole authoritative invoke-time
+     * gate (ADR-063).
+     *
+     * @return list<array{id: string, name: string, description: string, inputSchema: array,
+     *         outputSchema?: array, readOnlyHint?: bool, destructiveHint?: bool,
+     *         idempotentHint?: bool, scope?: string}>
      *
      * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-ATTR-002 — Attributed method becomes a catalog tool on both surfaces)
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
      */
     public function getTools(): array
     {
@@ -126,8 +143,18 @@ class AttributeToolProvider implements IMcpToolProvider
                 $descriptor['outputSchema'] = $entry['outputSchema'];
             }
 
+            foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
+                if (array_key_exists($hintKey, $entry) === true) {
+                    $descriptor[$hintKey] = $entry[$hintKey];
+                }
+            }
+
+            if (array_key_exists('scope', $entry) === true) {
+                $descriptor['scope'] = $entry['scope'];
+            }
+
             $tools[] = $descriptor;
-        }
+        }//end foreach
 
         return $tools;
     }//end getTools()

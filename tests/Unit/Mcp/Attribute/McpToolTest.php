@@ -11,8 +11,10 @@ declare(strict_types=1);
  * @license  AGPL-3.0-or-later
  * @link     https://github.com/OpenRegister/OpenRegister
  *
- * @spec openspec/changes/or-mcp-tool-attribute/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-ATTR-001 — The #[McpTool] service-method attribute)
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-ATTR-005 — Attribute-declared hints/scope reach both MCP surfaces)
  */
 
 namespace OCA\OpenRegister\Tests\Unit\Mcp\Attribute;
@@ -47,6 +49,47 @@ class McpToolTest extends TestCase
         $this->assertSame('Create a sales lead.', $attribute->description);
 
     }//end testExplicitValuesAreRetained()
+
+
+    public function testHintAndScopeParamsDefaultToNull(): void
+    {
+        $attribute = new McpTool();
+
+        $this->assertNull($attribute->readOnlyHint);
+        $this->assertNull($attribute->destructiveHint);
+        $this->assertNull($attribute->idempotentHint);
+        $this->assertNull($attribute->scope);
+
+    }//end testHintAndScopeParamsDefaultToNull()
+
+
+    public function testHintAndScopeParamsAreIndependentlySettable(): void
+    {
+        $attribute = new McpTool(destructiveHint: true, scope: 'delete');
+
+        $this->assertTrue($attribute->destructiveHint);
+        $this->assertSame('delete', $attribute->scope);
+        $this->assertNull($attribute->readOnlyHint);
+        $this->assertNull($attribute->idempotentHint);
+
+    }//end testHintAndScopeParamsAreIndependentlySettable()
+
+
+    public function testAllFourNewParamsAreRetained(): void
+    {
+        $attribute = new McpTool(
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+            scope: 'create'
+        );
+
+        $this->assertFalse($attribute->readOnlyHint);
+        $this->assertTrue($attribute->destructiveHint);
+        $this->assertFalse($attribute->idempotentHint);
+        $this->assertSame('create', $attribute->scope);
+
+    }//end testAllFourNewParamsAreRetained()
 
 
     public function testAttributeTargetsMethodsOnly(): void

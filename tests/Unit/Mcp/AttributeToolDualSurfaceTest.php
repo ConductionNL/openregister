@@ -33,6 +33,7 @@ use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\Mcp\ToolRegistryFacade;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\AttributeFixtureService;
+use OCA\OpenRegister\Tests\Unit\Mcp\Fixtures\HintScopeFixtureService;
 use OCA\OpenRegister\Tool\AgentTool;
 use OCA\OpenRegister\Tool\ApplicationTool;
 use OCA\OpenRegister\Tool\ObjectsTool;
@@ -44,6 +45,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
 require_once __DIR__.'/Fixtures/AttributeFixtureService.php';
+require_once __DIR__.'/Fixtures/HintScopeFixtureService.php';
 
 /**
  * Dual-surface tests for the attribute-derived provider.
@@ -90,6 +92,33 @@ class AttributeToolDualSurfaceTest extends TestCase
         );
 
     }//end attributedProvider()
+
+
+    /**
+     * Build the attributed provider around the hint/scope fixture service
+     * (REQ-ATTR-005 — one method declares all four optional hint/scope
+     * params).
+     *
+     * @return AttributeToolProvider
+     */
+    private function hintScopeProvider(): AttributeToolProvider
+    {
+        $instance = new HintScopeFixtureService();
+        $scanner  = new AttributeToolScanner();
+
+        $entries = $scanner->scanClass(appId: 'pipelinq', className: get_class($instance), logger: $this->logger);
+        foreach ($entries as &$entry) {
+            $entry['instance'] = $instance;
+        }
+
+        return new AttributeToolProvider(
+            appId: 'pipelinq',
+            entries: $entries,
+            auditTrailMapper: $this->auditTrailMapper,
+            logger: $this->logger
+        );
+
+    }//end hintScopeProvider()
 
 
     // ── JSON-RPC surface (McpToolsService) ───────────────────────────
@@ -149,12 +178,14 @@ class AttributeToolDualSurfaceTest extends TestCase
      * Wire the REAL registry/listener/bridge/facade chain around one
      * attributed provider and return the facade.
      *
+     * @param AttributeToolProvider|null $provider The provider to wire; defaults to {@see attributedProvider()}.
+     *
      * @return ToolRegistryFacade
      */
-    private function buildFacade(): ToolRegistryFacade
+    private function buildFacade(?AttributeToolProvider $provider = null): ToolRegistryFacade
     {
         $mcpToolsService = new McpToolsService(
-            providers: [$this->attributedProvider()],
+            providers: [$provider ?? $this->attributedProvider()],
             logger: $this->logger
         );
 
@@ -219,4 +250,48 @@ class AttributeToolDualSurfaceTest extends TestCase
         $this->assertSame('b@example.com', $result['result']['email']);
 
     }//end testFacadeInvocationRoutesThroughTheSameAttributedProviderAndIsAudited()
+
+
+    // ── Hint/scope dual-surface proof (REQ-ATTR-005) ──────────────────
+
+
+    public function testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface(): void
+    {
+        $service = new McpToolsService(
+            providers: [$this->hintScopeProvider()],
+            logger: $this->logger
+        );
+
+        $tools = $service->listTools()['tools'];
+        $byId  = [];
+        foreach ($tools as $tool) {
+            $byId[$tool['id']] = $tool;
+        }
+
+        $deleteLead = $byId['pipelinq.deleteLead'];
+        $this->assertFalse($deleteLead['readOnlyHint']);
+        $this->assertTrue($deleteLead['destructiveHint']);
+        $this->assertFalse($deleteLead['idempotentHint']);
+        $this->assertSame('delete', $deleteLead['scope']);
+
+    }//end testDeclaredHintsAndScopeAreVisibleOnJsonRpcSurface()
+
+
+    public function testDeclaredHintsAndScopeAreVisibleOnFacadeSurface(): void
+    {
+        $facade = $this->buildFacade($this->hintScopeProvider());
+
+        $descriptors = $facade->listTools();
+        $byMcpId     = [];
+        foreach ($descriptors as $descriptor) {
+            $byMcpId[$descriptor['mcpId']] = $descriptor;
+        }
+
+        $deleteLead = $byMcpId['pipelinq.deleteLead'];
+        $this->assertFalse($deleteLead['readOnlyHint']);
+        $this->assertTrue($deleteLead['destructiveHint']);
+        $this->assertFalse($deleteLead['idempotentHint']);
+        $this->assertSame('delete', $deleteLead['scope']);
+
+    }//end testDeclaredHintsAndScopeAreVisibleOnFacadeSurface()
 }//end class
