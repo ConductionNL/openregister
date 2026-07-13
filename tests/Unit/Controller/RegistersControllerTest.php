@@ -1190,6 +1190,77 @@ class RegistersControllerTest extends TestCase
         $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
     }
 
+    public function testExportPdfWithSchemaSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+
+        $schema = $this->createRealSchema(5, 'Test Schema');
+        $schema->setSlug('test-schema');
+
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, '5'],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->exportService->method('exportToPdf')->willReturn("%PDF-1.7\n...fake pdf bytes...");
+        $this->currentUser = null;
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+        $this->assertSame('application/pdf', $result->getHeaders()['Content-Type'] ?? null);
+        $this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
+    }
+
+    public function testExportPdfMissingSchemaReturns400(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, null],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertStringContainsString('schema', $result->getData()['error']);
+    }
+
+    public function testExportPdfTooLargeReturns400(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+
+        $schema = $this->createRealSchema(5, 'Test Schema');
+        $schema->setSlug('test-schema');
+
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, '5'],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->exportService->method('exportToPdf')->willThrowException(
+            new \OCA\OpenRegister\Exception\ExportTooLargeException(6000, 5000)
+        );
+        $this->currentUser = null;
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('export_too_large', $result->getData()['error']);
+        $this->assertSame(6000, $result->getData()['rowCount']);
+        $this->assertSame(5000, $result->getData()['maxRows']);
+    }
+
     // ── Import extended tests ────────────────────────────────────────
 
     public function testImportExcelSuccess(): void

@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
@@ -3883,22 +3884,24 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return DataDownloadResponse The exported file as a download response
+     * @return DataDownloadResponse|JSONResponse The exported file as a download response, or a
+     *     400 JSON error when a `format=pdf` request exceeds {@see \OCA\OpenRegister\Service\ExportService::MAX_PDF_EXPORT_ROWS}.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @psalm-return DataDownloadResponse<200,
-     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv',
-     *     array<never, never>>
+     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv'|'application/pdf',
+     *     array<never, never>>|JSONResponse
      *
      * @psalm-suppress NoValue
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
      */
-    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse
     {
         // Set the register and schema context.
         $objectService->setRegister(register: $register);
@@ -3952,6 +3955,33 @@ class ObjectsController extends Controller
                 contentType: 'application/json'
             );
         }
+
+        if ($type === 'pdf') {
+            try {
+                $content = $this->exportService->exportToPdf(
+                    register: $registerEntity,
+                    schema: $schemaEntity,
+                    filters: $filters,
+                    currentUser: $this->userSession->getUser()
+                );
+            } catch (ExportTooLargeException $e) {
+                return new JSONResponse(
+                    data: [
+                        'error'    => 'export_too_large',
+                        'message'  => $e->getMessage(),
+                        'rowCount' => $e->getRowCount(),
+                        'maxRows'  => $e->getMaxRows(),
+                    ],
+                    statusCode: ExportTooLargeException::HTTP_STATUS
+                );
+            }
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.pdf",
+                contentType: 'application/pdf'
+            );
+        }//end if
 
         // Default to Excel.
         $spreadsheet = $this->exportService->exportToExcel(

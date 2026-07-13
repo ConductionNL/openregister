@@ -55,6 +55,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -871,13 +872,17 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to export
      *
-     * @return DataDownloadResponse|JSONResponse
+     * @return DataDownloadResponse|JSONResponse Download for `excel`/`csv`/`pdf`/`configuration` formats,
+     *     or a 400 JSON error for a missing schema (`csv`/`pdf`) or an over-cap `pdf` row count.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple format branches
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
+     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -929,6 +934,44 @@ class RegistersController extends Controller
                         (new DateTime())->format('Y-m-d_His')
                     );
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
+                case 'pdf':
+                    // PDF exports require a specific schema, same as CSV — a coherent
+                    // single table needs one column set.
+                    $schemaId = $this->request->getParam('schema');
+
+                    if ($schemaId === null || $schemaId === '') {
+                        $errMsg = 'PDF export requires a specific schema to be selected';
+                        return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
+                    }
+
+                    $schema = $this->schemaMapper->find($schemaId);
+
+                    try {
+                        $pdf = $this->exportService->exportToPdf(
+                            register: $register,
+                            schema: $schema,
+                            filters: [],
+                            currentUser: $this->userSession->getUser()
+                        );
+                    } catch (ExportTooLargeException $e) {
+                        return new JSONResponse(
+                            data: [
+                                'error'    => 'export_too_large',
+                                'message'  => $e->getMessage(),
+                                'rowCount' => $e->getRowCount(),
+                                'maxRows'  => $e->getMaxRows(),
+                            ],
+                            statusCode: ExportTooLargeException::HTTP_STATUS
+                        );
+                    }
+
+                    $filename = sprintf(
+                        '%s_%s_%s.pdf',
+                        $register->getSlug() ?? 'register',
+                        $schema->getSlug() ?? 'schema',
+                        (new DateTime())->format('Y-m-d_His')
+                    );
+                    return new DataDownloadResponse($pdf, $filename, 'application/pdf');
                 case 'configuration':
                 default:
                     $exportData  = $this->configurationService->exportConfig(

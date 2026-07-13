@@ -5676,6 +5676,90 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
+    // export() — PDF export path
+    // =========================================================================
+
+    public function testExportReturnsPdfDownloadResponse(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('my-register');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('my-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'pdf']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'pdf';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToPdf')->willReturn("%PDF-1.7\n...fake pdf bytes...");
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+        $this->assertSame('application/pdf', $result->getHeaders()['Content-Type'] ?? null);
+        $this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
+    }
+
+    public function testExportPdfTooLargeReturns400(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('my-register');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('my-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'pdf']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'pdf';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToPdf')->willThrowException(
+            new \OCA\OpenRegister\Exception\ExportTooLargeException(6000, 5000)
+        );
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('export_too_large', $result->getData()['error']);
+        $this->assertSame(6000, $result->getData()['rowCount']);
+        $this->assertSame(5000, $result->getData()['maxRows']);
+    }
+
+    // =========================================================================
     // index() — cross-table search with comma-separated schemas
     // =========================================================================
 
