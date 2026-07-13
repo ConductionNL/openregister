@@ -80,6 +80,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</post-migration>
 		<install>
@@ -91,6 +92,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 		</install>
 	</repair-steps>

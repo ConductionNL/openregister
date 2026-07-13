@@ -75,7 +75,10 @@ export default {
 				.map(schema => ({
 					id: schema.id || schema.uuid || schema.slug,
 					title: schema.title || schema.name || `Schema ${schema.id}`,
+					label: schema.title || schema.name || `Schema ${schema.id}`,
 					description: schema.description || schema.summary || '',
+					slug: schema.slug,
+					properties: schema.properties || {},
 					reference: `#/components/schemas/${schema.slug || schema.title || schema.id}`,
 				}))
 		},

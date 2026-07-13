@@ -759,6 +759,15 @@ return [
         ['name' => 'auditTrail#update', 'url' => '/api/audit-trails/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroy', 'url' => '/api/audit-trails/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'auditTrail#destroyMultiple', 'url' => '/api/audit-trails', 'verb' => 'DELETE'],
+        // Audit Query (v2) — unified, cross-app query/export of audit-entry
+        // objects (e.g. procest's aiAuditEntry, parafering's paraferingAuditEntry).
+        // Distinct from Audit Trails above (OR's own object-mutation log);
+        // this queries app-defined audit-entry OBJECTS via ObjectService.
+        // /export MUST come before the (paramless) query route is irrelevant
+        // here since both are static paths, but kept in the same specific-first
+        // order as the audit-trails block above for consistency.
+        ['name' => 'auditQuery#export', 'url' => '/api/v2/audit/export', 'verb' => 'GET'],
+        ['name' => 'auditQuery#query', 'url' => '/api/v2/audit', 'verb' => 'GET'],
         // Notification History — read-only audit trail of every dispatch.
         ['name' => 'notificationHistory#index', 'url' => '/api/notification-history', 'verb' => 'GET'],
         // Notification Subscriptions — DEPRECATED per-user (register, schema) opt-in surface.

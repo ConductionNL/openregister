@@ -55,6 +55,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -2585,6 +2586,7 @@ class ObjectsController extends Controller
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
+    #[AnonRateLimit(limit: 30, period: 60)]
     public function create(
         string $register,
         string $schema,
