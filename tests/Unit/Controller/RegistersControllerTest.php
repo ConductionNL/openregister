@@ -1916,4 +1916,52 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(400, $result->getStatus());
     }
 
+    /**
+     * registerObjectStats() sums the per-schema counts, reporting a LIVE total.
+     *
+     * `total` must exclude soft-deleted rows (the per-schema UNION's `total` includes
+     * them, `deleted` is the subset), so a register with two schemas — one with 5 objects
+     * / 1 deleted, one with 3 / 0 deleted — reports total 7 (=(5-1)+(3-0)) and deleted 1.
+     * ObjectEntityMapper::getStatistics() must NOT be called when per-schema counts exist.
+     *
+     * @return void
+     */
+    public function testRegisterObjectStatsSumsLiveCountsFromSchemaStats(): void
+    {
+        $this->objectMapper->expects($this->never())->method('getStatistics');
+
+        $schemaStats = [
+            10 => ['total' => 5, 'deleted' => 1, 'invalid' => 0, 'locked' => 0, 'size' => 100],
+            20 => ['total' => 3, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 50],
+        ];
+
+        $method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, 7, $schemaStats);
+
+        $this->assertSame(7, $result['total']);
+        $this->assertSame(1, $result['deleted']);
+        $this->assertSame(150, $result['size']);
+    }
+
+    /**
+     * With no per-schema counts (the '@self.stats'-without-'schemas' caller),
+     * registerObjectStats() falls back to the mapper rather than reporting zero.
+     *
+     * @return void
+     */
+    public function testRegisterObjectStatsFallsBackToMapperWithoutSchemaStats(): void
+    {
+        $this->objectMapper->expects($this->once())
+            ->method('getStatistics')
+            ->with(registerId: 7, schemaId: null)
+            ->willReturn(['total' => 42, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0]);
+
+        $method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, 7, null);
+
+        $this->assertSame(42, $result['total']);
+    }
+
 }
