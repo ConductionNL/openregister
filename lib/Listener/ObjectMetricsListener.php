@@ -63,7 +63,6 @@ use Throwable;
  */
 class ObjectMetricsListener implements IEventListener
 {
-
     /**
      * Wire collaborators.
      *
