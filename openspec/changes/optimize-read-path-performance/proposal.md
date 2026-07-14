@@ -36,9 +36,11 @@ far more expensive than they need to be:
 - `RenderObject::handleInversedProperties()` routes the single-entity path through the same
   schema-targeted batched machinery the list path uses (`preloadInverseRelationships()` →
   `findByRelationBatchInSchema`, GIN-indexed), populating `inverseRelationCache` and serving from
-  it. The generic cross-table `findByRelation()` scan remains only as a resilience fallback when
-  the batched preload cannot populate the cache. Single reads now resolve inverse properties
-  identically to list reads.
+  it. ALL of the schema's inverse properties are preloaded — not just the extended ones — so the
+  legacy single-read response shape (every inverse property resolved once any one is extended) is
+  fully preserved. The generic cross-table `findByRelation()` scan remains only as a resilience
+  fallback when the batched preload cannot populate the cache. The extended inverse property's
+  value is identical to what a list read returns.
 - The two `\OC::$server->get(MagicMapper::class)` service-locations inside RenderObject are
   replaced with the already-injected `$this->objectEntityMapper` (same class, proper DI).
 - The two `[BATCH_PRELOAD]` `logger->info()` calls in `renderEntities()` are downgraded to
@@ -75,6 +77,5 @@ far more expensive than they need to be:
   real `PropertyRbacHandler` instead of a wiping mock),
   `tests/Unit/Service/Merge/MergeServiceTest.php` (`willReturnMap` rows extended for the new
   `_render` parameter).
-- No API contract change: response bodies are byte-identical for direct-scope reads; stale-scope
-  reads and inverse-extended single reads now match the list-path result shape (which is the
-  canonical one).
+- No API contract change: response bodies keep their existing shape, including every inverse
+  property resolved on single reads whenever any inverse property is extended.

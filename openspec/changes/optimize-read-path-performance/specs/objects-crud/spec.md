@@ -26,10 +26,13 @@ applied by that single render pass on the response path — never zero times, ne
 When a single-entity render extends an `inversedBy` property, the system SHALL resolve the
 referencing objects through the same schema-targeted batched lookup the list path uses
 (`findByRelationBatchInSchema` against the target schema's magic table), populating the inverse
-relation cache and serving the property from it. The generic cross-table reverse-reference scan
-(`findByRelation`) SHALL only run as a resilience fallback when the batched preload cannot populate
-the cache (e.g. an unresolvable target schema reference). A single read MUST produce the same
-inverse-property value as a list read of the same object with the same extend.
+relation cache and serving the properties from it. The preload MUST cover ALL of the schema's
+inverse properties — not only the extended ones — because a single read resolves every inverse
+property once any one of them is extended; a partial preload would silently empty the others in
+the response. The generic cross-table reverse-reference scan (`findByRelation`) SHALL only run as
+a resilience fallback when the batched preload cannot populate the cache (e.g. an unresolvable
+target schema reference). For the extended inverse property, a single read MUST produce the same
+value as a list read of the same object with the same extend.
 
 #### Scenario: Single read uses the schema-targeted batch lookup
 
@@ -38,11 +41,19 @@ inverse-property value as a list read of the same object with the same extend.
 - **THEN** the referencing object is found via the schema-targeted batched lookup
 - **AND** no cross-table reverse-reference scan is executed
 
-#### Scenario: Single and list reads agree on inverse properties
+#### Scenario: Single and list reads agree on the extended inverse property
 
 - **WHEN** the same object is rendered once via the single-read path and once via the list path,
   both extending the same inverse property
 - **THEN** both renders return an identical value for that inverse property
+
+#### Scenario: Non-extended inverse properties keep their resolved values on single reads
+
+- **GIVEN** a schema with two `inversedBy` properties, each with a referencing object
+- **WHEN** the object is rendered individually extending only one of the two inverse properties
+- **THEN** the extended inverse property contains its referencing object
+- **AND** the other inverse property is also populated with its referencing object — it is not
+  emptied by the batched preload
 
 ### Requirement: uuid scope resolution is cached per request
 

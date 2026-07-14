@@ -1644,8 +1644,7 @@ class RenderObject
                         _unset: $unset,
                         _registers: $registers,
                         _schemas: $schemas,
-                        _objects: $objects,
-                        _extendList: $extendArray
+                        _objects: $objects
                     );
                 }
             }//end if
@@ -3154,26 +3153,22 @@ class RenderObject
     /**
      * Handles inversed properties for an object
      *
-     * @param ObjectEntity $entity      The entity to process
-     * @param array        $objectData  The current object data
-     * @param int          $_depth      Current depth level
-     * @param array|null   $_filter     Filters to apply
-     * @param array|null   $_fields     Fields to include
-     * @param array|null   $_unset      Properties to remove from the rendered entity
-     * @param array|null   $_registers  Preloaded registers
-     * @param array|null   $_schemas    Preloaded schemas
-     * @param array|null   $_objects    Preloaded objects
-     * @param array|null   $_extendList The normalized _extend list for this render; used to
-     *                                  batch-preload exactly the extended inverse properties
-     *                                  (list-path parity). Null preloads all inverse properties.
+     * @param ObjectEntity $entity     The entity to process
+     * @param array        $objectData The current object data
+     * @param int          $_depth     Current depth level
+     * @param array|null   $_filter    Filters to apply
+     * @param array|null   $_fields    Fields to include
+     * @param array|null   $_unset     Properties to remove from the rendered entity
+     * @param array|null   $_registers Preloaded registers
+     * @param array|null   $_schemas   Preloaded schemas
+     * @param array|null   $_objects   Preloaded objects
      *
      * @return array The updated object data with inversed properties
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Complex inversed relationship resolution
-     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple relationship types create many paths
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive relationship handling requires extensive logic
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors renderEntity's rendering-option surface
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inversed relationship resolution
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
@@ -3186,8 +3181,7 @@ class RenderObject
         ?array $_unset=[],
         ?array $_registers=[],
         ?array $_schemas=[],
-        ?array $_objects=[],
-        ?array $_extendList=null
+        ?array $_objects=[]
     ): array {
         // Get the schema for this object.
         $schema = $this->getSchema(id: $entity->getSchema());
@@ -3229,11 +3223,13 @@ class RenderObject
         // through the SAME schema-targeted batched machinery the list path uses
         // (preloadInverseRelationships → findByRelationBatchInSchema, GIN-indexed)
         // instead of falling straight into the generic cross-table
-        // findByRelation() scan. This also makes single reads resolve inverse
-        // properties identically to list reads.
+        // findByRelation() scan. ALL inverse properties are preloaded — not just
+        // the extended ones — because a single read has always resolved every
+        // inverse property once any one of them is extended; preloading a subset
+        // would silently empty the others (consumer-visible response shape).
         $this->preloadInverseRelationships(
             entities: [$entity],
-            extend: ($_extendList ?? $propertyNames)
+            extend: $propertyNames
         );
 
         foreach ($propertyNames as $propName) {

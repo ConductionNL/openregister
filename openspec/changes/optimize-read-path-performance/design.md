@@ -48,17 +48,19 @@ bare mock returned `[]` and wiped the object, failing 2 tests at HEAD).
 ## Decision: single-entity inverse resolution = list machinery + legacy fallback
 
 `handleInversedProperties()` now, on a cold cache, calls
-`preloadInverseRelationships([$entity], $extendList)` and serves from the cache — identical
-machinery, query shape and result semantics as the list path (register-scoped, target-schema-scoped,
+`preloadInverseRelationships([$entity], $allInversePropertyNames)` and serves from the cache —
+identical machinery and query shape as the list path (register-scoped, target-schema-scoped,
 GIN-indexed). The old cross-table scan is kept below it as a resilience fallback for the cases the
 batch preload cannot handle (unresolvable `$ref`, batch query failure) so no configuration that
-worked before can break. The normalized extend list is passed down as a new trailing
-`?array $_extendList = null` parameter (null → preload all inverse properties, preserving the
-behaviour of direct invocations e.g. in tests).
+worked before can break.
 
-Consequence, intentional: a single read now resolves inverse properties with LIST semantics (only
-extended inverse properties are populated; scoping by the entity's register). This is the canonical
-shape — the list path is what production traffic overwhelmingly exercises — and is pinned by the
+Shape preservation (review finding): the preload covers ALL of the schema's inverse properties, not
+just the extended ones. A single read has always resolved every inverse property once any one of
+them is extended; preloading only the extended subset would make `handleInversedPropertiesFromCache`
+silently empty the others (cache miss → `[]`/null) — a consumer-visible regression on
+`GET /objects/{id}?_extend=someInverseProp`. Cost: one batched query per inverse property on the
+schema (each replacing what the fallback did with a full cross-table scan), so the perf win stands.
+The extended property's value is identical to the list read; the complete shape is pinned by the
 parity test.
 
 ## Decision: uuid scope cache is an array property, consult-populate-invalidate
@@ -74,10 +76,10 @@ array dies with the request.
 
 ## Risks / Trade-offs
 
-- **Behavioural delta on stale-scope + inverse-extended single reads**: response values for
-  non-extended inverse properties on single reads change from "populated anyway" to "empty unless
-  extended" (list parity). Accepted: extending is the documented way to request inverse data, and
-  the previous behaviour was an artefact of the slow path.
+- **Inverse response shape**: fully preserved. An earlier draft preloaded only the extended
+  inverse properties (strict list parity), which review flagged as a consumer-visible regression —
+  non-extended inverse properties would have been silently emptied. The final design preloads all
+  inverse properties on the single path, keeping the legacy shape at batched-query cost.
 - **PHPUnit mock materialization**: adding a trailing parameter to `find()` changes the argument
   count mocks receive; `willReturnMap` rows (exact-arity matching) in `MergeServiceTest` were
   extended. `with()`-style expectations are prefix-matched and unaffected.

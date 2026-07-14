@@ -14,19 +14,21 @@
 ## 2. Single-read inverse properties through the batched machinery
 
 - [x] 2.1 `handleInversedProperties()`: when the inverse cache is cold (single-entity render), call
-      `preloadInverseRelationships([$entity], $extendList)` — the same schema-targeted batched path
-      the list uses — then serve from `inverseRelationCache`. Keep the generic cross-table
+      `preloadInverseRelationships([$entity], ...)` — the same schema-targeted batched path the
+      list uses — then serve from `inverseRelationCache`. Keep the generic cross-table
       `findByRelation()` scan only as a resilience fallback when the preload cannot populate the
       cache.
-- [x] 2.2 Pass the normalized extend list from `renderEntity()` into `handleInversedProperties()`
-      (new trailing `?array $_extendList = null` parameter) so the single path preloads exactly the
-      extended inverse properties, like the list path.
+- [x] 2.2 Preload ALL of the schema's inverse properties on the single-entity path (not only the
+      extended ones): a single read has always resolved every inverse property once any one is
+      extended, and preloading a subset would silently empty the others in the response
+      (review finding; consumer-visible shape preserved).
 - [x] 2.3 Replace both `\OC::$server->get(MagicMapper::class)` service-locations with the
       constructor-injected `$this->objectEntityMapper` (same class; no constructor change needed —
       MagicMapper was already injected).
 - [x] 2.4 Test: `testSingleReadResolvesInversePropertiesViaBatchedPreloadLikeListRead` —
-      `findByRelation` never called, `findByRelationBatchInSchema` used on both paths, and the
-      single-read result for the inverse property is identical to the list-read result.
+      `findByRelation` never called, `findByRelationBatchInSchema` used on both paths, the
+      extended inverse property identical to the list-read result, and a non-extended inverse
+      property still populated on the single read (complete legacy shape).
 
 ## 3. Hot-path logging downgrades
 
