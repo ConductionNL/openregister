@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
@@ -126,7 +127,8 @@ class RegistersControllerTest extends TestCase
             $this->container,
             $this->groupManager,
             $this->createMock(RegisterCacheHandler::class),
-            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger)
+            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger),
+            $this->createMock(MigrationPackService::class)
         );
     }
 

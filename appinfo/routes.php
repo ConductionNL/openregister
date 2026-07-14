@@ -1118,6 +1118,20 @@ return [
 		['name' => 'scheduledReports#destroy', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'scheduledReports#runNow', 'url' => '/api/scheduled-reports/{id}/run-now', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
 
+		// Migration mapping packs (migration-mapping-packs): declarative
+		// source-format-to-schema import mappings. Reads (index/show/export)
+		// are available to any authenticated user so the import flow can
+		// browse packs; create/update/destroy/import are admin-gated. The
+		// `packId` request param on registers#import (below) resolves a
+		// pack by its `packSlug` and runs each row through it before save.
+		['name' => 'migrationPacks#index', 'url' => '/api/migration-packs', 'verb' => 'GET'],
+		['name' => 'migrationPacks#create', 'url' => '/api/migration-packs', 'verb' => 'POST'],
+		['name' => 'migrationPacks#import', 'url' => '/api/migration-packs/import', 'verb' => 'POST'],
+		['name' => 'migrationPacks#show', 'url' => '/api/migration-packs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#update', 'url' => '/api/migration-packs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#destroy', 'url' => '/api/migration-packs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#export', 'url' => '/api/migration-packs/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+
 		// Workflow Engines - CRUD and health check.
 		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],
 		['name' => 'workflowEngine#index', 'url' => '/api/engines', 'verb' => 'GET'],
