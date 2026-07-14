@@ -696,6 +696,99 @@ class RenderObject
     }//end resolveTranslationsForRows()
 
     /**
+     * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
+     *
+     * The list cheap-path (no _extend/_fields/_filter/_unset) does NOT run rows through
+     * renderEntity() — for performance — so the write-only redaction enforced there never
+     * runs. That is exactly the path the OpenConnector leak used: `GET .../objects/{reg}/
+     * {schema}` is a LIST, so it took the cheap-path and returned every Source's apikey in
+     * cleartext even after the single-object read was redacted. This method closes that gap
+     * with the same rule, mirroring resolveTranslationsForRows()'s per-row schema
+     * resolution and object-vs-array handling.
+     *
+     * Gated on `$_rbac`: a system-context read (`_rbac: false`) is trusted internal code
+     * (the sync/credential engine) and gets the full row; only a user-facing read
+     * (`_rbac: true`) is redacted. Strips the object body AND the `@self.relations` search
+     * index copy.
+     *
+     * @param array $rows  Result rows by reference, mutated in place.
+     * @param bool  $_rbac Whether this is a user-facing read (true) or system context (false).
+     *
+     * @return void
+     */
+    public function redactWriteOnlyFromRows(array &$rows, bool $_rbac=true): void
+    {
+        // Same bypass as renderEntity's read-strip (feat #380): a system-context read
+        // (`_rbac: false`) or a config-boot / repair render (SystemOperationContext) must
+        // see the full row — the sync and credential engines batch-read sources and need
+        // the secret. Only a normal authenticated read is stripped.
+        if ($_rbac === false || SystemOperationContext::isActive() === true || empty($rows) === true) {
+            return;
+        }
+
+        foreach ($rows as &$row) {
+            if ($row instanceof ObjectEntity === true) {
+                $schema = $this->getSchema(id: $row->getSchema());
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $object = $row->getObject();
+                if (is_array($object) === true) {
+                    $row->setObject($this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object));
+                }
+
+                // The body strip above leaves the `relations` search index untouched; it is
+                // a separate scalar mirror that jsonSerialize surfaces as @self.relations,
+                // so a write-only secret leaks there unless stripped too.
+                $relations = $row->getRelations();
+                if (is_array($relations) === true) {
+                    $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
+                }
+
+                continue;
+            }//end if
+
+            if (is_array($row) === true) {
+                $schemaId = $row['@self']['schema'] ?? null;
+                if (is_int($schemaId) === false && is_string($schemaId) === false) {
+                    continue;
+                }
+
+                $schema = $this->getSchema(id: $schemaId);
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+                if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+                    $row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
+                        schema: $schema,
+                        object: $row['@self']['relations']
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        unset($row);
+    }//end redactWriteOnlyFromRows()
+
+    /**
+     * Whether a schema has any read-strip rule (property-level read authorization or a
+     * write-only property). Mirrors the guard in renderEntity's read-strip block, so the
+     * cheap-path and the single-object path agree on when to strip.
+     *
+     * @param Schema|null $schema The row's schema.
+     *
+     * @return bool
+     */
+    private function schemaNeedsReadStrip(?Schema $schema): bool
+    {
+        return $schema !== null
+            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true);
+    }//end schemaNeedsReadStrip()
+
+    /**
      * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
      *
      * @param mixed $row The row to inspect.
