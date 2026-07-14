@@ -8,7 +8,7 @@ Request interception currently costs a webhook table scan on every object write 
 
 ### Requirement: Request interception MUST short-circuit via a cached tenant-agnostic flag when no interception webhook exists
 
-The system SHALL maintain a per-event-type boolean flag — "does ANY enabled webhook configured for request interception exist for this event type, across ALL organisations" — in a distributed cache. Before querying webhooks, `interceptRequest` SHALL consult this flag: a cached `false` SHALL return the original request data without ANY webhook table query; a cached `true` SHALL proceed with the organisation-filtered interception lookup; a cache miss SHALL compute the flag from a tenant-agnostic scan (no organisation filter) and store it. The flag MUST NOT be cached per organisation: the cached answer must be valid for every tenant, so one tenant's "no webhooks" can never disable another tenant's interception hooks. The flag SHALL be invalidated on every webhook insert, update, and delete, and SHALL additionally expire via a TTL as a safety net. Without a cache backend the system SHALL fall back to computing the flag on each call (pre-cache behaviour).
+The system SHALL maintain a per-event-type boolean flag — "does ANY enabled webhook configured for request interception exist for this event type, across ALL organisations" — in a distributed cache. Before querying webhooks, `interceptRequest` SHALL consult this flag: a cached `false` SHALL return the original request data without ANY webhook table query; a cached `true` SHALL proceed with the organisation-filtered interception lookup; a cache miss SHALL compute the flag from a tenant-agnostic scan (no organisation filter) and store it. The flag MUST NOT be cached per organisation: the cached answer must be valid for every tenant, so one tenant's "no webhooks" can never disable another tenant's interception hooks. The flag SHALL be invalidated on every webhook insert, update, and delete, and SHALL additionally expire via a short TTL as a safety net. The flag SHALL only be cached when a genuinely DISTRIBUTED memory cache backend is configured (`ICacheFactory::isAvailable()`): without one, the distributed-cache factory falls back to a node-local cache, and a stale node-local `false` could let one node's writes bypass an interception webhook created on another node. Without a distributed backend (or without any cache backend) the system SHALL fall back to computing the flag on each call (pre-cache behaviour).
 
 #### Scenario: Zero interception webhooks — object write skips the webhook table
 - **GIVEN** the cached flag for `object.creating` is `false`
@@ -31,6 +31,12 @@ The system SHALL maintain a per-event-type boolean flag — "does ANY enabled we
 - **GIVEN** a cached `false` flag for `object.creating`
 - **WHEN** a webhook is created, updated, or deleted
 - **THEN** the cached flags for all event types are invalidated so the next interception recomputes them
+
+#### Scenario: No distributed cache backend disables the fast-path cache
+- **GIVEN** no distributed memory cache is configured (the cache factory reports unavailable)
+- **WHEN** an object create request is intercepted
+- **THEN** no flag is read from or written to any cache backend
+- **AND** the interception-webhook existence check is computed from the database (pre-cache behaviour)
 
 ### Requirement: Request-interception delivery MUST be hard-capped at 2 seconds connect and total
 

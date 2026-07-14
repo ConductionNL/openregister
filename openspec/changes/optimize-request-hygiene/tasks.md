@@ -2,12 +2,12 @@
 
 ## 1. Webhook interception fast path + timeout cap
 
-- [x] 1.1 Create `lib/Service/Webhook/WebhookInterceptionCache.php` — distributed-cache flag (`has-interception-webhooks:{eventType}`, TTL 300s, `get`/`set`/`invalidate`).
+- [x] 1.1 Create `lib/Service/Webhook/WebhookInterceptionCache.php` — distributed-cache flag (`has-interception-webhooks:{eventType}`, TTL 60s, `get`/`set`/`invalidate`), armed ONLY when `ICacheFactory::isAvailable()` reports a genuinely distributed backend (a node-local fallback could let stale `false` flags bypass interception on multi-node setups).
 - [x] 1.2 Add `WebhookMapper::findEnabledForInterceptionScan()` — enabled webhooks WITHOUT organisation filter (tenant-agnostic flag computation), documented why.
 - [x] 1.3 Invalidate the flag cache in `WebhookMapper::insert()`, `update()`, `delete()` (nullable optional constructor dependency).
 - [x] 1.4 `WebhookService::interceptRequest()` consults `hasInterceptionWebhooks()` first: cached false → return request params without any webhook query; miss → compute globally + cache; true → organisation-filtered lookup as before. Shared matching extracted to `matchesInterception()`.
 - [x] 1.5 Add `WebhookService::INTERCEPTION_TIMEOUT_SECONDS = 2` (commented) and thread an optional `timeoutCapSeconds` through `deliverWebhook()` → `sendRequest()`; applied only on the interception path, `min()` with the per-webhook timeout, non-positive per-webhook timeouts forced to the cap, `connect_timeout` set to the cap. Async post-save delivery untouched.
-- [x] 1.6 Unit tests: cache hit (true/false)/miss/per-event scoping/invalidation (`WebhookInterceptionCacheTest`), fast-path skip + miss-compute-store + no-backend fallback + timeout cap incl. never-raise (`WebhookInterceptionFastPathTest`), CRUD invalidation (`WebhookMapperInterceptionInvalidationTest`).
+- [x] 1.6 Unit tests: cache hit (true/false)/miss/per-event scoping/invalidation + unavailable-backend gate (never creates the cache, always misses, no-op invalidate) (`WebhookInterceptionCacheTest`), fast-path skip + miss-compute-store + no-backend fallback + timeout cap incl. never-raise (`WebhookInterceptionFastPathTest`), CRUD invalidation (`WebhookMapperInterceptionInvalidationTest`).
 - [x] 1.7 Fix pre-existing bug encountered: `WebhookLog::setPayloadArray()` called the magic setter with a named argument, so `Entity::__call` never stored the payload (PHP "Undefined array key 0" warning) — switched to positional args like `Webhook.php`.
 
 ## 2. Fake gzip headers

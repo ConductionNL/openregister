@@ -83,6 +83,8 @@ class WebhookInterceptionCacheTest extends TestCase
         );
 
         $factory = $this->createMock(ICacheFactory::class);
+        // A genuinely distributed backend is configured — the cache arms itself.
+        $factory->method('isAvailable')->willReturn(true);
         $factory->method('createDistributed')->willReturn($backend);
 
         $this->cache = new WebhookInterceptionCache(cacheFactory: $factory);
@@ -152,4 +154,65 @@ class WebhookInterceptionCacheTest extends TestCase
         $this->assertNull($this->cache->get(eventType: 'object.creating'));
         $this->assertNull($this->cache->get(eventType: 'object.updating'));
     }//end testInvalidateClearsAllFlags()
+
+    // ─── No distributed backend configured ───────────────────────────
+
+    /**
+     * Build a cache whose factory reports NO distributed backend.
+     *
+     * @param ICacheFactory&MockObject $factory Factory mock (isAvailable false pre-set).
+     *
+     * @return WebhookInterceptionCache
+     */
+    private function makeUnavailableCache(ICacheFactory&MockObject $factory): WebhookInterceptionCache
+    {
+        $factory->method('isAvailable')->willReturn(false);
+
+        return new WebhookInterceptionCache(cacheFactory: $factory);
+    }//end makeUnavailableCache()
+
+    /**
+     * Without a distributed backend the cache must never be created:
+     * createDistributed() would fall back to a node-LOCAL cache whose stale
+     * 'false' on one node could bypass an interception webhook created on
+     * another node.
+     *
+     * @return void
+     */
+    public function testUnavailableBackendNeverCreatesTheCache(): void
+    {
+        $factory = $this->createMock(ICacheFactory::class);
+        $factory->expects($this->never())->method('createDistributed');
+
+        $this->makeUnavailableCache($factory);
+    }//end testUnavailableBackendNeverCreatesTheCache()
+
+    /**
+     * With the cache disabled, set() is a no-op and get() always reports a
+     * miss — the caller computes the flag from the database on every write.
+     *
+     * @return void
+     */
+    public function testUnavailableBackendAlwaysMisses(): void
+    {
+        $cache = $this->makeUnavailableCache($this->createMock(ICacheFactory::class));
+
+        $cache->set(eventType: 'object.creating', hasWebhooks: false);
+
+        $this->assertNull($cache->get(eventType: 'object.creating'));
+    }//end testUnavailableBackendAlwaysMisses()
+
+    /**
+     * invalidate() stays safe (no-op) with the cache disabled.
+     *
+     * @return void
+     */
+    public function testUnavailableBackendInvalidateIsNoOp(): void
+    {
+        $cache = $this->makeUnavailableCache($this->createMock(ICacheFactory::class));
+
+        $cache->invalidate();
+
+        $this->assertNull($cache->get(eventType: 'object.creating'));
+    }//end testUnavailableBackendInvalidateIsNoOp()
 }//end class

@@ -46,8 +46,18 @@ use OCP\ICacheFactory;
  * lookup to select the webhooks that actually apply.
  *
  * Invalidation: every webhook insert/update/delete clears the flags (see
- * WebhookMapper). A TTL bounds staleness across nodes that miss an
+ * WebhookMapper). A short TTL bounds staleness across nodes that miss an
  * invalidation (e.g. cache backends without distributed clear).
+ *
+ * IMPORTANT — the cache is only armed when a genuinely DISTRIBUTED memory
+ * cache is configured (ICacheFactory::isAvailable()). Without one,
+ * createDistributed() silently falls back to a node-LOCAL cache (APCu):
+ * on a multi-node deployment a cached "false" on node B would then survive
+ * a webhook created on node A for up to the TTL, and node B's writes would
+ * bypass a real interception webhook. In that configuration get() always
+ * reports a miss and set()/invalidate() are no-ops, so callers compute the
+ * flag from the database on every write — the pre-cache behaviour, slower
+ * but always correct.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Webhook
@@ -67,10 +77,13 @@ class WebhookInterceptionCache
      *
      * Bounds staleness when an invalidation is missed; webhook CRUD clears
      * the flags eagerly so this is a safety net, not the primary mechanism.
+     * Kept short (60s) so that even in a pathological case where a node
+     * misses the distributed invalidation, a newly created interception
+     * webhook is honoured within a minute.
      *
      * @var integer
      */
-    private const CACHE_TTL_SECONDS = 300;
+    private const CACHE_TTL_SECONDS = 60;
 
     /**
      * Cache key prefix for per-event-type flags.
@@ -82,12 +95,21 @@ class WebhookInterceptionCache
     /**
      * Distributed cache instance scoped to webhook interception flags.
      *
-     * @var ICache
+     * Null when no genuinely distributed memory cache is configured — the
+     * cache is then disabled entirely (see the class docblock) rather than
+     * silently degrading to a node-local backend.
+     *
+     * @var ICache|null
      */
-    private ICache $cache;
+    private ?ICache $cache = null;
 
     /**
      * Constructor
+     *
+     * Arms the cache only when ICacheFactory reports a distributed memory
+     * cache backend; otherwise createDistributed() would hand back a
+     * node-LOCAL cache whose stale "false" flags could bypass interception
+     * webhooks on multi-node deployments.
      *
      * @param ICacheFactory $cacheFactory Cache factory used to create the distributed cache.
      *
@@ -95,7 +117,9 @@ class WebhookInterceptionCache
      */
     public function __construct(ICacheFactory $cacheFactory)
     {
-        $this->cache = $cacheFactory->createDistributed('openregister-webhook-interception');
+        if ($cacheFactory->isAvailable() === true) {
+            $this->cache = $cacheFactory->createDistributed('openregister-webhook-interception');
+        }
     }//end __construct()
 
     /**
@@ -109,6 +133,12 @@ class WebhookInterceptionCache
      */
     public function get(string $eventType): ?bool
     {
+        // Cache disabled (no distributed backend) → always a miss, so the
+        // caller falls back to computing the flag from the database.
+        if ($this->cache === null) {
+            return null;
+        }
+
         $value = $this->cache->get(self::KEY_PREFIX.$eventType);
         if ($value === null) {
             return null;
@@ -130,7 +160,8 @@ class WebhookInterceptionCache
     public function set(string $eventType, bool $hasWebhooks): void
     {
         // ICache values must be scalars; store as int for backend portability.
-        $this->cache->set(self::KEY_PREFIX.$eventType, (int) $hasWebhooks, self::CACHE_TTL_SECONDS);
+        // No-op when the cache is disabled (no distributed backend).
+        $this->cache?->set(self::KEY_PREFIX.$eventType, (int) $hasWebhooks, self::CACHE_TTL_SECONDS);
     }//end set()
 
     /**
@@ -145,6 +176,7 @@ class WebhookInterceptionCache
      */
     public function invalidate(): void
     {
-        $this->cache->clear(self::KEY_PREFIX);
+        // No-op when the cache is disabled (no distributed backend).
+        $this->cache?->clear(self::KEY_PREFIX);
     }//end invalidate()
 }//end class

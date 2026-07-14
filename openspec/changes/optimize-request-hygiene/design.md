@@ -9,7 +9,8 @@
 - **Component:** `lib/Service/Webhook/WebhookInterceptionCache.php`, backed by `ICacheFactory::createDistributed('openregister-webhook-interception')`.
 - **Key:** `has-interception-webhooks:{eventType}` (e.g. `has-interception-webhooks:object.creating`).
 - **Value:** `0`/`1` (scalar for backend portability), surfaced as `bool`; `null` = miss.
-- **TTL:** 300s (`CACHE_TTL_SECONDS`) — a safety net for nodes that miss an invalidation; eager invalidation is the primary mechanism.
+- **TTL:** 60s (`CACHE_TTL_SECONDS`) — a safety net for nodes that miss an invalidation; eager invalidation is the primary mechanism. Kept short so a missed invalidation can delay a new interception webhook by at most a minute.
+- **Distributed-only gate:** the cache is only armed when `ICacheFactory::isAvailable()` reports a genuinely distributed memory cache. Without one, `createDistributed()` silently falls back to a node-LOCAL cache (APCu); on multi-node deployments a cached `false` on node B would survive a webhook created on node A for up to the TTL, letting node B's writes bypass a real interception hook. With no distributed backend the cache is disabled (`get()` always misses, `set()`/`invalidate()` no-op) and every write computes the flag from the database — pre-cache behaviour, slower but always correct.
 - **Invalidation points:** `WebhookMapper::insert()`, `update()`, `delete()` each call `WebhookInterceptionCache::invalidate()` (clears the key prefix). Any CRUD can change any event type's answer, so all flags are cleared. `updateStatistics()` routes through `update()` and therefore also invalidates — harmless: the flag is only load-bearing on installs with zero interception webhooks, which never deliver.
 - **Nullable DI:** both `WebhookService` and `WebhookMapper` take the cache as an optional trailing constructor argument. Without it, behaviour degrades to the pre-change lookup (no crash in degraded environments or hand-constructed test instances).
 
