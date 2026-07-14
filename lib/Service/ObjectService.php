@@ -377,6 +377,8 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
+     *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function runAsSystem(callable $operation)
@@ -1469,9 +1471,9 @@ class ObjectService
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
-        // Index-guard the [$object, $uuid] tuple so a short return never emits
-        // an "Undefined array key" warning; keeps the current values otherwise.
-        $object = ($cascadeResult[0] ?? $object);
+        // The handler returns an [array $object, ?string $uuid] tuple; offset 0
+        // always exists, offset 1 may be null — keep the current uuid then.
+        $object = $cascadeResult[0];
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
         // Restore the parent object's register and schema context after cascading.
@@ -2616,6 +2618,8 @@ class ObjectService
      * @param array<string, mixed> $query The canonical search query.
      *
      * @return array<string, mixed> The query with provider-contract keys added.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */

@@ -2584,10 +2584,7 @@ class ObjectsController extends Controller
      *
      * @PublicPage
      *
-     * @psalm-return JSONResponse<201|401|403|404,
-     *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
-     *     message?: mixed|string, error?: mixed|string,...},
-     *     array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue

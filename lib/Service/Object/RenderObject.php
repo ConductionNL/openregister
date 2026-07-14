@@ -1445,6 +1445,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional rendering features create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
+     * @SuppressWarnings(PHPMD.StaticAccess)           SystemOperationContext is a static execution-context holder by design
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
@@ -2647,12 +2648,11 @@ class RenderObject
 
             $value = ($objectData[$name] ?? null);
             if (is_array($value) === true) {
-                // An associative array (or one carrying id/@self) is an object
-                // already embedded by an earlier extend pass — never treat its
-                // VALUES as ids to resolve.
-                $alreadyEmbedded = (array_is_list($value) === false
-                    || isset($value['id']) === true
-                    || isset($value['@self']) === true);
+                // An associative array (i.e. one carrying string keys such as
+                // id/@self) is an object already embedded by an earlier extend
+                // pass — never treat its VALUES as ids to resolve. A list can
+                // never carry those string keys, so list-ness is the test.
+                $alreadyEmbedded = (array_is_list($value) === false);
                 if ($alreadyEmbedded === false) {
                     $objectData[$name] = array_map($resolve, $value);
                 }
@@ -3170,9 +3170,10 @@ class RenderObject
      * @return array The updated object data with inversed properties
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex inversed relationship resolution
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple relationship types create many paths
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relationship handling requires extensive logic
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Complex inversed relationship resolution
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple relationship types create many paths
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive relationship handling requires extensive logic
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors renderEntity's rendering-option surface
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
