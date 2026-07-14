@@ -16,12 +16,11 @@ declare(strict_types=1);
 namespace Unit\Service\Archival;
 
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\BackgroundJob\DestructionExecutionJob;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Archival\DestructionService;
 use OCA\OpenRegister\Service\Archival\LegalHoldService;
-use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUser;
@@ -37,8 +36,6 @@ class DestructionServiceTest extends TestCase
 {
     private MagicMapper&MockObject $objectMapper;
     private LegalHoldService&MockObject $legalHoldService;
-    private DeleteObject&MockObject $deleteObject;
-    private AuditTrailMapper&MockObject $auditTrailMapper;
     private IAppConfig&MockObject $appConfig;
     private IJobList&MockObject $jobList;
     private IUserSession&MockObject $userSession;
@@ -55,8 +52,6 @@ class DestructionServiceTest extends TestCase
             ->addMethods(['findByUuid'])
             ->getMock();
         $this->legalHoldService = $this->createMock(LegalHoldService::class);
-        $this->deleteObject     = $this->createMock(DeleteObject::class);
-        $this->auditTrailMapper = $this->createMock(AuditTrailMapper::class);
         $this->appConfig        = $this->createMock(IAppConfig::class);
         $this->jobList          = $this->createMock(IJobList::class);
         $this->userSession      = $this->createMock(IUserSession::class);
@@ -65,8 +60,6 @@ class DestructionServiceTest extends TestCase
         $this->service = new DestructionService(
             $this->objectMapper,
             $this->legalHoldService,
-            $this->deleteObject,
-            $this->auditTrailMapper,
             $this->appConfig,
             $this->jobList,
             $this->userSession,
@@ -243,62 +236,77 @@ class DestructionServiceTest extends TestCase
     }
 
     /**
-     * Test generating a destruction certificate.
+     * D1 (openregister#393): approval MUST queue DestructionExecutionJob with the
+     * argument key the job actually reads — `destructionListUuid`.
+     *
+     * The job does `$argument['destructionListUuid'] ?? null` and returns early when
+     * absent. approveList() previously queued `['destructionList' => <array>, ...]`,
+     * so the job bailed out on every single run: no object was ever destroyed and no
+     * verklaring van vernietiging was ever produced through the /api/archival route.
+     * Asserting on the queued payload is what makes that regression impossible to
+     * reintroduce silently.
      */
-    public function testGenerateCertificate(): void
+    public function testApproveListQueuesJobWithUuidTheJobCanActuallyRead(): void
     {
+        $this->setupMockUser('archivaris-1');
+
         $list = [
-            'objects'   => [
-                ['uuid' => 'uuid-1', 'schema' => 5, 'classificatie' => 'B1'],
-                ['uuid' => 'uuid-2', 'schema' => 5, 'classificatie' => 'B1'],
-                ['uuid' => 'uuid-3', 'schema' => 8, 'classificatie' => 'A1'],
-            ],
-            'approvals' => [
-                ['approvedBy' => 'archivaris-1'],
-            ],
+            'status'    => DestructionService::STATUS_IN_REVIEW,
+            'objects'   => [['uuid' => 'uuid-1']],
+            'approvals' => [],
         ];
 
-        $executionResult = [
-            'destroyed'      => 3,
-            'skippedCount'   => 0,
-            'skipped'        => [],
-            'filesDestroyed' => 2,
-        ];
+        $captured = null;
+        $this->jobList->expects($this->once())
+            ->method('add')
+            ->willReturnCallback(
+                function (string $job, $argument) use (&$captured): void {
+                    $this->assertSame(DestructionExecutionJob::class, $job);
+                    $captured = $argument;
+                }
+            );
 
-        $certificate = $this->service->generateCertificate($list, $executionResult);
+        $this->service->approveList($list, 'approve_all', [], [], false, 'list-uuid-42');
 
-        $this->assertEquals('verklaring_van_vernietiging', $certificate['type']);
-        $this->assertEquals(3, $certificate['totalObjectsDestroyed']);
-        $this->assertEquals(0, $certificate['totalObjectsSkipped']);
-        $this->assertContains('archivaris-1', $certificate['approvers']);
-        $this->assertEquals(true, $certificate['immutable']);
-        $this->assertStringContainsString('Archiefwet 1995', $certificate['complianceStatement']);
+        $this->assertIsArray($captured);
+        $this->assertArrayHasKey(
+            'destructionListUuid',
+            $captured,
+            'DestructionExecutionJob reads $argument["destructionListUuid"]; any other key makes it a no-op.'
+        );
+        $this->assertSame('list-uuid-42', $captured['destructionListUuid']);
     }
 
     /**
-     * Test certificate for partial completion records skipped objects.
+     * D2 (openregister#393): the approval MUST be recorded under the canonical
+     * `userId` key.
+     *
+     * Both readers of the approvals list — RetentionService::generateDestructionCertificate()
+     * and DestructionExecutionJob — do array_column($approvals, 'userId'). approveList()
+     * previously wrote `approvedBy`, so the certificate's approver list came out EMPTY:
+     * a legally worthless "verklaring van vernietiging" that does not record who
+     * authorised the destruction.
      */
-    public function testGenerateCertificatePartial(): void
+    public function testApprovalIsRecordedUnderCanonicalUserIdKey(): void
     {
+        $this->setupMockUser('archivaris-1');
+
         $list = [
-            'objects'   => [['uuid' => 'uuid-1', 'schema' => 5, 'classificatie' => 'B1']],
-            'approvals' => [['approvedBy' => 'archivaris-1']],
+            'status'    => DestructionService::STATUS_IN_REVIEW,
+            'objects'   => [['uuid' => 'uuid-1']],
+            'approvals' => [],
         ];
 
-        $executionResult = [
-            'destroyed'      => 1,
-            'skippedCount'   => 2,
-            'skipped'        => [
-                ['uuid' => 'uuid-2', 'reason' => 'legal_hold_placed_after_approval'],
-                ['uuid' => 'uuid-3', 'reason' => 'legal_hold_placed_after_approval'],
-            ],
-            'filesDestroyed' => 0,
-        ];
+        $result = $this->service->approveList($list, 'approve_all', [], [], false, 'list-uuid-42');
 
-        $certificate = $this->service->generateCertificate($list, $executionResult);
+        $this->assertSame('archivaris-1', $result['approvals'][0]['userId']);
 
-        $this->assertEquals(1, $certificate['totalObjectsDestroyed']);
-        $this->assertEquals(2, $certificate['totalObjectsSkipped']);
-        $this->assertCount(2, $certificate['skippedObjects']);
+        // The exact projection the certificate generator performs must be non-empty.
+        $approvers = array_column($result['approvals'], 'userId');
+        $this->assertSame(
+            ['archivaris-1'],
+            $approvers,
+            'array_column($approvals, "userId") is what lands in the certificate; it must not be empty.'
+        );
     }
 }

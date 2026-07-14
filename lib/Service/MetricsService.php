@@ -106,6 +106,27 @@ class MetricsService
     public const METRIC_CHAT_MESSAGE = 'chat_message';
 
     /**
+     * Metric type constant for object creation (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_CREATED = 'object_created';
+
+    /**
+     * Metric type constant for object update (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_UPDATED = 'object_updated';
+
+    /**
+     * Metric type constant for object deletion (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_DELETED = 'object_deleted';
+
+    /**
      * Constructor
      *
      * @param IDBConnection   $db     Database connection
