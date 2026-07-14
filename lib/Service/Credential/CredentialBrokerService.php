@@ -74,6 +74,8 @@ use Throwable;
  *   is deliberately decomposed into small single-purpose guard methods so each
  *   security decision is independently auditable; the aggregate weighted method
  *   count is a by-product of that decomposition, not of tangled logic.
+ *
+ * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
  */
 class CredentialBrokerService
 {
@@ -181,6 +183,14 @@ class CredentialBrokerService
 
         // Guard 3 + 4 — provider resolution, allow-rules, host-lock.
         $provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+
+        // An inject-only provider carries no baseUrl/allowRules and MUST NEVER be proxied
+        // (an unbounded host is exactly what the constrained proxy exists to prevent). Its
+        // secret is reachable only app-side via resolveInjectable(); fail closed here.
+        if ($this->isInjectOnly(provider: $provider) === true) {
+            $this->deny(reason: 'inject-only provider cannot be proxied; use resolveInjectable', credentialId: $credentialId);
+        }
+
         $this->assertRuleAllowed(provider: $provider, method: $method, matchPath: $matchPath, credentialId: $credentialId);
         $resolvedUrl = $this->resolveAndLockUrl(provider: $provider, path: $path, credentialId: $credentialId);
 
@@ -200,6 +210,84 @@ class CredentialBrokerService
             credentialId: $credentialId
         );
     }//end request()
+
+    /**
+     * Resolve the raw secret for an INJECT-ONLY credential, for same-instance app-side injection.
+     *
+     * This is the deliberate counterpart to {@see request()} for arbitrary / self-hosted
+     * targets that cannot be host-locked from the immutable catalogue (an OpenConnector
+     * Source against a municipality's own API, say). It runs ONLY the two guards that are
+     * meaningful without a host — Guard 1 (owner / organisation membership, IDOR) and Guard 2
+     * (allowedApps) — and then returns the plaintext secret to the trusted in-process caller,
+     * which injects it itself. It deliberately SKIPS the provider allow-rules and host-lock
+     * (Guards 3 + 4): there is no host to lock, so those guards do not apply.
+     *
+     * The catalogue keeps the two worlds apart. An `inject_only` provider carries no baseUrl
+     * and no allowRules, so {@see request()} refuses it (it can never become an open proxy).
+     * A normal host-locked provider (Mollie, GitHub, …) is NOT inject-only, so this method
+     * returns null for it — its secret stays zero-knowledge inside OR and is only ever
+     * reachable through the constrained proxy. A caller therefore uses the return value to
+     * route: a non-null secret means "inject this yourself"; null means "this credential is a
+     * proxy credential — call request() instead".
+     *
+     * The plaintext crosses the process boundary into the calling app (a change from the
+     * proxy's "secret never leaves OR" posture), so this is a TRUSTED IN-PROCESS PATH only —
+     * `appId` is the caller's own id, exactly as on the tokenless in-process {@see request()}
+     * path (design D-G). `actingUserId` follows the same rule as request() (design D-K):
+     * honored only when there is no user session.
+     *
+     * @param string      $credentialId The `credential` object UUID.
+     * @param string      $appId        The authenticated calling app id (the caller's own id on the in-process path).
+     * @param string|null $actingUserId Optional asserted user for SESSIONLESS in-process callers; ignored with a session.
+     *
+     * @return string|null The raw secret for an inject-only credential, or null when the credential is a proxy credential.
+     *
+     * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     */
+    public function resolveInjectable(
+        string $credentialId,
+        string $appId,
+        ?string $actingUserId=null
+    ): ?string {
+        // Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
+        $credential = $this->loadAdmittedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
+        $data       = $credential->jsonSerialize();
+        $scope      = $this->scopeOf(data: $data);
+
+        // Guard 2 — allowed app.
+        $this->assertAppAllowed(data: $data, appId: $appId, credentialId: $credentialId);
+
+        // Only inject-only credentials may be resolved app-side; a proxy credential's secret
+        // stays inside OR — signal that with null so the caller routes to request() instead.
+        $provider = $this->resolveProvider(data: $data, credentialId: $credentialId);
+        if ($this->isInjectOnly(provider: $provider) === false) {
+            return null;
+        }
+
+        $secret = $this->credentialStore->get($credentialId, $scope);
+        if ($secret === null) {
+            $this->deny(reason: 'no secret stored for inject-only credential', credentialId: $credentialId);
+        }
+
+        return (string) $secret;
+    }//end resolveInjectable()
+
+    /**
+     * Whether a resolved provider entry is inject-only (app-side injection, never proxied).
+     *
+     * @param array<string, mixed> $provider The catalogue provider entry.
+     *
+     * @return bool True when the provider is flagged `inject_only`.
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     */
+    private function isInjectOnly(array $provider): bool
+    {
+        return ($provider['inject_only'] ?? false) === true;
+    }//end isInjectOnly()
 
     /**
      * Guard 1 — load the credential and admit the caller per the credential's SCOPE.

@@ -48,7 +48,6 @@ use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -102,8 +101,6 @@ class ObjectServiceTest extends TestCase
 	private $auditHandler;
 	/** @var MockObject&PermissionHandler */
 	private $permissionHandler;
-	/** @var MockObject&PerformanceHandler */
-	private $performanceHandler;
 	/** @var MockObject&CascadingHandler */
 	private $cascadingHandler;
 	/** @var MockObject&QueryHandler */
@@ -149,7 +146,6 @@ class ObjectServiceTest extends TestCase
 		$this->lockHandler = $this->createMock(LockHandler::class);
 		$this->auditHandler = $this->createMock(AuditHandler::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
 		$this->queryHandler = $this->createMock(QueryHandler::class);
 		$this->facetHandler = $this->createMock(FacetHandler::class);
@@ -190,7 +186,6 @@ class ObjectServiceTest extends TestCase
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
-			$this->performanceHandler,
 			$this->permissionHandler,
 			$this->renderHandler,
 			$this->saveHandler,
@@ -277,14 +272,14 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setRegister with a numeric ID uses performance cache.
+	 * Test setRegister with a numeric ID resolves via the mapper.
 	 */
-	public function testSetRegisterWithNumericIdUsesCachedLookup(): void
+	public function testSetRegisterWithNumericIdUsesMapperFind(): void
 	{
-		$this->performanceHandler
+		$this->registerMapper
 			->expects($this->once())
-			->method('getCachedEntities')
-			->willReturn([$this->register]);
+			->method('find')
+			->willReturn($this->register);
 
 		$result = $this->service->setRegister(register: 1);
 
@@ -322,14 +317,14 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setSchema with a numeric ID uses cached lookup.
+	 * Test setSchema with a numeric ID resolves via the mapper.
 	 */
-	public function testSetSchemaWithNumericIdUsesCachedLookup(): void
+	public function testSetSchemaWithNumericIdUsesMapperFind(): void
 	{
-		$this->performanceHandler
+		$this->schemaMapper
 			->expects($this->once())
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+			->method('find')
+			->willReturn($this->schema);
 
 		$result = $this->service->setSchema(schema: 2);
 
@@ -510,9 +505,9 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		// setSchema will be called since currentSchema is null.
-		$this->performanceHandler
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper
+			->method('find')
+			->willReturn($this->schema);
 
 		$this->renderHandler
 			->expects($this->once())
@@ -558,7 +553,7 @@ class ObjectServiceTest extends TestCase
 		$this->getHandler->method('find')->willReturn($entity);
 
 		// setSchema will be called for derived schema.
-		$this->performanceHandler->method('getCachedEntities')->willReturn([$this->schema]);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
 		$this->renderHandler->method('renderEntity')->willReturn($entity);
 
 		// Capture the context before the call so we can assert it is restored.
@@ -744,9 +739,9 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		// setSchema is called to derive schema from object.
-		$this->performanceHandler
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper
+			->method('find')
+			->willReturn($this->schema);
 
 		$this->permissionHandler
 			->expects($this->once())
@@ -784,6 +779,189 @@ class ObjectServiceTest extends TestCase
 		$result = $this->service->deleteObject(uuid: 'nonexistent');
 
 		$this->assertTrue($result);
+	}
+
+	// ── 9. deleteObjects() bulk tests ───────────────────────────────────
+
+	/**
+	 * Bulk delete resolves every uuid's scope with ONE batched cross-table
+	 * lookup and hands the pre-resolved entity plus concrete register/schema
+	 * entities to the delete handler — the legacy per-uuid pre-find is skipped.
+	 */
+	public function testDeleteObjectsUsesBatchedScopeResolution(): void
+	{
+		$entityA = new ObjectEntity();
+		$entityA->setUuid('uuid-a');
+		$entityA->setRegister('1');
+		$entityA->setSchema('2');
+
+		$entityB = new ObjectEntity();
+		$entityB->setUuid('uuid-b');
+		$entityB->setRegister('1');
+		$entityB->setSchema('2');
+
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-a', 'uuid-b'], true)
+			->willReturn([$entityA, $entityB]);
+
+		// The legacy per-uuid pre-delete find must NOT run for batch-resolved uuids.
+		$this->objectEntityMapper
+			->expects($this->never())
+			->method('find');
+
+		// Scope entities materialise once per distinct (register, schema) pair.
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($this->register);
+		$this->schemaMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($this->schema);
+
+		$captured = [];
+		$this->deleteHandler
+			->expects($this->exactly(2))
+			->method('deleteObject')
+			->willReturnCallback(
+				function (
+					$register,
+					$schema,
+					$uuid,
+					$originalObjectId=null,
+					$_rbac=true,
+					$_multitenancy=true,
+					$scoped=false,
+					$preResolved=null
+				) use (&$captured) {
+					$captured[] = [
+						'register'    => $register,
+						'schema'      => $schema,
+						'uuid'        => $uuid,
+						'preResolved' => $preResolved,
+					];
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-a', 'uuid-b'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-a', 'uuid-b'], $result['deleted_uuids']);
+		$this->assertSame([], $result['skipped_uuids']);
+		$this->assertSame($this->register, $captured[0]['register']);
+		$this->assertSame($this->schema, $captured[0]['schema']);
+		$this->assertSame($entityA, $captured[0]['preResolved']);
+		$this->assertSame($entityB, $captured[1]['preResolved']);
+	}
+
+	/**
+	 * Uuids the batch lookup cannot resolve fall back to the legacy per-uuid
+	 * scope find and a handler call without pre-resolved entity.
+	 */
+	public function testDeleteObjectsFallsBackToPerUuidLookupWhenBatchMisses(): void
+	{
+		$this->objectEntityMapper
+			->method('findMultipleAcrossAllMagicTables')
+			->willReturn([]);
+
+		$legacyEntity = new ObjectEntity();
+		$legacyEntity->setUuid('uuid-legacy');
+		$legacyEntity->setRegister('1');
+		$legacyEntity->setSchema('2');
+
+		// Legacy per-uuid scope resolution runs for the missed uuid.
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($legacyEntity);
+
+		$captured = [];
+		$this->deleteHandler
+			->expects($this->once())
+			->method('deleteObject')
+			->willReturnCallback(
+				function (
+					$register,
+					$schema,
+					$uuid,
+					$originalObjectId=null,
+					$_rbac=true,
+					$_multitenancy=true,
+					$scoped=false,
+					$preResolved=null
+				) use (&$captured) {
+					$captured[] = ['register' => $register, 'preResolved' => $preResolved];
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-legacy'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-legacy'], $result['deleted_uuids']);
+		// Legacy call shape: no pre-resolved entity, current (null) scope.
+		$this->assertNull($captured[0]['register']);
+		$this->assertNull($captured[0]['preResolved']);
+	}
+
+	/**
+	 * A RESTRICT block on one object skips it without aborting the bulk delete.
+	 */
+	public function testDeleteObjectsSkipsRestrictBlockedObjects(): void
+	{
+		$entityA = new ObjectEntity();
+		$entityA->setUuid('uuid-ok');
+		$entityA->setRegister('1');
+		$entityA->setSchema('2');
+
+		$entityB = new ObjectEntity();
+		$entityB->setUuid('uuid-blocked');
+		$entityB->setRegister('1');
+		$entityB->setSchema('2');
+
+		$this->objectEntityMapper
+			->method('findMultipleAcrossAllMagicTables')
+			->willReturn([$entityA, $entityB]);
+
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
+			deletable: false,
+			blockers: [['objectUuid' => 'ref', 'property' => 'parentId']]
+		);
+		$this->deleteHandler
+			->method('deleteObject')
+			->willReturnCallback(
+				function ($register, $schema, $uuid) use ($analysis): bool {
+					if ($uuid === 'uuid-blocked') {
+						throw new \OCA\OpenRegister\Exception\ReferentialIntegrityException(analysis: $analysis);
+					}
+
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-ok', 'uuid-blocked'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-ok'], $result['deleted_uuids']);
+		$this->assertSame(['uuid-blocked'], $result['skipped_uuids']);
 	}
 
 	// ── 10. lockObject() / unlockObject() tests ─────────────────────────
@@ -2189,43 +2367,32 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame($expected, $result);
 	}
 
-	// ── 55f. setRegister fallback path (numeric ID, cache returns non-Register) ──
+	// ── 55f/55g. setRegister/setSchema entity getters ─────────────────────
 
 	/**
-	 * Test setRegister falls back to mapper when cache returns unexpected type.
+	 * Test getCurrentRegisterEntity exposes the entity resolved by setRegister.
 	 */
-	public function testSetRegisterFallsBackToMapperWhenCacheReturnsWrong(): void
+	public function testGetCurrentRegisterEntityReturnsResolvedEntity(): void
 	{
-		// Return an item that is NOT a Register instance.
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([new \stdClass()]);
+		$this->assertNull($this->service->getCurrentRegisterEntity());
 
-		$this->registerMapper->expects($this->once())
-			->method('find')
-			->willReturn($this->register);
-
+		$this->registerMapper->method('find')->willReturn($this->register);
 		$this->service->setRegister(register: 1);
 
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+		$this->assertSame($this->register, $this->service->getCurrentRegisterEntity());
 	}
 
-	// ── 55g. setSchema fallback path (numeric ID, cache returns non-Schema) ──
-
 	/**
-	 * Test setSchema falls back to mapper when cache returns unexpected type.
+	 * Test getCurrentSchemaEntity exposes the entity resolved by setSchema.
 	 */
-	public function testSetSchemaFallsBackToMapperWhenCacheReturnsWrong(): void
+	public function testGetCurrentSchemaEntityReturnsResolvedEntity(): void
 	{
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([new \stdClass()]);
+		$this->assertNull($this->service->getCurrentSchemaEntity());
 
-		$this->schemaMapper->expects($this->once())
-			->method('find')
-			->willReturn($this->schema);
-
+		$this->schemaMapper->method('find')->willReturn($this->schema);
 		$this->service->setSchema(schema: 2);
 
-		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+		$this->assertSame($this->schema, $this->service->getCurrentSchemaEntity());
 	}
 
 	// ── 55h. countSearchObjects with active organisation ─────────────────
@@ -2407,8 +2574,8 @@ class ObjectServiceTest extends TestCase
 	 */
 	public function testSetContextFromParametersSetsSchema(): void
 	{
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper->method('find')
+			->willReturn($this->schema);
 
 		$this->invokePrivate('setContextFromParameters', [null, $this->schema]);
 
@@ -2701,5 +2868,157 @@ class ObjectServiceTest extends TestCase
 		} finally {
 			$this->assertSame(1, $callCount, 'no register/schema context means the first lookup is already cross-table');
 		}
+	}
+
+	// ── find() render skip (single-render read path) ───────────────────────
+
+	/**
+	 * find(_render: false) returns the raw entity without invoking the render
+	 * handler, while the permission check still runs.
+	 *
+	 * This is the contract ObjectsController::show() relies on: the controller
+	 * is the single render site, so find() must not render the entity a first
+	 * time (double render repeated file hydration, writeOnly redaction and the
+	 * expensive inverse-property resolution on every single read).
+	 */
+	public function testFindSkipsRenderingWhenRenderFalse(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
+		$entity->setSchema(2);
+
+		$this->getHandler
+			->expects($this->once())
+			->method('find')
+			->willReturn($entity);
+
+		// setSchema will be called since currentSchema is null.
+		$this->performanceHandler
+			->method('getCachedEntities')
+			->willReturn([$this->schema]);
+
+		// The read is still access-controlled even when rendering is skipped.
+		$this->permissionHandler
+			->expects($this->once())
+			->method('checkPermission');
+
+		// The whole point: no render pass inside find().
+		$this->renderHandler
+			->expects($this->never())
+			->method('renderEntity');
+
+		$result = $this->service->find(
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			schema: $this->schema,
+			_render: false
+		);
+
+		$this->assertSame($entity, $result);
+	}
+
+	// ── find() request-scoped uuid → (register, schema) cache ──────────────
+
+	/**
+	 * A second lookup of the same uuid under the same stale scope goes straight
+	 * to the object's resolved register/schema: one scoped call instead of a
+	 * scoped miss plus a cross-table scan.
+	 */
+	public function testFindUsesUuidScopeCacheOnRepeatedStaleScopeLookups(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$trueRegister = new Register();
+		$trueRegister->setId(8);
+		$trueSchema = new Schema();
+		$trueSchema->setId(1470);
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// Call 1 (stale scope) misses; call 2 (cross-table) resolves; call 3
+		// (second find(), cache hit) must be scoped to the TRUE context.
+		$callCount = 0;
+		$calls     = [];
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, &$calls, $object): ObjectEntity {
+				$callCount++;
+				$calls[] = $args;
+				if ($callCount === 1) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		// Re-anchoring resolves the object's true register/schema by id.
+		$this->registerMapper->method('find')->willReturn($trueRegister);
+		$this->schemaMapper->method('find')->willReturn($trueSchema);
+
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		// First read: scoped miss + cross-table fallback (2 handler calls).
+		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->assertSame(2, $callCount);
+
+		// Second read with the SAME stale scope: exactly ONE more handler call…
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result);
+		$this->assertSame(3, $callCount, 'a repeated uuid lookup must not re-run the cross-table fallback');
+
+		// …and that call is scoped to the resolved true context, not unscoped.
+		// GetObject::find positional args: [0]=id, [1]=register, [2]=schema.
+		$this->assertSame($trueRegister, $calls[2][1], 'cache hit must target the resolved register');
+		$this->assertSame($trueSchema, $calls[2][2], 'cache hit must target the resolved schema');
+	}
+
+	/**
+	 * A cached scope that no longer resolves (object deleted/moved mid-request)
+	 * is invalidated and the original cross-table fallback still runs — the
+	 * cache is a fast path only, never a behaviour change (openregister#1520).
+	 */
+	public function testFindInvalidatesUuidScopeCacheWhenCachedScopeMisses(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$trueRegister = new Register();
+		$trueRegister->setId(8);
+		$trueSchema = new Schema();
+		$trueSchema->setId(1470);
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// Call 1: stale-scope miss. Call 2: cross-table hit (populates cache).
+		// Call 3: cached-scope lookup misses (object moved). Call 4: fallback.
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, $object): ObjectEntity {
+				$callCount++;
+				if ($callCount === 1 || $callCount === 3) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		$this->registerMapper->method('find')->willReturn($trueRegister);
+		$this->schemaMapper->method('find')->willReturn($trueSchema);
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result, 'the cross-table fallback must still resolve the object');
+		$this->assertSame(4, $callCount, 'stale cache entry must fall back to the cross-table lookup');
 	}
 }

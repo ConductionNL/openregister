@@ -26,6 +26,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -39,6 +40,8 @@ class SourceRecordChangeListenerTest extends TestCase
 
     private LoggerInterface&MockObject $logger;
 
+    private ICacheFactory&MockObject $cacheFactory;
+
     private SourceRecordChangeListener $listener;
 
     protected function setUp(): void
@@ -46,10 +49,16 @@ class SourceRecordChangeListenerTest extends TestCase
         $this->schemaMapper  = $this->createMock(SchemaMapper::class);
         $this->objectService = $this->createMock(ObjectService::class);
         $this->logger        = $this->createMock(LoggerInterface::class);
-        $this->listener      = new SourceRecordChangeListener(
+        $this->cacheFactory  = $this->createMock(ICacheFactory::class);
+        // No distributed cache in unit tests — the listener falls back to
+        // its per-instance memoisation when cache creation fails.
+        $this->cacheFactory->method('createDistributed')
+            ->willThrowException(new \RuntimeException('no cache in tests'));
+        $this->listener = new SourceRecordChangeListener(
             $this->schemaMapper,
             $this->objectService,
-            $this->logger
+            $this->logger,
+            $this->cacheFactory
         );
     }//end setUp()
 

@@ -825,7 +825,7 @@ final class NotificationAnnotationValidator
                     ),
                 ];
             }
-        }
+        }//end if
 
         // Mutually exclusive with the rolling `coalesce` window — a rule
         // picks one "hold and batch" mechanism, not both.

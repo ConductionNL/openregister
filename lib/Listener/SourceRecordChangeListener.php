@@ -42,31 +42,70 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Event\SchemaCreatedEvent;
+use OCA\OpenRegister\Event\SchemaDeletedEvent;
+use OCA\OpenRegister\Event\SchemaUpdatedEvent;
 use OCA\OpenRegister\Service\Merge\MergeService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Recompute a reverse-FK master when one of its source objects changes.
  *
- * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
+ * Also subscribed to schema lifecycle events so the cross-request reverse-FK
+ * index cache is invalidated the moment a schema (and therefore any reverse-FK
+ * sourceLink declaration) changes.
+ *
+ * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|SchemaCreatedEvent|SchemaUpdatedEvent|SchemaDeletedEvent>
  *
  * @spec openspec/changes/mdm-reverse-fk-source-resolution/tasks.md#4.1
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Handles both object and schema lifecycle events plus the index cache
  */
 class SourceRecordChangeListener implements IEventListener
 {
 
     /**
+     * Distributed-cache key holding the serialized reverse index.
+     *
+     * @var string
+     */
+    private const REVERSE_INDEX_CACHE_KEY = 'reverse_fk_index';
+
+    /**
+     * Time-to-live for the cached reverse index, in seconds. The index is
+     * additionally invalidated eagerly on every schema create/update/delete
+     * event, so the TTL is only a safety net against missed invalidations
+     * (e.g. schema changes applied through raw SQL or another instance
+     * without a distributed cache).
+     *
+     * @var int
+     */
+    private const REVERSE_INDEX_CACHE_TTL = 3600;
+
+    /**
      * Memoised reverse index: source-schema identifier (slug or id, as
      * strings) => list of reference-field names that carry the master uuid.
-     * Built lazily from the schema registry, cached per listener instance.
+     * Built lazily from the schema registry, cached per listener instance
+     * and shared across requests through the distributed cache — building
+     * it requires loading EVERY schema, which is far too expensive to do
+     * on the first object write of every request.
      *
      * @var array<string, array<int, string>>|null
      */
     private ?array $reverseIndex = null;
+
+    /**
+     * Distributed cache holding the reverse index across requests.
+     *
+     * @var ICache|null
+     */
+    private ?ICache $indexCache = null;
 
     /**
      * Wire collaborators.
@@ -74,6 +113,7 @@ class SourceRecordChangeListener implements IEventListener
      * @param SchemaMapper    $schemaMapper  Schema registry (to build the reverse index).
      * @param ObjectService   $objectService Object read/write path (RBAC + tenant scoped).
      * @param LoggerInterface $logger        PSR logger for warnings.
+     * @param ICacheFactory   $cacheFactory  Distributed-cache factory for the reverse index.
      *
      * @return void
      *
@@ -82,13 +122,20 @@ class SourceRecordChangeListener implements IEventListener
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
         private readonly ObjectService $objectService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        ICacheFactory $cacheFactory
     ) {
+        try {
+            $this->indexCache = $cacheFactory->createDistributed('openregister_reverse_fk');
+        } catch (Throwable $e) {
+            $this->indexCache = null;
+        }
     }//end __construct()
 
     /**
      * Dispatch: recompute the referenced master(s) after a source object is
-     * created, updated, or deleted.
+     * created, updated, or deleted, and invalidate the cached reverse index
+     * when a schema changes.
      *
      * @param Event $event Inbound dispatcher event.
      *
@@ -99,6 +146,17 @@ class SourceRecordChangeListener implements IEventListener
     public function handle(Event $event): void
     {
         try {
+            if ($event instanceof SchemaCreatedEvent
+                || $event instanceof SchemaUpdatedEvent
+                || $event instanceof SchemaDeletedEvent
+            ) {
+                // A schema change can add/remove reverse-FK sourceLink
+                // declarations — drop the cached index so it is rebuilt.
+                $this->reverseIndex = null;
+                $this->indexCache?->remove(self::REVERSE_INDEX_CACHE_KEY);
+                return;
+            }
+
             if ($event instanceof ObjectCreatedEvent || $event instanceof ObjectDeletedEvent) {
                 $this->processSource(object: $event->getObject(), oldObject: null);
                 return;
@@ -110,7 +168,7 @@ class SourceRecordChangeListener implements IEventListener
             }
         } catch (Throwable $e) {
             $this->logger->warning('Source-record change recompute failed: '.$e->getMessage());
-        }
+        }//end try
     }//end handle()
 
     /**
@@ -192,6 +250,15 @@ class SourceRecordChangeListener implements IEventListener
             return $this->reverseIndex;
         }
 
+        // Cross-request cache: building the index loads EVERY schema, which
+        // would otherwise run on the first object write of every request.
+        // Invalidated eagerly on Schema created/updated/deleted events.
+        $cached = $this->indexCache?->get(self::REVERSE_INDEX_CACHE_KEY);
+        if (is_array($cached) === true) {
+            $this->reverseIndex = $cached;
+            return $this->reverseIndex;
+        }
+
         $index = [];
         try {
             $schemas = $this->schemaMapper->findAll(_rbac: false, _multitenancy: false);
@@ -213,6 +280,8 @@ class SourceRecordChangeListener implements IEventListener
         }
 
         $this->reverseIndex = $index;
+        $this->indexCache?->set(self::REVERSE_INDEX_CACHE_KEY, $index, self::REVERSE_INDEX_CACHE_TTL);
+
         return $this->reverseIndex;
     }//end reverseIndex()
 
