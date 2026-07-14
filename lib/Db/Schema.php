@@ -2001,6 +2001,7 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-merge',
         'x-openregister-handoff',
         'x-openregister-mcp',
+        'x-openregister-approval-chains',
     ];
 
     /**

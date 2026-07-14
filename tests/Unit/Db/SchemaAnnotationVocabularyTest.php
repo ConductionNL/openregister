@@ -91,6 +91,36 @@ class SchemaAnnotationVocabularyTest extends TestCase
     }
 
     /**
+     * FAILING PATH (approval-chains-declarative): `x-openregister-approval-chains`
+     * MUST survive the round-trip. Before this capability existed the key was
+     * absent from ANNOTATION_VOCABULARY, so setConfiguration() silently dropped
+     * it — shillinq's BcfClaim declaration never reached the configuration
+     * column and no gate listener could ever read it, however it was wired.
+     *
+     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     */
+    public function testApprovalChainsAnnotationSurvivesRoundTrip(): void
+    {
+        $chains = [
+            'bcf-claim-submit-approval' => [
+                'transition' => 'submit',
+                'approvers'  => [['role' => 'bcf-administrator', 'min' => 1]],
+                'onApprove'  => 'advanceTransition',
+            ],
+        ];
+
+        $this->schema->setConfiguration([
+            'x-openregister-approval-chains' => $chains,
+        ]);
+
+        $config = $this->schema->getConfiguration();
+
+        $this->assertNotNull($config);
+        $this->assertArrayHasKey('x-openregister-approval-chains', $config);
+        $this->assertSame($chains, $config['x-openregister-approval-chains']);
+    }
+
+    /**
      * Actual typos (non-vocabulary x-openregister-* keys) are still dropped.
      */
     public function testActualTypoIsDropped(): void
