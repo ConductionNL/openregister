@@ -7,6 +7,7 @@ use OCA\OpenRegister\Db\ApprovalChain;
 use OCA\OpenRegister\Db\ApprovalChainMapper;
 use OCA\OpenRegister\Db\ApprovalStep;
 use OCA\OpenRegister\Db\ApprovalStepMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\WorkflowExecutionMapper;
 use OCA\OpenRegister\Event\ApprovalStepApprovedEvent;
 use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
@@ -27,6 +28,7 @@ class ApprovalServiceTest extends TestCase
     private IGroupManager $groupManager;
     private LoggerInterface $logger;
     private IEventDispatcher $eventDispatcher;
+    private SchemaMapper $schemaMapper;
 
     protected function setUp(): void
     {
@@ -36,6 +38,7 @@ class ApprovalServiceTest extends TestCase
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
 
         $this->service = new ApprovalService(
             $this->chainMapper,
@@ -43,7 +46,8 @@ class ApprovalServiceTest extends TestCase
             $this->executionMapper,
             $this->groupManager,
             $this->logger,
-            $this->eventDispatcher
+            $this->eventDispatcher,
+            $this->schemaMapper
         );
     }
 
@@ -307,5 +311,100 @@ class ApprovalServiceTest extends TestCase
         $this->assertSame('carol', $dispatched[0]->getUserId());
         $this->assertSame('afgewezen', $dispatched[0]->getStatusOnReject());
         $this->assertSame('obj-rej', $dispatched[0]->getObjectUuid());
+    }
+
+    /**
+     * FAILING PATH (approval-chains-declarative): an approver equal to the
+     * step's `requesterId` MUST be rejected when the chain's schema declares
+     * `x-openregister-approval-chains[<chainName>].separationOfDuties` (default
+     * true when the annotation exists).
+     */
+    public function testApproveStepRejectsRequesterWhenSeparationOfDutiesDeclared(): void
+    {
+        $chain = new ApprovalChain();
+        $chain->setId(77);
+        $chain->hydrate([
+            'name'     => 'submit-approval',
+            'schemaId' => 5,
+            'steps'    => [['order' => 1, 'role' => 'finance-clerks']],
+        ]);
+
+        $step = new ApprovalStep();
+        $step->hydrate([
+            'status'      => 'pending',
+            'role'        => 'finance-clerks',
+            'stepOrder'   => 1,
+            'chainId'     => 77,
+            'objectUuid'  => 'obj-sod',
+            'requesterId' => 'alice',
+        ]);
+
+        $schema = new \OCA\OpenRegister\Db\Schema();
+        $schema->setConfiguration([
+            'x-openregister-approval-chains' => [
+                'submit-approval' => [
+                    'transition'         => 'submit',
+                    'approvers'          => [['role' => 'finance-clerks', 'min' => 1]],
+                    'separationOfDuties' => true,
+                ],
+            ],
+        ]);
+
+        $this->stepMapper->method('find')->with(1)->willReturn($step);
+        $this->chainMapper->method('find')->with(77)->willReturn($chain);
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('You may not decide an approval step you requested yourself');
+
+        // alice is the requester AND (hypothetically) in the finance-clerks
+        // group — separation of duties must reject before the role check.
+        $this->groupManager->method('isInGroup')->willReturn(true);
+
+        $this->service->approveStep(1, 'alice', 'self-approving');
+    }
+
+    /**
+     * Pre-existing pure-CRUD-provisioned chains (no matching declarative
+     * annotation) MUST remain completely unaffected — the requester/approver
+     * being the same person is not rejected when no schema declares
+     * `x-openregister-approval-chains` for that chain name.
+     */
+    public function testApproveStepAllowsRequesterEqualsApproverWhenNoDeclarativeEntry(): void
+    {
+        $chain = new ApprovalChain();
+        $chain->setId(78);
+        $chain->hydrate([
+            'name'     => 'legacy-crud-chain',
+            'schemaId' => 5,
+            'steps'    => [['order' => 1, 'role' => 'teamleider', 'statusOnApprove' => 'goedgekeurd']],
+        ]);
+
+        $step = new ApprovalStep();
+        $step->hydrate([
+            'status'      => 'pending',
+            'role'        => 'teamleider',
+            'stepOrder'   => 1,
+            'chainId'     => 78,
+            'objectUuid'  => 'obj-crud',
+            'requesterId' => 'dave',
+        ]);
+
+        // Schema exists but has no x-openregister-approval-chains entry named
+        // "legacy-crud-chain" — the pure-CRUD flow this chain was provisioned
+        // through has no declarative counterpart at all.
+        $schema = new \OCA\OpenRegister\Db\Schema();
+        $schema->setConfiguration([]);
+
+        $this->stepMapper->method('find')->with(1)->willReturn($step);
+        $this->chainMapper->method('find')->with(78)->willReturn($chain);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->groupManager->method('isInGroup')->willReturn(true);
+        $this->stepMapper->method('findByChainAndObject')->willReturn([$step]);
+
+        // Must NOT throw — dave deciding his own pure-CRUD step is unaffected.
+        $result = $this->service->approveStep(1, 'dave', '');
+
+        $this->assertSame('approved', $result['step']->getStatus());
     }
 }

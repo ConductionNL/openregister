@@ -160,6 +160,10 @@ use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Listener\ApprovalChainGateListener;
+use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -2321,6 +2325,17 @@ class Application extends App implements IBootstrap
         // Order matters: initial state runs on creating; validation runs on updating.
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
+
+        // Approval-chains declarative wiring — see x-openregister-approval-chains.
+        // Provisions ApprovalChain rows from the annotation (schema save), then
+        // gates any lifecycle transition it names until the provisioned chain's
+        // steps are all approved. Registered immediately after
+        // LifecycleValidationListener: transition legality must be established
+        // before approval-chain gating runs against it.
+        $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
+        $context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
 
         // Calculations annotation listener — materialises declared calculations
         // into the object payload before persistence (see x-openregister-calculations).
