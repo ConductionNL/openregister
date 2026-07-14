@@ -160,9 +160,10 @@ class AnnotationNotifier implements INotifier
                 )
             );
         } else {
-            // setIcon() only accepts absolute http(s) URLs (desktop/mobile client
-            // support) — a relative imagePath() throws InvalidValueException on
-            // every render, so the notification never reaches the client.
+            // The setIcon() method only accepts absolute http(s) URLs (desktop and
+            // mobile client support) — a relative imagePath() throws
+            // InvalidValueException on every render, so the notification never
+            // reaches the client.
             $notification->setIcon(
                 $this->urlGenerator->getAbsoluteURL(
                     $this->urlGenerator->imagePath(appName: 'openregister', file: 'app.svg')

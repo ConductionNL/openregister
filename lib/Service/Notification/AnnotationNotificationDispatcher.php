@@ -90,32 +90,32 @@ class AnnotationNotificationDispatcher
     /**
      * Constructor.
      *
-     * @param SchemaMapper                                             $schemaMapper        Mapper used to resolve the object's schema.
-     * @param INotificationManager                                     $notificationManager Nextcloud notification API.
-     * @param LoggerInterface                                          $logger              Logger for dispatch diagnostics.
-     * @param IGroupManager                                            $groupManager        Group resolver for `groups` recipient kinds.
-     * @param IUserManager                                             $userManager         User resolver for `users` recipient kinds.
-     * @param IMailer                                                  $mailer              Mailer for the `email` channel.
-     * @param IActivityManager                                         $activityManager     Activity manager for the `activity` channel.
-     * @param IClientService                                           $httpClient          HTTP client for the `webhook` and `talk` channels.
-     * @param IServerContainer                                         $serverContainer     Server container for expression resolvers (F06).
-     * @param RateLimiter|null                                         $rateLimiter         Optional rate limiter (per-rule, per-recipient).
-     * @param IConfig|null                                             $config              Optional config service for runtime tunables.
-     * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
-     * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
-     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper (DEPRECATED).
-     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
-     * @param NotificationPreferenceService|null                       $preferenceService   Override-only preference resolver (delivery gate).
-     * @param IJobList|null                                            $jobList             Job list used to enqueue the web-push dispatch job.
-     * @param IURLGenerator|null                                       $urlGenerator        URL generator for action-target deeplinks.
-     * @param RegisterMapper|null                                      $registerMapper      Register mapper used for the default originApp.
-     * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService       Object resolver for relation-target deeplinks (RBAC).
-     * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry    Canonical per-app deeplink resolver.
-     * @param IAppManager|null                                         $appManager          Resolves originApp display name (auto body).
-     * @param NotificationDeliveryWindowService|null                   $deliveryWindowService Override-only quiet-hours resolver + evaluator.
+     * @param SchemaMapper                                             $schemaMapper             Mapper used to resolve the object's schema.
+     * @param INotificationManager                                     $notificationManager      Nextcloud notification API.
+     * @param LoggerInterface                                          $logger                   Logger for dispatch diagnostics.
+     * @param IGroupManager                                            $groupManager             Group resolver for `groups` recipient kinds.
+     * @param IUserManager                                             $userManager              User resolver for `users` recipient kinds.
+     * @param IMailer                                                  $mailer                   Mailer for the `email` channel.
+     * @param IActivityManager                                         $activityManager          Activity manager for the `activity` channel.
+     * @param IClientService                                           $httpClient               HTTP client for the `webhook` and `talk` channels.
+     * @param IServerContainer                                         $serverContainer          Server container for expression resolvers (F06).
+     * @param RateLimiter|null                                         $rateLimiter              Optional rate limiter (per-rule, per-recipient).
+     * @param IConfig|null                                             $config                   Optional config service for runtime tunables.
+     * @param NotificationHistoryMapper|null                           $historyMapper            Optional history mapper for delivery audit rows.
+     * @param NotificationCoalescer|null                               $coalescer                Optional coalescer for burst suppression.
+     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper       Optional subscription mapper (DEPRECATED).
+     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper        Dispatch-log mapper for idempotency dedup.
+     * @param NotificationPreferenceService|null                       $preferenceService        Override-only preference resolver (delivery gate).
+     * @param IJobList|null                                            $jobList                  Job list used to enqueue the web-push dispatch job.
+     * @param IURLGenerator|null                                       $urlGenerator             URL generator for action-target deeplinks.
+     * @param RegisterMapper|null                                      $registerMapper           Register mapper used for the default originApp.
+     * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService            Object resolver for relation-target deeplinks (RBAC).
+     * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry         Canonical per-app deeplink resolver.
+     * @param IAppManager|null                                         $appManager               Resolves originApp display name (auto body).
+     * @param NotificationDeliveryWindowService|null                   $deliveryWindowService    Override-only quiet-hours resolver + evaluator.
      * @param QueuedNotificationMapper|null                            $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
      * @param DigestScheduleEvaluator|null                             $digestScheduleEvaluator  Live evaluator for the `digest` fixed-time schedule.
-     * @param ITimeFactory|null                                        $timeFactory          Time source for the delivery-window/digest gate (testable "now").
+     * @param ITimeFactory|null                                        $timeFactory              Time source for the delivery/digest gate.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -643,21 +643,22 @@ class AnnotationNotificationDispatcher
      * depth: a caller invoking this directly still gets the bypass).
      *
      * @param array<string, mixed> $spec              The full notification spec block.
-     * @param string                $uid               Recipient user UID.
-     * @param string                $ruleId            The rule id.
-     * @param int                   $schemaId           Owning schema id.
-     * @param array<int, string>    $queueableChannels  Per-recipient channels eligible for queueing
-     *                                                   (effectiveChannels ∩ {nc-notification, email, activity}).
-     * @param array<int, string>    $channels           The rule's full declared channel list (for history audit).
-     * @param ObjectEntity          $object             The triggering object.
-     * @param string                $subjectKey         Canonical INotification subject key.
-     * @param string                $name               Notification annotation key.
-     * @param string                $subject            Pre-rendered, per-recipient subject.
-     * @param string                $message            Pre-rendered, per-recipient message body.
-     * @param array<string, mixed>  $context             Trigger context (action, from, to).
-     * @param string                $originApp          Resolved origin app id.
-     * @param array<int, mixed>     $actions            Resolved action buttons.
-     * @param string|null           $locale             Recipient locale.
+     * @param string               $uid               Recipient user UID.
+     * @param string               $ruleId            The rule id.
+     * @param int                  $schemaId          Owning schema id.
+     * @param array<int, string>   $queueableChannels Per-recipient channels eligible for queueing
+     *                                                (effectiveChannels ∩ {nc-notification,
+     *                                                email, activity}).
+     * @param array<int, string>   $channels          The rule's full declared channel list (for history audit).
+     * @param ObjectEntity         $object            The triggering object.
+     * @param string               $subjectKey        Canonical INotification subject key.
+     * @param string               $name              Notification annotation key.
+     * @param string               $subject           Pre-rendered, per-recipient subject.
+     * @param string               $message           Pre-rendered, per-recipient message body.
+     * @param array<string, mixed> $context           Trigger context (action, from, to).
+     * @param string               $originApp         Resolved origin app id.
+     * @param array<int, mixed>    $actions           Resolved action buttons.
+     * @param string|null          $locale            Recipient locale.
      *
      * @return bool True when the event was queued (caller must skip immediate dispatch).
      *
@@ -696,8 +697,8 @@ class AnnotationNotificationDispatcher
             }
         }
 
-        $digestSpec      = ($spec['digest'] ?? null);
-        $digestDeclared  = is_array($digestSpec) === true
+        $digestSpec     = ($spec['digest'] ?? null);
+        $digestDeclared = is_array($digestSpec) === true
             && $this->digestScheduleEvaluator !== null
             && $this->digestScheduleEvaluator->isValidDigestSpec($digestSpec) === true;
 
@@ -714,7 +715,10 @@ class AnnotationNotificationDispatcher
             $reason = QueuedNotification::REASON_DIGEST_SCHEDULE;
         }
 
-        $status = ($reason === QueuedNotification::REASON_DIGEST_SCHEDULE) ? 'queued-digest' : 'queued-quiet-hours';
+        $status = 'queued-quiet-hours';
+        if ($reason === QueuedNotification::REASON_DIGEST_SCHEDULE) {
+            $status = 'queued-digest';
+        }
 
         if ($this->queuedNotificationMapper !== null) {
             $payload = [
@@ -813,7 +817,10 @@ class AnnotationNotificationDispatcher
             $object->setName((string) $payload['objectName']);
         }
 
-        $locale = (($payload['locale'] ?? null) !== null) ? (string) $payload['locale'] : null;
+        $locale = null;
+        if (($payload['locale'] ?? null) !== null) {
+            $locale = (string) $payload['locale'];
+        }
 
         if (in_array('nc-notification', $channels, true) === true) {
             $this->emitNotification(
@@ -836,10 +843,15 @@ class AnnotationNotificationDispatcher
                 subject: $subject,
                 locale: $locale
             );
-        }
+        }//end if
 
         if (in_array('email', $channels, true) === true) {
-            $this->emitEmail(uid: $recipient, subject: $subject, body: $message !== '' ? $message : $subject);
+            $emailBody = $subject;
+            if ($message !== '') {
+                $emailBody = $message;
+            }
+
+            $this->emitEmail(uid: $recipient, subject: $subject, body: $emailBody);
             $this->recordHistory(
                 ruleId: $ruleId,
                 channel: 'email',

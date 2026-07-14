@@ -51,10 +51,10 @@ class NotificationDeliveryWindowController extends Controller
     /**
      * Constructor.
      *
-     * @param string                            $appName        App name.
-     * @param IRequest                          $request        Request.
-     * @param NotificationDeliveryWindowService $windowService  Override-only window store + evaluator.
-     * @param IUserSession                      $userSession    Current-user session.
+     * @param string                            $appName       App name.
+     * @param IRequest                          $request       Request.
+     * @param NotificationDeliveryWindowService $windowService Override-only window store + evaluator.
+     * @param IUserSession                      $userSession   Current-user session.
      */
     public function __construct(
         string $appName,
