@@ -370,24 +370,6 @@ class PerformanceHandler
     }//end isUuid()
 
     /**
-     * Get cached entities or use fallback function
-     *
-     * Attempts to retrieve entities from cache, falling back to the provided function if not cached.
-     *
-     * @param mixed    $ids          Entity ID(s) to retrieve (int, array, or 'all').
-     * @param callable $fallbackFunc Function to call if not in cache.
-     *
-     * @return array<mixed> Array of entities
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function getCachedEntities(mixed $ids, callable $fallbackFunc): array
-    {
-        // Entity caching is disabled - always use fallback function.
-        return call_user_func($fallbackFunc, $ids);
-    }//end getCachedEntities()
-
-    /**
      * Get facet count from query parameters
      *
      * @param bool                 $hasFacets Whether facets are requested.
