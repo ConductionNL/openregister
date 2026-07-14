@@ -77,6 +77,8 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
     eval(
         'namespace Doctrine\\DBAL\\Types {
             class Types {
+                const ARRAY = "array";
+                const ASCII_STRING = "ascii_string";
                 const BIGINT = "bigint";
                 const BINARY = "binary";
                 const BLOB = "blob";
@@ -93,6 +95,7 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
                 const GUID = "guid";
                 const INTEGER = "integer";
                 const JSON = "json";
+                const OBJECT = "object";
                 const SIMPLE_ARRAY = "simple_array";
                 const SMALLINT = "smallint";
                 const STRING = "string";

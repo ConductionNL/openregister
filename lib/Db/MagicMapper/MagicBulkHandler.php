@@ -553,12 +553,15 @@ class MagicBulkHandler
         // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
         // This allows us to correctly classify created vs updated regardless of timestamp values.
         // Important for CSV imports that preserve historical _created dates.
+        // The FULL pre-update rows are fetched (not just `_uuid`) so callers can
+        // record a real old-vs-new changeset in the audit trail for updates.
         $existingUuids = [];
+        $preUpdateRows = [];
         if (empty($uuids) === false) {
             $placeholders = implode(',', array_fill(0, count($uuids), '?'));
-            $existsSql    = "SELECT `_uuid` FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
+            $existsSql    = "SELECT * FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
             if ($isPostgres === true) {
-                $existsSql = "SELECT \"_uuid\" FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
+                $existsSql = "SELECT * FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
             }
 
             try {
@@ -567,6 +570,7 @@ class MagicBulkHandler
                 $existingRows = $existsStmt->fetchAll();
                 foreach ($existingRows as $row) {
                     $existingUuids[$row['_uuid']] = true;
+                    $preUpdateRows[$row['_uuid']] = $row;
                 }
 
                 $this->logger->debug(
@@ -738,6 +742,11 @@ class MagicBulkHandler
                         $obj['object_status'] = 'updated';
                         $unchangedCount--;
                         $updatedCount++;
+                        // Retain the pre-update row so the caller can write a
+                        // real old-vs-new changeset into the audit trail.
+                        if (isset($preUpdateRows[$objUuid]) === true) {
+                            $obj['_pre_update_row'] = $preUpdateRows[$objUuid];
+                        }
                     }
                 }
 

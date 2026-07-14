@@ -939,6 +939,13 @@ class ObjectsController extends Controller
         // Perform cross-table search.
         $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
+        // Redact write-only secrets before serialising (openregister#380, ocon#147): this
+        // direct-magic-mapper path bypasses renderEntity, so without this a non-admin read
+        // returns write-only fields in cleartext. redactWriteOnlyFromRows resolves each
+        // row's schema individually, so the cross-schema result set is handled correctly.
+        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
         // Serialize results.
         $serializedResults = [];
         foreach ($results as $entity) {
@@ -1229,12 +1236,21 @@ class ObjectsController extends Controller
                         _multitenancy: $multi
                     );
                 } else {
-                    // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
+                    // Convert ObjectEntity array to JSON-serializable format (no complex
+                    // rendering). This fast path bypasses renderEntity — where write-only
+                    // secrets are stripped (openregister#380, ocon#147) — so without the
+                    // redaction call below it returns every write-only field in cleartext.
+                    // This is the exact path the OpenConnector Source leak used: a plain
+                    // list read (no _extend) hit this branch. Redact the raw entities with
+                    // the same read-strip renderEntity applies, then serialize.
+                    $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                    $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+
                     $serializedResults = [];
                     foreach ($results as $entity) {
                         $serializedResults[] = $entity->jsonSerialize();
                     }
-                }
+                }//end if
 
                 // Calculate pagination - need a separate count query since search applies limit/offset.
                 $limit  = (int) ($query['_limit'] ?? 20);
@@ -2235,6 +2251,11 @@ class ObjectsController extends Controller
                             register: $registerEntity,
                             schema: $schemaEntity
                         );
+
+                        // Redact write-only secrets before serialising (openregister#380,
+                        // ocon#147) — this direct-magic-mapper path bypasses renderEntity.
+                        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
                         // Convert ObjectEntity array to JSON-serializable format.
                         $serializedResults = [];
