@@ -2444,7 +2444,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
@@ -3034,7 +3034,7 @@ class MagicMapper extends AbstractObjectMapper
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @SuppressWarnings(PHPMD.StaticAccess) ObjectHandling::relates() is a pure enum-style helper
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
      */
     private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void
     {

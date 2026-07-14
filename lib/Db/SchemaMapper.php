@@ -459,8 +459,8 @@ class SchemaMapper extends QBMapper
             $result = $qb->executeQuery();
 
             while (($row = $result->fetch()) !== false) {
-                $schema              = new Schema();
-                $schema              = $schema->fromRow($row);
+                $schema = new Schema();
+                $schema = $schema->fromRow($row);
                 $schemas[$row['id']] = $schema;
             }
 

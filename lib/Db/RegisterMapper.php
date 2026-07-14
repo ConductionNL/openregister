@@ -476,8 +476,8 @@ class RegisterMapper extends QBMapper
             $result = $qb->executeQuery();
 
             while (($row = $result->fetch()) !== false) {
-                $register              = new Register();
-                $register              = $register->fromRow($row);
+                $register = new Register();
+                $register = $register->fromRow($row);
                 $registers[$row['id']] = $register;
             }
 

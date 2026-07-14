@@ -1402,9 +1402,9 @@ class ObjectService
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
-        // handlePreValidationCascading() always returns a [array, string|null]
-        // tuple (every return site is a 2-tuple); only the uuid half is
-        // nullable, so only it keeps the null-coalescing fallback.
+        // The cascade handler always returns an [array, string|null] tuple
+        // (every return site is a 2-tuple); only the uuid half is nullable,
+        // so only it keeps the null-coalescing fallback.
         $object = $cascadeResult[0];
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
