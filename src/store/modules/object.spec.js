@@ -29,4 +29,15 @@ describe('Object Store', () => {
 		store.setObjectItem(null)
 		expect(store.objectItem).toBe(false)
 	})
+
+	it('exposes live-updates subscribe/unsubscribe via liveUpdatesPlugin (adopt-live-updates-ui)', () => {
+		const store = useObjectStore()
+
+		expect(typeof store.subscribe).toBe('function')
+		expect(typeof store.unsubscribe).toBe('function')
+		// Plugin is inert until the first subscribe(): status starts offline,
+		// no subscriptions are active.
+		expect(store.liveStatus).toBe('offline')
+		expect(store.liveSubscriptions).toBe(0)
+	})
 })

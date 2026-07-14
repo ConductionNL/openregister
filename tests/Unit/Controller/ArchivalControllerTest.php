@@ -52,8 +52,11 @@ class ArchivalControllerTest extends TestCase
         $this->request            = $this->createMock(IRequest::class);
         $this->destructionService = $this->createMock(DestructionService::class);
         $this->legalHoldService   = $this->createMock(LegalHoldService::class);
+        // `update` must be stubbed: approveDestructionList now PERSISTS the approved
+        // list (openregister#393 D3). Without it the real MagicMapper::update() runs.
         $this->objectMapper       = $this->getMockBuilder(MagicMapper::class)
             ->disableOriginalConstructor()
+            ->onlyMethods(['update'])
             ->addMethods(['findByUuid'])
             ->getMock();
         $this->userSession        = $this->createMock(IUserSession::class);
@@ -90,7 +93,7 @@ class ArchivalControllerTest extends TestCase
         return $this->getMockBuilder(ObjectEntity::class)
             ->disableOriginalConstructor()
             ->onlyMethods(['jsonSerialize', 'getObject'])
-            ->addMethods(['getUuid', 'getRetention'])
+            ->addMethods(['getUuid', 'getRetention', 'setObject'])
             ->getMock();
     }
 
@@ -292,12 +295,20 @@ class ArchivalControllerTest extends TestCase
             'action' => 'approve_all',
         ]);
 
+        $approved = [
+            'status' => DestructionService::STATUS_APPROVED,
+            'items'  => ['obj-1', 'obj-2'],
+        ];
+
         $this->destructionService
             ->method('approveList')
-            ->willReturn([
-                'status' => DestructionService::STATUS_APPROVED,
-                'items'  => ['obj-1', 'obj-2'],
-            ]);
+            ->willReturn($approved);
+
+        // D3 (openregister#393): the approval MUST be written back. It previously was
+        // not, so the list stayed `in_review` in storage and the execution job — which
+        // reloads by uuid and requires status `approved` — refused to run.
+        $object->expects($this->once())->method('setObject')->with($approved);
+        $this->objectMapper->expects($this->once())->method('update')->with($object);
 
         $response = $this->controller->approveDestructionList('dl-1');
 

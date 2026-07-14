@@ -848,8 +848,8 @@ class ObjectsController extends Controller
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
         $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-        $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-        $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $registerMapper = $this->registerMapper;
+        $schemaMapper   = $this->schemaMapper;
 
         // PERF-14: resolve each register and schema exactly once up front instead of
         // re-running find() for every register×schema combination in the inner loop.
@@ -938,6 +938,13 @@ class ObjectsController extends Controller
 
         // Perform cross-table search.
         $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
+
+        // Redact write-only secrets before serialising (openregister#380, ocon#147): this
+        // direct-magic-mapper path bypasses renderEntity, so without this a non-admin read
+        // returns write-only fields in cleartext. redactWriteOnlyFromRows resolves each
+        // row's schema individually, so the cross-schema result set is handled correctly.
+        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
         // Serialize results.
         $serializedResults = [];
@@ -1043,29 +1050,14 @@ class ObjectsController extends Controller
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
 
-        // STEP 3: Fetch entities for magic mapper support.
-        $registerEntity = null;
-        $schemaEntity   = null;
-
-        try {
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $registerEntity = $registerMapper->find(id: $resolvedRegisterId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
-        try {
-            $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-            $schemaEntity = $schemaMapper->find(id: $resolvedSchemaId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
+        // STEP 3: Reuse the entities already resolved by setRegister()/setSchema()
+        // above — re-fetching them via the mappers would resolve the same
+        // register and schema twice per request.
         return [
             'register'       => $resolvedRegisterId,
             'schema'         => $resolvedSchemaId,
-            'registerEntity' => $registerEntity,
-            'schemaEntity'   => $schemaEntity,
+            'registerEntity' => $objectService->getCurrentRegisterEntity(),
+            'schemaEntity'   => $objectService->getCurrentSchemaEntity(),
         ];
     }//end resolveRegisterSchemaIds()
 
@@ -1244,12 +1236,21 @@ class ObjectsController extends Controller
                         _multitenancy: $multi
                     );
                 } else {
-                    // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
+                    // Convert ObjectEntity array to JSON-serializable format (no complex
+                    // rendering). This fast path bypasses renderEntity — where write-only
+                    // secrets are stripped (openregister#380, ocon#147) — so without the
+                    // redaction call below it returns every write-only field in cleartext.
+                    // This is the exact path the OpenConnector Source leak used: a plain
+                    // list read (no _extend) hit this branch. Redact the raw entities with
+                    // the same read-strip renderEntity applies, then serialize.
+                    $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                    $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+
                     $serializedResults = [];
                     foreach ($results as $entity) {
                         $serializedResults[] = $entity->jsonSerialize();
                     }
-                }
+                }//end if
 
                 // Calculate pagination - need a separate count query since search applies limit/offset.
                 $limit  = (int) ($query['_limit'] ?? 20);
@@ -1427,16 +1428,9 @@ class ObjectsController extends Controller
                     );
                 }
 
-                // Return in expected format.
-                $response = new JSONResponse(data: $responseData);
-
-                // Enable gzip compression for large payloads.
-                if (count($responseData['results'] ?? []) > 10) {
-                    $response->addHeader('Content-Encoding', 'gzip');
-                    $response->addHeader('Vary', 'Accept-Encoding');
-                }
-
-                return $response;
+                // Return in expected format. Response compression is negotiated
+                // at the webserver level; the controller never sets encoding headers.
+                return new JSONResponse(data: $responseData);
             }//end if
         }//end if
 
@@ -1508,16 +1502,9 @@ class ObjectsController extends Controller
             );
         }
 
-        // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
-        $response = new JSONResponse(data: $result);
-
-        // Enable gzip compression for responses > 1KB.
-        if (($result['results'] ?? null) !== null && (count($result['results']) > 10) === true) {
-            $response->addHeader('Content-Encoding', 'gzip');
-            $response->addHeader('Vary', 'Accept-Encoding');
-        }
-
-        return $response;
+        // Response compression is negotiated at the webserver level; the
+        // controller never sets encoding headers.
+        return new JSONResponse(data: $result);
     }//end index()
 
     /**
@@ -2265,6 +2252,11 @@ class ObjectsController extends Controller
                             schema: $schemaEntity
                         );
 
+                        // Redact write-only secrets before serialising (openregister#380,
+                        // ocon#147) — this direct-magic-mapper path bypasses renderEntity.
+                        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
+
                         // Convert ObjectEntity array to JSON-serializable format.
                         $serializedResults = [];
                         foreach ($results as $entity) {
@@ -2438,7 +2430,12 @@ class ObjectsController extends Controller
         // If admin, disable RBAC.
         $multi = $isAdmin === false;
         // If admin, disable multitenancy.
-        // Find and validate the object.
+        // Find and validate the object. Rendering is deferred to the single
+        // renderEntity() call below (`_render: false`): find() previously
+        // rendered the entity with the same $extend and the controller then
+        // rendered it AGAIN, repeating file hydration, writeOnly redaction and
+        // the expensive inverse-property resolution on every single read.
+        // Permission checks and read logging inside find() still run.
         try {
             $objectEntity = $this->objectService->find(
                 id: $id,
@@ -2447,7 +2444,8 @@ class ObjectsController extends Controller
                 register: $register,
                 schema: $schema,
                 _rbac: $rbac,
-                _multitenancy: $multi
+                _multitenancy: $multi,
+                _render: false
             );
             if ($objectEntity === null) {
                 $errorMsg = "Object with id {$id} not found";
@@ -2455,6 +2453,9 @@ class ObjectsController extends Controller
             }
 
             // Render the object with requested extensions, filters, fields, and unset parameters.
+            // This is the ONLY render on the show() response path: writeOnly
+            // redaction and read-authorization stripping (openregister#385/#386)
+            // are applied here, exactly once, inside renderEntity().
             $renderedObject = $this->objectService->renderEntity(
                 entity: $objectEntity,
                 _extend: $extend,
@@ -2575,10 +2576,7 @@ class ObjectsController extends Controller
      *
      * @PublicPage
      *
-     * @psalm-return JSONResponse<201|401|403|404,
-     *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
-     *     message?: mixed|string, error?: mixed|string,...},
-     *     array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
@@ -2965,7 +2963,7 @@ class ObjectsController extends Controller
         $multi   = $isAdmin === false;
 
         // Log RBAC/multitenancy settings for debugging.
-        $this->logger->info(
+        $this->logger->debug(
                 message: '[ObjectsController] PATCH: RBAC/Multitenancy settings',
                 context: [
                     'file'    => __FILE__,
@@ -3051,7 +3049,7 @@ class ObjectsController extends Controller
                 uuid: $id
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                     message: '[ObjectsController] PATCH: saveObject succeeded',
                     context: [
                         'file'   => __FILE__,
@@ -3076,7 +3074,7 @@ class ObjectsController extends Controller
                         );
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ObjectsController] PATCH: Starting to prepare response',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );

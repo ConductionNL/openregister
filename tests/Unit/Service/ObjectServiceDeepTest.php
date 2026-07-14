@@ -44,7 +44,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -77,8 +76,6 @@ class ObjectServiceDeepTest extends TestCase
 {
 
     private ObjectService $service;
-
-    private MockObject|PerformanceHandler $performanceHandler;
 
     private MockObject|RegisterMapper $registerMapper;
 
@@ -119,7 +116,6 @@ class ObjectServiceDeepTest extends TestCase
         $dataManipHandler   = $this->createMock(DataManipulationHandler::class);
         $this->deleteHandler = $this->createMock(DeleteObject::class);
         $this->getHandler    = $this->createMock(GetObject::class);
-        $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->permissionHandler  = $this->createMock(PermissionHandler::class);
         $this->renderHandler      = $this->createMock(RenderObject::class);
         $this->saveHandler        = $this->createMock(SaveObject::class);
@@ -171,7 +167,6 @@ class ObjectServiceDeepTest extends TestCase
             $dataManipHandler,
             $this->deleteHandler,
             $this->getHandler,
-            $this->performanceHandler,
             $this->permissionHandler,
             $this->renderHandler,
             $this->saveHandler,
@@ -265,41 +260,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setRegister with numeric ID uses cache
+     * Test setRegister with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetRegisterWithNumericIdUsesCache(): void
+    public function testSetRegisterWithNumericIdUsesMapper(): void
     {
         $register = $this->createMock(Register::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$register]);
-
-        $result = $this->service->setRegister(42);
-        $this->assertSame($this->service, $result);
-
-    }//end testSetRegisterWithNumericIdUsesCache()
-
-
-    /**
-     * Test setRegister with numeric ID falls back when cache fails
-     *
-     * @return void
-     */
-    public function testSetRegisterWithNumericIdCacheFallback(): void
-    {
-        $register = $this->createMock(Register::class);
-
-        // Cache returns non-register (e.g., string or null).
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn(['not-a-register']);
-
         $this->registerMapper->method('find')->willReturn($register);
 
         $result = $this->service->setRegister(42);
         $this->assertSame($this->service, $result);
 
-    }//end testSetRegisterWithNumericIdCacheFallback()
+    }//end testSetRegisterWithNumericIdUsesMapper()
 
 
     // =========================================================================
@@ -321,20 +294,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setSchema with numeric ID uses cache
+     * Test setSchema with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetSchemaWithNumericIdUsesCache(): void
+    public function testSetSchemaWithNumericIdUsesMapper(): void
     {
         $schema = $this->createMock(Schema::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$schema]);
+        $this->schemaMapper->method('find')->willReturn($schema);
 
         $result = $this->service->setSchema(5);
         $this->assertSame($this->service, $result);
 
-    }//end testSetSchemaWithNumericIdUsesCache()
+    }//end testSetSchemaWithNumericIdUsesMapper()
 
 
     /**

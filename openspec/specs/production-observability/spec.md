@@ -93,6 +93,38 @@ The system MUST expose gauge metrics for the total number of registers, schemas,
 ### Requirement: CRUD Operation Counters
 The system MUST maintain monotonic counters for create, update, and delete operations on objects. These counters SHALL be labeled with `register` and `schema` to enable per-domain throughput analysis. Counters MUST persist across PHP request boundaries using the `openregister_metrics` database table (already used by `MetricsService`).
 
+**Recording (implemented 2026-07-14, `revive-or-dead-capabilities` / openregister#393):**
+`ObjectMetricsListener` writes a metric row per object create/update/delete, listening on the
+`ObjectCreatedEvent` / `ObjectUpdatedEvent` / `ObjectDeletedEvent` that `MagicMapper` — the
+canonical write path every Conduction app inherits — already dispatches. Until then
+`MetricsService::recordMetric()` had **zero callers anywhere in `lib/`**: the
+`openregister_metrics` table was created by a migration and never written to, so this
+requirement had no implementation path at all despite being marked done.
+
+**Exposition — STILL A GAP.** The scrape-side scenarios below (`openregister_objects_*_total`
+in the Prometheus exposition) are **not yet implemented**: the `/api/metrics` endpoint is served
+by `AppHost\Controller\GenericMetrics`, which does not read `openregister_metrics`. The rows now
+exist; projecting them into the Prometheus exposition format is tracked as a follow-up on
+openregister#393. Do not read the scenarios below as satisfied.
+
+#### Scenario: Object creation writes a metric row
+- **GIVEN** an object is created in schema "meldingen" of register "zaken"
+- **WHEN** the write completes
+- **THEN** a row MUST be inserted into `openregister_metrics` with `metric_type = 'object_created'`
+- **AND** `entity_type = 'object'` and `entity_id` = the object's uuid
+- **AND** the `metadata` MUST carry `register` and `schema`, from which the `{register=…,schema=…}` labels are derived
+- **AND** `user_id` MUST record the acting user when there is a session
+
+#### Scenario: Object update and delete write metric rows
+- **WHEN** an object is updated, **THEN** a row with `metric_type = 'object_updated'` MUST be written
+- **WHEN** an object is deleted, **THEN** a row with `metric_type = 'object_deleted'` MUST be written
+
+#### Scenario: Metrics recording never breaks the write it observes
+- **GIVEN** the metrics insert fails (e.g. the database is unavailable)
+- **WHEN** an object is created
+- **THEN** the failure MUST be logged and swallowed
+- **AND** the object create/update/delete that triggered it MUST still succeed
+
 #### Scenario: Object creation counter increments
 - **GIVEN** 10 objects have been created in schema "meldingen" of register "zaken"
 - **WHEN** the metrics endpoint is scraped

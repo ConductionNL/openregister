@@ -105,6 +105,16 @@ class SaveObjects
     use RelationDetectionTrait;
 
     /**
+     * Maximum number of audit entries materialised into AuditTrail entities
+     * and persisted per insertAuditTrails() call. Bounds peak memory: a save
+     * chunk can hold up to 20k objects, and each audit entity embeds the
+     * object's old+new payload diff.
+     *
+     * @var int
+     */
+    private const AUDIT_INSERT_CHUNK_SIZE = 100;
+
+    /**
      * Static schema cache to avoid repeated database lookups
      *
      * @var array<int|string, Schema>
@@ -1036,14 +1046,21 @@ class SaveObjects
             schema: $schema
         );
 
-        // STEP 3: Build and classify results from bulk operation output.
-        $this->buildChunkResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+        // STEP 3: Build and classify results from bulk operation output. Returns the
+        // hydrated entities (with pre-update state for updates) for side effects.
+        $sideEffects = $this->buildChunkResults(
+            bulkResult: $bulkResult,
+            transformedObjects: $transformedObjects,
+            result: $result
+        );
 
         // STEP 3b (BUG-OBJ-1): always write the audit trail for created/updated objects and,
         // when requested, dispatch the matching lifecycle events. The ultraFastBulkSave mapper
         // path bypasses the per-row event/audit hooks that the single-object insert/update apply,
         // so the bulk path must replay them here to stay at parity with single-object save.
-        $this->emitChunkSideEffects(result: $result, schemaCache: $schemaCache, _events: $_events);
+        // Audit rows are written with streamed batched multi-row INSERTs (100 rows per
+        // statement) instead of one INSERT (plus hash-chain queries) per object.
+        $this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events);
 
         $endTime        = microtime(true);
         $processingTime = round(($endTime - $startTime) * 1000, 2);
@@ -1166,122 +1183,147 @@ class SaveObjects
      *
      * The ultraFastBulkSave mapper path bypasses the per-row event/audit hooks the
      * single-object insert/update apply, so the bulk path replays them here. Audit
-     * trail rows are always written (unless audit trails are disabled in settings);
+     * trail rows are written with batched multi-row INSERTs
+     * ({@see AuditTrailMapper::insertAuditTrails()}) instead of one INSERT per
+     * object, streamed in slices of {@see self::AUDIT_INSERT_CHUNK_SIZE} entries
+     * so peak memory never holds a whole 20k-object chunk's audit entities (each
+     * embeds an old+new payload diff). Update rows carry the REAL pre-update
+     * state so their changeset is an accurate old-vs-new diff.
      * ObjectCreated/ObjectUpdatedEvent are only dispatched when $_events is true.
      *
-     * @param array $result      The classified result (saved/updated buckets)
-     * @param array $schemaCache Schema cache (unused for now, reserved for future per-schema gating)
+     * @param array $sideEffects Side-effect payload from buildChunkResults():
+     *                           'created' => list<ObjectEntity>,
+     *                           'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
      * @param bool  $_events     Whether to dispatch object lifecycle events
      *
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function emitChunkSideEffects(array $result, array $schemaCache, bool $_events): void
+    private function emitChunkSideEffects(array $sideEffects, bool $_events): void
     {
-        // Created objects → audit (action: create) + ObjectCreatedEvent.
-        foreach (($result['saved'] ?? []) as $savedData) {
-            $entity = $this->hydrateResultEntity(data: $savedData);
-            if ($entity === null) {
-                continue;
+        $createdEntities = ($sideEffects['created'] ?? []);
+        $updatedEntities = ($sideEffects['updated'] ?? []);
+
+        // Batched audit trail: multi-row INSERTs instead of one INSERT (plus
+        // hash-chain queries) per object.
+        if ($this->auditTrailMapper !== null) {
+            $auditEntries = [];
+            foreach ($createdEntities as $entity) {
+                $auditEntries[] = [
+                    'old'    => null,
+                    'new'    => $entity,
+                    'action' => 'create',
+                ];
             }
 
-            $this->writeBulkAuditTrail(old: null, new: $entity, action: 'create');
+            foreach ($updatedEntities as $pair) {
+                // Fall back to the persisted entity as `old` when no pre-update
+                // snapshot could be reconstructed, so the row still records an
+                // 'update' action (a null `old` would be classified as 'create').
+                $auditEntries[] = [
+                    'old'    => ($pair['old'] ?? $pair['new']),
+                    'new'    => $pair['new'],
+                    'action' => 'update',
+                ];
+            }
 
-            if ($_events === true && $this->eventDispatcher !== null) {
+            // MEMORY: stream the entries in slices of AUDIT_INSERT_CHUNK_SIZE.
+            // A save chunk can hold up to 20k objects (calculateOptimalChunkSize),
+            // and every AuditTrail entity embeds an old+new payload diff — building
+            // them all before inserting would hold the whole chunk's diffs in
+            // memory at once. array_splice() consumes the entry list destructively
+            // so each slice's references are released as soon as it is persisted.
+            while ($auditEntries !== []) {
+                $slice = array_splice($auditEntries, 0, self::AUDIT_INSERT_CHUNK_SIZE);
                 try {
-                    $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $entity));
+                    $this->auditTrailMapper->insertAuditTrails(entries: $slice);
                 } catch (\Throwable $e) {
                     $this->logger->warning(
-                        message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
-                        context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
+                        message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
+                        context: ['error' => $e->getMessage(), 'entries' => count($slice)]
                     );
                 }
             }
-        }//end foreach
+        }//end if
 
-        // Updated objects → audit (action: update) + ObjectUpdatedEvent.
-        foreach (($result['updated'] ?? []) as $updatedData) {
-            $entity = $this->hydrateResultEntity(data: $updatedData);
-            if ($entity === null) {
-                continue;
-            }
-
-            // The bulk path does not retain a pre-update snapshot. Pass the persisted
-            // entity as `old` as well so createAuditTrail() records an 'update' action
-            // (a null `old` would be auto-classified as a 'create').
-            $this->writeBulkAuditTrail(old: $entity, new: $entity, action: 'update');
-
-            if ($_events === true && $this->eventDispatcher !== null) {
-                try {
-                    // The bulk path does not retain a pre-update snapshot; pass the
-                    // persisted entity as both old and new so listeners still fire.
-                    $this->eventDispatcher->dispatchTyped(
-                        new ObjectUpdatedEvent(newObject: $entity, oldObject: $entity)
-                    );
-                } catch (\Throwable $e) {
-                    $this->logger->warning(
-                        message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
-                        context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
-                    );
-                }
-            }
-        }//end foreach
-    }//end emitChunkSideEffects()
-
-    /**
-     * Hydrate an ObjectEntity from a bulk result row, or null when identity is missing.
-     *
-     * @param mixed $data The result row (array) for a persisted object
-     *
-     * @return ObjectEntity|null The hydrated entity, or null when it cannot be built
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     */
-    private function hydrateResultEntity(mixed $data): ?ObjectEntity
-    {
-        if (is_array($data) === false) {
-            return null;
-        }
-
-        // A persisted object must have a stable UUID; without one we cannot write a
-        // meaningful audit row or event, so skip rather than emit a corrupt record.
-        if (empty($data['uuid']) === true && empty($data['id']) === true) {
-            return null;
-        }
-
-        $entity = new ObjectEntity();
-        $entity->hydrate($data);
-
-        return $entity;
-    }//end hydrateResultEntity()
-
-    /**
-     * Write a single audit trail row for a bulk-persisted object, guarded by settings.
-     *
-     * @param ObjectEntity|null $old    The pre-change entity (null on create)
-     * @param ObjectEntity|null $new    The post-change entity
-     * @param string            $action The audit action (create/update)
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     */
-    private function writeBulkAuditTrail(?ObjectEntity $old, ?ObjectEntity $new, string $action): void
-    {
-        if ($this->auditTrailMapper === null) {
+        if ($_events !== true || $this->eventDispatcher === null) {
             return;
         }
 
+        // Created objects → ObjectCreatedEvent.
+        foreach ($createdEntities as $entity) {
+            try {
+                $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $entity));
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[SaveObjects] Failed to dispatch ObjectCreatedEvent for bulk object',
+                    context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
+                );
+            }
+        }
+
+        // Updated objects → ObjectUpdatedEvent with the real pre-update state
+        // when available so diff-aware listeners see an accurate changeset.
+        foreach ($updatedEntities as $pair) {
+            $entity = $pair['new'];
+            try {
+                $this->eventDispatcher->dispatchTyped(
+                    new ObjectUpdatedEvent(newObject: $entity, oldObject: ($pair['old'] ?? $entity))
+                );
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[SaveObjects] Failed to dispatch ObjectUpdatedEvent for bulk object',
+                    context: ['error' => $e->getMessage(), 'uuid' => $entity->getUuid()]
+                );
+            }
+        }
+    }//end emitChunkSideEffects()
+
+    /**
+     * Convert a raw magic-table result row into an ObjectEntity.
+     *
+     * The bulk mapper returns raw rows (underscore-prefixed metadata columns
+     * plus snake_case property columns). Conversion needs register + schema
+     * context, resolved through the static caches from the row's `_register`
+     * and `_schema` values.
+     *
+     * @param array $row The raw magic-table row
+     *
+     * @return ObjectEntity|null The converted entity, or null when it cannot be built
+     */
+    private function convertBulkRowToEntity(array $row): ?ObjectEntity
+    {
+        $registerId = ($row['_register'] ?? null);
+        $schemaId   = ($row['_schema'] ?? null);
+
+        if ($registerId === null || $schemaId === null) {
+            return null;
+        }
+
         try {
-            $this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+            $register = $this->loadRegisterWithCache(registerId: $registerId);
+            $schema   = $this->loadSchemaWithCache(schemaId: $schemaId);
+
+            return $this->objectEntityMapper->convertRowToObjectEntity(
+                row: $row,
+                _register: $register,
+                _schema: $schema
+            );
         } catch (\Throwable $e) {
             $this->logger->warning(
-                message: '[SaveObjects] Failed to write audit trail for bulk object',
-                context: ['error' => $e->getMessage(), 'action' => $action, 'uuid' => $new?->getUuid()]
+                message: '[SaveObjects] Failed to convert bulk result row to entity',
+                context: [
+                    'error'    => $e->getMessage(),
+                    'uuid'     => ($row['_uuid'] ?? 'unknown'),
+                    'register' => $registerId,
+                    'schema'   => $schemaId,
+                ]
             );
-        }
-    }//end writeBulkAuditTrail()
+
+            return null;
+        }//end try
+    }//end convertBulkRowToEntity()
 
     /**
      * Transform a chunk of objects to database format and collect invalid objects
@@ -1387,12 +1429,18 @@ class SaveObjects
      * @param array $transformedObjects The original transformed objects (for fallback)
      * @param array $result             The result array to populate
      *
-     * @return void
+     * @return array Side-effect payload: 'created' => list<ObjectEntity>,
+     *               'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function buildChunkResults(mixed $bulkResult, array $transformedObjects, array &$result): void
+    private function buildChunkResults(mixed $bulkResult, array $transformedObjects, array &$result): array
     {
+        $sideEffects = [
+            'created' => [],
+            'updated' => [],
+        ];
+
         if (is_array($bulkResult) === false) {
             // Fallback for unexpected return format.
             $this->logger->warning("[SaveObjects] Unexpected bulk result format, using fallback");
@@ -1401,20 +1449,32 @@ class SaveObjects
                 $result['statistics']['saved']++;
             }
 
-            return;
+            return $sideEffects;
         }
 
         // Check if we got complete objects (new approach) or just UUIDs (fallback).
+        // The mapper contract is raw magic-table rows carrying an `object_status`
+        // field — the previous gate looked for `created`/`updated` keys that raw
+        // rows never have (they are `_created`/`_updated`), which sent every bulk
+        // result down the legacy path and silently dropped classification, audit
+        // trails, and events.
         $firstItem = reset($bulkResult);
 
-        if (is_array($firstItem) === true && isset($firstItem['created'], $firstItem['updated']) === true) {
+        if (is_array($firstItem) === true && isset($firstItem['object_status']) === true) {
             // NEW APPROACH: Complete objects with database-computed classification returned.
-            $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
-            return;
+            return $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
         }
 
-        // FALLBACK: UUID array returned (legacy behavior).
+        // FALLBACK: UUID array returned (legacy behavior). This path cannot
+        // reconstruct entities, so it yields NO side effects: no audit rows are
+        // written and no lifecycle events are dispatched for these objects.
+        $this->logger->warning(
+            message: '[SaveObjects] Legacy uuid-array bulk result — audit trail and lifecycle events are skipped for this chunk',
+            context: ['objects' => count($bulkResult)]
+        );
         $this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
+
+        return $sideEffects;
     }//end buildChunkResults()
 
     /**
@@ -1426,13 +1486,21 @@ class SaveObjects
      * @param array $bulkResult The complete objects from bulk save with object_status
      * @param array $result     The result array to populate
      *
-     * @return void
+     * @return array Side-effect payload: 'created' => list<ObjectEntity>,
+     *               'updated' => list<array{old: ObjectEntity|null, new: ObjectEntity}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-status branching plus entity conversion fallbacks
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
      */
-    private function classifyDatabaseComputedResults(array $bulkResult, array &$result): void
+    private function classifyDatabaseComputedResults(array $bulkResult, array &$result): array
     {
         $this->logger->info("[SaveObjects] Processing complete objects with database-computed classification");
+
+        $sideEffects = [
+            'created' => [],
+            'updated' => [],
+        ];
 
         $createdCount   = 0;
         $updatedCount   = 0;
@@ -1442,21 +1510,48 @@ class SaveObjects
             // DATABASE-COMPUTED CLASSIFICATION: Use the object_status calculated by database.
             $objectStatus = $completeObject['object_status'] ?? 'unknown';
 
+            // Retain the pre-update row (updates only) for the audit diff, and keep
+            // internal bookkeeping fields out of the raw row before conversion.
+            $preUpdateRow = ($completeObject['_pre_update_row'] ?? null);
+            unset($completeObject['_pre_update_row'], $completeObject['object_status'], $completeObject['operation_start_time']);
+
+            // Convert the raw magic-table row to an ObjectEntity so the response
+            // carries the same serialized shape as the single-object save path.
+            $entity     = $this->convertBulkRowToEntity(row: $completeObject);
+            $serialized = $completeObject;
+            if ($entity !== null) {
+                $serialized = $entity->jsonSerialize();
+            }
+
             switch ($objectStatus) {
                 case 'created':
-                    $result['saved'][] = $completeObject;
+                    $result['saved'][] = $serialized;
                     $result['statistics']['saved']++;
                     $createdCount++;
+                    if ($entity !== null) {
+                        $sideEffects['created'][] = $entity;
+                    }
                     break;
 
                 case 'updated':
-                    $result['updated'][] = $completeObject;
+                    $result['updated'][] = $serialized;
                     $result['statistics']['updated']++;
                     $updatedCount++;
+                    if ($entity !== null) {
+                        $oldEntity = null;
+                        if (is_array($preUpdateRow) === true) {
+                            $oldEntity = $this->convertBulkRowToEntity(row: $preUpdateRow);
+                        }
+
+                        $sideEffects['updated'][] = [
+                            'old' => $oldEntity,
+                            'new' => $entity,
+                        ];
+                    }
                     break;
 
                 case 'unchanged':
-                    $result['unchanged'][] = $completeObject;
+                    $result['unchanged'][] = $serialized;
                     $result['statistics']['unchanged']++;
                     $unchangedCount++;
                     break;
@@ -1466,11 +1561,11 @@ class SaveObjects
                     $this->logger->warning(
                             "Unexpected object status: {$objectStatus}",
                             [
-                                'uuid'          => $completeObject['uuid'],
+                                'uuid'          => ($completeObject['_uuid'] ?? $completeObject['uuid'] ?? 'unknown'),
                                 'object_status' => $objectStatus,
                             ]
                             );
-                    $result['unchanged'][] = $completeObject;
+                    $result['unchanged'][] = $serialized;
                     $result['statistics']['unchanged']++;
                     $unchangedCount++;
             }//end switch
@@ -1486,6 +1581,8 @@ class SaveObjects
                     'classification_method' => 'database_computed_sql',
                 ]
                 );
+
+        return $sideEffects;
     }//end classifyDatabaseComputedResults()
 
     /**

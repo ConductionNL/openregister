@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -160,7 +159,6 @@ class AppendOnlyTest extends TestCase
             $this->createMock(DataManipulationHandler::class),
             $this->deleteHandler,
             $this->createMock(GetObject::class),
-            $this->createMock(PerformanceHandler::class),
             $this->createMock(PermissionHandler::class),
             $this->renderHandler,
             $this->saveHandler,
