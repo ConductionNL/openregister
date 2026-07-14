@@ -24,6 +24,7 @@
  * @link https://www.OpenRegister.app
  *
  * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -59,6 +60,10 @@ use OCP\AppFramework\Db\Entity;
  * @method void setScheduleDayOfMonth(?int $scheduleDayOfMonth)
  * @method string|null getDeliveryFolder()
  * @method void setDeliveryFolder(?string $deliveryFolder)
+ * @method string|null getDeliveryMode()
+ * @method void setDeliveryMode(?string $deliveryMode)
+ * @method string|null getRecipients()
+ * @method void setRecipients(?string $recipients)
  * @method bool|null getEnabled()
  * @method void setEnabled(?bool $enabled)
  * @method DateTime|null getLastRunAt()
@@ -75,11 +80,13 @@ use OCP\AppFramework\Db\Entity;
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
  * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
  *
- * @SuppressWarnings(PHPMD.TooManyFields) 17 columns is the row's actual
- *     shape (design.md's table) — scheduling config, owner, delivery
- *     target, and last-run outcome each need their own field; splitting
- *     this into sub-objects would just move the field count, not reduce it.
+ * @SuppressWarnings(PHPMD.TooManyFields) 19 columns is the row's actual
+ *     shape (design.md's table plus deliveryMode/recipients) — scheduling
+ *     config, owner, delivery target/mode, and last-run outcome each need
+ *     their own field; splitting this into sub-objects would just move the
+ *     field count, not reduce it.
  */
 class ScheduledReport extends Entity implements JsonSerializable
 {
@@ -162,6 +169,26 @@ class ScheduledReport extends Entity implements JsonSerializable
     protected ?string $deliveryFolder = null;
 
     /**
+     * How the export is delivered to the owner: `files` (Nextcloud Files
+     * only — the original behaviour), `email` (email only), or `both`.
+     * Defaults to `files` so every report created before this field existed
+     * keeps its exact prior behaviour.
+     *
+     * @var string|null
+     */
+    protected ?string $deliveryMode = null;
+
+    /**
+     * Opaque JSON-encoded array of recipient email addresses used when
+     * `deliveryMode` is `email` or `both`. Empty/absent means "the owner's
+     * own Nextcloud email address, resolved at run time" — see
+     * `ScheduledReportService::resolveRecipients()`.
+     *
+     * @var string|null
+     */
+    protected ?string $recipients = null;
+
+    /**
      * Whether this report is scheduled to run.
      *
      * @var boolean|null
@@ -219,6 +246,8 @@ class ScheduledReport extends Entity implements JsonSerializable
         $this->addType(fieldName: 'scheduleDayOfWeek', type: 'integer');
         $this->addType(fieldName: 'scheduleDayOfMonth', type: 'integer');
         $this->addType(fieldName: 'deliveryFolder', type: 'string');
+        $this->addType(fieldName: 'deliveryMode', type: 'string');
+        $this->addType(fieldName: 'recipients', type: 'string');
         $this->addType(fieldName: 'enabled', type: 'boolean');
         $this->addType(fieldName: 'lastRunAt', type: 'datetime');
         $this->addType(fieldName: 'lastStatus', type: 'string');
@@ -249,6 +278,28 @@ class ScheduledReport extends Entity implements JsonSerializable
     }//end getFiltersArray()
 
     /**
+     * The decoded recipient email list, or an empty array when none is stored
+     * (default-to-owner-email is resolved at run time, not here).
+     *
+     * @return string[]
+     *
+     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     */
+    public function getRecipientsArray(): array
+    {
+        if ($this->recipients === null || $this->recipients === '') {
+            return [];
+        }
+
+        $decoded = json_decode($this->recipients, true);
+        if (is_array($decoded) === false) {
+            return [];
+        }
+
+        return array_values(array_filter($decoded, static fn ($value) => is_string($value) === true));
+    }//end getRecipientsArray()
+
+    /**
      * JSON serialization — the row is only ever exposed to its owner or an admin (controller-gated).
      *
      * @return array<string,mixed>
@@ -270,6 +321,8 @@ class ScheduledReport extends Entity implements JsonSerializable
             'scheduleDayOfWeek'  => $this->scheduleDayOfWeek,
             'scheduleDayOfMonth' => $this->scheduleDayOfMonth,
             'deliveryFolder'     => $this->deliveryFolder,
+            'deliveryMode'       => ($this->deliveryMode ?? 'files'),
+            'recipients'         => $this->getRecipientsArray(),
             'enabled'            => $this->enabled,
             'lastRunAt'          => $this->lastRunAt?->format(DateTime::ATOM),
             'lastStatus'         => $this->lastStatus,

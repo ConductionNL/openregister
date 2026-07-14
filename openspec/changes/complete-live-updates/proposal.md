@@ -57,7 +57,7 @@ pure write amplification on the hot object-save path.
   `info.xml` registration), the table-creating migration
   (`Version1Date20260430000000` — fresh installs no longer create the dead
   table), and the two tests covering the subsystem. A new migration
-  (`Version1Date20260714000000`) drops the orphaned
+  (`Version1Date20260714120000`) drops the orphaned
   `openregister_realtime_events` table (and thereby its indexes) on instances
   that ran development between May and July 2026 — idempotent, drops only when
   present. Spec deltas REMOVE the requirements that mandated this subsystem

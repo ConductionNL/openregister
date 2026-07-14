@@ -36,9 +36,14 @@ use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
+use OCP\IConfig;
 use OCP\IUser;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\Mail\IAttachment;
+use OCP\Mail\IEMailTemplate;
+use OCP\Mail\IMailer;
+use OCP\Mail\IMessage;
 use OCP\Notification\INotification;
 use OCP\Notification\IManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -47,30 +52,48 @@ use Psr\Log\LoggerInterface;
 
 class ScheduledReportServiceRunOneTest extends TestCase
 {
+
     private ScheduledReportMapper&MockObject $mapper;
+
     private RegisterMapper&MockObject $registerMapper;
+
     private SchemaMapper&MockObject $schemaMapper;
+
     private ExportService&MockObject $exportService;
+
     private IRootFolder&MockObject $rootFolder;
+
     private IUserManager&MockObject $userManager;
+
     private IUserSession&MockObject $userSession;
+
     private IManager&MockObject $notificationManager;
+
+    private IMailer&MockObject $mailer;
+
+    private IConfig&MockObject $config;
+
     private ScheduledReportService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->mapper              = $this->createMock(ScheduledReportMapper::class);
-        $this->registerMapper      = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper        = $this->createMock(SchemaMapper::class);
-        $this->exportService       = $this->createMock(ExportService::class);
-        $this->rootFolder          = $this->createMock(IRootFolder::class);
-        $this->userManager         = $this->createMock(IUserManager::class);
-        $this->userSession         = $this->createMock(IUserSession::class);
+        $this->mapper         = $this->createMock(ScheduledReportMapper::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
+        $this->exportService  = $this->createMock(ExportService::class);
+        $this->rootFolder     = $this->createMock(IRootFolder::class);
+        $this->userManager    = $this->createMock(IUserManager::class);
+        $this->userSession    = $this->createMock(IUserSession::class);
         $this->notificationManager = $this->createMock(IManager::class);
+        $this->mailer = $this->createMock(IMailer::class);
+        $this->config = $this->createMock(IConfig::class);
 
         $this->mapper->method('update')->willReturnArgument(0);
+        $this->config->method('getSystemValue')->willReturnCallback(
+            static fn ($key, $default=null) => $default
+        );
 
         $this->service = new ScheduledReportService(
             $this->mapper,
@@ -81,15 +104,17 @@ class ScheduledReportServiceRunOneTest extends TestCase
             $this->userManager,
             $this->userSession,
             $this->notificationManager,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->mailer,
+            $this->config
         );
-    }
+    }//end setUp()
 
-    private function makeReport(string $format = 'csv'): ScheduledReport
+    private function makeReport(string $format='csv'): ScheduledReport
     {
         $report = new ScheduledReport();
-        $ref = new \ReflectionClass($report);
-        $prop = $ref->getProperty('id');
+        $ref    = new \ReflectionClass($report);
+        $prop   = $ref->getProperty('id');
         $prop->setAccessible(true);
         $prop->setValue($report, 7);
 
@@ -106,7 +131,7 @@ class ScheduledReportServiceRunOneTest extends TestCase
         $report->setEnabled(true);
 
         return $report;
-    }
+    }//end makeReport()
 
     private function mockOwnerFolder(bool $folderExists, bool $fileExists): Folder&MockObject
     {
@@ -138,7 +163,7 @@ class ScheduledReportServiceRunOneTest extends TestCase
         $this->rootFolder->method('getUserFolder')->with('alice')->willReturn($userFolder);
 
         return $folder;
-    }
+    }//end mockOwnerFolder()
 
     public function testSuccessfulRunSetsSuccessStatusAndNotifies(): void
     {
@@ -163,12 +188,12 @@ class ScheduledReportServiceRunOneTest extends TestCase
         self::assertSame('success', $report->getLastStatus());
         self::assertNull($report->getLastError());
         self::assertNotNull($report->getLastRunAt());
-    }
+    }//end testSuccessfulRunSetsSuccessStatusAndNotifies()
 
     public function testExportTooLargeMarksFailedAndNotifiesWithoutThrowing(): void
     {
         $report = $this->makeReport('pdf');
-        $owner = $this->createMock(IUser::class);
+        $owner  = $this->createMock(IUser::class);
         $owner->method('getUID')->willReturn('alice');
         $this->userManager->method('get')->with('alice')->willReturn($owner);
 
@@ -188,7 +213,7 @@ class ScheduledReportServiceRunOneTest extends TestCase
 
         self::assertSame('failed', $report->getLastStatus());
         self::assertStringContainsString('9000', (string) $report->getLastError());
-    }
+    }//end testExportTooLargeMarksFailedAndNotifiesWithoutThrowing()
 
     public function testMissingOwnerAccountMarksFailedWithoutNotifying(): void
     {
@@ -202,7 +227,7 @@ class ScheduledReportServiceRunOneTest extends TestCase
         $this->service->runOne(report: $report);
 
         self::assertSame('failed', $report->getLastStatus());
-    }
+    }//end testMissingOwnerAccountMarksFailedWithoutNotifying()
 
     public function testSessionIsSwappedToOwnerAndRestoredAfterRun(): void
     {
@@ -215,9 +240,11 @@ class ScheduledReportServiceRunOneTest extends TestCase
         $setUserCalls = [];
         $this->userSession->expects(self::exactly(2))
             ->method('setUser')
-            ->willReturnCallback(function ($user) use (&$setUserCalls, $previousUser): void {
-                $setUserCalls[] = ($user === $previousUser) ? 'previous' : 'owner';
-            });
+            ->willReturnCallback(
+                    function ($user) use (&$setUserCalls, $previousUser): void {
+                        $setUserCalls[] = ($user === $previousUser) ? 'previous' : 'owner';
+                    }
+                    );
 
         $this->exportService->method('exportToCsv')->willReturn('id,name');
         $this->notificationManager->method('createNotification')->willReturn($this->createMock(INotification::class));
@@ -227,5 +254,5 @@ class ScheduledReportServiceRunOneTest extends TestCase
         // First swap to the owner (for RBAC-correct export), then restore
         // the previously-active session user in the finally block.
         self::assertSame(['owner', 'previous'], $setUserCalls);
-    }
+    }//end testSessionIsSwappedToOwnerAndRestoredAfterRun()
 }//end class

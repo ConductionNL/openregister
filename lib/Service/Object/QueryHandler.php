@@ -484,6 +484,14 @@ class QueryHandler
             $translateStart = microtime(true);
             $this->renderHandler->resolveTranslationsForRows(rows: $results);
             $metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
+
+            // Cheap path also skips renderEntity, which is where write-only properties are
+            // redacted (openregister#380, ocon#147). Without this, a LIST read returns
+            // secrets that a single-object read would strip — and the OpenConnector leak
+            // was exactly a list read. Apply the same redaction to the raw rows here.
+            $redactStart = microtime(true);
+            $this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $_rbac);
+            $metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
         }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).

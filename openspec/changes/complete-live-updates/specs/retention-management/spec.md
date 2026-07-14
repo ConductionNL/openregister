@@ -12,4 +12,4 @@ the job and its `info.xml` registration are deleted. This is independent of the
 AVG retention pass and the Archiefwet destruction workflow, which are unchanged.
 
 **Migration**: The leftover table is dropped by migration
-`Version1Date20260714000000` (idempotent, drops only when present).
+`Version1Date20260714120000` (idempotent, drops only when present).

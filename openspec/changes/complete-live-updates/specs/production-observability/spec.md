@@ -13,4 +13,4 @@ history remains in the audit trail.
 
 **Migration**: None for consumers — none existed. The orphaned
 `openregister_realtime_events` table is dropped by migration
-`Version1Date20260714000000` (idempotent, drops only when present).
+`Version1Date20260714120000` (idempotent, drops only when present).

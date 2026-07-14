@@ -89,7 +89,7 @@ endpoints it fed (`/api/realtime/events`, `/api/realtime/cursor`) were never
 called by any frontend or sibling app (verified by grepping the entire
 apps-extra workspace). The notify_push transport (`NotifyPushListener`) and the
 GraphQL SSE subscription path cover realtime delivery without per-save DB write
-amplification. The subsystem is removed; migration `Version1Date20260714000000`
+amplification. The subsystem is removed; migration `Version1Date20260714120000`
 drops the orphaned `openregister_realtime_events` table (and its indexes) on
 instances that still carry it.
 

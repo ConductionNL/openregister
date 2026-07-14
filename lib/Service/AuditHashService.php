@@ -200,6 +200,134 @@ class AuditHashService
     }//end sealRow()
 
     /**
+     * Seal a batch of already-inserted audit-trail rows into the hash chain.
+     *
+     * Batched counterpart of {@see sealRow()} for bulk audit inserts: instead
+     * of 3 queries per row (row SELECT + previous-hash SELECT + UPDATE) it
+     * runs one range SELECT, one previous-hash SELECT, and one CASE-based
+     * UPDATE for the whole batch. To keep the chain verifiable when foreign
+     * rows interleave with the batch (concurrent writers), ALL unsealed rows
+     * in the id range [min(ids), max(ids)] are sealed — the hash computed for
+     * any row is deterministic (same canonical JSON + same predecessor), so
+     * sealing an interleaved row here yields the identical value its own
+     * sealRow() call would produce. Already-sealed rows are left untouched
+     * and only contribute their stored hash as the chain link.
+     *
+     * KNOWN RACE (pre-existing in sealRow(), widened at bulk boundaries): a
+     * concurrent writer can insert a row AFTER this batch's range SELECT but
+     * with an id inside/adjacent to the range, or seal a boundary row between
+     * our getHashBefore() read and our UPDATE. Either interleaving can leave
+     * one boundary link computed against a stale predecessor, which
+     * verifyChain() would later report as a break (a false tamper alarm, not
+     * data loss — resealing recomputes deterministically). The single-row
+     * sealRow() has the same window per row; batching widens it to the batch
+     * duration. Follow-up: serialize sealing with an advisory lock (tracked
+     * in a separate issue per the pre-merge review).
+     *
+     * @param int[] $ids The audit-trail row ids to seal.
+     *
+     * @return int Number of rows sealed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chain walking requires sealed/unsealed branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Same — early-outs plus per-row sealed/unsealed paths
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function sealRows(array $ids): int
+    {
+        $ids = array_values(
+            array_filter(
+                array_map('intval', $ids),
+                static function (int $id): bool {
+                    return $id > 0;
+                }
+            )
+        );
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        $minId = min($ids);
+        $maxId = max($ids);
+
+        // Fetch every row in the id range so interleaved foreign rows keep
+        // their place in the chain.
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->gte('id', $qb->createNamedParameter($minId, IQueryBuilder::PARAM_INT)))
+            ->andWhere($qb->expr()->lte('id', $qb->createNamedParameter($maxId, IQueryBuilder::PARAM_INT)))
+            ->orderBy('id', 'ASC');
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        if ($rows === []) {
+            return 0;
+        }
+
+        $previousHash = $this->getHashBefore(id: $minId);
+        if ($previousHash === null) {
+            $previousHash = $this->getGenesisHash();
+        }
+
+        // Walk the range in id order, computing hashes for unsealed rows.
+        $updates = [];
+        foreach ($rows as $row) {
+            $storedHash = ($row['hash'] ?? null);
+            if ($storedHash !== null && $storedHash !== '') {
+                // Already sealed — adopt its hash as the next chain link.
+                $previousHash = $storedHash;
+                continue;
+            }
+
+            $entry = new AuditTrail();
+            $entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+            $hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+            $updates[(int) $row['id']] = [
+                'hash'         => $hash,
+                'previousHash' => $previousHash,
+            ];
+
+            $previousHash = $hash;
+        }
+
+        if ($updates === []) {
+            return 0;
+        }
+
+        // Single CASE-based UPDATE for the whole batch.
+        $tableName  = $this->db->getQueryBuilder()->getTableName('openregister_audit_trails');
+        $hashCases  = [];
+        $prevCases  = [];
+        $parameters = [];
+        foreach ($updates as $id => $values) {
+            $hashCases[]  = 'WHEN '.((int) $id).' THEN ?';
+            $parameters[] = $values['hash'];
+        }
+
+        foreach ($updates as $id => $values) {
+            $prevCases[]  = 'WHEN '.((int) $id).' THEN ?';
+            $parameters[] = $values['previousHash'];
+        }
+
+        $idList = implode(',', array_map('intval', array_keys($updates)));
+
+        $sql = 'UPDATE '.$tableName
+            .' SET hash = CASE id '.implode(' ', $hashCases).' ELSE hash END,'
+            .' previous_hash = CASE id '.implode(' ', $prevCases).' ELSE previous_hash END'
+            .' WHERE id IN ('.$idList.')';
+
+        $this->db->executeStatement($sql, $parameters);
+
+        return count($updates);
+    }//end sealRows()
+
+    /**
      * Verify the integrity of the hash chain.
      *
      * Iterates audit trail entries in order and validates that each entry's

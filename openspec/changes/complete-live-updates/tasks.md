@@ -54,7 +54,7 @@
   `appinfo/info.xml`.
 - [x] 2.4 Delete the `openregister_realtime_events` create-migration
   (`lib/Migration/Version1Date20260430000000.php`) so fresh installs no longer
-  create the dead table, and add `lib/Migration/Version1Date20260714000000.php`
+  create the dead table, and add `lib/Migration/Version1Date20260714120000.php`
   dropping the orphaned table (and its indexes) on instances that still carry
   it — idempotent, drops only when present.
 - [x] 2.5 Delete `tests/Service/RealtimeUpdatesIntegrationTest.php` and

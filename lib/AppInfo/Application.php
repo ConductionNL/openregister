@@ -151,6 +151,7 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
@@ -159,6 +160,10 @@ use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Listener\ApprovalChainGateListener;
+use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
@@ -2325,6 +2330,17 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
+        // Approval-chains declarative wiring — see x-openregister-approval-chains.
+        // Provisions ApprovalChain rows from the annotation (schema save), then
+        // gates any lifecycle transition it names until the provisioned chain's
+        // steps are all approved. Registered immediately after
+        // LifecycleValidationListener: transition legality must be established
+        // before approval-chain gating runs against it.
+        $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
+        $context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+
         // Calculations annotation listener — materialises declared calculations
         // into the object payload before persistence (see x-openregister-calculations).
         $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
@@ -2349,6 +2365,19 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+        // Schema lifecycle events invalidate the listener's cross-request
+        // reverse-FK index cache (reverse-FK declarations live on schemas).
+        $context->registerEventListener(SchemaCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SourceRecordChangeListener::class);
+
+        // CRUD metric listener — persists an operational metric row per object
+        // create/update/delete into `openregister_metrics`, which the canonical
+        // production-observability spec requires for counters that survive PHP
+        // request boundaries. Fail-soft: never aborts the write it observes.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
