@@ -40,6 +40,18 @@
 ## 6. Ship
 
 - [x] 6.1 Spec deltas for `archival-destruction-workflow` + `production-observability`
-- [ ] 6.2 Run tests in `php:8.3-cli` + fresh `composer install`; report baseline AND delta
-- [ ] 6.3 PR → `development`, admin-merge
-- [ ] 6.4 Archive change; update issue #393
+- [x] 6.2 Run tests in `php:8.3-cli` + fresh `composer install`; report baseline AND delta
+      (baseline @0c0256213: 14448 tests / 20 errors / 8 failures — branch: 14437 / 20 / 8 → zero new failures)
+- [x] 6.3 PR #395 → `development`, admin-merged (`abcfd3d2d`)
+- [x] 6.4 Archive change; sync canonical specs; update issue #393
+
+## 7. Follow-ups filed (NOT done here — out of scope)
+
+- [ ] 7.1 Prometheus **exposition** of the new CRUD counters — `/api/metrics`
+      (`AppHost\Controller\GenericMetrics`) does not read `openregister_metrics`. Rows now
+      exist; projecting them into the exposition format remains unimplemented.
+- [ ] 7.2 Retention-metadata **validation** on the object write path — removed with
+      `ArchivalService` (REQ-010); it never ran (zero callers) and has no live equivalent.
+- [ ] 7.3 Residual orphans left by the `ArchivalService` deletion: `DestructionListMapper`,
+      `DestructionList` entity, `SelectionListMapper` (entity/mapper/migration layers —
+      schema risk, deliberately not touched).
