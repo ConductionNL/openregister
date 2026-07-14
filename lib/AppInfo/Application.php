@@ -2346,6 +2346,11 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+        // Schema lifecycle events invalidate the listener's cross-request
+        // reverse-FK index cache (reverse-FK declarations live on schemas).
+        $context->registerEventListener(SchemaCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SourceRecordChangeListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
