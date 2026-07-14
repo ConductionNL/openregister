@@ -1742,41 +1742,57 @@ class RenderObject
         // selection above, so a caller can never re-surface a stripped property
         // by naming it (e.g. ?fields=apiToken).
         //
-        // Bypass for trusted internal reads — mirrors PermissionHandler::hasPermission().
-        // $_rbac === false is an explicit internal/service render that must see the
-        // full object (including writeOnly secrets it operates on), and
-        // SystemOperationContext::isActive() covers config boot / repair steps.
-        // A normal authenticated session always renders with $_rbac = true (the
-        // default), so end-user responses are always stripped.
-        $stripForRead = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
-        $schema       = $readSchema ?? $this->getSchema(id: $entity->getSchema());
-        if ($stripForRead === true
-            && $schema !== null
-            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true)
-        ) {
-            // Ensure @self metadata is available for property-level RBAC checks.
-            // Property authorization can reference @self.organisation or _organisation,
-            // which needs to be accessible during filtering (before jsonSerialize adds @self).
-            $objectDataWithSelf = $objectData;
-            if (isset($objectDataWithSelf['@self']) === false) {
-                $objectDataWithSelf['@self'] = [
-                    'organisation' => $entity->getOrganisation(),
-                    'owner'        => $entity->getOwner(),
-                ];
-            }
+        // writeOnly stripping is a HARD render-boundary rule and is NOT rbac-gated:
+        // a `writeOnly: true` property must never be returned on ANY read — including
+        // admin and `_rbac: false` internal renders (an admin HTTP read renders with
+        // `_rbac: false`, so gating writeOnly on it leaked plaintext secrets — #389).
+        // Internal code that needs a raw secret value reads ObjectEntity::getObject()
+        // from the mapper directly and never enters renderEntity.
+        //
+        // Property `authorization.read` (group-based) stripping IS rbac-gated: it is
+        // bypassed for trusted internal reads (`_rbac: false`) and config boot / repair
+        // steps (SystemOperationContext), mirroring PermissionHandler::hasPermission().
+        //
+        // Fail-safe ordering: both run AFTER caller-supplied `fields`/`unset` selection
+        // above, so a caller can never re-surface a stripped property by naming it
+        // (e.g. ?fields=apiToken).
+        $schema      = $readSchema ?? $this->getSchema(id: $entity->getSchema());
+        $stripAuthz  = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+        $doWriteOnly = ($schema !== null && $schema->hasWriteOnlyProperties() === true);
+        $doAuthz     = ($stripAuthz === true && $schema !== null && $schema->hasPropertyAuthorization() === true);
+        if ($doWriteOnly === true || $doAuthz === true) {
+            if ($doAuthz === true) {
+                // Group-authorization filtering also strips writeOnly (filterReadableProperties
+                // calls stripWriteOnlyProperties first). Ensure @self metadata is available:
+                // property authorization can reference @self.organisation or _organisation.
+                $objectDataWithSelf = $objectData;
+                if (isset($objectDataWithSelf['@self']) === false) {
+                    $objectDataWithSelf['@self'] = [
+                        'organisation' => $entity->getOrganisation(),
+                        'owner'        => $entity->getOwner(),
+                    ];
+                }
 
-            $objectData = $this->propertyRbacHandler->filterReadableProperties(
-                schema: $schema,
-                object: $objectDataWithSelf
-            );
+                $objectData = $this->propertyRbacHandler->filterReadableProperties(
+                    schema: $schema,
+                    object: $objectDataWithSelf
+                );
 
-            // Remove the temporary @self if it was added (it will be properly added in jsonSerialize).
-            if (isset($objectData['@self']) === true
-                && count($objectData['@self']) <= 2
-                && isset($objectData['@self']['organisation']) === true
-            ) {
-                unset($objectData['@self']);
-            }
+                // Remove the temporary @self if it was added (jsonSerialize re-adds it).
+                if (isset($objectData['@self']) === true
+                    && count($objectData['@self']) <= 2
+                    && isset($objectData['@self']['organisation']) === true
+                ) {
+                    unset($objectData['@self']);
+                }
+            } else {
+                // writeOnly-only path (admin / _rbac: false, or a schema with no
+                // property authorization): strip writeOnly unconditionally.
+                $objectData = $this->propertyRbacHandler->stripWriteOnlyProperties(
+                    schema: $schema,
+                    object: $objectData
+                );
+            }//end if
         }//end if
 
         // Resolve translatable properties to the requested language.

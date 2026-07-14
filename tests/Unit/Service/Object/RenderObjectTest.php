@@ -464,6 +464,107 @@ class RenderObjectTest extends TestCase
     }
 
     // =========================================================================
+    // renderEntity - writeOnly stripping is NOT rbac-gated (#389)
+    // Regression: these go through renderEntity's _rbac gate, NOT the handler
+    // helper directly (the direct-helper tests passed while the bug shipped).
+    // =========================================================================
+
+    /**
+     * Build a real Schema (id 1) with the given properties so hasWriteOnlyProperties()
+     * / hasPropertyAuthorization() are computed from real config, and wire the
+     * schema/register/file mocks renderEntity needs to reach the strip block.
+     *
+     * @param array $properties Schema property config.
+     *
+     * @return void
+     */
+    private function wireSchemaForStrip(array $properties): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties($properties);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->registerMapper->method('find')->willReturn($this->createRegister(1));
+        $this->fileMapper->method('getFilesForObject')->willReturn([]);
+    }
+
+    public function testRenderEntityStripsWriteOnlyEvenWhenRbacFalse(): void
+    {
+        // #389: an admin HTTP read renders with _rbac=false; writeOnly MUST still strip.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        // writeOnly path must run even under _rbac=false; group-authz filter must NOT
+        // (schema declares no property authorization).
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $obj) {
+                unset($obj['apiSecret']);
+                return $obj;
+            });
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+        ]);
+
+        $result = $this->handler->renderEntity($entity, _rbac: false);
+
+        $obj = $result->getObject();
+        $this->assertArrayNotHasKey('apiSecret', $obj, 'writeOnly field must be stripped even when _rbac=false (admin)');
+        $this->assertArrayHasKey('name', $obj);
+    }
+
+    public function testRenderEntityRbacFalseRunsWriteOnlyButNotGroupAuthz(): void
+    {
+        // Proves the two mechanisms are separated: under _rbac=false, writeOnly still
+        // strips while group `authorization.read` stripping stays bypassed.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+            'salary'    => ['type' => 'number', 'authorization' => ['read' => ['hr']]],
+        ]);
+
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('stripWriteOnlyProperties')
+            ->willReturnArgument(1);
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->handler->renderEntity($entity, _rbac: false);
+    }
+
+    public function testRenderEntityRbacTrueRunsGroupAuthzFilter(): void
+    {
+        // Regression guard: the group-authz path (which also strips writeOnly) still
+        // runs for a normal _rbac=true read — unchanged behaviour.
+        $this->wireSchemaForStrip([
+            'name'   => ['type' => 'string'],
+            'salary' => ['type' => 'number', 'authorization' => ['read' => ['hr']]],
+        ]);
+
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('filterReadableProperties')
+            ->willReturnArgument(1);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->handler->renderEntity($entity, _rbac: true);
+    }
+
+    // =========================================================================
     // renderEntity with string extend parameter
     // =========================================================================
 
