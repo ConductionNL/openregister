@@ -265,41 +265,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setRegister with numeric ID uses cache
+     * Test setRegister with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetRegisterWithNumericIdUsesCache(): void
+    public function testSetRegisterWithNumericIdUsesMapper(): void
     {
         $register = $this->createMock(Register::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$register]);
-
-        $result = $this->service->setRegister(42);
-        $this->assertSame($this->service, $result);
-
-    }//end testSetRegisterWithNumericIdUsesCache()
-
-
-    /**
-     * Test setRegister with numeric ID falls back when cache fails
-     *
-     * @return void
-     */
-    public function testSetRegisterWithNumericIdCacheFallback(): void
-    {
-        $register = $this->createMock(Register::class);
-
-        // Cache returns non-register (e.g., string or null).
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn(['not-a-register']);
-
         $this->registerMapper->method('find')->willReturn($register);
 
         $result = $this->service->setRegister(42);
         $this->assertSame($this->service, $result);
 
-    }//end testSetRegisterWithNumericIdCacheFallback()
+    }//end testSetRegisterWithNumericIdUsesMapper()
 
 
     // =========================================================================
@@ -321,20 +299,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setSchema with numeric ID uses cache
+     * Test setSchema with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetSchemaWithNumericIdUsesCache(): void
+    public function testSetSchemaWithNumericIdUsesMapper(): void
     {
         $schema = $this->createMock(Schema::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$schema]);
+        $this->schemaMapper->method('find')->willReturn($schema);
 
         $result = $this->service->setSchema(5);
         $this->assertSame($this->service, $result);
 
-    }//end testSetSchemaWithNumericIdUsesCache()
+    }//end testSetSchemaWithNumericIdUsesMapper()
 
 
     /**

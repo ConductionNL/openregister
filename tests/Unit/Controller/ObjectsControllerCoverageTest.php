@@ -79,21 +79,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Register DI mappers — defaults throw so entities stay null.
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
+        // Entities resolved by ObjectService::setRegister()/setSchema() default
+        // to null on the mock, so resolveRegisterSchemaIds() returns null
+        // entities unless a test wires the getters explicitly.
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,
@@ -167,24 +155,19 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     /**
-     * Register DI mappers that successfully return register and schema entities,
-     * and re-create the controller to pick up the new registrations.
+     * Wire the resolved register/schema entities into the ObjectService mock
+     * (resolveRegisterSchemaIds() reuses the entities that setRegister()/
+     * setSchema() already resolved instead of re-fetching them) and the
+     * constructor-injected mappers, then re-create the controller.
      */
     private function registerDiMappersWithEntities(
         Register&MockObject $registerEntity,
         Schema&MockObject $schemaEntity
     ): void {
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
+        $this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->controller = new ObjectsController(
             'openregister',
@@ -1046,40 +1029,13 @@ class ObjectsControllerCoverageTest extends TestCase
         $schemaEntity1 = $this->createSchemaMock(2, 'schema1');
         $schemaEntity2 = $this->createSchemaMock(3, 'schema2');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturnCallback(function () use ($schemaEntity1, $schemaEntity2) {
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturnCallback(function () use ($schemaEntity1, $schemaEntity2) {
             static $callCount = 0;
             $callCount++;
             return $callCount <= 1 ? $schemaEntity1 : $schemaEntity2;
         });
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',
@@ -1115,6 +1071,13 @@ class ObjectsControllerCoverageTest extends TestCase
      */
     public function testIndexCrossTableSearchWithInvalidPairsReturns404(): void
     {
+        // crossTableSearch() resolves entities through the constructor-injected
+        // mappers; make resolution fail so no valid pairs remain.
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
         $this->request->method('getParams')->willReturn([
             'schemas' => '99,100',
         ]);
@@ -1141,35 +1104,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
         $schemaEntity = $this->createSchemaMock(2, 'sch1');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',
@@ -1431,17 +1368,10 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
         $schemaEntity = $this->createSchemaMock(2, 'sch');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
+        // resolveRegisterSchemaIds() reuses the entities already resolved by
+        // ObjectService::setRegister()/setSchema().
+        $this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
         // Create a fresh webhookService mock with interceptRequest throwing.
         // Note: the controller's catch block uses `Exception` which resolves to OCP\DB\Exception
@@ -1711,35 +1641,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
         $schemaEntity = $this->createSchemaMock(2, 'sch1');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',

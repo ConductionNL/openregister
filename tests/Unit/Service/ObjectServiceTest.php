@@ -277,14 +277,14 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setRegister with a numeric ID uses performance cache.
+	 * Test setRegister with a numeric ID resolves via the mapper.
 	 */
-	public function testSetRegisterWithNumericIdUsesCachedLookup(): void
+	public function testSetRegisterWithNumericIdUsesMapperFind(): void
 	{
-		$this->performanceHandler
+		$this->registerMapper
 			->expects($this->once())
-			->method('getCachedEntities')
-			->willReturn([$this->register]);
+			->method('find')
+			->willReturn($this->register);
 
 		$result = $this->service->setRegister(register: 1);
 
@@ -322,14 +322,14 @@ class ObjectServiceTest extends TestCase
 	}
 
 	/**
-	 * Test setSchema with a numeric ID uses cached lookup.
+	 * Test setSchema with a numeric ID resolves via the mapper.
 	 */
-	public function testSetSchemaWithNumericIdUsesCachedLookup(): void
+	public function testSetSchemaWithNumericIdUsesMapperFind(): void
 	{
-		$this->performanceHandler
+		$this->schemaMapper
 			->expects($this->once())
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+			->method('find')
+			->willReturn($this->schema);
 
 		$result = $this->service->setSchema(schema: 2);
 
@@ -510,9 +510,9 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		// setSchema will be called since currentSchema is null.
-		$this->performanceHandler
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper
+			->method('find')
+			->willReturn($this->schema);
 
 		$this->renderHandler
 			->expects($this->once())
@@ -558,7 +558,7 @@ class ObjectServiceTest extends TestCase
 		$this->getHandler->method('find')->willReturn($entity);
 
 		// setSchema will be called for derived schema.
-		$this->performanceHandler->method('getCachedEntities')->willReturn([$this->schema]);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
 		$this->renderHandler->method('renderEntity')->willReturn($entity);
 
 		// Capture the context before the call so we can assert it is restored.
@@ -744,9 +744,9 @@ class ObjectServiceTest extends TestCase
 			->willReturn($entity);
 
 		// setSchema is called to derive schema from object.
-		$this->performanceHandler
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper
+			->method('find')
+			->willReturn($this->schema);
 
 		$this->permissionHandler
 			->expects($this->once())
@@ -2189,43 +2189,32 @@ class ObjectServiceTest extends TestCase
 		$this->assertSame($expected, $result);
 	}
 
-	// ── 55f. setRegister fallback path (numeric ID, cache returns non-Register) ──
+	// ── 55f/55g. setRegister/setSchema entity getters ─────────────────────
 
 	/**
-	 * Test setRegister falls back to mapper when cache returns unexpected type.
+	 * Test getCurrentRegisterEntity exposes the entity resolved by setRegister.
 	 */
-	public function testSetRegisterFallsBackToMapperWhenCacheReturnsWrong(): void
+	public function testGetCurrentRegisterEntityReturnsResolvedEntity(): void
 	{
-		// Return an item that is NOT a Register instance.
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([new \stdClass()]);
+		$this->assertNull($this->service->getCurrentRegisterEntity());
 
-		$this->registerMapper->expects($this->once())
-			->method('find')
-			->willReturn($this->register);
-
+		$this->registerMapper->method('find')->willReturn($this->register);
 		$this->service->setRegister(register: 1);
 
-		$this->assertSame($this->register, $this->getProperty('currentRegister'));
+		$this->assertSame($this->register, $this->service->getCurrentRegisterEntity());
 	}
 
-	// ── 55g. setSchema fallback path (numeric ID, cache returns non-Schema) ──
-
 	/**
-	 * Test setSchema falls back to mapper when cache returns unexpected type.
+	 * Test getCurrentSchemaEntity exposes the entity resolved by setSchema.
 	 */
-	public function testSetSchemaFallsBackToMapperWhenCacheReturnsWrong(): void
+	public function testGetCurrentSchemaEntityReturnsResolvedEntity(): void
 	{
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([new \stdClass()]);
+		$this->assertNull($this->service->getCurrentSchemaEntity());
 
-		$this->schemaMapper->expects($this->once())
-			->method('find')
-			->willReturn($this->schema);
-
+		$this->schemaMapper->method('find')->willReturn($this->schema);
 		$this->service->setSchema(schema: 2);
 
-		$this->assertSame($this->schema, $this->getProperty('currentSchema'));
+		$this->assertSame($this->schema, $this->service->getCurrentSchemaEntity());
 	}
 
 	// ── 55h. countSearchObjects with active organisation ─────────────────
@@ -2407,8 +2396,8 @@ class ObjectServiceTest extends TestCase
 	 */
 	public function testSetContextFromParametersSetsSchema(): void
 	{
-		$this->performanceHandler->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		$this->schemaMapper->method('find')
+			->willReturn($this->schema);
 
 		$this->invokePrivate('setContextFromParameters', [null, $this->schema]);
 

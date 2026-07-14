@@ -86,24 +86,10 @@ class ObjectsControllerPatchConcurrencyTest extends TestCase
         $this->webhookService   = $this->createMock(WebhookService::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
 
-        // resolveRegisterSchemaIds() resolves slugs via \OC::$server->get(); make
-        // both DI-resolved mappers throw so slug lookups miss and the numeric ids
-        // passed in tests ('1' / '2') are used as-is (same pattern as
-        // ObjectsControllerTest::setUp()).
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
+        // resolveRegisterSchemaIds() reuses the entities resolved by
+        // ObjectService::setRegister()/setSchema(); the ObjectService mock
+        // returns null from the entity getters by default, so entities stay
+        // null and the numeric ids passed in tests ('1' / '2') are used as-is.
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,

@@ -848,8 +848,8 @@ class ObjectsController extends Controller
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
         $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-        $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-        $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $registerMapper = $this->registerMapper;
+        $schemaMapper   = $this->schemaMapper;
 
         // PERF-14: resolve each register and schema exactly once up front instead of
         // re-running find() for every register×schema combination in the inner loop.
@@ -1043,29 +1043,14 @@ class ObjectsController extends Controller
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
 
-        // STEP 3: Fetch entities for magic mapper support.
-        $registerEntity = null;
-        $schemaEntity   = null;
-
-        try {
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $registerEntity = $registerMapper->find(id: $resolvedRegisterId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
-        try {
-            $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-            $schemaEntity = $schemaMapper->find(id: $resolvedSchemaId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
+        // STEP 3: Reuse the entities already resolved by setRegister()/setSchema()
+        // above — re-fetching them via the mappers would resolve the same
+        // register and schema twice per request.
         return [
             'register'       => $resolvedRegisterId,
             'schema'         => $resolvedSchemaId,
-            'registerEntity' => $registerEntity,
-            'schemaEntity'   => $schemaEntity,
+            'registerEntity' => $objectService->getCurrentRegisterEntity(),
+            'schemaEntity'   => $objectService->getCurrentSchemaEntity(),
         ];
     }//end resolveRegisterSchemaIds()
 
@@ -1427,16 +1412,9 @@ class ObjectsController extends Controller
                     );
                 }
 
-                // Return in expected format.
-                $response = new JSONResponse(data: $responseData);
-
-                // Enable gzip compression for large payloads.
-                if (count($responseData['results'] ?? []) > 10) {
-                    $response->addHeader('Content-Encoding', 'gzip');
-                    $response->addHeader('Vary', 'Accept-Encoding');
-                }
-
-                return $response;
+                // Return in expected format. Response compression is negotiated
+                // at the webserver level; the controller never sets encoding headers.
+                return new JSONResponse(data: $responseData);
             }//end if
         }//end if
 
@@ -1508,16 +1486,9 @@ class ObjectsController extends Controller
             );
         }
 
-        // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
-        $response = new JSONResponse(data: $result);
-
-        // Enable gzip compression for responses > 1KB.
-        if (($result['results'] ?? null) !== null && (count($result['results']) > 10) === true) {
-            $response->addHeader('Content-Encoding', 'gzip');
-            $response->addHeader('Vary', 'Accept-Encoding');
-        }
-
-        return $response;
+        // Response compression is negotiated at the webserver level; the
+        // controller never sets encoding headers.
+        return new JSONResponse(data: $result);
     }//end index()
 
     /**

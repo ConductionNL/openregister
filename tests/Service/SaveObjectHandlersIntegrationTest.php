@@ -1392,23 +1392,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test getCachedEntities uses fallback.
-     */
-    public function testGetCachedEntitiesUsesFallback(): void
-    {
-        $called = false;
-        $result = $this->performanceHandler->getCachedEntities(
-            'all',
-            function ($ids) use (&$called) {
-                $called = true;
-                return ['entity1', 'entity2'];
-            }
-        );
-        $this->assertTrue($called);
-        $this->assertEquals(['entity1', 'entity2'], $result);
-    }
-
-    /**
      * Test preloadCriticalEntities runs without error.
      */
     public function testPreloadCriticalEntities(): void
