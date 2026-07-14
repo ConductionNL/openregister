@@ -152,6 +152,7 @@ use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ObjectMetricsListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
@@ -2346,6 +2347,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+
+        // CRUD metric listener — persists an operational metric row per object
+        // create/update/delete into `openregister_metrics`, which the canonical
+        // production-observability spec requires for counters that survive PHP
+        // request boundaries. Fail-soft: never aborts the write it observes.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
