@@ -34,8 +34,10 @@ use OCA\OpenRegister\Db\ScheduledReportMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ScheduledReportService;
 use OCP\Files\IRootFolder;
+use OCP\IConfig;
 use OCP\IUserManager;
 use OCP\IUserSession;
+use OCP\Mail\IMailer;
 use OCP\Notification\IManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -43,9 +45,13 @@ use Psr\Log\LoggerInterface;
 
 class ScheduledReportServiceValidationTest extends TestCase
 {
+
     private ScheduledReportService $service;
+
     private ScheduledReportMapper&MockObject $mapper;
+
     private RegisterMapper&MockObject $registerMapper;
+
     private SchemaMapper&MockObject $schemaMapper;
 
     protected function setUp(): void
@@ -70,26 +76,28 @@ class ScheduledReportServiceValidationTest extends TestCase
             $this->createMock(IUserManager::class),
             $this->createMock(IUserSession::class),
             $this->createMock(IManager::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IMailer::class),
+            $this->createMock(IConfig::class)
         );
-    }
+    }//end setUp()
 
-    private function validPayload(array $overrides = []): array
+    private function validPayload(array $overrides=[]): array
     {
         return array_merge(
             [
-                'name'         => 'Weekly cases',
-                'registerId'   => 1,
-                'schemaId'     => 2,
-                'filters'      => [],
-                'format'       => 'csv',
-                'scheduleType' => 'weekly',
-                'scheduleHour' => 8,
+                'name'              => 'Weekly cases',
+                'registerId'        => 1,
+                'schemaId'          => 2,
+                'filters'           => [],
+                'format'            => 'csv',
+                'scheduleType'      => 'weekly',
+                'scheduleHour'      => 8,
                 'scheduleDayOfWeek' => 0,
             ],
             $overrides
         );
-    }
+    }//end validPayload()
 
     public function testValidCsvWeeklyReportIsCreated(): void
     {
@@ -99,13 +107,13 @@ class ScheduledReportServiceValidationTest extends TestCase
         self::assertSame('csv', $report->getFormat());
         self::assertTrue($report->getEnabled());
         self::assertNull($report->getLastRunAt());
-    }
+    }//end testValidCsvWeeklyReportIsCreated()
 
     public function testUnsupportedFormatIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->service->create(data: $this->validPayload(['format' => 'json']), ownerUid: 'alice');
-    }
+    }//end testUnsupportedFormatIsRejected()
 
     public function testCsvWithoutSchemaIsRejected(): void
     {
@@ -114,7 +122,7 @@ class ScheduledReportServiceValidationTest extends TestCase
             data: $this->validPayload(['schemaId' => null]),
             ownerUid: 'alice'
         );
-    }
+    }//end testCsvWithoutSchemaIsRejected()
 
     public function testExcelWithoutSchemaIsAllowed(): void
     {
@@ -127,7 +135,7 @@ class ScheduledReportServiceValidationTest extends TestCase
 
         self::assertSame('excel', $report->getFormat());
         self::assertNull($report->getSchemaId());
-    }
+    }//end testExcelWithoutSchemaIsAllowed()
 
     public function testUnsupportedScheduleTypeIsRejected(): void
     {
@@ -136,7 +144,7 @@ class ScheduledReportServiceValidationTest extends TestCase
             data: $this->validPayload(['scheduleType' => 'hourly']),
             ownerUid: 'alice'
         );
-    }
+    }//end testUnsupportedScheduleTypeIsRejected()
 
     public function testWeeklyWithoutDayOfWeekIsRejected(): void
     {
@@ -145,7 +153,7 @@ class ScheduledReportServiceValidationTest extends TestCase
             data: $this->validPayload(['scheduleDayOfWeek' => null]),
             ownerUid: 'alice'
         );
-    }
+    }//end testWeeklyWithoutDayOfWeekIsRejected()
 
     public function testMonthlyWithoutDayOfMonthIsRejected(): void
     {
@@ -154,7 +162,7 @@ class ScheduledReportServiceValidationTest extends TestCase
             data: $this->validPayload(['scheduleType' => 'monthly', 'scheduleDayOfMonth' => null]),
             ownerUid: 'alice'
         );
-    }
+    }//end testMonthlyWithoutDayOfMonthIsRejected()
 
     public function testMonthlyWithValidDayOfMonthIsAccepted(): void
     {
@@ -165,17 +173,17 @@ class ScheduledReportServiceValidationTest extends TestCase
 
         self::assertSame('monthly', $report->getScheduleType());
         self::assertSame(15, $report->getScheduleDayOfMonth());
-    }
+    }//end testMonthlyWithValidDayOfMonthIsAccepted()
 
     public function testMissingNameIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->service->create(data: $this->validPayload(['name' => '']), ownerUid: 'alice');
-    }
+    }//end testMissingNameIsRejected()
 
     public function testMissingRegisterIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->service->create(data: $this->validPayload(['registerId' => null]), ownerUid: 'alice');
-    }
+    }//end testMissingRegisterIsRejected()
 }//end class
