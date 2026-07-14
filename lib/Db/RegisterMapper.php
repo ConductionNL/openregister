@@ -62,7 +62,7 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register update(Entity $entity)
  * @method Register insertOrUpdate(Entity $entity)
  * @method Register delete(Entity $entity)
- * @method Register find(int|string $id)
+ * @method Register find(int|string $id, bool $_rbac=true, bool $_multitenancy=true)
  * @method Register findEntity(IQueryBuilder $query)
  * @method list<Register> findEntities(IQueryBuilder $query)
  *
@@ -477,8 +477,8 @@ class RegisterMapper extends QBMapper
             $result = $qb->executeQuery();
 
             while (($row = $result->fetch()) !== false) {
-                $register              = new Register();
-                $register              = $register->fromRow($row);
+                $register = new Register();
+                $register = $register->fromRow($row);
                 $registers[$row['id']] = $register;
             }
 

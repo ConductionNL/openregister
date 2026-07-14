@@ -40,6 +40,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
@@ -189,6 +190,7 @@ class RegistersController extends Controller
      * @param IGroupManager        $groupManager         Group manager for RBAC checks
      * @param RegisterCacheHandler $registerCacheHandler Register cache handler (runtime-schema-api)
      * @param RegisterSerializer   $registerSerializer   Register serializer for response shaping
+     * @param MigrationPackService $migrationPackService Migration pack lookup for import's `packId` param
      *
      * @return void
      *
@@ -214,7 +216,8 @@ class RegistersController extends Controller
         private readonly ContainerInterface $container,
         private readonly IGroupManager $groupManager,
         private readonly RegisterCacheHandler $registerCacheHandler,
-        private readonly RegisterSerializer $registerSerializer
+        private readonly RegisterSerializer $registerSerializer,
+        private readonly MigrationPackService $migrationPackService
     ) {
         $this->logger->debug(
             message: '[RegistersController] Constructor started.',
@@ -1428,6 +1431,22 @@ class RegistersController extends Controller
             $publish        = $this->parseBooleanParam(paramName: 'publish', default: false);
             $enrich         = $this->parseBooleanParam(paramName: 'enrich', default: true);
 
+            // Migration mapping pack (migration-mapping-packs): optional packId
+            // resolves a stored MigrationPack by its document slug; ImportService
+            // then maps every row through it before the normal validate/save
+            // pipeline. dryRun maps + validates every row and saves nothing —
+            // the per-row report migration quoting needs.
+            $packId = $this->request->getParam('packId');
+            $dryRun = $this->parseBooleanParam(paramName: 'dryRun', default: false);
+            $pack   = null;
+            if ($packId !== null && $packId !== '') {
+                try {
+                    $pack = $this->migrationPackService->findByPackSlug(packSlug: (string) $packId)->getDefinitionArray();
+                } catch (DoesNotExistException $e) {
+                    return new JSONResponse(data: ['error' => 'Migration pack "'.$packId.'" not found'], statusCode: 400);
+                }
+            }
+
             // Log import parameters for debugging.
             $this->logger->debug(
                 message: '[RegistersController] Import parameters received',
@@ -1446,6 +1465,16 @@ class RegistersController extends Controller
             // Handle different import types.
             switch ($type) {
                 case 'excel':
+                    // Migration packs are only wired into the single-schema CSV/JSON
+                    // paths so far — reject rather than silently ignore packId here
+                    // (an orphaned/no-op parameter is worse than a clear error).
+                    if ($pack !== null) {
+                        return new JSONResponse(
+                            data: ['error' => 'packId is not yet supported for Excel imports; use CSV or JSON with a migration pack instead.'],
+                            statusCode: 400
+                        );
+                    }
+
                     // Import from Excel and get summary (now returns sheet-based format).
                     // SEC-CTRL-6: Do NOT read rbac/multi from the request — that would let a
                     // manager pass ?multi=false to write objects across organisation boundaries.
@@ -1494,7 +1523,9 @@ class RegistersController extends Controller
                         _multitenancy: $multi,
                         publish: $publish,
                         currentUser: $this->userSession->getUser(),
-                        enrich: $enrich
+                        enrich: $enrich,
+                        pack: $pack,
+                        dryRun: $dryRun
                     );
                     break;
                 case 'json':
@@ -1531,11 +1562,20 @@ class RegistersController extends Controller
                         _multitenancy: $multi,
                         publish: $publish,
                         currentUser: $this->userSession->getUser(),
-                        enrich: $enrich
+                        enrich: $enrich,
+                        pack: $pack,
+                        dryRun: $dryRun
                     );
                     break;
                 case 'configuration':
                 default:
+                    if ($pack !== null) {
+                        return new JSONResponse(
+                            data: ['error' => 'packId only applies to CSV/JSON row imports, not configuration bundle imports.'],
+                            statusCode: 400
+                        );
+                    }
+
                     // Initialize the uploaded files array.
                     $uploadedFiles = [$uploadedFile];
                     // Get the uploaded JSON data.

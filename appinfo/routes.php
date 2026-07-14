@@ -298,9 +298,6 @@ return [
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
         ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
-        // Realtime cursor-based polling endpoints.
-        ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
-        ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
         // Translation sidecar — search, per-object slots + completeness, status updates.
         ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
         ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
@@ -1117,6 +1114,20 @@ return [
 		['name' => 'scheduledReports#update', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
 		['name' => 'scheduledReports#destroy', 'url' => '/api/scheduled-reports/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
 		['name' => 'scheduledReports#runNow', 'url' => '/api/scheduled-reports/{id}/run-now', 'verb' => 'POST', 'requirements' => ['id' => '\d+']],
+
+		// Migration mapping packs (migration-mapping-packs): declarative
+		// source-format-to-schema import mappings. Reads (index/show/export)
+		// are available to any authenticated user so the import flow can
+		// browse packs; create/update/destroy/import are admin-gated. The
+		// `packId` request param on registers#import (below) resolves a
+		// pack by its `packSlug` and runs each row through it before save.
+		['name' => 'migrationPacks#index', 'url' => '/api/migration-packs', 'verb' => 'GET'],
+		['name' => 'migrationPacks#create', 'url' => '/api/migration-packs', 'verb' => 'POST'],
+		['name' => 'migrationPacks#import', 'url' => '/api/migration-packs/import', 'verb' => 'POST'],
+		['name' => 'migrationPacks#show', 'url' => '/api/migration-packs/{id}', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#update', 'url' => '/api/migration-packs/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#destroy', 'url' => '/api/migration-packs/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '\d+']],
+		['name' => 'migrationPacks#export', 'url' => '/api/migration-packs/{id}/export', 'verb' => 'GET', 'requirements' => ['id' => '\d+']],
 
 		// Workflow Engines - CRUD and health check.
 		['name' => 'workflowEngine#available', 'url' => '/api/engines/available', 'verb' => 'GET'],

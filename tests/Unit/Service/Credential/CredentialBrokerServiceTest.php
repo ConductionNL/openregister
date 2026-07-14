@@ -211,4 +211,106 @@ class CredentialBrokerServiceTest extends TestCase
         $this->assertIsString($encoded);
         $this->assertStringNotContainsString('SUPERSECRETTOKEN', $encoded);
     }
+
+    /**
+     * A generic inject-only catalogue entry (no baseUrl, no allowRules).
+     *
+     * @return array<string, mixed>
+     */
+    private function genericProvider(): array
+    {
+        return [
+            'identifier'  => 'generic-apikey',
+            'inject_only' => true,
+            'authScheme'  => ['header' => 'Authorization', 'template' => '{secret}'],
+        ];
+    }
+
+    public function testResolveInjectableReturnsSecretForOwnerAndAllowedApp(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+            $this->genericProvider(),
+            'VAULT-KEY-XYZ'
+        );
+
+        $secret = $service->resolveInjectable('cred-1', 'openconnector');
+
+        $this->assertSame('VAULT-KEY-XYZ', $secret);
+    }
+
+    public function testResolveInjectableEnforcesOwnerGuard(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'bob',
+            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+            $this->genericProvider(),
+            'VAULT-KEY-XYZ'
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->resolveInjectable('cred-1', 'openconnector');
+    }
+
+    public function testResolveInjectableEnforcesAllowedAppsGuard(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'generic-apikey', 'allowedApps' => ['someoneelse']],
+            $this->genericProvider(),
+            'VAULT-KEY-XYZ'
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->resolveInjectable('cred-1', 'openconnector');
+    }
+
+    public function testResolveInjectableReturnsNullForProxyCredential(): void
+    {
+        // A normal host-locked provider is NOT inject-only: its secret stays inside OR,
+        // so resolveInjectable signals "use the proxy path" by returning null.
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'github', 'allowedApps' => ['openconnector']],
+            $this->githubProvider(),
+            'SECRET123'
+        );
+
+        $this->assertNull($service->resolveInjectable('cred-1', 'openconnector'));
+    }
+
+    public function testResolveInjectableDeniesWhenNoSecretStored(): void
+    {
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+            $this->genericProvider(),
+            null
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->resolveInjectable('cred-1', 'openconnector');
+    }
+
+    public function testRequestRefusesToProxyAnInjectOnlyProvider(): void
+    {
+        // Guards 1 + 2 pass, but an inject-only provider must never be proxied — it has no
+        // host to lock, so request() fails closed rather than becoming an open proxy.
+        $service = $this->makeService(
+            'alice',
+            'alice',
+            ['provider' => 'generic-apikey', 'allowedApps' => ['openconnector']],
+            $this->genericProvider(),
+            'VAULT-KEY-XYZ'
+        );
+
+        $this->expectException(CredentialAccessDeniedException::class);
+        $service->request('cred-1', 'openconnector', 'GET', '/anything');
+    }
 }//end class

@@ -78,24 +78,10 @@ class ObjectsControllerTest extends TestCase
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Register mappers in the DI container that resolveRegisterSchemaIds() resolves
-        // via \OC::$server->get(). These separate mocks default to throwing on find()
-        // so entities stay null (same as old stub behavior). The constructor-injected
-        // $this->registerMapper / $this->schemaMapper remain independent for other tests.
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
+        // resolveRegisterSchemaIds() reuses the entities resolved by
+        // ObjectService::setRegister()/setSchema(); the ObjectService mock
+        // returns null from the entity getters by default, so entities stay
+        // null (same as the old throwing-DI-stub behavior).
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,
@@ -5763,8 +5749,22 @@ class ObjectsControllerTest extends TestCase
     // index() — cross-table search with comma-separated schemas
     // =========================================================================
 
+    /**
+     * crossTableSearch() resolves entities through the constructor-injected
+     * mappers; make both throw so no valid register+schema pairs remain and
+     * the controller answers 404.
+     */
+    private function makeCrossTableMappersThrow(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+    }
+
     public function testIndexWithCommaSeparatedSchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => '1,2',
         ]);
@@ -5774,8 +5774,8 @@ class ObjectsControllerTest extends TestCase
         $this->objectService->method('getRegister')->willReturn(1);
         $this->objectService->method('getSchema')->willReturn(1);
 
-        // crossTableSearch uses \OC::$server->get() which returns DI mocks that throw
-        // DoesNotExistException, resulting in a 404 with "No valid magic-mapped register+schema combinations found"
+        // Entity resolution fails for every pair, resulting in a 404 with
+        // "No valid magic-mapped register+schema combinations found".
         $result = $this->controller->index('1', '1', $this->objectService);
 
         $this->assertSame(404, $result->getStatus());
@@ -5790,6 +5790,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithArraySchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => ['1', '2'],
         ]);
@@ -5812,6 +5813,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithMultipleRegistersTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'registers' => '1,2',
         ]);
@@ -5832,6 +5834,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithMultipleSchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'register' => '1',
             'schemas' => '1,2',
@@ -5855,6 +5858,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithMultipleRegistersTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schema' => '1',
             'registers' => ['1', '2'],
@@ -5876,6 +5880,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithUnderscorePrefixedMultiSchemas(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             '_register' => '1',
             'schemas' => '1,2,3',
@@ -6654,6 +6659,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithRegistersArrayOverridesRegisterParam(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'register' => '1',
             'schema' => '2',
@@ -6796,6 +6802,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithBothMultipleSchemasAndRegisters(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => ['1', '2'],
             'registers' => ['3', '4'],

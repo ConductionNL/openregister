@@ -64,17 +64,16 @@ use Psr\Log\LoggerInterface;
  */
 final class NotificationQueueFlushJob extends TimedJob
 {
-
     /**
      * Wire collaborators and configure the timed-job interval.
      *
-     * @param ITimeFactory                       $time             Nextcloud time factory.
-     * @param QueuedNotificationMapper            $queuedMapper     Durable queue mapper.
-     * @param SchemaMapper                        $schemaMapper     Schema lookup mapper (rule digest config).
-     * @param AnnotationNotificationDispatcher     $dispatcher       Notification dispatcher (flush entry point).
-     * @param NotificationDeliveryWindowService     $windowService    Delivery-window resolver + evaluator.
-     * @param DigestScheduleEvaluator             $digestEvaluator  Live digest-schedule evaluator.
-     * @param LoggerInterface                     $logger           PSR logger.
+     * @param ITimeFactory                      $time            Nextcloud time factory.
+     * @param QueuedNotificationMapper          $queuedMapper    Durable queue mapper.
+     * @param SchemaMapper                      $schemaMapper    Schema lookup mapper (rule digest config).
+     * @param AnnotationNotificationDispatcher  $dispatcher      Notification dispatcher (flush entry point).
+     * @param NotificationDeliveryWindowService $windowService   Delivery-window resolver + evaluator.
+     * @param DigestScheduleEvaluator           $digestEvaluator Live digest-schedule evaluator.
+     * @param LoggerInterface                   $logger          PSR logger.
      */
     public function __construct(
         ITimeFactory $time,

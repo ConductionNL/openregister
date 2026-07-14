@@ -94,7 +94,7 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
             $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class),
+            $this->realPropertyRbacHandler(),
             $this->createMock(\Psr\Log\LoggerInterface::class),
             $this->createMock(\OCA\OpenRegister\Service\FileService::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
@@ -105,6 +105,29 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
             $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
+        );
+    }
+
+    /**
+     * A REAL PropertyRbacHandler with mocked leaf dependencies.
+     *
+     * writeOnly stripping (the behaviour under test) is a pure function of the schema's
+     * writeOnly flags — it needs no session or groups — so a real handler strips correctly
+     * off `schemaWithWriteOnlySecrets()`. The test schemas declare no property-level
+     * `authorization`, so ConditionMatcher is never exercised and a mock suffices. Both the
+     * single-object path (renderEntity → filterReadableProperties) and the cheap-path
+     * (redactWriteOnlyFromRows → filterReadableProperties/stripWriteOnlyProperties) run
+     * through this same real handler.
+     *
+     * @return \OCA\OpenRegister\Service\PropertyRbacHandler
+     */
+    private function realPropertyRbacHandler(): \OCA\OpenRegister\Service\PropertyRbacHandler
+    {
+        return new \OCA\OpenRegister\Service\PropertyRbacHandler(
+            $this->createMock(\OCP\IUserSession::class),
+            $this->createMock(\OCP\IGroupManager::class),
+            $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
+            $this->createMock(\Psr\Log\LoggerInterface::class)
         );
     }
 
@@ -305,5 +328,76 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
 
         // `token` is NOT marked writeOnly, so it is returned. Opt-in means opt-in.
         $this->assertSame('not-flagged-so-kept', $data['token']);
+    }
+
+    /**
+     * The list cheap-path (which bypasses renderEntity for performance) also redacts.
+     *
+     * This is the path the OpenConnector leak actually used: `GET .../objects/{reg}/{schema}`
+     * is a LIST, so it took the cheap-path and returned the secret even after the
+     * single-object read was fixed. Rows here are ObjectEntity objects (the cheap-path
+     * shape when no _extend/_fields is requested).
+     *
+     * @return void
+     */
+    public function testCheapPathRowRedactionStripsWriteOnlyFromEntityRows(): void
+    {
+        $rows = [$this->sourceEntity()];
+
+        $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, true);
+
+        $data = $rows[0]->getObject();
+        $this->assertArrayNotHasKey('apiKey', $data);
+        $this->assertArrayNotHasKey('secret', $data);
+        $this->assertSame('BRP HaalCentraal', $data['name']);
+
+        // The @self.relations index copy is stripped too.
+        $relations = $rows[0]->getRelations();
+        $this->assertArrayNotHasKey('apiKey', $relations);
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rows[0]->jsonSerialize()));
+    }
+
+    /**
+     * The cheap-path also handles ARRAY rows (the SOLR/index list shape), redacting the
+     * body and `@self.relations`.
+     *
+     * @return void
+     */
+    public function testCheapPathRowRedactionStripsWriteOnlyFromArrayRows(): void
+    {
+        $rows = [
+            [
+                'name'     => 'BRP HaalCentraal',
+                'apiKey'   => 'SECRET_APIKEY_MUST_NOT_LEAK',
+                'password' => 'SECRET_PASSWORD_MUST_NOT_LEAK',
+                '@self'    => [
+                    'schema'    => 213,
+                    'relations' => ['apiKey' => 'SECRET_APIKEY_MUST_NOT_LEAK', 'name' => 'BRP HaalCentraal'],
+                ],
+            ],
+        ];
+
+        $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, true);
+
+        $this->assertArrayNotHasKey('apiKey', $rows[0]);
+        $this->assertArrayNotHasKey('password', $rows[0]);
+        $this->assertArrayNotHasKey('apiKey', $rows[0]['@self']['relations']);
+        $this->assertSame('BRP HaalCentraal', $rows[0]['name']);
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rows));
+    }
+
+    /**
+     * A system-context list read (`_rbac: false`) is NOT redacted — the engine batch-reads
+     * sources and must still get the secrets.
+     *
+     * @return void
+     */
+    public function testCheapPathRowRedactionSkipsSystemContext(): void
+    {
+        $rows = [$this->sourceEntity()];
+
+        $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, false);
+
+        $this->assertSame('SECRET_APIKEY_MUST_NOT_LEAK', $rows[0]->getObject()['apiKey']);
     }
 }

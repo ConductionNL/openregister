@@ -42,7 +42,6 @@ use DateTimeImmutable;
  */
 class DigestScheduleEvaluator
 {
-
     /**
      * Constructor.
      *
@@ -98,7 +97,12 @@ class DigestScheduleEvaluator
      */
     public function lastOccurrence(array $digest, DateTimeImmutable $now): DateTimeImmutable
     {
-        $tz       = $this->windowService->resolveTimezone(is_string($digest['timezone'] ?? null) ? $digest['timezone'] : null);
+        $timezoneSpec = null;
+        if (is_string($digest['timezone'] ?? null) === true) {
+            $timezoneSpec = $digest['timezone'];
+        }
+
+        $tz       = $this->windowService->resolveTimezone(tzName: $timezoneSpec);
         $schedule = (string) ($digest['schedule'] ?? 'daily');
         $at       = (string) ($digest['at'] ?? '00:00');
         $weekday  = $digest['weekday'] ?? null;
@@ -136,7 +140,7 @@ class DigestScheduleEvaluator
      */
     public function isDue(array $digest, DateTimeImmutable $enqueuedAt, DateTimeImmutable $now): bool
     {
-        if ($this->isValidDigestSpec($digest) === false) {
+        if ($this->isValidDigestSpec(digest: $digest) === false) {
             // Malformed schedule — fail open (treat as due) so a bad
             // annotation cannot indefinitely trap events in the queue.
             return true;

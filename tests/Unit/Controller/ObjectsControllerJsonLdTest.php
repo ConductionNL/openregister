@@ -120,10 +120,8 @@ class ObjectsControllerJsonLdTest extends TestCase
         $controller = $this->buildController(withJsonLd: false);
         $this->setupAdmin();
 
-        // Entity resolution throws → entities null → JSON-LD never fires regardless.
-        \OC::$server->registerService(RegisterMapper::class, fn() => $this->throwingMapper(RegisterMapper::class));
-        \OC::$server->registerService(SchemaMapper::class, fn() => $this->throwingMapper(SchemaMapper::class));
-
+        // Entity getters return null (mock default) → entities null → JSON-LD
+        // never fires regardless.
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getHeader')->willReturn('application/ld+json');
 
@@ -164,16 +162,10 @@ class ObjectsControllerJsonLdTest extends TestCase
         $schema->setSlug('persoon');
         $schema->setProperties(['title' => ['type' => 'string']]);
 
-        \OC::$server->registerService(RegisterMapper::class, function () use ($register) {
-            $m = $this->createMock(RegisterMapper::class);
-            $m->method('find')->willReturn($register);
-            return $m;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($schema) {
-            $m = $this->createMock(SchemaMapper::class);
-            $m->method('find')->willReturn($schema);
-            return $m;
-        });
+        // resolveRegisterSchemaIds() reuses the entities already resolved by
+        // ObjectService::setRegister()/setSchema().
+        $this->objectService->method('getCurrentRegisterEntity')->willReturn($register);
+        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schema);
 
         $this->request->method('getParams')->willReturn([]);
         $this->request->method('getHeader')->willReturn('application/ld+json');
@@ -201,13 +193,5 @@ class ObjectsControllerJsonLdTest extends TestCase
         $this->assertArrayHasKey('@context', $data);
         $this->assertSame('https://nc.test/o/uuid-1', $data['@id']);
         $this->assertArrayNotHasKey('@self', $data);
-    }
-
-
-    private function throwingMapper(string $class)
-    {
-        $m = $this->createMock($class);
-        $m->method('find')->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('nope'));
-        return $m;
     }
 }
