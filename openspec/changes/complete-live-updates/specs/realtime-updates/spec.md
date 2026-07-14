@@ -44,6 +44,23 @@ the import.
 - **AND** subsequent single-object saves in the same request MUST emit per-object
   events again (batch mode is off)
 
+#### Scenario: Collection hint derived from the save result, not from lifecycle events
+
+- **GIVEN** a default import (`events=false` throughout the import call chain,
+  as sent by the UI and `RegistersController`), so `NotifyPushListener::handle()`
+  never fires during the bulk save
+- **WHEN** the bulk save returns with a non-empty `saved` or `updated` set
+- **THEN** the import MUST queue the `(register-slug, schema-slug)` pair
+  directly from its own register/schema entities
+  (`NotifyPushListener::addBatchedCollection()`), independent of event dispatch
+- **AND** when the bulk save throws (partial saves may have landed), the pair
+  MUST be queued conservatively
+- **AND** when every row is `unchanged` (smart dedup skipped all writes), NO
+  collection event MUST be emitted
+- **AND** when lifecycle events ARE enabled, listener accumulation and the
+  result-derived hint MUST collapse onto the same accumulator key (no double
+  emit)
+
 #### Scenario: Flush soft-fails without notify_push
 
 - **GIVEN** notify_push is not installed (`IQueue` not resolvable)
@@ -72,8 +89,9 @@ endpoints it fed (`/api/realtime/events`, `/api/realtime/cursor`) were never
 called by any frontend or sibling app (verified by grepping the entire
 apps-extra workspace). The notify_push transport (`NotifyPushListener`) and the
 GraphQL SSE subscription path cover realtime delivery without per-save DB write
-amplification. The subsystem is removed; the existing table is left in place on
-installed instances (drop is a follow-up).
+amplification. The subsystem is removed; migration `Version1Date20260714000000`
+drops the orphaned `openregister_realtime_events` table (and its indexes) on
+instances that still carry it.
 
 **Migration**: None required — no consumers existed. Clients wanting a change
 feed subscribe to `or-object-{uuid}` / `or-collection-{register}-{schema}`

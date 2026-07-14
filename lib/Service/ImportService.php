@@ -854,6 +854,46 @@ class ImportService
     }//end flushNotifyPushBatch()
 
     /**
+     * Queue a notify_push collection hint derived from the import's own context.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * everywhere in the import call chain), so NotifyPushListener::handle()
+     * never fires and the batch accumulator would stay empty. The import knows
+     * exactly which (register, schema) collection it just changed — queue the
+     * pair directly from the entities' slugs. Deduplicated with any
+     * event-driven accumulation when events ARE enabled. Soft-fails on any
+     * slug-resolution error (a missed hint must never break the import).
+     *
+     * @param Register $register The register the import saved into.
+     * @param Schema   $schema   The schema the import saved into.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void
+    {
+        try {
+            $registerSlug = (string) ($register->getSlug() ?? '');
+            $schemaSlug   = (string) ($schema->getSlug() ?? '');
+            NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+        } catch (\Throwable $e) {
+            // Slug not resolvable — skip the hint, never break the import.
+            $this->logger->debug(
+                message: '[ImportService] Could not queue notify_push collection hint',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+    }//end queueNotifyPushCollectionHint()
+
+    /**
      * Process a single spreadsheet sheet using batch saving for better performance
      *
      * @param Spreadsheet   $spreadsheet   The spreadsheet to process
@@ -974,8 +1014,12 @@ class ImportService
             // Suppress per-object notify_push events during the bulk save; on
             // completion (success OR failure — partial saves still happened)
             // flush one deduplicated collection event per (register, schema)
-            // pair so connected clients refetch their lists.
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
             NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -988,10 +1032,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
                 // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
                 $this->flushNotifyPushBatch();
                 NotifyPushListener::setBatchMode(false);
-            }
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -1169,8 +1221,12 @@ class ImportService
             // Suppress per-object notify_push events during the bulk save; on
             // completion (success OR failure — partial saves still happened)
             // flush one deduplicated collection event per (register, schema)
-            // pair so connected clients refetch their lists.
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
             NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -1183,10 +1239,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
                 // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
                 $this->flushNotifyPushBatch();
                 NotifyPushListener::setBatchMode(false);
-            }
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.

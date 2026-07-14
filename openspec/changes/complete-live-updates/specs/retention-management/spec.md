@@ -11,5 +11,5 @@ zero consumers). With nothing writing to the table, there is nothing to prune;
 the job and its `info.xml` registration are deleted. This is independent of the
 AVG retention pass and the Archiefwet destruction workflow, which are unchanged.
 
-**Migration**: None — the leftover table on installed instances no longer grows;
-dropping it is a follow-up.
+**Migration**: The leftover table is dropped by migration
+`Version1Date20260714000000` (idempotent, drops only when present).

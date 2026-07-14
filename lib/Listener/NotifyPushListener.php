@@ -376,6 +376,36 @@ class NotifyPushListener implements IEventListener
     }//end hasBatchedCollections()
 
     /**
+     * Accumulate a (register-slug, schema-slug) pair directly, bypassing event dispatch.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * throughout ImportService / SaveObjects), so handle() never fires during a
+     * standard import and the accumulator would stay empty. Import callers that
+     * already know which collection changed use this entry point to queue the
+     * collection hint themselves; flushBatch() then broadcasts it. Duplicate
+     * pairs collapse onto the same accumulator key — safe to combine with
+     * event-driven accumulation when events ARE enabled.
+     *
+     * @param string $registerSlug The register slug (empty = ignored).
+     * @param string $schemaSlug   The schema slug (empty = ignored).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function addBatchedCollection(string $registerSlug, string $schemaSlug): void
+    {
+        if ($registerSlug === '' || $schemaSlug === '') {
+            return;
+        }
+
+        self::$batchedCollections[$registerSlug.'|'.$schemaSlug] = [
+            'register' => $registerSlug,
+            'schema'   => $schemaSlug,
+        ];
+    }//end addBatchedCollection()
+
+    /**
      * Emit one collection event per accumulated (register, schema) pair and clear state.
      *
      * Should be called in a `finally` block after a bulk-import loop, BEFORE

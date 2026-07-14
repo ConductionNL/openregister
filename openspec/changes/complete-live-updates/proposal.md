@@ -34,14 +34,21 @@ pure write amplification on the hot object-save path.
   the helper in their `finally` block — BEFORE `setBatchMode(false)` — so on
   import completion (success or failure; partial saves still happened) exactly
   one deduplicated `or-collection-{register-slug}-{schema-slug}` broadcast is
-  pushed per affected pair. The flush keeps the archived change's design
+  pushed per affected pair. Crucially, the collection hint is DERIVED FROM THE
+  SAVE RESULT, not from lifecycle events: the entire import call chain defaults
+  `events=false` (UI, `RegistersController`, `SaveObjects`), so
+  `NotifyPushListener::handle()` never fires during a standard import — the
+  import queues the pair itself via the new
+  `NotifyPushListener::addBatchedCollection()` when the save result contains
+  saved/updated rows (or conservatively when the save throws; all-unchanged
+  imports emit nothing). The flush keeps the archived change's design
   decisions: collection events are broadcast without per-user targeting
   (payload is slugs + action only; clients refetch through the RBAC-filtered
   REST API), and everything soft-fails when notify_push is absent (no
   accumulation happens in that case, so the flush is a silent no-op; a resolve
   failure with pending events logs at most one DEBUG entry).
   `NotifyPushListener::flushBatch()` drops its never-used `PermissionHandler`
-  parameter and gains a `hasBatchedCollections()` guard accessor.
+  parameter and gains `hasBatchedCollections()` / `addBatchedCollection()`.
 
 - **Remove the orphaned RealtimeService write path (Task 2).** Deletes
   `RealtimeService`, `RealtimeController` (+ its two routes),
@@ -49,10 +56,11 @@ pure write amplification on the hot object-save path.
   `RealtimeEvent`/`RealtimeEventMapper`, `RealtimeEventRetentionJob` (+ its
   `info.xml` registration), the table-creating migration
   (`Version1Date20260430000000` — fresh installs no longer create the dead
-  table), and the two tests covering the subsystem. The existing
-  `openregister_realtime_events` table on already-installed instances is
-  intentionally **left in place** (no destructive migration); dropping it is a
-  follow-up. Spec deltas REMOVE the requirements that mandated this subsystem
+  table), and the two tests covering the subsystem. A new migration
+  (`Version1Date20260714000000`) drops the orphaned
+  `openregister_realtime_events` table (and thereby its indexes) on instances
+  that ran development between May and July 2026 — idempotent, drops only when
+  present. Spec deltas REMOVE the requirements that mandated this subsystem
   from `realtime-updates`, `production-observability`, and
   `retention-management`.
 

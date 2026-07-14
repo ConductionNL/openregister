@@ -11,5 +11,6 @@ entire apps-extra workspace). Realtime delivery is covered by the notify_push
 transport (`NotifyPushListener`) and the GraphQL SSE subscription path; audit
 history remains in the audit trail.
 
-**Migration**: None — no consumers. The `openregister_realtime_events` table is
-left in place on installed instances (drop is a follow-up).
+**Migration**: None for consumers — none existed. The orphaned
+`openregister_realtime_events` table is dropped by migration
+`Version1Date20260714000000` (idempotent, drops only when present).

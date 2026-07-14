@@ -27,6 +27,16 @@
   deduplicated collection events and zero per-object events; per-object pushes
   resume after the import; failure path (`saveObjects` throws after partial
   saves) still flushes.
+- [x] 1.7 Decouple hint accumulation from the `events` flag: the default import
+  path runs `events=false` end to end (UI → `RegistersController` →
+  `ImportService` → `SaveObjects`), so the listener never accumulates on its
+  own. Add `NotifyPushListener::addBatchedCollection()` and
+  `ImportService::queueNotifyPushCollectionHint()`; both call sites derive the
+  `(register-slug, schema-slug)` pair from the save RESULT (saved/updated
+  non-empty, or conservatively when the save throws; all-unchanged emits
+  nothing). Tests exercise the real default flags (no manual event dispatch),
+  the failure path, the all-unchanged case, and the events-enabled variant
+  (result hint + listener accumulation deduplicate — no double emit).
 
 ## 2. Remove the orphaned RealtimeService write path
 
@@ -42,10 +52,11 @@
   four `RealtimeEventListener` registrations + import from
   `lib/AppInfo/Application.php`, and the `RealtimeEventRetentionJob` entry from
   `appinfo/info.xml`.
-- [x] 2.4 Delete the `openregister_realtime_events` migration
+- [x] 2.4 Delete the `openregister_realtime_events` create-migration
   (`lib/Migration/Version1Date20260430000000.php`) so fresh installs no longer
-  create the dead table. Existing installs keep the table (no destructive
-  migration; drop is a follow-up).
+  create the dead table, and add `lib/Migration/Version1Date20260714000000.php`
+  dropping the orphaned table (and its indexes) on instances that still carry
+  it — idempotent, drops only when present.
 - [x] 2.5 Delete `tests/Service/RealtimeUpdatesIntegrationTest.php` and
   `tests/Service/RealtimeEventRetentionJobTest.php`; drop the stale
   `RealtimeEventMapper` entry from `phpstan-baseline.neon`.

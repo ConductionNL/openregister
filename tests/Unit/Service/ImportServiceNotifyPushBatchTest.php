@@ -5,8 +5,10 @@ declare(strict_types=1);
 /**
  * ImportService NotifyPush Batch Flush Tests
  *
- * Proves the import → notify_push batch contract end to end: during a bulk
- * import per-object pushes are suppressed (batch mode), and on completion —
+ * Proves the import → notify_push batch contract end to end THROUGH THE REAL
+ * DEFAULT PATH: bulk saves run with lifecycle events disabled (`events=false`
+ * everywhere in the import call chain), so the collection hint MUST be derived
+ * from the save result — not from listener event accumulation. On completion —
  * including the failure path — the accumulated collection events are flushed
  * exactly once per (register, schema) pair as untargeted broadcasts.
  *
@@ -50,7 +52,8 @@ use Psr\Log\LoggerInterface;
 use ReflectionClass;
 
 /**
- * Tests that bulk imports flush deduplicated notify_push collection events.
+ * Tests that bulk imports flush deduplicated notify_push collection events
+ * on the default import path (lifecycle events disabled).
  *
  * @coversDefaultClass \OCA\OpenRegister\Service\ImportService
  *
@@ -67,14 +70,15 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     private object $queue;
 
     /**
-     * Real listener instance used to simulate lifecycle events during the bulk save.
+     * Real listener instance used to verify per-object pushes resume after the
+     * import and to simulate the events-enabled import variant.
      *
      * @var NotifyPushListener
      */
     private NotifyPushListener $listener;
 
     /**
-     * ObjectService mock whose saveObjects() simulates event dispatch.
+     * ObjectService mock whose saveObjects() is stubbed per test.
      *
      * @var ObjectService&\PHPUnit\Framework\MockObject\MockObject
      */
@@ -128,7 +132,7 @@ class ImportServiceNotifyPushBatchTest extends TestCase
             ->with('OCA\NotifyPush\Queue\IQueue')
             ->willReturn($this->queue);
 
-        // Slug resolution for the listener.
+        // Slug resolution for the listener (events-enabled variant + post-import checks).
         $register = $this->getMockBuilder(Register::class)->addMethods(['getSlug'])->getMock();
         $register->method('getSlug')->willReturn('test-register');
         $registerMapper = $this->createMock(RegisterMapper::class);
@@ -182,7 +186,8 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     }//end tearDown()
 
     /**
-     * Build a Register entity with an id set via reflection.
+     * Build a Register entity with an id and slug set — the collection hint is
+     * derived from the real entity's slug, exactly like a production import.
      *
      * @param int $id Database id.
      *
@@ -192,6 +197,7 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     {
         $register = new Register();
         $register->setTitle('TestRegister');
+        $register->setSlug('test-register');
         $ref  = new ReflectionClass($register);
         $prop = $ref->getProperty('id');
         $prop->setAccessible(true);
@@ -200,7 +206,7 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     }//end createRegister()
 
     /**
-     * Build a Schema entity with an id set via reflection.
+     * Build a Schema entity with an id and slug set via the real entity API.
      *
      * @param int   $id         Database id.
      * @param array $properties Schema properties.
@@ -221,7 +227,26 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     }//end createSchema()
 
     /**
+     * Default name/email schema used by every test.
+     *
+     * @return Schema
+     */
+    private function createDefaultSchema(): Schema
+    {
+        return $this->createSchema(
+                2,
+                [
+                    'name'  => ['type' => 'string'],
+                    'email' => ['type' => 'string'],
+                ]
+                );
+    }//end createDefaultSchema()
+
+    /**
      * Simulate the bulk save dispatching N ObjectCreatedEvents through the listener.
+     *
+     * Used ONLY by the events-enabled variant — the default import path never
+     * dispatches lifecycle events.
      *
      * @param int $count Number of object saves to simulate.
      *
@@ -252,56 +277,61 @@ class ImportServiceNotifyPushBatchTest extends TestCase
     }//end createTempCsv()
 
     /**
-     * Successful import: N object saves in batch mode emit ZERO per-object pushes
-     * and exactly ONE deduplicated broadcast collection event on completion.
+     * A canned successful saveObjects result with three created objects.
+     *
+     * @return array
+     */
+    private function savedResult(): array
+    {
+        return [
+            'saved'     => [
+                ['@self' => ['id' => 'imported-uuid-0'], 'name' => 'John'],
+                ['@self' => ['id' => 'imported-uuid-1'], 'name' => 'Jane'],
+                ['@self' => ['id' => 'imported-uuid-2'], 'name' => 'Jim'],
+            ],
+            'updated'   => [],
+            'unchanged' => [],
+        ];
+    }//end savedResult()
+
+    /**
+     * REAL DEFAULT PATH: importFromCsv with default flags (events=false, so no
+     * lifecycle events fire) still flushes exactly one broadcast collection
+     * event, derived from the save result — and zero per-object events.
      *
      * @return void
      *
      * @spec openspec/specs/realtime-updates/spec.md
      */
-    public function testImportFlushesDeduplicatedCollectionEventAndNoObjectEvents(): void
+    public function testDefaultImportFlushesCollectionEventDerivedFromSaveResult(): void
     {
         $tmpFile  = $this->createTempCsv();
         $register = $this->createRegister(1);
-        $schema   = $this->createSchema(
-                2,
-                [
-                    'name'  => ['type' => 'string'],
-                    'email' => ['type' => 'string'],
-                ]
-                );
+        $schema   = $this->createDefaultSchema();
 
         $pushesDuringSave = null;
         $this->objectService->method('saveObjects')
             ->willReturnCallback(
                     function () use (&$pushesDuringSave): array {
-                        // Simulate the 3 lifecycle events the bulk save dispatches.
-                        $this->simulateObjectSaves(3);
-                        // Capture push count DURING the save — must stay zero (batch mode).
+                        // Default path: NO lifecycle events are dispatched here.
+                        // Capture push count DURING the save — must stay zero.
                         $pushesDuringSave = count($this->queue->pushes);
-                        return [
-                            'saved'     => [
-                                ['@self' => ['id' => 'imported-uuid-0'], 'name' => 'John'],
-                                ['@self' => ['id' => 'imported-uuid-1'], 'name' => 'Jane'],
-                                ['@self' => ['id' => 'imported-uuid-2'], 'name' => 'Jim'],
-                            ],
-                            'updated'   => [],
-                            'unchanged' => [],
-                        ];
+                        return $this->savedResult();
                     }
                     );
 
         try {
+            // Default flags — exactly what RegistersController/the UI import sends.
             $result = $this->service->importFromCsv($tmpFile, $register, $schema);
         } finally {
             @unlink($tmpFile);
         }
 
         $this->assertIsArray($result);
-        $this->assertSame(0, $pushesDuringSave, 'Batch mode must suppress all pushes during the bulk save');
+        $this->assertSame(0, $pushesDuringSave, 'No pushes may be emitted during the bulk save');
 
         // Exactly ONE push total: the deduplicated collection broadcast.
-        $this->assertCount(1, $this->queue->pushes, 'Import completion must flush exactly one collection event');
+        $this->assertCount(1, $this->queue->pushes, 'Default import must flush exactly one collection event');
 
         [$type, $payload] = $this->queue->pushes[0];
         $this->assertSame('notify_custom', $type);
@@ -336,36 +366,25 @@ class ImportServiceNotifyPushBatchTest extends TestCase
                 );
         $this->assertContains('or-object-post-import-uuid', $postImportMessages, 'Per-object pushes must resume after import');
 
-    }//end testImportFlushesDeduplicatedCollectionEventAndNoObjectEvents()
+    }//end testDefaultImportFlushesCollectionEventDerivedFromSaveResult()
 
     /**
-     * Failure path: when the bulk save throws AFTER partial saves, the accumulated
-     * collection events are still flushed (finally) and batch mode is cleared.
+     * Failure path on the default flags: when the bulk save throws, partial
+     * saves may have landed — the collection event is still flushed (finally)
+     * and batch mode is cleared.
      *
      * @return void
      *
      * @spec openspec/specs/realtime-updates/spec.md
      */
-    public function testImportFailurePathStillFlushesAccumulatedCollectionEvents(): void
+    public function testImportFailurePathStillFlushesCollectionEvent(): void
     {
         $tmpFile  = $this->createTempCsv();
         $register = $this->createRegister(1);
-        $schema   = $this->createSchema(
-                2,
-                [
-                    'name'  => ['type' => 'string'],
-                    'email' => ['type' => 'string'],
-                ]
-                );
+        $schema   = $this->createDefaultSchema();
 
         $this->objectService->method('saveObjects')
-            ->willReturnCallback(
-                    function (): array {
-                        // Two objects were saved (events fired) before the failure.
-                        $this->simulateObjectSaves(2);
-                        throw new \RuntimeException('bulk save exploded mid-import');
-                    }
-                    );
+            ->willThrowException(new \RuntimeException('bulk save exploded mid-import'));
 
         try {
             $this->expectException(\RuntimeException::class);
@@ -374,12 +393,92 @@ class ImportServiceNotifyPushBatchTest extends TestCase
             @unlink($tmpFile);
 
             // The finally-path flush must have emitted the collection broadcast.
-            $this->assertCount(1, $this->queue->pushes, 'Failure path must still flush accumulated collection events');
+            $this->assertCount(1, $this->queue->pushes, 'Failure path must still flush the collection event');
             $this->assertSame('or-collection-test-register-test-schema', $this->queue->pushes[0][1]['message']);
 
             // Accumulator cleared and batch mode disabled.
             $this->assertFalse(NotifyPushListener::hasBatchedCollections());
         }
 
-    }//end testImportFailurePathStillFlushesAccumulatedCollectionEvents()
+    }//end testImportFailurePathStillFlushesCollectionEvent()
+
+    /**
+     * An import where every row is unchanged (smart dedup skipped all writes)
+     * must NOT emit a collection event — nothing changed, no refetch needed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public function testAllUnchangedImportEmitsNoCollectionEvent(): void
+    {
+        $tmpFile  = $this->createTempCsv();
+        $register = $this->createRegister(1);
+        $schema   = $this->createDefaultSchema();
+
+        $this->objectService->method('saveObjects')
+            ->willReturn(
+                    [
+                        'saved'     => [],
+                        'updated'   => [],
+                        'unchanged' => [
+                            ['@self' => ['id' => 'imported-uuid-0'], 'name' => 'John'],
+                            ['@self' => ['id' => 'imported-uuid-1'], 'name' => 'Jane'],
+                            ['@self' => ['id' => 'imported-uuid-2'], 'name' => 'Jim'],
+                        ],
+                    ]
+                    );
+
+        try {
+            $this->service->importFromCsv($tmpFile, $register, $schema);
+        } finally {
+            @unlink($tmpFile);
+        }
+
+        $this->assertCount(0, $this->queue->pushes, 'All-unchanged import must not emit any push');
+
+    }//end testAllUnchangedImportEmitsNoCollectionEvent()
+
+    /**
+     * Events-enabled variant: when lifecycle events DO fire during the bulk
+     * save, listener accumulation and the result-derived hint land on the same
+     * accumulator key — still exactly one collection event, no double emit.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public function testEventsEnabledImportDoesNotDoubleEmit(): void
+    {
+        $tmpFile  = $this->createTempCsv();
+        $register = $this->createRegister(1);
+        $schema   = $this->createDefaultSchema();
+
+        $this->objectService->method('saveObjects')
+            ->willReturnCallback(
+                    function (): array {
+                        // Simulate the lifecycle events an events=true bulk save dispatches.
+                        $this->simulateObjectSaves(3);
+                        return $this->savedResult();
+                    }
+                    );
+
+        try {
+            $this->service->importFromCsv(
+                    $tmpFile,
+                    $register,
+                    $schema,
+                    false,
+                    // events=true.
+                    true
+                    );
+        } finally {
+            @unlink($tmpFile);
+        }
+
+        // Listener accumulation + result-derived hint deduplicate onto one key.
+        $this->assertCount(1, $this->queue->pushes, 'Event accumulation and result hint must not double-emit');
+        $this->assertSame('or-collection-test-register-test-schema', $this->queue->pushes[0][1]['message']);
+
+    }//end testEventsEnabledImportDoesNotDoubleEmit()
 }//end class
