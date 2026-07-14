@@ -47,6 +47,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setDecidedAt(?DateTime $decidedAt)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
+ * @method string|null getRequesterId()
+ * @method void setRequesterId(?string $requesterId)
  *
  * @psalm-suppress PropertyNotSetInConstructor
  */
@@ -124,6 +126,17 @@ class ApprovalStep extends Entity implements JsonSerializable
     protected ?DateTime $created = null;
 
     /**
+     * Uid of the user whose attempted transition provisioned this step, when the
+     * step was created via the declarative approval-chains gate. `null` for steps
+     * created through the pure `POST /api/approval-chains` CRUD flow. Used by
+     * `ApprovalService::resolveSeparationOfDuties()` to reject a decision made by
+     * the same user who triggered the gate.
+     *
+     * @var string|null
+     */
+    protected ?string $requesterId = null;
+
+    /**
      * Constructor for ApprovalStep entity.
      */
     public function __construct()
@@ -138,6 +151,7 @@ class ApprovalStep extends Entity implements JsonSerializable
         $this->addType(fieldName: 'comment', type: 'string');
         $this->addType(fieldName: 'decidedAt', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
+        $this->addType(fieldName: 'requesterId', type: 'string');
     }//end __construct()
 
     /**
@@ -160,6 +174,7 @@ class ApprovalStep extends Entity implements JsonSerializable
             'comment',
             'decidedAt',
             'created',
+            'requesterId',
         ];
 
         foreach ($object as $key => $value) {
@@ -180,17 +195,18 @@ class ApprovalStep extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'         => $this->id,
-            'uuid'       => $this->uuid,
-            'chainId'    => $this->chainId,
-            'objectUuid' => $this->objectUuid,
-            'stepOrder'  => $this->stepOrder,
-            'role'       => $this->role,
-            'status'     => $this->status,
-            'decidedBy'  => $this->decidedBy,
-            'comment'    => $this->comment,
-            'decidedAt'  => $this->decidedAt?->format('c'),
-            'created'    => $this->created?->format('c'),
+            'id'          => $this->id,
+            'uuid'        => $this->uuid,
+            'chainId'     => $this->chainId,
+            'objectUuid'  => $this->objectUuid,
+            'stepOrder'   => $this->stepOrder,
+            'role'        => $this->role,
+            'status'      => $this->status,
+            'decidedBy'   => $this->decidedBy,
+            'comment'     => $this->comment,
+            'decidedAt'   => $this->decidedAt?->format('c'),
+            'created'     => $this->created?->format('c'),
+            'requesterId' => $this->requesterId,
         ];
     }//end jsonSerialize()
 }//end class

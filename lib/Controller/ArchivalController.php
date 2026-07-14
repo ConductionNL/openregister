@@ -236,7 +236,8 @@ class ArchivalController extends Controller
                 action: $action,
                 excludedIds: $excludedIds,
                 exclusionReasons: $exclusionReasons,
-                requiresDual: $requiresDual
+                requiresDual: $requiresDual,
+                listUuid: $id
             );
 
             // Check if dual approval was rejected (same user).
@@ -248,6 +249,14 @@ class ArchivalController extends Controller
                     statusCode: Http::STATUS_CONFLICT
                 );
             }
+
+            // Persist the approval. Without this the recorded approval and the
+            // `approved` status were returned to the caller but never written back,
+            // so the list stayed `in_review` in storage and the execution job — which
+            // reloads the list by uuid and requires status `approved` — refused to run
+            // (openregister#393). RetentionController has always persisted here.
+            $object->setObject($result);
+            $this->objectMapper->update($object);
 
             return new JSONResponse(
                 data: $result,

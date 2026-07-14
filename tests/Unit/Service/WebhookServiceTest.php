@@ -1724,6 +1724,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         // Inject mock client for delivery.
         $mockResponse = new GuzzleResponse(200, [], '{"ok":true}');
@@ -1756,6 +1758,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         // Inject mock client that throws.
         $mockClient = $this->createMock(GuzzleClient::class);
@@ -1789,6 +1793,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         $mockResponse = new GuzzleResponse(200, [], '{}');
         $mockClient   = $this->createMock(GuzzleClient::class);
@@ -2233,6 +2239,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         $request = $this->createMock(\OCP\IRequest::class);
         $request->method('getParams')->willReturn(['key' => 'value']);

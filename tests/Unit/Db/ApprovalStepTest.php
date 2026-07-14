@@ -28,6 +28,7 @@ class ApprovalStepTest extends TestCase
         $this->assertSame('string', $fieldTypes['comment']);
         $this->assertSame('datetime', $fieldTypes['decidedAt']);
         $this->assertSame('datetime', $fieldTypes['created']);
+        $this->assertSame('string', $fieldTypes['requesterId']);
     }
 
     public function testDefaultValues(): void
@@ -78,5 +79,17 @@ class ApprovalStepTest extends TestCase
         $this->assertSame('pending', $json['status']);
         $this->assertNull($json['decidedBy']);
         $this->assertNull($json['decidedAt']);
+        $this->assertNull($json['requesterId']);
+    }
+
+    public function testRequesterIdHydratesAndSerializes(): void
+    {
+        $this->entity->hydrate([
+            'objectUuid'  => 'obj-789',
+            'requesterId' => 'alice',
+        ]);
+
+        $this->assertSame('alice', $this->entity->getRequesterId());
+        $this->assertSame('alice', $this->entity->jsonSerialize()['requesterId']);
     }
 }

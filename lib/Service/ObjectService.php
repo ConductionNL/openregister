@@ -57,7 +57,6 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -215,7 +214,6 @@ class ObjectService
      * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
      * @param DeleteObject                   $deleteHandler        Handler for object deletion.
      * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PerformanceHandler             $performanceHandler   Handler for performance operations.
      * @param PermissionHandler              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
      * @param SaveObject                     $saveHandler          Handler for individual object saving.
@@ -261,7 +259,6 @@ class ObjectService
         private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
-        private readonly PerformanceHandler $performanceHandler,
         private readonly PermissionHandler $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
@@ -398,47 +395,17 @@ class ObjectService
     public function setRegister(Register | string | int $register): static
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs only.
-            // When deriving register from object context, bypass RBAC and multi-tenancy checks.
-            // If user has access to the object, they should be able to access its register.
-            if (is_numeric($register) === true) {
-                $registers          = $this->performanceHandler->getCachedEntities(
-                    [$register],
-                    function (array $ids): array {
-                        return [$this->registerMapper->find(
-                            id: $ids[0],
-                            _rbac: false,
-                            _multitenancy: false
-                        )
-                        ];
-                    }
-                );
-                $registerExists     = isset($registers[0]) === true;
-                $isRegisterInstance = $registerExists
-                    && $registers[0] instanceof Register;
-                if ($isRegisterInstance === true) {
-                    $register = $registers[0];
-                }
-
-                if ($isRegisterInstance !== true) {
-                    // Fallback to direct database lookup if cache fails.
-                    $register = $this->registerMapper->find(
-                        id: $register,
-                        _rbac: false,
-                        _multitenancy: false
-                    );
-                }
-            }//end if
-
-            if (is_numeric($register) !== true && ($register instanceof Register) === false) {
-                // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
-                $register = $this->registerMapper->find(
-                    id: $register,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            }
-        }//end if
+            // Resolve the identifier through the mapper. RegisterMapper::find()
+            // already provides request-scoped caching (findCache) and supports
+            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug). RBAC and
+            // multi-tenancy checks are bypassed: if the user has access to the
+            // object, they should be able to access its register.
+            $register = $this->registerMapper->find(
+                id: $register,
+                _rbac: false,
+                _multitenancy: false
+            );
+        }
 
         $this->currentRegister = $register;
         return $this;
@@ -456,45 +423,15 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // Try to find schema by ID first (if numeric) or by slug.
+            // Resolve the identifier through the mapper. SchemaMapper::find()
+            // already provides request-scoped caching (findCache) and supports
+            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
             try {
-                if (is_numeric($schema) === true) {
-                    // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs.
-                    $schemas          = $this->performanceHandler->getCachedEntities(
-                        [$schema],
-                        function (array $ids): array {
-                            return [$this->schemaMapper->find(
-                                id: $ids[0],
-                                _rbac: false,
-                                _multitenancy: false
-                            )
-                            ];
-                        }
-                    );
-                    $schemaExists     = isset($schemas[0]) === true;
-                    $isSchemaInstance = $schemaExists && $schemas[0] instanceof Schema;
-                    if ($isSchemaInstance === true) {
-                        $schema = $schemas[0];
-                    }
-
-                    if ($isSchemaInstance !== true) {
-                        // Fallback to direct database lookup if cache fails.
-                        $schema = $this->schemaMapper->find(
-                            id: $schema,
-                            _rbac: false,
-                            _multitenancy: false
-                        );
-                    }
-                }//end if
-
-                if (is_numeric($schema) !== true && ($schema instanceof Schema) === false) {
-                    // It's a slug string - find() supports slugs via orX(id, uuid, slug).
-                    $schema = $this->schemaMapper->find(
-                        id: $schema,
-                        _rbac: false,
-                        _multitenancy: false
-                    );
-                }
+                $schema = $this->schemaMapper->find(
+                    id: $schema,
+                    _rbac: false,
+                    _multitenancy: false
+                );
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Debug logging to understand WHY schema lookup fails.
                 $this->logger->error(
@@ -517,6 +454,38 @@ class ObjectService
         $this->currentSchema = $schema;
         return $this;
     }//end setSchema()
+
+    /**
+     * Get the register entity resolved by the last setRegister() call.
+     *
+     * Exposes the already-resolved entity so callers (e.g. controllers that
+     * resolved slugs via setRegister()) can reuse it instead of re-fetching
+     * the same register from the database.
+     *
+     * @return Register|null The current register entity, or null when no register context is set.
+     *
+     * @spec exclude Context getter exposing the entity resolved by setRegister(); no business rule.
+     */
+    public function getCurrentRegisterEntity(): ?Register
+    {
+        return $this->currentRegister;
+    }//end getCurrentRegisterEntity()
+
+    /**
+     * Get the schema entity resolved by the last setSchema() call.
+     *
+     * Exposes the already-resolved entity so callers (e.g. controllers that
+     * resolved slugs via setSchema()) can reuse it instead of re-fetching
+     * the same schema from the database.
+     *
+     * @return Schema|null The current schema entity, or null when no schema context is set.
+     *
+     * @spec exclude Context getter exposing the entity resolved by setSchema(); no business rule.
+     */
+    public function getCurrentSchemaEntity(): ?Schema
+    {
+        return $this->currentSchema;
+    }//end getCurrentSchemaEntity()
 
     /**
      * Set the current object context.
@@ -2769,12 +2738,14 @@ class ObjectService
      * Record a search-trail entry for a paginated search, honouring the
      * configured recording mode.
      *
-     * Resolves the effective mode via SearchQueryHandler: 'none' records
-     * nothing; '_search' records only when a non-empty `_search` term is
-     * present; 'all' records every paginated search. Derives the execution
-     * type from the result source (index vs database) and the response time
-     * from the captured start time. Never throws — a recording failure must
-     * not affect the search response.
+     * Resolves the effective mode via SearchQueryHandler (memoized per
+     * request): 'none' records nothing; '_search' records only when a
+     * non-empty `_search` term is present; 'all' records every paginated
+     * search. Derives the execution type from the result source (index vs
+     * database) and the response time from the captured start time. The
+     * entry is buffered and persisted after the response (deferred flush in
+     * SearchQueryHandler), so recording adds no write latency to the search.
+     * Never throws — a recording failure must not affect the search response.
      *
      * @param array $query     The post-view-merge search query.
      * @param array $result    The paginated search result (results, total, @self).

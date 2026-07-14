@@ -176,15 +176,17 @@ class WebhookLogTest extends TestCase
     }
 
     /**
-     * Note: setPayloadArray internally calls setPayload with named args
-     * which breaks __call magic. The payload is not actually set.
-     * This test documents the current (buggy) behavior.
+     * setPayloadArray stores the JSON-encoded payload. Historically it
+     * called setPayload with a NAMED argument, which Entity::__call cannot
+     * resolve, so the payload was silently dropped; the call is positional
+     * now and the value round-trips.
      */
-    public function testSetPayloadArrayDoesNotStoreValueDueToNamedArgBug(): void
+    public function testSetPayloadArrayStoresJsonEncodedValue(): void
     {
         $this->webhookLog->setPayloadArray(['event' => 'created', 'id' => 1]);
-        // Due to named-arg bug in __call, setPayload(payload: ...) does not work
-        $this->assertNull($this->webhookLog->getPayload());
+
+        $this->assertSame('{"event":"created","id":1}', $this->webhookLog->getPayload());
+        $this->assertSame(['event' => 'created', 'id' => 1], $this->webhookLog->getPayloadArray());
     }
 
     public function testSetPayloadArrayNullClearsPayload(): void

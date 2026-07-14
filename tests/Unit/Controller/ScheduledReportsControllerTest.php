@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\BackgroundJob\ScheduledReportRunNowJob;
 use OCA\OpenRegister\Controller\ScheduledReportsController;
 use OCA\OpenRegister\Db\ScheduledReport;
@@ -41,11 +42,17 @@ use Psr\Log\LoggerInterface;
 
 class ScheduledReportsControllerTest extends TestCase
 {
+
     private ScheduledReportsController $controller;
+
     private ScheduledReportService&MockObject $service;
+
     private IJobList&MockObject $jobList;
+
     private IUserSession&MockObject $userSession;
+
     private IGroupManager&MockObject $groupManager;
+
     private IRequest&MockObject $request;
 
     /**
@@ -57,6 +64,7 @@ class ScheduledReportsControllerTest extends TestCase
      * returning the first ("alice") user.
      */
     private ?IUser $currentUser = null;
+
     private bool $currentUserIsAdmin = false;
 
     protected function setUp(): void
@@ -83,7 +91,7 @@ class ScheduledReportsControllerTest extends TestCase
             $this->groupManager,
             $this->createMock(LoggerInterface::class)
         );
-    }
+    }//end setUp()
 
     private function setupUser(string $uid, bool $isAdmin): void
     {
@@ -91,13 +99,13 @@ class ScheduledReportsControllerTest extends TestCase
         $user->method('getUID')->willReturn($uid);
         $this->currentUser        = $user;
         $this->currentUserIsAdmin = $isAdmin;
-    }
+    }//end setupUser()
 
     private function makeReport(int $id, string $owner): ScheduledReport
     {
         $report = new ScheduledReport();
-        $ref = new \ReflectionClass($report);
-        $prop = $ref->getProperty('id');
+        $ref    = new \ReflectionClass($report);
+        $prop   = $ref->getProperty('id');
         $prop->setAccessible(true);
         $prop->setValue($report, $id);
 
@@ -114,7 +122,7 @@ class ScheduledReportsControllerTest extends TestCase
         $report->setEnabled(true);
 
         return $report;
-    }
+    }//end makeReport()
 
     public function testIndexReturnsOwnReports(): void
     {
@@ -126,7 +134,7 @@ class ScheduledReportsControllerTest extends TestCase
 
         self::assertSame(200, $response->getStatus());
         self::assertSame(1, $response->getData()['total']);
-    }
+    }//end testIndexReturnsOwnReports()
 
     public function testNonAdminAllParamStillOnlySeesOwnReports(): void
     {
@@ -136,7 +144,7 @@ class ScheduledReportsControllerTest extends TestCase
         $this->service->expects(self::once())->method('findForOwner')->with('alice')->willReturn([]);
 
         $this->controller->index();
-    }
+    }//end testNonAdminAllParamStillOnlySeesOwnReports()
 
     public function testAdminCanListAllReports(): void
     {
@@ -150,7 +158,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->index();
 
         self::assertSame(2, $response->getData()['total']);
-    }
+    }//end testAdminCanListAllReports()
 
     public function testOwnerCanShowOwnReport(): void
     {
@@ -167,7 +175,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->show(1);
 
         self::assertSame(200, $response->getStatus());
-    }
+    }//end testOwnerCanShowOwnReport()
 
     public function testNonOwnerCannotShowAnotherUsersReport(): void
     {
@@ -178,7 +186,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->show(42);
 
         self::assertContains($response->getStatus(), [403, 404]);
-    }
+    }//end testNonOwnerCannotShowAnotherUsersReport()
 
     public function testShowReturns404ForMissingReport(): void
     {
@@ -187,7 +195,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->show(999);
 
         self::assertSame(404, $response->getStatus());
-    }
+    }//end testShowReturns404ForMissingReport()
 
     public function testNonOwnerCannotUpdateAnotherUsersReport(): void
     {
@@ -197,7 +205,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->update(42);
 
         self::assertContains($response->getStatus(), [403, 404]);
-    }
+    }//end testNonOwnerCannotUpdateAnotherUsersReport()
 
     public function testNonOwnerCannotDeleteAnotherUsersReport(): void
     {
@@ -206,7 +214,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->destroy(42);
 
         self::assertContains($response->getStatus(), [403, 404]);
-    }
+    }//end testNonOwnerCannotDeleteAnotherUsersReport()
 
     public function testOwnerCanDeleteOwnReport(): void
     {
@@ -215,7 +223,7 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->destroy(1);
 
         self::assertSame(204, $response->getStatus());
-    }
+    }//end testOwnerCanDeleteOwnReport()
 
     public function testRunNowQueuesJobAndReturns202WithoutCallingExportInline(): void
     {
@@ -235,7 +243,7 @@ class ScheduledReportsControllerTest extends TestCase
 
         self::assertSame(202, $response->getStatus());
         self::assertTrue($response->getData()['queued']);
-    }
+    }//end testRunNowQueuesJobAndReturns202WithoutCallingExportInline()
 
     public function testRunNowRespectsOwnership(): void
     {
@@ -248,5 +256,74 @@ class ScheduledReportsControllerTest extends TestCase
         $response = $this->controller->runNow(42);
 
         self::assertContains($response->getStatus(), [403, 404]);
-    }
+    }//end testRunNowRespectsOwnership()
+
+    /**
+     * Create forwards deliveryMode/recipients through to
+     * `ScheduledReportService::create()` unchanged (validation itself lives
+     * in the service — see ScheduledReportServiceRecipientsValidationTest)
+     * and the created row's jsonSerialize() (which now includes the two new
+     * fields) is returned as-is.
+     */
+    public function testCreateForwardsDeliveryModeAndRecipients(): void
+    {
+        $payload = [
+            'name'              => 'Weekly cases',
+            'registerId'        => 1,
+            'schemaId'          => 2,
+            'format'            => 'csv',
+            'scheduleType'      => 'weekly',
+            'scheduleDayOfWeek' => 0,
+            'deliveryMode'      => 'both',
+            'recipients'        => ['a@example.com'],
+        ];
+        $this->request->method('getParams')->willReturn($payload);
+
+        $created = $this->makeReport(1, 'alice');
+        $created->setDeliveryMode('both');
+        $created->setRecipients(json_encode(['a@example.com']));
+
+        $this->service->expects(self::once())
+            ->method('create')
+            ->with($payload, 'alice')
+            ->willReturn($created);
+
+        $response = $this->controller->create();
+
+        self::assertSame(201, $response->getStatus());
+        self::assertSame('both', $response->getData()['deliveryMode']);
+        self::assertSame(['a@example.com'], $response->getData()['recipients']);
+    }//end testCreateForwardsDeliveryModeAndRecipients()
+
+    public function testCreateReturns422WhenDeliveryValidationFails(): void
+    {
+        $this->request->method('getParams')->willReturn(
+                [
+                    'name'         => 'Weekly cases',
+                    'registerId'   => 1,
+                    'deliveryMode' => 'sms',
+                ]
+                );
+
+        $this->service->method('create')
+            ->willThrowException(new InvalidArgumentException('deliveryMode must be one of: files, email, both'));
+
+        $response = $this->controller->create();
+
+        self::assertSame(422, $response->getStatus());
+        self::assertStringContainsString('deliveryMode', $response->getData()['error']);
+    }//end testCreateReturns422WhenDeliveryValidationFails()
+
+    public function testUpdateReturns422WhenRecipientValidationFails(): void
+    {
+        $this->request->method('getParams')->willReturn(['recipients' => ['not-an-email']]);
+
+        $this->service->method('update')
+            ->willThrowException(new InvalidArgumentException('"not-an-email" is not a valid email address.'));
+
+        $response = $this->controller->update(1);
+
+        self::assertSame(422, $response->getStatus());
+        self::assertStringContainsString('valid email', $response->getData()['error']);
+    }//end testUpdateReturns422WhenRecipientValidationFails()
 }//end class

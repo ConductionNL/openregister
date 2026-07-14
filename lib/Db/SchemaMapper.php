@@ -83,7 +83,7 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
  * @method Schema delete(Entity $entity, bool $force=false)
- * @method Schema find(int|string $id)
+ * @method Schema find(int|string $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true)
  * @method Schema findEntity(IQueryBuilder $query)
  * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
@@ -462,6 +462,7 @@ class SchemaMapper extends QBMapper
             while (($row = $result->fetch()) !== false) {
                 $schema = new Schema();
                 $schema = $schema->fromRow($row);
+
                 $schemas[$row['id']] = $schema;
             }
 
@@ -2276,6 +2277,18 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
+            // Skip inline constraint schemas. JSON Schema allows an allOf entry to be an
+            // inline schema object ({ "required": [...] }, { "properties": {...} }), not
+            // only a $ref to another schema. OpenRegister's composition model treats
+            // allOf/oneOf/anyOf as a list of schema IDENTIFIERS, so only string/int
+            // entries are references to load — an array entry is a constraint that stands
+            // on its own and must not be handed to loadSchema() (which would fatal on the
+            // array). This unblocked openconnector's register import, silently broken by
+            // lti_deployment's `oneOf: [{required, not}, ...]` XOR constraint.
+            if (is_string($parentRef) === false && is_int($parentRef) === false) {
+                continue;
+            }
+
             // Check for self-reference.
             if ($parentRef === $currentId || $parentRef === $schema->getId()
                 || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
@@ -2444,6 +2457,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($oneOf as $ref) {
+            // Skip inline constraint schemas — a oneOf entry may be an inline schema object
+            // ({ "required": [...], "not": {...} }) rather than a $ref to another schema.
+            // Only string/int entries are schema identifiers to load. See resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2456,7 +2476,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (oneOf schemas are not merged).
         return $schema;
@@ -2484,6 +2504,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($anyOf as $ref) {
+            // Skip inline constraint schemas — an anyOf entry may be an inline schema
+            // object rather than a $ref. Only string/int entries are identifiers. See
+            // resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2496,7 +2523,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (anyOf schemas are not merged).
         return $schema;

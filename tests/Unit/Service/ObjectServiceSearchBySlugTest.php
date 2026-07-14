@@ -43,7 +43,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -106,7 +105,6 @@ class ObjectServiceSearchBySlugTest extends TestCase
             dataManipHandler:    $this->createMock(DataManipulationHandler::class),
             deleteHandler:       $this->createMock(DeleteObject::class),
             getHandler:          $this->createMock(GetObject::class),
-            performanceHandler:  $this->createMock(PerformanceHandler::class),
             permissionHandler:   $this->createMock(PermissionHandler::class),
             renderHandler:       $this->createMock(RenderObject::class),
             saveHandler:         $this->createMock(SaveObject::class),

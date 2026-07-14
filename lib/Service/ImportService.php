@@ -32,6 +32,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
+use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
+use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IUserManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -42,6 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use React\Async\PromiseInterface;
 use React\Promise\Promise;
@@ -62,6 +66,8 @@ use React\EventLoop\Loop;
  * - **Progress Tracking**: Provides real-time progress updates during import
  *
  * @package OCA\OpenRegister\Service
+ *
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Import service requires comprehensive data transformation methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for multi-format import support
@@ -148,12 +154,16 @@ class ImportService
     /**
      * Constructor for the ImportService
      *
-     * @param SchemaMapper                                              $schemaMapper        The schema mapper
-     * @param ObjectService                                             $objectService       The object service
-     * @param LoggerInterface                                           $logger              The logger interface
-     * @param IGroupManager                                             $groupManager        The group manager
-     * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec Translation CSV codec
-     * @param AuditTrailMapper                                          $auditTrailMapper    The audit trail mapper
+     * @param SchemaMapper                                              $schemaMapper          The schema mapper
+     * @param ObjectService                                             $objectService         The object service
+     * @param LoggerInterface                                           $logger                The logger interface
+     * @param IGroupManager                                             $groupManager          The group manager
+     * @param \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec   Translation CSV codec
+     * @param AuditTrailMapper                                          $auditTrailMapper      The audit trail mapper
+     * @param MappingEngine                                             $mappingEngine         Migration-pack mapping engine
+     * @param ValidateObject                                            $validateObjectHandler Schema validator, used for genuinely
+     *                                                                                         side-effect-free dry-run imports
+     * @param ContainerInterface                                        $container             DI container for lazy IQueue resolution
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -161,7 +171,10 @@ class ImportService
         LoggerInterface $logger,
         IGroupManager $groupManager,
         \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
-        private readonly AuditTrailMapper $auditTrailMapper
+        private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly MappingEngine $mappingEngine,
+        private readonly ValidateObject $validateObjectHandler,
+        private readonly ContainerInterface $container
     ) {
         $this->schemaMapper  = $schemaMapper;
         $this->objectService = $objectService;
@@ -429,12 +442,18 @@ class ImportService
      * @param bool          $publish       DEPRECATED: No-op. Object-level publish metadata removed; use RBAC $now rules.
      * @param IUser|null    $currentUser   Current user for RBAC checks (default: null).
      * @param bool          $enrich        Whether to enrich objects with metadata (default: true).
+     * @param array|null    $pack          Optional migration pack definition (decoded JSON). When given, each row is
+     *                                     mapped through `MappingEngine::mapRow()` before the normal validate/save
+     *                                     pipeline.
+     * @param bool          $dryRun        When true, rows are mapped and validated but nothing is saved.
      *
      * @return array Import results by schema
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importFromCsv(
         string $filePath,
@@ -446,7 +465,9 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null,
-        bool $enrich=true
+        bool $enrich=true,
+        ?array $pack=null,
+        bool $dryRun=false
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
@@ -481,7 +502,9 @@ class ImportService
                 _multitenancy: $_multitenancy,
                 publish: $publish,
                 currentUser: $currentUser,
-                enrich: $enrich
+                enrich: $enrich,
+                pack: $pack,
+                dryRun: $dryRun
             );
 
             // Add schema information to the summary (consistent with Excel import).
@@ -524,6 +547,10 @@ class ImportService
      * @param bool          $publish       DEPRECATED no-op; publication is RBAC-driven
      * @param IUser|null    $currentUser   The current user performing the import
      * @param bool          $enrich        Whether to enrich objects with metadata
+     * @param array|null    $pack          Optional migration pack definition (decoded JSON). When given, each JSON
+     *                                     object is mapped through `MappingEngine::mapRow()` (source resolved via
+     *                                     JSON-Pointer-style paths against the raw decoded object) before save.
+     * @param bool          $dryRun        When true, rows are mapped and validated but nothing is saved.
      *
      * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
      *
@@ -534,6 +561,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)  validation/events/enrich are kept for signature parity with importFromExcel/importFromCsv
      *
      * @spec exclude Retrofit — JSON object import/export added alongside the existing Excel/CSV importers; no dedicated openspec change.
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importFromJson(
         string $filePath,
@@ -545,10 +573,13 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null,
-        bool $enrich=true
+        bool $enrich=true,
+        ?array $pack=null,
+        bool $dryRun=false
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
+        $startTime = microtime(true);
 
         if ($schema === null) {
             throw new InvalidArgumentException('JSON import requires a specific schema');
@@ -602,44 +633,109 @@ class ImportService
                 'errors'    => [],
             ];
 
-            foreach ($objects as $raw) {
+            // Phase 1: resolve every row to an (uuid, body) pair. When a pack is
+            // given, each source object is mapped through it first (source
+            // resolved via JSON-Pointer-style paths against the raw decoded
+            // object) — a row with mapping errors (missing required source, or
+            // an unresolved lookup/reference — the literal-leak guard) is
+            // reported and excluded, never partially mapped or saved.
+            $resolved = [];
+            foreach ($objects as $rowIndex => $raw) {
                 if (is_array($raw) === false) {
                     continue;
                 }
 
-                // Upsert key: prefer @self.id, then a top-level id/uuid.
-                $uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
-                if ($uuid !== null) {
-                    $uuid = (string) $uuid;
+                // Keys are list indexes for a JSON array export; cast guards
+                // against a decoded object-with-string-keys envelope.
+                $rowNumber = ((int) $rowIndex + 1);
+                if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $rowNumber) === true) {
+                    continue;
                 }
 
-                // Body = schema properties only; empty strings → null.
-                $body = array_intersect_key($raw, $propertyKeys);
-                foreach ($body as $key => $value) {
-                    if ($value === '') {
-                        $body[$key] = null;
+                if ($pack !== null) {
+                    $mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $raw, rowNumber: $rowNumber);
+                    if (empty($mapped['errors']) === false) {
+                        foreach ($mapped['errors'] as $mappingError) {
+                            $summary['errors'][] = $this->formatMappingError(error: $mappingError);
+                        }
+
+                        continue;
                     }
-                }
 
+                    $body = $mapped['data'];
+                    $uuid = $body['id'] ?? null;
+                    unset($body['id']);
+                    if ($uuid !== null) {
+                        $uuid = (string) $uuid;
+                    }
+                } else {
+                    // Upsert key: prefer @self.id, then a top-level id/uuid.
+                    $uuid = ($raw['@self']['id'] ?? $raw['id'] ?? $raw['uuid'] ?? null);
+                    if ($uuid !== null) {
+                        $uuid = (string) $uuid;
+                    }
+
+                    // Body = schema properties only; empty strings → null.
+                    $body = array_intersect_key($raw, $propertyKeys);
+                    foreach ($body as $key => $value) {
+                        if ($value === '') {
+                            $body[$key] = null;
+                        }
+                    }
+                }//end if
+
+                $resolved[] = [
+                    'uuid' => $uuid,
+                    'body' => $body,
+                    'name' => ($raw['name'] ?? $uuid),
+                ];
+            }//end foreach
+
+            // Phase 2a: dry-run — validate every resolved row, save NOTHING.
+            if ($dryRun === true) {
+                $summary = $this->buildDryRunSummary(
+                    summary: $summary,
+                    objects: array_column($resolved, 'body'),
+                    schema: $schema,
+                    startTime: $startTime
+                );
+
+                $summary['schema'] = [
+                    'id'    => $schema->getId(),
+                    'title' => $schema->getTitle(),
+                    'slug'  => $schema->getSlug(),
+                ];
+
+                return [
+                    'JSON'        => $summary,
+                    'importJobId' => $importJobId,
+                ];
+            }
+
+            // Phase 2b: persist each resolved row through the same single-object
+            // saveObject() path the REST create/update uses (unchanged from the
+            // non-pack behaviour — the bulk saveObjects() path silently skips
+            // dedicated-table schemas, see the class-level note above).
+            foreach ($resolved as $row) {
                 try {
                     $saved = $this->objectService->saveObject(
-                        object: $body,
+                        object: $row['body'],
                         register: $register,
                         schema: $schema,
-                        uuid: $uuid,
+                        uuid: $row['uuid'],
                         _rbac: $_rbac,
                         _multitenancy: $_multitenancy,
                         currentUser: $currentUser
                     );
 
-                    if ($uuid !== null) {
+                    if ($row['uuid'] !== null) {
                         $summary['updated'][] = $saved->getUuid();
                     } else {
                         $summary['created'][] = $saved->getUuid();
                     }
                 } catch (\Throwable $e) {
                     $summary['errors'][] = [
-                        'object' => ($raw['name'] ?? $uuid),
+                        'object' => $row['name'],
                         'error'  => $e->getMessage(),
                         'type'   => get_class($e),
                     ];
@@ -804,6 +900,92 @@ class ImportService
      */
 
     /**
+     * Flush accumulated notify_push collection events after a bulk import.
+     *
+     * Lazily resolves notify_push's IQueue from the container and emits one
+     * broadcast `or-collection-{register-slug}-{schema-slug}` event per
+     * (register, schema) pair accumulated while batch mode was active.
+     *
+     * Soft-fails: when notify_push is not installed (IQueue not resolvable)
+     * this is a silent no-op — nothing was accumulated in that case, so we
+     * return before even touching the container. A resolution failure with
+     * pending events (partial install / config drift) logs at most one
+     * DEBUG entry and never interrupts the import.
+     *
+     * MUST be called before setBatchMode(false), which clears the accumulator.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    private function flushNotifyPushBatch(): void
+    {
+        if (NotifyPushListener::hasBatchedCollections() === false) {
+            return;
+        }
+
+        try {
+            $queue = $this->container->get('OCA\NotifyPush\Queue\IQueue');
+        } catch (\Throwable $e) {
+            // Notify_push unavailable — soft-fail with a single DEBUG log.
+            $this->logger->debug(
+                message: '[ImportService] notify_push IQueue not available; skipping batch flush',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return;
+        }
+
+        NotifyPushListener::flushBatch(queue: $queue);
+
+    }//end flushNotifyPushBatch()
+
+    /**
+     * Queue a notify_push collection hint derived from the import's own context.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * everywhere in the import call chain), so NotifyPushListener::handle()
+     * never fires and the batch accumulator would stay empty. The import knows
+     * exactly which (register, schema) collection it just changed — queue the
+     * pair directly from the entities' slugs. Deduplicated with any
+     * event-driven accumulation when events ARE enabled. Soft-fails on any
+     * slug-resolution error (a missed hint must never break the import).
+     *
+     * @param Register $register The register the import saved into.
+     * @param Schema   $schema   The schema the import saved into.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void
+    {
+        try {
+            $registerSlug = (string) ($register->getSlug() ?? '');
+            $schemaSlug   = (string) ($schema->getSlug() ?? '');
+            NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+        } catch (\Throwable $e) {
+            // Slug not resolvable — skip the hint, never break the import.
+            $this->logger->debug(
+                message: '[ImportService] Could not queue notify_push collection hint',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+    }//end queueNotifyPushCollectionHint()
+
+    /**
      * Process a single spreadsheet sheet using batch saving for better performance
      *
      * @param Spreadsheet   $spreadsheet   The spreadsheet to process
@@ -921,15 +1103,15 @@ class ImportService
                 );
             }
 
-            // @todo add-live-updates/task-6: Wrap with NotifyPushListener::setBatchMode(true) and
-            // flushBatch($queue, $permissionHandler) once IQueue and PermissionHandler are injected
-            // into ImportService. Pattern:
-            // NotifyPushListener::setBatchMode(true);
-            // try { ... saveObjects ... } finally {
-            // NotifyPushListener::flushBatch($queue, $permissionHandler);
-            // NotifyPushListener::setBatchMode(false);
-            // }
-            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            // Suppress per-object notify_push events during the bulk save; on
+            // completion (success OR failure — partial saves still happened)
+            // flush one deduplicated collection event per (register, schema)
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
+            NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -942,10 +1124,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
-                // Cannot call flushBatch here without IQueue — batch mode is cleared
-                // so individual events are re-enabled for subsequent calls.
-                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
-            }
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
+                // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
+                $this->flushNotifyPushBatch();
+                NotifyPushListener::setBatchMode(false);
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -1006,16 +1196,20 @@ class ImportService
      * @param bool                                          $publish       DEPRECATED: No-op. Publish metadata removed.
      * @param IUser|null                                    $currentUser   The current user performing the import
      * @param bool                                          $enrich        Whether to enrich objects with metadata
+     * @param array|null                                    $pack          Optional migration pack definition; each row is mapped through it first
+     * @param bool                                          $dryRun        When true, rows are mapped and validated but nothing is saved
      *
      * @return array CSV sheet processing results
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags control import behavior options
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  CSV processing requires many conditional branches for data handling
-     * @SuppressWarnings(PHPMD.NPathComplexity)       CSV processing requires many conditional row/column handling
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) CSV processing consolidates related operations for performance
-     * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   CSV processing requires many conditional branches for data handling
+     * @SuppressWarnings(PHPMD.NPathComplexity)        CSV processing requires many conditional row/column handling
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  CSV processing consolidates related operations for performance
+     * @SuppressWarnings(PHPMD.StaticAccess)           NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) pack/dryRun extend the existing signature
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1027,7 +1221,9 @@ class ImportService
         bool $_multitenancy=true,
         bool $publish=false,
         ?IUser $currentUser=null,
-        bool $enrich=true
+        bool $enrich=true,
+        ?array $pack=null,
+        bool $dryRun=false
     ): array {
         $summary = [
             'found'     => 0,
@@ -1069,12 +1265,33 @@ class ImportService
         $allObjects = [];
 
         for ($row = 2; $row <= $highestRow; $row++) {
+            if ($pack !== null && $this->mappingEngine->isRowSkipped(pack: $pack, rowNumber: $row) === true) {
+                continue;
+            }
+
             // NO ERROR SUPPRESSION: Let CSV row processing errors bubble up immediately!
             $rowData = $this->extractRowData(sheet: $sheet, columnMapping: $columnMapping, row: $row);
 
             if (empty($rowData) === true) {
                 continue;
                 // Skip empty rows.
+            }
+
+            // Migration pack mapping: source columns -> target schema properties,
+            // with transforms applied. A row with mapping errors (missing required
+            // source, or an unresolved lookup/reference — the literal-leak guard)
+            // is reported and excluded from the batch, never partially mapped.
+            if ($pack !== null) {
+                $mapped = $this->mappingEngine->mapRow(pack: $pack, sourceRow: $rowData, rowNumber: $row);
+                if (empty($mapped['errors']) === false) {
+                    foreach ($mapped['errors'] as $mappingError) {
+                        $summary['errors'][] = $this->formatMappingError(error: $mappingError);
+                    }
+
+                    continue;
+                }
+
+                $rowData = $mapped['data'];
             }
 
             // Transform row data to object format.
@@ -1091,6 +1308,16 @@ class ImportService
         }//end for
 
         $summary['found'] = count($allObjects);
+
+        // Dry-run: map + validate every row, save NOTHING. This is the killer
+        // feature for migration quoting — an operator can see exactly what
+        // would happen before committing to a real import. Genuinely
+        // side-effect-free: ValidateObject::validateObject() only issues
+        // read-only lookups (schema resolution, uniqueness SELECTs), and
+        // ObjectService::saveObjects()/saveObject() is never called on this path.
+        if ($dryRun === true) {
+            return $this->buildDryRunSummary(summary: $summary, objects: $allObjects, schema: $schema, startTime: $startTime);
+        }
 
         // NOTE: Deduplication is now handled by SaveObjects::saveObjects() (deduplicateIds=true by default).
         // This ensures consistent deduplication across ALL bulk save operations (CSV, Excel, API, etc.).
@@ -1120,9 +1347,15 @@ class ImportService
                 );
             }
 
-            // @todo add-live-updates/task-6: Wrap with NotifyPushListener batch mode once
-            // IQueue and PermissionHandler are injected into ImportService.
-            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            // Suppress per-object notify_push events during the bulk save; on
+            // completion (success OR failure — partial saves still happened)
+            // flush one deduplicated collection event per (register, schema)
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
+            NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -1135,8 +1368,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
-                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
-            }
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
+                // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
+                $this->flushNotifyPushBatch();
+                NotifyPushListener::setBatchMode(false);
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -1199,6 +1442,93 @@ class ImportService
 
         return $summary;
     }//end processCsvSheet()
+
+    /**
+     * Format one MappingEngine row error into the shape `serializeErrorsToCsv()`
+     * and the controller's `summary['errors']` contract already expect
+     * (`row`/`field`/`error`/`type`), so migration-pack mapping failures show
+     * up in the same per-row error report as any other import error —
+     * clearly labeled with the source column and transform that failed.
+     *
+     * @param array{row: int, source: string, target: ?string, transform: ?string, message: string} $error One MappingEngine error entry.
+     *
+     * @return array{row: int, field: string, error: string, type: string, original_value: string}
+     *
+     * @spec openspec/specs/migration-mapping-packs/spec.md
+     */
+    private function formatMappingError(array $error): array
+    {
+        $label = 'source column "'.$error['source'].'"';
+        if ($error['transform'] !== null) {
+            $label .= ' (transform: '.$error['transform'].')';
+        }
+
+        return [
+            'row'            => $error['row'],
+            'field'          => $error['target'] ?? $error['source'],
+            'error'          => '[migration-pack] '.$error['message'].' — '.$label,
+            'type'           => 'MigrationPackMappingError',
+            'original_value' => $error['source'],
+        ];
+    }//end formatMappingError()
+
+    /**
+     * Build a dry-run summary: every mapped row is validated against the
+     * target schema via `ValidateObject::validateObject()` (read-only —
+     * schema resolution + uniqueness SELECTs, no writes) and NOTHING is
+     * saved. `created`/`updated`/`unchanged` stay empty since no object was
+     * actually persisted; `rows` carries the per-row valid/invalid verdict
+     * migration quoting needs.
+     *
+     * @param array<string, mixed> $summary   The summary accumulated so far (found/errors/etc).
+     * @param array<int, array>    $objects   The mapped+type-coerced objects that would be saved.
+     * @param Schema               $schema    The target schema to validate against.
+     * @param float                $startTime `microtime(true)` at the start of processing, for performance metrics.
+     *
+     * @return array<string, mixed> The dry-run summary.
+     *
+     * @spec openspec/specs/migration-mapping-packs/spec.md#dry-run
+     */
+    private function buildDryRunSummary(array $summary, array $objects, Schema $schema, float $startTime): array
+    {
+        $summary['dryRun']      = true;
+        $summary['rows']        = [];
+        $summary['validRows']   = 0;
+        $summary['invalidRows'] = 0;
+
+        foreach ($objects as $index => $object) {
+            $result  = $this->validateObjectHandler->validateObject(object: $object, schema: $schema);
+            $isValid = $result->isValid();
+
+            if ($isValid === true) {
+                $summary['validRows']++;
+            } else {
+                $summary['invalidRows']++;
+            }
+
+            $rowErrors = [];
+            if ($isValid === false) {
+                $rowErrors = [$this->validateObjectHandler->generateErrorMessage(result: $result)];
+            }
+
+            $summary['rows'][] = [
+                'index'   => $index,
+                'valid'   => $isValid,
+                'errors'  => $rowErrors,
+                'preview' => $object,
+            ];
+        }//end foreach
+
+        $totalTime = microtime(true) - $startTime;
+        $summary['performance'] = [
+            'totalTime'      => round($totalTime, 3),
+            'totalTimeMs'    => round($totalTime * 1000, 2),
+            'totalProcessed' => count($objects),
+            'totalFound'     => $summary['found'],
+        ];
+
+        return $summary;
+    }//end buildDryRunSummary()
 
     /**
      * Transform CSV row data to object format for batch saving
@@ -1642,6 +1972,7 @@ class ImportService
      * @return mixed The transformed value
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Type transformation switch requires branches for each data type
+     * @SuppressWarnings(PHPMD.StaticAccess)         ObjectHandling::relates() is the established enum-style helper idiom
      */
     private function transformValueByType($value, array $propertyDef)
     {

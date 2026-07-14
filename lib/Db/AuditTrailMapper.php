@@ -377,6 +377,32 @@ class AuditTrailMapper extends QBMapper
      */
     public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
     {
+        $auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action);
+
+        // Insert the new AuditTrail, sealed into the hash chain, and return it.
+        return $this->insertHashChained(auditTrail: $auditTrail);
+    }//end createAuditTrail()
+
+    /**
+     * Build (but do not persist) an audit trail entity for object changes.
+     *
+     * Contains the complete row-building logic shared by {@see createAuditTrail()}
+     * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
+     * so both paths produce identical audit rows.
+     *
+     * @param ObjectEntity|null $old    The old state of the object
+     * @param ObjectEntity|null $new    The new state of the object
+     * @param string|null       $action The action to create the audit trail for
+     *
+     * @return AuditTrail The populated (unpersisted) audit trail entity
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)          Uuid::v4 is standard Symfony UID pattern
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Audit trail creation requires handling many optional fields
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    private function buildAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
+    {
         // Determine the action based on the presence of old and new objects.
         $objectEntity = $new;
         if ($new === null && $action === 'update') {
@@ -490,9 +516,187 @@ class AuditTrailMapper extends QBMapper
         // Set default expiration date (30 days from now).
         $auditTrail->setExpires(new DateTime('+30 days'));
 
-        // Insert the new AuditTrail, sealed into the hash chain, and return it.
-        return $this->insertHashChained(auditTrail: $auditTrail);
-    }//end createAuditTrail()
+        return $auditTrail;
+    }//end buildAuditTrail()
+
+    /**
+     * Create audit trail rows for many object changes with batched inserts.
+     *
+     * Each entry is an array with keys `old` (?ObjectEntity), `new` (?ObjectEntity)
+     * and `action` (string). Rows are built through the exact same
+     * {@see buildAuditTrail()} logic as {@see createAuditTrail()} so their content
+     * is identical, but they are persisted with one multi-row INSERT per chunk of
+     * 100 instead of one INSERT (plus 3 hash-chain queries) per row. After each
+     * chunk the rows are sealed into the SHA-256 hash chain in a single batched
+     * pass ({@see AuditHashService::sealRows()}). Sealing stays fail-soft exactly
+     * like the single-row path: a sealing hiccup logs and leaves rows unhashed
+     * rather than losing the audit records.
+     *
+     * @param array $entries   List of ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string] entries
+     * @param int   $chunkSize Number of rows per multi-row INSERT statement
+     *
+     * @return AuditTrail[] The persisted audit trail entities (ids populated)
+     *
+     * @throws \OCP\DB\Exception If a database error occurs during insert
+     *
+     * @psalm-return list<AuditTrail>
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function insertAuditTrails(array $entries, int $chunkSize=100): array
+    {
+        if ($entries === []) {
+            return [];
+        }
+
+        $auditTrails = [];
+        foreach ($entries as $entry) {
+            $auditTrails[] = $this->buildAuditTrail(
+                old: ($entry['old'] ?? null),
+                new: ($entry['new'] ?? null),
+                action: ($entry['action'] ?? 'update')
+            );
+        }
+
+        foreach (array_chunk($auditTrails, max(1, $chunkSize)) as $chunk) {
+            $this->insertAuditTrailChunk(chunk: $chunk);
+        }
+
+        return $auditTrails;
+    }//end insertAuditTrails()
+
+    /**
+     * Persist one chunk of audit trail entities with a single multi-row INSERT.
+     *
+     * Values are converted exactly as QBMapper::insert() would convert them
+     * (json fields json_encode'd, datetime fields formatted as `Y-m-d H:i:s`),
+     * so the resulting rows are byte-identical to single-row inserts. After the
+     * insert the generated ids are read back (by row uuid) and the chunk is
+     * sealed into the hash chain in one batched pass.
+     *
+     * @param AuditTrail[] $chunk The audit trail entities to persist
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception If a database error occurs during insert
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Column-union, value binding, id readback and sealing in one pass
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function insertAuditTrailChunk(array $chunk): void
+    {
+        if ($chunk === []) {
+            return;
+        }
+
+        // Union of updated properties across the chunk (rows built by
+        // buildAuditTrail() set the same fields, but optional fields like
+        // processingActivityId/importJobId can differ per row).
+        $properties = [];
+        foreach ($chunk as $auditTrail) {
+            foreach (array_keys($auditTrail->getUpdatedFields()) as $property) {
+                if ($property !== 'id' && in_array($property, $properties, true) === false) {
+                    $properties[] = $property;
+                }
+            }
+        }
+
+        $fieldTypes = $chunk[0]->getFieldTypes();
+        $columns    = [];
+        foreach ($properties as $property) {
+            $columns[] = $chunk[0]->propertyToColumn($property);
+        }
+
+        $qb        = $this->db->getQueryBuilder();
+        $tableName = $qb->getTableName($this->getTableName());
+
+        $valuesClauses = [];
+        $parameters    = [];
+        foreach ($chunk as $auditTrail) {
+            $placeholders = [];
+            foreach ($properties as $property) {
+                $getter         = 'get'.ucfirst($property);
+                $parameters[]   = $this->toDatabaseValue(
+                    value: $auditTrail->$getter(),
+                    type: ($fieldTypes[$property] ?? 'string')
+                );
+                $placeholders[] = '?';
+            }
+
+            $valuesClauses[] = '('.implode(',', $placeholders).')';
+        }
+
+        $sql = 'INSERT INTO '.$tableName
+            .' ('.implode(', ', $columns).') VALUES '
+            .implode(', ', $valuesClauses);
+
+        $this->db->executeStatement($sql, $parameters);
+
+        // Read back the generated ids (keyed by the uuid we generated per row).
+        $uuidToEntity = [];
+        foreach ($chunk as $auditTrail) {
+            $uuidToEntity[$auditTrail->getUuid()] = $auditTrail;
+        }
+
+        $idPlaceholders = implode(',', array_fill(0, count($uuidToEntity), '?'));
+        $idSql          = 'SELECT id, uuid FROM '.$tableName.' WHERE uuid IN ('.$idPlaceholders.')';
+
+        $result = $this->db->executeQuery($idSql, array_keys($uuidToEntity));
+        $ids    = [];
+        while (($row = $result->fetch()) !== false) {
+            $ids[] = (int) $row['id'];
+            if (isset($uuidToEntity[$row['uuid']]) === true) {
+                $uuidToEntity[$row['uuid']]->setId((int) $row['id']);
+            }
+        }
+
+        $result->closeCursor();
+
+        // Seal the persisted rows into the hash chain in one batched pass.
+        // Fail-soft, matching insertHashChained(): the audit rows are already
+        // inserted; a sealing hiccup logs and leaves them unhashed.
+        try {
+            $hashService = $this->container->get(\OCA\OpenRegister\Service\AuditHashService::class);
+            $hashService->sealRows(ids: $ids);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[AuditTrailMapper] batched hash-chain seal failed for '.count($ids).' rows: '.$e->getMessage()
+            );
+        }
+    }//end insertAuditTrailChunk()
+
+    /**
+     * Convert an entity property value to its database representation.
+     *
+     * Mirrors the conversions QBMapper::insert() applies through parameter
+     * types: json fields are json_encode'd and datetime fields are formatted
+     * with the platform datetime format (`Y-m-d H:i:s`).
+     *
+     * @param mixed  $value The property value
+     * @param string $type  The declared entity field type
+     *
+     * @return mixed The database-ready value
+     */
+    private function toDatabaseValue(mixed $value, string $type): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($type === 'json') {
+            return json_encode($value);
+        }
+
+        if ($type === 'datetime' && $value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
+
+        if ($type === 'boolean' || $type === 'bool') {
+            return (int) $value;
+        }
+
+        return $value;
+    }//end toDatabaseValue()
 
     /**
      * Resolve the AVG / GDPR Art 30 processing-activity uuid for this
@@ -1577,6 +1781,8 @@ class AuditTrailMapper extends QBMapper
      *
      * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern
      */
     public function createToolInvocationEntry(
         string $toolId,

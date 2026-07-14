@@ -130,6 +130,29 @@ class CredentialAppTokenService
     /**
      * Issue a short-lived signed token binding an app id to a credential id.
      *
+     * CONSUMER SEAM — deliberately has no caller inside OpenRegister.
+     *
+     * This is the CLIENT half of the broker's token protocol. OpenRegister is the
+     * VERIFIER, never the issuer: `CredentialController::brokerRequest()` calls
+     * {@see verify()} on the `X-Credential-Token` header presented by the caller.
+     * The ISSUER is the CONSUMING APP, which holds the per-app signing secret handed
+     * to it exactly once by {@see registerApp()} (`POST /api/credentials/apps/{appId}/register`).
+     * ADR-004 Rule 2 states the contract: "Apps present signed, per-app, expiring
+     * tokens." OpenRegister minting a token for itself would be a category error — it
+     * would *assert* the appId instead of *proving* it, which is precisely the control
+     * this token exists to provide.
+     *
+     * Who is meant to call it:
+     *  - Same-instance PHP consumer apps that reach the broker over HTTP, via
+     *    `Server::get(CredentialAppTokenService::class)->issueToken(...)`. (A trusted
+     *    in-process caller does NOT need a token: it passes its appId straight to
+     *    `CredentialBrokerService::request` — the token authenticates claims across a
+     *    trust boundary that an in-process call never crosses.)
+     *  - Cross-runtime consumers (ExApps, external services) re-implement this exact
+     *    HMAC construction in their own language; this method is the reference
+     *    implementation of the token format that {@see verify()} accepts, and the
+     *    issue→verify round-trip tests are what guard that format from drifting.
+     *
      * @param string      $appId        The consuming app's id (must be registered).
      * @param string      $credentialId The credential UUID the app intends to use.
      * @param string|null $method       Optional HTTP method to bind the token to a single request.
@@ -138,6 +161,10 @@ class CredentialAppTokenService
      * @return string A `payload.signature` token (base64url parts).
      *
      * @throws CredentialAccessDeniedException When the app has no registered signing secret.
+     *
+     * @orphaned-write-capability exclude Consumer-facing seam: OpenRegister is the token VERIFIER
+     *   (CredentialController::brokerRequest -> verify()); the CONSUMING APP is the issuer, holding
+     *   the per-app secret from registerApp(). ADR-004 Rule 2. An in-repo caller would defeat the control.
      *
      * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
      */

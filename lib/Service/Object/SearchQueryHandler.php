@@ -57,6 +57,40 @@ use Psr\Log\LoggerInterface;
  */
 class SearchQueryHandler
 {
+
+    /**
+     * Memoized effective search-trail recording mode for this request.
+     *
+     * The recording mode is read from settings once per request instead of
+     * twice per search (getEffectiveRecordingMode() + the enabled check in
+     * logSearchTrail()). Null until the first read. Long-running processes
+     * (CLI) keep the first value for their lifetime, which is acceptable
+     * for a best-effort analytics trail.
+     *
+     * @var string|null
+     */
+    private ?string $recordingModeMemo = null;
+
+    /**
+     * In-request buffer of search-trail entries pending persistence.
+     *
+     * Entries accumulate during the request and are flushed after the
+     * response by a shutdown function (mirrors ProcessingLogService's
+     * buffered emission), keeping the INSERT off the hot search path.
+     * The trail is best-effort: losing buffered rows on a fatal is
+     * acceptable.
+     *
+     * @var array<int, array{query: array, resultCount: int, totalResults: int, responseTime: float, executionType: string}>
+     */
+    private array $searchTrailBuffer = [];
+
+    /**
+     * Whether the shutdown flush for the trail buffer is registered.
+     *
+     * @var boolean
+     */
+    private bool $trailFlushRegistered = false;
+
     /**
      * SearchQueryHandler constructor.
      *
@@ -529,10 +563,13 @@ class SearchQueryHandler
     }//end getUrlSeparator()
 
     /**
-     * Log search trail entry
+     * Buffer a search trail entry for deferred persistence
      *
-     * Creates a search trail entry if search trails are enabled in settings.
-     * Logs query, result counts, and execution time for analytics and debugging.
+     * Records a search trail entry if search trails are enabled in settings.
+     * The entry is buffered in-request and persisted after the response by a
+     * shutdown function (see flushSearchTrails()), so the trail INSERT never
+     * adds latency to the search itself. The trail is best-effort by
+     * contract: buffered rows lost on a fatal are acceptable.
      *
      * @param array<string, mixed> $_query         Search query array.
      * @param int                  $_resultCount   Number of results returned.
@@ -542,7 +579,7 @@ class SearchQueryHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/search-trail-recording/spec.md
      */
     public function logSearchTrail(
         array $_query,
@@ -551,32 +588,76 @@ class SearchQueryHandler
         float $_executionTime,
         string $_executionType='sync'
     ): void {
-        try {
-            // Only create search trail if search trails are enabled.
-            if ($this->isSearchTrailsEnabled() === true) {
-                // Create the search trail entry using the service with actual execution time.
-                // The mapper extracts the search term from $_query['_search'] into
+        // Only record when trails are enabled. Reuses the memoized recording
+        // mode so the settings are read at most once per request instead of a
+        // second time here.
+        if ($this->getEffectiveRecordingMode() === 'none') {
+            return;
+        }
+
+        $this->searchTrailBuffer[] = [
+            'query'         => $_query,
+            'resultCount'   => $_resultCount,
+            'totalResults'  => $_totalResults,
+            'responseTime'  => $_executionTime,
+            'executionType' => $_executionType,
+        ];
+
+        // Register the deferred flush once per request; it runs after the
+        // response has been generated so the write cost is off the hot path.
+        if ($this->trailFlushRegistered === false) {
+            $this->trailFlushRegistered = true;
+            register_shutdown_function([$this, 'flushSearchTrails']);
+        }
+    }//end logSearchTrail()
+
+    /**
+     * Flush buffered search-trail entries to storage
+     *
+     * Runs as a shutdown function after the response, and may be called
+     * directly (tests, CLI) to force persistence. Fail-soft per entry: a
+     * failed insert is logged and dropped — the trail is best-effort and
+     * must never surface an error to the request.
+     *
+     * @return int Number of entries persisted.
+     *
+     * @spec openspec/specs/search-trail-recording/spec.md
+     */
+    public function flushSearchTrails(): int
+    {
+        $persisted = 0;
+        $entries   = $this->searchTrailBuffer;
+
+        // Clear the buffer up front so re-entrant calls never double-write.
+        $this->searchTrailBuffer = [];
+
+        foreach ($entries as $entry) {
+            try {
+                // The mapper extracts the search term from query['_search'] into
                 // the search_term column that the popular-terms stats aggregate.
                 $this->searchTrailService->createSearchTrail(
-                    query: $_query,
-                    resultCount: $_resultCount,
-                    totalResults: $_totalResults,
-                    responseTime: $_executionTime,
-                    executionType: $_executionType
+                    query: $entry['query'],
+                    resultCount: $entry['resultCount'],
+                    totalResults: $entry['totalResults'],
+                    responseTime: $entry['responseTime'],
+                    executionType: $entry['executionType']
                 );
-            }
-        } catch (Exception $e) {
-            // Log the error but never fail the search request.
-            $this->logger->warning(
-                message: '[SearchQueryHandler] Failed to record search trail',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-        }//end try
-    }//end logSearchTrail()
+                $persisted++;
+            } catch (\Throwable $e) {
+                // Log the error but never fail: the trail is best-effort.
+                $this->logger->warning(
+                    message: '[SearchQueryHandler] Failed to record search trail',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        return $persisted;
+    }//end flushSearchTrails()
 
     /**
      * Check if search trails are enabled in the settings
@@ -610,13 +691,31 @@ class SearchQueryHandler
      * Returns 'none' when search trails are disabled (master switch /
      * back-compat), otherwise the configured `searchTrailRecordingMode`
      * ('all', '_search', or 'none'; default '_search'). Falls back to
-     * '_search' if settings cannot be read.
+     * '_search' if settings cannot be read. The resolved mode is memoized
+     * per request so repeated calls (mode gate + logSearchTrail) read the
+     * settings once.
      *
      * @return string One of 'all', '_search', 'none'.
      *
-     * @spec openspec/changes/search-trail-recording/tasks.md
+     * @spec openspec/specs/search-trail-recording/spec.md
      */
     public function getEffectiveRecordingMode(): string
+    {
+        if ($this->recordingModeMemo !== null) {
+            return $this->recordingModeMemo;
+        }
+
+        $this->recordingModeMemo = $this->resolveRecordingMode();
+
+        return $this->recordingModeMemo;
+    }//end getEffectiveRecordingMode()
+
+    /**
+     * Read the recording mode from settings (uncached).
+     *
+     * @return string One of 'all', '_search', 'none'.
+     */
+    private function resolveRecordingMode(): string
     {
         try {
             $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
@@ -641,5 +740,5 @@ class SearchQueryHandler
             );
             return '_search';
         }//end try
-    }//end getEffectiveRecordingMode()
+    }//end resolveRecordingMode()
 }//end class

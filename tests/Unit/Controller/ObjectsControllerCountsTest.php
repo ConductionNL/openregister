@@ -94,25 +94,12 @@ class ObjectsControllerCountsTest extends TestCase
         $this->webhookService   = $this->createMock(WebhookService::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
 
-        // DI mappers resolved via \OC::$server->get() inside
-        // resolveRegisterSchemaIds(). Default to throwing on find() so the
+        // resolveRegisterSchemaIds() reuses the entities resolved by
+        // ObjectService::setRegister()/setSchema(); the ObjectService mock
+        // returns null from the entity getters by default, so the
         // register/schema entities stay null — this forces the
         // database-backed (non-magic) count path through
         // searchObjectsPaginated, which these tests mock.
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,
