@@ -87,6 +87,36 @@ class ValidateObject
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
 
     /**
+     * Request-scoped memoized validator instance.
+     *
+     * Building an Opis Validator and registering the custom formats and the
+     * http protocol resolver on every validateObject() call is pure overhead:
+     * the configuration is identical for every validation in a request. The
+     * shared instance also lets the Opis schema loader reuse `$ref` documents
+     * it already resolved (each of which costs a SchemaMapper::find round
+     * trip through resolveSchema()) instead of re-resolving them per call.
+     *
+     * @var Validator|null
+     */
+    private ?Validator $validator = null;
+
+    /**
+     * Request-scoped cache of fully prepared validation schemas.
+     *
+     * Keyed by `{schemaId}:{schemaVersion}` (mirroring SchemaMapper's
+     * findCache pattern — a version bump produces a new key, so stale
+     * entries are never served). Each entry holds the schema object after
+     * the complete per-schema preparation pipeline (reference/circular-ref
+     * transformation, metadata cleaning, computed-property stripping from
+     * `required`, null-type widening) plus the derived computed-property
+     * and required-field lists, so validating N objects against the same
+     * schema runs the pipeline once instead of N times.
+     *
+     * @var array<string, array{schemaObject: object, computed: list<string>, required: array}>
+     */
+    private array $preparedSchemaCache = [];
+
+    /**
      * Constructor for ValidateObject
      *
      * @param IAppConfig      $config       Configuration service.
@@ -733,6 +763,7 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates is a stateless enum-style helper
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
@@ -1344,78 +1375,67 @@ class ValidateObject
         int $_depth=0
     ): ValidationResult {
 
+        // Resolve a schema id to its entity once so downstream steps (unique-field
+        // validation, prepared-schema caching) always work with the entity.
+        // SchemaMapper::find() memoizes lookups in its own findCache.
+        if ($schema !== null && ($schema instanceof Schema) === false) {
+            $schema = $this->schemaMapper->find($schema);
+        }
+
         // Use == because === will never be true when comparing stdClass-instances.
         // Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
-        if ($schemaObject == new stdClass()) {
-            if ($schema instanceof Schema) {
-                $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if ($schema !== null) {
-                // Handle int or string schema ID.
-                $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
-            }
-        }//end if
+        $useDefaultSchema = ($schemaObject == new stdClass());
+        if ($useDefaultSchema === true && $schema instanceof Schema) {
+            $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+        }
 
-        $this->validateUniqueFields(object: $object, schema: $schema);
+        if ($schema instanceof Schema) {
+            $this->validateUniqueFields(object: $object, schema: $schema);
+        }
 
         // Validate extended field types (color, recurrence) against the original,
         // un-transformed schema so the declared `type`/`format` annotations are intact.
         $this->validateExtendedFieldTypes(object: $object, schemaObject: $schemaObject);
 
-        // Get the current schema slug for circular reference detection.
-        $currentSchemaSlug = '';
-        if ($schema instanceof Schema) {
-            $currentSchemaSlug = $schema->getSlug();
+        // Run the per-schema preparation pipeline (transform, clean, computed strip,
+        // null-type widening) — memoized per schemaId:version so bulk validation of
+        // N objects against one schema prepares it once instead of N times. A custom
+        // caller-supplied $schemaObject bypasses the cache (no stable cache key).
+        $cacheKey = null;
+        $prepared = null;
+        if ($useDefaultSchema === true && $schema instanceof Schema) {
+            $cacheKey = ((string) $schema->getId()).':'.((string) $schema->getVersion());
+            $prepared = ($this->preparedSchemaCache[$cacheKey] ?? null);
         }
 
-        // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-        [$schemaObject, $object] = $this->transformSchemaForValidation(
-            schemaObject: $schemaObject,
-            object: $object,
-            currentSchemaSlug: $currentSchemaSlug
-        );
-
-        // Clean the schema by removing all Nextcloud-specific metadata properties.
-        $schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
-
-        // Log the final schema object before validation.
-        // If schemaObject reuired is empty unset it.
-        if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
-            unset($schemaObject->required);
+        if ($prepared === null) {
+            $prepared = $this->prepareSchemaForValidation(schemaObject: $schemaObject, schema: $schema);
+            if ($cacheKey !== null) {
+                $this->preparedSchemaCache[$cacheKey] = $prepared;
+            }
         }
+
+        $schemaObject = $prepared['schemaObject'];
 
         // If there are no properties, we don't need to validate.
         // Skip validation ONLY if properties are NOT set OR if properties are empty.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Validate against an empty schema object to get a valid ValidationResult.
-            $validator = new Validator();
-            return $validator->validate(json_decode(json_encode($object)), new stdClass());
+            return $this->getValidator()->validate(json_decode(json_encode($object)), new stdClass());
         }
 
         // @todo This should be done earlier.
         unset($object['extend'], $object['filters']);
 
-        // Remove computed properties from input data and required fields.
+        // Remove computed properties from input data.
         // Computed fields are system-generated and should not be validated against user input.
-        // @var object{properties?: object, required?: array<string>} $schemaObject.
-        if (($schemaObject->properties ?? null) !== null) {
-            foreach ($schemaObject->properties as $propName => $propSchema) {
-                if (($propSchema->computed ?? null) !== null) {
-                    unset($object[$propName]);
-                    // Also remove from required array — computed fields can't be required from user input.
-                    if (is_array($schemaObject->required) === true) {
-                        $reqKey = array_search($propName, $schemaObject->required, true);
-                        if ($reqKey !== false) {
-                            unset($schemaObject->required[$reqKey]);
-                            $schemaObject->required = array_values($schemaObject->required);
-                        }
-                    }
-                }
-            }
+        foreach ($prepared['computed'] as $computedProperty) {
+            unset($object[$computedProperty]);
         }
 
         // Remove only truly empty values that have no validation significance.
         // Keep empty strings for required fields so they can fail validation with proper error messages.
-        $requiredFields = $schemaObject->required ?? [];
+        $requiredFields = $prepared['required'];
         $object         = array_filter(
             $object,
             function ($value, $key) use ($requiredFields, $schemaObject) {
@@ -1467,6 +1487,77 @@ class ValidateObject
             ARRAY_FILTER_USE_BOTH
         );
 
+        return $this->getValidator()->validate(json_decode(json_encode($object)), $schemaObject);
+    }//end validateObject()
+
+    /**
+     * Run the complete per-schema preparation pipeline for validation.
+     *
+     * Applies, in order: circular-reference/OpenRegister-config transformation,
+     * Nextcloud metadata cleaning, empty-`required` removal, computed-property
+     * stripping from `required`, and null-type widening for non-required
+     * fields. The output depends only on the schema (never on the object being
+     * validated), which is what makes it cacheable per schemaId:version.
+     *
+     * @param object      $schemaObject The raw schema object to prepare
+     * @param Schema|null $schema       The schema entity (for slug-based circular reference detection)
+     *
+     * @return array{schemaObject: object, computed: list<string>, required: array} The prepared
+     *         schema object plus the derived computed-property and required-field lists
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential schema mutations with per-property branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array
+    {
+        // Get the current schema slug for circular reference detection.
+        $currentSchemaSlug = '';
+        if ($schema instanceof Schema) {
+            $currentSchemaSlug = $schema->getSlug();
+        }
+
+        // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
+        [$schemaObject] = $this->transformSchemaForValidation(
+            schemaObject: $schemaObject,
+            object: [],
+            currentSchemaSlug: $currentSchemaSlug
+        );
+
+        // Collect computed property names BEFORE cleaning — the cleaning step
+        // strips the per-property `computed` marker, which previously made
+        // computed-property removal unreachable (the old code inspected the
+        // already-cleaned schema and never found a `computed` key).
+        $computedProperties = [];
+        if (($schemaObject->properties ?? null) !== null) {
+            foreach ($schemaObject->properties as $propName => $propSchema) {
+                if (is_object($propSchema) === true && ($propSchema->computed ?? null) !== null) {
+                    $computedProperties[] = $propName;
+                }
+            }
+        }
+
+        // Clean the schema by removing all Nextcloud-specific metadata properties.
+        $schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
+
+        // If schemaObject required is empty unset it.
+        if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
+            unset($schemaObject->required);
+        }
+
+        // Strip computed properties from the required list — computed fields
+        // are system-generated and can't be required from user input.
+        foreach ($computedProperties as $propName) {
+            if (is_array($schemaObject->required ?? null) === true) {
+                $reqKey = array_search($propName, $schemaObject->required, true);
+                if ($reqKey !== false) {
+                    unset($schemaObject->required[$reqKey]);
+                    $schemaObject->required = array_values($schemaObject->required);
+                }
+            }
+        }
+
+        $requiredFields = ($schemaObject->required ?? []);
+
         /*
          * Modify schema to allow null values for non-required fields.
          * This ensures that null values are valid for optional fields.
@@ -1507,6 +1598,30 @@ class ValidateObject
             }//end if
         }//end if
 
+        return [
+            'schemaObject' => $schemaObject,
+            'computed'     => $computedProperties,
+            'required'     => $requiredFields,
+        ];
+    }//end prepareSchemaForValidation()
+
+    /**
+     * Get the request-scoped memoized validator.
+     *
+     * Builds the Opis Validator once per service instance: max-error limit,
+     * custom format validators (bsn, semver, ISO 8601 date-time) and the
+     * http protocol resolver are registered a single time instead of on
+     * every validateObject() call. The shared loader also caches resolved
+     * `$ref` schema documents across calls.
+     *
+     * @return Validator The configured validator instance
+     */
+    private function getValidator(): Validator
+    {
+        if ($this->validator !== null) {
+            return $this->validator;
+        }
+
         $validator = new Validator();
         $validator->setMaxErrors(100);
 
@@ -1521,8 +1636,10 @@ class ValidateObject
 
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
-        return $validator->validate(json_decode(json_encode($object)), $schemaObject);
-    }//end validateObject()
+        $this->validator = $validator;
+
+        return $validator;
+    }//end getValidator()
 
     /**
      * Register a custom format validator with named parameters support
@@ -1952,16 +2069,14 @@ class ValidateObject
                         $uniqueFields
                     )
                 );
-            } else {
+                $errorName   = (string) (array_shift($uniqueFields) ?? 'uniqueField');
+            }
+
+            if (is_array($uniqueFields) === false) {
                 // Scalar field name only — guarding the concat here avoids an
                 // "Array to string conversion" when $uniqueFields is an array.
                 $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
-            }
-
-            if (is_array($uniqueFields) === true) {
-                $errorName = (string) (array_shift($uniqueFields) ?? 'uniqueField');
-            } else {
-                $errorName = (string) $uniqueFields;
+                $errorName   = (string) $uniqueFields;
             }
 
             $errMsg  = "The identifying fields ({$fieldNames}) are not unique. ";

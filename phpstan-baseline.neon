@@ -3104,11 +3104,6 @@ parameters:
 			path: lib/Db/OrganisationMapper.php
 
 		-
-			message: "#^Strict comparison using \\=\\=\\= between bool\\|float\\|int\\|string and null will always evaluate to false\\.$#"
-			count: 1
-			path: lib/Db/RealtimeEventMapper.php
-
-		-
 			message: "#^Call to an undefined static method OCP\\\\AppFramework\\\\Db\\\\Entity\\:\\:setSchemas\\(\\)\\.$#"
 			count: 1
 			path: lib/Db/Register.php
@@ -6700,22 +6695,22 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 2
+			count: 3
 			path: lib/Service/ScheduledReportService.php
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\RegisterMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
-			path: lib/Service/ScheduledReportService.php
-
-		-
-			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
 			count: 2
 			path: lib/Service/ScheduledReportService.php
 
 		-
+			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
+			count: 3
+			path: lib/Service/ScheduledReportService.php
+
+		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:find\\(\\)\\.$#"
-			count: 1
+			count: 2
 			path: lib/Service/ScheduledReportService.php
 
 		-

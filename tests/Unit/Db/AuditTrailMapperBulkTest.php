@@ -197,21 +197,21 @@ class AuditTrailMapperBulkTest extends TestCase
     {
         $this->db->expects($this->never())->method('executeStatement');
 
-        $this->assertSame([], $this->mapper->insertAuditTrails(rows: []));
+        $this->assertSame([], $this->mapper->insertAuditTrails(entries:[]));
     }//end testInsertAuditTrailsWithEmptyInputDoesNothing()
 
     public function testInsertAuditTrailsRejectsNonAuditTrailRows(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->mapper->insertAuditTrails(rows: [new \stdClass()]);
+        $this->mapper->insertAuditTrails(entries:[new \stdClass()]);
     }//end testInsertAuditTrailsRejectsNonAuditTrailRows()
 
     public function testInsertAuditTrailsRejectsRowsWithoutUuid(): void
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->mapper->insertAuditTrails(rows: [new AuditTrail()]);
+        $this->mapper->insertAuditTrails(entries:[new AuditTrail()]);
     }//end testInsertAuditTrailsRejectsRowsWithoutUuid()
 
     public function testInsertAuditTrailsIssuesOneMultiRowInsertAndSealsInIdOrder(): void
@@ -256,7 +256,7 @@ class AuditTrailMapperBulkTest extends TestCase
             }
         );
 
-        $inserted = $this->mapper->insertAuditTrails(rows: [$rowA, $rowB]);
+        $inserted = $this->mapper->insertAuditTrails(entries:[$rowA, $rowB]);
 
         // ONE multi-row INSERT: two parenthesised value groups, one statement.
         $this->assertStringStartsWith('INSERT INTO *PREFIX*openregister_audit_trails (', $capturedSql);
@@ -287,7 +287,7 @@ class AuditTrailMapperBulkTest extends TestCase
         $this->hashService->method('sealRow')->willThrowException(new \RuntimeException('hash backend down'));
 
         // Fail-soft: the row stays inserted and is returned with its id.
-        $inserted = $this->mapper->insertAuditTrails(rows: [$row]);
+        $inserted = $this->mapper->insertAuditTrails(entries:[$row]);
 
         $this->assertSame(21, $inserted[0]->getId());
     }//end testInsertAuditTrailsSurvivesSealFailure()

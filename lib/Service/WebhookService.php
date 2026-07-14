@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCP\BackgroundJob\IJobList;
@@ -119,15 +120,27 @@ class WebhookService
     private MappingMapper $mappingMapper;
 
     /**
+     * Cache of the "has interception webhooks" flag per event type.
+     *
+     * Nullable so the service stays constructible without a cache backend
+     * (unit tests, degraded environments); the fast path then falls back to
+     * the direct lookup.
+     *
+     * @var WebhookInterceptionCache|null
+     */
+    private ?WebhookInterceptionCache $interceptionCache;
+
+    /**
      * Constructor
      *
-     * @param WebhookMapper            $webhookMapper       Webhook mapper
-     * @param LoggerInterface          $logger              Logger
-     * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
-     * @param MappingService           $mappingService      Mapping service
-     * @param MappingMapper            $mappingMapper       Mapping mapper
-     * @param IJobList                 $jobList             Background job list for async delivery
-     * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
+     * @param WebhookMapper                 $webhookMapper       Webhook mapper
+     * @param LoggerInterface               $logger              Logger
+     * @param WebhookLogMapper              $webhookLogMapper    Webhook log mapper
+     * @param MappingService                $mappingService      Mapping service
+     * @param MappingMapper                 $mappingMapper       Mapping mapper
+     * @param IJobList                      $jobList             Background job list for async delivery
+     * @param CloudEventFormatter|null      $cloudEventFormatter CloudEvent formatter (optional)
+     * @param WebhookInterceptionCache|null $interceptionCache   Interception-flag cache (optional)
      *
      * @return void
      */
@@ -138,7 +151,8 @@ class WebhookService
         MappingService $mappingService,
         MappingMapper $mappingMapper,
         IJobList $jobList,
-        ?CloudEventFormatter $cloudEventFormatter=null
+        ?CloudEventFormatter $cloudEventFormatter=null,
+        ?WebhookInterceptionCache $interceptionCache=null
     ) {
         $this->webhookMapper    = $webhookMapper;
         $this->logger           = $logger;
@@ -147,6 +161,7 @@ class WebhookService
         $this->mappingMapper    = $mappingMapper;
         $this->jobList          = $jobList;
         $this->cloudEventFormatter = $cloudEventFormatter;
+        $this->interceptionCache   = $interceptionCache;
         $this->initializeHttpClient();
     }//end __construct()
 
@@ -173,6 +188,20 @@ class WebhookService
      * @var integer
      */
     private const LOG_BODY_PREVIEW_BYTES = 1024;
+
+    /**
+     * Connect + total timeout for request-interception deliveries, in seconds.
+     *
+     * Interception is request-blocking BY DESIGN: the object write waits for
+     * the hook's answer. A hook that cannot respond within 2 seconds must not
+     * gate writes — with the client default of 30s total / 10s connect, one
+     * slow endpoint stalled every object create for up to 30 seconds. This cap
+     * applies ONLY to the synchronous interception path; post-save deliveries
+     * run async via WebhookDeliveryJob and keep the per-webhook timeout.
+     *
+     * @var integer
+     */
+    private const INTERCEPTION_TIMEOUT_SECONDS = 2;
 
     /**
      * Initialize HTTP client with default configuration
@@ -671,10 +700,14 @@ class WebhookService
     /**
      * Deliver webhook to target URL
      *
-     * @param Webhook $webhook   Webhook configuration
-     * @param string  $eventName Event name
-     * @param array   $payload   Payload data
-     * @param int     $attempt   Current attempt number (for retries)
+     * @param Webhook  $webhook           Webhook configuration
+     * @param string   $eventName         Event name
+     * @param array    $payload           Payload data
+     * @param int      $attempt           Current attempt number (for retries)
+     * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout;
+     *                                    used by the synchronous interception path
+     *                                    (INTERCEPTION_TIMEOUT_SECONDS). Null keeps the
+     *                                    per-webhook timeout (async deliveries).
      *
      * @return bool Success status
      *
@@ -685,8 +718,13 @@ class WebhookService
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
      */
-    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
-    {
+    public function deliverWebhook(
+        Webhook $webhook,
+        string $eventName,
+        array $payload,
+        int $attempt=1,
+        ?int $timeoutCapSeconds=null
+    ): bool {
         if ($webhook->getEnabled() === false) {
             $this->logger->debug(
                 message: '[WebhookService] Webhook is disabled, skipping delivery',
@@ -731,7 +769,11 @@ class WebhookService
         $webhookLog->setAttempt($attempt);
 
         try {
-            $response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload);
+            $response = $this->sendRequest(
+                webhook: $webhook,
+                payload: $webhookPayload,
+                timeoutCapSeconds: $timeoutCapSeconds
+            );
 
             // BUG-SVC-1: http_errors is disabled on the Guzzle client, so a 4xx/5xx
             // response does NOT throw — it lands here. Treat any non-2xx status as a
@@ -1134,8 +1176,10 @@ class WebhookService
     /**
      * Send HTTP request to webhook URL
      *
-     * @param Webhook $webhook Webhook configuration
-     * @param array   $payload Payload to send
+     * @param Webhook  $webhook           Webhook configuration
+     * @param array    $payload           Payload to send
+     * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout
+     *                                    (request-blocking interception deliveries)
      *
      * @return (int|string)[] Response data
      *
@@ -1147,7 +1191,7 @@ class WebhookService
      *
      * @spec openspec/specs/notificatie-engine/spec.md
      */
-    private function sendRequest(Webhook $webhook, array $payload): array
+    private function sendRequest(Webhook $webhook, array $payload, ?int $timeoutCapSeconds=null): array
     {
         // Per-hook opt-in (admin-set) to allow private/loopback targets for
         // local testing. Defaults to false (full SSRF blocking) when the key
@@ -1177,6 +1221,20 @@ class WebhookService
             'headers' => $headers,
             'timeout' => $webhook->getTimeout(),
         ];
+
+        // Hard-cap connect + total timeout for request-blocking deliveries
+        // (interception). The cap never RAISES a webhook's own shorter timeout,
+        // but a non-positive per-webhook timeout (Guzzle: 0 = wait forever)
+        // must not escape the cap either.
+        if ($timeoutCapSeconds !== null) {
+            $webhookTimeout     = (int) $webhook->getTimeout();
+            $options['timeout'] = $timeoutCapSeconds;
+            if ($webhookTimeout > 0 && $webhookTimeout < $timeoutCapSeconds) {
+                $options['timeout'] = $webhookTimeout;
+            }
+
+            $options['connect_timeout'] = $timeoutCapSeconds;
+        }
 
         // Override the shared client's redirect guard per-request so the
         // on_redirect callback can see this hook's allowPrivate flag. Mirrors
@@ -1344,11 +1402,19 @@ class WebhookService
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {
-        // Find webhooks configured for this event type.
+        // Fast path: a cached (or freshly computed) tenant-agnostic flag tells
+        // us whether ANY interception webhook exists for this event type. On
+        // installs without interception webhooks — the common case — this
+        // avoids the webhook table scan on every object write.
+        if ($this->hasInterceptionWebhooks(eventType: $eventType) === false) {
+            return $request->getParams();
+        }
+
+        // Find webhooks configured for this event type (organisation-filtered).
         $webhooks = $this->findWebhooksForInterception(eventType: $eventType);
 
         if (empty($webhooks) === true) {
-            // No webhooks configured, return original request data.
+            // No webhooks configured for this organisation, return original request data.
             return $request->getParams();
         }
 
@@ -1381,12 +1447,14 @@ class WebhookService
                     'cloudEvent' => $cloudEvent,
                 ];
 
-                // Deliver webhook.
+                // Deliver webhook. Interception blocks the object write, so the
+                // delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
                 $success = $this->deliverWebhook(
                     webhook: $webhook,
                     eventName: $eventType,
                     payload: $webhookPayload,
-                    attempt: 1
+                    attempt: 1,
+                    timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS
                 );
 
                 // Process response if webhook is configured to handle responses.
@@ -1444,35 +1512,95 @@ class WebhookService
      */
     private function findWebhooksForInterception(string $eventType): array
     {
-        // Get all enabled webhooks.
+        // Get all enabled webhooks (organisation-filtered).
         $allWebhooks = $this->webhookMapper->findEnabled();
 
         // Filter webhooks that match this event type and are configured for interception.
         $matchingWebhooks = [];
 
         foreach ($allWebhooks as $webhook) {
-            $config = $webhook->getConfigurationArray();
-
-            // Check if webhook is configured for request interception.
-            if (($config['interceptRequests'] ?? false) !== true) {
-                continue;
+            if ($this->matchesInterception(webhook: $webhook, eventType: $eventType) === true) {
+                $matchingWebhooks[] = $webhook;
             }
-
-            // Check if webhook listens to this event type.
-            $events = $webhook->getEventsArray();
-            if (empty($events) === false) {
-                // Check if event type matches.
-                $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
-                if ($webhook->matchesEvent($eventClass) === false) {
-                    continue;
-                }
-            }
-
-            $matchingWebhooks[] = $webhook;
-        }//end foreach
+        }
 
         return $matchingWebhooks;
     }//end findWebhooksForInterception()
+
+    /**
+     * Check whether a webhook intercepts requests for an event type
+     *
+     * A webhook intercepts when its configuration opts into interception AND
+     * it either listens to all events or matches the given event type.
+     *
+     * @param Webhook $webhook   Webhook to check
+     * @param string  $eventType Event type (e.g., 'object.creating')
+     *
+     * @return bool True when the webhook intercepts requests for the event type
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     */
+    private function matchesInterception(Webhook $webhook, string $eventType): bool
+    {
+        $config = $webhook->getConfigurationArray();
+
+        // Check if webhook is configured for request interception.
+        if (($config['interceptRequests'] ?? false) !== true) {
+            return false;
+        }
+
+        // Check if webhook listens to this event type (empty events = all events).
+        $events = $webhook->getEventsArray();
+        if (empty($events) === false) {
+            $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
+            if ($webhook->matchesEvent($eventClass) === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end matchesInterception()
+
+    /**
+     * Determine whether ANY interception webhook exists for an event type
+     *
+     * Answers the question globally (tenant-agnostic) and caches the boolean
+     * in the distributed cache so the common zero-webhook case skips the
+     * table scan on every object write. A global "true" is a superset check:
+     * the caller still runs the organisation-filtered lookup to select the
+     * webhooks that actually apply. A per-organisation flag is deliberately
+     * NOT cached — one tenant's "false" must never disable another tenant's
+     * interception hooks. Cache entries are invalidated on webhook CRUD (see
+     * WebhookMapper) and expire via TTL as a safety net.
+     *
+     * @param string $eventType Event type (e.g., 'object.creating')
+     *
+     * @return bool True when at least one enabled interception webhook exists for the event type
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     */
+    private function hasInterceptionWebhooks(string $eventType): bool
+    {
+        $cached = $this->interceptionCache?->get(eventType: $eventType);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // Cache miss (or no cache backend): compute the flag from a
+        // tenant-agnostic scan so the cached answer is valid for every
+        // organisation.
+        $hasWebhooks = false;
+        foreach ($this->webhookMapper->findEnabledForInterceptionScan() as $webhook) {
+            if ($this->matchesInterception(webhook: $webhook, eventType: $eventType) === true) {
+                $hasWebhooks = true;
+                break;
+            }
+        }
+
+        $this->interceptionCache?->set(eventType: $eventType, hasWebhooks: $hasWebhooks);
+
+        return $hasWebhooks;
+    }//end hasInterceptionWebhooks()
 
     /**
      * Check if webhook response should be processed

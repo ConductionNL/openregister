@@ -1197,7 +1197,7 @@ class DeleteObject
         }
 
         try {
-            $this->auditTrailMapper->insertAuditTrails(rows: $rows);
+            $this->auditTrailMapper->insertAuditTrails(entries: $rows);
         } catch (\Throwable $e) {
             $this->logger->warning(
                 message: '[DeleteObject] Bulk cascade audit insert failed',

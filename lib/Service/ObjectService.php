@@ -57,7 +57,6 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -189,6 +188,23 @@ class ObjectService
      */
     private ?ObjectEntity $currentObject = null;
 
+    /**
+     * Request-scoped cache of resolved uuid → (register, schema) contexts.
+     *
+     * When a uuid is read under a stale URL scope, the scoped lookup misses and
+     * find() falls back to an expensive cross-table search (openregister#1520 —
+     * that fallback is deliberate and must keep working). Within one request the
+     * same uuid is often resolved repeatedly (relation resolution, inverse
+     * rendering), and each resolution used to re-miss the scoped path and re-run
+     * the cross-table scan. This cache remembers the object's true register and
+     * schema after the first successful resolution so subsequent lookups go
+     * straight to the right magic table. It is a plain array property, so it
+     * lives exactly as long as this service instance (one request).
+     *
+     * @var array<string, array{register: Register|null, schema: Schema}>
+     */
+    private array $uuidScopeCache = [];
+
     // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
     // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
 
@@ -198,7 +214,6 @@ class ObjectService
      * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
      * @param DeleteObject                   $deleteHandler        Handler for object deletion.
      * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PerformanceHandler             $performanceHandler   Handler for performance operations.
      * @param PermissionHandler              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
      * @param SaveObject                     $saveHandler          Handler for individual object saving.
@@ -244,7 +259,6 @@ class ObjectService
         private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
-        private readonly PerformanceHandler $performanceHandler,
         private readonly PermissionHandler $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,
@@ -360,6 +374,8 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
+     *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
@@ -381,47 +397,17 @@ class ObjectService
     public function setRegister(Register | string | int $register): static
     {
         if (is_string($register) === true || is_int($register) === true) {
-            // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs only.
-            // When deriving register from object context, bypass RBAC and multi-tenancy checks.
-            // If user has access to the object, they should be able to access its register.
-            if (is_numeric($register) === true) {
-                $registers          = $this->performanceHandler->getCachedEntities(
-                    [$register],
-                    function (array $ids): array {
-                        return [$this->registerMapper->find(
-                            id: $ids[0],
-                            _rbac: false,
-                            _multitenancy: false
-                        )
-                        ];
-                    }
-                );
-                $registerExists     = isset($registers[0]) === true;
-                $isRegisterInstance = $registerExists
-                    && $registers[0] instanceof Register;
-                if ($isRegisterInstance === true) {
-                    $register = $registers[0];
-                }
-
-                if ($isRegisterInstance !== true) {
-                    // Fallback to direct database lookup if cache fails.
-                    $register = $this->registerMapper->find(
-                        id: $register,
-                        _rbac: false,
-                        _multitenancy: false
-                    );
-                }
-            }//end if
-
-            if (is_numeric($register) !== true && ($register instanceof Register) === false) {
-                // It's a slug string - find() already supports slugs via orX(id, uuid, slug).
-                $register = $this->registerMapper->find(
-                    id: $register,
-                    _rbac: false,
-                    _multitenancy: false
-                );
-            }
-        }//end if
+            // Resolve the identifier through the mapper. RegisterMapper::find()
+            // already provides request-scoped caching (findCache) and supports
+            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug). RBAC and
+            // multi-tenancy checks are bypassed: if the user has access to the
+            // object, they should be able to access its register.
+            $register = $this->registerMapper->find(
+                id: $register,
+                _rbac: false,
+                _multitenancy: false
+            );
+        }
 
         $this->currentRegister = $register;
         return $this;
@@ -439,45 +425,15 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
-            // Try to find schema by ID first (if numeric) or by slug.
+            // Resolve the identifier through the mapper. SchemaMapper::find()
+            // already provides request-scoped caching (findCache) and supports
+            // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
             try {
-                if (is_numeric($schema) === true) {
-                    // **PERFORMANCE OPTIMIZATION**: Use cached entity lookup for numeric IDs.
-                    $schemas          = $this->performanceHandler->getCachedEntities(
-                        [$schema],
-                        function (array $ids): array {
-                            return [$this->schemaMapper->find(
-                                id: $ids[0],
-                                _rbac: false,
-                                _multitenancy: false
-                            )
-                            ];
-                        }
-                    );
-                    $schemaExists     = isset($schemas[0]) === true;
-                    $isSchemaInstance = $schemaExists && $schemas[0] instanceof Schema;
-                    if ($isSchemaInstance === true) {
-                        $schema = $schemas[0];
-                    }
-
-                    if ($isSchemaInstance !== true) {
-                        // Fallback to direct database lookup if cache fails.
-                        $schema = $this->schemaMapper->find(
-                            id: $schema,
-                            _rbac: false,
-                            _multitenancy: false
-                        );
-                    }
-                }//end if
-
-                if (is_numeric($schema) !== true && ($schema instanceof Schema) === false) {
-                    // It's a slug string - find() supports slugs via orX(id, uuid, slug).
-                    $schema = $this->schemaMapper->find(
-                        id: $schema,
-                        _rbac: false,
-                        _multitenancy: false
-                    );
-                }
+                $schema = $this->schemaMapper->find(
+                    id: $schema,
+                    _rbac: false,
+                    _multitenancy: false
+                );
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Debug logging to understand WHY schema lookup fails.
                 $this->logger->error(
@@ -500,6 +456,38 @@ class ObjectService
         $this->currentSchema = $schema;
         return $this;
     }//end setSchema()
+
+    /**
+     * Get the register entity resolved by the last setRegister() call.
+     *
+     * Exposes the already-resolved entity so callers (e.g. controllers that
+     * resolved slugs via setRegister()) can reuse it instead of re-fetching
+     * the same register from the database.
+     *
+     * @return Register|null The current register entity, or null when no register context is set.
+     *
+     * @spec exclude Context getter exposing the entity resolved by setRegister(); no business rule.
+     */
+    public function getCurrentRegisterEntity(): ?Register
+    {
+        return $this->currentRegister;
+    }//end getCurrentRegisterEntity()
+
+    /**
+     * Get the schema entity resolved by the last setSchema() call.
+     *
+     * Exposes the already-resolved entity so callers (e.g. controllers that
+     * resolved slugs via setSchema()) can reuse it instead of re-fetching
+     * the same schema from the database.
+     *
+     * @return Schema|null The current schema entity, or null when no schema context is set.
+     *
+     * @spec exclude Context getter exposing the entity resolved by setSchema(); no business rule.
+     */
+    public function getCurrentSchemaEntity(): ?Schema
+    {
+        return $this->currentSchema;
+    }//end getCurrentSchemaEntity()
 
     /**
      * Set the current object context.
@@ -558,8 +546,12 @@ class ObjectService
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $_render       Whether to render the entity before returning (default: true).
+     *                                                Pass false when the caller performs its own single render
+     *                                                (e.g. ObjectsController::show()) so the object is not
+     *                                                rendered twice; permission checks and read logging still run.
      *
-     * @return ObjectEntity|null The rendered object or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -577,7 +569,8 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_render=true
     ): ?ObjectEntity {
         // Resolve the call's register / schema, isolating it from any
         // stale `currentRegister` / `currentSchema` state left over from
@@ -610,6 +603,22 @@ class ObjectService
                 $callSchema = $this->currentSchema;
             }
 
+            // Request-scoped uuid → (register, schema) cache: when this uuid was
+            // already resolved earlier in this request, target its true context
+            // directly. This avoids re-missing the scoped lookup (and re-running
+            // the cross-table fallback below) for every repeated relation
+            // resolution of the same uuid under a stale URL scope.
+            if (is_string($id) === true && isset($this->uuidScopeCache[$id]) === true) {
+                $cachedScope = $this->uuidScopeCache[$id];
+                if ($cachedScope['register'] !== null) {
+                    $this->setRegister(register: $cachedScope['register']);
+                    $callRegister = $this->currentRegister;
+                }
+
+                $this->setSchema(schema: $cachedScope['schema']);
+                $callSchema = $this->currentSchema;
+            }
+
             // Retrieve the object — when both call args are null, MagicMapper
             // falls back to its `findAcrossAllMagicTables` path.
             try {
@@ -635,6 +644,12 @@ class ObjectService
                 // hit, RE-ANCHOR the call's register/schema to the resolved object
                 // so RBAC + rendering use the object's true context, not the stale
                 // one supplied by the caller.
+                // A cached scope that no longer resolves (object deleted or
+                // moved mid-request) must not pin future lookups to it.
+                if (is_string($id) === true) {
+                    unset($this->uuidScopeCache[$id]);
+                }
+
                 $canFallBack = (($callSchema !== null || $callRegister !== null)
                     && is_string($id) === true
                     && $this->isUuidFormat(value: $id) === true);
@@ -679,6 +694,20 @@ class ObjectService
                 }
             }
 
+            // Remember this uuid's resolved (register, schema) for the rest of
+            // the request so repeated lookups skip the scoped-miss + cross-table
+            // fallback dance entirely. Only uuids are cached: they are globally
+            // unique, unlike slugs or numeric per-table ids.
+            if (is_string($id) === true
+                && $this->isUuidFormat(value: $id) === true
+                && $this->currentSchema !== null
+            ) {
+                $this->uuidScopeCache[$id] = [
+                    'register' => $this->currentRegister,
+                    'schema'   => $this->currentSchema,
+                ];
+            }
+
             // Check user has permission to read this specific object (includes object owner check).
             // Publication visibility is now handled by RBAC conditional rules with $now variable.
             $this->checkPermission(
@@ -689,6 +718,17 @@ class ObjectService
                 _rbac: $_rbac,
                 object: $object
             );
+
+            // Skip rendering when the caller is the render site itself. The read
+            // path stays intact above — retrieval, cross-schema fallback,
+            // permission check — but the (expensive) render pass with its
+            // writeOnly redaction runs exactly once, in the caller, instead of
+            // twice. Used by ObjectsController::show().
+            if ($_render === false) {
+                // AVG / GDPR per-access read logging still applies to the read.
+                $this->logProcessingRead(object: $object);
+                return $object;
+            }
 
             // Render the object before returning.
             $registers = null;
@@ -1402,9 +1442,8 @@ class ObjectService
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
-        // The cascade handler always returns an [array, string|null] tuple
-        // (every return site is a 2-tuple); only the uuid half is nullable,
-        // so only it keeps the null-coalescing fallback.
+        // The handler returns an [array $object, ?string $uuid] tuple; offset 0
+        // always exists, offset 1 may be null — keep the current uuid then.
         $object = $cascadeResult[0];
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
@@ -2551,6 +2590,8 @@ class ObjectService
      *
      * @return array<string, mixed> The query with provider-contract keys added.
      *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
+     *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-mapping requires one guard per provider key
@@ -2701,12 +2742,14 @@ class ObjectService
      * Record a search-trail entry for a paginated search, honouring the
      * configured recording mode.
      *
-     * Resolves the effective mode via SearchQueryHandler: 'none' records
-     * nothing; '_search' records only when a non-empty `_search` term is
-     * present; 'all' records every paginated search. Derives the execution
-     * type from the result source (index vs database) and the response time
-     * from the captured start time. Never throws — a recording failure must
-     * not affect the search response.
+     * Resolves the effective mode via SearchQueryHandler (memoized per
+     * request): 'none' records nothing; '_search' records only when a
+     * non-empty `_search` term is present; 'all' records every paginated
+     * search. Derives the execution type from the result source (index vs
+     * database) and the response time from the captured start time. The
+     * entry is buffered and persisted after the response (deferred flush in
+     * SearchQueryHandler), so recording adds no write latency to the search.
+     * Never throws — a recording failure must not affect the search response.
      *
      * @param array $query     The post-view-merge search query.
      * @param array $result    The paginated search result (results, total, @self).

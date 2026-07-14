@@ -696,6 +696,99 @@ class RenderObject
     }//end resolveTranslationsForRows()
 
     /**
+     * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
+     *
+     * The list cheap-path (no _extend/_fields/_filter/_unset) does NOT run rows through
+     * renderEntity() — for performance — so the write-only redaction enforced there never
+     * runs. That is exactly the path the OpenConnector leak used: `GET .../objects/{reg}/
+     * {schema}` is a LIST, so it took the cheap-path and returned every Source's apikey in
+     * cleartext even after the single-object read was redacted. This method closes that gap
+     * with the same rule, mirroring resolveTranslationsForRows()'s per-row schema
+     * resolution and object-vs-array handling.
+     *
+     * Gated on `$_rbac`: a system-context read (`_rbac: false`) is trusted internal code
+     * (the sync/credential engine) and gets the full row; only a user-facing read
+     * (`_rbac: true`) is redacted. Strips the object body AND the `@self.relations` search
+     * index copy.
+     *
+     * @param array $rows  Result rows by reference, mutated in place.
+     * @param bool  $_rbac Whether this is a user-facing read (true) or system context (false).
+     *
+     * @return void
+     */
+    public function redactWriteOnlyFromRows(array &$rows, bool $_rbac=true): void
+    {
+        // Same bypass as renderEntity's read-strip (feat #380): a system-context read
+        // (`_rbac: false`) or a config-boot / repair render (SystemOperationContext) must
+        // see the full row — the sync and credential engines batch-read sources and need
+        // the secret. Only a normal authenticated read is stripped.
+        if ($_rbac === false || SystemOperationContext::isActive() === true || empty($rows) === true) {
+            return;
+        }
+
+        foreach ($rows as &$row) {
+            if ($row instanceof ObjectEntity === true) {
+                $schema = $this->getSchema(id: $row->getSchema());
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $object = $row->getObject();
+                if (is_array($object) === true) {
+                    $row->setObject($this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object));
+                }
+
+                // The body strip above leaves the `relations` search index untouched; it is
+                // a separate scalar mirror that jsonSerialize surfaces as @self.relations,
+                // so a write-only secret leaks there unless stripped too.
+                $relations = $row->getRelations();
+                if (is_array($relations) === true) {
+                    $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
+                }
+
+                continue;
+            }//end if
+
+            if (is_array($row) === true) {
+                $schemaId = $row['@self']['schema'] ?? null;
+                if (is_int($schemaId) === false && is_string($schemaId) === false) {
+                    continue;
+                }
+
+                $schema = $this->getSchema(id: $schemaId);
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+                if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+                    $row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
+                        schema: $schema,
+                        object: $row['@self']['relations']
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        unset($row);
+    }//end redactWriteOnlyFromRows()
+
+    /**
+     * Whether a schema has any read-strip rule (property-level read authorization or a
+     * write-only property). Mirrors the guard in renderEntity's read-strip block, so the
+     * cheap-path and the single-object path agree on when to strip.
+     *
+     * @param Schema|null $schema The row's schema.
+     *
+     * @return bool
+     */
+    private function schemaNeedsReadStrip(?Schema $schema): bool
+    {
+        return $schema !== null
+            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true);
+    }//end schemaNeedsReadStrip()
+
+    /**
      * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
      *
      * @param mixed $row The row to inspect.
@@ -1445,6 +1538,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple optional rendering features create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive rendering requires extensive logic
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    RBAC and multitenancy flags control security behavior
+     * @SuppressWarnings(PHPMD.StaticAccess)           SystemOperationContext is a static execution-context holder by design
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
@@ -2646,12 +2740,11 @@ class RenderObject
 
             $value = ($objectData[$name] ?? null);
             if (is_array($value) === true) {
-                // An associative array (or one carrying id/@self) is an object
-                // already embedded by an earlier extend pass — never treat its
-                // VALUES as ids to resolve.
-                $alreadyEmbedded = (array_is_list($value) === false
-                    || isset($value['id']) === true
-                    || isset($value['@self']) === true);
+                // An associative array (i.e. one carrying string keys such as
+                // id/@self) is an object already embedded by an earlier extend
+                // pass — never treat its VALUES as ids to resolve. A list can
+                // never carry those string keys, so list-ness is the test.
+                $alreadyEmbedded = (array_is_list($value) === false);
                 if ($alreadyEmbedded === false) {
                     $objectData[$name] = array_map($resolve, $value);
                 }
@@ -3007,9 +3100,7 @@ class RenderObject
             $additionalFields = array_slice($inversedByFields, 1);
         }
 
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-
-        return $magicMapper->findByRelationBatchInSchema(
+        return $this->objectEntityMapper->findByRelationBatchInSchema(
             uuids: $entityUuids,
             schemaId: $schemaIdInt,
             registerId: $registerId,
@@ -3220,13 +3311,42 @@ class RenderObject
             );
         }
 
-        // Fallback: Query for referencing objects (original slower path).
-        // This happens when preloading wasn't done (e.g., single entity render).
+        // Single-entity render (e.g. show()): the batch preload only runs on the
+        // list path (renderEntities), so the cache is cold here. Route this read
+        // through the SAME schema-targeted batched machinery the list path uses
+        // (preloadInverseRelationships → findByRelationBatchInSchema, GIN-indexed)
+        // instead of falling straight into the generic cross-table
+        // findByRelation() scan. ALL inverse properties are preloaded — not just
+        // the extended ones — because a single read has always resolved every
+        // inverse property once any one of them is extended; preloading a subset
+        // would silently empty the others (consumer-visible response shape).
+        $this->preloadInverseRelationships(
+            entities: [$entity],
+            extend: $propertyNames
+        );
+
+        foreach ($propertyNames as $propName) {
+            if (isset($this->inverseRelationCache[$entityUuid.'_'.$propName]) === true) {
+                $hasCache = true;
+                break;
+            }
+        }
+
+        if ($hasCache === true) {
+            return $this->handleInversedPropertiesFromCache(
+                entity: $entity,
+                objectData: $objectData,
+                inversedProperties: $inversedProperties
+            );
+        }
+
+        // Fallback: Query for referencing objects (original slower cross-table path).
+        // Only reached when the batched preload could not populate the cache
+        // (e.g. unresolvable target schema reference or batch query failure).
         $referencingObjects = $this->objectEntityMapper->findByRelation($entityUuid);
 
         // For multi-field inversedBy, also search columns directly since _relations
         // may not contain UUIDs stored in object-format fields (e.g., {"value": "uuid"}).
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
         foreach ($inversedProperties as $propName => $propConfig) {
             $inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
             if (is_array($inversedByValue) === true && count($inversedByValue) > 1) {
@@ -3241,7 +3361,7 @@ class RenderObject
                 }
 
                 $additionalFields  = array_slice($inversedByValue, 1);
-                $additionalResults = $magicMapper->findByRelationBatchInSchema(
+                $additionalResults = $this->objectEntityMapper->findByRelationBatchInSchema(
                     uuids: [$entityUuid],
                     schemaId: (int) $targetSchemaId,
                     registerId: (int) $entity->getRegister(),
@@ -3640,7 +3760,8 @@ class RenderObject
 
         // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
         // This prevents N+1 query problem when extending relations across multiple entities.
-        $this->logger->info(
+        // Debug level: this fires on EVERY extended list render (hot path).
+        $this->logger->debug(
                 message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
                 context: [
                     'file'        => __FILE__,
@@ -3672,7 +3793,7 @@ class RenderObject
             // Remove duplicates and batch preload ALL related objects in ONE query.
             $allUuidsToPreload = array_unique($allUuidsToPreload);
 
-            $this->logger->info(
+            $this->logger->debug(
                     message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
                     context: [
                         'file'        => __FILE__,
