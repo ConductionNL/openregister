@@ -594,6 +594,10 @@ class AuditTrailMapper extends QBMapper
                 continue;
             }
 
+            if (is_array($entry) === false) {
+                throw new \InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
+            }
+
             $auditTrails[] = $this->buildAuditTrail(
                 old: ($entry['old'] ?? null),
                 new: ($entry['new'] ?? null),

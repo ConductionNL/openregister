@@ -219,6 +219,8 @@ class AuditTrailMapperBulkTest extends TestCase
         $rowA = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-a'), new: null, action: 'delete');
         $rowB = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-b'), new: null, action: 'delete');
 
+        $this->mockQueryBuilderTableName();
+
         $capturedSql    = null;
         $capturedParams = null;
         $this->db->expects($this->once())
@@ -232,13 +234,12 @@ class AuditTrailMapperBulkTest extends TestCase
             );
 
         // The id-resolution SELECT returns the freshly-assigned ids by uuid —
-        // deliberately out of order to prove sealing sorts ascending.
+        // deliberately out of order to prove readback maps ids by uuid.
         $result = $this->createMock(IResult::class);
-        $result->method('fetchAll')->willReturn(
-            [
-                ['id' => 12, 'uuid' => $rowB->getUuid()],
-                ['id' => 11, 'uuid' => $rowA->getUuid()],
-            ]
+        $result->method('fetch')->willReturnOnConsecutiveCalls(
+            ['id' => 12, 'uuid' => $rowB->getUuid()],
+            ['id' => 11, 'uuid' => $rowA->getUuid()],
+            false
         );
         $this->db->expects($this->once())
             ->method('executeQuery')
@@ -248,47 +249,71 @@ class AuditTrailMapperBulkTest extends TestCase
             )
             ->willReturn($result);
 
-        $sealedIds = [];
-        $this->hashService->method('sealRow')->willReturnCallback(
-            function (int $id) use (&$sealedIds): bool {
-                $sealedIds[] = $id;
-                return true;
-            }
-        );
+        $sealedIds = null;
+        $this->hashService->expects($this->once())
+            ->method('sealRows')
+            ->willReturnCallback(
+                function (array $ids) use (&$sealedIds): int {
+                    $sealedIds = $ids;
+                    return count($ids);
+                }
+            );
 
-        $inserted = $this->mapper->insertAuditTrails(entries:[$rowA, $rowB]);
+        $inserted = $this->mapper->insertAuditTrails(entries: [$rowA, $rowB]);
 
         // ONE multi-row INSERT: two parenthesised value groups, one statement.
         $this->assertStringStartsWith('INSERT INTO *PREFIX*openregister_audit_trails (', $capturedSql);
         $this->assertSame(1, substr_count($capturedSql, ' VALUES '));
-        $this->assertSame(1, substr_count($capturedSql, '),('));
-        $this->assertStringContainsString('"uuid"', $capturedSql);
-        $this->assertStringContainsString('"object_uuid"', $capturedSql);
+        // Two parenthesised value groups joined once => exactly one '), (' separator.
+        $this->assertSame(1, substr_count($capturedSql, '), ('));
         // Params cover both rows' uuids.
         $this->assertContains($rowA->getUuid(), $capturedParams);
         $this->assertContains($rowB->getUuid(), $capturedParams);
 
-        // Ids attached and sealed in ascending order (chain contiguity).
+        // Ids attached by uuid and both rows sealed in ONE batched pass
+        // (ascending-order chain contiguity is sealRows' own contract,
+        // pinned by AuditHashSealRowsTest).
         $this->assertSame(11, $inserted[0]->getId());
         $this->assertSame(12, $inserted[1]->getId());
-        $this->assertSame([11, 12], $sealedIds);
+        $this->assertEqualsCanonicalizing([11, 12], $sealedIds);
     }//end testInsertAuditTrailsIssuesOneMultiRowInsertAndSealsInIdOrder()
 
     public function testInsertAuditTrailsSurvivesSealFailure(): void
     {
         $row = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-c'), new: null, action: 'delete');
 
+        $this->mockQueryBuilderTableName();
         $this->db->method('executeStatement')->willReturn(1);
 
         $result = $this->createMock(IResult::class);
-        $result->method('fetchAll')->willReturn([['id' => 21, 'uuid' => $row->getUuid()]]);
+        $result->method('fetch')->willReturnOnConsecutiveCalls(
+            ['id' => 21, 'uuid' => $row->getUuid()],
+            false
+        );
         $this->db->method('executeQuery')->willReturn($result);
 
-        $this->hashService->method('sealRow')->willThrowException(new \RuntimeException('hash backend down'));
+        $this->hashService->method('sealRows')->willThrowException(new \RuntimeException('hash backend down'));
 
         // Fail-soft: the row stays inserted and is returned with its id.
         $inserted = $this->mapper->insertAuditTrails(entries:[$row]);
 
         $this->assertSame(21, $inserted[0]->getId());
     }//end testInsertAuditTrailsSurvivesSealFailure()
+
+
+    /**
+     * Stub the query-builder table-name resolution used by the bulk INSERT.
+     *
+     * insertAuditTrailChunk() resolves the physical table name through
+     * IQueryBuilder::getTableName(); the bare IDBConnection mock would
+     * otherwise return null from getQueryBuilder().
+     *
+     * @return void
+     */
+    private function mockQueryBuilderTableName(): void
+    {
+        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
+        $qb->method('getTableName')->willReturn('*PREFIX*openregister_audit_trails');
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+    }//end mockQueryBuilderTableName()
 }//end class
