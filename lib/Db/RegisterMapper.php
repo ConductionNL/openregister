@@ -62,7 +62,6 @@ use OCA\OpenRegister\Service\FileService;
  * @method Register update(Entity $entity)
  * @method Register insertOrUpdate(Entity $entity)
  * @method Register delete(Entity $entity)
- * @method Register find(int|string $id)
  * @method Register findEntity(IQueryBuilder $query)
  * @method list<Register> findEntities(IQueryBuilder $query)
  *
