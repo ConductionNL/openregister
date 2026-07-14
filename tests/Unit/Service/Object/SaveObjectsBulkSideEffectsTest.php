@@ -380,6 +380,45 @@ class SaveObjectsBulkSideEffectsTest extends TestCase
     }//end testUnchangedRowsAndEventSuppression()
 
     /**
+     * MEMORY CONTRACT: audit entries are streamed to insertAuditTrails() in
+     * slices of at most 100, so a 20k-object save chunk never materialises
+     * all its AuditTrail entities (each embedding an old+new payload diff)
+     * at once. 250 side-effect entities must arrive as 3 calls of 100/100/50.
+     */
+    public function testAuditEntriesAreStreamedInSlicesOfAtMostOneHundred(): void
+    {
+        $created = [];
+        for ($i = 0; $i < 250; $i++) {
+            $entity = new ObjectEntity();
+            $entity->setUuid('uuid-stream-'.$i);
+            $created[] = $entity;
+        }
+
+        $sliceSizes = [];
+        $this->auditTrailMapper->expects($this->exactly(3))
+            ->method('insertAuditTrails')
+            ->willReturnCallback(
+                function (array $entries) use (&$sliceSizes): array {
+                    $sliceSizes[] = count($entries);
+                    return [];
+                }
+            );
+
+        $ref    = new ReflectionClass($this->handler);
+        $method = $ref->getMethod('emitChunkSideEffects');
+        $method->setAccessible(true);
+        $method->invokeArgs(
+            $this->handler,
+            [
+                ['created' => $created, 'updated' => []],
+                false,
+            ]
+        );
+
+        $this->assertSame([100, 100, 50], $sliceSizes);
+    }//end testAuditEntriesAreStreamedInSlicesOfAtMostOneHundred()
+
+    /**
      * The internal `_pre_update_row` bookkeeping never leaks into the API
      * response buckets.
      */

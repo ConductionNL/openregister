@@ -105,6 +105,16 @@ class SaveObjects
     use RelationDetectionTrait;
 
     /**
+     * Maximum number of audit entries materialised into AuditTrail entities
+     * and persisted per insertAuditTrails() call. Bounds peak memory: a save
+     * chunk can hold up to 20k objects, and each audit entity embeds the
+     * object's old+new payload diff.
+     *
+     * @var int
+     */
+    private const AUDIT_INSERT_CHUNK_SIZE = 100;
+
+    /**
      * Static schema cache to avoid repeated database lookups
      *
      * @var array<int|string, Schema>
@@ -1048,8 +1058,8 @@ class SaveObjects
         // when requested, dispatch the matching lifecycle events. The ultraFastBulkSave mapper
         // path bypasses the per-row event/audit hooks that the single-object insert/update apply,
         // so the bulk path must replay them here to stay at parity with single-object save.
-        // Audit rows are written with ONE batched multi-row INSERT per chunk instead of
-        // one INSERT (plus hash-chain queries) per object.
+        // Audit rows are written with streamed batched multi-row INSERTs (100 rows per
+        // statement) instead of one INSERT (plus hash-chain queries) per object.
         $this->emitChunkSideEffects(sideEffects: $sideEffects, _events: $_events);
 
         $endTime        = microtime(true);
@@ -1173,11 +1183,13 @@ class SaveObjects
      *
      * The ultraFastBulkSave mapper path bypasses the per-row event/audit hooks the
      * single-object insert/update apply, so the bulk path replays them here. Audit
-     * trail rows for the whole chunk are written with a single batched multi-row
-     * INSERT ({@see AuditTrailMapper::insertAuditTrails()}) instead of one INSERT
-     * per object, and update rows carry the REAL pre-update state so their
-     * changeset is an accurate old-vs-new diff. ObjectCreated/ObjectUpdatedEvent
-     * are only dispatched when $_events is true.
+     * trail rows are written with batched multi-row INSERTs
+     * ({@see AuditTrailMapper::insertAuditTrails()}) instead of one INSERT per
+     * object, streamed in slices of {@see self::AUDIT_INSERT_CHUNK_SIZE} entries
+     * so peak memory never holds a whole 20k-object chunk's audit entities (each
+     * embeds an old+new payload diff). Update rows carry the REAL pre-update
+     * state so their changeset is an accurate old-vs-new diff.
+     * ObjectCreated/ObjectUpdatedEvent are only dispatched when $_events is true.
      *
      * @param array $sideEffects Side-effect payload from buildChunkResults():
      *                           'created' => list<ObjectEntity>,
@@ -1193,8 +1205,8 @@ class SaveObjects
         $createdEntities = ($sideEffects['created'] ?? []);
         $updatedEntities = ($sideEffects['updated'] ?? []);
 
-        // Batched audit trail: one multi-row INSERT per chunk instead of one
-        // INSERT (plus hash-chain queries) per object.
+        // Batched audit trail: multi-row INSERTs instead of one INSERT (plus
+        // hash-chain queries) per object.
         if ($this->auditTrailMapper !== null) {
             $auditEntries = [];
             foreach ($createdEntities as $entity) {
@@ -1216,13 +1228,20 @@ class SaveObjects
                 ];
             }
 
-            if ($auditEntries !== []) {
+            // MEMORY: stream the entries in slices of AUDIT_INSERT_CHUNK_SIZE.
+            // A save chunk can hold up to 20k objects (calculateOptimalChunkSize),
+            // and every AuditTrail entity embeds an old+new payload diff — building
+            // them all before inserting would hold the whole chunk's diffs in
+            // memory at once. array_splice() consumes the entry list destructively
+            // so each slice's references are released as soon as it is persisted.
+            while ($auditEntries !== []) {
+                $slice = array_splice($auditEntries, 0, self::AUDIT_INSERT_CHUNK_SIZE);
                 try {
-                    $this->auditTrailMapper->insertAuditTrails(entries: $auditEntries);
+                    $this->auditTrailMapper->insertAuditTrails(entries: $slice);
                 } catch (\Throwable $e) {
                     $this->logger->warning(
                         message: '[SaveObjects] Failed to write batched audit trail for bulk chunk',
-                        context: ['error' => $e->getMessage(), 'entries' => count($auditEntries)]
+                        context: ['error' => $e->getMessage(), 'entries' => count($slice)]
                     );
                 }
             }
@@ -1446,7 +1465,13 @@ class SaveObjects
             return $this->classifyDatabaseComputedResults(bulkResult: $bulkResult, result: $result);
         }
 
-        // FALLBACK: UUID array returned (legacy behavior).
+        // FALLBACK: UUID array returned (legacy behavior). This path cannot
+        // reconstruct entities, so it yields NO side effects: no audit rows are
+        // written and no lifecycle events are dispatched for these objects.
+        $this->logger->warning(
+            message: '[SaveObjects] Legacy uuid-array bulk result — audit trail and lifecycle events are skipped for this chunk',
+            context: ['objects' => count($bulkResult)]
+        );
         $this->classifyLegacyResults(bulkResult: $bulkResult, transformedObjects: $transformedObjects, result: $result);
 
         return $sideEffects;

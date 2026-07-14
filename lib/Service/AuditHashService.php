@@ -213,6 +213,17 @@ class AuditHashService
      * sealRow() call would produce. Already-sealed rows are left untouched
      * and only contribute their stored hash as the chain link.
      *
+     * KNOWN RACE (pre-existing in sealRow(), widened at bulk boundaries): a
+     * concurrent writer can insert a row AFTER this batch's range SELECT but
+     * with an id inside/adjacent to the range, or seal a boundary row between
+     * our getHashBefore() read and our UPDATE. Either interleaving can leave
+     * one boundary link computed against a stale predecessor, which
+     * verifyChain() would later report as a break (a false tamper alarm, not
+     * data loss — resealing recomputes deterministically). The single-row
+     * sealRow() has the same window per row; batching widens it to the batch
+     * duration. Follow-up: serialize sealing with an advisory lock (tracked
+     * in a separate issue per the pre-merge review).
+     *
      * @param int[] $ids The audit-trail row ids to seal.
      *
      * @return int Number of rows sealed.
