@@ -79,7 +79,8 @@ class ImportServiceTest extends TestCase
             $translationCsvCodec,
             $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
             new \OCA\OpenRegister\Service\MigrationPack\MappingEngine(),
-            $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class)
+            $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+            $this->createMock(\Psr\Container\ContainerInterface::class)
         );
     }
 

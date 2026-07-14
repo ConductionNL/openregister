@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
+use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IUserManager;
@@ -44,6 +45,7 @@ use DateTime;
 use InvalidArgumentException;
 use Exception;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use React\Async\PromiseInterface;
 use React\Promise\Promise;
@@ -161,6 +163,7 @@ class ImportService
      * @param MappingEngine                                             $mappingEngine         Migration-pack mapping engine
      * @param ValidateObject                                            $validateObjectHandler Schema validator, used for genuinely
      *                                                                                         side-effect-free dry-run imports
+     * @param ContainerInterface                                        $container             DI container for lazy IQueue resolution
      */
     public function __construct(
         SchemaMapper $schemaMapper,
@@ -170,7 +173,8 @@ class ImportService
         \OCA\OpenRegister\Service\Translation\TranslationCsvCodec $translationCsvCodec,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly MappingEngine $mappingEngine,
-        private readonly ValidateObject $validateObjectHandler
+        private readonly ValidateObject $validateObjectHandler,
+        private readonly ContainerInterface $container
     ) {
         $this->schemaMapper  = $schemaMapper;
         $this->objectService = $objectService;
@@ -896,6 +900,92 @@ class ImportService
      */
 
     /**
+     * Flush accumulated notify_push collection events after a bulk import.
+     *
+     * Lazily resolves notify_push's IQueue from the container and emits one
+     * broadcast `or-collection-{register-slug}-{schema-slug}` event per
+     * (register, schema) pair accumulated while batch mode was active.
+     *
+     * Soft-fails: when notify_push is not installed (IQueue not resolvable)
+     * this is a silent no-op — nothing was accumulated in that case, so we
+     * return before even touching the container. A resolution failure with
+     * pending events (partial install / config drift) logs at most one
+     * DEBUG entry and never interrupts the import.
+     *
+     * MUST be called before setBatchMode(false), which clears the accumulator.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    private function flushNotifyPushBatch(): void
+    {
+        if (NotifyPushListener::hasBatchedCollections() === false) {
+            return;
+        }
+
+        try {
+            $queue = $this->container->get('OCA\NotifyPush\Queue\IQueue');
+        } catch (\Throwable $e) {
+            // Notify_push unavailable — soft-fail with a single DEBUG log.
+            $this->logger->debug(
+                message: '[ImportService] notify_push IQueue not available; skipping batch flush',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return;
+        }
+
+        NotifyPushListener::flushBatch(queue: $queue);
+
+    }//end flushNotifyPushBatch()
+
+    /**
+     * Queue a notify_push collection hint derived from the import's own context.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * everywhere in the import call chain), so NotifyPushListener::handle()
+     * never fires and the batch accumulator would stay empty. The import knows
+     * exactly which (register, schema) collection it just changed — queue the
+     * pair directly from the entities' slugs. Deduplicated with any
+     * event-driven accumulation when events ARE enabled. Soft-fails on any
+     * slug-resolution error (a missed hint must never break the import).
+     *
+     * @param Register $register The register the import saved into.
+     * @param Schema   $schema   The schema the import saved into.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) NotifyPushListener batch API is static by design (accessible without DI from import context)
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    private function queueNotifyPushCollectionHint(Register $register, Schema $schema): void
+    {
+        try {
+            $registerSlug = (string) ($register->getSlug() ?? '');
+            $schemaSlug   = (string) ($schema->getSlug() ?? '');
+            NotifyPushListener::addBatchedCollection(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+        } catch (\Throwable $e) {
+            // Slug not resolvable — skip the hint, never break the import.
+            $this->logger->debug(
+                message: '[ImportService] Could not queue notify_push collection hint',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+    }//end queueNotifyPushCollectionHint()
+
+    /**
      * Process a single spreadsheet sheet using batch saving for better performance
      *
      * @param Spreadsheet   $spreadsheet   The spreadsheet to process
@@ -1013,15 +1103,15 @@ class ImportService
                 );
             }
 
-            // @todo add-live-updates/task-6: Wrap with NotifyPushListener::setBatchMode(true) and
-            // flushBatch($queue, $permissionHandler) once IQueue and PermissionHandler are injected
-            // into ImportService. Pattern:
-            // NotifyPushListener::setBatchMode(true);
-            // try { ... saveObjects ... } finally {
-            // NotifyPushListener::flushBatch($queue, $permissionHandler);
-            // NotifyPushListener::setBatchMode(false);
-            // }
-            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            // Suppress per-object notify_push events during the bulk save; on
+            // completion (success OR failure — partial saves still happened)
+            // flush one deduplicated collection event per (register, schema)
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
+            NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -1034,10 +1124,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
-                // Cannot call flushBatch here without IQueue — batch mode is cleared
-                // so individual events are re-enabled for subsequent calls.
-                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
-            }
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
+                // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
+                $this->flushNotifyPushBatch();
+                NotifyPushListener::setBatchMode(false);
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.
@@ -1249,9 +1347,15 @@ class ImportService
                 );
             }
 
-            // @todo add-live-updates/task-6: Wrap with NotifyPushListener batch mode once
-            // IQueue and PermissionHandler are injected into ImportService.
-            \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(true);
+            // Suppress per-object notify_push events during the bulk save; on
+            // completion (success OR failure — partial saves still happened)
+            // flush one deduplicated collection event per (register, schema)
+            // pair so connected clients refetch their lists. The hint is
+            // derived from the save RESULT, not from lifecycle events: bulk
+            // saves run with events disabled by default, so the listener
+            // never accumulates on its own.
+            NotifyPushListener::setBatchMode(true);
+            $saveResult = null;
             try {
                 $saveResult = $this->objectService->saveObjects(
                     objects: $allObjects,
@@ -1264,8 +1368,18 @@ class ImportService
                     enrich: $enrich
                 );
             } finally {
-                \OCA\OpenRegister\Listener\NotifyPushListener::setBatchMode(false);
-            }
+                // Null result = save threw; partial saves may have landed, so hint conservatively.
+                $collectionChanged = $saveResult === null
+                    || empty($saveResult['saved'] ?? []) === false
+                    || empty($saveResult['updated'] ?? []) === false;
+                if ($collectionChanged === true) {
+                    $this->queueNotifyPushCollectionHint(register: $register, schema: $schema);
+                }
+
+                // Flush BEFORE disabling batch mode — setBatchMode(false) clears the accumulator.
+                $this->flushNotifyPushBatch();
+                NotifyPushListener::setBatchMode(false);
+            }//end try
 
             // Use the structured return from saveObjects with smart deduplication.
             // SaveObjects returns ObjectEntity->jsonSerialize() arrays where UUID is in @self.id.

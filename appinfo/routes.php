@@ -298,9 +298,6 @@ return [
         // admin-default + FG-delegated, append-only by surface (no write routes).
         ['name' => 'processingLog#index',      'url' => '/api/avg/verwerkingen',            'verb' => 'GET'],
         ['name' => 'processingLog#betrokkene', 'url' => '/api/avg/verwerkingen/betrokkene', 'verb' => 'GET'],
-        // Realtime cursor-based polling endpoints.
-        ['name' => 'realtime#events', 'url' => '/api/realtime/events', 'verb' => 'GET'],
-        ['name' => 'realtime#cursor', 'url' => '/api/realtime/cursor', 'verb' => 'GET'],
         // Translation sidecar — search, per-object slots + completeness, status updates.
         ['name' => 'translation#search',        'url' => '/api/translations/search',                                          'verb' => 'GET'],
         ['name' => 'translation#showByObject',  'url' => '/api/translations/object/{uuid}',                                   'verb' => 'GET'],
