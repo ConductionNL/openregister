@@ -62,7 +62,8 @@ class ImportServiceErrorsCsvTest extends TestCase
             $logger,
             $groupManager,
             $translationCsvCodec,
-            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+            $this->createMock(\Psr\Container\ContainerInterface::class)
         );
 
     }//end setUp()

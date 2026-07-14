@@ -360,29 +360,47 @@ class NotifyPushListener implements IEventListener
     }//end resetStaticState()
 
     /**
+     * Whether any (register, schema) pairs have been accumulated in batch mode.
+     *
+     * Lets import callers skip IQueue resolution entirely when nothing was
+     * accumulated (e.g. notify_push not installed, so handle() never reached
+     * the accumulator) — avoiding even the one DEBUG log of a failed resolve.
+     *
+     * @return bool True when at least one collection event is pending flush.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function hasBatchedCollections(): bool
+    {
+        return self::$batchedCollections !== [];
+    }//end hasBatchedCollections()
+
+    /**
      * Emit one collection event per accumulated (register, schema) pair and clear state.
      *
-     * Should be called in a `finally` block after a bulk-import loop:
+     * Should be called in a `finally` block after a bulk-import loop, BEFORE
+     * setBatchMode(false) — disabling batch mode clears the accumulator:
      * ```php
      * NotifyPushListener::setBatchMode(true);
      * try {
      *     // ... import loop
      * } finally {
-     *     NotifyPushListener::flushBatch($queue, $permissionHandler);
+     *     NotifyPushListener::flushBatch($queue);
      *     NotifyPushListener::setBatchMode(false);
      * }
      * ```
      *
-     * @param object            $queue       Resolved IQueue instance.
-     * @param PermissionHandler $permHandler Permission handler for user resolution.
+     * The flush is a broadcast: collection events carry no per-user targeting
+     * (payload is slugs + action only); clients refetch through the RBAC-filtered
+     * REST API, so no data can leak to unauthorised subscribers.
+     *
+     * @param object $queue Resolved IQueue instance.
      *
      * @return void
      *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-4
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Permission handler retained on the signature for upcoming per-user batch routing
+     * @spec openspec/specs/realtime-updates/spec.md
      */
-    public static function flushBatch(object $queue, PermissionHandler $permHandler): void
+    public static function flushBatch(object $queue): void
     {
         foreach (self::$batchedCollections as $entry) {
             $registerSlug = $entry['register'];
