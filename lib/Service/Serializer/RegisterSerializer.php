@@ -122,6 +122,14 @@ final class RegisterSerializer
         array $extend=[],
         ?array $schemaStatsByRegisterId=null,
     ): array {
+        // PERF (N+1): expandSchemas() resolves each schema id through
+        // findSchemaCached() → SchemaMapper::find(), i.e. ONE query per schema.
+        // With `_extend[]=schemas` over every register that is one query per
+        // register-schema pair (~1,200 on the dev instance) on a single page
+        // load. Warm the cache with one batched lookup up front; the per-id path
+        // below then only runs for ids the batch could not resolve.
+        $this->warmSchemaCache(registers: $registers, extend: $extend);
+
         $out = [];
         foreach ($registers as $register) {
             $registerId = (int) $register->getId();
@@ -239,4 +247,55 @@ final class RegisterSerializer
 
         return $this->schemaCache[$key];
     }//end findSchemaCached()
+
+    /**
+     * Resolve every register's schemas in ONE query and seed the request cache.
+     *
+     * Only NUMERIC ids are batched: findMultipleOptimized() matches on `id`,
+     * whereas find() also resolves a uuid or a slug. Anything non-numeric (and
+     * anything the batch does not return — e.g. an orphan id) is deliberately
+     * left out of the cache so findSchemaCached() still falls back to find(),
+     * preserving both the uuid/slug lookup and the DoesNotExistException that
+     * expandSchemas() relies on to retain orphan ids.
+     *
+     * Matches find(_multitenancy: false) semantics: findMultipleOptimized()
+     * applies no organisation filter, and find()'s `_rbac` branch is currently a
+     * no-op, so this is a pure query-count optimisation.
+     *
+     * @param Register[]    $registers The registers about to be serialized.
+     * @param array<string> $extend    Extension keys; schemas are only resolved when requested.
+     *
+     * @return void
+     *
+     * @spec exclude batched warm-up of the request-scoped cache; no behaviour change
+     */
+    private function warmSchemaCache(array $registers, array $extend): void
+    {
+        if (in_array('schemas', $extend, true) === false) {
+            return;
+        }
+
+        $ids = [];
+        foreach ($registers as $register) {
+            foreach (($register->getSchemas() ?? []) as $schemaId) {
+                if (is_numeric($schemaId) === false) {
+                    continue;
+                }
+
+                if (isset($this->schemaCache[(string) $schemaId]) === true) {
+                    continue;
+                }
+
+                $ids[(int) $schemaId] = true;
+            }
+        }
+
+        if (empty($ids) === true) {
+            return;
+        }
+
+        foreach ($this->schemaMapper->findMultipleOptimized(ids: array_keys($ids)) as $id => $schema) {
+            $this->schemaCache[(string) $id] = $schema;
+        }
+    }//end warmSchemaCache()
 }//end class
