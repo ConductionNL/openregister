@@ -128,8 +128,8 @@ class ApprovalChainAnnotationInstaller implements IEventListener
     /**
      * Upsert a single `ApprovalChain` row from one chain's `approvers` list.
      *
-     * @param int                              $schemaId Owning schema id.
-     * @param string                           $chainKey Declarative chain key (becomes `name`).
+     * @param int                              $schemaId  Owning schema id.
+     * @param string                           $chainKey  Declarative chain key (becomes `name`).
      * @param array<int, array<string, mixed>> $approvers Declared `{role, min, minAmount?}` tiers.
      *
      * @return void

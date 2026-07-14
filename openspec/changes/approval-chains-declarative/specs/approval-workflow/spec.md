@@ -12,6 +12,17 @@ chain key, `schemaId`, `steps` derived from `approvers`) on `SchemaCreatedEvent`
 `SchemaUpdatedEvent`, using the same row shape `POST /api/approval-chains`
 produces. Schemas without this key are unaffected.
 
+`x-openregister-approval-chains` MUST be registered in
+`Schema::ANNOTATION_VOCABULARY`. `Schema::setConfiguration()` drops any
+`x-openregister-*` key absent from that whitelist, so without the registration the
+declaration never reaches the `configuration` column and every listener below
+reads an absent key — the capability would be inert regardless of its wiring.
+
+#### Scenario: The declared key survives a save round-trip
+- **GIVEN** a schema whose `configuration` declares `x-openregister-approval-chains`
+- **WHEN** the schema is saved and re-read
+- **THEN** `getConfiguration()` MUST still contain the `x-openregister-approval-chains` key
+
 #### Scenario: Declaring a chain provisions it without manual CRUD
 - **GIVEN** a schema declares `x-openregister-approval-chains` with one chain entry
 - **WHEN** the schema is saved (create or update)

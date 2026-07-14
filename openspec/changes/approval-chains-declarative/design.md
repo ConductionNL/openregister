@@ -82,6 +82,32 @@ Studied before writing any code (per house rules):
   correct, already-shipped signal for "release the gate" — no new event type is
   introduced.
 
+## The key could not even persist: `Schema::ANNOTATION_VOCABULARY`
+
+`Schema::setConfiguration()` filters the configuration array against a private
+whitelist, `ANNOTATION_VOCABULARY` (`lib/Db/Schema.php:1984`), dropping any
+`x-openregister-*` key not declared in it — deliberately, so a typo'd annotation
+is caught at save time "instead of silently round-tripping through the
+configuration column and having the corresponding listener never fire" (its own
+docblock). `x-openregister-approval-chains` was **not** in that list.
+
+This is the load-bearing half of the phantom, and it cuts both ways:
+
+- It is *why* shillinq's declaration was inert beyond "no listener read it" — the
+  key never even reached the `configuration` column. Any listener added without
+  this entry would read an array that does not contain the key, and no-op forever
+  while every test that constructs a `Schema` in-process would show the same
+  empty read. A gate listener wired up without this one-line change is a
+  **phantom replacing a phantom**.
+- It also means OR's anti-phantom guard was working exactly as designed: it
+  correctly refused to store a key no engine claimed. Registering the key in the
+  vocabulary is therefore part of *declaring the capability real*, not a
+  workaround.
+
+Verified empirically before/after (a `Schema` with both `x-openregister-lifecycle`
+and `x-openregister-approval-chains` set): before the change `getConfiguration()`
+returned only the lifecycle key; after it returns both.
+
 ## Contract extracted from shillinq's declaration
 
 `lib/Settings/register.d/bookkeeping-bcf-vat-compensation.json:176-196`

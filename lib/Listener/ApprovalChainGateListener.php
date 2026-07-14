@@ -57,13 +57,13 @@ class ApprovalChainGateListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param SchemaMapper                      $schemaMapper Schema lookup mapper.
-     * @param ApprovalChainMapper                $chainMapper  Chain mapper.
-     * @param ApprovalStepMapper                 $stepMapper   Step mapper.
-     * @param ApprovalService                    $approvalService Provisions/inspects chain steps.
-     * @param ApprovalChainAnnotationInstaller    $installer    Ensures the declared chain is provisioned.
-     * @param IUserSession                        $userSession  Current user session (requester identity).
-     * @param LoggerInterface                     $logger       Logger for gate diagnostics.
+     * @param SchemaMapper                     $schemaMapper    Schema lookup mapper.
+     * @param ApprovalChainMapper              $chainMapper     Chain mapper.
+     * @param ApprovalStepMapper               $stepMapper      Step mapper.
+     * @param ApprovalService                  $approvalService Provisions/inspects chain steps.
+     * @param ApprovalChainAnnotationInstaller $installer       Ensures the declared chain is provisioned.
+     * @param IUserSession                     $userSession     Current user session (requester identity).
+     * @param LoggerInterface                  $logger          Logger for gate diagnostics.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -287,7 +287,7 @@ class ApprovalChainGateListener implements IEventListener
 
         $amount = (float) ($newData[$amountField] ?? 0);
 
-        $best         = null;
+        $best          = null;
         $bestMinAmount = -1.0;
         foreach ($approvers as $tier) {
             if (is_array($tier) === false) {

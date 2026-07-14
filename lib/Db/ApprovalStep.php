@@ -195,13 +195,13 @@ class ApprovalStep extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'         => $this->id,
-            'uuid'       => $this->uuid,
-            'chainId'    => $this->chainId,
-            'objectUuid' => $this->objectUuid,
-            'stepOrder'  => $this->stepOrder,
-            'role'       => $this->role,
-            'status'     => $this->status,
+            'id'          => $this->id,
+            'uuid'        => $this->uuid,
+            'chainId'     => $this->chainId,
+            'objectUuid'  => $this->objectUuid,
+            'stepOrder'   => $this->stepOrder,
+            'role'        => $this->role,
+            'status'      => $this->status,
             'decidedBy'   => $this->decidedBy,
             'comment'     => $this->comment,
             'decidedAt'   => $this->decidedAt?->format('c'),

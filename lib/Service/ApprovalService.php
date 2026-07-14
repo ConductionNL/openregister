@@ -79,19 +79,21 @@ class ApprovalService
      * Creates ApprovalStep entities for each step in the chain: step 1 as
      * 'pending', all others as 'waiting'.
      *
-     * @param ApprovalChain              $chain         The approval chain
-     * @param string                     $objectUuid    The object's UUID
-     * @param string|null                $requesterId   Uid of the user whose attempted transition
-     *                                                   triggered provisioning, when called from the
-     *                                                   declarative gate (`ApprovalChainGateListener`).
-     *                                                   Stamped onto every created step so
-     *                                                   {@see resolveSeparationOfDuties()} can later reject
-     *                                                   a self-decision. `null` for the pure-CRUD flow.
+     * @param ApprovalChain                         $chain         The approval chain
+     * @param string                                $objectUuid    The object's UUID
+     * @param string|null                           $requesterId   Uid of the user whose attempted transition
+     *                                                             triggered provisioning, when called from
+     *                                                             the declarative gate
+     *                                                             (`ApprovalChainGateListener`). Stamped
+     *                                                             onto every created step so {@see
+     *                                                             resolveSeparationOfDuties()} can later
+     *                                                             reject a self-decision. `null` for the
+     *                                                             pure-CRUD flow.
      * @param array<int, array<string, mixed>>|null $stepsOverride Step definitions to use instead of the
-     *                                                   chain's own static `steps` — used by the declarative
-     *                                                   gate's amount-threshold tier routing, where the
-     *                                                   applicable tier is resolved per-object rather than
-     *                                                   baked into the persisted chain config.
+     *                                                             chain's own static `steps` — used by the declarative
+     *                                                             gate's amount-threshold tier routing, where the
+     *                                                             applicable tier is resolved per-object rather than
+     *                                                             baked into the persisted chain config.
      *
      * @return array<int, ApprovalStep> Created steps
      *

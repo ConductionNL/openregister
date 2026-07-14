@@ -4,6 +4,7 @@
 - [x] 1.2 `lib/Db/ApprovalStep.php` — add `requesterId` property/type/getter/setter, add to `hydrate()` field list and `jsonSerialize()`.
 - [x] 1.3 `lib/Db/ApprovalStepMapper.php` — add `deleteByChainAndObject(int $chainId, string $objectUuid): int`.
 - [x] 1.4 `lib/Db/ApprovalChainMapper.php` — add `findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain`.
+- [x] 1.5 `lib/Db/Schema.php` — add `x-openregister-approval-chains` to `ANNOTATION_VOCABULARY`. **Without this the key is silently dropped by `setConfiguration()` and the capability is dead on arrival** — OR's own anti-phantom guard was (correctly) rejecting the undeclared key.
 
 ## 2. Declarative provisioning
 
