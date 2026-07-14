@@ -169,6 +169,8 @@ class ImportServiceNotifyPushBatchTest extends TestCase
             $this->createMock(IGroupManager::class),
             $translationCsvCodec,
             $this->createMock(AuditTrailMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
             $container
         );
 
