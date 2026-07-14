@@ -162,10 +162,10 @@ class ApprovalService
             throw new Exception('Step is not in pending status');
         }
 
-        // Load the chain up front — needed for both separation-of-duties
-        // resolution and the step definitions used below.
-        $chain = $this->chainMapper->find($step->getChainId());
-        $this->verifySeparationOfDuties(step: $step, chain: $chain, userId: $userId);
+        // Separation of duties is evaluated BEFORE the role check so a
+        // self-decision attempt gets a distinct, honest error rather than being
+        // masked by (or coincidentally passing) the group-membership check.
+        $this->verifySeparationOfDuties(step: $step, userId: $userId);
 
         // Verify role membership.
         $this->verifyRole(userId: $userId, role: $step->getRole());
@@ -177,6 +177,8 @@ class ApprovalService
         $step->setDecidedAt(new DateTime());
         $this->stepMapper->update($step);
 
+        // Load the chain to get step definitions.
+        $chain      = $this->chainMapper->find($step->getChainId());
         $chainSteps = $chain->getStepsArray();
 
         // Find the current step definition for statusOnApprove.
@@ -264,10 +266,9 @@ class ApprovalService
             throw new Exception('Step is not in pending status');
         }
 
-        // Load the chain up front — needed for both separation-of-duties
-        // resolution and the step definitions used below.
-        $chain = $this->chainMapper->find($step->getChainId());
-        $this->verifySeparationOfDuties(step: $step, chain: $chain, userId: $userId);
+        // Separation of duties is evaluated BEFORE the role check (see
+        // approveStep()).
+        $this->verifySeparationOfDuties(step: $step, userId: $userId);
 
         // Verify role membership.
         $this->verifyRole(userId: $userId, role: $step->getRole());
@@ -279,6 +280,8 @@ class ApprovalService
         $step->setDecidedAt(new DateTime());
         $this->stepMapper->update($step);
 
+        // Load the chain to get step definitions.
+        $chain      = $this->chainMapper->find($step->getChainId());
         $chainSteps = $chain->getStepsArray();
 
         // Find the current step definition for statusOnReject.
@@ -314,9 +317,13 @@ class ApprovalService
      * Reject a decision made by the same user who triggered the chain, when the
      * chain's schema declares separation of duties.
      *
-     * @param ApprovalStep  $step   The step being decided.
-     * @param ApprovalChain $chain  The step's parent chain.
-     * @param string        $userId The deciding user's id.
+     * The chain is resolved lazily — only when the decider actually IS the
+     * recorded requester — so the pure-CRUD flow (steps with no `requesterId`,
+     * and callers whose step carries no `chainId`) reaches the role check on
+     * exactly the code path it always did, before this change existed.
+     *
+     * @param ApprovalStep $step   The step being decided.
+     * @param string       $userId The deciding user's id.
      *
      * @return void
      *
@@ -325,7 +332,7 @@ class ApprovalService
      *
      * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
      */
-    private function verifySeparationOfDuties(ApprovalStep $step, ApprovalChain $chain, string $userId): void
+    private function verifySeparationOfDuties(ApprovalStep $step, string $userId): void
     {
         $requesterId = $step->getRequesterId();
         if ($requesterId === null || $requesterId === '' || $requesterId !== $userId) {
@@ -333,6 +340,13 @@ class ApprovalService
             // requester — nothing to enforce either way.
             return;
         }
+
+        $chainId = $step->getChainId();
+        if ($chainId === null) {
+            return;
+        }
+
+        $chain = $this->chainMapper->find((int) $chainId);
 
         if ($this->resolveSeparationOfDuties(chain: $chain) === true) {
             throw new Exception('You may not decide an approval step you requested yourself');
