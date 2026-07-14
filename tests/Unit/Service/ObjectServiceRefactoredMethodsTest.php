@@ -46,7 +46,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 // PublishHandler was removed from ObjectService.
@@ -149,7 +148,6 @@ class ObjectServiceRefactoredMethodsTest extends TestCase
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
-			$this->createMock(PerformanceHandler::class),
 			$this->permissionHandler,
 			$this->renderHandler,
 			$this->saveHandler,

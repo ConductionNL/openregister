@@ -57,7 +57,6 @@ use OCA\OpenRegister\Service\Object\DataManipulationHandler;
 use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SaveObject;
@@ -198,7 +197,6 @@ class ObjectService
      * @param DataManipulationHandler        $dataManipHandler     Handler for data manipulation operations.
      * @param DeleteObject                   $deleteHandler        Handler for object deletion.
      * @param GetObject                      $getHandler           Handler for object retrieval.
-     * @param PerformanceHandler             $performanceHandler   Handler for performance operations.
      * @param PermissionHandler              $permissionHandler    Handler for permission checks.
      * @param RenderObject                   $renderHandler        Handler for object rendering.
      * @param SaveObject                     $saveHandler          Handler for individual object saving.
@@ -244,7 +242,6 @@ class ObjectService
         private readonly DataManipulationHandler $dataManipHandler,
         private readonly DeleteObject $deleteHandler,
         private readonly GetObject $getHandler,
-        private readonly PerformanceHandler $performanceHandler,
         private readonly PermissionHandler $permissionHandler,
         private readonly RenderObject $renderHandler,
         private readonly SaveObject $saveHandler,

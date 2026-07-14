@@ -69,7 +69,7 @@ class SearchQueryHandler
      *
      * @var string|null
      */
-    private ?string $effectiveRecordingMode = null;
+    private ?string $recordingModeMemo = null;
 
     /**
      * In-request buffer of search-trail entries pending persistence.
@@ -701,13 +701,13 @@ class SearchQueryHandler
      */
     public function getEffectiveRecordingMode(): string
     {
-        if ($this->effectiveRecordingMode !== null) {
-            return $this->effectiveRecordingMode;
+        if ($this->recordingModeMemo !== null) {
+            return $this->recordingModeMemo;
         }
 
-        $this->effectiveRecordingMode = $this->resolveRecordingMode();
+        $this->recordingModeMemo = $this->resolveRecordingMode();
 
-        return $this->effectiveRecordingMode;
+        return $this->recordingModeMemo;
     }//end getEffectiveRecordingMode()
 
     /**

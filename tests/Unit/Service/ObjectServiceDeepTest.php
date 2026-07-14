@@ -44,7 +44,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -77,8 +76,6 @@ class ObjectServiceDeepTest extends TestCase
 {
 
     private ObjectService $service;
-
-    private MockObject|PerformanceHandler $performanceHandler;
 
     private MockObject|RegisterMapper $registerMapper;
 
@@ -119,7 +116,6 @@ class ObjectServiceDeepTest extends TestCase
         $dataManipHandler   = $this->createMock(DataManipulationHandler::class);
         $this->deleteHandler = $this->createMock(DeleteObject::class);
         $this->getHandler    = $this->createMock(GetObject::class);
-        $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->permissionHandler  = $this->createMock(PermissionHandler::class);
         $this->renderHandler      = $this->createMock(RenderObject::class);
         $this->saveHandler        = $this->createMock(SaveObject::class);
@@ -171,7 +167,6 @@ class ObjectServiceDeepTest extends TestCase
             $dataManipHandler,
             $this->deleteHandler,
             $this->getHandler,
-            $this->performanceHandler,
             $this->permissionHandler,
             $this->renderHandler,
             $this->saveHandler,

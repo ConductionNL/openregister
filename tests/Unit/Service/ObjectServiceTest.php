@@ -48,7 +48,6 @@ use OCA\OpenRegister\Service\Object\AuditHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -102,8 +101,6 @@ class ObjectServiceTest extends TestCase
 	private $auditHandler;
 	/** @var MockObject&PermissionHandler */
 	private $permissionHandler;
-	/** @var MockObject&PerformanceHandler */
-	private $performanceHandler;
 	/** @var MockObject&CascadingHandler */
 	private $cascadingHandler;
 	/** @var MockObject&QueryHandler */
@@ -149,7 +146,6 @@ class ObjectServiceTest extends TestCase
 		$this->lockHandler = $this->createMock(LockHandler::class);
 		$this->auditHandler = $this->createMock(AuditHandler::class);
 		$this->permissionHandler = $this->createMock(PermissionHandler::class);
-		$this->performanceHandler = $this->createMock(PerformanceHandler::class);
 		$this->cascadingHandler = $this->createMock(CascadingHandler::class);
 		$this->queryHandler = $this->createMock(QueryHandler::class);
 		$this->facetHandler = $this->createMock(FacetHandler::class);
@@ -190,7 +186,6 @@ class ObjectServiceTest extends TestCase
 			$this->createMock(DataManipulationHandler::class),
 			$this->deleteHandler,
 			$this->getHandler,
-			$this->performanceHandler,
 			$this->permissionHandler,
 			$this->renderHandler,
 			$this->saveHandler,
