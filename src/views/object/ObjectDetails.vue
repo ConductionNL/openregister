@@ -408,6 +408,13 @@ export default {
 	data() {
 		return {
 			currentActiveObject: undefined,
+			// Live-updates handle for the or-object-{uuid} subscription of the
+			// currently opened object (adopt-live-updates-ui). Managed by
+			// syncLiveSubscription(); liveKey is `${type}::${uuid}` so a
+			// re-render for the same object is a no-op.
+			liveHandle: null,
+			liveKey: '',
+			liveUnwatch: null,
 			auditTrailLoading: false,
 			auditTrails: [],
 			relationsLoading: false,
@@ -515,6 +522,7 @@ export default {
 			this.getAuditTrails()
 			this.getRelations()
 		}
+		this.syncLiveSubscription()
 	},
 	/**
 	 * Lifecycle hook: reload sub-resources when the viewed object changes.
@@ -528,9 +536,99 @@ export default {
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.syncLiveSubscription()
 		}
 	},
+	/**
+	 * Lifecycle hook: release the live object subscription on unmount.
+	 *
+	 * @spec openspec/specs/realtime-updates/spec.md
+	 * @return {void}
+	 */
+	beforeDestroy() {
+		this.releaseLiveSubscription()
+	},
 	methods: {
+		/**
+		 * Subscribe to live updates for the currently opened object
+		 * (adopt-live-updates-ui): or-object-{uuid} via notify_push with
+		 * polling fallback. Events are refetch hints only — the
+		 * liveUpdatesPlugin re-runs fetchObject(type, uuid), which lands in
+		 * the package store's objects[type][uuid] cache; the watcher installed
+		 * here bridges that fresh data into objectStore.objectItem so this
+		 * detail view re-renders. Idempotent per (type, uuid); releases the
+		 * previous subscription when another object is opened.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {Promise<void>}
+		 */
+		async syncLiveSubscription() {
+			if (typeof objectStore.subscribe !== 'function') {
+				return
+			}
+			const ctx = this.relationContext
+			const item = objectStore.objectItem
+			// The push event key is or-object-{uuid} — prefer the uuid over a
+			// numeric id when both are present.
+			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
+			if (!ctx || !uuid) {
+				this.releaseLiveSubscription()
+				return
+			}
+			const type = `${ctx.register}-${ctx.schema}`
+			const key = `${type}::${uuid}`
+			if (this.liveHandle && this.liveKey === key) {
+				return
+			}
+			this.releaseLiveSubscription()
+			try {
+				// Subscription is independent of the list view's registration
+				// timing: register the type ourselves when it is not known yet.
+				if (!objectStore.objectTypes.includes(type)) {
+					objectStore.registerObjectType(type, ctx.schema, ctx.register)
+				}
+				this.liveKey = key
+				const handle = await objectStore.subscribe(type, uuid)
+				if (this.liveKey !== key) {
+					// Another object was opened (or the component was
+					// destroyed) while awaiting — drop the stale subscription.
+					objectStore.unsubscribe(handle)
+					return
+				}
+				this.liveHandle = handle
+				// Bridge: event → plugin refetch → objects[type][uuid] cache →
+				// objectItem (which this template renders).
+				this.liveUnwatch = this.$watch(
+					() => objectStore.getObject(type, uuid),
+					(fresh) => {
+						if (fresh && this.liveKey === key) {
+							objectStore.setObjectItem(fresh)
+						}
+					},
+				)
+			} catch (e) {
+				this.liveHandle = null
+				this.liveKey = ''
+				console.warn('[ObjectDetails] live subscription failed:', e?.message ?? e)
+			}
+		},
+		/**
+		 * Release the current live object subscription and its cache watcher.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {void}
+		 */
+		releaseLiveSubscription() {
+			if (this.liveUnwatch) {
+				this.liveUnwatch()
+				this.liveUnwatch = null
+			}
+			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
+				objectStore.unsubscribe(this.liveHandle)
+			}
+			this.liveHandle = null
+			this.liveKey = ''
+		},
 		// Race-safe sub-resource fetches. Deep-link navigation primes
 		// objectStore.objectItem from the REST API before the plugins
 		// that own these actions (filesPlugin / auditTrailsPlugin /

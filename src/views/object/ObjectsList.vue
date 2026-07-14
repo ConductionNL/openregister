@@ -143,12 +143,33 @@ export default {
 			loading: false,
 			search: '',
 			searchTimeout: null,
-
+			// Live-updates handle for the or-collection-{register}-{schema}
+			// subscription of the currently scoped register+schema
+			// (adopt-live-updates-ui). Managed by syncLiveSubscription().
+			liveHandle: null,
+			liveType: '',
 		}
+	},
+	computed: {
+		/**
+		 * @spec exclude Derived client-state — mirrors the store's currentType so the watcher below can re-scope the live subscription.
+		 */
+		liveCollectionType() {
+			return objectStore.currentType
+		},
 	},
 	watch: {
 		/**
-		 * @param newVal
+		 * Re-scope the live collection subscription when the user switches
+		 * register/schema.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveCollectionType() {
+			this.syncLiveSubscription()
+		},
+		/**
+		 * @param {number} newVal The new page number
 		 * @spec exclude list-view watcher; reloads the object list on page change (object-lifecycle contract)
 		 */
 		currentPage(newVal) {
@@ -158,7 +179,7 @@ export default {
 			})
 		},
 		/**
-		 * @param newVal
+		 * @param {string} newVal The new search term
 		 * @spec exclude list-view watcher; debounced reload of the object list on search change (object-lifecycle contract)
 		 */
 		search(newVal) {
@@ -183,6 +204,7 @@ export default {
 		// in the side bars the existing watchers re-trigger the call.
 		const registerSet = !!objectStore?.filters?.register
 		const schemaSet = !!objectStore?.filters?.schema
+		this.syncLiveSubscription()
 		if (!registerSet || !schemaSet) {
 			this.loading = false
 			return
@@ -192,7 +214,80 @@ export default {
 			this.loading = false
 		})
 	},
+	/**
+	 * Lifecycle hook: release the live collection subscription on unmount.
+	 *
+	 * @spec openspec/specs/realtime-updates/spec.md
+	 * @return {void}
+	 */
+	beforeDestroy() {
+		this.releaseLiveSubscription()
+	},
 	methods: {
+		/**
+		 * Subscribe to live updates for the currently scoped register+schema
+		 * collection (adopt-live-updates-ui). Events are refetch hints only:
+		 * the liveUpdatesPlugin re-runs fetchCollection with the last-used
+		 * params, so the rendered collection state refreshes reactively.
+		 * Idempotent per type; releases the previous subscription when the
+		 * scope changes. Uses notify_push when available, visibility-gated
+		 * polling otherwise.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {Promise<void>}
+		 */
+		async syncLiveSubscription() {
+			const type = objectStore.currentType
+			if (typeof objectStore.subscribe !== 'function') {
+				return
+			}
+			if (!type) {
+				this.releaseLiveSubscription()
+				return
+			}
+			if (this.liveHandle && this.liveType === type) {
+				return
+			}
+			this.releaseLiveSubscription()
+			try {
+				// Subscription is independent of refreshObjectList timing:
+				// register the type ourselves when it is not known yet.
+				if (!objectStore.objectTypes.includes(type)) {
+					const registerId = registerStore.registerItem?.id
+					const schemaId = schemaStore.schemaItem?.id
+					if (!registerId || !schemaId) {
+						return
+					}
+					objectStore.registerObjectType(type, schemaId, registerId)
+				}
+				this.liveType = type
+				const handle = await objectStore.subscribe(type)
+				if (this.liveType !== type) {
+					// Scope changed (or component destroyed) while awaiting —
+					// drop the now-stale subscription instead of leaking it.
+					objectStore.unsubscribe(handle)
+					return
+				}
+				this.liveHandle = handle
+			} catch (e) {
+				this.liveHandle = null
+				this.liveType = ''
+				console.warn('[ObjectsList] live subscription failed:', e?.message ?? e)
+			}
+		},
+		/**
+		 * Release the current live collection subscription, if any.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {void}
+		 */
+		releaseLiveSubscription() {
+			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
+				objectStore.unsubscribe(this.liveHandle)
+			}
+			this.liveHandle = null
+			this.liveType = ''
+		},
 		/**
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)
 		 */
