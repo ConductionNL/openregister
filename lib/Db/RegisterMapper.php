@@ -77,6 +77,17 @@ class RegisterMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * Maximum number of expressions allowed in a single SQL IN() list.
+     *
+     * Nextcloud's QueryBuilder refuses more than 1000 expressions in an IN()
+     * list (Oracle limit); exceeding it logs an error and emits an "Undefined
+     * array key 0" PHP warning. Batched id lookups must chunk below this bound.
+     *
+     * @var integer
+     */
+    private const MAX_IN_LIST_SIZE = 1000;
+
+    /**
      * Schema mapper instance
      *
      * Used for finding schemas associated with registers.
@@ -450,20 +461,28 @@ class RegisterMapper extends QBMapper
             return [];
         }
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_registers')
-            ->where(
-                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
-            );
-
-        $result    = $qb->executeQuery();
         $registers = [];
 
-        while (($row = $result->fetch()) !== false) {
-            $register = new Register();
-            $register = $register->fromRow($row);
-            $registers[$row['id']] = $register;
+        // Chunk below the 1000-expression IN() ceiling (Oracle limit enforced by
+        // Nextcloud's QueryBuilder). Registers are fewer than schemas today, but
+        // this list is caller-supplied and unbounded.
+        foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_registers')
+                ->where(
+                    $qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY))
+                );
+
+            $result = $qb->executeQuery();
+
+            while (($row = $result->fetch()) !== false) {
+                $register              = new Register();
+                $register              = $register->fromRow($row);
+                $registers[$row['id']] = $register;
+            }
+
+            $result->closeCursor();
         }
 
         return $registers;

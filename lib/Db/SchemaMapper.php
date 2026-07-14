@@ -106,6 +106,18 @@ class SchemaMapper extends QBMapper
     use MultiTenancyTrait;
 
     /**
+     * Maximum number of expressions allowed in a single SQL IN() list.
+     *
+     * Nextcloud's QueryBuilder refuses to emit more than 1000 expressions in an
+     * IN() list because Oracle rejects them; exceeding it logs an error and
+     * emits an "Undefined array key 0" PHP warning. Batched id lookups must be
+     * chunked below this bound.
+     *
+     * @var integer
+     */
+    private const MAX_IN_LIST_SIZE = 1000;
+
+    /**
      * Event dispatcher instance
      *
      * Dispatches events when schemas are created, updated, or deleted.
@@ -430,20 +442,31 @@ class SchemaMapper extends QBMapper
             return [];
         }
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_schemas')
-            ->where(
-                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
-            );
-
-        $result  = $qb->executeQuery();
         $schemas = [];
 
-        while (($row = $result->fetch()) !== false) {
-            $schema = new Schema();
-            $schema = $schema->fromRow($row);
-            $schemas[$row['id']] = $schema;
+        // An IN() list is capped at MAX_IN_LIST_SIZE expressions: Nextcloud's
+        // QueryBuilder logs "More than 1000 expressions in a list are not allowed
+        // on Oracle" (and emits an "Undefined array key 0" PHP warning) once the
+        // list exceeds that. This instance already holds 1,233 schemas, so the
+        // registers-with-stats endpoint tripped it on every request. Chunk it.
+        foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_schemas')
+                ->where(
+                    $qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY))
+                );
+
+            $result = $qb->executeQuery();
+
+            while (($row = $result->fetch()) !== false) {
+                $schema = new Schema();
+                $schema = $schema->fromRow($row);
+
+                $schemas[$row['id']] = $schema;
+            }
+
+            $result->closeCursor();
         }
 
         return $schemas;
@@ -2254,6 +2277,18 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
+            // Skip inline constraint schemas. JSON Schema allows an allOf entry to be an
+            // inline schema object ({ "required": [...] }, { "properties": {...} }), not
+            // only a $ref to another schema. OpenRegister's composition model treats
+            // allOf/oneOf/anyOf as a list of schema IDENTIFIERS, so only string/int
+            // entries are references to load — an array entry is a constraint that stands
+            // on its own and must not be handed to loadSchema() (which would fatal on the
+            // array). This unblocked openconnector's register import, silently broken by
+            // lti_deployment's `oneOf: [{required, not}, ...]` XOR constraint.
+            if (is_string($parentRef) === false && is_int($parentRef) === false) {
+                continue;
+            }
+
             // Check for self-reference.
             if ($parentRef === $currentId || $parentRef === $schema->getId()
                 || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
@@ -2422,6 +2457,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($oneOf as $ref) {
+            // Skip inline constraint schemas — a oneOf entry may be an inline schema object
+            // ({ "required": [...], "not": {...} }) rather than a $ref to another schema.
+            // Only string/int entries are schema identifiers to load. See resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2434,7 +2476,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (oneOf schemas are not merged).
         return $schema;
@@ -2462,6 +2504,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($anyOf as $ref) {
+            // Skip inline constraint schemas — an anyOf entry may be an inline schema
+            // object rather than a $ref. Only string/int entries are identifiers. See
+            // resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2474,7 +2523,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (anyOf schemas are not merged).
         return $schema;

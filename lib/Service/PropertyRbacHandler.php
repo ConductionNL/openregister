@@ -137,10 +137,20 @@ class PropertyRbacHandler
      *
      * @spec openspec/specs/row-field-level-security/spec.md#fls-strips-restricted-fields (strips unreadable
      *       property-authorized fields from outgoing data; admin + no-property-auth short-circuit)
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     *       (writeOnly stripping runs before the admin bypass — admin is NOT exempt from writeOnly)
      */
     public function filterReadableProperties(Schema $schema, array $object): array
     {
-        // If user is admin, return object as-is.
+        // Write-only stripping applies to EVERYONE, including admin: a write-only
+        // property (secret/token) is never returned on read. This runs BEFORE the
+        // admin short-circuit below precisely because admin is not exempt. It is a
+        // fail-safe projection: the property may have been selected by the caller
+        // (e.g. ?fields=apiToken) yet is still removed here because stripping is
+        // applied after selection in the render path.
+        $object = $this->stripWriteOnlyProperties(schema: $schema, object: $object);
+
+        // If user is admin, return object as-is (writeOnly already stripped above).
         if ($this->isAdmin() === true) {
             return $object;
         }
@@ -173,6 +183,48 @@ class PropertyRbacHandler
 
         return $object;
     }//end filterReadableProperties()
+
+    /**
+     * Strip write-only properties from outgoing object data.
+     *
+     * A property declared `writeOnly: true` (standard JSON Schema / OpenAPI
+     * keyword) is a write-only secret: it may be written but is NEVER returned
+     * on read, for ANY caller including admin. This is the correct semantic for
+     * secrets and tokens and is the platform-level answer to openregister#380
+     * (ADR-063 MCP tools have no field projection of their own, so stripping in
+     * OpenRegister's read path makes them inherit the redaction automatically).
+     *
+     * Fail-safe: only opted-in properties are removed; a schema with no
+     * writeOnly property returns the object untouched (backward compatible).
+     * The render path applies this AFTER caller-supplied field/extend selection,
+     * so a caller cannot re-surface a stripped property by naming it.
+     *
+     * @param Schema $schema Schema containing property definitions
+     * @param array  $object Object data to filter
+     *
+     * @return array Object data with write-only properties removed
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     *       (strips writeOnly properties for every reader; short-circuits when the schema has none)
+     */
+    public function stripWriteOnlyProperties(Schema $schema, array $object): array
+    {
+        if ($schema->hasWriteOnlyProperties() === false) {
+            return $object;
+        }
+
+        foreach ($schema->getWriteOnlyProperties() as $propertyName) {
+            if (array_key_exists($propertyName, $object) === true) {
+                unset($object[$propertyName]);
+                $this->logger->debug(
+                    message: '[PropertyRbacHandler] Stripped write-only property',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
+                );
+            }
+        }
+
+        return $object;
+    }//end stripWriteOnlyProperties()
 
     /**
      * Validate writable properties on incoming data

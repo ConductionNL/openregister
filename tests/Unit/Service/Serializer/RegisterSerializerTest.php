@@ -311,4 +311,85 @@ class RegisterSerializerTest extends TestCase
     }//end makeSchema()
 
 
+    /**
+     * Registers share schemas, and serializeMany() expands the schemas of EVERY register.
+     * Each schema used to be re-fetched once per register that referenced it — and
+     * SchemaMapper::find() resolves an identifier with `WHERE uuid = ? OR slug = ? OR
+     * id = ?`, which no index covers. On a dev instance (76 registers, 1,231 schemas) that
+     * was the hottest query in the request; `GET /api/registers?_extend[]=schemas&
+     * _extend[]=@self.stats` took 76 seconds.
+     *
+     * @return void
+     */
+    public function testSchemasSharedAcrossRegistersAreFetchedOnce(): void
+    {
+        // Three registers, all referencing the same two schemas.
+        $registers = [
+            $this->makeRegister(1, [10, 20]),
+            $this->makeRegister(2, [10, 20]),
+            $this->makeRegister(3, [10, 20]),
+        ];
+
+        $schema10 = $this->makeSchema(10, 'foo');
+        $schema20 = $this->makeSchema(20, 'bar');
+
+        $fetched = [];
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($schema10, $schema20, &$fetched) {
+                $fetched[] = $id;
+                return ($id === 10) ? $schema10 : $schema20;
+            }
+        );
+
+        $result = $this->serializer->serializeMany($registers, ['schemas']);
+
+        // Six references, two distinct schemas → two reads, not six.
+        $this->assertSame([10, 20], $fetched);
+
+        // ...and every register still gets both schemas expanded.
+        $this->assertCount(3, $result);
+        foreach ($result as $register) {
+            $this->assertCount(2, $register['schemas']);
+            $this->assertSame(10, $register['schemas'][0]['id']);
+            $this->assertSame(20, $register['schemas'][1]['id']);
+        }
+
+    }//end testSchemasSharedAcrossRegistersAreFetchedOnce()
+
+
+    /**
+     * The cache must not swallow a miss: an orphan id still has to throw out of the mapper
+     * so expandSchemas() can retain it in place, and it must not be cached as a "hit".
+     *
+     * @return void
+     */
+    public function testOrphanIdIsStillRetainedWhenSchemasAreCached(): void
+    {
+        $registers = [
+            $this->makeRegister(1, [10, 999]),
+            $this->makeRegister(2, [10, 999]),
+        ];
+
+        $schema10 = $this->makeSchema(10, 'foo');
+
+        $this->schemaMapper->method('find')->willReturnCallback(
+            function ($id) use ($schema10) {
+                if ($id === 10) {
+                    return $schema10;
+                }
+
+                throw new DoesNotExistException('schema not found');
+            }
+        );
+
+        $result = $this->serializer->serializeMany($registers, ['schemas']);
+
+        foreach ($result as $register) {
+            $this->assertSame(10, $register['schemas'][0]['id']);
+            $this->assertSame(999, $register['schemas'][1]);
+        }
+
+    }//end testOrphanIdIsStillRetainedWhenSchemasAreCached()
+
+
 }//end class

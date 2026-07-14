@@ -127,6 +127,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
 		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 	</background-jobs>
 
     <navigations>
