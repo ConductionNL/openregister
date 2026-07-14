@@ -2947,8 +2947,23 @@ class Application extends App implements IBootstrap
             $scanner    = new AttributeToolScanner();
 
             foreach ($appManager->getInstalledApps() as $appId) {
+                // The `IMcpScannableServices::<appId>` opt-in alias — and the
+                // scanned service class itself (ADR-041) — live in the opting-in
+                // app's OWN DI container, NOT OR's shared container: a leaf app
+                // registers them via $context->registerServiceAlias() in its own
+                // Application::register(), which binds into that app's
+                // \OC\AppFramework\DependencyInjection\DIContainer. Resolving them
+                // off the shared $container silently returns nothing (#390), so
+                // both alias and instance resolution must go through the app's
+                // own container. Fail-soft: an app with no registered container
+                // (or a container whose resolution throws) is simply skipped.
+                $appContainer = $this->getRegisteredAppContainer(appId: $appId, logger: $logger);
+                if ($appContainer === null) {
+                    continue;
+                }
+
                 $classNames = $this->resolveScannableServiceClasses(
-                    container: $container,
+                    appContainer: $appContainer,
                     logger: $logger,
                     appId: $appId
                 );
@@ -2963,7 +2978,7 @@ class Application extends App implements IBootstrap
                 }
 
                 $entries = $this->resolveAttributeEntries(
-                    container: $container,
+                    appContainer: $appContainer,
                     logger: $logger,
                     appId: $appId,
                     descriptors: $descriptors,
@@ -2989,29 +3004,72 @@ class Application extends App implements IBootstrap
     }//end collectAttributeMcpProviders()
 
     /**
-     * Resolve one app's declared scannable service classes via the
-     * `IMcpScannableServices::<appId>` container alias, or an empty list
-     * when the app has not opted in / the alias fails to resolve.
+     * Obtain the opting-in app's OWN DI container so its
+     * `IMcpScannableServices::<appId>` opt-in alias (and the attributed
+     * service instances) can be resolved from where the leaf app actually
+     * registered them (#390).
      *
-     * @param ContainerInterface       $container The DI container.
-     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
-     * @param string                   $appId     The candidate app id.
+     * Wraps `\OC::$server->getRegisteredAppContainer($appId)`, which throws
+     * when the app has no bootstrapped container. Fail-soft: any error (app
+     * not registered, server seam unavailable) returns null so a single
+     * misbehaving app never fatals the whole MCP catalog. Isolated behind
+     * its own method so unit tests can override the app-container topology.
+     *
+     * @param string                   $appId  The candidate app id.
+     * @param \Psr\Log\LoggerInterface $logger PSR logger.
+     *
+     * @return ContainerInterface|null The app's own container, or null when unavailable.
+     */
+    protected function getRegisteredAppContainer(
+        string $appId,
+        \Psr\Log\LoggerInterface $logger
+    ): ?ContainerInterface {
+        try {
+            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[McpToolsService] No registered app container',
+                ['appId' => $appId, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+
+        return ($appContainer instanceof ContainerInterface) ? $appContainer : null;
+
+    }//end getRegisteredAppContainer()
+
+    /**
+     * Resolve one app's declared scannable service classes via the
+     * `IMcpScannableServices::<appId>` alias registered in THAT APP'S OWN
+     * container, or an empty list when the app has not opted in / the alias
+     * fails to resolve.
+     *
+     * The alias is registered by the leaf app in its own
+     * Application::register() and therefore lives in the app's own
+     * \OC\AppFramework\DependencyInjection\DIContainer — never in OR's shared
+     * container. Resolving it off the shared container silently discovered
+     * nothing (#390); {@see collectAttributeMcpProviders()} passes the
+     * per-app container obtained from {@see getRegisteredAppContainer()}.
+     *
+     * @param ContainerInterface       $appContainer The opting-in app's own DI container.
+     * @param \Psr\Log\LoggerInterface $logger       PSR logger.
+     * @param string                   $appId        The candidate app id.
      *
      * @return list<string> Candidate scannable service FQCNs (possibly empty).
      */
     private function resolveScannableServiceClasses(
-        ContainerInterface $container,
+        ContainerInterface $appContainer,
         \Psr\Log\LoggerInterface $logger,
         string $appId
     ): array {
         $key = 'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::'.$appId;
 
         try {
-            if ($container->has($key) === false) {
+            if ($appContainer->has($key) === false) {
                 return [];
             }
 
-            $declaration = $container->get($key);
+            $declaration = $appContainer->get($key);
         } catch (\Throwable $e) {
             $logger->debug(
                 '[McpToolsService] Scannable-services alias resolve failed',
@@ -3033,16 +3091,20 @@ class Application extends App implements IBootstrap
      * ADR-041), applying the collision policy documented on
      * {@see collectAttributeMcpProviders()}.
      *
-     * @param ContainerInterface               $container   The DI container.
-     * @param \Psr\Log\LoggerInterface         $logger      PSR logger.
-     * @param string                           $appId       The owning app id.
-     * @param array<int, array<string, mixed>> $descriptors Scanned descriptors (see AttributeToolScanner).
-     * @param array<IMcpToolProvider>          $providers   Providers collected so far (for collision checks).
+     * The service instance is resolved from the owning app's OWN container
+     * (#390) — the scanned class and its dependencies are only reliably
+     * wireable there, not in OR's shared container.
+     *
+     * @param ContainerInterface               $appContainer The owning app's own DI container.
+     * @param \Psr\Log\LoggerInterface         $logger       PSR logger.
+     * @param string                           $appId        The owning app id.
+     * @param array<int, array<string, mixed>> $descriptors  Scanned descriptors (see AttributeToolScanner).
+     * @param array<IMcpToolProvider>          $providers    Providers collected so far (for collision checks).
      *
      * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
      */
     private function resolveAttributeEntries(
-        ContainerInterface $container,
+        ContainerInterface $appContainer,
         \Psr\Log\LoggerInterface $logger,
         string $appId,
         array $descriptors,
@@ -3085,7 +3147,7 @@ class Application extends App implements IBootstrap
             }
 
             try {
-                $descriptor['instance'] = $container->get($descriptor['class']);
+                $descriptor['instance'] = $appContainer->get($descriptor['class']);
             } catch (\Throwable $e) {
                 $logger->warning(
                     '[McpToolsService] Could not resolve attributed tool service instance',
