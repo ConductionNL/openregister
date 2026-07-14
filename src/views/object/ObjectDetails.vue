@@ -411,9 +411,14 @@ export default {
 			// Live-updates handle for the or-object-{uuid} subscription of the
 			// currently opened object (adopt-live-updates-ui). Managed by
 			// syncLiveSubscription(); liveKey is `${type}::${uuid}` so a
-			// re-render for the same object is a no-op.
+			// re-render for the same object is a no-op. livePendingKey marks
+			// an in-flight subscribe so a concurrent same-key call doesn't
+			// double-subscribe; liveEpoch invalidates in-flight resolutions
+			// after a release (object switch / destroy).
 			liveHandle: null,
 			liveKey: '',
+			livePendingKey: '',
+			liveEpoch: 0,
 			liveUnwatch: null,
 			auditTrailLoading: false,
 			auditTrails: [],
@@ -580,6 +585,11 @@ export default {
 			if (this.liveHandle && this.liveKey === key) {
 				return
 			}
+			if (this.livePendingKey === key) {
+				// A subscribe for this exact object is already in flight —
+				// re-subscribing here would leak the first handle + watcher.
+				return
+			}
 			this.releaseLiveSubscription()
 			try {
 				// Subscription is independent of the list view's registration
@@ -587,11 +597,16 @@ export default {
 				if (!objectStore.objectTypes.includes(type)) {
 					objectStore.registerObjectType(type, ctx.schema, ctx.register)
 				}
+				const epoch = this.liveEpoch
+				this.livePendingKey = key
 				this.liveKey = key
 				const handle = await objectStore.subscribe(type, uuid)
-				if (this.liveKey !== key) {
-					// Another object was opened (or the component was
-					// destroyed) while awaiting — drop the stale subscription.
+				if (this.livePendingKey === key) {
+					this.livePendingKey = ''
+				}
+				if (this.liveEpoch !== epoch) {
+					// Released while awaiting (another object opened, or the
+					// component was destroyed) — drop the stale subscription.
 					objectStore.unsubscribe(handle)
 					return
 				}
@@ -607,18 +622,25 @@ export default {
 					},
 				)
 			} catch (e) {
+				if (this.livePendingKey === key) {
+					this.livePendingKey = ''
+				}
 				this.liveHandle = null
 				this.liveKey = ''
 				console.warn('[ObjectDetails] live subscription failed:', e?.message ?? e)
 			}
 		},
 		/**
-		 * Release the current live object subscription and its cache watcher.
+		 * Release the current live object subscription and its cache watcher,
+		 * and invalidate any in-flight subscribe (its resolution unsubscribes
+		 * itself via the epoch check).
 		 *
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 * @return {void}
 		 */
 		releaseLiveSubscription() {
+			this.liveEpoch += 1
+			this.livePendingKey = ''
 			if (this.liveUnwatch) {
 				this.liveUnwatch()
 				this.liveUnwatch = null

@@ -17,8 +17,10 @@
   (`registerObjectType`) when the list's own refresh has not done so yet.
 - [x] 2.2 Re-scope on register/schema switch via a watcher on the store's
   `currentType`; subscribe on mount; unsubscribe in `beforeDestroy`.
-- [x] 2.3 Guard the async race: a subscription resolving after the scope
-  changed (or after unmount) is immediately unsubscribed instead of leaked.
+- [x] 2.3 Guard the async races: an in-flight same-scope call is deduped via
+  a pending-type marker (no double subscribe), and a subscription resolving
+  after a release (scope change / unmount) is invalidated by an epoch counter
+  and immediately unsubscribed instead of leaked.
 
 ## 3. Object detail view (object subscription)
 
@@ -30,7 +32,9 @@
   Options-API template (which renders `objectStore.objectItem`) updates.
 - [x] 3.3 Re-scope when another object is opened (`updated()` hook alongside
   the existing sub-resource reloads); release subscription + watcher in
-  `beforeDestroy`; same async-race guard as the list view.
+  `beforeDestroy`; same async-race guards as the list view (pending-key
+  in-flight dedupe + epoch invalidation of stale resolutions, which would
+  otherwise also leak the `$watch` unwatcher).
 
 ## 4. Out of scope / deferred
 

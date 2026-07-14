@@ -146,8 +146,13 @@ export default {
 			// Live-updates handle for the or-collection-{register}-{schema}
 			// subscription of the currently scoped register+schema
 			// (adopt-live-updates-ui). Managed by syncLiveSubscription().
+			// livePendingType marks an in-flight subscribe so a concurrent
+			// same-scope call doesn't double-subscribe; liveEpoch invalidates
+			// in-flight resolutions after a release (scope change / destroy).
 			liveHandle: null,
 			liveType: '',
+			livePendingType: '',
+			liveEpoch: 0,
 		}
 	},
 	computed: {
@@ -248,6 +253,11 @@ export default {
 			if (this.liveHandle && this.liveType === type) {
 				return
 			}
+			if (this.livePendingType === type) {
+				// A subscribe for this exact scope is already in flight —
+				// re-subscribing here would leak the first handle.
+				return
+			}
 			this.releaseLiveSubscription()
 			try {
 				// Subscription is independent of refreshObjectList timing:
@@ -260,28 +270,40 @@ export default {
 					}
 					objectStore.registerObjectType(type, schemaId, registerId)
 				}
+				const epoch = this.liveEpoch
+				this.livePendingType = type
 				this.liveType = type
 				const handle = await objectStore.subscribe(type)
-				if (this.liveType !== type) {
-					// Scope changed (or component destroyed) while awaiting —
-					// drop the now-stale subscription instead of leaking it.
+				if (this.livePendingType === type) {
+					this.livePendingType = ''
+				}
+				if (this.liveEpoch !== epoch) {
+					// released while awaiting (scope change / destroy) — drop
+					// the now-stale subscription instead of leaking it.
 					objectStore.unsubscribe(handle)
 					return
 				}
 				this.liveHandle = handle
 			} catch (e) {
+				if (this.livePendingType === type) {
+					this.livePendingType = ''
+				}
 				this.liveHandle = null
 				this.liveType = ''
 				console.warn('[ObjectsList] live subscription failed:', e?.message ?? e)
 			}
 		},
 		/**
-		 * Release the current live collection subscription, if any.
+		 * Release the current live collection subscription, if any, and
+		 * invalidate any in-flight subscribe (its resolution unsubscribes
+		 * itself via the epoch check).
 		 *
 		 * @spec openspec/specs/realtime-updates/spec.md
 		 * @return {void}
 		 */
 		releaseLiveSubscription() {
+			this.liveEpoch += 1
+			this.livePendingType = ''
 			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
 				objectStore.unsubscribe(this.liveHandle)
 			}
