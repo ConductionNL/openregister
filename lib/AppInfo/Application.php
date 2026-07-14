@@ -141,7 +141,6 @@ use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
-use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\FlowActionListener;
@@ -325,6 +324,10 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)  IBootstrap::boot(IBootContext) signature
  *   is fixed by the NC framework contract; the $context parameter may not be used in
  *   every version of the boot method.
+ * @SuppressWarnings(PHPMD.TooManyMethods)         Bootstrap class groups its register/boot
+ *   wire-up into per-concern helper methods (services, listeners, middleware, capabilities);
+ *   inlining them to satisfy the method-count threshold would recreate one unreadable
+ *   mega-method that the ExcessiveMethodLength suppression already guards against.
  */
 class Application extends App implements IBootstrap
 {
@@ -2378,12 +2381,6 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
-
-        // Realtime event log — append-only CloudEvent records for SSE/polling clients.
-        $context->registerEventListener(ObjectCreatedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectTransitionedEvent::class, RealtimeEventListener::class);
 
         // Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
         $context->registerEventListener(ObjectCreatedEvent::class,      TranslationProjectionListener::class);
