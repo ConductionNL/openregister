@@ -1347,4 +1347,103 @@ class RenderObjectCoverageTest extends TestCase
         $serialized = $result->jsonSerialize();
         $this->assertTrue($serialized['@circular'] ?? false);
     }
+
+    // =========================================================================
+    // handleInversedProperties — single read uses the batched preload machinery
+    // (list-path parity, no cross-table findByRelation scan)
+    // =========================================================================
+
+    /**
+     * A single-entity render (show() path) must resolve inversedBy properties
+     * through the same schema-targeted batched machinery as the list path
+     * (preloadInverseRelationships → findByRelationBatchInSchema) and produce
+     * an identical result — never through the generic cross-table
+     * findByRelation() reverse-reference scan.
+     *
+     * @return void
+     */
+    public function testSingleReadResolvesInversePropertiesViaBatchedPreloadLikeListRead(): void
+    {
+        $entityUuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $refUuid = 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
+
+        $schema = $this->createSchema(1, 'org-schema');
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'contacts' => [
+                'type' => 'array',
+                'items' => [
+                    'inversedBy' => 'org',
+                    '$ref' => '5',
+                ],
+            ],
+        ]);
+        $targetSchema = $this->createSchema(5, 'contact-schema');
+        $targetSchema->setProperties([
+            'name' => ['type' => 'string'],
+            'org' => ['type' => 'string'],
+        ]);
+        $this->setPrivateProperty('schemasCache', [1 => $schema, 5 => $targetSchema]);
+        $this->fileMapper->method('getFilesForObject')->willReturn([]);
+
+        $makeEntity = function () use ($entityUuid): ObjectEntity {
+            $entity = $this->createObjectEntity(1, $entityUuid, ['name' => 'Org']);
+            $entity->setSchema(1);
+            $entity->setRegister(1);
+            return $entity;
+        };
+
+        $makeRef = function () use ($refUuid, $entityUuid): ObjectEntity {
+            $ref = $this->createObjectEntity(2, $refUuid, ['name' => 'Contact', 'org' => $entityUuid]);
+            $ref->setSchema(5);
+            $ref->setRegister(1);
+            return $ref;
+        };
+
+        // The generic cross-table reverse-reference scan must NOT run…
+        $this->objectMapper->expects($this->never())
+            ->method('findByRelation');
+
+        // …the schema-targeted batched lookup serves BOTH the single and the
+        // list path (one call each).
+        $this->objectMapper->expects($this->exactly(2))
+            ->method('findByRelationBatchInSchema')
+            ->willReturnCallback(
+                function () use ($makeRef): array {
+                    return [$makeRef()];
+                }
+            );
+
+        // Single read (renderEntity — the show() path).
+        $singleRendered = $this->handler->renderEntity(
+            entity: $makeEntity(),
+            _extend: ['contacts']
+        )->jsonSerialize();
+
+        // Reset the per-request inverse caches so the list path starts cold too.
+        $this->setPrivateProperty('inverseRelationCache', []);
+        $this->setPrivateProperty('objectsCache', []);
+
+        // List read (renderEntities — the index() path).
+        $listEntities = $this->handler->renderEntities(
+            entities: [$makeEntity()],
+            _extend: ['contacts']
+        );
+        $listRendered = $listEntities[0]->jsonSerialize();
+
+        $this->assertNotEmpty(
+            $singleRendered['contacts'],
+            'single read must resolve the extended inverse property'
+        );
+        $this->assertSame(
+            'Contact',
+            $singleRendered['contacts'][0]['name'] ?? null,
+            'inverse property must contain the fully rendered referencing object'
+        );
+        $this->assertEquals(
+            $listRendered['contacts'],
+            $singleRendered['contacts'],
+            'single read must resolve inverse properties identically to a list read'
+        );
+    }
 }

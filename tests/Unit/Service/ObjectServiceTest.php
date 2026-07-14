@@ -2702,4 +2702,156 @@ class ObjectServiceTest extends TestCase
 			$this->assertSame(1, $callCount, 'no register/schema context means the first lookup is already cross-table');
 		}
 	}
+
+	// ── find() render skip (single-render read path) ───────────────────────
+
+	/**
+	 * find(_render: false) returns the raw entity without invoking the render
+	 * handler, while the permission check still runs.
+	 *
+	 * This is the contract ObjectsController::show() relies on: the controller
+	 * is the single render site, so find() must not render the entity a first
+	 * time (double render repeated file hydration, writeOnly redaction and the
+	 * expensive inverse-property resolution on every single read).
+	 */
+	public function testFindSkipsRenderingWhenRenderFalse(): void
+	{
+		$entity = new ObjectEntity();
+		$entity->setId(1);
+		$entity->setUuid('550e8400-e29b-41d4-a716-446655440000');
+		$entity->setSchema(2);
+
+		$this->getHandler
+			->expects($this->once())
+			->method('find')
+			->willReturn($entity);
+
+		// setSchema will be called since currentSchema is null.
+		$this->performanceHandler
+			->method('getCachedEntities')
+			->willReturn([$this->schema]);
+
+		// The read is still access-controlled even when rendering is skipped.
+		$this->permissionHandler
+			->expects($this->once())
+			->method('checkPermission');
+
+		// The whole point: no render pass inside find().
+		$this->renderHandler
+			->expects($this->never())
+			->method('renderEntity');
+
+		$result = $this->service->find(
+			id: '550e8400-e29b-41d4-a716-446655440000',
+			schema: $this->schema,
+			_render: false
+		);
+
+		$this->assertSame($entity, $result);
+	}
+
+	// ── find() request-scoped uuid → (register, schema) cache ──────────────
+
+	/**
+	 * A second lookup of the same uuid under the same stale scope goes straight
+	 * to the object's resolved register/schema: one scoped call instead of a
+	 * scoped miss plus a cross-table scan.
+	 */
+	public function testFindUsesUuidScopeCacheOnRepeatedStaleScopeLookups(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$trueRegister = new Register();
+		$trueRegister->setId(8);
+		$trueSchema = new Schema();
+		$trueSchema->setId(1470);
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// Call 1 (stale scope) misses; call 2 (cross-table) resolves; call 3
+		// (second find(), cache hit) must be scoped to the TRUE context.
+		$callCount = 0;
+		$calls     = [];
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, &$calls, $object): ObjectEntity {
+				$callCount++;
+				$calls[] = $args;
+				if ($callCount === 1) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		// Re-anchoring resolves the object's true register/schema by id.
+		$this->registerMapper->method('find')->willReturn($trueRegister);
+		$this->schemaMapper->method('find')->willReturn($trueSchema);
+
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		// First read: scoped miss + cross-table fallback (2 handler calls).
+		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$this->assertSame(2, $callCount);
+
+		// Second read with the SAME stale scope: exactly ONE more handler call…
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result);
+		$this->assertSame(3, $callCount, 'a repeated uuid lookup must not re-run the cross-table fallback');
+
+		// …and that call is scoped to the resolved true context, not unscoped.
+		// GetObject::find positional args: [0]=id, [1]=register, [2]=schema.
+		$this->assertSame($trueRegister, $calls[2][1], 'cache hit must target the resolved register');
+		$this->assertSame($trueSchema, $calls[2][2], 'cache hit must target the resolved schema');
+	}
+
+	/**
+	 * A cached scope that no longer resolves (object deleted/moved mid-request)
+	 * is invalidated and the original cross-table fallback still runs — the
+	 * cache is a fast path only, never a behaviour change (openregister#1520).
+	 */
+	public function testFindInvalidatesUuidScopeCacheWhenCachedScopeMisses(): void
+	{
+		$uuid = '9974da4d-e091-440d-a5d3-f09a6e5c556d';
+
+		$trueRegister = new Register();
+		$trueRegister->setId(8);
+		$trueSchema = new Schema();
+		$trueSchema->setId(1470);
+
+		$object = new ObjectEntity();
+		$object->setId(3);
+		$object->setUuid($uuid);
+		$object->setRegister('8');
+		$object->setSchema('1470');
+
+		// Call 1: stale-scope miss. Call 2: cross-table hit (populates cache).
+		// Call 3: cached-scope lookup misses (object moved). Call 4: fallback.
+		$callCount = 0;
+		$this->getHandler->method('find')->willReturnCallback(
+			function (...$args) use (&$callCount, $object): ObjectEntity {
+				$callCount++;
+				if ($callCount === 1 || $callCount === 3) {
+					throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found in magic table');
+				}
+
+				return $object;
+			}
+		);
+
+		$this->registerMapper->method('find')->willReturn($trueRegister);
+		$this->schemaMapper->method('find')->willReturn($trueSchema);
+		$this->renderHandler->method('renderEntity')->willReturn($object);
+
+		$this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+		$result = $this->service->find(id: $uuid, register: $this->register, schema: $this->schema);
+
+		$this->assertSame($object, $result, 'the cross-table fallback must still resolve the object');
+		$this->assertSame(4, $callCount, 'stale cache entry must fall back to the cross-table lookup');
+	}
 }

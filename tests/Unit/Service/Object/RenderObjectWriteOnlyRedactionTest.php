@@ -94,7 +94,17 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
             $this->createMock(\OCP\SystemTag\ISystemTagObjectMapper::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\CacheHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\PropertyRbacHandler::class),
+            // The REAL PropertyRbacHandler: renderEntity() routes the rendered data
+            // through filterReadableProperties() whenever the schema declares
+            // writeOnly properties, and a bare mock (returning []) would wipe the
+            // whole object instead of stripping only the secrets. The real handler
+            // with an anonymous session exercises the actual stripping logic.
+            new \OCA\OpenRegister\Service\PropertyRbacHandler(
+                $this->createMock(\OCP\IUserSession::class),
+                $this->createMock(\OCP\IGroupManager::class),
+                $this->createMock(\OCA\OpenRegister\Service\ConditionMatcher::class),
+                $this->createMock(\Psr\Log\LoggerInterface::class)
+            ),
             $this->createMock(\Psr\Log\LoggerInterface::class),
             $this->createMock(\OCA\OpenRegister\Service\FileService::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),

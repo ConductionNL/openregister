@@ -1643,7 +1643,8 @@ class RenderObject
                         _unset: $unset,
                         _registers: $registers,
                         _schemas: $schemas,
-                        _objects: $objects
+                        _objects: $objects,
+                        _extendList: $extendArray
                     );
                 }
             }//end if
@@ -3007,9 +3008,7 @@ class RenderObject
             $additionalFields = array_slice($inversedByFields, 1);
         }
 
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-
-        return $magicMapper->findByRelationBatchInSchema(
+        return $this->objectEntityMapper->findByRelationBatchInSchema(
             uuids: $entityUuids,
             schemaId: $schemaIdInt,
             registerId: $registerId,
@@ -3155,15 +3154,18 @@ class RenderObject
     /**
      * Handles inversed properties for an object
      *
-     * @param ObjectEntity $entity     The entity to process
-     * @param array        $objectData The current object data
-     * @param int          $_depth     Current depth level
-     * @param array|null   $_filter    Filters to apply
-     * @param array|null   $_fields    Fields to include
-     * @param array|null   $_unset     Properties to remove from the rendered entity
-     * @param array|null   $_registers Preloaded registers
-     * @param array|null   $_schemas   Preloaded schemas
-     * @param array|null   $_objects   Preloaded objects
+     * @param ObjectEntity $entity      The entity to process
+     * @param array        $objectData  The current object data
+     * @param int          $_depth      Current depth level
+     * @param array|null   $_filter     Filters to apply
+     * @param array|null   $_fields     Fields to include
+     * @param array|null   $_unset      Properties to remove from the rendered entity
+     * @param array|null   $_registers  Preloaded registers
+     * @param array|null   $_schemas    Preloaded schemas
+     * @param array|null   $_objects    Preloaded objects
+     * @param array|null   $_extendList The normalized _extend list for this render; used to
+     *                                  batch-preload exactly the extended inverse properties
+     *                                  (list-path parity). Null preloads all inverse properties.
      *
      * @return array The updated object data with inversed properties
      *
@@ -3183,7 +3185,8 @@ class RenderObject
         ?array $_unset=[],
         ?array $_registers=[],
         ?array $_schemas=[],
-        ?array $_objects=[]
+        ?array $_objects=[],
+        ?array $_extendList=null
     ): array {
         // Get the schema for this object.
         $schema = $this->getSchema(id: $entity->getSchema());
@@ -3220,13 +3223,40 @@ class RenderObject
             );
         }
 
-        // Fallback: Query for referencing objects (original slower path).
-        // This happens when preloading wasn't done (e.g., single entity render).
+        // Single-entity render (e.g. show()): the batch preload only runs on the
+        // list path (renderEntities), so the cache is cold here. Route this read
+        // through the SAME schema-targeted batched machinery the list path uses
+        // (preloadInverseRelationships → findByRelationBatchInSchema, GIN-indexed)
+        // instead of falling straight into the generic cross-table
+        // findByRelation() scan. This also makes single reads resolve inverse
+        // properties identically to list reads.
+        $this->preloadInverseRelationships(
+            entities: [$entity],
+            extend: ($_extendList ?? $propertyNames)
+        );
+
+        foreach ($propertyNames as $propName) {
+            if (isset($this->inverseRelationCache[$entityUuid.'_'.$propName]) === true) {
+                $hasCache = true;
+                break;
+            }
+        }
+
+        if ($hasCache === true) {
+            return $this->handleInversedPropertiesFromCache(
+                entity: $entity,
+                objectData: $objectData,
+                inversedProperties: $inversedProperties
+            );
+        }
+
+        // Fallback: Query for referencing objects (original slower cross-table path).
+        // Only reached when the batched preload could not populate the cache
+        // (e.g. unresolvable target schema reference or batch query failure).
         $referencingObjects = $this->objectEntityMapper->findByRelation($entityUuid);
 
         // For multi-field inversedBy, also search columns directly since _relations
         // may not contain UUIDs stored in object-format fields (e.g., {"value": "uuid"}).
-        $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
         foreach ($inversedProperties as $propName => $propConfig) {
             $inversedByValue = $propConfig['items']['inversedBy'] ?? $propConfig['inversedBy'] ?? null;
             if (is_array($inversedByValue) === true && count($inversedByValue) > 1) {
@@ -3241,7 +3271,7 @@ class RenderObject
                 }
 
                 $additionalFields  = array_slice($inversedByValue, 1);
-                $additionalResults = $magicMapper->findByRelationBatchInSchema(
+                $additionalResults = $this->objectEntityMapper->findByRelationBatchInSchema(
                     uuids: [$entityUuid],
                     schemaId: (int) $targetSchemaId,
                     registerId: (int) $entity->getRegister(),
@@ -3640,7 +3670,8 @@ class RenderObject
 
         // **PERFORMANCE OPTIMIZATION**: Batch preload ALL related objects BEFORE rendering.
         // This prevents N+1 query problem when extending relations across multiple entities.
-        $this->logger->info(
+        // Debug level: this fires on EVERY extended list render (hot path).
+        $this->logger->debug(
                 message: '[RenderObject] [BATCH_PRELOAD] Starting batch preload check',
                 context: [
                     'file'        => __FILE__,
@@ -3672,7 +3703,7 @@ class RenderObject
             // Remove duplicates and batch preload ALL related objects in ONE query.
             $allUuidsToPreload = array_unique($allUuidsToPreload);
 
-            $this->logger->info(
+            $this->logger->debug(
                     message: '[RenderObject] [BATCH_PRELOAD] UUIDs collected',
                     context: [
                         'file'        => __FILE__,
