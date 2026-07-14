@@ -68,6 +68,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Delete operations require coordination with multiple services
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity at threshold (50) due to integrity + cascade + audit logic
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Integrity + legacy cascade + batched cascade paths live together
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
@@ -133,6 +134,8 @@ class DeleteObject
      * @param \OCA\OpenRegister\Db\RegisterMapper|null                         $registerMapper       Register mapper for register lookups
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI constructor wires all delete-path collaborators
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -164,6 +167,10 @@ class DeleteObject
      *                                               'triggerObject', 'triggerSchema', 'action_type'.
      * @param bool                   $permanent      When true, physically removes the record from the database
      *                                               instead of soft-deleting. Used by archival destruction workflow.
+     * @param Register|null          $register       Optional pre-resolved register context. When supplied together
+     *                                               with `$schema` and an ObjectEntity `$object`, the redundant
+     *                                               cross-table re-find of the object's context is skipped.
+     * @param Schema|null            $schema         Optional pre-resolved schema context (see `$register`).
      *
      * @return bool Whether the deletion was successful.
      *
@@ -179,8 +186,13 @@ class DeleteObject
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
-    public function delete(array | JsonSerializable $object, ?array $cascadeContext=null, bool $permanent=false): bool
-    {
+    public function delete(
+        array | JsonSerializable $object,
+        ?array $cascadeContext=null,
+        bool $permanent=false,
+        ?Register $register=null,
+        ?Schema $schema=null
+    ): bool {
         // Handle ObjectEntity passed from deleteObject() - skip redundant lookup.
         // Handle array input - find object with context (searches across all magic tables).
         // NOTE: the ObjectEntity branch MUST be evaluated first. Reading $object['id']
@@ -205,20 +217,32 @@ class DeleteObject
             throw new Exception('Cannot delete object: no identifier (id/@self.id/uuid) found in the supplied data.');
         }
 
-        $includeDeleted = ($object instanceof ObjectEntity);
-        $context        = $this->objectEntityMapper->findAcrossAllSources(
-            identifier: $identifier,
-            includeDeleted: $includeDeleted,
-            _rbac: false,
-            _multitenancy: false
-        );
-        $objectEntity   = $context['object'];
-        if ($object instanceof ObjectEntity === true) {
+        // PERF: callers that already resolved the object AND its register/schema
+        // context (deleteObject() always has both after resolveDeletionContext())
+        // pass them in, skipping a full cross-magic-table re-scan per delete.
+        $objectEntity   = null;
+        $registerEntity = $register;
+        $schemaEntity   = $schema;
+        if ($object instanceof ObjectEntity === true && $register !== null && $schema !== null) {
             $objectEntity = $object;
         }
 
-        $registerEntity = $context['register'];
-        $schemaEntity   = $context['schema'];
+        if ($objectEntity === null) {
+            $includeDeleted = ($object instanceof ObjectEntity);
+            $context        = $this->objectEntityMapper->findAcrossAllSources(
+                identifier: $identifier,
+                includeDeleted: $includeDeleted,
+                _rbac: false,
+                _multitenancy: false
+            );
+            $objectEntity   = $context['object'];
+            if ($object instanceof ObjectEntity === true) {
+                $objectEntity = $object;
+            }
+
+            $registerEntity = $context['register'];
+            $schemaEntity   = $context['schema'];
+        }
 
         // **PERMANENT DELETE**: Physical removal from database (archival destruction workflow).
         if ($permanent === true) {
@@ -301,6 +325,11 @@ class DeleteObject
             'organisation' => $activeOrganisation,
         ];
 
+        // PERF: snapshot the pre-delete state once and hand it to the mapper as
+        // the update's old entity — this skips the mapper's internal pre-update
+        // re-find (the entity was freshly fetched by every caller of this method).
+        $preDeleteState = clone $objectEntity;
+
         $objectEntity->setDeleted($deletionData);
 
         // BUG-OBJ-2: soft delete intentionally LEAVES the bound Nextcloud folder/files
@@ -314,7 +343,8 @@ class DeleteObject
         $result = $this->objectEntityMapper->update(
             entity: $objectEntity,
             register: $registerEntity,
-            schema: $schemaEntity
+            schema: $schemaEntity,
+            oldEntity: $preDeleteState
         ) !== null;
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
@@ -361,26 +391,16 @@ class DeleteObject
                 $auditAction = $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete';
             }
 
-            $auditTrail = $this->auditTrailMapper->createAuditTrail(
+            // PERF: cascade context (referential-integrity tagging) is folded into
+            // the initial INSERT by the mapper. Previously this issued a second
+            // UPDATE per cascade-tagged row, which also invalidated the hash-chain
+            // seal computed over the freshly-inserted row.
+            $this->auditTrailMapper->createAuditTrail(
                 old: $objectEntity,
                 new: null,
-                action: $auditAction
+                action: $auditAction,
+                cascadeContext: $cascadeContext
             );
-
-            // If this deletion was triggered by referential integrity, tag the audit entry
-            // with cascade context metadata so it can be distinguished from user-initiated deletes.
-            if ($cascadeContext !== null && $auditTrail !== null) {
-                $changed = $auditTrail->getChanged() ?? [];
-                $changed['triggeredBy']    = 'referential_integrity';
-                $changed['cascadeContext'] = [
-                    'triggerObject' => $cascadeContext['triggerObject'] ?? null,
-                    'triggerSchema' => $cascadeContext['triggerSchema'] ?? null,
-                    'action_type'   => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
-                    'property'      => $cascadeContext['property'] ?? null,
-                ];
-                $auditTrail->setChanged($changed);
-                $this->auditTrailMapper->update($auditTrail);
-            }
         }//end if
 
         return $result;
@@ -478,6 +498,12 @@ class DeleteObject
      *                                                   without touching any row (#1638).
      *                                                   When false (default), legacy cross-table lookup
      *                                                   via `findAcrossAllSources` is used.
+     * @param ObjectEntity|null        $preResolved      Optional already-fetched entity for `$uuid`. Callers
+     *                                                   that batch-resolve many objects up front (bulk delete)
+     *                                                   pass it together with concrete Register + Schema
+     *                                                   entities so the handler skips its own per-object
+     *                                                   cross-table lookup. Ignored unless its uuid matches
+     *                                                   `$uuid` and both scope entities are concrete.
      *
      * @return bool Whether the deletion was successful.
      *
@@ -499,7 +525,8 @@ class DeleteObject
         ?string $originalObjectId=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $scoped=false
+        bool $scoped=false,
+        ?ObjectEntity $preResolved=null
     ): bool {
         // Read-only projection guard: a schema served from an external source
         // (x-openregister-object-source) is read-only — deletes are not allowed.
@@ -539,7 +566,8 @@ class DeleteObject
             uuid: $uuid,
             scoped: $scoped,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            preResolved: $preResolved
         );
 
         $object = $context['object'];
@@ -557,7 +585,12 @@ class DeleteObject
         }
 
         try {
-            return $this->delete(object: $object);
+            // Pass the already-resolved scope so delete() skips its own re-find.
+            return $this->delete(
+                object: $object,
+                register: $this->contextRegisterEntity(context: $context),
+                schema: $this->contextSchemaEntity(context: $context)
+            );
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[DeleteObject] Delete failed',
@@ -589,6 +622,10 @@ class DeleteObject
      *                                                magic table; lookup MUST target only that table.
      * @param bool                     $_rbac         Whether to apply RBAC checks.
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering.
+     * @param ObjectEntity|null        $preResolved   Optional already-fetched entity for $uuid;
+     *                                                used (and the lookup skipped entirely) only
+     *                                                when its uuid matches and both scope
+     *                                                parameters are concrete entities.
      *
      * @return array{object: ObjectEntity, register: Register|int|string, schema: Schema|int|string}
      *
@@ -605,8 +642,25 @@ class DeleteObject
         string $uuid,
         bool $scoped,
         bool $_rbac,
-        bool $_multitenancy
+        bool $_multitenancy,
+        ?ObjectEntity $preResolved=null
     ): array {
+        // PERF: a caller that already resolved the entity (bulk delete performs
+        // ONE batched cross-table lookup for all UUIDs) passes it in — skip the
+        // per-object magic-table scan entirely. Defensive: the entity must match
+        // the requested uuid and the scope must be concrete entities.
+        if ($preResolved !== null
+            && $preResolved->getUuid() === $uuid
+            && $register instanceof Register === true
+            && $schema instanceof Schema === true
+        ) {
+            return [
+                'object'   => $preResolved,
+                'register' => $register,
+                'schema'   => $schema,
+            ];
+        }
+
         // Scoped path: lookup hits exactly one magic table — a UUID in a
         // different scope raises DoesNotExistException. This is the fix for
         // #1638 (cross-scope silent deletes).
@@ -641,6 +695,44 @@ class DeleteObject
         );
 
     }//end resolveDeletionContext()
+
+    /**
+     * Extract a concrete Register entity from a deletion context, or null.
+     *
+     * @param array $context The deletion context (from resolveDeletionContext()).
+     *
+     * @return Register|null The register entity when the context holds one.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function contextRegisterEntity(array $context): ?Register
+    {
+        $contextRegister = ($context['register'] ?? null);
+        if ($contextRegister instanceof Register === true) {
+            return $contextRegister;
+        }
+
+        return null;
+    }//end contextRegisterEntity()
+
+    /**
+     * Extract a concrete Schema entity from a deletion context, or null.
+     *
+     * @param array $context The deletion context (from resolveDeletionContext()).
+     *
+     * @return Schema|null The schema entity when the context holds one.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function contextSchemaEntity(array $context): ?Schema
+    {
+        $contextSchema = ($context['schema'] ?? null);
+        if ($contextSchema instanceof Schema === true) {
+            return $contextSchema;
+        }
+
+        return null;
+    }//end contextSchemaEntity()
 
     /**
      * Handle referential integrity checks and cascade deletion for root deletions.
@@ -767,7 +859,12 @@ class DeleteObject
                 analysis: $analysis
             );
 
-            $result = $this->delete(object: $object, cascadeContext: $rootCascadeCtx);
+            $result = $this->delete(
+                object: $object,
+                cascadeContext: $rootCascadeCtx,
+                register: $this->contextRegisterEntity(context: $context),
+                schema: $this->contextSchemaEntity(context: $context)
+            );
             $this->db->commit();
             return $result;
         } catch (Exception $e) {
@@ -875,6 +972,15 @@ class DeleteObject
     /**
      * Handles cascading deletes for related objects (legacy cascade: true).
      *
+     * PERF: all referenced ids are collected first and resolved with ONE batched
+     * cross-table lookup, then soft-deleted with one UPDATE per magic table and
+     * one multi-row audit INSERT — instead of running the full per-object delete
+     * pipeline (cross-table scan, re-find, row update, audit insert) per id.
+     * Ids the uuid-based batch lookup cannot resolve (numeric ids, slugs, URIs)
+     * fall back to the legacy per-id pipeline, preserving prior behaviour.
+     * Cascade depth is unchanged: children are sub-deletions (originalObjectId
+     * set) and never cascade further, exactly like the per-id pipeline.
+     *
      * @param Register     $register         The register containing the object.
      * @param Schema       $schema           The schema of the object.
      * @param ObjectEntity $object           The object being deleted.
@@ -890,6 +996,61 @@ class DeleteObject
         ObjectEntity $object,
         string $originalObjectId
     ): void {
+        $cascadeIds = $this->collectCascadeTargetIds(schema: $schema, object: $object);
+        if (empty($cascadeIds) === true) {
+            return;
+        }
+
+        // Resolve every level-one cascade target in one batched lookup.
+        $targets = [];
+        try {
+            $targets = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+                uuids: $cascadeIds,
+                includeDeleted: true
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[DeleteObject] Batched cascade lookup failed; falling back to per-id deletes',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+        $handledIds = $this->batchCascadeSoftDelete(targets: $targets);
+
+        // Legacy per-id pipeline for ids the batch lookup did not resolve.
+        foreach ($cascadeIds as $cascadeId) {
+            if (isset($handledIds[$cascadeId]) === true) {
+                continue;
+            }
+
+            $this->deleteObject(
+                register: $register,
+                schema: $schema,
+                uuid: $cascadeId,
+                originalObjectId: $originalObjectId
+            );
+        }
+    }//end cascadeDeleteObjects()
+
+    /**
+     * Collect the referenced ids of all `cascade: true` schema properties.
+     *
+     * @param Schema       $schema The schema whose properties are inspected.
+     * @param ObjectEntity $object The object holding the reference values.
+     *
+     * @return string[] Unique, non-empty referenced ids.
+     *
+     * @psalm-return list<string>
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function collectCascadeTargetIds(Schema $schema, ObjectEntity $object): array
+    {
+        $ids        = [];
         $properties = $schema->getProperties();
         foreach ($properties ?? [] as $propertyName => $property) {
             if (isset($property['cascade']) === false || $property['cascade'] !== true) {
@@ -901,27 +1062,189 @@ class DeleteObject
                 continue;
             }
 
+            $candidates = [$value];
             if (is_array($value) === true) {
-                foreach ($value as $id) {
-                    $this->deleteObject(
-                        register: $register,
-                        schema: $schema,
-                        uuid: $id,
-                        originalObjectId: $originalObjectId
-                    );
+                $candidates = $value;
+            }
+
+            foreach ($candidates as $candidate) {
+                if (is_scalar($candidate) === false || (string) $candidate === '') {
+                    continue;
                 }
 
+                $ids[] = (string) $candidate;
+            }
+        }//end foreach
+
+        return array_values(array_unique($ids));
+    }//end collectCascadeTargetIds()
+
+    /**
+     * Soft-delete a batch of resolved cascade targets.
+     *
+     * Applies the same deletion metadata shape as {@see delete()}, persists via
+     * one UPDATE per magic table (MagicMapper::softDeleteMultipleObjectEntities,
+     * which also dispatches the per-object updating/updated events the per-id
+     * pipeline produced), writes the audit rows with one multi-row INSERT, and
+     * invalidates caches per object.
+     *
+     * @param ObjectEntity[] $targets The batch-resolved cascade target entities.
+     *
+     * @return array<string, true> Ids taken care of by the batch (keyed by uuid).
+     *                             Empty when the batch write failed entirely — the
+     *                             caller then falls back to per-id deletes.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function batchCascadeSoftDelete(array $targets): array
+    {
+        if (empty($targets) === true) {
+            return [];
+        }
+
+        [$userId, $activeOrganisation] = $this->resolveUserContext();
+        $deletedAt = (new DateTime())->format(DateTime::ATOM);
+
+        $handled     = [];
+        $oldEntities = [];
+        foreach ($targets as $entity) {
+            $uuid = $entity->getUuid();
+            if ($uuid === null || $uuid === '') {
                 continue;
             }
 
-            $this->deleteObject(
-                register: $register,
-                schema: $schema,
-                uuid: $value,
-                originalObjectId: $originalObjectId
+            $handled[$uuid]     = true;
+            $oldEntities[$uuid] = clone $entity;
+            $entity->setDeleted(
+                [
+                    'deletedBy'    => $userId,
+                    'deletedAt'    => $deletedAt,
+                    'objectId'     => $uuid,
+                    'organisation' => $activeOrganisation,
+                ]
             );
+        }
+
+        try {
+            $deleted = $this->objectEntityMapper->softDeleteMultipleObjectEntities(
+                entities: $targets,
+                oldEntities: $oldEntities
+            );
+        } catch (\Throwable $e) {
+            // Nothing was handled — the caller retries every id via the
+            // legacy per-id pipeline.
+            $this->logger->error(
+                message: '[DeleteObject] Batched cascade soft delete failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $this->writeCascadeAuditTrails(deleted: $deleted);
+        $this->invalidateCachesForDeleted(deleted: $deleted);
+
+        return $handled;
+    }//end batchCascadeSoftDelete()
+
+    /**
+     * Write the audit rows for batch-cascade-deleted objects in one bulk INSERT.
+     *
+     * Row shape matches the per-object path exactly (buildAuditTrail with
+     * action `delete` and the post-soft-delete entity as the old state). An
+     * audit failure is logged but never aborts the cascade — parity with the
+     * per-id pipeline, where a throwing audit write left the object deleted
+     * and the cascade running.
+     *
+     * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/deletion-audit-trail/spec.md
+     */
+    private function writeCascadeAuditTrails(array $deleted): void
+    {
+        if (empty($deleted) === true || $this->isAuditTrailsEnabled() === false) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($deleted as $entity) {
+            try {
+                $rows[] = $this->auditTrailMapper->buildAuditTrail(
+                    old: $entity,
+                    new: null,
+                    action: 'delete'
+                );
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[DeleteObject] Could not build cascade audit row',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'uuid'  => $entity->getUuid(),
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
+        }
+
+        if (empty($rows) === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->insertAuditTrails(rows: $rows);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[DeleteObject] Bulk cascade audit insert failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'count' => count($rows),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+    }//end writeCascadeAuditTrails()
+
+    /**
+     * Invalidate caches per soft-deleted object (parity with delete()).
+     *
+     * @param ObjectEntity[] $deleted The successfully soft-deleted entities.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function invalidateCachesForDeleted(array $deleted): void
+    {
+        foreach ($deleted as $entity) {
+            $registerIdInt = null;
+            if (is_numeric($entity->getRegister()) === true) {
+                $registerIdInt = (int) $entity->getRegister();
+            }
+
+            $schemaIdInt = null;
+            if (is_numeric($entity->getSchema()) === true) {
+                $schemaIdInt = (int) $entity->getSchema();
+            }
+
+            try {
+                $this->cacheHandler->invalidateForObjectChange(
+                    object: $entity,
+                    operation: 'soft_delete',
+                    registerId: $registerIdInt,
+                    schemaId: $schemaIdInt
+                );
+            } catch (\Exception $e) {
+                // Cache invalidation failures never abort a delete (parity with delete()).
+            }//end try
         }//end foreach
-    }//end cascadeDeleteObjects()
+    }//end invalidateCachesForDeleted()
 
     /**
      * Check if audit trails are enabled in the settings
@@ -979,6 +1302,9 @@ class DeleteObject
      * @throws \OCP\AppFramework\Db\DoesNotExistException When no external row matches the id.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Fail-closed writable checks require explicit branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Fail-closed writable checks require explicit branching
      */
     private function delegateObjectSourceDelete(
         Register | int | string | null $register,
