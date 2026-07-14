@@ -361,6 +361,8 @@ class ObjectService
      * @return mixed Whatever the callable returns.
      *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      */
     public function runAsSystem(callable $operation)
     {
@@ -1400,9 +1402,10 @@ class ObjectService
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
-        // Index-guard the [$object, $uuid] tuple so a short return never emits
-        // an "Undefined array key" warning; keeps the current values otherwise.
-        $object = ($cascadeResult[0] ?? $object);
+        // handlePreValidationCascading() always returns a [array, string|null]
+        // tuple (every return site is a 2-tuple); only the uuid half is
+        // nullable, so only it keeps the null-coalescing fallback.
+        $object = $cascadeResult[0];
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
         // Restore the parent object's register and schema context after cascading.
@@ -2549,6 +2552,8 @@ class ObjectService
      * @return array<string, mixed> The query with provider-contract keys added.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-mapping requires one guard per provider key
      */
     private function normaliseObjectSourceQuery(array $query): array
     {
@@ -3426,6 +3431,17 @@ class ObjectService
             );
         }
 
+        // PERF: resolve the scope AND the entity of every UUID with ONE batched
+        // cross-table lookup instead of a full magic-table scan per UUID. The
+        // batch matches on the uuid column only; identifiers in other shapes
+        // (numeric ids, slugs, URIs) fall back to the legacy per-uuid lookup.
+        $preResolvedObjects = $this->batchResolveDeleteScopes(uuids: $filteredUuids);
+
+        // Request-local caches so each distinct (register, schema) pair is
+        // materialised as entities at most once for the whole bulk operation.
+        $registerEntityCache = [];
+        $schemaEntityCache   = [];
+
         // Process each object individually through the delete handler so that
         // referential integrity rules (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT)
         // are enforced per object. Skips objects that fail (e.g., RESTRICT blocks).
@@ -3442,41 +3458,71 @@ class ObjectService
         foreach ($filteredUuids as $uuid) {
             try {
                 // BUG-OBJ-5: resolve the object's register/schema BEFORE deleting
-                // it (the delete handler returns only a bool). Uses the mapper's
-                // find (no read audit trail) and includes already-soft-deleted
-                // rows so a hard-delete of a trashed object still yields its scope.
+                // it (the delete handler returns only a bool). Prefer the batch
+                // resolution above; fall back to a per-uuid mapper find (no read
+                // audit trail) that also matches non-uuid identifier shapes. Both
+                // include already-soft-deleted rows so a delete of a trashed
+                // object still yields its scope.
                 $deletedRegisterId = null;
                 $deletedSchemaId   = null;
-                try {
-                    $preDeleteObject   = $this->objectMapper->find(
-                        identifier: $uuid,
-                        register: $this->currentRegister,
-                        schema: $this->currentSchema,
-                        includeDeleted: true,
-                        _rbac: $_rbac,
-                        _multitenancy: $_multitenancy
+                $preResolved       = ($preResolvedObjects[$uuid] ?? null);
+                if ($preResolved !== null) {
+                    $deletedRegisterId = $preResolved->getRegister();
+                    $deletedSchemaId   = $preResolved->getSchema();
+                }
+
+                if ($preResolved === null) {
+                    try {
+                        $preDeleteObject   = $this->objectMapper->find(
+                            identifier: $uuid,
+                            register: $this->currentRegister,
+                            schema: $this->currentSchema,
+                            includeDeleted: true,
+                            _rbac: $_rbac,
+                            _multitenancy: $_multitenancy
+                        );
+                        $deletedRegisterId = $preDeleteObject->getRegister();
+                        $deletedSchemaId   = $preDeleteObject->getSchema();
+                    } catch (\Throwable $resolveError) {
+                        // BUG-OBJ-14: scope resolution failed (object already gone or
+                        // not visible) — log and fall back to a broad invalidation.
+                        $this->logger->warning(
+                            message: '[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation',
+                            context: [
+                                'uuid'  => $uuid,
+                                'error' => $resolveError->getMessage(),
+                            ]
+                        );
+                    }//end try
+                }//end if
+
+                // PERF: hand the batch-resolved entity + its concrete scope to the
+                // delete handler so it skips its own per-object cross-table re-find.
+                // When scope entities cannot be materialised, keep the legacy call.
+                $handlerRegister    = $this->currentRegister;
+                $handlerSchema      = $this->currentSchema;
+                $handlerPreResolved = null;
+                if ($preResolved !== null) {
+                    $scopeEntities = $this->loadDeleteScopeEntities(
+                        registerId: $deletedRegisterId,
+                        schemaId: $deletedSchemaId,
+                        registerCache: $registerEntityCache,
+                        schemaCache: $schemaEntityCache
                     );
-                    $deletedRegisterId = $preDeleteObject->getRegister();
-                    $deletedSchemaId   = $preDeleteObject->getSchema();
-                } catch (\Throwable $resolveError) {
-                    // BUG-OBJ-14: scope resolution failed (object already gone or
-                    // not visible) — log and fall back to a broad invalidation.
-                    $this->logger->warning(
-                        message: '[ObjectService] Bulk delete could not resolve register/schema scope for cache invalidation',
-                        context: [
-                            'uuid'  => $uuid,
-                            'error' => $resolveError->getMessage(),
-                        ]
-                    );
-                }//end try
+                    if ($scopeEntities !== null) {
+                        [$handlerRegister, $handlerSchema] = $scopeEntities;
+                        $handlerPreResolved = $preResolved;
+                    }
+                }
 
                 $result = $this->deleteHandler->deleteObject(
-                    register: $this->currentRegister,
-                    schema: $this->currentSchema,
+                    register: $handlerRegister,
+                    schema: $handlerSchema,
                     uuid: $uuid,
                     originalObjectId: null,
                     _rbac: $_rbac,
-                    _multitenancy: $_multitenancy
+                    _multitenancy: $_multitenancy,
+                    preResolved: $handlerPreResolved
                 );
                 if ($result === true) {
                     $deletedObjectIds[] = $uuid;
@@ -3569,6 +3615,107 @@ class ObjectService
             'cascade_count' => $totalCascadeCount,
         ];
     }//end deleteObjects()
+
+    /**
+     * Batch-resolve the entities (and thus register/schema scopes) for a set of UUIDs.
+     *
+     * One cross-table lookup for the whole set (uuid-column matches only).
+     * Includes soft-deleted rows so deleting a trashed object still resolves
+     * its scope. A total lookup failure logs and returns an empty map — every
+     * uuid then falls back to the legacy per-uuid resolution.
+     *
+     * @param array $uuids The UUIDs to resolve.
+     *
+     * @return array<string, \OCA\OpenRegister\Db\ObjectEntity> Resolved entities keyed by uuid.
+     *
+     * @phpstan-param array<int, string> $uuids
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function batchResolveDeleteScopes(array $uuids): array
+    {
+        $resolved = [];
+        try {
+            $entities = $this->objectMapper->findMultipleAcrossAllMagicTables(
+                uuids: $uuids,
+                includeDeleted: true
+            );
+            foreach ($entities as $entity) {
+                $entityUuid = $entity->getUuid();
+                if ($entityUuid !== null && $entityUuid !== '') {
+                    $resolved[$entityUuid] = $entity;
+                }
+            }
+        } catch (\Throwable $batchError) {
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete batch scope resolution failed; falling back to per-uuid lookups',
+                context: ['error' => $batchError->getMessage()]
+            );
+        }
+
+        return $resolved;
+    }//end batchResolveDeleteScopes()
+
+    /**
+     * Materialise the Register + Schema entities for a resolved delete scope.
+     *
+     * Uses per-bulk-operation caches (passed by reference) so each distinct
+     * pair is loaded at most once; RegisterMapper/SchemaMapper add their own
+     * request-scoped caching underneath. Returns null when either entity
+     * cannot be loaded — the caller then keeps the legacy delete call.
+     *
+     * @param string|int|null $registerId    The register id from the resolved entity.
+     * @param string|int|null $schemaId      The schema id from the resolved entity.
+     * @param array           $registerCache Cache of Register entities keyed by int id.
+     * @param array           $schemaCache   Cache of Schema entities keyed by int id.
+     *
+     * @return array{0: \OCA\OpenRegister\Db\Register, 1: \OCA\OpenRegister\Db\Schema}|null
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function loadDeleteScopeEntities(
+        string | int | null $registerId,
+        string | int | null $schemaId,
+        array &$registerCache,
+        array &$schemaCache
+    ): ?array {
+        if (is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+            return null;
+        }
+
+        $registerKey = (int) $registerId;
+        $schemaKey   = (int) $schemaId;
+
+        try {
+            if (isset($registerCache[$registerKey]) === false) {
+                $registerCache[$registerKey] = $this->registerMapper->find(
+                    $registerKey,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            }
+
+            if (isset($schemaCache[$schemaKey]) === false) {
+                $schemaCache[$schemaKey] = $this->schemaMapper->find(
+                    $schemaKey,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+            }
+        } catch (\Throwable $scopeError) {
+            $this->logger->warning(
+                message: '[ObjectService] Bulk delete could not materialise scope entities',
+                context: [
+                    'registerId' => $registerKey,
+                    'schemaId'   => $schemaKey,
+                    'error'      => $scopeError->getMessage(),
+                ]
+            );
+            return null;
+        }//end try
+
+        return [$registerCache[$registerKey], $schemaCache[$schemaKey]];
+    }//end loadDeleteScopeEntities()
 
     /**
      * Delete all objects belonging to a specific schema
