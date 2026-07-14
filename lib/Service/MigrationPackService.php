@@ -17,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 /**
  * Class MigrationPackService
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPackService
 {
@@ -55,7 +55,7 @@ class MigrationPackService
      *
      * @return MigrationPack[]
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function findAll(): array
     {
@@ -71,7 +71,7 @@ class MigrationPackService
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function find(int $id): MigrationPack
     {
@@ -87,7 +87,7 @@ class MigrationPackService
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function findByPackSlug(string $packSlug): MigrationPack
     {
@@ -107,7 +107,7 @@ class MigrationPackService
      *
      * @throws InvalidArgumentException When the definition is structurally invalid or its slug already exists.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function create(array $definition, ?string $ownerUid=null, bool $builtin=false): MigrationPack
     {
@@ -143,7 +143,7 @@ class MigrationPackService
      * @throws DoesNotExistException When no row matches.
      * @throws InvalidArgumentException When the definition is structurally invalid, or its slug collides with a different pack.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function update(int $id, array $definition): MigrationPack
     {
@@ -175,7 +175,7 @@ class MigrationPackService
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function delete(int $id): void
     {
@@ -195,7 +195,7 @@ class MigrationPackService
      *
      * @throws InvalidArgumentException When the definition is structurally invalid.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importDefinition(array $definition, ?string $ownerUid=null): MigrationPack
     {

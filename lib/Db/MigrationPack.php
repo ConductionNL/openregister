@@ -27,7 +27,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -62,7 +62,7 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPack extends Entity implements JsonSerializable
 {
@@ -151,7 +151,7 @@ class MigrationPack extends Entity implements JsonSerializable
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function getDefinitionArray(): array
     {
@@ -172,7 +172,7 @@ class MigrationPack extends Entity implements JsonSerializable
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function jsonSerialize(): array
     {

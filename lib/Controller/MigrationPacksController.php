@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ use Psr\Log\LoggerInterface;
 /**
  * MigrationPacksController handles CRUD + JSON import/export for migration packs.
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPacksController extends Controller
 {
@@ -132,7 +132,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -159,7 +159,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -190,7 +190,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -223,7 +223,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -276,7 +276,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -323,7 +323,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -372,7 +372,7 @@ class MigrationPacksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

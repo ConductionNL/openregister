@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use DateTime;
  * Maps one source row (CSV row / Excel row / decoded JSON object) onto a set
  * of target schema-property values, per a migration-pack definition.
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MappingEngine
 {
@@ -58,7 +58,7 @@ class MappingEngine
      *
      * @return array{data: array<string, mixed>, errors: list<array{row: int, source: string, target: ?string, transform: ?string, message: string}>}
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md#mapping-engine
+     * @spec openspec/specs/migration-mapping-packs/spec.md#mapping-engine
      */
     public function mapRow(array $pack, array $sourceRow, int $rowNumber): array
     {
@@ -133,7 +133,7 @@ class MappingEngine
      *
      * @return bool
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function isRowSkipped(array $pack, int $rowNumber): bool
     {

@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use InvalidArgumentException;
 /**
  * Structural + business-rule validator for a migration-pack JSON document.
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One small, independently-testable validate*() method
  *     per pack-document field keeps each check simple; the class total sums them, not any single method.
@@ -73,7 +73,7 @@ class PackDefinitionValidator
      *
      * @return string[] List of validation error messages. Empty when valid.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md#validation
+     * @spec openspec/specs/migration-mapping-packs/spec.md#validation
      */
     public function validate(array $definition): array
     {
@@ -100,7 +100,7 @@ class PackDefinitionValidator
      *
      * @throws InvalidArgumentException When the definition is invalid. The message joins every error found.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md#validation
+     * @spec openspec/specs/migration-mapping-packs/spec.md#validation
      */
     public function assertValid(array $definition): void
     {

@@ -65,7 +65,7 @@ use React\EventLoop\Loop;
  *
  * @package OCA\OpenRegister\Service
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Import service requires comprehensive data transformation methods
  * @SuppressWarnings(PHPMD.TooManyMethods)           Many methods required for multi-format import support
@@ -449,7 +449,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
      *
      * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importFromCsv(
         string $filePath,
@@ -557,7 +557,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)  validation/events/enrich are kept for signature parity with importFromExcel/importFromCsv
      *
      * @spec exclude Retrofit — JSON object import/export added alongside the existing Excel/CSV importers; no dedicated openspec change.
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importFromJson(
         string $filePath,
@@ -1111,7 +1111,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) pack/dryRun extend the existing signature
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     private function processCsvSheet(
         \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet,
@@ -1340,7 +1340,7 @@ class ImportService
      *
      * @return array{row: int, field: string, error: string, type: string, original_value: string}
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     private function formatMappingError(array $error): array
     {
@@ -1373,7 +1373,7 @@ class ImportService
      *
      * @return array<string, mixed> The dry-run summary.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md#dry-run
+     * @spec openspec/specs/migration-mapping-packs/spec.md#dry-run
      */
     private function buildDryRunSummary(array $summary, array $objects, Schema $schema, float $startTime): array
     {

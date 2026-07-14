@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -35,7 +35,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<MigrationPack>
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class MigrationPackMapper extends QBMapper
 {
@@ -58,7 +58,7 @@ class MigrationPackMapper extends QBMapper
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function find(int $id): MigrationPack
     {
@@ -81,7 +81,7 @@ class MigrationPackMapper extends QBMapper
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function findByPackSlug(string $packSlug): MigrationPack
     {
@@ -98,7 +98,7 @@ class MigrationPackMapper extends QBMapper
      *
      * @return MigrationPack[]
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function findAll(): array
     {

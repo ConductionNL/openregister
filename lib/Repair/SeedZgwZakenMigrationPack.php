@@ -13,7 +13,7 @@
  * with only a placeholder map entry and no `default`, so every row
  * referencing an unmapped zaaktype URL fails loudly (the literal-leak guard)
  * until the operator supplies their own catalogue mapping — see
- * `openspec/changes/migration-mapping-packs/design.md` for the full
+ * `openspec/changes/archive/2026-07-14-migration-mapping-packs/design.md` for the full
  * pack-authoring rationale, including why Decos/Centric-format packs are
  * NOT shipped here (their export shapes could not be verified against a
  * real system).
@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use Throwable;
 /**
  * Seeds the built-in `zgw-zaken-json` reference migration pack.
  *
- * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+ * @spec openspec/specs/migration-mapping-packs/spec.md
  */
 class SeedZgwZakenMigrationPack implements IRepairStep
 {
@@ -72,7 +72,7 @@ class SeedZgwZakenMigrationPack implements IRepairStep
      *
      * @return string The step name.
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function getName(): string
     {
@@ -89,7 +89,7 @@ class SeedZgwZakenMigrationPack implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/migration-mapping-packs/specs/migration-mapping-packs/spec.md
+     * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function run(IOutput $output): void
     {
