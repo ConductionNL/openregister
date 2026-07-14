@@ -219,6 +219,8 @@ class AuditHashService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chain walking requires sealed/unsealed branching
      * @SuppressWarnings(PHPMD.NPathComplexity)      Same — early-outs plus per-row sealed/unsealed paths
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
      */
     public function sealRows(array $ids): int
     {

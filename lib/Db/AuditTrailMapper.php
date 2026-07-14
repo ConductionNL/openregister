@@ -540,6 +540,8 @@ class AuditTrailMapper extends QBMapper
      * @throws \OCP\DB\Exception If a database error occurs during insert
      *
      * @psalm-return list<AuditTrail>
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
      */
     public function insertAuditTrails(array $entries, int $chunkSize=100): array
     {
