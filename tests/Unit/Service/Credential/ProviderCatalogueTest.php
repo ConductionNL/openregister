@@ -149,9 +149,16 @@ class ProviderCatalogueTest extends TestCase
         }
     }//end testNoProviderWildcardsItsWholeApiSurface()
 
-    public function testEveryProviderIsHostLockedOverHttps(): void
+    public function testEveryProxyProviderIsHostLockedOverHttps(): void
     {
         foreach ($this->catalogue->all() as $id => $entry) {
+            // Inject-only providers are NEVER proxied (request() refuses them), so
+            // they deliberately carry no baseUrl to host-lock — they are covered by
+            // the inverse invariant below instead.
+            if (($entry['inject_only'] ?? false) === true) {
+                continue;
+            }
+
             $baseUrl = (string) ($entry['baseUrl'] ?? '');
 
             // resolveAndLockUrl() parses the host out of baseUrl and refuses any
@@ -160,7 +167,29 @@ class ProviderCatalogueTest extends TestCase
             $this->assertStringStartsWith('https://', $baseUrl, $id.' must be https');
             $this->assertIsString(parse_url($baseUrl, PHP_URL_HOST), $id.' must have a lockable host');
         }
-    }//end testEveryProviderIsHostLockedOverHttps()
+    }//end testEveryProxyProviderIsHostLockedOverHttps()
+
+    public function testInjectOnlyProvidersCarryNoProxyAffordance(): void
+    {
+        $injectOnly = 0;
+        foreach ($this->catalogue->all() as $id => $entry) {
+            if (($entry['inject_only'] ?? false) !== true) {
+                continue;
+            }
+
+            $injectOnly++;
+
+            // An inject-only provider must have NO baseUrl and NO allowRules: those
+            // are exactly the proxy affordances, and request() refuses to proxy it.
+            // Its secret is only ever reachable app-side via resolveInjectable().
+            $this->assertArrayNotHasKey('baseUrl', $entry, $id.' (inject-only) must not carry a baseUrl');
+            $this->assertArrayNotHasKey('allowRules', $entry, $id.' (inject-only) must not carry allowRules');
+            $this->assertNotEmpty($entry['authScheme']['header'] ?? '', $id.' must still describe its auth header');
+        }
+
+        // Guard against the flag silently disappearing from the catalogue.
+        $this->assertGreaterThan(0, $injectOnly, 'the catalogue must ship at least one inject-only provider');
+    }//end testInjectOnlyProvidersCarryNoProxyAffordance()
 
     public function testEverySecretIsCarriedInASingleHeaderTemplate(): void
     {
