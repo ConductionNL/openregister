@@ -781,6 +781,189 @@ class ObjectServiceTest extends TestCase
 		$this->assertTrue($result);
 	}
 
+	// ── 9. deleteObjects() bulk tests ───────────────────────────────────
+
+	/**
+	 * Bulk delete resolves every uuid's scope with ONE batched cross-table
+	 * lookup and hands the pre-resolved entity plus concrete register/schema
+	 * entities to the delete handler — the legacy per-uuid pre-find is skipped.
+	 */
+	public function testDeleteObjectsUsesBatchedScopeResolution(): void
+	{
+		$entityA = new ObjectEntity();
+		$entityA->setUuid('uuid-a');
+		$entityA->setRegister('1');
+		$entityA->setSchema('2');
+
+		$entityB = new ObjectEntity();
+		$entityB->setUuid('uuid-b');
+		$entityB->setRegister('1');
+		$entityB->setSchema('2');
+
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('findMultipleAcrossAllMagicTables')
+			->with(['uuid-a', 'uuid-b'], true)
+			->willReturn([$entityA, $entityB]);
+
+		// The legacy per-uuid pre-delete find must NOT run for batch-resolved uuids.
+		$this->objectEntityMapper
+			->expects($this->never())
+			->method('find');
+
+		// Scope entities materialise once per distinct (register, schema) pair.
+		$this->registerMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($this->register);
+		$this->schemaMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($this->schema);
+
+		$captured = [];
+		$this->deleteHandler
+			->expects($this->exactly(2))
+			->method('deleteObject')
+			->willReturnCallback(
+				function (
+					$register,
+					$schema,
+					$uuid,
+					$originalObjectId=null,
+					$_rbac=true,
+					$_multitenancy=true,
+					$scoped=false,
+					$preResolved=null
+				) use (&$captured) {
+					$captured[] = [
+						'register'    => $register,
+						'schema'      => $schema,
+						'uuid'        => $uuid,
+						'preResolved' => $preResolved,
+					];
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-a', 'uuid-b'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-a', 'uuid-b'], $result['deleted_uuids']);
+		$this->assertSame([], $result['skipped_uuids']);
+		$this->assertSame($this->register, $captured[0]['register']);
+		$this->assertSame($this->schema, $captured[0]['schema']);
+		$this->assertSame($entityA, $captured[0]['preResolved']);
+		$this->assertSame($entityB, $captured[1]['preResolved']);
+	}
+
+	/**
+	 * Uuids the batch lookup cannot resolve fall back to the legacy per-uuid
+	 * scope find and a handler call without pre-resolved entity.
+	 */
+	public function testDeleteObjectsFallsBackToPerUuidLookupWhenBatchMisses(): void
+	{
+		$this->objectEntityMapper
+			->method('findMultipleAcrossAllMagicTables')
+			->willReturn([]);
+
+		$legacyEntity = new ObjectEntity();
+		$legacyEntity->setUuid('uuid-legacy');
+		$legacyEntity->setRegister('1');
+		$legacyEntity->setSchema('2');
+
+		// Legacy per-uuid scope resolution runs for the missed uuid.
+		$this->objectEntityMapper
+			->expects($this->once())
+			->method('find')
+			->willReturn($legacyEntity);
+
+		$captured = [];
+		$this->deleteHandler
+			->expects($this->once())
+			->method('deleteObject')
+			->willReturnCallback(
+				function (
+					$register,
+					$schema,
+					$uuid,
+					$originalObjectId=null,
+					$_rbac=true,
+					$_multitenancy=true,
+					$scoped=false,
+					$preResolved=null
+				) use (&$captured) {
+					$captured[] = ['register' => $register, 'preResolved' => $preResolved];
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-legacy'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-legacy'], $result['deleted_uuids']);
+		// Legacy call shape: no pre-resolved entity, current (null) scope.
+		$this->assertNull($captured[0]['register']);
+		$this->assertNull($captured[0]['preResolved']);
+	}
+
+	/**
+	 * A RESTRICT block on one object skips it without aborting the bulk delete.
+	 */
+	public function testDeleteObjectsSkipsRestrictBlockedObjects(): void
+	{
+		$entityA = new ObjectEntity();
+		$entityA->setUuid('uuid-ok');
+		$entityA->setRegister('1');
+		$entityA->setSchema('2');
+
+		$entityB = new ObjectEntity();
+		$entityB->setUuid('uuid-blocked');
+		$entityB->setRegister('1');
+		$entityB->setSchema('2');
+
+		$this->objectEntityMapper
+			->method('findMultipleAcrossAllMagicTables')
+			->willReturn([$entityA, $entityB]);
+
+		$this->registerMapper->method('find')->willReturn($this->register);
+		$this->schemaMapper->method('find')->willReturn($this->schema);
+
+		$analysis = new \OCA\OpenRegister\Dto\DeletionAnalysis(
+			deletable: false,
+			blockers: [['objectUuid' => 'ref', 'property' => 'parentId']]
+		);
+		$this->deleteHandler
+			->method('deleteObject')
+			->willReturnCallback(
+				function ($register, $schema, $uuid) use ($analysis): bool {
+					if ($uuid === 'uuid-blocked') {
+						throw new \OCA\OpenRegister\Exception\ReferentialIntegrityException(analysis: $analysis);
+					}
+
+					return true;
+				}
+			);
+		$this->deleteHandler->method('getLastCascadeCount')->willReturn(0);
+
+		$result = $this->service->deleteObjects(
+			uuids: ['uuid-ok', 'uuid-blocked'],
+			_rbac: false,
+			_multitenancy: false
+		);
+
+		$this->assertSame(['uuid-ok'], $result['deleted_uuids']);
+		$this->assertSame(['uuid-blocked'], $result['skipped_uuids']);
+	}
+
 	// ── 10. lockObject() / unlockObject() tests ─────────────────────────
 
 	/**

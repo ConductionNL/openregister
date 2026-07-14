@@ -2444,6 +2444,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
      */
     private function mapSchemaPropertyToColumn(string $propertyName, array $propertyConfig): array
     {
@@ -3033,6 +3034,7 @@ class MagicMapper extends AbstractObjectMapper
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates() is a pure enum-style helper
      */
     private function createTableIndexes(string $tableName, Register $_register, Schema $_schema): void
     {
@@ -6565,6 +6567,220 @@ class MagicMapper extends AbstractObjectMapper
     }//end deleteObjectEntity()
 
     /**
+     * Soft-delete multiple pre-resolved objects with ONE UPDATE per magic table.
+     *
+     * PERF: the per-object soft-delete path re-serialises and rewrites the whole
+     * row (updateObjectEntity → saveObjectToRegisterSchemaTable) and re-fetches
+     * it afterwards — for a cascade of N children that is ~5 queries per child.
+     * This method batches children of the same (register, schema) pair into a
+     * single `UPDATE ... SET _deleted = CASE _uuid ... END WHERE _uuid IN (...)`
+     * statement while preserving the per-object event contract:
+     *
+     * - `ObjectUpdatingEvent` is dispatched per entity BEFORE the write; a hook
+     *   that stops propagation skips that entity (parity with the per-object
+     *   path, where HookStoppedException aborted the child's delete).
+     * - A hook that modifies the payload routes that entity through the
+     *   full-row save so the modification persists (the batched UPDATE only
+     *   writes the deleted marker).
+     * - `ObjectUpdatedEvent` is dispatched per entity AFTER the write.
+     *
+     * The caller must set the `deleted` metadata on every entity beforehand
+     * (its JSON is what the batched UPDATE writes) — deletion attribution is
+     * the caller's domain, persistence is this mapper's.
+     *
+     * @param array                       $entities    ObjectEntity list to soft-delete
+     *                                                 (validated at runtime); uuid, numeric
+     *                                                 register/schema ids and `deleted`
+     *                                                 metadata must be set on every entity.
+     * @param array<string, ObjectEntity> $oldEntities Optional pre-delete snapshots keyed
+     *                                                 by uuid, used as event old-objects.
+     *                                                 Missing snapshots are derived by
+     *                                                 cloning the (mutated) entity.
+     *
+     * @return ObjectEntity[] The entities that were actually soft-deleted.
+     *
+     * @throws Exception If a batched UPDATE fails for every table.
+     *
+     * @psalm-return list<ObjectEntity>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Hook handling requires per-entity branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Hook handling requires per-entity branching
+     */
+    public function softDeleteMultipleObjectEntities(array $entities, array $oldEntities=[]): array
+    {
+        if (empty($entities) === true) {
+            return [];
+        }
+
+        $groups    = [];
+        $completed = [];
+        foreach ($entities as $entity) {
+            if ($entity instanceof ObjectEntity === false) {
+                throw new Exception('softDeleteMultipleObjectEntities() expects ObjectEntity instances');
+            }
+
+            $uuid       = $entity->getUuid();
+            $registerId = $entity->getRegister();
+            $schemaId   = $entity->getSchema();
+            if ($uuid === null || $uuid === ''
+                || is_numeric($registerId) === false
+                || is_numeric($schemaId) === false
+            ) {
+                $this->logger->warning(
+                    message: '[MagicMapper] Skipping batched soft delete for entity without uuid/register/schema',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+                );
+                continue;
+            }
+
+            $oldEntity = ($oldEntities[$uuid] ?? clone $entity);
+
+            // Pre-save hook — parity with the single-object update path.
+            $updatingEvent = new ObjectUpdatingEvent(newObject: $entity, oldObject: $oldEntity);
+            $this->eventDispatcher->dispatchTyped($updatingEvent);
+            if ($updatingEvent->isPropagationStopped() === true) {
+                $this->logger->info(
+                    message: '[MagicMapper] Batched soft delete skipped by hook',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+                );
+                continue;
+            }
+
+            $modifiedData = $updatingEvent->getModifiedData();
+            if (empty($modifiedData) === false) {
+                // Hook modified the payload — persist via the full-row save so
+                // the modification is not lost by the marker-only batched UPDATE.
+                $entity->setObject(array_merge(($entity->getObject() ?? []), $modifiedData));
+                if ($this->softDeleteSingleFullRow(entity: $entity) === true) {
+                    $completed[] = ['entity' => $entity, 'old' => $oldEntity];
+                }
+
+                continue;
+            }
+
+            $groupKey = ((int) $registerId).'_'.((int) $schemaId);
+            $groups[$groupKey]['registerId'] = (int) $registerId;
+            $groups[$groupKey]['schemaId']   = (int) $schemaId;
+            $groups[$groupKey]['items'][]    = ['entity' => $entity, 'old' => $oldEntity];
+        }//end foreach
+
+        foreach ($groups as $group) {
+            try {
+                $this->executeBatchSoftDeleteUpdate(
+                    registerId: $group['registerId'],
+                    schemaId: $group['schemaId'],
+                    items: $group['items']
+                );
+                $completed = array_merge($completed, $group['items']);
+            } catch (Exception $e) {
+                $this->logger->error(
+                    message: '[MagicMapper] Batched soft delete UPDATE failed for magic table',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'registerId' => $group['registerId'],
+                        'schemaId'   => $group['schemaId'],
+                        'count'      => count($group['items']),
+                        'error'      => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        $result = [];
+        foreach ($completed as $item) {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
+            );
+            $result[] = $item['entity'];
+        }
+
+        return $result;
+    }//end softDeleteMultipleObjectEntities()
+
+    /**
+     * Persist one hook-modified entity via the full-row save path (soft delete).
+     *
+     * @param ObjectEntity $entity The (already deleted-marked, hook-modified) entity.
+     *
+     * @return bool True when the row was written.
+     */
+    private function softDeleteSingleFullRow(ObjectEntity $entity): bool
+    {
+        try {
+            $register  = $this->registerMapper->find((int) $entity->getRegister(), _rbac: false, _multitenancy: false);
+            $schema    = $this->schemaMapper->find((int) $entity->getSchema(), _rbac: false, _multitenancy: false);
+            $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
+            $this->saveObjectToRegisterSchemaTable(
+                objectData: $entity->jsonSerialize(),
+                register: $register,
+                schema: $schema,
+                tableName: $tableName
+            );
+            return true;
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[MagicMapper] Full-row soft delete failed for hook-modified entity',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'uuid'  => $entity->getUuid(),
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return false;
+        }//end try
+    }//end softDeleteSingleFullRow()
+
+    /**
+     * Execute one batched soft-delete UPDATE against a single magic table.
+     *
+     * Writes each row's (per-object) deleted-metadata JSON via a parameterised
+     * `CASE _uuid WHEN ... THEN ... END` expression — one statement per table
+     * regardless of how many rows it soft-deletes.
+     *
+     * @param int   $registerId The register id (table-name component).
+     * @param int   $schemaId   The schema id (table-name component).
+     * @param array $items      List of ['entity' => ObjectEntity, 'old' => ObjectEntity] pairs.
+     *
+     * @return void
+     *
+     * @throws \OCP\DB\Exception If the UPDATE fails.
+     */
+    private function executeBatchSoftDeleteUpdate(int $registerId, int $schemaId, array $items): void
+    {
+        // Same convention as MagicTableHandler::getTableNameForRegisterSchema()
+        // (numeric ids never exceed the max table-name length).
+        $tableName  = self::TABLE_PREFIX.$registerId.'_'.$schemaId;
+        $uuidCol    = self::METADATA_PREFIX.'uuid';
+        $deletedCol = self::METADATA_PREFIX.'deleted';
+
+        $qb = $this->db->getQueryBuilder();
+
+        $caseSql = '(CASE '.$uuidCol;
+        $uuids   = [];
+        foreach ($items as $item) {
+            $entity  = $item['entity'];
+            $uuids[] = $entity->getUuid();
+
+            $caseSql .= ' WHEN '.$qb->createNamedParameter($entity->getUuid());
+            $caseSql .= ' THEN '.$qb->createNamedParameter(json_encode($entity->getDeleted()));
+        }
+
+        $caseSql .= ' END)';
+
+        $qb->update($tableName)
+            ->set($deletedCol, $qb->createFunction($caseSql))
+            ->where(
+                $qb->expr()->in(
+                    $uuidCol,
+                    $qb->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+        $qb->executeStatement();
+    }//end executeBatchSoftDeleteUpdate()
+
+    /**
      * Delete all objects belonging to a specific schema from the magic table.
      *
      * This method performs an optimized bulk deletion from the magic table
@@ -9319,6 +9535,10 @@ class MagicMapper extends AbstractObjectMapper
         $totalCount          = 0;
 
         foreach ($schemaIds as $sId) {
+            // BUGFIX (pre-existing): the loop body referenced an undefined
+            // `$schemaIdInt` (a variable name from a DIFFERENT method), so the
+            // register lookup keyed on null and every schema was skipped.
+            $schemaIdInt       = (int) $sId;
             $matchedRegisterId = ($schemaToRegisterId[$schemaIdInt] ?? null);
             $matchedRegister   = null;
             if ($matchedRegisterId !== null) {

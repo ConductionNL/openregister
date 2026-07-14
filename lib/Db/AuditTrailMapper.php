@@ -364,9 +364,14 @@ class AuditTrailMapper extends QBMapper
     /**
      * Creates an audit trail for object changes
      *
-     * @param ObjectEntity|null $old    The old state of the object
-     * @param ObjectEntity|null $new    The new state of the object
-     * @param string|null       $action The action to create the audit trail for
+     * @param ObjectEntity|null $old            The old state of the object
+     * @param ObjectEntity|null $new            The new state of the object
+     * @param string|null       $action         The action to create the audit trail for
+     * @param array|null        $cascadeContext Optional referential-integrity cascade context. When
+     *                                          non-null, the context is folded into the `changed`
+     *                                          column of the initial INSERT (previously this required
+     *                                          a second UPDATE per row, which also invalidated the
+     *                                          hash-chain seal computed at insert time).
      *
      * @return AuditTrail The created audit trail
      *
@@ -375,9 +380,13 @@ class AuditTrailMapper extends QBMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    public function createAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
-    {
-        $auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action);
+    public function createAuditTrail(
+        ?ObjectEntity $old=null,
+        ?ObjectEntity $new=null,
+        ?string $action='update',
+        ?array $cascadeContext=null
+    ): AuditTrail {
+        $auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
 
         // Insert the new AuditTrail, sealed into the hash chain, and return it.
         return $this->insertHashChained(auditTrail: $auditTrail);
@@ -390,9 +399,12 @@ class AuditTrailMapper extends QBMapper
      * (single insert) and {@see insertAuditTrails()} (batched multi-row insert),
      * so both paths produce identical audit rows.
      *
-     * @param ObjectEntity|null $old    The old state of the object
-     * @param ObjectEntity|null $new    The new state of the object
-     * @param string|null       $action The action to create the audit trail for
+     * @param ObjectEntity|null $old            The old state of the object
+     * @param ObjectEntity|null $new            The new state of the object
+     * @param string|null       $action         The action to create the audit trail for
+     * @param array|null        $cascadeContext Optional referential-integrity cascade context to fold
+     *                                          into the `changed` column (keys: triggerObject,
+     *                                          triggerSchema, action_type, property).
      *
      * @return AuditTrail The populated (unpersisted) audit trail entity
      *
@@ -401,8 +413,12 @@ class AuditTrailMapper extends QBMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
-    private function buildAuditTrail(?ObjectEntity $old=null, ?ObjectEntity $new=null, ?string $action='update'): AuditTrail
-    {
+    public function buildAuditTrail(
+        ?ObjectEntity $old=null,
+        ?ObjectEntity $new=null,
+        ?string $action='update',
+        ?array $cascadeContext=null
+    ): AuditTrail {
         // Determine the action based on the presence of old and new objects.
         $objectEntity = $new;
         if ($new === null && $action === 'update') {
@@ -462,6 +478,19 @@ class AuditTrailMapper extends QBMapper
                 }
             }
         }//end if
+
+        // Fold referential-integrity cascade context into the change set so it is
+        // part of the initial INSERT. Key shape matches the (removed) post-insert
+        // UPDATE that DeleteObject used to issue per cascade-tagged delete.
+        if ($cascadeContext !== null) {
+            $changed['triggeredBy']    = 'referential_integrity';
+            $changed['cascadeContext'] = [
+                'triggerObject' => $cascadeContext['triggerObject'] ?? null,
+                'triggerSchema' => $cascadeContext['triggerSchema'] ?? null,
+                'action_type'   => $cascadeContext['action_type'] ?? 'referential_integrity.cascade_delete',
+                'property'      => $cascadeContext['property'] ?? null,
+            ];
+        }
 
         // Get the current user.
         $user = $this->userSession->getUser();
@@ -532,7 +561,9 @@ class AuditTrailMapper extends QBMapper
      * like the single-row path: a sealing hiccup logs and leaves rows unhashed
      * rather than losing the audit records.
      *
-     * @param array $entries   List of ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string] entries
+     * @param array $entries   Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
+     *                          'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+     *                          pre-built AuditTrail entities (each must carry a uuid) persisted as-is
      * @param int   $chunkSize Number of rows per multi-row INSERT statement
      *
      * @return AuditTrail[] The persisted audit trail entities (ids populated)
@@ -551,10 +582,27 @@ class AuditTrailMapper extends QBMapper
 
         $auditTrails = [];
         foreach ($entries as $entry) {
+            // Pre-built rows (e.g. cascade deletes assembled via buildAuditTrail()
+            // with cascade context) are persisted as-is; array entries are built
+            // through the shared row logic so both shapes yield identical rows.
+            if ($entry instanceof AuditTrail) {
+                if ($entry->getUuid() === null || $entry->getUuid() === '') {
+                    throw new \InvalidArgumentException('insertAuditTrails() requires every pre-built row to carry a uuid.');
+                }
+
+                $auditTrails[] = $entry;
+                continue;
+            }
+
+            if (is_array($entry) === false) {
+                throw new \InvalidArgumentException('insertAuditTrails() expects AuditTrail entities or old/new/action entry arrays.');
+            }
+
             $auditTrails[] = $this->buildAuditTrail(
                 old: ($entry['old'] ?? null),
                 new: ($entry['new'] ?? null),
-                action: ($entry['action'] ?? 'update')
+                action: ($entry['action'] ?? 'update'),
+                cascadeContext: ($entry['cascadeContext'] ?? null)
             );
         }
 
