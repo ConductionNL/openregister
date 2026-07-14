@@ -2430,7 +2430,12 @@ class ObjectsController extends Controller
         // If admin, disable RBAC.
         $multi = $isAdmin === false;
         // If admin, disable multitenancy.
-        // Find and validate the object.
+        // Find and validate the object. Rendering is deferred to the single
+        // renderEntity() call below (`_render: false`): find() previously
+        // rendered the entity with the same $extend and the controller then
+        // rendered it AGAIN, repeating file hydration, writeOnly redaction and
+        // the expensive inverse-property resolution on every single read.
+        // Permission checks and read logging inside find() still run.
         try {
             $objectEntity = $this->objectService->find(
                 id: $id,
@@ -2439,7 +2444,8 @@ class ObjectsController extends Controller
                 register: $register,
                 schema: $schema,
                 _rbac: $rbac,
-                _multitenancy: $multi
+                _multitenancy: $multi,
+                _render: false
             );
             if ($objectEntity === null) {
                 $errorMsg = "Object with id {$id} not found";
@@ -2447,6 +2453,9 @@ class ObjectsController extends Controller
             }
 
             // Render the object with requested extensions, filters, fields, and unset parameters.
+            // This is the ONLY render on the show() response path: writeOnly
+            // redaction and read-authorization stripping (openregister#385/#386)
+            // are applied here, exactly once, inside renderEntity().
             $renderedObject = $this->objectService->renderEntity(
                 entity: $objectEntity,
                 _extend: $extend,
@@ -2567,10 +2576,7 @@ class ObjectsController extends Controller
      *
      * @PublicPage
      *
-     * @psalm-return JSONResponse<201|401|403|404,
-     *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
-     *     message?: mixed|string, error?: mixed|string,...},
-     *     array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
@@ -2957,7 +2963,7 @@ class ObjectsController extends Controller
         $multi   = $isAdmin === false;
 
         // Log RBAC/multitenancy settings for debugging.
-        $this->logger->info(
+        $this->logger->debug(
                 message: '[ObjectsController] PATCH: RBAC/Multitenancy settings',
                 context: [
                     'file'    => __FILE__,
@@ -3043,7 +3049,7 @@ class ObjectsController extends Controller
                 uuid: $id
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                     message: '[ObjectsController] PATCH: saveObject succeeded',
                     context: [
                         'file'   => __FILE__,
@@ -3068,7 +3074,7 @@ class ObjectsController extends Controller
                         );
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ObjectsController] PATCH: Starting to prepare response',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );

@@ -1550,6 +1550,71 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     // =========================================================================
+    // show() — single render on the response path (perf: no double render)
+    // =========================================================================
+
+    /**
+     * show() must fetch the object WITHOUT rendering (find(_render: false)) and
+     * render exactly once via renderEntity() — the controller is the single
+     * render site. The response body must be the output of that one render,
+     * which is where writeOnly redaction and read-authorization stripping run
+     * (see RenderObjectWriteOnlyRedactionTest for the redaction contract).
+     */
+    public function testShowFindsWithoutRenderAndRendersExactlyOnce(): void
+    {
+        $this->setupRegularUser();
+
+        $registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
+        $schemaEntity = $this->createSchemaMock(2, 'sch');
+        $this->registerDiMappersWithEntities($registerEntity, $schemaEntity);
+
+        $this->request->method('getParams')->willReturn([]);
+
+        $objectEntity = new ObjectEntity();
+        $objectEntity->setUuid('uuid-single-render');
+        $objectEntity->setObject(['title' => 'Secret holder', 'apiKey' => 'hunter2']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        // Capture find() arguments to pin the _render: false contract.
+        // ObjectService::find positional args: [0]=id, [1]=_extend, [2]=files,
+        // [3]=register, [4]=schema, [5]=_rbac, [6]=_multitenancy, [7]=_render.
+        $findArgs = [];
+        $this->objectService->expects($this->once())
+            ->method('find')
+            ->willReturnCallback(
+                function (...$args) use (&$findArgs, $objectEntity): ObjectEntity {
+                    $findArgs = $args;
+                    return $objectEntity;
+                }
+            );
+
+        // Exactly ONE render on the response path; its (redacted) output IS the
+        // response body.
+        $this->objectService->expects($this->once())
+            ->method('renderEntity')
+            ->willReturn([
+                'title' => 'Secret holder',
+                '@self' => ['uuid' => 'uuid-single-render'],
+            ]);
+
+        $result = $this->controller->show('uuid-single-render', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $this->assertFalse($findArgs[7], 'show() must call find() with _render: false (single render site)');
+        $this->assertTrue($findArgs[5], 'show() must keep _rbac enabled for a non-admin read');
+
+        $data = $result->getData();
+        $this->assertArrayNotHasKey(
+            'apiKey',
+            $data,
+            'response must be the single-render output (writeOnly property redacted by renderEntity)'
+        );
+        $this->assertSame('Secret holder', $data['title']);
+    }
+
+    // =========================================================================
     // index() — normal path with large results triggers gzip header
     // =========================================================================
 

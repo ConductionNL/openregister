@@ -123,7 +123,7 @@ class NotificationDeliveryWindowService
             return;
         }
 
-        $clean = $this->validateAndNormalize($window);
+        $clean = $this->validateAndNormalize(window: $window);
 
         $this->config->setUserValue($userId, self::APP_NAME, self::CONFIG_KEY, json_encode($clean));
 
@@ -142,17 +142,17 @@ class NotificationDeliveryWindowService
     {
         $start = $window['start'] ?? null;
         $end   = $window['end'] ?? null;
-        if ($this->isValidTimeOfDay($start) === false) {
+        if ($this->isValidTimeOfDay(value: $start) === false) {
             throw new \InvalidArgumentException('"start" must be an "HH:MM" time string.');
         }
 
-        if ($this->isValidTimeOfDay($end) === false) {
+        if ($this->isValidTimeOfDay(value: $end) === false) {
             throw new \InvalidArgumentException('"end" must be an "HH:MM" time string.');
         }
 
         $timezone = $window['timezone'] ?? null;
         if ($timezone !== null) {
-            if (is_string($timezone) === false || $timezone === '' || $this->isValidTimezone($timezone) === false) {
+            if (is_string($timezone) === false || $timezone === '' || $this->isValidTimezone(value: $timezone) === false) {
                 throw new \InvalidArgumentException('"timezone" must be a valid IANA timezone name.');
             }
         }
@@ -175,11 +175,16 @@ class NotificationDeliveryWindowService
             $days = array_values(array_unique($days));
         }
 
+        $timezoneName = $this->resolveServerTimezoneName();
+        if ($timezone !== null) {
+            $timezoneName = (string) $timezone;
+        }
+
         return [
             'enabled'  => true,
             'start'    => (string) $start,
             'end'      => (string) $end,
-            'timezone' => ($timezone !== null) ? (string) $timezone : $this->resolveServerTimezoneName(),
+            'timezone' => $timezoneName,
             'days'     => $days,
         ];
 
@@ -208,17 +213,21 @@ class NotificationDeliveryWindowService
 
         $start = $window['start'] ?? null;
         $end   = $window['end'] ?? null;
-        if ($this->isValidTimeOfDay($start) === false || $this->isValidTimeOfDay($end) === false) {
+        if ($this->isValidTimeOfDay(value: $start) === false || $this->isValidTimeOfDay(value: $end) === false) {
             return false;
         }
 
         $tzName = $window['timezone'] ?? null;
-        $tz     = $this->resolveTimezone(is_string($tzName) === true ? $tzName : null);
+        if (is_string($tzName) === false) {
+            $tzName = null;
+        }
+
+        $tz = $this->resolveTimezone(tzName: $tzName);
 
         $local = $now->setTimezone($tz);
 
-        $startMinutes = $this->minutesSinceMidnight((string) $start);
-        $endMinutes   = $this->minutesSinceMidnight((string) $end);
+        $startMinutes = $this->minutesSinceMidnight(time: (string) $start);
+        $endMinutes   = $this->minutesSinceMidnight(time: (string) $end);
         $nowMinutes   = ((int) $local->format('G') * 60) + (int) $local->format('i');
         $weekday      = (int) $local->format('w');
 
@@ -266,7 +275,7 @@ class NotificationDeliveryWindowService
      */
     public function resolveTimezone(?string $tzName): DateTimeZone
     {
-        if ($tzName !== null && $tzName !== '' && $this->isValidTimezone($tzName) === true) {
+        if ($tzName !== null && $tzName !== '' && $this->isValidTimezone(value: $tzName) === true) {
             try {
                 return new DateTimeZone($tzName);
             } catch (\Throwable $e) {
@@ -296,7 +305,7 @@ class NotificationDeliveryWindowService
      */
     private function resolveServerTimezoneName(): string
     {
-        return $this->resolveTimezone(null)->getName();
+        return $this->resolveTimezone(tzName: null)->getName();
 
     }//end resolveServerTimezoneName()
 

@@ -188,6 +188,23 @@ class ObjectService
      */
     private ?ObjectEntity $currentObject = null;
 
+    /**
+     * Request-scoped cache of resolved uuid → (register, schema) contexts.
+     *
+     * When a uuid is read under a stale URL scope, the scoped lookup misses and
+     * find() falls back to an expensive cross-table search (openregister#1520 —
+     * that fallback is deliberate and must keep working). Within one request the
+     * same uuid is often resolved repeatedly (relation resolution, inverse
+     * rendering), and each resolution used to re-miss the scoped path and re-run
+     * the cross-table scan. This cache remembers the object's true register and
+     * schema after the first successful resolution so subsequent lookups go
+     * straight to the right magic table. It is a plain array property, so it
+     * lives exactly as long as this service instance (one request).
+     *
+     * @var array<string, array{register: Register|null, schema: Schema}>
+     */
+    private array $uuidScopeCache = [];
+
     // **REMOVED**: Distributed caching mechanisms removed since SOLR is now our index.
     // **REMOVED**: Cache TTL constants removed since SOLR is now our index.
 
@@ -357,6 +374,8 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
+     *
      * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
      */
     public function runAsSystem(callable $operation)
@@ -525,8 +544,12 @@ class ObjectService
      * @param Schema|string|int|null   $schema        The schema object or its ID/UUID.
      * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
      * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param bool                     $_render       Whether to render the entity before returning (default: true).
+     *                                                Pass false when the caller performs its own single render
+     *                                                (e.g. ObjectsController::show()) so the object is not
+     *                                                rendered twice; permission checks and read logging still run.
      *
-     * @return ObjectEntity|null The rendered object or null.
+     * @return ObjectEntity|null The rendered object (or the raw entity when $_render is false) or null.
      *
      * @throws Exception If the object is not found.
      *
@@ -544,7 +567,8 @@ class ObjectService
         Register | string | int | null $register=null,
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        bool $_render=true
     ): ?ObjectEntity {
         // Resolve the call's register / schema, isolating it from any
         // stale `currentRegister` / `currentSchema` state left over from
@@ -577,6 +601,22 @@ class ObjectService
                 $callSchema = $this->currentSchema;
             }
 
+            // Request-scoped uuid → (register, schema) cache: when this uuid was
+            // already resolved earlier in this request, target its true context
+            // directly. This avoids re-missing the scoped lookup (and re-running
+            // the cross-table fallback below) for every repeated relation
+            // resolution of the same uuid under a stale URL scope.
+            if (is_string($id) === true && isset($this->uuidScopeCache[$id]) === true) {
+                $cachedScope = $this->uuidScopeCache[$id];
+                if ($cachedScope['register'] !== null) {
+                    $this->setRegister(register: $cachedScope['register']);
+                    $callRegister = $this->currentRegister;
+                }
+
+                $this->setSchema(schema: $cachedScope['schema']);
+                $callSchema = $this->currentSchema;
+            }
+
             // Retrieve the object — when both call args are null, MagicMapper
             // falls back to its `findAcrossAllMagicTables` path.
             try {
@@ -602,6 +642,12 @@ class ObjectService
                 // hit, RE-ANCHOR the call's register/schema to the resolved object
                 // so RBAC + rendering use the object's true context, not the stale
                 // one supplied by the caller.
+                // A cached scope that no longer resolves (object deleted or
+                // moved mid-request) must not pin future lookups to it.
+                if (is_string($id) === true) {
+                    unset($this->uuidScopeCache[$id]);
+                }
+
                 $canFallBack = (($callSchema !== null || $callRegister !== null)
                     && is_string($id) === true
                     && $this->isUuidFormat(value: $id) === true);
@@ -646,6 +692,20 @@ class ObjectService
                 }
             }
 
+            // Remember this uuid's resolved (register, schema) for the rest of
+            // the request so repeated lookups skip the scoped-miss + cross-table
+            // fallback dance entirely. Only uuids are cached: they are globally
+            // unique, unlike slugs or numeric per-table ids.
+            if (is_string($id) === true
+                && $this->isUuidFormat(value: $id) === true
+                && $this->currentSchema !== null
+            ) {
+                $this->uuidScopeCache[$id] = [
+                    'register' => $this->currentRegister,
+                    'schema'   => $this->currentSchema,
+                ];
+            }
+
             // Check user has permission to read this specific object (includes object owner check).
             // Publication visibility is now handled by RBAC conditional rules with $now variable.
             $this->checkPermission(
@@ -656,6 +716,17 @@ class ObjectService
                 _rbac: $_rbac,
                 object: $object
             );
+
+            // Skip rendering when the caller is the render site itself. The read
+            // path stays intact above — retrieval, cross-schema fallback,
+            // permission check — but the (expensive) render pass with its
+            // writeOnly redaction runs exactly once, in the caller, instead of
+            // twice. Used by ObjectsController::show().
+            if ($_render === false) {
+                // AVG / GDPR per-access read logging still applies to the read.
+                $this->logProcessingRead(object: $object);
+                return $object;
+            }
 
             // Render the object before returning.
             $registers = null;
@@ -1369,9 +1440,9 @@ class ObjectService
             uuid: $uuid,
             currentRegister: $currentRegisterId
         );
-        // Index-guard the [$object, $uuid] tuple so a short return never emits
-        // an "Undefined array key" warning; keeps the current values otherwise.
-        $object = ($cascadeResult[0] ?? $object);
+        // The handler returns an [array $object, ?string $uuid] tuple; offset 0
+        // always exists, offset 1 may be null — keep the current uuid then.
+        $object = $cascadeResult[0];
         $uuid   = ($cascadeResult[1] ?? $uuid);
 
         // Restore the parent object's register and schema context after cascading.
@@ -2516,6 +2587,8 @@ class ObjectService
      * @param array<string, mixed> $query The canonical search query.
      *
      * @return array<string, mixed> The query with provider-contract keys added.
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */

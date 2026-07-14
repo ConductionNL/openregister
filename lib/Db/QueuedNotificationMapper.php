@@ -52,7 +52,6 @@ use OCP\IDBConnection;
  */
 class QueuedNotificationMapper extends QBMapper
 {
-
     /**
      * Constructor.
      *
@@ -125,7 +124,7 @@ class QueuedNotificationMapper extends QBMapper
             return $this->findEntities(query: $qb);
         } catch (\Throwable $e) {
             return [];
-        }
+        }//end try
 
     }//end findByRecipientAndRule()
 
