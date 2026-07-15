@@ -564,6 +564,80 @@ class RenderObjectTest extends TestCase
         $this->handler->renderEntity($entity, _rbac: true);
     }
 
+    public function testRenderEntityStripsWriteOnlyFromRelationsMirrorWhenRbacFalse(): void
+    {
+        // #420 (the mirror half of #389): OpenRegister mirrors a reference-shaped
+        // scalar property into the `relations` search index, surfaced as
+        // @self.relations. The body writeOnly strip is unconditional (#389), but the
+        // mirror strip used to live only on the _rbac=true path — so an admin
+        // (_rbac=false) read still leaked the value via @self.relations. The mirror
+        // must strip on the same unconditional boundary as the body.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        // stripWriteOnlyProperties is now invoked for BOTH the object body and the
+        // relations mirror; strip the writeOnly key from whichever array it receives.
+        $this->propertyRbacHandler->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $arr) {
+                unset($arr['apiSecret']);
+                return $arr;
+            });
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+        ]);
+        // The scalar was mirrored into the relations index under its bare property name.
+        $entity->setRelations(['apiSecret' => 'PLAINTEXT_SECRET']);
+
+        $result = $this->handler->renderEntity($entity, _rbac: false);
+
+        $this->assertArrayNotHasKey('apiSecret', $result->getObject(), 'body must strip writeOnly');
+        $this->assertArrayNotHasKey(
+            'apiSecret',
+            (array) $result->getRelations(),
+            '#420: writeOnly must also be stripped from the @self.relations mirror under _rbac=false'
+        );
+    }
+
+    public function testRenderEntityKeepsNonWriteOnlyRelationsMirror(): void
+    {
+        // No-regression guard for #420: a genuine, non-writeOnly relation must
+        // survive in the mirror — the strip removes ONLY writeOnly properties.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+            'linkedRef' => ['type' => 'string'],
+        ]);
+
+        $this->propertyRbacHandler->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $arr) {
+                unset($arr['apiSecret']);
+                return $arr;
+            });
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+            'linkedRef' => 'aaaaaaaa-bbbb-cccc-dddd-ffffffffffff',
+        ]);
+        $entity->setRelations([
+            'apiSecret' => 'PLAINTEXT_SECRET',
+            'linkedRef' => 'aaaaaaaa-bbbb-cccc-dddd-ffffffffffff',
+        ]);
+
+        $relations = (array) $this->handler->renderEntity($entity, _rbac: false)->getRelations();
+
+        $this->assertArrayNotHasKey('apiSecret', $relations, 'writeOnly stripped from mirror');
+        $this->assertArrayHasKey('linkedRef', $relations, 'genuine relation must survive the strip');
+    }
+
     // =========================================================================
     // renderEntity with string extend parameter
     // =========================================================================
