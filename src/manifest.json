@@ -102,28 +102,12 @@
 			"_note": "Faceted cross-schema search via OR's bespoke SearchIndex; the built-in search page would change behaviour."
 		},
 		{
-			"id": "chat",
-			"route": "/chat",
-			"type": "custom",
-			"title": "AI Chat",
-			"component": "ChatIndex",
-			"_note": "Bespoke realtime AI chat shell wired to OR's conversation store; not the library's generic chat page."
-		},
-		{
 			"id": "files",
 			"route": "/files",
 			"type": "custom",
 			"title": "Files",
 			"component": "FilesIndex",
 			"_note": "Files workspace, not a standard object list."
-		},
-		{
-			"id": "agents",
-			"route": "/agents",
-			"type": "custom",
-			"title": "Agents",
-			"component": "AgentsIndex",
-			"_note": "AI agents configuration UI; bespoke, not a generic object list."
 		},
 		{
 			"id": "configurations",
@@ -315,17 +299,6 @@
 				{ "id": "Templates", "label": "Templates", "icon": "FileOutline", "route": "templates", "order": 40 },
 				{ "id": "Tables", "label": "Search / views", "icon": "Magnify", "route": "tables", "order": 50 },
 				{ "id": "Files", "label": "Files", "icon": "FileDocumentMultipleOutline", "route": "files", "order": 60 }
-			]
-		},
-		{
-			"id": "AiGroup",
-			"label": "AI",
-			"icon": "RobotOutline",
-			"section": "main",
-			"order": 70,
-			"children": [
-				{ "id": "Chat", "label": "AI Chat", "icon": "MessageTextOutline", "route": "chat", "order": 10 },
-				{ "id": "Agents", "label": "Agents", "icon": "RobotOutline", "route": "agents", "order": 70 }
 			]
 		},
 		{

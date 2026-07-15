@@ -925,8 +925,8 @@ return [
         ['name' => 'applications#page', 'url' => '/applications', 'verb' => 'GET'],
         // SPA detail route — see ConductionNL/openregister#1962.
         ['name' => 'ui#applicationDetails', 'url' => '/applications/{id}', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
-        // Agents.
-        ['name' => 'agents#page', 'url' => '/agents', 'verb' => 'GET'],
+        // Agents. The SPA page moved to hermiq (or-chat-engine-decommission);
+        // only the API surface remains, answered via the compat proxy.
         ['name' => 'agents#stats', 'url' => '/api/agents/stats', 'verb' => 'GET'],
         ['name' => 'agents#tools', 'url' => '/api/agents/tools', 'verb' => 'GET'],
         // Search.
@@ -1047,7 +1047,6 @@ return [
 		// guard in OC's Router doesn't reject it.
 		['name' => 'ui#integrationsView', 'url' => '/integrations/{register}/{schema}/{objectId}', 'verb' => 'GET', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'objectId' => '[^/]+']],
 		['name' => 'ui#tables', 'url' => '/tables', 'verb' => 'GET'],
-		['name' => 'ui#chat', 'url' => '/chat', 'verb' => 'GET'],
 		['name' => 'ui#configurations', 'url' => '/configurations', 'verb' => 'GET'],
 		['name' => 'ui#deleted', 'url' => '/deleted', 'verb' => 'GET'],
 		['name' => 'ui#auditTrail', 'url' => '/audit-trails', 'verb' => 'GET'],

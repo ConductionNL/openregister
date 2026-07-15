@@ -3,15 +3,15 @@
 /**
  * OpenRegister Chat Proxy Handler
  *
- * Implements the optional, opt-in "proxy-to-hermiq" leg of the
- * or-chat-proxy-deprecation compat window: when an operator sets the
- * `openregister.chat.proxyTo` appconfig value to `hermiq`, this handler
- * forwards chat/agents/conversations API calls to hermiq's mirrored routes
- * server-side, and falls back to local serving whenever hermiq is not
- * installed, not reachable, or the forward call fails at the transport
- * level. Off by default — an operator must explicitly opt in during the
- * migration window (hydra ADR-034 amendment, SPECTR-NEXTCLOUD-PLAN.md §7.4
- * step 6).
+ * Implements the "proxy-to-hermiq" leg of the or-chat-proxy-deprecation
+ * compat window: this handler forwards chat/agents/conversations API calls
+ * to hermiq's mirrored routes server-side, and falls back to local serving
+ * whenever hermiq is not installed, not reachable, or the forward call
+ * fails at the transport level. ON by default since
+ * or-chat-engine-decommission (hermiq is the engine's canonical home per
+ * hydra ADR-034 amendment, SPECTR-NEXTCLOUD-PLAN.md §7.4); an operator
+ * opts out by setting the `openregister.chat.proxyTo` appconfig value to
+ * anything other than `hermiq` (e.g. `off`).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -63,9 +63,11 @@ class ChatProxyHandler
     private const CONFIG_APP = 'openregister';
 
     /**
-     * Appconfig key. Default '' (empty) means "serve locally", matching
-     * today's behaviour. The only currently-supported non-empty value is
-     * 'hermiq'.
+     * Appconfig key. Since or-chat-engine-decommission an UNSET value means
+     * "proxy to hermiq" (hermiq is the agent engine's canonical home per
+     * hydra ADR-034 Amendment 2026-07-05). An operator opts out — restoring
+     * local-engine answering — by setting any other explicit value, e.g.
+     * `occ config:app:set openregister chat.proxyTo --value=off`.
      *
      * @var string
      */
@@ -139,13 +141,15 @@ class ChatProxyHandler
     }//end __construct()
 
     /**
-     * Whether an operator has opted into the hermiq proxy.
+     * Whether the hermiq proxy is active. Defaults to active when the
+     * appconfig value is unset (or-chat-engine-decommission); an operator
+     * opts out with any explicit value other than 'hermiq' (e.g. 'off').
      *
-     * @return bool True when `chat.proxyTo` is set to 'hermiq'.
+     * @return bool True when `chat.proxyTo` is unset or set to 'hermiq'.
      */
     public function isProxyConfigured(): bool
     {
-        return $this->appConfig->getValueString(self::CONFIG_APP, self::CONFIG_KEY_PROXY_TO, '') === self::HERMIQ_APP_ID;
+        return $this->appConfig->getValueString(self::CONFIG_APP, self::CONFIG_KEY_PROXY_TO, self::HERMIQ_APP_ID) === self::HERMIQ_APP_ID;
     }//end isProxyConfigured()
 
     /**
