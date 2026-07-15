@@ -1416,7 +1416,7 @@ class FileService
      *
      * @param ObjectEntity|string      $objectEntity The object entity to add the file to.
      * @param string                   $fileName     The name of the file to create.
-     * @param string                   $content      The content to write to the file.
+     * @param string|resource          $content      File content: a byte string, or a readable stream resource.
      * @param bool                     $share        Whether to create a share link for the file.
      * @param array                    $tags         Optional array of tags to attach to the file.
      * @param int|string|Schema|null   $_schema      The register of the object to add the file to.
@@ -1438,7 +1438,7 @@ class FileService
     public function addFile(
         ObjectEntity | string $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[],
         int | string | Schema | null $_schema=null,
@@ -1462,11 +1462,11 @@ class FileService
      *
      * Delegates to CreateFileHandler for single-responsibility upsert operations.
      *
-     * @param ObjectEntity $objectEntity The object entity to save the file to.
-     * @param string       $fileName     The name of the file to save.
-     * @param string       $content      The content to write to the file.
-     * @param bool         $share        Whether to create a share link for the file (only for new files).
-     * @param array        $tags         Optional array of tags to attach to the file.
+     * @param ObjectEntity    $objectEntity The object entity to save the file to.
+     * @param string          $fileName     The name of the file to save.
+     * @param string|resource $content      File content: a byte string, or a readable stream resource.
+     * @param bool            $share        Whether to create a share link for the file (only for new files).
+     * @param array           $tags         Optional array of tags to attach to the file.
      *
      * @return File The saved file.
      *
@@ -1484,7 +1484,7 @@ class FileService
     public function saveFile(
         ObjectEntity $objectEntity,
         string $fileName,
-        string $content,
+        mixed $content,
         bool $share=false,
         array $tags=[]
     ): File {

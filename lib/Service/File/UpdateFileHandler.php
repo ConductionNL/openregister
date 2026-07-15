@@ -55,6 +55,16 @@ class UpdateFileHandler
 {
 
     /**
+     * Number of leading bytes read from a stream resource for the magic-byte
+     * executable check. Executable signatures live at offset 0, so a small
+     * bounded prefix gives full parity with the string path without buffering
+     * the whole file into memory.
+     *
+     * @var int
+     */
+    private const EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH = 512;
+
+    /**
      * Reference to FileService for cross-handler coordination (circular dependency break).
      *
      * @var FileService|null
@@ -434,16 +444,42 @@ class UpdateFileHandler
             }//end if
         }//end if
 
+        // Compute the incoming content hash in a memory-bounded way so a re-synced,
+        // byte-identical file still skips the write (and its version bump) on both the
+        // string and the streamed (resource) paths. For a resource the md5 is computed
+        // via hash_update_stream (chunked read, never buffered into a string) and the
+        // stream is rewound afterwards.
+        $incomingMd5 = null;
+        if ($content !== null && $file instanceof File && is_resource($content) === true) {
+            $hashContext = hash_init('md5');
+            hash_update_stream($hashContext, $content);
+            $incomingMd5 = hash_final($hashContext);
+            rewind($content);
+        }
+
+        if ($content !== null && $file instanceof File && is_resource($content) === false) {
+            $incomingMd5 = md5(string: $content);
+        }
+
         // Update the file content if provided and content is not equal to the current content.
-        if ($content !== null && $file instanceof File && $file->hash(type: 'md5') !== md5(string: $content)) {
+        if ($incomingMd5 !== null && $file instanceof File && $file->hash(type: 'md5') !== $incomingMd5) {
             try {
-                    // Check if the content is base64 encoded and decode it if necessary.
-                if (base64_encode(base64_decode($content, true)) === $content) {
+                // Check if the content is base64 encoded and decode it if necessary.
+                // Skipped for a resource: the caller already produced decoded bytes.
+                if (is_resource($content) === false && base64_encode(base64_decode($content, true)) === $content) {
                     $content = base64_decode($content);
                 }
 
-                // Security: Block executable files.
-                $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
+                // Security: Block executable files. On the streamed (resource) path the
+                // magic-byte signatures live at offset 0, so we read a bounded prefix and
+                // rewind before writing. A string is checked directly.
+                $execCheckBytes = $content;
+                if (is_resource($content) === true) {
+                    $execCheckBytes = (string) fread($content, self::EXECUTABLE_MAGIC_BYTE_PREFIX_LENGTH);
+                    rewind($content);
+                }
+
+                $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $execCheckBytes);
 
                 // Assert the session can reach the file (owned or shared).
                 $this->fileValidHandler->checkOwnership($file);
