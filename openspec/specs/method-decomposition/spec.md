@@ -229,7 +229,6 @@ Cache settings management with TTL configuration, invalidation rules, and cache 
 - `lib/Service/Schemas/SchemaCacheHandler.php` (3)
 - `lib/Service/Object/SaveObjects/TransformationHandler.php` (3)
 - `lib/Service/Object/SaveObjects/PreparationHandler.php` (3)
-- `lib/Service/Object/SaveObjects/ChunkProcessingHandler.php` (3)
 - `lib/Service/Object/PerformanceOptimizationHandler.php` (3)
 - `lib/Service/Object/MigrationHandler.php` (3)
 - `lib/Service/McpDiscoveryService.php` (3)

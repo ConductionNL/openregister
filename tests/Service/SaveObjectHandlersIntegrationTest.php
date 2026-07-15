@@ -3,8 +3,8 @@
 /**
  * Integration tests for SaveObject/SaveObjects handlers and related services
  *
- * Tests RelationCascadeHandler, TransformationHandler, ChunkProcessingHandler,
- * DeleteObject, CascadingHandler, BulkOperationsHandler, PerformanceHandler,
+ * Tests RelationCascadeHandler, TransformationHandler, DeleteObject,
+ * CascadingHandler, BulkOperationsHandler, PerformanceHandler,
  * and SaveObjects with real database operations.
  *
  * @category Test
@@ -32,7 +32,6 @@ use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\Object\SaveObject\RelationCascadeHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects;
-use OCA\OpenRegister\Service\Object\SaveObjects\ChunkProcessingHandler;
 use OCA\OpenRegister\Service\Object\SaveObjects\TransformationHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\TestCase;
@@ -42,7 +41,7 @@ use Symfony\Component\Uid\Uuid;
  * Integration tests for SaveObject/SaveObjects handler classes
  *
  * Tests real code paths in RelationCascadeHandler, TransformationHandler,
- * ChunkProcessingHandler, DeleteObject, CascadingHandler, BulkOperationsHandler,
+ * DeleteObject, CascadingHandler, BulkOperationsHandler,
  * PerformanceHandler, and SaveObjects.
  *
  * @group DB
@@ -51,7 +50,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase
 {
     private RelationCascadeHandler $relationCascadeHandler;
     private TransformationHandler $transformationHandler;
-    private ChunkProcessingHandler $chunkProcessingHandler;
     private DeleteObject $deleteObject;
     private CascadingHandler $cascadingHandler;
     private BulkOperationsHandler $bulkOperationsHandler;
@@ -78,7 +76,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase
         parent::setUp();
         $this->relationCascadeHandler = \OC::$server->get(RelationCascadeHandler::class);
         $this->transformationHandler = \OC::$server->get(TransformationHandler::class);
-        $this->chunkProcessingHandler = \OC::$server->get(ChunkProcessingHandler::class);
         $this->deleteObject = \OC::$server->get(DeleteObject::class);
         $this->cascadingHandler = \OC::$server->get(CascadingHandler::class);
         $this->bulkOperationsHandler = \OC::$server->get(BulkOperationsHandler::class);
@@ -1902,191 +1899,6 @@ class SaveObjectHandlersIntegrationTest extends TestCase
         );
         $this->assertIsArray($result);
         $this->assertEmpty($result);
-    }
-
-    // ========================================================================
-    // ChunkProcessingHandler tests
-    // ========================================================================
-
-    /**
-     * Test processObjectsChunk with empty objects.
-     */
-    public function testProcessObjectsChunkEmpty(): void
-    {
-        $schemaCache = [$this->testSchema->getId() => $this->testSchema];
-
-        // All objects invalid (no register/schema).
-        $objects = [
-            ['title' => 'No register or schema'],
-        ];
-
-        $result = $this->chunkProcessingHandler->processObjectsChunk(
-            $objects,
-            $schemaCache,
-            false,
-            false,
-            false,
-            false,
-            $this->testRegister,
-            $this->testSchema
-        );
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('statistics', $result);
-        $this->assertArrayHasKey('saved', $result);
-        $this->assertArrayHasKey('updated', $result);
-        $this->assertArrayHasKey('invalid', $result);
-    }
-
-    /**
-     * Test processObjectsChunk with valid objects.
-     */
-    public function testProcessObjectsChunkValid(): void
-    {
-        $schemaCache = [$this->testSchema->getId() => $this->testSchema];
-
-        $objects = [
-            [
-                'title'    => 'Chunk test ' . uniqid(),
-                'register' => $this->testRegister->getId(),
-                'schema'   => $this->testSchema->getId(),
-            ],
-        ];
-
-        $result = $this->chunkProcessingHandler->processObjectsChunk(
-            $objects,
-            $schemaCache,
-            false,
-            false,
-            false,
-            false,
-            $this->testRegister,
-            $this->testSchema
-        );
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('statistics', $result);
-        $this->assertArrayHasKey('processingTimeMs', $result['statistics']);
-
-        // Track saved objects for cleanup.
-        foreach ($result['saved'] ?? [] as $saved) {
-            if (isset($saved['uuid'])) {
-                $this->createdObjectUuids[] = $saved['uuid'];
-            }
-        }
-    }
-
-    /**
-     * Test processObjectsChunk with register/schema as IDs.
-     */
-    public function testProcessObjectsChunkWithIds(): void
-    {
-        $schemaCache = [$this->testSchema->getId() => $this->testSchema];
-
-        $objects = [
-            [
-                'title'    => 'Chunk ID test ' . uniqid(),
-                'register' => $this->testRegister->getId(),
-                'schema'   => $this->testSchema->getId(),
-            ],
-        ];
-
-        $result = $this->chunkProcessingHandler->processObjectsChunk(
-            $objects,
-            $schemaCache,
-            false,
-            false,
-            false,
-            false,
-            $this->testRegister->getId(),
-            $this->testSchema->getId()
-        );
-
-        $this->assertIsArray($result);
-        $this->assertArrayHasKey('statistics', $result);
-
-        foreach ($result['saved'] ?? [] as $saved) {
-            if (isset($saved['uuid'])) {
-                $this->createdObjectUuids[] = $saved['uuid'];
-            }
-        }
-    }
-
-    /**
-     * Test processObjectsChunk with mixed valid/invalid objects.
-     */
-    public function testProcessObjectsChunkMixed(): void
-    {
-        $schemaCache = [$this->testSchema->getId() => $this->testSchema];
-
-        $objects = [
-            [
-                'title'    => 'Valid chunk ' . uniqid(),
-                'register' => $this->testRegister->getId(),
-                'schema'   => $this->testSchema->getId(),
-            ],
-            [
-                'title' => 'Invalid chunk - no register',
-                'schema' => $this->testSchema->getId(),
-            ],
-        ];
-
-        $result = $this->chunkProcessingHandler->processObjectsChunk(
-            $objects,
-            $schemaCache,
-            false,
-            false,
-            false,
-            false,
-            $this->testRegister,
-            $this->testSchema
-        );
-
-        $this->assertIsArray($result);
-        $this->assertGreaterThanOrEqual(1, $result['statistics']['invalid']);
-
-        foreach ($result['saved'] ?? [] as $saved) {
-            if (isset($saved['uuid'])) {
-                $this->createdObjectUuids[] = $saved['uuid'];
-            }
-        }
-    }
-
-    /**
-     * Test processObjectsChunk captures processingTimeMs.
-     */
-    public function testProcessObjectsChunkTimingCapture(): void
-    {
-        $schemaCache = [$this->testSchema->getId() => $this->testSchema];
-
-        $objects = [
-            [
-                'title'    => 'Timing test ' . uniqid(),
-                'register' => $this->testRegister->getId(),
-                'schema'   => $this->testSchema->getId(),
-            ],
-        ];
-
-        $result = $this->chunkProcessingHandler->processObjectsChunk(
-            $objects,
-            $schemaCache,
-            false,
-            false,
-            false,
-            false,
-            $this->testRegister,
-            $this->testSchema
-        );
-
-        $this->assertArrayHasKey('processingTimeMs', $result['statistics']);
-        $this->assertIsFloat($result['statistics']['processingTimeMs']);
-        $this->assertGreaterThanOrEqual(0, $result['statistics']['processingTimeMs']);
-
-        foreach ($result['saved'] ?? [] as $saved) {
-            if (isset($saved['uuid'])) {
-                $this->createdObjectUuids[] = $saved['uuid'];
-            }
-        }
     }
 
     // ========================================================================
