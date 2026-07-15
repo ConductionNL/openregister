@@ -66,6 +66,8 @@ use RuntimeException;
  *   PHP fallback). The method count rises with each platform-specific
  *   helper; extracting them into a separate class would require passing
  *   the full constructor dependency graph through.
+ *
+ * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
  */
 class AggregationRunner
 {
@@ -379,12 +381,13 @@ class AggregationRunner
             'truncated' => $truncated,
         ];
 
-        if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
+        $runGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($runGroupFields) > 0) {
             $result['groups'] = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $runGroupFields
             );
         }
 
@@ -869,12 +872,13 @@ class AggregationRunner
             ];
         }//end if
 
-        if ($groupBy !== null && isset($groupBy['field']) === true) {
+        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($groupFields) > 0) {
             $groups = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $groupFields
             );
 
             return [
@@ -988,39 +992,94 @@ class AggregationRunner
     }//end computeMetric()
 
     /**
-     * Compute a grouped metric, bucketing rows by `$groupField`.
+     * Resolve a raw groupBy spec to an ordered list of non-empty group field
+     * names, honouring every accepted shape (single `{field}`, multi
+     * `{fields:[...]}`, plain list `[...]`).
      *
-     * @param array<int, array<string, mixed>> $rows       Already-filtered rows.
-     * @param string                           $metric     One of count/sum/avg/min/max/count_distinct.
-     * @param mixed                            $field      Field to aggregate over.
-     * @param string                           $groupField Field used as the bucket key.
+     * Invalid members (non-string / empty) are dropped defensively for the
+     * named-annotation path where the spec is not pre-validated by
+     * {@see AggregationQuery::create()}. Returns an empty list for an
+     * ungrouped request, which the callers treat as "compute a scalar".
      *
-     * @return array<int, array{key: mixed, value: int|float|null}>
+     * @param mixed $groupBy Raw groupBy spec from the annotation or query.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     * @return array<int, string> Ordered, de-duplicated group field names.
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
      */
-    private function computeGrouped(array $rows, string $metric, mixed $field, string $groupField): array
+    private function resolveGroupFields(mixed $groupBy): array
     {
-        $buckets = [];
-        foreach ($rows as $row) {
-            $bucket = $row[$groupField] ?? null;
-            $key    = json_encode($bucket);
-            if (is_scalar($bucket) === true) {
-                $key = (string) $bucket;
+        $fields = [];
+        foreach (AggregationQuery::normaliseGroupByFields(groupBy: $groupBy) as $field) {
+            if (is_string($field) === false || $field === '') {
+                continue;
             }
 
+            if (in_array($field, $fields, true) === true) {
+                continue;
+            }
+
+            $fields[] = $field;
+        }
+
+        return $fields;
+
+    }//end resolveGroupFields()
+
+    /**
+     * Compute a grouped metric, bucketing rows by one or more group fields.
+     *
+     * Single-field groupBy yields the backward-compatible `{key, value}`
+     * row shape. Multi-field (cross-tab) groupBy yields a composite
+     * `{keys: {fieldA: ..., fieldB: ...}, value}` row per distinct tuple so
+     * a consumer can pivot the result into a cross-tab. The bucket order is
+     * the first-seen order of each distinct tuple.
+     *
+     * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+     * @param string                           $metric      One of count/sum/avg/min/max/count_distinct.
+     * @param mixed                            $field       Field to aggregate over.
+     * @param array<int, string>               $groupFields Ordered field(s) used as the bucket key.
+     *
+     * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value: int|float|null}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     */
+    private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields): array
+    {
+        $isMulti = (count($groupFields) > 1);
+        $buckets = [];
+        foreach ($rows as $row) {
+            $tuple = [];
+            foreach ($groupFields as $groupField) {
+                $tuple[$groupField] = ($row[$groupField] ?? null);
+            }
+
+            // Composite cache key over the whole tuple; json_encode keeps
+            // distinct tuples distinct regardless of scalar/null members.
+            $key = json_encode($tuple);
             if (isset($buckets[$key]) === false) {
-                $buckets[$key] = ['key' => $bucket, 'rows' => []];
+                $buckets[$key] = ['tuple' => $tuple, 'rows' => []];
             }
 
             $buckets[$key]['rows'][] = $row;
         }
 
         $out = [];
-        foreach ($buckets as $b) {
+        foreach ($buckets as $bucket) {
+            $value = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
+            if ($isMulti === true) {
+                $out[] = [
+                    'keys'  => $bucket['tuple'],
+                    'value' => $value,
+                ];
+                continue;
+            }
+
+            // Single-field: unwrap the tuple to the legacy `{key, value}` shape.
             $out[] = [
-                'key'   => $b['key'],
-                'value' => $this->computeMetric(rows: $b['rows'], metric: $metric, field: $field),
+                'key'   => reset($bucket['tuple']),
+                'value' => $value,
             ];
         }
 
@@ -1198,8 +1257,16 @@ class AggregationRunner
     /**
      * Try to compute the aggregation directly in SQL on the magic table.
      *
-     * Supports: count/sum/avg/min/max + simple equality filters
-     * + optional groupBy on a single field. Postgres only.
+     * Supports: count/sum/avg/min/max + simple equality/operator filters
+     * + optional categorical groupBy on ONE OR MORE fields (`GROUP BY a, b`
+     * → one row per distinct tuple) + optional time-bucketing. The
+     * categorical groupBy and time-bucket paths run natively on Postgres,
+     * MySQL and SQLite; the ungrouped scalar path is Postgres-only (the
+     * others fall through to the PHP fallback).
+     *
+     * Multi-field groupBy returns each group row as
+     * `{keys: {fieldA: ..., fieldB: ...}, value}`; single-field groupBy
+     * keeps the backward-compatible `{key, value}` shape.
      *
      * Returns the result fragment ('value' or 'groups') on success, null
      * to signal the caller should fall back to PHP-side aggregation.
@@ -1209,7 +1276,8 @@ class AggregationRunner
      * @param string                    $metric     Metric name (count/sum/avg/min/max).
      * @param string|null               $field      Field to aggregate over (ignored for count).
      * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
-     * @param array<string, mixed>|null $groupBy    Optional group spec ({field: ...}).
+     * @param array<string, mixed>|null $groupBy    Optional group spec: single-field ({field: ...}),
+     *                                              multi-field ({fields: [...]}), or a plain list ([...]).
      * @param array<string, mixed>|null $dateBucket Optional time-bucket spec ({field, start, end, gap}).
      *                                              When supplied, the query becomes a `date_trunc`-bucketed
      *                                              series with explicit `WHERE field >= start AND field < end`
@@ -1240,16 +1308,22 @@ class AggregationRunner
     ): ?array {
         $platformName = $this->detectDatabasePlatform();
 
+        // Ordered list of categorical group fields (single-field, multi-field
+        // cross-tab, or plain-list shape all normalise here).
+        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+
         // Postgres handles every query shape natively. MySQL and SQLite
-        // currently support only the time-bucket path; the categorical
-        // groupBy + ungrouped paths still depend on Postgres-specific
-        // operators (`::jsonb`, `::numeric`) and fall through to the PHP
-        // fallback on non-Postgres engines.
+        // support the time-bucket path AND the categorical groupBy path
+        // (single- or multi-field) — both reuse the platform-branched
+        // aggregate SQL + identifier quoting below. The remaining
+        // non-Postgres gap is the *ungrouped* scalar path, which still
+        // depends on the Postgres-specific numeric cast and falls through
+        // to the PHP fallback.
         if ($platformName === 'unknown') {
             return null;
         }
 
-        if ($platformName !== 'postgres' && $dateBucket === null) {
+        if ($platformName !== 'postgres' && $dateBucket === null && count($groupFields) === 0) {
             return null;
         }
 
@@ -1479,13 +1553,23 @@ class AggregationRunner
                 return ['groups' => $groups];
             }//end if
 
-            if ($groupBy !== null && isset($groupBy['field']) === true) {
-                $groupCol = '"'.$this->sanitizeColumnName(name: (string) $groupBy['field']).'"';
-                $sql      = "SELECT {$groupCol} AS bucket, {$aggSql} AS agg
+            if (count($groupFields) > 0) {
+                $isMulti     = (count($groupFields) > 1);
+                $selectParts = [];
+                $groupCols   = [];
+                foreach ($groupFields as $index => $groupField) {
+                    $groupCol      = $quote.$this->sanitizeColumnName(name: $groupField).$quote;
+                    $groupCols[]   = $groupCol;
+                    $selectParts[] = $groupCol.' AS g'.$index;
+                }
+
+                $selectSql = implode(', ', $selectParts);
+                $groupSql  = implode(', ', $groupCols);
+                $sql       = "SELECT {$selectSql}, {$aggSql} AS agg
                              FROM {$fullTable}
                              WHERE {$whereSql}
-                             GROUP BY {$groupCol}";
-                $stmt     = $this->db->prepare($sql);
+                             GROUP BY {$groupSql}";
+                $stmt      = $this->db->prepare($sql);
                 $stmt->execute($bindings);
                 $groups = [];
                 while (($row = $stmt->fetch()) !== false) {
@@ -1496,8 +1580,18 @@ class AggregationRunner
                         $value = (int) $value;
                     }
 
-                    $groups[] = ['key' => $row['bucket'], 'value' => $value];
-                }
+                    if ($isMulti === true) {
+                        $keys = [];
+                        foreach ($groupFields as $index => $groupField) {
+                            $keys[$groupField] = ($row['g'.$index] ?? null);
+                        }
+
+                        $groups[] = ['keys' => $keys, 'value' => $value];
+                        continue;
+                    }
+
+                    $groups[] = ['key' => ($row['g0'] ?? null), 'value' => $value];
+                }//end while
 
                 return ['groups' => $groups];
             }//end if
@@ -1983,12 +2077,13 @@ class AggregationRunner
             'truncated' => $truncated,
         ];
 
-        if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
+        $crossGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($crossGroupFields) > 0) {
             $result['groups'] = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $crossGroupFields
             );
         }
 

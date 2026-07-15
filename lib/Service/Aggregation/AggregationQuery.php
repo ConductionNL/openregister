@@ -38,6 +38,8 @@ use InvalidArgumentException;
 
 /**
  * Backend-portable aggregation request.
+ *
+ * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
  */
 class AggregationQuery
 {
@@ -74,7 +76,10 @@ class AggregationQuery
      * @param string                    $metric     Aggregation metric.
      * @param ?string                   $field      Field for sum/avg/min/max; required when metric != count.
      * @param array<string, mixed>      $filter     Filter conditions (see class docblock for shapes).
-     * @param array<string, mixed>|null $groupBy    Optional grouping spec; e.g. `{field: 'status'}`.
+     * @param array<string, mixed>|null $groupBy    Optional grouping spec. Accepts a single-field shape
+     *                                              (`{field: 'status'}`), a multi-field cross-tab shape
+     *                                              (`{fields: ['vendorId', 'dueDateBucket']}`), or a plain
+     *                                              ordered list of field names (`['vendorId', 'dueDateBucket']`).
      * @param array<string, mixed>|null $dateBucket Optional date-bucket spec; `{field, start, end, gap}`.
      */
     private function __construct(
@@ -93,7 +98,10 @@ class AggregationQuery
      * @param string                    $metric     One of METRIC_*.
      * @param ?string                   $field      Field for non-count metrics; null for count.
      * @param array<string, mixed>      $filter     Filter map.
-     * @param array<string, mixed>|null $groupBy    Optional groupBy.
+     * @param array<string, mixed>|null $groupBy    Optional groupBy. Single-field (`{field: 'x'}`),
+     *                                              multi-field (`{fields: ['a','b']}`), or a plain list
+     *                                              (`['a','b']`). Multi-field yields one grouped row per
+     *                                              distinct field tuple.
      * @param array<string, mixed>|null $dateBucket Optional dateBucket spec `{field, start, end, gap}`.
      *
      * @return self
@@ -101,11 +109,14 @@ class AggregationQuery
      * @throws InvalidArgumentException When the input is invalid.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
      *   Fail-fast validation chain: each `if` is one independent guard
-     *   against bad input. Extracting them would reduce the count but
-     *   obscure the per-rule error messages.
+     *   against bad input (including the single-/multi-field groupBy shape
+     *   checks). Extracting them would reduce the count but obscure the
+     *   per-rule error messages.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
      */
     public static function create(
         string $metric,
@@ -130,9 +141,26 @@ class AggregationQuery
             );
         }
 
-        if ($groupBy !== null && (isset($groupBy['field']) === false || $groupBy['field'] === '')) {
-            throw new InvalidArgumentException('groupBy MUST include a non-empty `field`');
-        }
+        if ($groupBy !== null) {
+            $groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
+            foreach ($groupFields as $groupField) {
+                if (is_string($groupField) === false || $groupField === '') {
+                    throw new InvalidArgumentException(
+                        'groupBy MUST include a non-empty `field`; every group field MUST be a non-empty string'
+                    );
+                }
+            }
+
+            if (count($groupFields) === 0) {
+                throw new InvalidArgumentException(
+                    'groupBy MUST include a non-empty `field` or a non-empty `fields` list'
+                );
+            }
+
+            if (count($groupFields) !== count(array_unique($groupFields))) {
+                throw new InvalidArgumentException('groupBy fields MUST be distinct (duplicate field in groupBy list)');
+            }
+        }//end if
 
         if ($dateBucket !== null) {
             self::assertValidDateBucket(spec: $dateBucket);
@@ -189,6 +217,8 @@ class AggregationQuery
      * Test whether the request includes a groupBy clause.
      *
      * @return bool
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
      */
     public function isGrouped(): bool
     {
@@ -197,32 +227,119 @@ class AggregationQuery
     }//end isGrouped()
 
     /**
-     * Get the groupBy field (or null when ungrouped).
+     * Get the FIRST groupBy field (or null when ungrouped).
+     *
+     * Retained for backward compatibility with single-field callers. For a
+     * multi-field cross-tab groupBy this returns the first grouping field
+     * only; use {@see getGroupByFields()} to obtain the full ordered tuple.
      *
      * @return ?string
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
      */
     public function getGroupByField(): ?string
     {
-        if ($this->groupBy === null) {
+        $fields = $this->getGroupByFields();
+        if (count($fields) === 0) {
             return null;
         }
 
-        $field      = ($this->groupBy['field'] ?? null);
-        $fieldValue = null;
-        if (is_string($field) === true) {
-            $fieldValue = $field;
-        }
-
-        return $fieldValue;
+        return $fields[0];
 
     }//end getGroupByField()
+
+    /**
+     * Get the ordered list of groupBy fields (empty when ungrouped).
+     *
+     * Normalises every accepted groupBy shape to a flat, ordered list of
+     * field names:
+     *  - `{field: 'status'}`                  → `['status']`
+     *  - `{fields: ['vendorId', 'bucket']}`   → `['vendorId', 'bucket']`
+     *  - `['vendorId', 'bucket']`             → `['vendorId', 'bucket']`
+     *  - `null`                               → `[]`
+     *
+     * @return array<int, string> Ordered group field names.
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     */
+    public function getGroupByFields(): array
+    {
+        if ($this->groupBy === null) {
+            return [];
+        }
+
+        $fields = [];
+        foreach (self::normaliseGroupByFields(groupBy: $this->groupBy) as $field) {
+            if (is_string($field) === true) {
+                $fields[] = $field;
+            }
+        }
+
+        return $fields;
+
+    }//end getGroupByFields()
+
+    /**
+     * Test whether this is a multi-field (cross-tab) groupBy.
+     *
+     * @return bool True when more than one grouping field is present.
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     */
+    public function isMultiFieldGroupBy(): bool
+    {
+        return (count($this->getGroupByFields()) > 1);
+
+    }//end isMultiFieldGroupBy()
+
+    /**
+     * Normalise any accepted groupBy shape to a flat, ordered candidate list.
+     *
+     * Shared canonicaliser used by both the value object and the runner so
+     * the single-field, multi-field, and plain-list shapes are honoured
+     * identically across the native-SQL and PHP-fallback paths. Returns the
+     * raw candidate values (which the caller validates) rather than filtering
+     * silently — dropping invalid entries here would reintroduce the very
+     * silent-ignore bug this feature fixes.
+     *
+     * @param mixed $groupBy The raw groupBy spec (array, list, or null).
+     *
+     * @return array<int, mixed> Ordered candidate field values.
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     */
+    public static function normaliseGroupByFields(mixed $groupBy): array
+    {
+        if (is_array($groupBy) === false) {
+            return [];
+        }
+
+        // Plain ordered list of field names: `['a', 'b']`.
+        if (array_is_list($groupBy) === true) {
+            return $groupBy;
+        }
+
+        // Multi-field cross-tab shape: `{fields: ['a', 'b']}`.
+        if (isset($groupBy['fields']) === true && is_array($groupBy['fields']) === true) {
+            return array_values($groupBy['fields']);
+        }
+
+        // Single-field shape: `{field: 'a'}`.
+        if (array_key_exists('field', $groupBy) === true) {
+            return [$groupBy['field']];
+        }
+
+        return [];
+
+    }//end normaliseGroupByFields()
 
     /**
      * Test whether the request includes a dateBucket clause.
      *
      * @return bool
+     *
+     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
      */
     public function hasDateBucket(): bool
     {
