@@ -168,7 +168,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function applyDeletionActions(
         DeletionAnalysis $analysis,
@@ -223,7 +223,8 @@ class ReferentialIntegrityService
                 cascadeTargets: $cascadeTargets,
                 userId: $userId,
                 cascadeSource: $cascadeSource,
-                triggerSchemaSlug: $triggerSchemaSlug
+                triggerSchemaSlug: $triggerSchemaSlug,
+                organisationId: $organisationId
             );
         }
     }//end applyDeletionActions()
@@ -1173,13 +1174,275 @@ class ReferentialIntegrityService
     }//end applySetDefault()
 
     /**
-     * Apply CASCADE deletes in batch, grouped by register+schema.
+     * Apply CASCADE deletes with batched resolution, batched soft-delete writes
+     * and one multi-row audit INSERT.
      *
-     * Groups cascade targets by their register+schema pair, resolves entities
-     * once per group, and calls MagicMapper::deleteObjects() in bulk.
-     * Falls back to individual deletion for targets without register info.
+     * PERF: the previous implementation fed every target through
+     * MagicMapper::deleteObjects(), which runs a full cross-magic-table scan
+     * (findAcrossAllSources) PER UUID, and wrote one single-row audit INSERT per
+     * target. For N cascade targets that is ~N cross-table scans + N INSERTs
+     * inside the delete transaction. This method mirrors the legacy-cascade
+     * batch path (DeleteObject::cascadeDeleteObjects): ONE batched cross-table
+     * lookup, one CASE-UPDATE per magic table via
+     * MagicMapper::softDeleteMultipleObjectEntities() (which dispatches the
+     * per-object updating/updated event pairs), and ONE multi-row audit INSERT.
+     *
+     * Targets the uuid-based batch lookup cannot resolve — and every target
+     * when the batched resolve or write fails — fall back to the unchanged
+     * per-object pipeline ({@see applyPerObjectCascadeDelete()}), fail-soft.
      *
      * @param array       $cascadeTargets    The cascade targets from DeletionAnalysis (already reversed).
+     * @param string      $userId            The user performing the deletion.
+     * @param string      $cascadeSource     The UUID of the root object triggering the cascade.
+     * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
+     * @param string|null $organisationId    The active organisation ID for deletion attribution.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function applyBatchCascadeDelete(
+        array $cascadeTargets,
+        string $userId,
+        string $cascadeSource,
+        ?string $triggerSchemaSlug,
+        ?string $organisationId=null
+    ): void {
+        $uuids = [];
+        foreach ($cascadeTargets as $target) {
+            $uuids[] = (string) $target['objectUuid'];
+        }
+
+        $uuids = array_values(array_unique($uuids));
+
+        // 1. Resolve every cascade target in ONE batched cross-table lookup.
+        // Only live rows are wanted: already soft-deleted targets stay on the
+        // per-object fallback, which no-ops their write (prior behaviour).
+        $resolved = [];
+        try {
+            $resolved = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+                uuids: $uuids,
+                includeDeleted: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+        // 2. One soft-delete UPDATE per magic table (+ per-object event pairs).
+        [$handled, $deleted] = $this->batchCascadeSoftDelete(
+            targets: $resolved,
+            userId: $userId,
+            organisationId: $organisationId
+        );
+
+        // 3. One multi-row audit INSERT covering every batch-deleted target.
+        $this->writeBatchCascadeAuditTrails(
+            cascadeTargets: $cascadeTargets,
+            deleted: $deleted,
+            cascadeSource: $cascadeSource,
+            triggerSchemaSlug: $triggerSchemaSlug
+        );
+
+        // 4. Per-object fallback for targets the batch did not take care of.
+        $fallbackTargets = [];
+        foreach ($cascadeTargets as $target) {
+            if (isset($handled[$target['objectUuid']]) === false) {
+                $fallbackTargets[] = $target;
+            }
+        }
+
+        if (empty($fallbackTargets) === false) {
+            $this->applyPerObjectCascadeDelete(
+                cascadeTargets: $fallbackTargets,
+                userId: $userId,
+                cascadeSource: $cascadeSource,
+                triggerSchemaSlug: $triggerSchemaSlug
+            );
+        }
+    }//end applyBatchCascadeDelete()
+
+    /**
+     * Soft-delete a batch of resolved cascade targets.
+     *
+     * Applies the same deletion attribution metadata shape as
+     * DeleteObject::delete() and the legacy-cascade batch write, then persists
+     * via one UPDATE per magic table (MagicMapper::softDeleteMultipleObjectEntities,
+     * which also dispatches the per-object updating/updated event pairs — a
+     * hook stopping propagation skips that target's write and the target is
+     * NOT force-retried per-object).
+     *
+     * @param ObjectEntity[] $targets        The batch-resolved cascade target entities.
+     * @param string         $userId         The user performing the deletion.
+     * @param string|null    $organisationId The active organisation ID for attribution.
+     *
+     * @return array{0: array<string, true>, 1: array<string, ObjectEntity>} Two maps keyed
+     *                             by uuid: [0] every target the batch took care of
+     *                             (deleted OR deliberately skipped by a hook — the
+     *                             caller must not retry these), [1] the targets that
+     *                             were actually soft-deleted (audit rows are written
+     *                             for these). Both empty when the batched write
+     *                             failed entirely — the caller then falls back to
+     *                             the per-object pipeline for every target.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function batchCascadeSoftDelete(array $targets, string $userId, ?string $organisationId): array
+    {
+        if (empty($targets) === true) {
+            return [[], []];
+        }
+
+        $deletedAt = (new DateTime())->format(DateTime::ATOM);
+
+        $handled     = [];
+        $oldEntities = [];
+        foreach ($targets as $entity) {
+            $uuid = $entity->getUuid();
+            if ($uuid === null || $uuid === '') {
+                continue;
+            }
+
+            $handled[$uuid]     = true;
+            $oldEntities[$uuid] = clone $entity;
+            $entity->setDeleted(
+                [
+                    'deletedBy'    => $userId,
+                    'deletedAt'    => $deletedAt,
+                    'objectId'     => $uuid,
+                    'organisation' => $organisationId,
+                ]
+            );
+        }
+
+        try {
+            $deletedEntities = $this->objectEntityMapper->softDeleteMultipleObjectEntities(
+                entities: $targets,
+                oldEntities: $oldEntities
+            );
+        } catch (\Throwable $e) {
+            // Nothing was handled — the caller retries every target via the
+            // per-object pipeline.
+            $this->logger->error(
+                message: '[ReferentialIntegrity] Batched cascade soft delete failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [[], []];
+        }
+
+        $deleted = [];
+        foreach ($deletedEntities as $entity) {
+            $uuid = $entity->getUuid();
+            if ($uuid !== null && $uuid !== '') {
+                $deleted[$uuid] = $entity;
+            }
+        }
+
+        return [$handled, $deleted];
+    }//end batchCascadeSoftDelete()
+
+    /**
+     * Write the audit rows for batch-deleted cascade targets in one bulk INSERT.
+     *
+     * One row per analysis target (a target referenced through two properties
+     * gets two rows, matching the per-object path), each pre-built through
+     * AuditTrailMapper::buildAuditTrail() with action
+     * `referential_integrity.cascade_delete` and the canonical cascade-context
+     * fold (triggerObject/triggerSchema/action_type/property). Audit failures
+     * are logged but never abort the cascade — parity with the per-object
+     * path's fail-soft logIntegrityAction().
+     *
+     * @param array                       $cascadeTargets    All cascade targets (already reversed).
+     * @param array<string, ObjectEntity> $deleted           Batch-deleted entities keyed by uuid.
+     * @param string                      $cascadeSource     The UUID of the root object triggering the cascade.
+     * @param string|null                 $triggerSchemaSlug Schema slug of the trigger object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/deletion-audit-trail/spec.md
+     */
+    private function writeBatchCascadeAuditTrails(
+        array $cascadeTargets,
+        array $deleted,
+        string $cascadeSource,
+        ?string $triggerSchemaSlug
+    ): void {
+        if (empty($deleted) === true) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($cascadeTargets as $target) {
+            $entity = ($deleted[$target['objectUuid']] ?? null);
+            if ($entity === null) {
+                continue;
+            }
+
+            try {
+                $rows[] = $this->auditTrailMapper->buildAuditTrail(
+                    old: $entity,
+                    new: null,
+                    action: 'referential_integrity.cascade_delete',
+                    cascadeContext: [
+                        'triggerObject' => $cascadeSource,
+                        'triggerSchema' => $triggerSchemaSlug,
+                        'action_type'   => 'referential_integrity.cascade_delete',
+                        'property'      => ($target['property'] ?? null),
+                    ]
+                );
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[ReferentialIntegrity] Could not build cascade audit row',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'uuid'  => $target['objectUuid'],
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        if (empty($rows) === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->insertAuditTrails(entries: $rows);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ReferentialIntegrity] Bulk cascade audit insert failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'count' => count($rows),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end writeBatchCascadeAuditTrails()
+
+    /**
+     * Apply CASCADE deletes per object, grouped by register+schema (legacy fallback).
+     *
+     * Preserved verbatim as the fallback pipeline for targets the batched path
+     * cannot handle: groups cascade targets by their register+schema pair and
+     * calls MagicMapper::deleteObjects() in bulk (which re-resolves each uuid
+     * individually). Falls back to individual deletion for targets without
+     * register info. Each target gets its own single-row audit insert with the
+     * legacy changed-shape.
+     *
+     * @param array       $cascadeTargets    The cascade targets needing per-object handling.
      * @param string      $userId            The user performing the deletion.
      * @param string      $cascadeSource     The UUID of the root object triggering the cascade.
      * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
@@ -1188,9 +1451,9 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function applyBatchCascadeDelete(
+    private function applyPerObjectCascadeDelete(
         array $cascadeTargets,
         string $userId,
         string $cascadeSource,
@@ -1258,5 +1521,5 @@ class ReferentialIntegrityService
                 );
             }
         }//end foreach
-    }//end applyBatchCascadeDelete()
+    }//end applyPerObjectCascadeDelete()
 }//end class
