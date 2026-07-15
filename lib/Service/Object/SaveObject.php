@@ -47,6 +47,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\TmloService;
@@ -286,10 +287,12 @@ class SaveObject
      * @param IAppConfig|null                                                  $appConfig                    App-config reader (admin bypass)
      * @param IEventDispatcher|null                                            $eventDispatcher              Event dispatcher (reference events)
      * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry         Writable object-source provider registry
+     * @param FieldEncryptionHandler|null                                      $fieldEncryptionHandler       Field-level encryption handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -318,6 +321,7 @@ class SaveObject
         private readonly ?IAppConfig $appConfig=null,
         private readonly ?IEventDispatcher $eventDispatcher=null,
         private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
+        private readonly ?FieldEncryptionHandler $fieldEncryptionHandler=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -4939,6 +4943,18 @@ class SaveObject
                 schema: $schema,
                 evaluateOn: 'save'
             );
+        }
+
+        // Encrypt properties flagged `x-openregister-encrypted: true` (field-level-
+        // object-encryption). This is the LAST step before the entity is persisted —
+        // every transform above (cascading, defaults, computed fields) needs the
+        // plaintext value to operate correctly, and nothing after this point needs
+        // it: relation scanning treats an opaque ciphertext string like any other
+        // non-reference scalar, and the mapper insert/update writes exactly what it
+        // is given. Schema validation already ran on plaintext upstream in
+        // ObjectService::saveObject(), before this handler is ever invoked.
+        if ($this->fieldEncryptionHandler !== null) {
+            $data = $this->fieldEncryptionHandler->encryptProperties(data: $data, schema: $schema);
         }
 
         return $data;

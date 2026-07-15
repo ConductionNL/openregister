@@ -50,6 +50,7 @@ use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
@@ -173,31 +174,33 @@ class RenderObject
     /**
      * Constructor for RenderObject handler.
      *
-     * @param FileMapper                $fileMapper               File mapper for database operations.
-     * @param MagicMapper               $objectEntityMapper       Object entity mapper for database operations.
-     * @param RegisterMapper            $registerMapper           Register mapper for database operations.
-     * @param SchemaMapper              $schemaMapper             Schema mapper for database operations.
-     * @param ISystemTagManager         $systemTagManager         System tag manager for file tags.
-     * @param ISystemTagObjectMapper    $systemTagMapper          System tag object mapper for file tags.
-     * @param CacheHandler              $cacheHandler             Cache service for performance optimization.
-     * @param CacheHandler              $objectCacheService       Object cache service for optimized loading.
-     * @param PropertyRbacHandler       $propertyRbacHandler      Property-level RBAC handler.
-     * @param LoggerInterface           $logger                   Logger for performance monitoring.
-     * @param FileService               $fileService              File service for file operations.
-     * @param ComputedFieldHandler      $computedFieldHandler     Handler for computed field evaluation.
-     * @param TranslationHandler        $translationHandler       Handler for translatable property resolution.
-     * @param LinkedEntityEnricher      $linkedEntityEnricher     Enricher for linked entity metadata.
-     * @param CalculationEvaluator      $calculationEvaluator     Evaluator for derived/computed properties.
-     * @param UrnService                $urnService               URN resolver for register/schema/object identifiers.
-     * @param TranslationStatusService  $translationStatusService Service exposing per-object translation status metadata.
-     * @param TranslationMapper         $translationMapper        Translation mapper for database operations.
-     * @param LanguageService           $languageService          Language service for source-language resolution.
-     * @param IRequest|null             $request                  Current request, used to read `?recurrenceOccurrences=N`.
-     * @param ObjectSourceRegistry|null $objectSourceRegistry     Resolves object-source providers for `$ref` extends into virtual schemas.
+     * @param FileMapper                  $fileMapper               File mapper for database operations.
+     * @param MagicMapper                 $objectEntityMapper       Object entity mapper for database operations.
+     * @param RegisterMapper              $registerMapper           Register mapper for database operations.
+     * @param SchemaMapper                $schemaMapper             Schema mapper for database operations.
+     * @param ISystemTagManager           $systemTagManager         System tag manager for file tags.
+     * @param ISystemTagObjectMapper      $systemTagMapper          System tag object mapper for file tags.
+     * @param CacheHandler                $cacheHandler             Cache service for performance optimization.
+     * @param CacheHandler                $objectCacheService       Object cache service for optimized loading.
+     * @param PropertyRbacHandler         $propertyRbacHandler      Property-level RBAC handler.
+     * @param LoggerInterface             $logger                   Logger for performance monitoring.
+     * @param FileService                 $fileService              File service for file operations.
+     * @param ComputedFieldHandler        $computedFieldHandler     Handler for computed field evaluation.
+     * @param TranslationHandler          $translationHandler       Handler for translatable property resolution.
+     * @param LinkedEntityEnricher        $linkedEntityEnricher     Enricher for linked entity metadata.
+     * @param CalculationEvaluator        $calculationEvaluator     Evaluator for derived/computed properties.
+     * @param UrnService                  $urnService               URN resolver for register/schema/object identifiers.
+     * @param TranslationStatusService    $translationStatusService Service exposing per-object translation status metadata.
+     * @param TranslationMapper           $translationMapper        Translation mapper for database operations.
+     * @param LanguageService             $languageService          Language service for source-language resolution.
+     * @param IRequest|null               $request                  Current request, used to read `?recurrenceOccurrences=N`.
+     * @param ObjectSourceRegistry|null   $objectSourceRegistry     Resolves object-source providers for `$ref` extends into virtual schemas.
+     * @param FieldEncryptionHandler|null $fieldEncryptionHandler   Field-level encryption handler (x-openregister-encrypted).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -221,6 +224,7 @@ class RenderObject
         private readonly LanguageService $languageService,
         private readonly ?IRequest $request=null,
         private readonly ?ObjectSourceRegistry $objectSourceRegistry=null,
+        private readonly ?FieldEncryptionHandler $fieldEncryptionHandler=null,
     ) {
     }//end __construct()
 
@@ -735,12 +739,26 @@ class RenderObject
 
                 $object = $row->getObject();
                 if (is_array($object) === true) {
-                    $row->setObject($this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object));
+                    $object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
+
+                    // Decrypt AFTER redaction: a field the RBAC/writeOnly strip above just
+                    // removed is no longer a key in $object, so decryptProperties() (which
+                    // only acts on keys still present) silently skips it — an unauthorized
+                    // caller never reaches decryption for that field.
+                    if ($this->fieldEncryptionHandler !== null && $schema->hasEncryptedProperties() === true) {
+                        $object = $this->fieldEncryptionHandler->decryptProperties(data: $object, schema: $schema);
+                    }
+
+                    $row->setObject($object);
                 }
 
                 // The body strip above leaves the `relations` search index untouched; it is
                 // a separate scalar mirror that jsonSerialize surfaces as @self.relations,
-                // so a write-only secret leaks there unless stripped too.
+                // so a write-only secret leaks there unless stripped too. Encrypted values
+                // are ciphertext by the time scanForRelations() runs at save time and do not
+                // look like references (isReference() matches UUID/URI/URL shapes), so they
+                // are not expected to appear in this mirror in the first place — only the
+                // writeOnly strip applies here.
                 $relations = $row->getRelations();
                 if (is_array($relations) === true) {
                     $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
@@ -761,6 +779,12 @@ class RenderObject
                 }
 
                 $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+
+                // Decrypt AFTER redaction, same ordering rationale as the ObjectEntity branch above.
+                if ($this->fieldEncryptionHandler !== null && $schema->hasEncryptedProperties() === true) {
+                    $row = $this->fieldEncryptionHandler->decryptProperties(data: $row, schema: $schema);
+                }
+
                 if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
                     $row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
                         schema: $schema,
@@ -785,7 +809,9 @@ class RenderObject
     private function schemaNeedsReadStrip(?Schema $schema): bool
     {
         return $schema !== null
-            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true);
+            && ($schema->hasPropertyAuthorization() === true
+                || $schema->hasWriteOnlyProperties() === true
+                || $schema->hasEncryptedProperties() === true);
     }//end schemaNeedsReadStrip()
 
     /**
@@ -1880,7 +1906,7 @@ class RenderObject
                     unset($objectData['@self']);
                 }
             } else {
-                // writeOnly-only path (admin / _rbac: false, or a schema with no
+                // The writeOnly-only path (admin / _rbac: false, or a schema with no
                 // property authorization): strip writeOnly unconditionally.
                 $objectData = $this->propertyRbacHandler->stripWriteOnlyProperties(
                     schema: $schema,
@@ -1888,6 +1914,20 @@ class RenderObject
                 );
             }//end if
         }//end if
+
+        // Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
+        // object-encryption). This MUST run after the writeOnly/property-authorization
+        // strip block above, and nowhere earlier: a property that block just removed is
+        // no longer a key in $objectData, so decryptProperties() — which only acts on
+        // keys still present — silently skips it. An unauthorized caller therefore never
+        // reaches decryption for a field it must not see; it gets the same "absent field"
+        // redaction every other property gets, never ciphertext, never plaintext. A value
+        // that is not yet an envelope (mixed plaintext/ciphertext rollout state) passes
+        // through unchanged; a value that fails to decrypt is replaced with a structured
+        // error marker rather than failing the whole render (see FieldEncryptionHandler).
+        if ($this->fieldEncryptionHandler !== null && $schema !== null && $schema->hasEncryptedProperties() === true) {
+            $objectData = $this->fieldEncryptionHandler->decryptProperties(data: $objectData, schema: $schema);
+        }
 
         // Resolve translatable properties to the requested language.
         $renderSchema   = $this->getSchema(id: $entity->getSchema());

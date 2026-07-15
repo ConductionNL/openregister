@@ -688,6 +688,63 @@ class Schema extends Entity implements JsonSerializable
     }//end getWriteOnlyProperties()
 
     /**
+     * Check if any property in the schema is declared encrypted at rest.
+     *
+     * A property carrying `x-openregister-encrypted: true` (the OpenRegister
+     * vendor-extension convention, sibling to `x-openregister-relations` etc.)
+     * is encrypted at rest via {@see \OCA\OpenRegister\Service\FieldEncryptionHandler}
+     * on save and decrypted for authorized reads on render. Used to decide
+     * whether the save/render path must apply the encryption/decryption step,
+     * and whether the magic-table column builder must skip the property.
+     *
+     * @return bool True if at least one property has x-openregister-encrypted === true
+     *
+     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     */
+    public function hasEncryptedProperties(): bool
+    {
+        if (empty($this->properties) === true) {
+            return false;
+        }
+
+        foreach ($this->properties as $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['x-openregister-encrypted'] ?? null) === true
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasEncryptedProperties()
+
+    /**
+     * Get the names of all properties declared encrypted (`x-openregister-encrypted: true`).
+     *
+     * @return array<int, string> List of encrypted property names
+     *
+     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     */
+    public function getEncryptedProperties(): array
+    {
+        $result = [];
+
+        if (empty($this->properties) === true) {
+            return $result;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['x-openregister-encrypted'] ?? null) === true
+            ) {
+                $result[] = (string) $propertyName;
+            }
+        }
+
+        return $result;
+    }//end getEncryptedProperties()
+
+    /**
      * Get the archive data
      *
      * @return array The archive data or empty array if null

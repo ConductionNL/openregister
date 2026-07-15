@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
+use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -1185,11 +1186,31 @@ class MagicSearchHandler
      *
      * @return void
      *
+     * @throws EncryptedFieldFilterException When a filter targets a property flagged
+     *                                        `x-openregister-encrypted: true`.
+     *
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
      */
     private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void
     {
         $properties = $schema->getProperties();
+
+        // Fail loud BEFORE any query work rather than silently returning zero rows:
+        // an encrypted property's value is ciphertext (and, since
+        // buildTableColumnsFromSchema() gives it no dedicated column, may not even be
+        // a real column at all), so a plaintext filter against it can never mean what
+        // the caller intended. Checked up-front, ahead of platform detection and SQL
+        // building, so the rejection is unconditional and cheap.
+        foreach ($filters as $field => $value) {
+            if (is_string($field) === true
+                && ($properties[$field]['x-openregister-encrypted'] ?? false) === true
+            ) {
+                throw new EncryptedFieldFilterException(property: $field);
+            }
+        }
+
         $isPostgres = $this->isPostgresPlatform();
 
         foreach ($filters as $field => $value) {
@@ -1639,6 +1660,16 @@ class MagicSearchHandler
         // Skip date/time formatted fields — PostgreSQL LOWER() only works on text columns.
         $dateFormats = ['date', 'date-time', 'time'];
         foreach ($properties ?? [] as $field => $propertyConfig) {
+            // Encrypted properties get no dedicated magic-table column (see
+            // MagicMapper::buildTableColumnsFromSchema()); including one in a LIKE
+            // full-text scan would either hit a non-existent column or, if a
+            // legacy column still exists from before the flag was set, scan
+            // ciphertext that can never match a plaintext search term. Skip
+            // explicitly rather than let it silently fail to match.
+            if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
+                continue;
+            }
+
             if (($propertyConfig['type'] ?? '') === 'string'
                 && in_array($propertyConfig['format'] ?? '', $dateFormats, true) === false
             ) {
@@ -1653,7 +1684,7 @@ class MagicSearchHandler
                     )
                 );
             }
-        }
+        }//end foreach
 
         // Search in metadata text fields (LIKE for all).
         $searchConditions->add(

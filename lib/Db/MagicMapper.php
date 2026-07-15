@@ -953,6 +953,10 @@ class MagicMapper extends AbstractObjectMapper
             );
 
             return $count;
+        } catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+            // Fail loud (design intent): never degrade a filter on an encrypted
+            // property to a silent count of 0.
+            throw $e;
         } catch (Exception $e) {
             $this->logger->error(
                 message: '[MagicMapper] Failed to count in register+schema table',
@@ -2102,6 +2106,18 @@ class MagicMapper extends AbstractObjectMapper
                             'propertyType' => gettype($propertyConfig),
                         ]
                     );
+                    continue;
+                }
+
+                // Skip properties flagged `x-openregister-encrypted: true` (field-level-
+                // object-encryption): the value is ciphertext by the time it reaches this
+                // table sync, so a dedicated typed column would only ever hold an opaque
+                // string useless for filtering/sorting/faceting. The value still lives in
+                // the table's `object` JSON blob column; it simply gets no dedicated,
+                // independently-queryable column. This is what makes the field
+                // structurally unsearchable server-side (composes with the explicit
+                // filter-time rejection in MagicSearchHandler::applyObjectFilters()).
+                if (($propertyConfig['x-openregister-encrypted'] ?? false) === true) {
                     continue;
                 }
 
@@ -9021,13 +9037,18 @@ class MagicMapper extends AbstractObjectMapper
                     register: $register,
                     schema: $schema
                 );
+            } catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+                // Fail loud (design intent): a filter on an encrypted property must
+                // reach the caller as a clear error, never a swallowed warning that
+                // degrades into an empty/zero result.
+                throw $e;
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve register/schema for search',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
-            }
-        }
+            }//end try
+        }//end if
 
         $this->logger->warning(
             message: '[MagicMapper] searchObjects() called without register/schema context',
@@ -9071,13 +9092,17 @@ class MagicMapper extends AbstractObjectMapper
                     register: $register,
                     schema: $schema
                 );
+            } catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+                // Fail loud (design intent): never degrade a filter on an encrypted
+                // property to a silent count of 0.
+                throw $e;
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to resolve register/schema for count',
                     context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
                 );
             }
-        }
+        }//end if
 
         return 0;
     }//end countSearchObjects()
@@ -9594,6 +9619,11 @@ class MagicMapper extends AbstractObjectMapper
                     schema: $schema
                 );
                 $totalCount += $schemaCount;
+            } catch (\OCA\OpenRegister\Exception\EncryptedFieldFilterException $e) {
+                // Fail loud (design intent): never silently drop a schema from a
+                // multi-schema search total because its own count hit an
+                // encrypted-field filter — surface the error to the caller.
+                throw $e;
             } catch (\Exception $e) {
                 $this->logger->warning(
                     message: '[MagicMapper] Failed to load schema for multi-schema search',

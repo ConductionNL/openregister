@@ -440,6 +440,12 @@ class Application extends App implements IBootstrap
         // bare 500. All other exceptions are rethrown untouched.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware::class);
 
+        // Register the EncryptedFieldFilterMiddleware (field-level-object-encryption):
+        // maps EncryptedFieldFilterException — thrown when a caller filters/
+        // searches/facets on a field flagged `x-openregister-encrypted` — onto a
+        // clear HTTP 400 instead of a silent zero-row result or a bare 500.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
+
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
         // with a concrete NcOfficeConverterInterface implementation that
