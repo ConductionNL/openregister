@@ -79,6 +79,71 @@ class AggregationQueryTest extends TestCase
     }//end testGroupByMustHaveField()
 
 
+    public function testMultiFieldGroupByFieldsShape(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'sum',
+            field: 'amount',
+            filter: [],
+            groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+        );
+        $this->assertTrue($q->isGrouped());
+        $this->assertTrue($q->isMultiFieldGroupBy());
+        $this->assertSame(['vendorId', 'dueDateBucket'], $q->getGroupByFields());
+        // Backward-compatible accessor returns the FIRST field only.
+        $this->assertSame('vendorId', $q->getGroupByField());
+
+    }//end testMultiFieldGroupByFieldsShape()
+
+
+    public function testMultiFieldGroupByPlainListShape(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', 'dueDateBucket']
+        );
+        $this->assertTrue($q->isMultiFieldGroupBy());
+        $this->assertSame(['vendorId', 'dueDateBucket'], $q->getGroupByFields());
+
+    }//end testMultiFieldGroupByPlainListShape()
+
+
+    public function testSingleFieldGroupByIsNotMultiField(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['field' => 'status']
+        );
+        $this->assertFalse($q->isMultiFieldGroupBy());
+        $this->assertSame(['status'], $q->getGroupByFields());
+
+    }//end testSingleFieldGroupByIsNotMultiField()
+
+
+    public function testMultiFieldGroupByRejectsEmptyMember(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('groupBy MUST include a non-empty `field`');
+        AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', '']
+        );
+
+    }//end testMultiFieldGroupByRejectsEmptyMember()
+
+
+    public function testMultiFieldGroupByRejectsDuplicateFields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('groupBy fields MUST be distinct');
+        AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', 'vendorId']
+        );
+
+    }//end testMultiFieldGroupByRejectsDuplicateFields()
+
+
     public function testFilterIsCarriedThrough(): void
     {
         $q = AggregationQuery::create(
