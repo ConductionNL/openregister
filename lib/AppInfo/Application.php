@@ -427,10 +427,11 @@ class Application extends App implements IBootstrap
 
         // Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
         // Deprecation/Sunset/Link response headers to every chat/agents/
-        // conversations controller response, and — only when an operator
-        // opts in via the `openregister.chat.proxyTo` appconfig value —
-        // forwards those requests server-side to hermiq. Off by default;
-        // any failure falls back to serving the request locally unchanged.
+        // conversations controller response and forwards those requests
+        // server-side to hermiq. ON by default since
+        // or-chat-engine-decommission; operators opt out via the
+        // `openregister.chat.proxyTo` appconfig value (any value != 'hermiq').
+        // Any failure falls back to serving the request locally unchanged.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
 
         // Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):

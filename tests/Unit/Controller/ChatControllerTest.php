@@ -240,6 +240,12 @@ class ChatControllerTest extends TestCase
 
     public function testGetChatStatsException(): void
     {
+        // An organisation must resolve for the DB to be touched at all —
+        // without one the endpoint short-circuits to zeros (leak fix).
+        $organisation = new Organisation();
+        $organisation->setUuid('org-uuid-err');
+        $this->organisationService->method('getActiveOrganisation')->willReturn($organisation);
+
         $this->db->method('getQueryBuilder')
             ->willThrowException(new \Exception('DB error'));
 
@@ -493,36 +499,23 @@ class ChatControllerTest extends TestCase
         return $qb;
     }
 
-    public function testGetChatStatsSuccess(): void
+    public function testGetChatStatsNoOrganisationReturnsZerosWithoutQuerying(): void
     {
-        // No active organisation in this scenario — the organisation filter
-        // is skipped entirely (same "filter only if provided" convention as
-        // ConversationMapper::countByUser()), but the conversation-id
-        // collection + message scoping still runs.
+        // No active organisation = nothing this caller may count. The
+        // endpoint must return zeros WITHOUT executing any query — the old
+        // behaviour (skip the filter, count instance-wide) was a
+        // multi-tenant information leak (or-chat-engine-decommission).
         $this->organisationService->method('getActiveOrganisation')->willReturn(null);
 
-        $resultMock = $this->createMock(IResult::class);
-        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('3', '7', '42');
-        $resultMock->method('fetch')->willReturnOnConsecutiveCalls(['id' => '10'], false);
-
-        $capturedParams = [];
-        $capturedEqCols = [];
-        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
-        $qb->method('executeQuery')->willReturn($resultMock);
-
-        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $this->db->expects($this->never())->method('getQueryBuilder');
 
         $result = $this->controller->getChatStats();
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
-        $this->assertSame(3, $data['total_agents']);
-        $this->assertSame(7, $data['total_conversations']);
-        $this->assertSame(42, $data['total_messages']);
-
-        // No active organisation means no organisation equality filter should
-        // have been built at all.
-        $this->assertSame([], $capturedEqCols);
+        $this->assertSame(0, $data['total_agents']);
+        $this->assertSame(0, $data['total_conversations']);
+        $this->assertSame(0, $data['total_messages']);
     }
 
     public function testGetChatStatsScopesCountsToActiveOrganisation(): void
@@ -568,32 +561,11 @@ class ChatControllerTest extends TestCase
         }
     }
 
-    public function testGetChatStatsWithNoConversationsSkipsMessageQuery(): void
-    {
-        // No active organisation and no conversations found at all: the
-        // message count must short-circuit to 0 without querying the
-        // messages table (an empty IN (...) clause would be invalid SQL).
-        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
-
-        $resultMock = $this->createMock(IResult::class);
-        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('0', '0');
-        $resultMock->method('fetch')->willReturn(false);
-
-        $capturedParams = [];
-        $capturedEqCols = [];
-        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
-        $qb->expects($this->exactly(3))->method('executeQuery')->willReturn($resultMock);
-
-        $this->db->method('getQueryBuilder')->willReturn($qb);
-
-        $result = $this->controller->getChatStats();
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame(0, $data['total_agents']);
-        $this->assertSame(0, $data['total_conversations']);
-        $this->assertSame(0, $data['total_messages']);
-    }
+    // Note: the former testGetChatStatsWithNoConversationsSkipsMessageQuery
+    // (no-org falls through to instance-wide counting) was removed by
+    // or-chat-engine-decommission — the no-org path now short-circuits to
+    // zeros without any query (see testGetChatStatsNoOrganisationReturnsZerosWithoutQuerying),
+    // closing the multi-tenant stats leak.
 
     // ── sendMessage — new conversation via agentUuid ──
 

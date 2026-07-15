@@ -12,9 +12,7 @@ import {
 	organisationStore,
 	applicationStore,
 	viewsStore,
-	agentStore,
 	sourceStore,
-	conversationStore,
 } from '../store/store.js'
 
 /**
@@ -40,9 +38,7 @@ export async function initializeAppData() {
 
 			// Extended entities
 			loadViews(),
-			loadAgents(),
 			loadSources(),
-			loadConversations(),
 		])
 	} catch (error) {
 		console.error('[AppInit] ✗ Error during initialization:', error)
@@ -68,9 +64,7 @@ export async function reloadAppData() {
 			forceLoadOrganisations(),
 			forceLoadApplications(),
 			forceLoadViews(),
-			forceLoadAgents(),
 			forceLoadSources(),
-			forceLoadConversations(),
 		])
 	} catch (error) {
 		console.error('[AppInit] ✗ Error during reload:', error)
@@ -196,26 +190,6 @@ async function forceLoadViews() {
 }
 
 /**
- * Load agents if not already loaded.
- *
- * @return {Promise<void>}
- */
-async function loadAgents() {
-	if (!agentStore.agentList || agentStore.agentList.length === 0) {
-		await agentStore.refreshAgentList()
-	}
-}
-
-/**
- * Force load agents (always refreshes).
- *
- * @return {Promise<void>}
- */
-async function forceLoadAgents() {
-	await agentStore.refreshAgentList()
-}
-
-/**
  * Load sources if not already loaded.
  *
  * @return {Promise<void>}
@@ -233,26 +207,6 @@ async function loadSources() {
  */
 async function forceLoadSources() {
 	await sourceStore.refreshSourceList()
-}
-
-/**
- * Load conversations if not already loaded.
- *
- * @return {Promise<void>}
- */
-async function loadConversations() {
-	if (!conversationStore.conversationList || conversationStore.conversationList.length === 0) {
-		await conversationStore.refreshConversationList()
-	}
-}
-
-/**
- * Force load conversations (always refreshes).
- *
- * @return {Promise<void>}
- */
-async function forceLoadConversations() {
-	await conversationStore.refreshConversationList()
 }
 
 /**

@@ -871,27 +871,39 @@ class ChatController extends Controller
             $organisation     = $this->organisationService->getActiveOrganisation();
             $organisationUuid = $organisation?->getUuid();
 
+            // No resolvable organisation means there is nothing this caller
+            // may count: return zeros rather than falling back to unscoped,
+            // instance-wide totals (multi-tenant leak,
+            // or-chat-engine-decommission REQ "Usage statistics are
+            // organisation-scoped, never instance-wide").
+            if ($organisationUuid === null) {
+                return new JSONResponse(
+                    data: [
+                        'total_agents'        => 0,
+                        'total_conversations' => 0,
+                        'total_messages'      => 0,
+                    ],
+                    statusCode: 200
+                );
+            }
+
             // Get agent count, scoped to the active organisation.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
-                ->from('openregister_agents');
-            if ($organisationUuid !== null) {
-                $qb->andWhere(
+                ->from('openregister_agents')
+                ->where(
                     $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
                 );
-            }
 
             $totalAgents = (int) $qb->executeQuery()->fetchOne();
 
             // Get conversation count, scoped to the active organisation.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
-                ->from('openregister_conversations');
-            if ($organisationUuid !== null) {
-                $qb->andWhere(
+                ->from('openregister_conversations')
+                ->where(
                     $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
                 );
-            }
 
             $totalConversations = (int) $qb->executeQuery()->fetchOne();
 
@@ -900,12 +912,10 @@ class ChatController extends Controller
             // own) can be scoped via their conversation_id foreign key.
             $qb = $this->db->getQueryBuilder();
             $qb->select('id')
-                ->from('openregister_conversations');
-            if ($organisationUuid !== null) {
-                $qb->andWhere(
+                ->from('openregister_conversations')
+                ->where(
                     $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
                 );
-            }
 
             $result          = $qb->executeQuery();
             $conversationIds = [];

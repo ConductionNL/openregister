@@ -146,32 +146,6 @@ class AgentsController extends Controller
     }//end __construct()
 
     /**
-     * Render the Agents page
-     *
-     * Returns the template for the main agents page.
-     * All routing is handled client-side by the SPA.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse Template response for agents SPA
-     *
-     * @psalm-return TemplateResponse<200, array<never, never>>
-     *
-     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
-     */
-    public function page(): TemplateResponse
-    {
-        // Return SPA template response (routing handled client-side).
-        return new TemplateResponse(
-            appName: 'openregister',
-            templateName: 'index',
-            params: []
-        );
-    }//end page()
-
-    /**
      * Get all agents accessible by current user
      *
      * RBAC filtering is handled in the mapper layer.

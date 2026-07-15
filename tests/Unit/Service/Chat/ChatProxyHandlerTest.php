@@ -46,19 +46,23 @@ class ChatProxyHandlerTest extends TestCase
     /**
      * Build a handler with fully-mocked collaborators.
      *
-     * @param string      $proxyTo         The `chat.proxyTo` appconfig value.
+     * @param string|null $proxyTo         The `chat.proxyTo` appconfig value; null simulates an
+     *                                     UNSET key (getValueString returns its default, which is
+     *                                     'hermiq' since or-chat-engine-decommission).
      * @param bool        $hermiqInstalled Whether IAppManager::isInstalled('hermiq') returns true.
      * @param IClient|null $client         Optional pre-built client mock (defaults to a never-called mock).
      */
     private function makeHandler(
-        string $proxyTo='',
+        ?string $proxyTo=null,
         bool $hermiqInstalled=true,
         ?IClient $client=null
     ): ChatProxyHandler {
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('getValueString')
-            ->with('openregister', 'chat.proxyTo', '')
-            ->willReturn($proxyTo);
+            ->with('openregister', 'chat.proxyTo', 'hermiq')
+            ->willReturnCallback(
+                fn (string $app, string $key, string $default='') => $proxyTo ?? $default
+            );
 
         $appManager = $this->createMock(IAppManager::class);
         $appManager->method('isInstalled')->with('hermiq')->willReturn($hermiqInstalled);
@@ -107,12 +111,16 @@ class ChatProxyHandlerTest extends TestCase
         return $request;
     }//end makeRequest()
 
-    public function testIsProxyConfiguredTrueOnlyForHermiq(): void
+    public function testIsProxyConfiguredDefaultsOnAndSupportsOptOut(): void
     {
+        // Unset key = proxy ON (or-chat-engine-decommission default flip).
+        $this->assertTrue($this->makeHandler()->isProxyConfigured());
         $this->assertTrue($this->makeHandler(proxyTo: 'hermiq')->isProxyConfigured());
+        // Any explicit non-hermiq value is an operator opt-out.
+        $this->assertFalse($this->makeHandler(proxyTo: 'off')->isProxyConfigured());
         $this->assertFalse($this->makeHandler(proxyTo: '')->isProxyConfigured());
         $this->assertFalse($this->makeHandler(proxyTo: 'something-else')->isProxyConfigured());
-    }//end testIsProxyConfiguredTrueOnlyForHermiq()
+    }//end testIsProxyConfiguredDefaultsOnAndSupportsOptOut()
 
     public function testIsHermiqInstalledDelegatesToAppManager(): void
     {
