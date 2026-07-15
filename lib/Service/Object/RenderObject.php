@@ -1913,6 +1913,30 @@ class RenderObject
                     object: $objectData
                 );
             }//end if
+
+            // The body is not the only copy of a writeOnly value. OpenRegister
+            // mirrors reference-shaped scalar properties (a UUID/URL/ref value)
+            // into the `relations` search index, which jsonSerialize() surfaces
+            // as `@self.relations` — so a writeOnly secret whose value is
+            // reference-shaped leaks there even after the body strip above. The
+            // body strip is a HARD, unconditional render-boundary rule (#389);
+            // its mirror MUST strip on the SAME boundary. The older _rbac-gated
+            // block earlier in this method strips the mirror only when
+            // `_rbac === true`, so an admin / `_rbac: false` read (an admin HTTP
+            // GET renders with `_rbac: false`) still returned the value via
+            // `@self.relations` (#420 — the mirror half of #389). Strip it here,
+            // unconditionally, whenever the schema has writeOnly properties.
+            if ($doWriteOnly === true) {
+                $relations = $entity->getRelations();
+                if (is_array($relations) === true && empty($relations) === false) {
+                    $entity->setRelations(
+                        $this->propertyRbacHandler->stripWriteOnlyProperties(
+                            schema: $schema,
+                            object: $relations
+                        )
+                    );
+                }
+            }//end if
         }//end if
 
         // Decrypt properties flagged `x-openregister-encrypted: true` (field-level-
