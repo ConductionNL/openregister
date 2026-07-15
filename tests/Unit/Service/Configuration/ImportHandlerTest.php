@@ -1103,6 +1103,10 @@ class ImportHandlerTest extends TestCase
 
     /**
      * importFromJson() returns empty result when stored version is equal and force is false.
+     *
+     * #426: the fast-skip now requires BOTH an equal-or-older version AND an unchanged
+     * content hash, so the stored hash must match the definitional content for the skip
+     * to fire.
      */
     public function testImportFromJsonSkipsWhenVersionNotNewer(): void
     {
@@ -1111,10 +1115,23 @@ class ImportHandlerTest extends TestCase
             'appId'   => 'myapp',
             'version' => '1.0.0',
         ];
+        // No `components`, so the hash falls back to the whole payload.
+        $contentHash = hash('sha256', json_encode($data));
 
         $this->appConfig->method('getValueString')
-            ->with('openregister', 'imported_config_myapp_version', '')
-            ->willReturn('1.0.0');
+            ->willReturnCallback(function (string $app, string $key, string $default = '') use ($contentHash) {
+                if ($key === 'imported_config_myapp_version') {
+                    return '1.0.0';
+                }
+
+                if ($key === 'imported_config_myapp_hash') {
+                    return $contentHash;
+                }
+
+                return $default;
+            });
+        // The skip path early-returns BEFORE the store, so the version/hash are never written.
+        $this->appConfig->expects($this->never())->method('setValueString');
 
         $result = $this->handler->importFromJson(
             data:          $data,
@@ -1127,6 +1144,56 @@ class ImportHandlerTest extends TestCase
         $this->assertSame([], $result['objects']);
 
     }//end testImportFromJsonSkipsWhenVersionNotNewer()
+
+
+    /**
+     * #426: same app version but changed definitional content must NOT fast-skip — the
+     * stored hash differs, so the import proceeds past the version-only gate (reaching
+     * the per-entity gates and the post-import version/hash store).
+     */
+    public function testImportFromJsonProceedsWhenContentHashDiffers(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+        ];
+
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(function (string $app, string $key, string $default = '') {
+                if ($key === 'imported_config_myapp_version') {
+                    return '1.0.0';
+                }
+
+                if ($key === 'imported_config_myapp_hash') {
+                    return 'STALE_HASH_THAT_DOES_NOT_MATCH_CURRENT_CONTENT';
+                }
+
+                return $default;
+            });
+
+        $storedHash = false;
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$storedHash) {
+                if (str_ends_with($key, '_hash') === true) {
+                    $storedHash = true;
+                }
+
+                return true;
+            });
+
+        $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            force:         false
+        );
+
+        $this->assertTrue(
+            $storedHash,
+            '#426: a changed content hash must let the import proceed past the version-only gate'
+        );
+
+    }//end testImportFromJsonProceedsWhenContentHashDiffers()
 
 
     /**
@@ -1228,9 +1295,13 @@ class ImportHandlerTest extends TestCase
 
         $this->appConfig->method('getValueString')->willReturn('');
 
-        $this->appConfig->expects($this->once())
-            ->method('setValueString')
-            ->with('openregister', 'imported_config_myapp_version', '1.2.3');
+        // #426: the store now writes BOTH the version and the content hash.
+        $stored = [];
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$stored) {
+                $stored[$key] = $value;
+                return true;
+            });
 
         $data = ['appId' => 'myapp', 'version' => '1.2.3'];
 
@@ -1240,6 +1311,9 @@ class ImportHandlerTest extends TestCase
             appId:         'myapp',
             version:       '1.2.3'
         );
+
+        $this->assertSame('1.2.3', $stored['imported_config_myapp_version'] ?? null);
+        $this->assertArrayHasKey('imported_config_myapp_hash', $stored);
 
     }//end testImportFromJsonStoresVersionInAppConfig()
 
@@ -1251,13 +1325,23 @@ class ImportHandlerTest extends TestCase
     {
         $configuration = $this->makeConfiguration(1);
 
+        // Version 3.0.0 > stored 0.0.0, so the gate proceeds regardless of hash.
         $this->appConfig->method('getValueString')
-            ->with('openregister', 'imported_config_extracted-app_version', '')
-            ->willReturn('0.0.0');
+            ->willReturnCallback(function (string $app, string $key, string $default = '') {
+                if ($key === 'imported_config_extracted-app_version') {
+                    return '0.0.0';
+                }
 
-        $this->appConfig->expects($this->once())
-            ->method('setValueString')
-            ->with('openregister', 'imported_config_extracted-app_version', '3.0.0');
+                return $default;
+            });
+
+        // #426: the store writes both the version and the content hash.
+        $stored = [];
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$stored) {
+                $stored[$key] = $value;
+                return true;
+            });
 
         $data = [
             'appId'   => 'extracted-app',
@@ -1271,6 +1355,7 @@ class ImportHandlerTest extends TestCase
         );
 
         $this->assertIsArray($result);
+        $this->assertSame('3.0.0', $stored['imported_config_extracted-app_version'] ?? null);
 
     }//end testImportFromJsonExtractsAppIdAndVersionFromData()
 

@@ -1474,6 +1474,33 @@ class ImportHandler
     }//end importSchema()
 
     /**
+     * Compute a stable content hash of a configuration's definitional payload.
+     *
+     * Used by the app-level import fast-skip (#426): the skip fires only when the app
+     * version is not newer AND this hash matches the last import, so a schema/register
+     * definition change re-imports even when the app version is unchanged. The hash
+     * covers `components` (registers, schemas, objects, mappings, …) — the parts whose
+     * changes should re-trigger the version-gated import — and falls back to the whole
+     * payload when `components` is absent. Key order is taken from the source config
+     * files (deterministic for an unchanged release), so no normalisation is needed; a
+     * reordering at most triggers one extra import pass.
+     *
+     * @param array $data The configuration data (pre-mutation snapshot).
+     *
+     * @return string A hex sha256 digest of the definitional payload.
+     */
+    private function computeDefinitionHash(array $data): string
+    {
+        $definitional = ($data['components'] ?? $data);
+        $encoded      = json_encode($definitional);
+        if ($encoded === false) {
+            $encoded = '';
+        }
+
+        return hash('sha256', $encoded);
+    }//end computeDefinitionHash()
+
+    /**
      * Import configuration data from JSON structure.
      *
      * This is the core import method that processes all configuration components
@@ -1538,14 +1565,35 @@ class ImportHandler
             $version = $data['version'];
         }
 
+        // Content hash of the definitional payload, computed ONCE from the incoming
+        // data before any import step mutates $data (schema import resolves $refs and
+        // stamps ids into it). The same value is reused for the skip check below and
+        // for the post-import store, so an unchanged release always produces an
+        // identical hash on the next run.
+        $definitionHash = $this->computeDefinitionHash(data: $data);
+
         // Perform version check if appId and version are available (unless force is enabled).
         if ($appId !== null && $version !== null && $force === false) {
             $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
+            $storedHash    = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_hash", '');
 
-            // If we have a stored version, compare it with the current version.
-            if ($storedVersion !== '' && version_compare($version, $storedVersion, '<=') === true) {
+            // Skip only when the app version is NOT newer AND the definitional content
+            // is byte-identical to the last import (#426). Comparing the app version
+            // alone made a schema-definition change silently no-op on existing installs
+            // whenever the app version was unchanged — even when the schema's OWN
+            // `version` was bumped — because this early-return fired BEFORE the per-schema
+            // version gate (importSchema) could run. Gating additionally on a content
+            // hash lets the import proceed to those per-entity gates whenever the config
+            // content changed; they then decide what actually updates. The truly-unchanged
+            // case still fast-skips. A never-stored hash ('' on first run after this fix)
+            // fails the equality and lets the import proceed once, healing existing installs.
+            if ($storedVersion !== ''
+                && version_compare($version, $storedVersion, '<=') === true
+                && $storedHash !== ''
+                && $storedHash === $definitionHash
+            ) {
                 $this->logger->info(
-                    message: "[ImportHandler] Skipping {$appId}: v{$version} <= {$storedVersion}",
+                    message: "[ImportHandler] Skipping {$appId}: v{$version} <= {$storedVersion} and config content unchanged",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
@@ -2242,6 +2290,11 @@ class ImportHandler
         // Store the version information if appId and version are available.
         if ($appId !== null && $version !== null) {
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_version", $version);
+            // Persist the content hash computed from the pre-mutation snapshot above so
+            // the next run can fast-skip only when the definitional content is unchanged
+            // (#426). Storing it even when the per-entity gates ended up updating nothing
+            // is correct: it records "this exact config content has been seen".
+            $this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $definitionHash);
             $this->logger->info(
                 message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import",
                 context: ['file' => __FILE__, 'line' => __LINE__]
