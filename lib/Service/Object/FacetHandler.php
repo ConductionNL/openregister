@@ -1239,6 +1239,16 @@ class FacetHandler
                 $schemaId   = $schema->getId();
                 $properties = $schema->getProperties() ?? [];
                 foreach ($properties as $propertyKey => $property) {
+                    // Encrypted properties are never facetable, even when a schema
+                    // author also sets `facetable: true` on one by mistake — the
+                    // magic-table value is ciphertext (or, once
+                    // MagicMapper::buildTableColumnsFromSchema() skips it, not even a
+                    // real column), so grouping by it would be meaningless at best
+                    // and a ciphertext leak into facet option labels at worst.
+                    if (($property['x-openregister-encrypted'] ?? false) === true) {
+                        continue;
+                    }
+
                     $facetConfig = $this->normalizeFacetConfig(facetable: $property['facetable'] ?? false);
                     if ($facetConfig === null) {
                         continue;
