@@ -66,11 +66,11 @@ The `ValidateObject` and `ValidationHandler` MUST check all object field values 
 
 ### REQ-004: Bulk object operations MUST use chunked processing
 
-When handling batches of objects, `SaveObjects` and its sub-handlers (`PreparationHandler`, `ChunkProcessingHandler`) MUST split the batch into configurable chunks to limit memory consumption and enable partial-success reporting. Each chunk MUST be processed independently so that a failure in one chunk does not roll back already-persisted chunks.
+When handling batches of objects, `SaveObjects` (assisted by its sub-handler `PreparationHandler`) MUST split the batch into configurable chunks to limit memory consumption and enable partial-success reporting. Chunk processing is implemented by `SaveObjects`' internal `processObjectsChunk()` — the former standalone `ChunkProcessingHandler` was an uncalled duplicate and has been removed. Each chunk MUST be processed independently so that a failure in one chunk does not roll back already-persisted chunks.
 
 #### Scenario: Large import is chunked
 - **GIVEN** a bulk import of 5000 objects with chunk size 100
-- **WHEN** `ChunkProcessingHandler` processes the import
+- **WHEN** `SaveObjects` processes the import
 - **THEN** objects MUST be processed in groups of 100
 - **AND** the response MUST include a `processed`, `failed`, and `skipped` count per chunk
 - **AND** a failure in chunk 30 MUST NOT roll back objects from chunks 1–29

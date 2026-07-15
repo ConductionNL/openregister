@@ -6,7 +6,7 @@ status: done
 
 ## Purpose
 
-Document and extend OpenRegister's existing import/export infrastructure. The core pipeline is already implemented: ImportService with ChunkProcessingHandler for bulk ingest, ExportService/ExportHandler for CSV/JSON/XML output, and Configuration/ImportHandler for register template loading. This spec validates the existing implementation and defines extensions for additional formats, progress tracking, and schema validation. The existing pipeline already handles CSV and Excel import via PhpSpreadsheet, CSV and Excel export with RBAC-aware header generation and relation name resolution, configuration import/export in OpenAPI 3.0.0 format, bulk operations via SaveObjects with BulkRelationHandler and BulkValidationHandler, deduplication efficiency reporting, multi-sheet Excel import, two-pass UUID-to-name resolution, and property-level RBAC enforcement on export columns. This spec extends that foundation with JSON/XML/ODS format support, interactive column mapping, progress tracking UI, downloadable error reports, import templates, streaming for large datasets, scheduled imports, and i18n for headers and templates.
+Document and extend OpenRegister's existing import/export infrastructure. The core pipeline is already implemented: ImportService with SaveObjects' internal chunked processing for bulk ingest, ExportService/ExportHandler for CSV/JSON/XML output, and Configuration/ImportHandler for register template loading. This spec validates the existing implementation and defines extensions for additional formats, progress tracking, and schema validation. The existing pipeline already handles CSV and Excel import via PhpSpreadsheet, CSV and Excel export with RBAC-aware header generation and relation name resolution, configuration import/export in OpenAPI 3.0.0 format, bulk operations via SaveObjects with BulkRelationHandler and BulkValidationHandler, deduplication efficiency reporting, multi-sheet Excel import, two-pass UUID-to-name resolution, and property-level RBAC enforcement on export columns. This spec extends that foundation with JSON/XML/ODS format support, interactive column mapping, progress tracking UI, downloadable error reports, import templates, streaming for large datasets, scheduled imports, and i18n for headers and templates.
 
 **Source**: Gap identified in cross-platform analysis; Baserow implements CSV export (core) and JSON/Excel export (premium) with view-scoped filtering; NocoDB implements Airtable/CSV/Excel import with async job processing and bulk API operations. Both competitors gate advanced export formats behind paid tiers -- OpenRegister should offer all formats in the open-source core.
 
@@ -15,7 +15,7 @@ This spec primarily validates and extends an already-functional import/export sy
 
 - **CSV/Excel import (fully implemented)**: `ImportService` with `importFromCsv()` and `importFromExcel()` using PhpSpreadsheet, with ReactPHP optimization and configurable chunk sizes.
 - **CSV/Excel export (fully implemented)**: `ExportService` with `exportToCsv()` and `exportToExcel()`, RBAC-aware header generation via `PropertyRbacHandler`, relation name resolution via two-pass `resolveUuidNameMap()`, admin-only `@self.*` metadata columns, and multi-tenancy support.
-- **Bulk operations (fully implemented)**: `SaveObjects` with `ChunkProcessingHandler` (60-70% fewer DB calls, 2-3x faster), `BulkRelationHandler` for inverse relations, `BulkValidationHandler` for schema analysis caching.
+- **Bulk operations (fully implemented)**: `SaveObjects` with internal chunked processing (`processObjectsChunk()`, 60-70% fewer DB calls, 2-3x faster), `BulkRelationHandler` for inverse relations, `BulkValidationHandler` for schema analysis caching.
 - **Configuration portability (fully implemented)**: `Configuration/ImportHandler` and `Configuration/ExportHandler` for OpenAPI 3.0.0 format with slug-based references, workflow deployment, and idempotent re-import.
 - **Deduplication (fully implemented)**: Import summaries include `created`, `updated`, `unchanged`, `errors` counts with deduplication efficiency reporting.
 - **Multi-sheet Excel (fully implemented)**: `processMultiSchemaSpreadsheetAsync()` matches sheet titles to schema slugs.
@@ -64,7 +64,7 @@ Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `Impor
 
 ### Requirement: The system MUST support bulk import via API @e2e exclude REST API bulk import — covered by Newman
 
-The bulk import API MUST accept an array of objects in a single request body for programmatic import without file upload. This endpoint SHALL leverage `SaveObjects` and `ChunkProcessingHandler` for high-performance batch processing with configurable chunk sizes.
+The bulk import API MUST accept an array of objects in a single request body for programmatic import without file upload. This endpoint SHALL leverage `SaveObjects` (internal chunked processing) for high-performance batch processing with configurable chunk sizes.
 
 #### Scenario: Bulk create objects via API
 - **GIVEN** schema `contactmomenten` in register `klantcontact`
@@ -803,7 +803,7 @@ size-guard its input, and any cap applied SHALL be logged, never silent.
   - `Configuration/ImportHandler` (`lib/Service/Configuration/ImportHandler.php`) for importing OpenAPI 3.0.0 configuration data (registers, schemas, objects, workflows, mappings)
   - `Configuration/ExportHandler` (`lib/Service/Configuration/ExportHandler.php`) for exporting configurations to OpenAPI format with slug-based references
   - `Object/ExportHandler` (`lib/Service/Object/ExportHandler.php`) for coordinating export and import operations between controller and services
-  - `SaveObjects` (`lib/Service/Object/SaveObjects.php`) with `ChunkProcessingHandler` for bulk operations (60-70% fewer DB calls, 2-3x faster)
+  - `SaveObjects` (`lib/Service/Object/SaveObjects.php`) with internal chunked processing for bulk operations (60-70% fewer DB calls, 2-3x faster)
   - `BulkRelationHandler` (`lib/Service/Object/SaveObjects/BulkRelationHandler.php`) for handling inverse relations during bulk import
   - `BulkValidationHandler` (`lib/Service/Object/SaveObjects/BulkValidationHandler.php`) for schema analysis caching and bulk validation
   - `ObjectsController::export()` endpoint returning `DataDownloadResponse` with CSV or XLSX
@@ -864,7 +864,7 @@ size-guard its input, and any cap applied SHALL be logged, never silent.
 
 **Status**: Partially Implemented
 
-**Existing Implementation**: `ImportService` and `ExportService` provide CSV and Excel import/export at the service layer with comprehensive bulk optimization via `SaveObjects`, `ChunkProcessingHandler`, `BulkRelationHandler`, and `BulkValidationHandler`. Configuration import/export is handled by `Configuration/ImportHandler` and `Configuration/ExportHandler` using OpenAPI 3.0.0 format. Object-level export is available via `Object/ExportHandler`. The `ObjectsController` exposes `export()` and `import()` endpoints. RBAC is enforced via `PropertyRbacHandler` for column visibility and admin checks for metadata columns.
+**Existing Implementation**: `ImportService` and `ExportService` provide CSV and Excel import/export at the service layer with comprehensive bulk optimization via `SaveObjects` (internal chunked processing), `BulkRelationHandler`, and `BulkValidationHandler`. Configuration import/export is handled by `Configuration/ImportHandler` and `Configuration/ExportHandler` using OpenAPI 3.0.0 format. Object-level export is available via `Object/ExportHandler`. The `ObjectsController` exposes `export()` and `import()` endpoints. RBAC is enforced via `PropertyRbacHandler` for column visibility and admin checks for metadata columns.
 
 **Nextcloud Core Integration**: The import pipeline leverages `QueuedJob` (OCP\BackgroundJob\QueuedJob) for SOLR warmup scheduling after imports. Completion notifications should use `INotifier` (OCP\Notification\INotifier). File handling should integrate with Nextcloud Files (WebDAV) for import template storage, scheduled file imports, and export file delivery. The `IJobList` service is already injected into `ImportService` for background job management.
 
