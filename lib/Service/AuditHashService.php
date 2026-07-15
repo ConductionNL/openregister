@@ -34,6 +34,9 @@ namespace OCA\OpenRegister\Service;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\Lock\ILockingProvider;
+use OCP\Lock\LockedException;
+use Psr\Log\LoggerInterface;
 
 /**
  * Handles cryptographic hash chaining for audit trail entries.
@@ -41,6 +44,8 @@ use OCP\IDBConnection;
  * @package OCA\OpenRegister\Service
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/audit-hash-chain/spec.md
  */
 class AuditHashService
 {
@@ -52,12 +57,43 @@ class AuditHashService
     private const GENESIS_SEED = 'openregister-genesis-v1';
 
     /**
+     * Well-known advisory lock key serializing ALL seal passes.
+     *
+     * The methods sealRow() and sealRows() race each other (and themselves
+     * across requests): both read a predecessor hash and then UPDATE, so two
+     * interleaved passes can chain a boundary row over a stale predecessor —
+     * a false tamper alarm on the next verifyChain(). A single exclusive
+     * lock on this key makes seal passes strictly sequential.
+     *
+     * @var string
+     */
+    private const SEAL_LOCK_KEY = 'openregister/audit-seal';
+
+    /**
+     * Number of acquisition attempts before giving up on the seal lock.
+     *
+     * @var int
+     */
+    private const SEAL_LOCK_ATTEMPTS = 3;
+
+    /**
+     * Delay between seal-lock acquisition attempts, in microseconds.
+     *
+     * @var int
+     */
+    private const SEAL_LOCK_RETRY_DELAY_USEC = 50000;
+
+    /**
      * Constructor for AuditHashService.
      *
-     * @param IDBConnection $db The database connection
+     * @param IDBConnection    $db              The database connection
+     * @param ILockingProvider $lockingProvider Advisory lock provider serializing seal passes
+     * @param LoggerInterface  $logger          Logger for fail-soft lock warnings
      */
     public function __construct(
-        private readonly IDBConnection $db
+        private readonly IDBConnection $db,
+        private readonly ILockingProvider $lockingProvider,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
@@ -151,19 +187,53 @@ class AuditHashService
     /**
      * Seal an already-inserted audit-trail row into the hash chain.
      *
-     * Reads the row by id, derives `previousHash` from the immediately-prior
-     * row (or genesis), and computes `hash` over the row using the SAME
+     * Reads the row by id, derives `previousHash` from the nearest PRIOR
+     * SEALED row (or genesis), and computes `hash` over the row using the SAME
      * `mapRowToEntity()` + `hydrate()` + `getCanonicalJson()` path that
      * {@see verifyChain()} uses — guaranteeing the stored hash re-verifies
      * exactly. The `hash` / `previous_hash` values are then written directly.
      * Call this AFTER inserting the row so the id and all persisted (DB-typed)
      * field values are final.
      *
+     * The critical section (predecessor read + hash write) runs under the
+     * exclusive {@see self::SEAL_LOCK_KEY} advisory lock shared with
+     * {@see sealRows()}. Fail-soft on contention: when the lock cannot be
+     * acquired within a short bounded wait the row is left unsealed (a later
+     * seal pass picks it up — {@see getHashBefore()} chains over unsealed
+     * rows exactly like verifyChain() does) rather than blocking the write
+     * path.
+     *
+     * @param int $id The audit-trail row id to seal.
+     *
+     * @return bool True when the row was found and sealed.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function sealRow(int $id): bool
+    {
+        if ($this->acquireSealLock() === false) {
+            $this->logger->warning(
+                '[AuditHashService] seal lock unavailable, leaving audit row '.$id.' unsealed (a later seal pass will chain it)'
+            );
+
+            return false;
+        }
+
+        try {
+            return $this->sealRowLocked(id: $id);
+        } finally {
+            $this->releaseSealLock();
+        }
+    }//end sealRow()
+
+    /**
+     * Seal a single row — body of {@see sealRow()}, caller holds the seal lock.
+     *
      * @param int $id The audit-trail row id to seal.
      *
      * @return bool True when the row was found and sealed.
      */
-    public function sealRow(int $id): bool
+    private function sealRowLocked(int $id): bool
     {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -197,7 +267,7 @@ class AuditHashService
 
         return true;
 
-    }//end sealRow()
+    }//end sealRowLocked()
 
     /**
      * Seal a batch of already-inserted audit-trail rows into the hash chain.
@@ -213,23 +283,22 @@ class AuditHashService
      * sealRow() call would produce. Already-sealed rows are left untouched
      * and only contribute their stored hash as the chain link.
      *
-     * KNOWN RACE (pre-existing in sealRow(), widened at bulk boundaries): a
-     * concurrent writer can insert a row AFTER this batch's range SELECT but
-     * with an id inside/adjacent to the range, or seal a boundary row between
-     * our getHashBefore() read and our UPDATE. Either interleaving can leave
-     * one boundary link computed against a stale predecessor, which
-     * verifyChain() would later report as a break (a false tamper alarm, not
-     * data loss — resealing recomputes deterministically). The single-row
-     * sealRow() has the same window per row; batching widens it to the batch
-     * duration. Follow-up: serialize sealing with an advisory lock (tracked
-     * in a separate issue per the pre-merge review).
+     * Seal passes are serialized under the exclusive
+     * {@see self::SEAL_LOCK_KEY} advisory lock shared with {@see sealRow()}:
+     * without it a concurrent writer could seal a boundary row between our
+     * getHashBefore() read and our UPDATE (or vice versa), chaining one link
+     * over a stale predecessor — a false tamper alarm on the next
+     * verifyChain(). Fail-soft on contention: when the lock cannot be
+     * acquired within a short bounded wait the rows are left unsealed (a
+     * later seal pass chains them; unsealed rows are skipped by both
+     * verifyChain() and getHashBefore()) rather than blocking the write
+     * path. Rows inserted by a concurrent uncommitted transaction that land
+     * inside the range after our range SELECT stay unsealed too — harmless
+     * for the same reason.
      *
      * @param int[] $ids The audit-trail row ids to seal.
      *
      * @return int Number of rows sealed.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chain walking requires sealed/unsealed branching
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Same — early-outs plus per-row sealed/unsealed paths
      *
      * @spec openspec/specs/audit-hash-chain/spec.md
      */
@@ -248,6 +317,34 @@ class AuditHashService
             return 0;
         }
 
+        if ($this->acquireSealLock() === false) {
+            $this->logger->warning(
+                '[AuditHashService] seal lock unavailable, leaving '.count($ids).' audit rows unsealed (a later seal pass will chain them)'
+            );
+
+            return 0;
+        }
+
+        try {
+            return $this->sealRowsLocked(ids: $ids);
+        } finally {
+            $this->releaseSealLock();
+        }
+    }//end sealRows()
+
+    /**
+     * Seal a batch of rows — body of {@see sealRows()}, caller holds the
+     * seal lock and has already normalised `$ids` to positive integers.
+     *
+     * @param int[] $ids The audit-trail row ids to seal (non-empty).
+     *
+     * @return int Number of rows sealed.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Chain walking requires sealed/unsealed branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Same — early-outs plus per-row sealed/unsealed paths
+     */
+    private function sealRowsLocked(array $ids): int
+    {
         $minId = min($ids);
         $maxId = max($ids);
 
@@ -325,7 +422,44 @@ class AuditHashService
         $this->db->executeStatement($sql, $parameters);
 
         return count($updates);
-    }//end sealRows()
+    }//end sealRowsLocked()
+
+    /**
+     * Try to acquire the exclusive advisory lock serializing seal passes.
+     *
+     * Bounded, short wait: {@see self::SEAL_LOCK_ATTEMPTS} attempts with
+     * {@see self::SEAL_LOCK_RETRY_DELAY_USEC} between them. Sealing is
+     * fail-soft, so on sustained contention the caller logs and leaves the
+     * rows unsealed instead of blocking the surrounding write path.
+     *
+     * @return bool True when the lock was acquired.
+     */
+    private function acquireSealLock(): bool
+    {
+        for ($attempt = 1; $attempt <= self::SEAL_LOCK_ATTEMPTS; $attempt++) {
+            try {
+                $this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+
+                return true;
+            } catch (LockedException) {
+                if ($attempt < self::SEAL_LOCK_ATTEMPTS) {
+                    usleep(self::SEAL_LOCK_RETRY_DELAY_USEC);
+                }
+            }
+        }
+
+        return false;
+    }//end acquireSealLock()
+
+    /**
+     * Release the exclusive seal lock acquired by {@see acquireSealLock()}.
+     *
+     * @return void
+     */
+    private function releaseSealLock(): void
+    {
+        $this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+    }//end releaseSealLock()
 
     /**
      * Verify the integrity of the hash chain.
@@ -444,13 +578,21 @@ class AuditHashService
     }//end verifyChain()
 
     /**
-     * Get the hash of the entry immediately before the given ID.
+     * Get the hash of the nearest SEALED entry before the given ID.
+     *
+     * Unsealed rows (hash NULL/empty — fail-soft leftovers or
+     * pre-migration entries) are skipped, exactly mirroring how
+     * {@see verifyChain()} walks the chain: it skips null-hash rows and
+     * carries the last SEALED hash forward. Chaining a new seal from the
+     * immediately-prior row instead would fall back to genesis whenever
+     * that row happens to be unsealed, permanently breaking verification
+     * at that link.
      *
      * @param int $id The entry ID
      *
-     * @return string|null The hash of the previous entry, or null if none
+     * @return string|null The hash of the nearest prior sealed entry, or null if none
      *
-     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/specs/audit-hash-chain/spec.md
      */
     private function getHashBefore(int $id): ?string
     {
@@ -460,6 +602,10 @@ class AuditHashService
             ->from('openregister_audit_trails')
             ->where(
                 $qb->expr()->lt('id', $qb->createNamedParameter($id, IQueryBuilder::PARAM_INT))
+            )
+            ->andWhere($qb->expr()->isNotNull('hash'))
+            ->andWhere(
+                $qb->expr()->neq('hash', $qb->createNamedParameter(''))
             )
             ->orderBy('id', 'DESC')
             ->setMaxResults(1);

@@ -37,8 +37,10 @@ namespace Unit\Service;
 use OCA\OpenRegister\Db\AuditTrail;
 use OCA\OpenRegister\Service\AuditHashService;
 use OCP\IDBConnection;
+use OCP\Lock\ILockingProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Unit tests proving hash-chain consistency invariants for AuditHashService.
@@ -53,7 +55,11 @@ class AuditHashChainConsistencyTest extends TestCase
         parent::setUp();
 
         $this->db      = $this->createMock(IDBConnection::class);
-        $this->service = new AuditHashService($this->db);
+        $this->service = new AuditHashService(
+            $this->db,
+            $this->createMock(ILockingProvider::class),
+            $this->createMock(LoggerInterface::class)
+        );
     }
 
     /**

@@ -9,8 +9,10 @@ use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\Lock\ILockingProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * Unit tests for AuditHashService.
@@ -19,13 +21,17 @@ class AuditHashServiceTest extends TestCase
 {
     private AuditHashService $service;
     private IDBConnection&MockObject $db;
+    private ILockingProvider&MockObject $lockingProvider;
+    private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->db      = $this->createMock(IDBConnection::class);
-        $this->service = new AuditHashService($this->db);
+        $this->db              = $this->createMock(IDBConnection::class);
+        $this->lockingProvider = $this->createMock(ILockingProvider::class);
+        $this->logger          = $this->createMock(LoggerInterface::class);
+        $this->service         = new AuditHashService($this->db, $this->lockingProvider, $this->logger);
     }
 
     public function testGetGenesisHash(): void
