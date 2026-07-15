@@ -158,6 +158,7 @@ use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
+use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
@@ -2347,6 +2348,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
         $context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+
+        // Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
+        // Runs the declared actions of a matched transition on the save path, so
+        // they fire for EVERY transition form — a named TransitionEngine action
+        // AND a plain list-form edit of the lifecycle field (issue #427). Registered
+        // after the validation + approval-gate listeners: a transition's actions
+        // must only run once its legality is established and no gate has blocked it
+        // (the listener checks isPropagationStopped()). A declared action naming an
+        // unregistered handler fails loudly via LifecycleActionRegistry.
+        $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleActionListener::class);
 
         // Calculations annotation listener — materialises declared calculations
         // into the object payload before persistence (see x-openregister-calculations).
