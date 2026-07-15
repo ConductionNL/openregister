@@ -383,6 +383,14 @@ class ObjectsControllerCoverageTest extends TestCase
             return $magicMapper;
         });
 
+        // The fast (non-rendering) list path now redacts write-only fields via
+        // RenderObject::redactWriteOnlyFromRows (openregister#380 leak fix), so
+        // the container must resolve a RenderObject here as well.
+        $renderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        \OC::$server->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+            return $renderHandler;
+        });
+
         $this->objectService->method('buildSearchQuery')->willReturn([
             '_limit' => 20,
             '_offset' => 0,

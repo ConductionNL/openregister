@@ -2893,10 +2893,12 @@ class ObjectServiceTest extends TestCase
 			->method('find')
 			->willReturn($entity);
 
-		// setSchema will be called since currentSchema is null.
-		$this->performanceHandler
-			->method('getCachedEntities')
-			->willReturn([$this->schema]);
+		// setSchema will be called since currentSchema is null; it resolves
+		// the schema through the mapper directly (the cached-entity no-op
+		// wrapper was removed).
+		$this->schemaMapper
+			->method('find')
+			->willReturn($this->schema);
 
 		// The read is still access-controlled even when rendering is skipped.
 		$this->permissionHandler
