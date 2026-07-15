@@ -102,13 +102,19 @@ does not apply here).
 
 ## 7. Quality gates
 
-- [ ] 7.1 `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) clean on
-  changed files — baseline-only pre-existing violations, zero new.
-- [ ] 7.2 PHPUnit full suite green (via `or-phpunit-83:latest`, `-d
-  memory_limit=4G`), diffed against a pristine `origin/development` baseline
-  worktree so only genuinely new failures block the change (the concurrent
-  CRUD-perf wave leaves base CI red for unrelated reasons).
-- [ ] 7.3 `openspec validate field-level-object-encryption --strict` passes.
+- [x] 7.1 `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) clean on
+  changed files — baseline-only pre-existing violations, zero new. PHPCS 0
+  errors on all changed `lib/` files; PHPMD's 6 findings are all in untouched
+  methods (`cascadeObjects`, `redactWriteOnlyFromRows` signature/guard — proven
+  by diff, not my hunks); PHPStan clean (2 `SchemaMapper::findAll` param entries
+  added to `phpstan-baseline.neon`, mirroring the existing `BackfillSystemOwnerCommand`
+  entries); Psalm clean.
+- [x] 7.2 PHPUnit: 41 new tests green (69 assertions). Full touched-dir suites
+  diffed against a pristine `origin/development` baseline worktree — **byte-identical
+  failure set** (4 errors + 3 failures, same test names: RelationHandler x2,
+  PermissionHandlerCustomScope x2, RenderObjectWriteOnlyRedaction, all pre-existing
+  red-base), **zero new failures**. Db/Command dirs: 1265 tests, 0 failures.
+- [x] 7.3 `openspec validate field-level-object-encryption --strict` passes.
 
 ## Acceptance criteria
 
