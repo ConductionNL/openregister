@@ -1,6 +1,6 @@
 <script setup>
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import { dashboardStore, searchTrailStore, registerStore, schemaStore } from '../../store/store.js'
+import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectStore } from '../../store/store.js'
 </script>
 
 <template>
@@ -219,6 +219,16 @@ const RANGE_PRESETS = [
 const RANGE_PERSIST_KEY = 'openregister:dashboard:kpi-range'
 
 /**
+ * Trailing debounce for live-event-driven widget refetches (ms). A bulk
+ * import flushes a burst of or-collection events; the dashboard endpoints
+ * are aggregates, so one refetch after the burst settles is enough. The
+ * dashboard store's own `chartLoading`/`statisticsLoading` guards DROP
+ * concurrent fetches (they do not queue a trailing one), so without this
+ * debounce the final state after a burst would be missed.
+ */
+const LIVE_REFETCH_DEBOUNCE_MS = 750
+
+/**
  * Resolve a preset id to an ISO date window. Returns { from, till } as
  * 'YYYY-MM-DD' strings, or { from: null, till: null } for "all time".
  *
@@ -259,11 +269,38 @@ export default {
 			refreshing: false,
 			dashboardLayout: [...DEFAULT_LAYOUT],
 			kpiRange: { from: null, till: null, preset: 'all' },
+			// Live-updates handle for the or-collection-{register}-{schema}
+			// subscription of the register+schema the dashboard is scoped to
+			// via the sidebar filter (dashboard-live-updates). Managed by
+			// syncLiveSubscription(); same guard set as ObjectsList.vue:
+			// livePendingType marks an in-flight subscribe so a concurrent
+			// same-scope call doesn't double-subscribe; liveEpoch invalidates
+			// in-flight resolutions after a release (scope change / destroy).
+			liveHandle: null,
+			liveType: '',
+			livePendingType: '',
+			liveEpoch: 0,
+			// Trailing-debounce timer coalescing burst events into one refetch.
+			liveRefetchTimer: null,
 		}
 	},
 	computed: {
 		isLoading() {
 			return dashboardStore.loading || searchTrailStore.statisticsLoading
+		},
+		/**
+		 * @spec exclude Derived client-state — composes the object-store type slug for the dashboard's sidebar scope so the watcher below can re-scope the live subscription. Empty unless BOTH register and schema are selected: the or-collection event dialect needs both slugs, so an unscoped (or register-only) dashboard cannot subscribe.
+		 */
+		liveCollectionType() {
+			const registerId = registerStore.registerItem?.id
+			const schemaId = schemaStore.schemaItem?.id
+			return (registerId && schemaId) ? `${registerId}-${schemaId}` : ''
+		},
+		/**
+		 * @spec exclude Derived client-state — mirrors the object store's liveLastEventAt diagnostic so the Options-API watcher below can react to live events.
+		 */
+		liveLastEventAt() {
+			return objectStore.liveLastEventAt
 		},
 		/**
 		 * Whether the dashboard has any data to display.
@@ -426,6 +463,30 @@ export default {
 			]
 		},
 	},
+	watch: {
+		/**
+		 * Re-scope the live collection subscription when the user changes the
+		 * dashboard's register/schema filter in the sidebar.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveCollectionType() {
+			this.syncLiveSubscription()
+		},
+		/**
+		 * A live event arrived on the object store (the plugin stamps
+		 * liveLastEventAt on every event). While the dashboard holds a
+		 * collection subscription, treat it as a refetch HINT for the
+		 * object-CRUD-derived widgets — debounced, never patched from the
+		 * event payload.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 */
+		liveLastEventAt() {
+			if (!this.liveHandle) return
+			this.scheduleLiveRefetch()
+		},
+	},
 	/**
 	 * Lifecycle hook: preload dashboard and search-trail data on mount.
 	 *
@@ -433,6 +494,7 @@ export default {
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
+		this.syncLiveSubscription()
 		this.loadPersistedRange()
 		dashboardStore.preload()
 		dashboardStore.fetchAllChartData()
@@ -448,7 +510,147 @@ export default {
 			this.setEmptySearchTrailData()
 		}
 	},
+	/**
+	 * Lifecycle hook: release the live collection subscription and cancel any
+	 * pending debounced refetch on unmount.
+	 *
+	 * @spec openspec/specs/realtime-updates/spec.md
+	 * @return {void}
+	 */
+	beforeDestroy() {
+		this.releaseLiveSubscription()
+	},
 	methods: {
+		/**
+		 * Subscribe to live updates for the register+schema collection the
+		 * dashboard is scoped to via the sidebar filter
+		 * (dashboard-live-updates). Reuses the package object store's
+		 * liveUpdatesPlugin — notify_push when available, visibility-gated
+		 * polling otherwise. Events are refetch hints only: the plugin
+		 * refreshes the object collection cache (kept warm by the sidebar's
+		 * own object search) and this view's liveLastEventAt watcher
+		 * debounce-refetches the dashboard aggregates. Idempotent per type;
+		 * releases the previous subscription when the scope changes. No-op
+		 * while the dashboard is unscoped — the or-collection event dialect
+		 * has no wildcard, so "all registers" cannot subscribe.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {Promise<void>}
+		 */
+		async syncLiveSubscription() {
+			const type = this.liveCollectionType
+			if (typeof objectStore.subscribe !== 'function') {
+				return
+			}
+			if (!type) {
+				this.releaseLiveSubscription()
+				return
+			}
+			if (this.liveHandle && this.liveType === type) {
+				return
+			}
+			if (this.livePendingType === type) {
+				// A subscribe for this exact scope is already in flight —
+				// re-subscribing here would leak the first handle.
+				return
+			}
+			this.releaseLiveSubscription()
+			try {
+				// Subscription is independent of the sidebar's object-list
+				// refresh timing: register the type ourselves when it is not
+				// known to the package store yet.
+				if (!objectStore.objectTypes.includes(type)) {
+					const registerId = registerStore.registerItem?.id
+					const schemaId = schemaStore.schemaItem?.id
+					if (!registerId || !schemaId) {
+						return
+					}
+					objectStore.registerObjectType(type, schemaId, registerId)
+				}
+				const epoch = this.liveEpoch
+				this.livePendingType = type
+				this.liveType = type
+				const handle = await objectStore.subscribe(type)
+				if (this.livePendingType === type) {
+					this.livePendingType = ''
+				}
+				if (this.liveEpoch !== epoch) {
+					// released while awaiting (scope change / destroy) — drop
+					// the now-stale subscription instead of leaking it.
+					objectStore.unsubscribe(handle)
+					return
+				}
+				this.liveHandle = handle
+			} catch (e) {
+				if (this.livePendingType === type) {
+					this.livePendingType = ''
+				}
+				this.liveHandle = null
+				this.liveType = ''
+				console.warn('[DashboardIndex] live subscription failed:', e?.message ?? e)
+			}
+		},
+		/**
+		 * Release the current live collection subscription, if any, cancel a
+		 * pending debounced refetch, and invalidate any in-flight subscribe
+		 * (its resolution unsubscribes itself via the epoch check).
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {void}
+		 */
+		releaseLiveSubscription() {
+			this.liveEpoch += 1
+			this.livePendingType = ''
+			clearTimeout(this.liveRefetchTimer)
+			this.liveRefetchTimer = null
+			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
+				objectStore.unsubscribe(this.liveHandle)
+			}
+			this.liveHandle = null
+			this.liveType = ''
+		},
+		/**
+		 * Coalesce a burst of live collection events (e.g. a bulk import
+		 * flush) into a single trailing refetch of the object-CRUD-derived
+		 * dashboard data. Epoch-guarded so a timer scheduled before a release
+		 * (scope change / destroy) never fires a stale refetch.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {void}
+		 */
+		scheduleLiveRefetch() {
+			clearTimeout(this.liveRefetchTimer)
+			const epoch = this.liveEpoch
+			this.liveRefetchTimer = setTimeout(() => {
+				this.liveRefetchTimer = null
+				if (this.liveEpoch !== epoch || !this.liveHandle) return
+				this.refetchLiveWidgets()
+			}, LIVE_REFETCH_DEBOUNCE_MS)
+		},
+		/**
+		 * Refetch the widgets whose data derives from object CRUD: the
+		 * register totals (Objects KPI + sidebar totals), the objects-by-*
+		 * charts, and the audit-trail statistics (every create/delete writes
+		 * audit entries). Search-trail widgets are NOT refetched — search
+		 * activity is not signalled by or-collection events. All fetches read
+		 * the current register/schema scope from the stores at call time.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {Promise<void>}
+		 */
+		async refetchLiveWidgets() {
+			try {
+				await Promise.all([
+					dashboardStore.fetchRegisters(),
+					dashboardStore.fetchAllChartData(),
+					dashboardStore.fetchAllStatistics(),
+				])
+			} catch (e) {
+				// Refetch hint failed — the widgets keep their last state and
+				// the next event (or manual refresh) tries again.
+				console.warn('[DashboardIndex] live refetch failed:', e?.message ?? e)
+			}
+		},
 		/**
 		 * Reset search-trail statistics to empty defaults for display.
 		 *
