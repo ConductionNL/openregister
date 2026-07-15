@@ -555,6 +555,33 @@ class SchemaTest extends TestCase
         $this->assertTrue($result['allowFiles']);
     }
 
+    /**
+     * #419: one invalid config value must not discard the whole configuration.
+     *
+     * An invalid `linkedTypes` entry used to make validateConfigurationArray()
+     * throw, and setConfiguration() propagated the throw — during app import
+     * that throw is swallowed and the schema silently lost its ENTIRE config
+     * (including `x-openregister-mcp`, so no MCP tools derived). The per-key
+     * isolation must drop only the offending key and keep valid siblings.
+     */
+    public function testSetConfigurationDropsInvalidValueKeepsRest(): void
+    {
+        $this->schema->setConfiguration([
+            'objectNameField'    => 'name',
+            'linkedTypes'        => ['mail', 'not-a-real-provider'],
+            'x-openregister-mcp' => ['search' => ['enabled' => true]],
+        ]);
+        $result = $this->schema->getConfiguration();
+        $this->assertIsArray($result);
+        // The offending key is dropped ...
+        $this->assertArrayNotHasKey('linkedTypes', $result);
+        // ... but valid siblings survive.
+        $this->assertSame('name', $result['objectNameField']);
+        $this->assertArrayHasKey('x-openregister-mcp', $result);
+        // ... and the dropped key is reported for logging.
+        $this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
+    }
+
     // --- Searchable ---
 
     public function testIsSearchableDefaultTrue(): void
