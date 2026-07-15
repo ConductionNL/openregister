@@ -40,6 +40,13 @@ if (is_dir($ocpStubBase . '/OCP') === true) {
     $loader->register(true);
 }
 
+// Internal (non-OCP) Nextcloud symbols referenced by OCP stub files at parse
+// time (e.g. OCP\Files\IRootFolder extends OC\Hooks\Emitter). The stub file
+// guards every definition with interface_exists/class_exists, so loading it
+// here is idempotent and order-independent — without it, any test that mocks
+// IRootFolder fails unless another suite happened to load the stub first.
+require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
 // Minimal in-process Doctrine\DBAL\* stubs.
 // OCP\DB\QueryBuilder\IQueryBuilder references ParameterType::*, Types::*,
 // ArrayParameterType::*, and Connection::* class constants at parse time
