@@ -39,11 +39,13 @@ use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http;
+use OCP\Http\Client\IClientService;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\OpenRegister\Controller\CredentialController
@@ -283,6 +285,21 @@ class CredentialControllerOrganisationTest extends TestCase
             }
         );
 
+        // A REAL broker over the same mocked ObjectService / CredentialStore: create()
+        // now mints through CredentialBrokerService::mint(), so a mocked broker would
+        // silently swallow the save + vault write these tests assert on. The controller
+        // behaviour under test (the D4 admin gate, the persisted property bag, the vault
+        // scope) is unchanged — only the seam the call travels through moved.
+        $broker = new CredentialBrokerService(
+            $this->objectService,
+            $this->store,
+            $catalogue,
+            $session,
+            $this->createMock(IClientService::class),
+            $this->createMock(LoggerInterface::class),
+            $this->orgService
+        );
+
         return new CredentialController(
             'openregister',
             $request,
@@ -291,7 +308,7 @@ class CredentialControllerOrganisationTest extends TestCase
             $this->objectService,
             $this->store,
             $catalogue,
-            $this->createMock(CredentialBrokerService::class),
+            $broker,
             $this->createMock(CredentialAppTokenService::class),
             $this->orgService
         );
