@@ -76,7 +76,14 @@ final class SchemaArchivalVocabularyTest extends TestCase
         self::assertSame($annotation, $result['x-openregister-archival']);
     }//end testArchivalAnnotationSurvivesConfigurationRoundTrip()
 
-    public function testSeedAnnotationSurvivesConfigurationRoundTrip(): void
+    /**
+     * `x-openregister-seed` is dropped: it is a phantom with no engine.
+     *
+     * This test previously asserted the opposite. Surviving the round-trip was
+     * never evidence the seed was planted — no code ever read the key. OR's
+     * engine-backed seed path is `components.objects` (ImportHandler).
+     */
+    public function testSeedAnnotationIsDroppedBecauseItHasNoEngine(): void
     {
         $schema = new Schema();
         $seed   = [
@@ -88,9 +95,9 @@ final class SchemaArchivalVocabularyTest extends TestCase
             ['x-openregister-seed' => $seed]
         );
 
-        self::assertArrayHasKey('x-openregister-seed', $result);
-        self::assertSame($seed, $result['x-openregister-seed']);
-    }//end testSeedAnnotationSurvivesConfigurationRoundTrip()
+        self::assertArrayNotHasKey('x-openregister-seed', $result);
+        self::assertContains('x-openregister-seed', $schema->consumeDroppedAnnotationKeys());
+    }//end testSeedAnnotationIsDroppedBecauseItHasNoEngine()
 
     public function testUnknownAnnotationKeyStillDropped(): void
     {
@@ -107,19 +114,19 @@ final class SchemaArchivalVocabularyTest extends TestCase
         self::assertContains('x-openregister-lifecycl', $schema->consumeDroppedAnnotationKeys());
     }//end testUnknownAnnotationKeyStillDropped()
 
-    public function testArchivalAndSeedNotRecordedAsDroppedKeys(): void
+    public function testArchivalAndProcessingNotRecordedAsDroppedKeys(): void
     {
         $schema = new Schema();
         $this->invokeValidateConfigurationArray(
             $schema,
             [
-                'x-openregister-archival' => ['retention' => ['default' => 'P30D']],
-                'x-openregister-seed'     => [],
+                'x-openregister-archival'   => ['retention' => ['default' => 'P30D']],
+                'x-openregister-processing' => ['code' => 'demo', 'logReads' => true],
             ]
         );
 
         $dropped = $schema->consumeDroppedAnnotationKeys();
         self::assertNotContains('x-openregister-archival', $dropped);
-        self::assertNotContains('x-openregister-seed', $dropped);
-    }//end testArchivalAndSeedNotRecordedAsDroppedKeys()
+        self::assertNotContains('x-openregister-processing', $dropped);
+    }//end testArchivalAndProcessingNotRecordedAsDroppedKeys()
 }//end class

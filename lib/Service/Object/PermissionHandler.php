@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
+use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
@@ -417,7 +418,26 @@ class PermissionHandler
             $objectOrganisation = $object->getOrganisation();
         }
 
-        $authorization = $this->resolveAuthorization(schema: $schema);
+        // Fail-closed: when the effective authorization cannot be resolved we DENY.
+        // Previously the resolver swallowed the error and returned null, which this
+        // method's `empty($authorization)` treatment read as "no rules configured"
+        // and granted every action to every caller (CWE-863).
+        try {
+            $authorization = $this->resolveAuthorization(schema: $schema);
+        } catch (AuthorizationUnresolvableException $e) {
+            $this->logger->error(
+                message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schema->getId(),
+                    'action'   => $action,
+                    'userId'   => $userId,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return false;
+        }
 
         // Get current user if not provided.
         if ($userId === null) {
@@ -1346,8 +1366,24 @@ class PermissionHandler
             return [];
         }//end try
 
-        $authorization = $this->resolveAuthorization(schema: $schema);
-        $groupIds      = $this->resolveReadGroupIds(authorization: $authorization);
+        // Fail-closed: an unresolvable authorization must not broadcast. Returning
+        // [] means "no targeted user list", which is the safe outcome here.
+        try {
+            $authorization = $this->resolveAuthorization(schema: $schema);
+        } catch (AuthorizationUnresolvableException $e) {
+            $this->logger->error(
+                message: '[PermissionHandler] Authorization unresolvable; no readable users resolved (fail-closed)',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schema->getId(),
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $groupIds = $this->resolveReadGroupIds(authorization: $authorization);
 
         // Null means "open / broadcast" — no targeted user list.
         if ($groupIds === null) {
@@ -1467,7 +1503,13 @@ class PermissionHandler
      *
      * @return array|null The effective authorization array, or null if none configured.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * Returns null when NO authorization is configured anywhere in the cascade
+     * (callers treat that as open). It THROWS when the cascade could not be
+     * evaluated — callers MUST treat that as deny, never as "no rules".
+     *
+     * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-authorization-resolution-fails-closed
      */
     public function resolveAuthorization(Schema $schema): ?array
     {
@@ -1619,7 +1661,14 @@ class PermissionHandler
 
         $sawTrue = false;
         foreach ($registerIds as $registerId) {
-            $registerAuth = $this->getRegisterAuthorization(registerId: $registerId);
+            try {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $registerId);
+            } catch (AuthorizationUnresolvableException $e) {
+                // Fail-closed: most-restrictive-wins, so an unresolvable register
+                // disables `public` inheritance rather than silently skipping it.
+                return false;
+            }
+
             if (is_array($registerAuth) === false || array_key_exists('inheritFromPublic', $registerAuth) === false) {
                 continue;
             }
@@ -1699,8 +1748,13 @@ class PermissionHandler
 
             return $registerMapper->find($registerId);
         } catch (\Throwable $e) {
-            $this->logger->warning(
-                message: '[PermissionHandler] Failed to get register for schema',
+            // Fail-closed: this method logged but still returned null, and null here
+            // means "schema belongs to no register" -> open. Logging a fail-open does
+            // not make it safe. A genuine "no register" answer still returns null
+            // above (getFirstRegisterWithSchema() === null); only the ERROR path
+            // throws.
+            $this->logger->error(
+                message: '[PermissionHandler] Failed to get register for schema; denying access (fail-closed)',
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,
@@ -1708,8 +1762,12 @@ class PermissionHandler
                     'error'    => $e->getMessage(),
                 ]
             );
-            return null;
-        }
+            throw new AuthorizationUnresolvableException(
+                message: 'Unable to resolve register for schema '.$schema->getId(),
+                code: 0,
+                previous: $e
+            );
+        }//end try
     }//end getRegisterForSchema()
 
     /**
@@ -1718,11 +1776,21 @@ class PermissionHandler
      * Caches the authorization array for each register ID to avoid
      * repeated database lookups within a single request.
      *
+     * Fails CLOSED (CWE-863): when the register cannot be resolved this throws
+     * rather than returning null. `null` from this method means "the register
+     * has no authorization configured" — a real answer that callers treat as
+     * open. A resolver error is NOT that answer, and must never be reported as
+     * one. The failure is also NOT cached: a transient mapper outage must not
+     * be frozen into a permanent per-request verdict.
+     *
      * @param int $registerId The register ID to get authorization for.
      *
-     * @return array|null The register's authorization array.
+     * @return array|null The register's authorization array, or null when the
+     *                    register genuinely has none configured.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+     * @throws AuthorizationUnresolvableException When the register's authorization cannot be determined. Callers MUST deny.
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-authorization-resolution-fails-closed
      */
     private function getRegisterAuthorization(int $registerId): ?array
     {
@@ -1740,9 +1808,27 @@ class PermissionHandler
 
             return $auth;
         } catch (\Throwable $e) {
-            $this->cachedRegisterAuth[$registerId] = null;
-            return null;
-        }
+            // Log — a sibling resolver (getRegisterForSchema) already logs on this
+            // exact shape; this one silently swallowed, so an authorization outage
+            // left no trace at all while granting full permissions.
+            $this->logger->error(
+                message: '[PermissionHandler] Failed to resolve register authorization; denying access (fail-closed)',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'registerId' => $registerId,
+                    'error'      => $e->getMessage(),
+                ]
+            );
+
+            // Deliberately NOT cached: caching the failure would turn a transient
+            // error into a permanent verdict for the rest of the request.
+            throw new AuthorizationUnresolvableException(
+                message: 'Unable to resolve authorization for register '.$registerId,
+                code: 0,
+                previous: $e
+            );
+        }//end try
     }//end getRegisterAuthorization()
 
     /**
@@ -1760,8 +1846,14 @@ class PermissionHandler
             return $this->cachedRegisterConfig[$registerId];
         }
 
-        // Calling getRegisterAuthorization populates both caches.
-        $this->getRegisterAuthorization(registerId: $registerId);
+        // Calling getRegisterAuthorization populates both caches. Configuration is
+        // not an authorization verdict, so an unresolvable register yields null
+        // ("unknown configuration") here — the resolver has already logged it.
+        try {
+            $this->getRegisterAuthorization(registerId: $registerId);
+        } catch (AuthorizationUnresolvableException $e) {
+            return null;
+        }
 
         return $this->cachedRegisterConfig[$registerId] ?? null;
     }//end getRegisterConfiguration()

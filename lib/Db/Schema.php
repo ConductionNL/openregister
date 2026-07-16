@@ -2101,8 +2101,12 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-widgets',
         'x-openregister-relations',
         'x-openregister-processing-activity',
+        // Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
+        // dialect). Was absent from this list, so setConfiguration() silently
+        // DROPPED it and per-schema read-logging could never be enabled —
+        // register-level worked, so the capability looked healthy.
+        'x-openregister-processing',
         'x-openregister-archival',
-        'x-openregister-seed',
         'x-openregister-object-source',
         'x-openregister-quality',
         'x-openregister-dedup',
