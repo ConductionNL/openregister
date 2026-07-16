@@ -428,7 +428,7 @@ class AttributeMcpDiscoveryTest extends TestCase
 
     public function testRealSeamReturnsNullWhenServerThrows(): void
     {
-        $server = new class {
+        $server = new class extends \OC_FakeServer {
             public function getRegisteredAppContainer(string $appName): object
             {
                 throw new RuntimeException('no container for '.$appName);
@@ -444,7 +444,7 @@ class AttributeMcpDiscoveryTest extends TestCase
     public function testRealSeamReturnsContainerWhenRegistered(): void
     {
         $appContainer = $this->container([]);
-        $server       = new class ($appContainer) {
+        $server       = new class ($appContainer) extends \OC_FakeServer {
             public function __construct(private object $appContainer)
             {
             }
@@ -463,7 +463,7 @@ class AttributeMcpDiscoveryTest extends TestCase
 
     public function testRealSeamReturnsNullForNonContainer(): void
     {
-        $server = new class {
+        $server = new class extends \OC_FakeServer {
             public function getRegisteredAppContainer(string $appName): object
             {
                 // A non-PSR-container object (e.g. an unexpected NC internal).
