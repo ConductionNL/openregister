@@ -283,11 +283,17 @@ class HealthCheckExecutor
     {
         $alias = IHealthCheckProvider::class.'::'.$appId;
         try {
-            if ($this->container->has($alias) === false) {
+            // Resolve from the CALLING APP's own container — where the app
+            // registered its `IHealthCheckProvider::<appId>` alias — not from
+            // OpenRegister's container, which cannot see another app's DI
+            // registrations (same root cause as the MCP-provider fix, #390).
+            $container = $this->resolveAppContainer(appId: $appId);
+
+            if ($container->has($alias) === false) {
                 return [];
             }
 
-            $provider = $this->container->get($alias);
+            $provider = $container->get($alias);
             if (($provider instanceof IHealthCheckProvider) === false) {
                 return [];
             }
@@ -301,6 +307,32 @@ class HealthCheckExecutor
             return [];
         }//end try
     }//end resolveProviderResults()
+
+    /**
+     * Resolve the calling app's OWN DI container so its
+     * `IHealthCheckProvider::<appId>` alias resolves from where the leaf app
+     * actually registered it (#390). Fail-soft to OpenRegister's container.
+     *
+     * @param string $appId The calling app id.
+     *
+     * @return ContainerInterface The app's own container, or OpenRegister's as a fallback.
+     */
+    private function resolveAppContainer(string $appId): ContainerInterface
+    {
+        try {
+            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
+            if ($appContainer instanceof ContainerInterface) {
+                return $appContainer;
+            }
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                message: sprintf('[AppHost\\Health] no registered app container for "%s": %s', $appId, $e->getMessage()),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId]
+            );
+        }//end try
+
+        return $this->container;
+    }//end resolveAppContainer()
 
     /**
      * Escalate the running status given a failed check's severity.
