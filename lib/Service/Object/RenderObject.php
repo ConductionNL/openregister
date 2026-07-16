@@ -710,58 +710,94 @@ class RenderObject
      * with the same rule, mirroring resolveTranslationsForRows()'s per-row schema
      * resolution and object-vs-array handling.
      *
-     * Gated on `$_rbac`: a system-context read (`_rbac: false`) is trusted internal code
-     * (the sync/credential engine) and gets the full row; only a user-facing read
-     * (`_rbac: true`) is redacted. Strips the object body AND the `@self.relations` search
-     * index copy.
+     * writeOnly stripping is a HARD render-boundary rule and is NOT rbac-gated, exactly as
+     * on the single-object path (renderEntity, #389): a `writeOnly: true` property — and a
+     * nested `x-openregister-writeonly-paths` dot-path (#459), which rides the same
+     * boundary — must never be returned on ANY read, including admin and `_rbac: false`
+     * renders. `ObjectsController` derives `_rbac` as `($isAdmin === false)`, so an ADMIN
+     * list/search read arrives here with `_rbac: false`; gating writeOnly on it returned
+     * every secret in cleartext (#460 — the list half of #389, which only ever fixed
+     * renderEntity). `_rbac: false` on an HTTP read means "this caller bypasses WHICH
+     * OBJECTS it may see", never "this caller may see secrets"; conflating the two was the
+     * bug. Internal code that needs a raw secret value reads ObjectEntity::getObject() from
+     * the mapper, or `find(..., _render: false)`, and never enters a render path.
+     *
+     * Property `authorization.read` (group-based) stripping and field decryption REMAIN
+     * `_rbac` / SystemOperationContext-gated: those are trusted-internal-read bypasses that
+     * mirror PermissionHandler::hasPermission(), and are unchanged by #460.
+     *
+     * Strips the object body AND the `@self.relations` search index copy (#429), which is a
+     * separate scalar mirror of reference-shaped values and therefore leaks a writeOnly
+     * secret independently of the body.
      *
      * @param array $rows  Result rows by reference, mutated in place.
      * @param bool  $_rbac Whether this is a user-facing read (true) or system context (false).
+     *                     Gates ONLY the authorization.read strip and decryption — never writeOnly.
      *
      * @return void
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
      */
     public function redactWriteOnlyFromRows(array &$rows, bool $_rbac=true): void
     {
-        // Same bypass as renderEntity's read-strip (feat #380): a system-context read
-        // (`_rbac: false`) or a config-boot / repair render (SystemOperationContext) must
-        // see the full row — the sync and credential engines batch-read sources and need
-        // the secret. Only a normal authenticated read is stripped.
-        if ($_rbac === false || SystemOperationContext::isActive() === true || empty($rows) === true) {
+        if (empty($rows) === true) {
             return;
         }
+
+        // The trusted-internal-read bypass applies to property `authorization.read` and to
+        // decryption ONLY. The writeOnly strip below deliberately does not consult it.
+        $applyGatedStrips = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
 
         foreach ($rows as &$row) {
             if ($row instanceof ObjectEntity === true) {
                 $schema = $this->getSchema(id: $row->getSchema());
-                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+
+                $doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
+                $doGated     = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
+                if ($doWriteOnly === false && $doGated === false) {
                     continue;
                 }
 
                 $object = $row->getObject();
                 if (is_array($object) === true) {
-                    $object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
+                    if ($doGated === true) {
+                        // Note filterReadableProperties strips writeOnly first, then applies
+                        // the group-authorization filter, so this covers both concerns.
+                        $object = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object);
+                    } else {
+                        // The writeOnly-only path (admin / `_rbac: false` / system context, or a
+                        // schema with no property authorization): strip writeOnly unconditionally.
+                        $object = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $object);
+                    }
 
                     // Decrypt AFTER redaction: a field the RBAC/writeOnly strip above just
                     // removed is no longer a key in $object, so decryptProperties() (which
                     // only acts on keys still present) silently skips it — an unauthorized
                     // caller never reaches decryption for that field.
-                    if ($this->fieldEncryptionHandler !== null && $schema->hasEncryptedProperties() === true) {
+                    if ($doGated === true
+                        && $this->fieldEncryptionHandler !== null
+                        && $schema->hasEncryptedProperties() === true
+                    ) {
                         $object = $this->fieldEncryptionHandler->decryptProperties(data: $object, schema: $schema);
-                    }
+                    }//end if
 
                     $row->setObject($object);
-                }
+                }//end if
 
                 // The body strip above leaves the `relations` search index untouched; it is
                 // a separate scalar mirror that jsonSerialize surfaces as @self.relations,
-                // so a write-only secret leaks there unless stripped too. Encrypted values
-                // are ciphertext by the time scanForRelations() runs at save time and do not
-                // look like references (isReference() matches UUID/URI/URL shapes), so they
-                // are not expected to appear in this mirror in the first place — only the
-                // writeOnly strip applies here.
-                $relations = $row->getRelations();
-                if (is_array($relations) === true) {
-                    $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
+                // so a write-only secret leaks there unless stripped too (#429). It rides the
+                // SAME unconditional boundary as the body strip. Encrypted values are
+                // ciphertext by the time scanForRelations() runs at save time and do not look
+                // like references (isReference() matches UUID/URI/URL shapes), so they are not
+                // expected to appear in this mirror in the first place — only the writeOnly
+                // strip applies here.
+                if ($doWriteOnly === true) {
+                    $relations = $row->getRelations();
+                    if (is_array($relations) === true) {
+                        $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
+                    }
                 }
 
                 continue;
@@ -774,18 +810,31 @@ class RenderObject
                 }
 
                 $schema = $this->getSchema(id: $schemaId);
-                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+
+                $doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
+                $doGated     = ($applyGatedStrips === true && $this->schemaNeedsReadStrip(schema: $schema) === true);
+                if ($doWriteOnly === false && $doGated === false) {
                     continue;
                 }
 
-                $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+                if ($doGated === true) {
+                    $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+                } else {
+                    $row = $this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $row);
+                }
 
                 // Decrypt AFTER redaction, same ordering rationale as the ObjectEntity branch above.
-                if ($this->fieldEncryptionHandler !== null && $schema->hasEncryptedProperties() === true) {
+                if ($doGated === true
+                    && $this->fieldEncryptionHandler !== null
+                    && $schema->hasEncryptedProperties() === true
+                ) {
                     $row = $this->fieldEncryptionHandler->decryptProperties(data: $row, schema: $schema);
                 }
 
-                if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+                if ($doWriteOnly === true
+                    && isset($row['@self']['relations']) === true
+                    && is_array($row['@self']['relations']) === true
+                ) {
                     $row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
                         schema: $schema,
                         object: $row['@self']['relations']
