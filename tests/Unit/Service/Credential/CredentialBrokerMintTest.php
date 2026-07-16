@@ -238,6 +238,36 @@ class CredentialBrokerMintTest extends TestCase
         $this->assertSame('asserted-owner', $this->savedObject['owner']);
     }
 
+    /**
+     * Mint persists the credential object in SYSTEM context (`_rbac: false`).
+     *
+     * Mint's contract is "authorization is the caller's" — the create must NOT be
+     * re-gated by RBAC, or a sessionless caller (an occ/repair migration folding an
+     * inline source secret into the broker) fails with NotAuthorizedException because
+     * the write ran as the anonymous principal. Live-verified against a real instance,
+     * where the pre-fix create denied the anonymous occ context. The stub previously
+     * ignored saveObject()'s arguments, which is why the gap shipped — assert the
+     * argument, not just the return.
+     */
+    public function testMintCreatesInSystemContextBypassingRbac(): void
+    {
+        $this->stubSaveObject(uuid: 'sys-minted-uuid');
+        $this->store->expects($this->once())->method('put');
+
+        $this->makeBroker()->mint(
+            name: 'Sessionless mint',
+            provider: 'generic-api-key',
+            owner: 'asserted-owner',
+            allowedApps: ['openconnector'],
+            secret: 'a-secret',
+            scope: 'organisation',
+            organisation: 'org-uuid'
+        );
+
+        $this->assertFalse($this->savedScope['_rbac'], 'mint() must create the credential object with _rbac:false');
+        $this->assertFalse($this->savedScope['_multitenancy'], 'mint() must create with _multitenancy:false');
+    }
+
     public function testEmptyNameIsRejectedBeforeAnythingIsPersisted(): void
     {
         $this->objectService->expects($this->never())->method('saveObject');
@@ -274,10 +304,23 @@ class CredentialBrokerMintTest extends TestCase
     private function stubSaveObject(string $uuid): void
     {
         $this->objectService->method('saveObject')->willReturnCallback(
-            function (array $object, ?array $extend=[], $register=null, $schema=null) use ($uuid): ObjectEntity {
+            function (
+                array $object,
+                ?array $extend=[],
+                $register=null,
+                $schema=null,
+                ?string $incomingUuid=null,
+                bool $_rbac=true,
+                bool $_multitenancy=true
+            ) use ($uuid): ObjectEntity {
                 $this->savedObject = $object;
-                $this->savedScope  = ['register' => $register, 'schema' => $schema];
-                $entity            = new ObjectEntity();
+                $this->savedScope  = [
+                    'register'      => $register,
+                    'schema'        => $schema,
+                    '_rbac'         => $_rbac,
+                    '_multitenancy' => $_multitenancy,
+                ];
+                $entity = new ObjectEntity();
                 $entity->setUuid($uuid);
                 $entity->setObject($object);
                 return $entity;
