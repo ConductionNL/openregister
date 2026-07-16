@@ -66,7 +66,7 @@ class TablesSyncCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     protected function configure(): void
     {
@@ -91,7 +91,7 @@ class TablesSyncCommand extends Command
      *
      * @return int Symfony command exit code.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -132,7 +132,7 @@ class TablesSyncCommand extends Command
      *
      * @return array<int, string> The admin user ids (may be empty).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function adminUserIds(): array
     {

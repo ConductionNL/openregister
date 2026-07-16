@@ -84,7 +84,7 @@ class DeleteFileHandler
      *
      * @psalm-param Node|string|int $file
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
@@ -149,7 +149,7 @@ class DeleteFileHandler
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

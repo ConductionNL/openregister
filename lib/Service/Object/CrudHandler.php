@@ -20,9 +20,9 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
+ * @spec openspec/specs/object-lifecycle/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -64,7 +64,7 @@ class CrudHandler
      * @param ObjectService   $objectService Object service for save/search operations
      * @param LoggerInterface $logger        PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -91,8 +91,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags provide flexible API filtering options
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function list(
         array $query=[],
@@ -165,8 +165,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function get(string $objectId, bool $_rbac=true, bool $_multitenancy=true)
     {
@@ -215,8 +215,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function create(array $data, bool $_rbac=true, bool $_multitenancy=true)
     {
@@ -267,8 +267,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function update(
         string $objectId,
@@ -329,7 +329,7 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function patch(
         string $objectId,
@@ -407,8 +407,8 @@ class CrudHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) - Boolean flags control RBAC and multitenancy behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function delete(string $objectId, bool $_rbac=true, bool $_multitenancy=true): bool
     {
@@ -461,7 +461,7 @@ class CrudHandler
      *
      * @psalm-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function buildSearchQuery(
         array $requestParams,

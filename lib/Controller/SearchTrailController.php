@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -918,7 +918,7 @@ class SearchTrailController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
      */
     public function destroyMultiple(): JSONResponse
     {

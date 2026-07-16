@@ -108,7 +108,7 @@ final class PaginatedResult
      *
      * @return self The normalized envelope.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-integration/specs/generic-integrations/spec.md#Requirement:Integration-list-responses-MUST-be-normalised-into-a-canonical-pagination-envelope
+     * @spec openspec/specs/generic-integrations/spec.md#Requirement:Integration-list-responses-MUST-be-normalised-into-a-canonical-pagination-envelope
      */
     public static function fromMixed(mixed $value): self
     {
@@ -165,7 +165,7 @@ final class PaginatedResult
      *
      * @return array{items:array<int,array<string,mixed>>,results:array<int,array<string,mixed>>,total:int,nextCursor:?string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-integration/specs/generic-integrations/spec.md#Requirement:Integration-list-responses-MUST-be-normalised-into-a-canonical-pagination-envelope
+     * @spec openspec/specs/generic-integrations/spec.md#Requirement:Integration-list-responses-MUST-be-normalised-into-a-canonical-pagination-envelope
      */
     public function toArray(): array
     {

@@ -48,7 +48,7 @@ namespace OCA\OpenRegister\AppHost;
  * Canonical AppHost route table builder.
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-3.2
- * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+ * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
  */
 class Routes
 {
@@ -68,7 +68,7 @@ class Routes
      *
      * @throws \InvalidArgumentException When `$extra` contains duplicate route names.
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
      */
     public static function standard(array $extra=[]): array
     {

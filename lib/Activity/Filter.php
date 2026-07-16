@@ -40,7 +40,7 @@ class Filter implements IFilter
      * @param IL10N         $l            The localization service.
      * @param IURLGenerator $urlGenerator The URL generator.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private IL10N $l,
@@ -53,7 +53,7 @@ class Filter implements IFilter
      *
      * @return string The filter identifier.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getIdentifier(): string
     {
@@ -65,7 +65,7 @@ class Filter implements IFilter
      *
      * @return string The filter name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getName(): string
     {
@@ -77,7 +77,7 @@ class Filter implements IFilter
      *
      * @return int The filter priority.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getPriority(): int
     {
@@ -89,7 +89,7 @@ class Filter implements IFilter
      *
      * @return string The icon URL.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getIcon(): string
     {
@@ -107,7 +107,7 @@ class Filter implements IFilter
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $types required by IFilter interface
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function filterTypes(array $types): array
     {
@@ -119,7 +119,7 @@ class Filter implements IFilter
      *
      * @return array<array-key, string> The allowed app IDs.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function allowedApps(): array
     {

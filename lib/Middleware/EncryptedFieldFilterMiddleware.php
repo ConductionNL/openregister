@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+ * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class EncryptedFieldFilterMiddleware extends Middleware
      *
      * @throws Exception Rethrows every exception that is not an EncryptedFieldFilterException.
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
      */
     public function afterException(Controller $controller, string $methodName, Exception $exception): Response
     {

@@ -88,7 +88,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function fetchEntities(array $options): array
     {
@@ -147,7 +147,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @psalm-return list{array{text: string, index: 0}}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function extractVectorizationItems($entity): array
     {
@@ -204,7 +204,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
@@ -287,7 +287,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return array<string> Array of @self keys
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function extractSelfKeys(array $objectData): array
     {
@@ -311,7 +311,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function extractFirstStringField(array $objectData): ?string
     {
@@ -345,7 +345,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return string|int Object ID
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getEntityIdentifier($entity)
     {
@@ -369,7 +369,7 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @return false|string Serialized text
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-4
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function serializeObject(array $object, array $config): string|false
     {

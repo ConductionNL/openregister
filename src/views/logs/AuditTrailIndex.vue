@@ -200,7 +200,7 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcAppContent,
@@ -255,7 +255,7 @@ export default {
 	},
 	computed: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		hasActiveFilters() {
 			return Object.keys(auditTrailStore.auditTrailFilters || {}).some(key =>
@@ -265,7 +265,7 @@ export default {
 			)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		paginatedAuditTrails() {
 			// Ensure we always return a clean array
@@ -277,13 +277,13 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		allSelected() {
 			return this.paginatedAuditTrails.length > 0 && this.paginatedAuditTrails.every(auditTrail => this.selectedAuditTrails.includes(auditTrail.id))
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		someSelected() {
 			return this.selectedAuditTrails.length > 0 && !this.allSelected
@@ -292,7 +292,7 @@ export default {
 	watch: {
 		paginatedAuditTrails: {
 			/**
-			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 			 */
 			handler() {
 				this.$nextTick(() => {
@@ -342,7 +342,7 @@ export default {
 		 * Load audit trails from API
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadAuditTrails() {
 			try {
@@ -357,7 +357,7 @@ export default {
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleFiltersChanged(filters) {
 			auditTrailStore.setAuditTrailFilters(filters)
@@ -369,7 +369,7 @@ export default {
 		 * @param {object} options - Export options from sidebar
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
@@ -379,7 +379,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry to view
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		viewDetails(auditTrail) {
 			// Set the audit trail item in the store
@@ -392,7 +392,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry with changes
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		viewChanges(auditTrail) {
 			// Set the audit trail item and open the specialized changes modal
@@ -404,7 +404,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail entry to copy
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async copyData(auditTrail) {
 			try {
@@ -453,7 +453,7 @@ export default {
 		 * Export audit trails with current filters
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		exportAuditTrails() {
 			this.exportFilteredAuditTrails({ format: 'csv', includeChanges: true })
@@ -463,7 +463,7 @@ export default {
 		 * @param {object} options - Export options
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async exportFilteredAuditTrails(options) {
 			try {
@@ -512,7 +512,7 @@ export default {
 		 * @param {object} auditTrail - Audit trail to delete
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		deleteAuditTrail(auditTrail) {
 			// Set the audit trail item in the store
@@ -524,7 +524,7 @@ export default {
 		 * Refresh audit trails list
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async refreshAuditTrails() {
 			await this.loadAuditTrails()
@@ -533,7 +533,7 @@ export default {
 		 * Update counts for sidebar
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateCounts() {
 			try {
@@ -549,7 +549,7 @@ export default {
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async onPageChanged(page) {
 			try {
@@ -568,7 +568,7 @@ export default {
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async onPageSizeChanged(pageSize) {
 			try {
@@ -587,7 +587,7 @@ export default {
 		 * @param {object} auditTrail - The audit trail item
 		 * @return {boolean} Whether the audit trail has changes
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		hasChanges(auditTrail) {
 			try {
@@ -610,7 +610,7 @@ export default {
 		formatBytes,
 		/**
 		 * @param checked
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		toggleSelectAll(checked) {
 			if (checked) {
@@ -622,7 +622,7 @@ export default {
 		/**
 		 * @param id
 		 * @param checked
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		toggleAuditTrailSelection(id, checked) {
 			if (checked) {
@@ -635,7 +635,7 @@ export default {
 		 * Delete selected audit trails using bulk operation
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async bulkDeleteAuditTrails() {
 			if (this.selectedAuditTrails.length === 0) return

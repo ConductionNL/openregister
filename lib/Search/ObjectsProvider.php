@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 declare(strict_types=1);
@@ -63,7 +63,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
- * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+ * @spec openspec/specs/unified-search-provider/spec.md
  */
 class ObjectsProvider implements IFilteringProvider
 {
@@ -160,7 +160,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function __construct(
         IL10N $l10n,
@@ -187,7 +187,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return 'openregister_objects'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getId(): string
     {
@@ -199,7 +199,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string Display name for the search provider
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getName(): string
     {
@@ -220,7 +220,7 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-suppress   UnusedParam Parameters required by interface but not used
      * @SuppressWarnings (PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getOrder(string $route, array $routeParameters): ?int
     {
@@ -237,7 +237,7 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   list{'term', 'since', 'until', 'person', 'register', 'schema'}
      * @phpstan-return array<string>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSupportedFilters(): array
     {
@@ -261,7 +261,7 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   array<never, never>
      * @phpstan-return array<string>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getAlternateIds(): array
     {
@@ -276,7 +276,7 @@ class ObjectsProvider implements IFilteringProvider
      * @psalm-return   list{FilterDefinition, FilterDefinition}
      * @phpstan-return list<\OCP\Search\FilterDefinition>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getCustomFilters(): array
     {
@@ -307,7 +307,7 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Search requires handling many filters, building queries, and formatting results
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
      */
     public function search(IUser $user, ISearchQuery $query): SearchResult
     {
@@ -592,7 +592,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The section title.
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     private function getSectionName(): string
     {
@@ -609,7 +609,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @psalm-return list<int>
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     private function getNonSearchableIds(): array
     {
@@ -645,7 +645,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The composed subline.
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     private function buildSubline(
         array $object,
@@ -698,7 +698,7 @@ class ObjectsProvider implements IFilteringProvider
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Excerpt walks fields with several optional paths.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Excerpt has multiple fallback branches.
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     private function buildExcerpt(array $object, string $term): string
     {
@@ -743,7 +743,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The ellipsised fragment with the matched substring verbatim.
      *
-     * @spec openspec/changes/unified-search-provider/specs/unified-search-provider/spec.md
+     * @spec openspec/specs/unified-search-provider/spec.md
      */
     private function sliceExcerpt(string $value, int $position, int $length): string
     {
@@ -770,7 +770,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The schema title or the ID as fallback
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function resolveSchemaName(int $schemaId): string
     {
@@ -834,7 +834,7 @@ class ObjectsProvider implements IFilteringProvider
      *
      * @return string The register title or the ID as fallback
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function resolveRegisterName(int $registerId): string
     {

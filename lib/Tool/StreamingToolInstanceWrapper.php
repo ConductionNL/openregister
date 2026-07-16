@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-chat-companion-streaming/specs/chat-ai/spec.md#tool-call-and-tool-result-sse-events
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);

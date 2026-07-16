@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/integration-time-tracker/tasks.md
+ * @spec openspec/specs/integration-time-tracker/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ class TimeReconcileCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     protected function configure(): void
     {
@@ -98,7 +98,7 @@ class TimeReconcileCommand extends Command
      *
      * @return int Symfony command exit code.
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

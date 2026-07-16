@@ -56,7 +56,7 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @param register
 		 * @param schema
 		 * @param id
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
@@ -95,7 +95,7 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @param schema
 		 * @param id
 		 * @param payload
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
@@ -111,7 +111,7 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 		 * @param schema
 		 * @param id
 		 * @param deckRef
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async unlink(register, schema, id, deckRef) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(deckRef)))

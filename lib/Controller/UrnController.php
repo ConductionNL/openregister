@@ -38,7 +38,7 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-7
+ * @spec openspec/specs/urn-resource-addressing/spec.md
  */
 class UrnController extends Controller
 {

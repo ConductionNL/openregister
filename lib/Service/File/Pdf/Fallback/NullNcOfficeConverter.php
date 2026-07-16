@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+ * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
 
 declare(strict_types=1);
@@ -47,7 +47,7 @@ use RuntimeException;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+ * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
 final class NullNcOfficeConverter implements NcOfficeConverterInterface
 {
@@ -70,7 +70,7 @@ final class NullNcOfficeConverter implements NcOfficeConverterInterface
      *
      * @throws RuntimeException Always — the null implementation is unavailable.
      *
-     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function pdfToOdt(string $pdfBytes): string
     {
@@ -90,7 +90,7 @@ final class NullNcOfficeConverter implements NcOfficeConverterInterface
      *
      * @throws RuntimeException Always — the null implementation is unavailable.
      *
-     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function odtToPdf(string $odtBytes): string
     {

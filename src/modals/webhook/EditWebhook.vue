@@ -472,7 +472,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeWebhook() {
 			// Get webhook item from navigation store transferData or initialize new one.

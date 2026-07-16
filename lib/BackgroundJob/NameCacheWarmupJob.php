@@ -21,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-30
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -79,7 +79,7 @@ class NameCacheWarmupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-5
+     * @spec openspec/specs/faceting-configuration/spec.md
      */
     protected function run($argument): void
     {

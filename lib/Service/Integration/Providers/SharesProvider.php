@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-shares/tasks.md
+ * @spec openspec/specs/integration-shares/spec.md
  */
 
 declare(strict_types=1);
@@ -227,7 +227,7 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-shares/tasks.md
+     * @spec openspec/specs/integration-shares/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  list() tries the ShareLinkService delegate first,
      * then falls back to a local folder-walk; per-node, per-type, and per-share dedup logic are
@@ -389,7 +389,7 @@ class SharesProvider extends AbstractIntegrationProvider
      * @throws \OCA\OpenRegister\Exception\NotImplementedException When the
      *         token service is unavailable.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -440,7 +440,7 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @return void
      *
-     * @spec openspec/changes/integration-shares/tasks.md
+     * @spec openspec/specs/integration-shares/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

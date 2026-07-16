@@ -139,7 +139,7 @@ class FolderManagementHandler
      * @psalm-return   Node|null
      * @phpstan-return Node|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createEntityFolder(Register | ObjectEntity $entity): ?Node
     {
@@ -185,7 +185,7 @@ class FolderManagementHandler
      *
      * @psalm-return Node
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createRegisterFolderById(Register $register, ?IUser $currentUser=null): Node
     {
@@ -248,7 +248,7 @@ class FolderManagementHandler
      *
      * @return Folder The created or existing folder for the object.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createObjectFolderById(
         ObjectEntity|string $objectEntity,
@@ -340,7 +340,7 @@ class FolderManagementHandler
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getRegisterFolderById(Register $register): ?Folder
     {
@@ -398,7 +398,7 @@ class FolderManagementHandler
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -460,7 +460,7 @@ class FolderManagementHandler
      * @phpstan-return int
      * @return         int The folder ID.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createObjectFolderWithoutUpdate(ObjectEntity $objectEntity, ?IUser $currentUser=null): int
     {
@@ -526,7 +526,7 @@ class FolderManagementHandler
      * @return         Node The folder node.
      * @throws         Exception If folder creation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createFolderPath(string $folderPath): Node
     {
@@ -598,7 +598,7 @@ class FolderManagementHandler
      * @psalm-return   Node
      * @phpstan-return Node
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function createFolder(string $folderPath): Node
     {
@@ -617,7 +617,7 @@ class FolderManagementHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getRegisterFolderName(Register $register): string|null
     {
@@ -642,7 +642,7 @@ class FolderManagementHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectFolderName(ObjectEntity|string $objectEntity): string
     {
@@ -672,7 +672,7 @@ class FolderManagementHandler
      * @psalm-return   Folder
      * @phpstan-return Folder
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getOpenRegisterUserFolder(): Folder
     {
@@ -699,7 +699,7 @@ class FolderManagementHandler
      * @psalm-return   Node|null
      * @phpstan-return Node|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getNodeById(int $nodeId): ?Node
     {
@@ -744,7 +744,7 @@ class FolderManagementHandler
      * @psalm-return   'file'|'folder'|'unknown'
      * @phpstan-return 'file'|'folder'|'unknown'
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-004
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getNodeTypeFromFolder(Node $node): string
     {

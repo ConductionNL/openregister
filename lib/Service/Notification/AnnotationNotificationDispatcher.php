@@ -664,7 +664,7 @@ class AnnotationNotificationDispatcher
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the call-site context in dispatchWithSchema().
      *
-     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function deliveryWindowOrDigestSuppresses(
         array $spec,
@@ -786,7 +786,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function dispatchQueued(array $queuedRows): void
     {
@@ -1069,7 +1069,7 @@ class AnnotationNotificationDispatcher
      *
      * @return bool True when the dispatch may proceed.
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function coalesceAllows(string $ruleId, string $recipient, ?array $coalesce): bool
     {
@@ -1213,7 +1213,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function recordHistory(
         string $ruleId,
@@ -1290,7 +1290,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function recordHistoryAcrossChannels(
         string $ruleId,

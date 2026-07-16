@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -79,7 +79,7 @@ class ContextRetrievalHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         VectorEmbeddings $vectorService,
@@ -108,7 +108,7 @@ class ContextRetrievalHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       RAG context retrieval requires many search strategies
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex RAG logic cannot be easily split
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function retrieveContext(
         string $query,
@@ -408,7 +408,7 @@ class ContextRetrievalHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {
@@ -442,7 +442,7 @@ class ContextRetrievalHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Name extraction requires checking many possible fields
      * @SuppressWarnings(PHPMD.NPathComplexity)      Name extraction requires checking many possible fields
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function extractSourceName(array $result): string
     {

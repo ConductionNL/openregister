@@ -699,7 +699,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if at least one property has x-openregister-encrypted === true
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function hasEncryptedProperties(): bool
     {
@@ -723,7 +723,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return array<int, string> List of encrypted property names
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function getEncryptedProperties(): array
     {
@@ -2143,7 +2143,7 @@ class Schema extends Entity implements JsonSerializable
      * @return void
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -2230,7 +2230,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return array<int, string>
      *
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
      */
     private static function legacyLinkedTypeIds(): array
     {

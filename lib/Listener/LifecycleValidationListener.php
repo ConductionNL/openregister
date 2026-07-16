@@ -96,7 +96,7 @@ class LifecycleValidationListener implements IEventListener
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-13
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handle(Event $event): void
     {

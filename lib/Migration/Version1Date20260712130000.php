@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
  */
 

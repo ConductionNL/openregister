@@ -255,7 +255,7 @@ export default {
 		/**
 		 * Load calendar provider config from schema configuration
 		 * @param {object} schema The schema object
-		 * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-4
+		 * @spec openspec/specs/calendar-integration/spec.md
 		 */
 		loadConfig(schema) {
 			const config = schema?.configuration?.calendarProvider || {}

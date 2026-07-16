@@ -60,7 +60,7 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @param register
 		 * @param schema
 		 * @param id
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
@@ -95,7 +95,7 @@ export const useEmailRelationsStore = defineStore('emailRelations', {
 		 * @param schema
 		 * @param id
 		 * @param emailId
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async unlink(register, schema, id, emailId) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(emailId)))

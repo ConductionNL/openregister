@@ -62,7 +62,7 @@ final class GuardResult
      *
      * @return self Allow verdict instance.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function allow(): self
     {
@@ -76,7 +76,7 @@ final class GuardResult
      *
      * @return self Deny verdict instance.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function deny(string $message): self
     {
@@ -88,7 +88,7 @@ final class GuardResult
      *
      * @return bool True when allowed, false when denied.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-4
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function isAllowed(): bool
     {

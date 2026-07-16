@@ -17,10 +17,10 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -342,8 +342,8 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromExcel(
         string $filePath,
@@ -452,7 +452,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the existing importFrom* signatures; pack/dryRun extend it.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/data-import-export/spec.md
      * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     public function importFromCsv(
@@ -800,7 +800,7 @@ class ImportService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control import behavior options
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function processMultiSchemaSpreadsheetAsync(
         Spreadsheet $spreadsheet,
@@ -1007,7 +1007,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Batch processing consolidates related operations for performance
      * @SuppressWarnings(PHPMD.StaticAccess)          NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function processSpreadsheetBatch(
         Spreadsheet $spreadsheet,
@@ -1208,7 +1208,7 @@ class ImportService
      * @SuppressWarnings(PHPMD.StaticAccess)           NotifyPushListener::setBatchMode/flushBatch are NC idiom static calls
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) pack/dryRun extend the existing signature
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/specs/migration-mapping-packs/spec.md
      */
     private function processCsvSheet(
@@ -1932,7 +1932,7 @@ class ImportService
      * @phpstan-return array<string, mixed>
      * @psalm-return   array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-10
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function transformObjectBySchema(array $objectData, Schema $schema): array
     {

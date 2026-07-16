@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  */
 
 declare(strict_types=1);
@@ -65,7 +65,7 @@ final class PlaceholderResolver
      * @return mixed Resolved value: DateTimeImmutable for date placeholders,
      *               string for $currentUser, original value otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function resolve(mixed $value): mixed
     {
@@ -87,7 +87,7 @@ final class PlaceholderResolver
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-3
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function resolveArray(array $values): array
     {

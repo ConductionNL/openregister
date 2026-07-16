@@ -19,7 +19,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+ * @spec openspec/specs/text-extraction/spec.md
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -59,7 +59,7 @@ interface TextExtractionHandlerInterface
      *
      * @throws \Exception When extraction fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
 

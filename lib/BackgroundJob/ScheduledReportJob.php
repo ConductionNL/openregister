@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Hourly scheduled-report deliverer.
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class ScheduledReportJob extends TimedJob
 {
@@ -87,7 +87,7 @@ class ScheduledReportJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     protected function run($argument): void
     {

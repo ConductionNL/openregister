@@ -34,7 +34,7 @@ class FileRenamedEvent extends Event
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function __construct(
         private readonly string $objectUuid,
@@ -49,7 +49,7 @@ class FileRenamedEvent extends Event
      *
      * @return string The object UUID.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getObjectUuid(): string
     {
@@ -61,7 +61,7 @@ class FileRenamedEvent extends Event
      *
      * @return int The file ID.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getFileId(): int
     {
@@ -73,7 +73,7 @@ class FileRenamedEvent extends Event
      *
      * @return array The event data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getData(): array
     {

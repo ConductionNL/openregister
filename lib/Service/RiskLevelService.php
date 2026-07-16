@@ -133,7 +133,7 @@ class RiskLevelService
      *
      * @return string Risk level constant (RISK_NONE through RISK_VERY_HIGH)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-3
+     * @spec openspec/specs/file-risk-classification/spec.md
      */
     public function computeRiskLevel(int $fileId): string
     {
@@ -171,7 +171,7 @@ class RiskLevelService
      *
      * @return string The computed risk level
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
+     * @spec openspec/specs/file-risk-classification/spec.md
      */
     public function updateRiskLevel(int $fileId): string
     {
@@ -204,7 +204,7 @@ class RiskLevelService
      *
      * @return string Risk level constant
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
+     * @spec openspec/specs/file-risk-classification/spec.md
      */
     public function getRiskLevel(int $fileId): string
     {
@@ -233,7 +233,7 @@ class RiskLevelService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
+     * @spec openspec/specs/file-risk-classification/spec.md
      */
     public function initMetadataKey(): void
     {
@@ -252,7 +252,7 @@ class RiskLevelService
      *
      * @return array<string, string> Map of risk level value to human-readable label
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-3/tasks.md#task-4
+     * @spec openspec/specs/file-risk-classification/spec.md
      */
     public static function getAllRiskLevels(): array
     {

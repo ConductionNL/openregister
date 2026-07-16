@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ class PdokGeocoder
      *
      * @return bool
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     public function isAvailable(): bool
     {
@@ -120,8 +120,8 @@ class PdokGeocoder
      *
      * @return array<int, array<string, mixed>> Suggestions (possibly empty).
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-006
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-006
      */
     public function geocodeFree(string $query, int $maxItems=5, bool $bagOnly=false): array
     {
@@ -155,7 +155,7 @@ class PdokGeocoder
      *
      * @return array<string, mixed>|null The nearest address, or null.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     public function reverseGeocode(float $longitude, float $latitude): ?array
     {
@@ -187,7 +187,7 @@ class PdokGeocoder
      *
      * @return array<int, array<string, mixed>>
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     public function shapeSuggestions(array $payload, int $maxItems): array
     {
@@ -228,7 +228,7 @@ class PdokGeocoder
      *
      * @return array{0: ?float, 1: ?float}
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     private function parseCentroid(mixed $point): array
     {
@@ -252,7 +252,7 @@ class PdokGeocoder
      *
      * @return array|null The decoded payload, or null on any failure.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     private function request(string $endpoint, array $params): ?array
     {
@@ -295,7 +295,7 @@ class PdokGeocoder
      *
      * @return array|null
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
      */
     private function decode(mixed $response): ?array
     {

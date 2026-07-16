@@ -93,7 +93,7 @@ class PersonLookupController extends Controller
      * @no-admin-idor-exempt External-gateway proxy: forwards a BSN to the admin-configured external BRP (HaalCentraal) provider;
      *   takes no OpenRegister object id and never keys an OR object.
      *
-     * @spec openspec/changes/integration-brp-audit-metadata/specs/integration-person-lookup/spec.md
+     * @spec openspec/specs/integration-person-lookup/spec.md
      */
     public function brpPerson(): JSONResponse
     {

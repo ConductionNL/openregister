@@ -27,7 +27,7 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/content-versioning/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
@@ -868,7 +868,7 @@ class FileService
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -1402,7 +1402,7 @@ class FileService
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -1509,7 +1509,7 @@ class FileService
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getAllTags(): array
     {
@@ -1652,7 +1652,7 @@ class FileService
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -2036,7 +2036,7 @@ class FileService
      *
      * @return FileVersioningHandler The versioning handler.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -2094,7 +2094,7 @@ class FileService
      *
      * @throws Exception If the rename fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -2149,7 +2149,7 @@ class FileService
      *
      * @throws Exception If the copy fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -2254,7 +2254,7 @@ class FileService
      *
      * @throws Exception If the move fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {

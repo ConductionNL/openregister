@@ -29,7 +29,7 @@
  *   widget:      CnFlowCard  (bespoke)
  *
  * @module src/integrations/builtin/flow
- * @spec openspec/changes/integration-flow/tasks.md
+ * @spec openspec/specs/integration-flow/spec.md
  * @see ADR-019 Integration Registry
  */
 

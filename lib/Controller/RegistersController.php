@@ -96,7 +96,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    The create/update actions include multi-step validation
  *   that is a single atomic write; extracting sub-steps would create misleading partial-update helpers.
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class RegistersController extends Controller
 {
@@ -898,7 +898,7 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response with schemas or error
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function schemas(int|string $id): JSONResponse
     {
@@ -942,7 +942,7 @@ class RegistersController extends Controller
      *
      * @return JSONResponse JSON response with objects
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function objects(int $register, int $schema): JSONResponse
     {
@@ -976,7 +976,7 @@ class RegistersController extends Controller
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple format branches
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
-     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
+     * @spec openspec/specs/export-pdf-format/spec.md
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -1801,7 +1801,7 @@ class RegistersController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

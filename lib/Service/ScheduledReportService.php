@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -70,8 +70,8 @@ use RuntimeException;
  *     in one cohesive unit per design.md; splitting execution into its own
  *     class would just relocate the complexity behind an extra collaborator.
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
- * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class ScheduledReportService
 {
@@ -170,7 +170,7 @@ class ScheduledReportService
      *
      * @throws DoesNotExistException When no row matches.
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function find(int $id): ScheduledReport
     {
@@ -184,7 +184,7 @@ class ScheduledReportService
      *
      * @return ScheduledReport[]
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function findForOwner(string $ownerUid): array
     {
@@ -196,7 +196,7 @@ class ScheduledReportService
      *
      * @return ScheduledReport[]
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function findAllForAdmin(): array
     {
@@ -213,7 +213,7 @@ class ScheduledReportService
      *
      * @throws InvalidArgumentException When validation fails.
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function create(array $data, string $ownerUid): ScheduledReport
     {
@@ -261,7 +261,7 @@ class ScheduledReportService
      * @throws RuntimeException When the caller does not own the row and is not an admin.
      * @throws InvalidArgumentException When validation fails.
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function update(int $id, array $data, string $callerUid, bool $callerIsAdmin): ScheduledReport
     {
@@ -336,7 +336,7 @@ class ScheduledReportService
      * @throws DoesNotExistException When no row matches.
      * @throws RuntimeException When the caller does not own the row and is not an admin.
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function delete(int $id, string $callerUid, bool $callerIsAdmin): void
     {
@@ -356,7 +356,7 @@ class ScheduledReportService
      *
      * @throws RuntimeException When the assertion fails.
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function assertOwnerOrAdmin(ScheduledReport $report, string $callerUid, bool $callerIsAdmin): void
     {
@@ -470,7 +470,7 @@ class ScheduledReportService
      *
      * @throws InvalidArgumentException When the payload isn't a valid recipient list.
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function validateRecipients(mixed $recipients): void
     {
@@ -557,7 +557,7 @@ class ScheduledReportService
      *
      * @return bool
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function isDue(ScheduledReport $report, DateTimeInterface $now): bool
     {
@@ -596,8 +596,8 @@ class ScheduledReportService
      *
      * @return void
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function runOne(ScheduledReport $report): void
     {
@@ -938,7 +938,7 @@ class ScheduledReportService
      *
      * @return string|null The failure reason, or null on success.
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function deliverToEmail(
         ScheduledReport $report,
@@ -1022,7 +1022,7 @@ class ScheduledReportService
      *
      * @return array<string,string> Email address => display name, ready for `IMessage::setTo()`.
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function resolveRecipients(ScheduledReport $report, \OCP\IUser $owner): array
     {
@@ -1172,7 +1172,7 @@ class ScheduledReportService
      *
      * @return void
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function notifyOwner(
         ScheduledReport $report,

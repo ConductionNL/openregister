@@ -286,7 +286,7 @@ export default {
 		 * Fetch available organisations from the store
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async fetchOrganisations() {
 			await organisationStore.refreshOrganisationList()

@@ -76,7 +76,7 @@ class ToolRegistrationEvent extends Event
      *
      * @param ToolRegistry $registry Tool registry to register tools with
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(ToolRegistry $registry)
     {
@@ -101,8 +101,8 @@ class ToolRegistrationEvent extends Event
      *
      * @throws \InvalidArgumentException If validation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {

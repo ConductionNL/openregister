@@ -86,7 +86,7 @@ use Throwable;
  *   security decision is independently auditable; the aggregate weighted method
  *   count is a by-product of that decomposition, not of tangled logic.
  *
- * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+ * @spec openspec/specs/credential-broker/spec.md
  */
 class CredentialBrokerService
 {
@@ -168,9 +168,9 @@ class CredentialBrokerService
      * @throws CredentialAccessDeniedException When any guard fails closed (mapped to a static 403).
      * @throws CredentialUpstreamException     When the outbound call fails at the transport level (mapped to a static 502).
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function request(
         string $credentialId,
@@ -278,9 +278,9 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function resolveInjectable(
         string $credentialId,
@@ -359,8 +359,8 @@ class CredentialBrokerService
      * @throws \InvalidArgumentException When the name is empty, or an organisation-scoped mint carries no organisation.
      * @throws Throwable                 When the object save or the vault write fails (the orphaned object is removed first).
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function mint(
         string $name,
@@ -442,7 +442,7 @@ class CredentialBrokerService
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function discardOrphanedCredential(string $uuid): void
     {
@@ -468,7 +468,7 @@ class CredentialBrokerService
      *
      * @return bool True when the provider is flagged `inject_only`.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isInjectOnly(array $provider): bool
     {
@@ -504,8 +504,8 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When missing, unauthenticated, or not admitted.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function loadAdmittedCredential(
         string $credentialId,
@@ -553,8 +553,8 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When unauthenticated or not owned.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertPersonalOwner(ObjectEntity $credential, string $credentialId, ?string $actingUserId): void
     {
@@ -602,7 +602,7 @@ class CredentialBrokerService
      * @throws CredentialAccessDeniedException When the org is malformed, the session user is not a member, or the
      *                                         sessionless assertion is absent or does not match the credential organisation.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertOrganisationMember(array $data, string $credentialId, ?string $actingOrganisationId=null): void
     {
@@ -639,7 +639,7 @@ class CredentialBrokerService
      *
      * @return string The scope (`personal`|`organisation`).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function scopeOf(array $data): string
     {
@@ -665,7 +665,7 @@ class CredentialBrokerService
      *
      * @return string|null The identity for the owner guard, or null when unauthenticated.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveActingIdentity(?string $actingUserId): ?string
     {
@@ -692,7 +692,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the app is not allowed.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertAppAllowed(array $data, string $appId, string $credentialId): void
     {
@@ -712,7 +712,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the provider is unknown.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveProvider(array $data, string $credentialId): array
     {
@@ -737,7 +737,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When no allow-rule matches.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertRuleAllowed(array $provider, string $method, string $matchPath, string $credentialId): void
     {
@@ -774,7 +774,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the resolved host does not match the base host.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveAndLockUrl(array $provider, string $path, string $credentialId): string
     {
@@ -802,7 +802,7 @@ class CredentialBrokerService
      *
      * @return array<string, string> The final request headers with auth injected.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function injectAuth(array $provider, array $headers, string $secret): array
     {
@@ -841,7 +841,7 @@ class CredentialBrokerService
      *
      * @throws CredentialUpstreamException When the call fails at the transport level.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId): array
     {
@@ -887,7 +887,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the path is empty, protocol-relative, or contains traversal.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function normalisePath(string $path): string
     {
@@ -919,7 +919,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException Always.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function deny(string $reason, string $credentialId): never
     {

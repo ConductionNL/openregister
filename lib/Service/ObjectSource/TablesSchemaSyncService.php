@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class TablesSchemaSyncService
      *
      * @return array{seeded: int, retired: int, skipped: int} Reconcile statistics.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function reconcile(array $tables): array
     {
@@ -123,7 +123,7 @@ class TablesSchemaSyncService
      *
      * @return bool True when a schema was retired.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function retireByTableId(int $tableId): bool
     {
@@ -145,7 +145,7 @@ class TablesSchemaSyncService
      *
      * @return bool True when a managed schema is bound to that table.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function hasManagedSchemaForTableId(int $tableId): bool
     {
@@ -166,7 +166,7 @@ class TablesSchemaSyncService
      *
      * @return string The schema slug (`nc-<slug(title)>-t<tableId>`).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function deterministicSlug(string $title, int $tableId): string
     {
@@ -185,7 +185,7 @@ class TablesSchemaSyncService
      *
      * @return Register The existing or newly created register.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function ensureRegister(): Register
     {
@@ -212,7 +212,7 @@ class TablesSchemaSyncService
      *
      * @return bool True when the schema was created or refreshed, false when skipped.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function seedTable(Register $register, array $table): bool
     {
@@ -274,7 +274,7 @@ class TablesSchemaSyncService
      *
      * @return int The number of schemas retired.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function retireMissing(Register $register, array $keepTableIds, ?int $onlyTableId=null): int
     {
@@ -335,7 +335,7 @@ class TablesSchemaSyncService
      *
      * @return array<int, Schema> Map of tableId → managed schema.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function managedSchemasByTableId(Register $register): array
     {
@@ -367,7 +367,7 @@ class TablesSchemaSyncService
      *
      * @return bool True when the schema carries the managed marker.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function isManaged(Schema $schema): bool
     {
@@ -387,7 +387,7 @@ class TablesSchemaSyncService
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function linkSchema(Register $register, Schema $schema): void
     {

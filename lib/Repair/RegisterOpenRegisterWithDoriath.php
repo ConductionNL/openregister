@@ -105,7 +105,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @return string The step name.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function getName(): string
     {
@@ -119,7 +119,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -154,7 +154,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @return bool True when self-registration can be attempted.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isDoriathAvailable(): bool
     {
@@ -174,7 +174,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @return bool True when already registered.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isRegistrationLive(): bool
     {
@@ -214,7 +214,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @throws RuntimeException When openssl key/CSR generation fails (caught by {@see run()}).
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function register(IOutput $output): void
     {
@@ -266,7 +266,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @throws RuntimeException When openssl generation/export fails.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function generateKeypair(): array
     {
@@ -302,7 +302,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @throws RuntimeException When CSR generation/export fails.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function generateCsr(OpenSSLAsymmetricKey $keyResource): string
     {
@@ -331,7 +331,7 @@ class RegisterOpenRegisterWithDoriath implements IRepairStep
      *
      * @return object|null The resolved service, or null.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function resolveApplicationService(): ?object
     {

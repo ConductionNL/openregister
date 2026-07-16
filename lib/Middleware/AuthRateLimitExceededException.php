@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ class AuthRateLimitExceededException extends Exception
      * @param string $message      The error message
      * @param int    $lockoutUntil Unix timestamp the lockout expires at (0 if unknown)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function __construct(
         string $message,
@@ -55,7 +55,7 @@ class AuthRateLimitExceededException extends Exception
      *
      * @return int The lockout expiry timestamp, or 0 when unknown
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function getLockoutUntil(): int
     {

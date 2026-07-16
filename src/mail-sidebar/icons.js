@@ -7,7 +7,7 @@
  * context). Unknown icon names fall back to a neutral shape so a card always
  * renders something sensible.
  *
- * @spec openspec/changes/integration-email/tasks.md
+ * @spec openspec/specs/integration-email/spec.md
  */
 import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
 import TrendingUp from 'vue-material-design-icons/TrendingUp.vue'

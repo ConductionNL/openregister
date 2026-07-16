@@ -420,7 +420,7 @@ class FileTextController extends Controller
      * @return JSONResponse JSON response with anonymization result
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {

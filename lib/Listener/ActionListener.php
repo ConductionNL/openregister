@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ class ActionListener implements IEventListener
      * @param ActionExecutor  $actionExecutor Action executor for running actions
      * @param LoggerInterface $logger         Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private readonly ActionMapper $actionMapper,
@@ -67,7 +67,7 @@ class ActionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -144,7 +144,7 @@ class ActionListener implements IEventListener
      *
      * @return string Short class name (e.g., 'ObjectCreatingEvent')
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function getEventTypeName(Event $event): string
     {
@@ -164,7 +164,7 @@ class ActionListener implements IEventListener
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function extractPayload(Event $event): array
     {
@@ -254,7 +254,7 @@ class ActionListener implements IEventListener
      *
      * @return array Filtered actions that match their filter conditions
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function applyFilterConditions(array $actions, array $payload): array
     {
@@ -294,7 +294,7 @@ class ActionListener implements IEventListener
      *
      * @return mixed The value or null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function getNestedValue(array $data, string $key): mixed
     {

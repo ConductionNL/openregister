@@ -34,7 +34,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  *
- * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class Version1Date20260714000000 extends SimpleMigrationStep
 {
@@ -65,7 +65,7 @@ class Version1Date20260714000000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

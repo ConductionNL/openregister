@@ -17,10 +17,10 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-reverse-lookup-api-to-find-objects-by-mail-message-id
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 declare(strict_types=1);
@@ -146,7 +146,7 @@ class EmailService
      *
      * @return array{results: array, total: int} Email links with total count.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
@@ -175,7 +175,7 @@ class EmailService
      *
      * @throws Exception If the email does not exist or is already linked.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function linkEmail(
         string $objectUuid,
@@ -246,7 +246,7 @@ class EmailService
      *
      * @return array Array of email links with object UUIDs.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function searchBySender(string $sender): array
     {
@@ -379,7 +379,7 @@ class EmailService
      *
      * @return array|null Message data or null if not found.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-reverse-lookup-api-to-find-objects-by-mail-message-id
      */
     private function fetchMailMessage(int $messageId, int $accountId): ?array
     {

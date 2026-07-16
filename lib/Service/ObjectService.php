@@ -376,7 +376,7 @@ class ObjectService
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      */

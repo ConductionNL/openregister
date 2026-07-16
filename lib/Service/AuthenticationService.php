@@ -93,7 +93,7 @@ class AuthenticationService
      *
      * @param ArrayLoader $loader The Twig array loader
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function __construct(ArrayLoader $loader)
     {
@@ -156,7 +156,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -212,7 +212,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -255,7 +255,7 @@ class AuthenticationService
      * @throws BadRequestException If configuration is incomplete.
      * @throws \GuzzleHttp\Exception\GuzzleException If the token endpoint fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -299,7 +299,7 @@ class AuthenticationService
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -329,7 +329,7 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getRSJWK(array $configuration): JWK
     {
@@ -354,7 +354,7 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getHSJWK(array $configuration): JWK
     {
@@ -378,7 +378,7 @@ class AuthenticationService
      * @throws \Twig\Error\SyntaxError  If the template has syntax errors.
      * @throws \Twig\Error\RuntimeError If the template rendering fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getJWTPayload(array $configuration): array
     {
@@ -422,7 +422,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If the algorithm is not supported.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getJWK(array $configuration): JWK
     {
@@ -448,7 +448,7 @@ class AuthenticationService
      *
      * @return string The compact-serialized JWT string.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -494,7 +494,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchJWTToken(array $configuration): string
     {

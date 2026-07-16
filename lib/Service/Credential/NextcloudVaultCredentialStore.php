@@ -90,7 +90,7 @@ class NextcloudVaultCredentialStore implements CredentialStore
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function put(string $uuid, string $secret, string $scope='personal'): void
     {
@@ -109,7 +109,7 @@ class NextcloudVaultCredentialStore implements CredentialStore
      *
      * @return string|null The raw secret, or null when absent / not a string.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function get(string $uuid, string $scope='personal'): ?string
     {
@@ -133,7 +133,7 @@ class NextcloudVaultCredentialStore implements CredentialStore
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function delete(string $uuid, string $scope='personal'): void
     {
@@ -156,7 +156,7 @@ class NextcloudVaultCredentialStore implements CredentialStore
      *
      * @return string The vault owner id (system identity or current user id).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function vaultOwner(string $scope): string
     {
@@ -172,7 +172,7 @@ class NextcloudVaultCredentialStore implements CredentialStore
      *
      * @return string The current user's UID, or an empty string when unauthenticated.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function currentUserId(): string
     {

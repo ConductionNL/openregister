@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-54
+ * @spec openspec/specs/mcp-discovery/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -125,7 +125,7 @@ class McpServerController extends Controller
      *
      * @return Response JSON-RPC response or HTTP 202 for notifications
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-54
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function handle(): Response
     {

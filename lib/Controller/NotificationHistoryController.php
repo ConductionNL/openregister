@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/tasks.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class NotificationHistoryController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function index(): JSONResponse
     {

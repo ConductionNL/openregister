@@ -137,28 +137,28 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
 		 */
 		mergeOperations() {
 			return qualityStore.mergeOperations
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
 		 */
 		mergeOperationsTotal() {
 			return qualityStore.mergeOperationsTotal
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
 		 */
 		mergeOperationsLimit() {
 			return qualityStore.mergeOperationsLimit
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
 		 */
 		mergeOperationsOffset() {
 			return qualityStore.mergeOperationsOffset
@@ -202,7 +202,7 @@ export default {
 		 * still calls through and reflects whatever it returns.
 		 *
 		 * @param {object} operation Merge operation row.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-reverse-offered-only-within-the-window
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-reverse-offered-only-within-the-window
 		 * @return {boolean}
 		 */
 		isReversible(operation) {
@@ -217,7 +217,7 @@ export default {
 		 * no longer reversible.
 		 *
 		 * @param {object} operation Merge operation row.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-reversing-restores-the-objects-and-updates-the-row
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-reversing-restores-the-objects-and-updates-the-row
 		 */
 		async reverse(operation) {
 			this.reversingId = operation.id

@@ -93,7 +93,7 @@ class WebhookRetryJob extends TimedJob
      * @param WebhookService   $webhookService   Webhook service
      * @param LoggerInterface  $logger           Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-13
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -125,7 +125,7 @@ class WebhookRetryJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-13
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     protected function run($argument): void
     {

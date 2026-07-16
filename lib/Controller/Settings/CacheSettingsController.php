@@ -75,7 +75,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with cache statistics or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getCacheStats(): JSONResponse
     {
@@ -97,7 +97,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with clear cache result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearCache(): JSONResponse
     {
@@ -122,7 +122,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with warmup result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function warmupNamesCache(): JSONResponse
     {
@@ -143,7 +143,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with warmup interval config
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getWarmupInterval(): JSONResponse
     {
@@ -187,7 +187,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated interval config
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function setWarmupInterval(): JSONResponse
     {
@@ -253,7 +253,7 @@ class CacheSettingsController extends Controller
      *
      * @return JSONResponse JSON response with invalidation result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearAppStoreCache(): JSONResponse
     {

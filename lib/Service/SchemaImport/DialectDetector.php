@@ -37,7 +37,7 @@ namespace OCA\OpenRegister\Service\SchemaImport;
 /**
  * Detects the dialect of an uploaded schema document.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class DialectDetector
 {
@@ -75,7 +75,7 @@ class DialectDetector
      *
      * @return array<int, string> The dialect keys.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public static function supportedDialects(): array
     {
@@ -97,7 +97,7 @@ class DialectDetector
      *
      * @return string|null The detected dialect, or null when undetectable.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each marker check adds one conservative branch.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Each marker check adds one conservative branch.

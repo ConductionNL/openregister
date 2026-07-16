@@ -14,7 +14,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/validate-self-folder-access/specs/self-folder-access-control/spec.md
+ * @spec openspec/specs/self-folder-access-control/spec.md
  */
 
 namespace OCA\OpenRegister\Exception;

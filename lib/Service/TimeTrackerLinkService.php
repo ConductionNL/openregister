@@ -648,7 +648,7 @@ class TimeTrackerLinkService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The dry-run toggle is the conventional shape for occ commands.
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     public function reconcileAllLinks(?string $objectUuid=null, bool $dryRun=false): array
     {

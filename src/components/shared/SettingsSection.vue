@@ -206,7 +206,7 @@ export default {
 		 *
 		 * @param {string} html Untrusted markup
 		 * @return {string} Sanitized HTML safe for v-html
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-4
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		sanitizeHtml(html) {
 			return DOMPurify.sanitize(html, {

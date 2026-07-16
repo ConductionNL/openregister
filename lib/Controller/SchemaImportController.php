@@ -80,7 +80,7 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The discovery results.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function types(string $dialect): JSONResponse
     {
@@ -101,7 +101,7 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The snapshot info.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function snapshot(string $dialect): JSONResponse
     {
@@ -121,7 +121,7 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The created schema, or a structured error.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $dialect): JSONResponse
     {
@@ -170,7 +170,7 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The classified diff (preview) or the updated schema.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      */

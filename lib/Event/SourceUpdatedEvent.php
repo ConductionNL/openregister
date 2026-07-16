@@ -66,7 +66,7 @@ class SourceUpdatedEvent extends Event
      *
      * @return Source The source after update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getSource(): Source
     {
@@ -78,7 +78,7 @@ class SourceUpdatedEvent extends Event
      *
      * @return Source The source after update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getNewSource(): Source
     {
@@ -90,7 +90,7 @@ class SourceUpdatedEvent extends Event
      *
      * @return Source The source before update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getOldSource(): Source
     {

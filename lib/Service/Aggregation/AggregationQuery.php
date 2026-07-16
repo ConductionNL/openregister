@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/aggregations-backend-native/tasks.md "SearchBackendInterface::aggregate"
+ * @spec openspec/specs/aggregations-backend-native/spec.md "SearchBackendInterface::aggregate"
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  */
 
@@ -39,7 +39,7 @@ use InvalidArgumentException;
 /**
  * Backend-portable aggregation request.
  *
- * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class AggregationQuery
 {
@@ -116,7 +116,7 @@ class AggregationQuery
      *   per-rule error messages.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public static function create(
         string $metric,
@@ -218,7 +218,7 @@ class AggregationQuery
      *
      * @return bool
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function isGrouped(): bool
     {
@@ -236,7 +236,7 @@ class AggregationQuery
      * @return ?string
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function getGroupByField(): ?string
     {
@@ -261,7 +261,7 @@ class AggregationQuery
      *
      * @return array<int, string> Ordered group field names.
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function getGroupByFields(): array
     {
@@ -285,7 +285,7 @@ class AggregationQuery
      *
      * @return bool True when more than one grouping field is present.
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function isMultiFieldGroupBy(): bool
     {
@@ -307,7 +307,7 @@ class AggregationQuery
      *
      * @return array<int, mixed> Ordered candidate field values.
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public static function normaliseGroupByFields(mixed $groupBy): array
     {
@@ -339,7 +339,7 @@ class AggregationQuery
      *
      * @return bool
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function hasDateBucket(): bool
     {
@@ -364,7 +364,7 @@ class AggregationQuery
      *   dateBucket: array<string, mixed>|null
      * } Canonical wire shape of the query.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function toArray(): array
     {

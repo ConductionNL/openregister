@@ -98,8 +98,8 @@ class CredentialAppTokenService
      *
      * @return string The newly generated signing secret (shown once).
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function registerApp(string $appId): string
     {
@@ -120,7 +120,7 @@ class CredentialAppTokenService
      *
      * @return bool True when a signing secret is registered for the app.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function isRegistered(string $appId): bool
     {
@@ -166,7 +166,7 @@ class CredentialAppTokenService
      *   (CredentialController::brokerRequest -> verify()); the CONSUMING APP is the issuer, holding
      *   the per-app secret from registerApp(). ADR-004 Rule 2. An in-repo caller would defeat the control.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function issueToken(string $appId, string $credentialId, ?string $method=null, ?string $path=null): string
     {
@@ -221,7 +221,7 @@ class CredentialAppTokenService
      *
      * @throws CredentialAccessDeniedException On any malformed / forged / expired token.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function verify(string $token, ?string $method=null, ?string $path=null): array
     {
@@ -296,7 +296,7 @@ class CredentialAppTokenService
      *
      * @throws CredentialAccessDeniedException When the payload is unreadable or malformed.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function decodeClaims(string $payloadB64): array
     {
@@ -324,7 +324,7 @@ class CredentialAppTokenService
      *
      * @return string|null The signing secret, or null.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function lookupSecret(string $appId): ?string
     {

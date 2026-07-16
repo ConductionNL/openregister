@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 class OfficeDocumentSanitizer
 {
@@ -90,7 +90,7 @@ class OfficeDocumentSanitizer
      * @param LoggerInterface           $logger      PII-free logger.
      * @param SanitizerInterface[]|null $strategies  Optional strategy override (DI / tests).
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -115,7 +115,7 @@ class OfficeDocumentSanitizer
      *
      * @return bool True when at least one strategy supports the format.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function isSanitizable(string $mimeType): bool
     {
@@ -142,7 +142,7 @@ class OfficeDocumentSanitizer
      *
      * @return SanitizationResult The sanitised path and audit report.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function sanitize(int $fileId): SanitizationResult
     {
@@ -210,7 +210,7 @@ class OfficeDocumentSanitizer
      *
      * @return SanitizerInterface The matching strategy.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function resolveStrategy(string $mimeType): SanitizerInterface
     {
@@ -233,7 +233,7 @@ class OfficeDocumentSanitizer
      *
      * @return string The extension (with leading dot).
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function extensionForMime(string $mimeType): string
     {
@@ -254,7 +254,7 @@ class OfficeDocumentSanitizer
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function copyToTemp($stream, string $tempPath): void
     {

@@ -21,9 +21,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -80,9 +80,9 @@ class DestructionExecutionJob extends QueuedJob
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     protected function run($argument): void
     {
@@ -265,7 +265,7 @@ class DestructionExecutionJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function notifySkippedHolds(
         string $listUuid,

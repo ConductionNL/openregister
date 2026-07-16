@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-80
+ * @spec openspec/specs/tenant-quotas/spec.md
  */
 
 declare(strict_types=1);
@@ -72,8 +72,8 @@ class TenantUsageSyncJob extends TimedJob
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-tenant-isolation-audit/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-80
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-usage-counters-must-be-persisted-via-background-job
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     protected function run(mixed $argument): void
     {

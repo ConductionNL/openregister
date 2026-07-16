@@ -157,7 +157,7 @@ class SchemaRunEntry extends Entity implements JsonSerializable
      *
      * @return static This entity, hydrated.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function hydrate(array $object): static
     {

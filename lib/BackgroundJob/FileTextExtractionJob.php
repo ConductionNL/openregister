@@ -108,7 +108,7 @@ class FileTextExtractionJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-10
+     * @spec openspec/specs/search-index/spec.md
      */
     protected function run($argument): void
     {

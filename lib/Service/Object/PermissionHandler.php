@@ -21,9 +21,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-model-hierarchy-register-schema-object-property
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-named-role-definitions-on-registers
  */
 
 declare(strict_types=1);
@@ -172,7 +172,7 @@ class PermissionHandler
      * @param ContainerInterface                         $container          Container for lazy loading services.
      * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -220,7 +220,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)      User/group/owner permission combinations create many paths
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC flag follows established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function hasPermission(
         Schema $schema,
@@ -727,7 +727,7 @@ class PermissionHandler
      *
      * @return void
      *
-     * @spec openspec/changes/rbac-scopes/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-caching-for-performance
      */
     public function clearPermissionCache(): void
     {
@@ -772,7 +772,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC flag follows established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function checkPermission(
         Schema $schema,
@@ -825,7 +825,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
     {
@@ -902,7 +902,7 @@ class PermissionHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) UUID filtering with permission checks requires multiple conditions
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function filterUuidsForPermissions(array $uuids, bool $_rbac, bool $_multitenancy): array
     {
@@ -974,7 +974,7 @@ class PermissionHandler
      *
      * @return string|null The active organisation UUID or null if none set
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -1043,7 +1043,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Rule entries: string, object, conditional, or nested group - each type is a distinct RBAC branch
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function hasGroupPermission(
         ?array $authorization,
@@ -1287,7 +1287,7 @@ class PermissionHandler
      *
      * @return array Array of group IDs that have permission, or empty array if all groups have permission
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getAuthorizedGroups(?array $authorization, string $action): array
     {
@@ -1735,7 +1735,7 @@ class PermissionHandler
      *
      * @return Register|null The parent register, or null if not found.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-55
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-scope-model-hierarchy-register-schema-object-property
      */
     private function getRegisterForSchema(Schema $schema): ?Register
     {
@@ -1838,7 +1838,7 @@ class PermissionHandler
      *
      * @return array|null The register's configuration array.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-named-role-definitions-on-registers
      */
     private function getRegisterConfiguration(int $registerId): ?array
     {
@@ -1879,7 +1879,7 @@ class PermissionHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Role expansion: validate defs, resolve `extends` chains, merge action sets, guard malformed data
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function expandRoles(array $authorization, Schema $schema): array
     {
@@ -2079,7 +2079,7 @@ class PermissionHandler
      *
      * @return array Array of role definitions, each with 'name', 'description', 'actions'.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-57
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-named-role-definitions-on-registers
      */
     private function getRoleDefinitionsForSchema(Schema $schema): array
     {

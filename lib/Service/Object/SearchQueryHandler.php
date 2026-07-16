@@ -21,9 +21,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ * @spec openspec/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ class SearchQueryHandler
      * @param IRequest           $request            Request object.
      * @param SearchTrailService $searchTrailService Service for recording search trails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
@@ -133,8 +133,8 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -315,7 +315,7 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function applyViewsToQuery(array $query, array $viewIds): array
     {
@@ -435,7 +435,7 @@ class SearchQueryHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function cleanQuery(array $parameters): array
     {
@@ -505,8 +505,8 @@ class SearchQueryHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
@@ -551,7 +551,7 @@ class SearchQueryHandler
      *
      * @psalm-return '&'|'?'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function getUrlSeparator(string $url): string
     {

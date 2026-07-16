@@ -51,7 +51,7 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class ApplicationsController extends Controller
 {
@@ -157,7 +157,7 @@ class ApplicationsController extends Controller
      *     results?: array<\OCA\OpenRegister\Db\Application>},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      *
      * @no-admin-idor-exempt List endpoint for the application-registry resource (app/template
      * metadata, not per-user objects); access follows OpenRegister's fleet-wide registry-controller
@@ -291,7 +291,7 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse JSON response with created application
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      *
      * @no-admin-idor-exempt Write to the application-registry resource (app/template metadata);
      * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
@@ -346,7 +346,7 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse JSON response with updated application
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      *
      * @no-admin-idor-exempt Update of an application-registry entry (app/template metadata);
      * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
@@ -411,7 +411,7 @@ class ApplicationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      *
      * @no-admin-idor-exempt Pure delegation to update(), which carries the same registry-controller
      * authorisation posture; this method has no body of its own. Pre-existing; untouched by this PR.
@@ -440,7 +440,7 @@ class ApplicationsController extends Controller
      *     array{error?: 'Failed to delete application',
      *     message?: 'Application deleted successfully'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      *
      * @no-admin-idor-exempt Delete of an application-registry entry (app/template metadata);
      * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC

@@ -66,7 +66,7 @@ export default {
 		 * file input. Avatar upload itself runs from the input's `change` handler
 		 * (`uploadAvatar`), not from this method.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
+		 * @spec openspec/specs/account-self-service/spec.md
 		 * @return {void}
 		 */
 		triggerUpload() {

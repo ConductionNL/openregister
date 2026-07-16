@@ -202,7 +202,7 @@ export default {
 		 * Seed the form from an existing activity or with Art-30 defaults.
 		 *
 		 * @param activity
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 		 */
 		makeForm(activity) {
 			return {
@@ -223,7 +223,7 @@ export default {
 		/**
 		 * Strip empty optional fields before writing the activity.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 		 */
 		buildPayload() {
 			const payload = { ...this.form }
@@ -237,7 +237,7 @@ export default {
 		/**
 		 * Dispatch create vs update of the processing activity against avgStore.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-7
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
 		 */
 		async onSave() {
 			this.saving = true

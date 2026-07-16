@@ -55,7 +55,7 @@ class VectorizationHandler
      * @param MagicMapper          $objectEntityMapper   Object entity mapper
      * @param LoggerInterface      $logger               PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly VectorizationService $vectorizationService,
@@ -76,7 +76,7 @@ class VectorizationHandler
      *
      * @throws \Exception If vectorization fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function vectorizeBatch(?array $views=null, int $batchSize=25): array
     {
@@ -141,7 +141,7 @@ class VectorizationHandler
      *
      * @psalm-return array{total_objects: int<0, max>, views: array|null}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getStatistics(?array $views=null): array
     {
@@ -198,7 +198,7 @@ class VectorizationHandler
      *
      * @throws \Exception If count fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getCount(?array $schemas=null): int
     {

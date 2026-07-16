@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-41
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -77,7 +77,7 @@ class GraphQLSubscriptionController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function subscribe(): Response
     {

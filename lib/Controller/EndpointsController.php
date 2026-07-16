@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per endpoint route.
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  *
  * The resource-CRUD verbs (index/show/create/update/patch/destroy) are governed by task-1.
  * The test/logs/logStats/allLogs methods are a production-observability cross-cut (endpoint
@@ -597,7 +597,7 @@ class EndpointsController extends Controller
      *     statusCode?: int, response?: mixed},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -684,7 +684,7 @@ class EndpointsController extends Controller
      *     results?: list<\OCA\OpenRegister\Db\EndpointLog>, total?: int<0, max>},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -759,7 +759,7 @@ class EndpointsController extends Controller
      *     'Failed to retrieve endpoint log statistics', total?: int,
      *     success?: int, failed?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -824,7 +824,7 @@ class EndpointsController extends Controller
      *     total?: int<0, max>},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

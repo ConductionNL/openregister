@@ -27,7 +27,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-4
+ * @spec openspec/specs/archival-annotation-vocabulary/spec.md#scenario-non-iso-8601-retention-default-is-rejected
  */
 
 declare(strict_types=1);
@@ -263,7 +263,7 @@ final class ArchivalAnnotationValidator
      *
      * @return bool True when the value parses as a duration.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-4
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md#scenario-non-iso-8601-retention-default-is-rejected
      */
     private function isIsoDuration(mixed $value): bool
     {

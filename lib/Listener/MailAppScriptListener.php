@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 declare(strict_types=1);
@@ -75,8 +75,8 @@ class MailAppScriptListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function handle(Event $event): void
     {
@@ -129,7 +129,7 @@ class MailAppScriptListener implements IEventListener
      *
      * @return bool True if the user has register access.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
      */
     private function userHasRegisterAccess(): bool
     {

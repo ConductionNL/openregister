@@ -116,7 +116,7 @@ class GitLabHandler
      *
      * @psalm-return array{'PRIVATE-TOKEN'?: string}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     private function getHeaders(): array
     {
@@ -152,7 +152,7 @@ class GitLabHandler
      *     path: mixed, project_id: mixed, ref: 'main'|mixed,
      *     url: ''|mixed}>, page: int, per_page: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function searchConfigurations(string $search='', int $page=1, int $perPage=30): array
     {
@@ -249,7 +249,7 @@ class GitLabHandler
      *
      * @psalm-return array<array{name: mixed, commit: mixed|null, protected: false|mixed, default: false|mixed}>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getBranches(int $projectId): array
     {
@@ -312,7 +312,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getFileContent(int $projectId, string $path, string $ref='main'): array
     {
@@ -383,7 +383,7 @@ class GitLabHandler
      *     description: ''|mixed, title: mixed|string, type: 'manual'|mixed,
      *     version: '1.0.0'|mixed}, id: mixed|null, path: mixed}>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function listConfigurationFiles(int $projectId, string $ref='main', string $path=''): array
     {
@@ -471,7 +471,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getProjectByPath(string $namespace, string $project): array
     {
@@ -525,7 +525,7 @@ class GitLabHandler
      *
      * @psalm-return array{openapi: mixed, 'x-openregister': mixed,...}|null
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     private function parseConfigurationFile(int $projectId, string $path, string $ref='main'): array|null
     {
@@ -569,7 +569,7 @@ class GitLabHandler
      *
      * @since 0.2.10
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getApiBase(): string
     {

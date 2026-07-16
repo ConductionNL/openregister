@@ -1827,7 +1827,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail The persisted, hash-chained entry.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v4 is standard Symfony UID pattern

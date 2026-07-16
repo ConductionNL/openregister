@@ -20,10 +20,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+ * @spec openspec/specs/mcp-discovery/spec.md
+ * @spec openspec/specs/mcp-discovery/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -84,8 +84,8 @@ class McpController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function discover(): JSONResponse
     {
@@ -115,8 +115,8 @@ class McpController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function discoverCapability(string $capability): JSONResponse
     {

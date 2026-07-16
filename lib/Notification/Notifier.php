@@ -36,7 +36,7 @@ use OCP\Notification\INotifier;
  *
  * @package OCA\OpenRegister\Notification
  *
- * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 class Notifier implements INotifier
 {
@@ -61,7 +61,7 @@ class Notifier implements INotifier
      *
      * @psalm-return 'openregister'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function getID(): string
     {
@@ -73,7 +73,7 @@ class Notifier implements INotifier
      *
      * @return string The notifier name
      *
-     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function getName(): string
     {
@@ -89,7 +89,7 @@ class Notifier implements INotifier
      * @return INotification The prepared notification
      * @throws InvalidArgumentException If the notification is not from this app
      *
-     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function prepare(INotification $notification, string $languageCode): INotification
     {
@@ -129,7 +129,7 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
-     * @spec openspec/changes/retrofit-2026-04-28-notificatie-engine/tasks.md#task-1
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function prepareConfigurationUpdate(INotification $notification, $l): INotification
     {
@@ -232,8 +232,8 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function prepareScheduledReportDelivered(INotification $notification, $l): INotification
     {
@@ -298,7 +298,7 @@ class Notifier implements INotifier
      *
      * @return INotification The prepared notification
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     private function prepareScheduledReportFailed(INotification $notification, $l): INotification
     {

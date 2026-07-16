@@ -23,8 +23,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ class GeoFilterParser
      *
      * @throws InvalidArgumentException When `geo.near`/`geo.radius` are mismatched.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function fromQueryParams(array $params): array
     {
@@ -115,7 +115,7 @@ class GeoFilterParser
      *
      * @throws InvalidArgumentException When malformed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function fromGeoSearchBody(array $body): array
     {

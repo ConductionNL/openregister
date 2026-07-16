@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ class SeedTablesVirtualSchemas implements IRepairStep
      *
      * @return string The step name.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function getName(): string
     {
@@ -83,7 +83,7 @@ class SeedTablesVirtualSchemas implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -116,7 +116,7 @@ class SeedTablesVirtualSchemas implements IRepairStep
      *
      * @return array<int, string> The admin user ids (may be empty).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function adminUserIds(): array
     {

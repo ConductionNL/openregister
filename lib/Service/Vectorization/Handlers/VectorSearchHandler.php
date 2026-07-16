@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 declare(strict_types=1);
@@ -392,7 +392,7 @@ class VectorSearchHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple search path combinations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive hybrid search with result fusion
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function hybridSearch(
         array $queryEmbedding,

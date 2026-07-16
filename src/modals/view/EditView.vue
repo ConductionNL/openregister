@@ -239,7 +239,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer

@@ -163,7 +163,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @throws RuntimeException When the store is unprovisioned or Doriath rejects the write.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function put(string $uuid, string $secret, string $scope='personal'): void
     {
@@ -208,7 +208,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @return string|null The raw secret, or null when absent/undecryptable. Never logged.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function get(string $uuid, string $scope='personal'): ?string
     {
@@ -255,7 +255,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @throws RuntimeException When the Doriath seam is unreachable (caller must not treat the secret as gone).
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function delete(string $uuid, string $scope='personal'): void
     {
@@ -285,7 +285,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @return string|null The plaintext secret, or null on any failure (fail closed).
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function decryptRow(object $row, string $uuid): ?string
     {
@@ -323,7 +323,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @return string|null The migrated secret, or null when there is nothing to migrate.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#lazy-migration-of-vault-secrets-to-doriath
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function migrateFromVault(string $uuid, string $scope='personal'): ?string
     {
@@ -373,7 +373,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @throws RuntimeException When the Doriath seam is unreachable.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#doriath-backed-secret-custody
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function lookupRow(string $uuid, string $applicationId): ?object
     {
@@ -392,7 +392,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @return string The Doriath-assigned application UUID, or ''.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function applicationId(): string
     {
@@ -406,7 +406,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @throws RuntimeException When OpenRegister is not registered with Doriath.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function requireApplicationId(): string
     {
@@ -429,7 +429,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @return object|null The resolved service, or null when unavailable.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function resolveDoriathService(string $className): ?object
     {
@@ -457,7 +457,7 @@ class DoriathCredentialStore implements CredentialStore
      *
      * @throws RuntimeException When the service cannot be resolved.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function requireDoriathService(string $className): object
     {

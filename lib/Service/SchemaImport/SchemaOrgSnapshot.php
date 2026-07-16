@@ -33,7 +33,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Indexed view over a bundled Schema.org vocabulary release.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class SchemaOrgSnapshot
 {
@@ -76,7 +76,7 @@ class SchemaOrgSnapshot
      *
      * @return string The version.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function version(): string
     {
@@ -90,7 +90,7 @@ class SchemaOrgSnapshot
      *
      * @return array<string, mixed>|null The class record, or null when unknown.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function findClass(string $reference): ?array
     {
@@ -106,7 +106,7 @@ class SchemaOrgSnapshot
      *
      * @return array<string, array<string, mixed>> Property records keyed by bare name.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function directPropertiesOf(string $className): array
     {
@@ -129,7 +129,7 @@ class SchemaOrgSnapshot
      *
      * @return array<string, array<string, mixed>> Property records keyed by bare name.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function propertiesWithAncestors(string $className): array
     {
@@ -154,7 +154,7 @@ class SchemaOrgSnapshot
      *
      * @return array<int, string> Bare class names, the class itself first.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function ancestryOf(string $className): array
     {
@@ -186,7 +186,7 @@ class SchemaOrgSnapshot
      *
      * @return array<int, array<string, mixed>> Matching class records.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function searchClasses(string $query, int $limit=50): array
     {
@@ -217,7 +217,7 @@ class SchemaOrgSnapshot
      *
      * @return string The bare name.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function bareName(string $reference): string
     {
@@ -244,7 +244,7 @@ class SchemaOrgSnapshot
      *
      * @return string The class IRI.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function classIri(string $className): string
     {

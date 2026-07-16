@@ -102,7 +102,7 @@ class FileBatchHandler
      *
      * @throws Exception If validation fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function executeBatch(
         ObjectEntity $object,

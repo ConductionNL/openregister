@@ -93,7 +93,7 @@ class ToolRegistrationListener implements IEventListener
      * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
      * @param LoggerInterface $logger          PSR logger.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         RegisterTool $registerTool,
@@ -118,7 +118,7 @@ class ToolRegistrationListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handle(Event $event): void
     {

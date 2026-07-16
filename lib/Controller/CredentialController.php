@@ -115,7 +115,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse The credential metadata (metadata only; never a secret).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function index(): JSONResponse
@@ -162,7 +162,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse The active organisation's credential metadata.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function indexOrganisation(): JSONResponse
     {
@@ -201,7 +201,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse `{results: Array<{identifier, title}>}`.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function providers(): JSONResponse
@@ -249,7 +249,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse The created credential metadata, or a static error.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function create(): JSONResponse
@@ -309,7 +309,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse The updated credential metadata, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function update(string $id): JSONResponse
@@ -360,7 +360,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse An empty success payload, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function destroy(string $id): JSONResponse
@@ -398,7 +398,7 @@ class CredentialController extends Controller
      *
      * @return JSONResponse `{appId, secret}` once, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function registerApp(string $appId): JSONResponse
@@ -433,8 +433,8 @@ class CredentialController extends Controller
      *
      * @return JSONResponse `{status, headers, body}` from the upstream, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -499,8 +499,8 @@ class CredentialController extends Controller
      *
      * @return JSONResponse `{status, headers, body}` from the upstream, or a static error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     #[NoAdminRequired]
     public function sessionBrokerRequest(string $id): JSONResponse
@@ -539,7 +539,7 @@ class CredentialController extends Controller
      *
      * @return string|null The current UID, or null.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function currentUid(): ?string
     {
@@ -559,7 +559,7 @@ class CredentialController extends Controller
      *
      * @return ObjectEntity|JSONResponse The manageable entity, or a static error response.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function ensureManageable(string $id, ?string $uid): ObjectEntity | JSONResponse
     {
@@ -608,7 +608,7 @@ class CredentialController extends Controller
      *
      * @return string The requested scope (`personal`|`organisation`).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function requestedScope(): string
     {
@@ -627,7 +627,7 @@ class CredentialController extends Controller
      *
      * @return string The scope (`personal`|`organisation`).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function scopeOf(array $data): string
     {
@@ -645,7 +645,7 @@ class CredentialController extends Controller
      *
      * @return string The organisation UUID, or '' when none can be resolved.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveOrganisation(string $requested): string
     {
@@ -669,7 +669,7 @@ class CredentialController extends Controller
      *
      * @return string|JSONResponse The gated organisation UUID, or a static error response.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function gatedOrganisation(string $uid): string | JSONResponse
     {
@@ -692,7 +692,7 @@ class CredentialController extends Controller
      *
      * @return array<string, mixed> The serialised metadata.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function serialise(ObjectEntity $object): array
     {
@@ -706,7 +706,7 @@ class CredentialController extends Controller
      *
      * @return array<int, string> The sanitised app-id list.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function normaliseAllowedApps(mixed $value): array
     {
@@ -731,7 +731,7 @@ class CredentialController extends Controller
      *
      * @return array<string, string> The sanitised header map.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function normaliseHeaders(mixed $value): array
     {
@@ -756,7 +756,7 @@ class CredentialController extends Controller
      *
      * @return string|null The request body, or null.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function normaliseBody(mixed $value): ?string
     {

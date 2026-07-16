@@ -19,10 +19,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+ * @spec openspec/specs/mcp-discovery/spec.md
+ * @spec openspec/specs/mcp-discovery/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -116,7 +116,7 @@ class McpDiscoveryService
      *
      * @return string The absolute URL
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
      */
     private function getCapabilityHref(string $capabilityId): string
     {
@@ -133,8 +133,8 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> The discovery catalog
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function getCatalog(): array
     {
@@ -248,8 +248,8 @@ class McpDiscoveryService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function getCapabilityDetail(string $capability): ?array
     {
@@ -281,7 +281,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildRegistersCapability(): array
     {
@@ -356,7 +356,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildSchemasCapability(): array
     {
@@ -429,7 +429,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildObjectsCapability(): array
     {
@@ -570,7 +570,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildSearchCapability(): array
     {
@@ -644,7 +644,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildFilesCapability(): array
     {
@@ -700,7 +700,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildAuditCapability(): array
     {
@@ -741,7 +741,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildBulkCapability(): array
     {
@@ -782,7 +782,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildWebhooksCapability(): array
     {
@@ -838,7 +838,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildChatCapability(): array
     {
@@ -889,7 +889,7 @@ class McpDiscoveryService
      *
      * @return array<string, mixed> Capability detail with endpoints and context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
      */
     private function buildViewsCapability(): array
     {

@@ -117,7 +117,7 @@ class PollLinkService
      *
      * @throws Exception On missing user, missing poll (404), duplicate (409).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkPoll(string $objectUuid, int $registerId, int $schemaId, int $pollId): PollLink
     {
@@ -172,7 +172,7 @@ class PollLinkService
      *
      * @throws Exception When no matching link is found (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkPoll(string $objectUuid, int $pollId): void
     {
@@ -200,7 +200,7 @@ class PollLinkService
      *   available/unavailable) combined with per-link row hydration requires nested guards;
      *   the logic cannot be split without losing the "degrade gracefully" contract.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedPolls(string $objectUuid): array
     {
@@ -246,7 +246,7 @@ class PollLinkService
      *
      * @return array<int,array{id:int,title:string,type:string,deadline:?string,closed:bool,voterCount:int,optionCount:int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailablePolls(?string $search=null): array
     {
@@ -325,7 +325,7 @@ class PollLinkService
      *   deadline); grouping them into a DTO would add an extra abstraction layer with no
      *   functional benefit since callers already have all values as discrete variables.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkPoll(
         string $objectUuid,

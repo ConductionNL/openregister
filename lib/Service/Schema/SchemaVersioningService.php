@@ -86,7 +86,7 @@ class SchemaVersioningService
      *
      * @return SchemaChangeSet The classified change set.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function classify(Schema $existing, array $newDefinition, array $renames=[]): SchemaChangeSet
     {
@@ -110,7 +110,7 @@ class SchemaVersioningService
      *
      * @throws BreakingSchemaChangeException When breaking and unacknowledged.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function enforceGate(SchemaChangeSet $changeSet, bool $acknowledged, int $schemaId): void
     {
@@ -137,7 +137,7 @@ class SchemaVersioningService
      *
      * @return string The next version.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function nextVersion(Schema $existing, SchemaChangeSet $changeSet): string
     {
@@ -157,7 +157,7 @@ class SchemaVersioningService
      *
      * @return SchemaChangelog|null The recorded entry, or null for a no-op.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function recordChangelog(int $schemaId, ?string $version, SchemaChangeSet $changeSet, bool $acknowledged): ?SchemaChangelog
     {

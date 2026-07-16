@@ -270,7 +270,7 @@ class RegisterService
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If register not found.
      *
-     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     * @spec openspec/specs/register-service-extensions/spec.md
      *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
      */
     public function findSerialized(int | string $id, array $_extend=[], bool $_multitenancy=true): array
@@ -313,7 +313,7 @@ class RegisterService
      *   callers can hand the same parameter set to either method without re-wrangling
      *   query params.
      *
-     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     * @spec openspec/specs/register-service-extensions/spec.md
      *   (Requirement: RegisterService SHALL expose serialized query methods that honor `_extend`)
      */
     public function findAllSerialized(

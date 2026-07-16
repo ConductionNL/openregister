@@ -89,7 +89,7 @@ class TaggingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Tag management requires handling create/find/attach scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for tag creation and attachment
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function attachTagsToFile(string $fileId, array $tags=[]): void
     {
@@ -209,7 +209,7 @@ class TaggingHandler
      *
      * @psalm-return list<string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/specs/file-actions/spec.md#REQ-005
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getFileTags(string $fileId): array
     {
@@ -247,7 +247,7 @@ class TaggingHandler
      *
      * @return string The object tag (e.g., 'object:uuid').
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -269,7 +269,7 @@ class TaggingHandler
      * @phpstan-return array<int, string>
      * @psalm-return   list<string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectTags(string $objectUuid): array
     {
@@ -308,7 +308,7 @@ class TaggingHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function addObjectTag(string $objectUuid, string $tagName): void
     {
@@ -330,7 +330,7 @@ class TaggingHandler
      *
      * @throws Exception If the tag is not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function removeObjectTag(string $objectUuid, string $tagName): void
     {
@@ -358,7 +358,7 @@ class TaggingHandler
      *
      * @psalm-return list<string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getAllTags(): array
     {

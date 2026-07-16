@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
  */
 
 declare(strict_types=1);
@@ -79,7 +79,7 @@ class ScheduledWorkflowJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-7
+     * @spec openspec/specs/workflow-operations/spec.md
      */
     protected function run($argument): void
     {
@@ -209,7 +209,7 @@ class ScheduledWorkflowJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
      */
     private function handleError(ScheduledWorkflow $schedule, $startTime, string $error): void
     {
