@@ -114,7 +114,7 @@ class DoriathApplicationRegistrar
      *
      * @return void
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function registerApplication(string $appId, ?string $description=null): void
     {
@@ -149,7 +149,7 @@ class DoriathApplicationRegistrar
      *
      * @return string The namespaced config key.
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public static function appConfigKey(string $appId): string
     {
@@ -161,7 +161,7 @@ class DoriathApplicationRegistrar
      *
      * @return bool True when per-app registration can be attempted.
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isDoriathAvailable(): bool
     {
@@ -184,7 +184,7 @@ class DoriathApplicationRegistrar
      *
      * @return bool True when already registered with a live row.
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isRegistrationLive(string $appId): bool
     {
@@ -219,7 +219,7 @@ class DoriathApplicationRegistrar
      *
      * @return void
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function register(string $appId, ?string $description): void
     {
@@ -263,7 +263,7 @@ class DoriathApplicationRegistrar
      *
      * @return object|null The resolved service, or null.
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function resolveApplicationService(): ?object
     {

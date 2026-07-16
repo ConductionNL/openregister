@@ -152,7 +152,7 @@ export const useQualityStore = defineStore('quality', {
 		 *
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-data-quality-dashboard
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-data-quality-dashboard
 		 */
 		async fetchQualityStats(register, schema) {
 			if (!register || !schema) return null
@@ -179,7 +179,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
 		 * @param {object} params { limit, offset, qualityStatus, sort, order }
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-data-quality-dashboard
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-data-quality-dashboard
 		 */
 		async fetchLowQualityObjects(register, schema, params = {}) {
 			if (!register || !schema) return { items: [], total: 0 }
@@ -213,7 +213,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
 		 * @param {object} params { limit, offset, threshold }
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-duplicate-candidates-view-read-only
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-duplicate-candidates-view-read-only
 		 */
 		async fetchDuplicates(register, schema, params = {}) {
 			if (!register || !schema) return { items: [], total: 0 }
@@ -250,7 +250,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
 		 * @param {object} params { limit, offset, sort, order }
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
 		 */
 		async fetchMasterEntities(register, schema, params = {}) {
 			if (!register || !schema) return { results: [], total: 0 }
@@ -281,7 +281,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
 		 * @param {string|number} id       Object id/uuid.
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
 		 */
 		async fetchGoldenRecord(register, schema, id) {
 			if (!register || !schema || !id) return null
@@ -333,7 +333,7 @@ export const useQualityStore = defineStore('quality', {
 		 *
 		 * @param {string|number} from Merged-away object id.
 		 * @param {string|number} into Surviving object id.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-previews-the-post-merge-golden-record-before-executing
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-previews-the-post-merge-golden-record-before-executing
 		 */
 		async previewMerge(from, into) {
 			this.loading = true
@@ -358,7 +358,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} from   Merged-away object id.
 		 * @param {string|number} into   Surviving object id.
 		 * @param {string}        reason Steward-supplied merge reason.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-captures-a-reason-and-executes-an-auditable-merge
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-captures-a-reason-and-executes-an-auditable-merge
 		 */
 		async executeMerge(from, into, reason) {
 			this.loading = true
@@ -381,7 +381,7 @@ export const useQualityStore = defineStore('quality', {
 		 *
 		 * @param {object} params { register, schema, limit, offset } — register/schema
 		 *                        default to the mergeOperation register/schema (#B).
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reviews-recent-merge-operations-in-a-dedicated-view
 		 */
 		async fetchMergeOperations(params = {}) {
 			this.loading = true
@@ -417,7 +417,7 @@ export const useQualityStore = defineStore('quality', {
 		 * the merge engine's reverse endpoint.
 		 *
 		 * @param {string|number} id `mergeOperation` uuid.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-steward-reverses-a-merge-within-its-reversal-window
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-steward-reverses-a-merge-within-its-reversal-window
 		 */
 		async reverseMerge(id) {
 			this.loading = true
@@ -444,7 +444,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string} attribute        Attribute name to override.
 		 * @param {*} value                 Winning value to pin.
 		 * @param {string} [rationale]      Optional steward rationale.
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-setattributeoverride-posts-to-the-override-endpoint
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-setattributeoverride-posts-to-the-override-endpoint
 		 */
 		async setAttributeOverride(id, attribute, value, rationale) {
 			this.loading = true
@@ -470,7 +470,7 @@ export const useQualityStore = defineStore('quality', {
 		 *
 		 * @param {string|number} id   Master object id/uuid.
 		 * @param {string} attribute   Attribute name whose override to clear.
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-survivorship/spec.md#scenario-clearing-an-override-falls-back-to-trust-resolution
+		 * @spec openspec/specs/mdm-survivorship/spec.md#scenario-clearing-an-override-falls-back-to-trust-resolution
 		 */
 		async clearAttributeOverride(id, attribute) {
 			this.loading = true
@@ -501,7 +501,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string} params.sourceSystem Source system the rule applies to.
 		 * @param {string} params.trustTier    Winning trust tier for this tuple.
 		 * @param {string} [params.rationale]  Optional steward rationale.
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persisttrustrule-creates-a-trust-configuration-object
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-persisttrustrule-creates-a-trust-configuration-object
 		 */
 		async persistTrustRule({ entityType, attribute, sourceSystem, trustTier, rationale }) {
 			this.loading = true
@@ -532,7 +532,7 @@ export const useQualityStore = defineStore('quality', {
 		 * @param {string|number} register Register reference.
 		 * @param {string|number} schema   Schema reference.
 		 * @param {string|number} id       Master object id/uuid.
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
 		 */
 		async touchObject(register, schema, id) {
 			this.loading = true
@@ -559,7 +559,7 @@ export const useQualityStore = defineStore('quality', {
 		 * (webhooks#index, webhooks#logStats, webhooks#allLogs) — no new
 		 * backend endpoint (design.md D1).
 		 *
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-queue--sync-health-view
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-queue--sync-health-view
 		 */
 		async fetchWebhookHealth() {
 			this.loading = true

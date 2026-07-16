@@ -20,8 +20,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-35
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -148,7 +148,7 @@ class SipPackageBuilder
      *
      * @return array<int, array> Array of batches.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     private function splitIntoBatches(array $objectsWithFiles, int $maxSize): array
     {
@@ -295,7 +295,7 @@ class SipPackageBuilder
      *
      * @return array{path: string, size: int, checksum: string} The manifest entry.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-7
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     private function createManifestEntry(string $path, string $content): array
     {
@@ -443,7 +443,7 @@ class SipPackageBuilder
      *
      * @return string The METS XML string.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function generateMetsXml(string $transferId, array $objectsWithFiles): string
     {
@@ -534,7 +534,7 @@ class SipPackageBuilder
      *
      * @return string The PREMIS XML string.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function generatePremisXml(string $transferId, array $objectsWithFiles): string
     {

@@ -291,7 +291,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+ * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
@@ -503,7 +503,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+		 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)

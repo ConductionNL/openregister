@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class ApprovalChainAdvanceListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function handle(Event $event): void
     {

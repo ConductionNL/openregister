@@ -17,7 +17,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -92,7 +92,7 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function index(
         string $register,
@@ -134,7 +134,7 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function create(
         string $register,
@@ -232,7 +232,7 @@ class NotesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-60
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function destroy(
         string $register,

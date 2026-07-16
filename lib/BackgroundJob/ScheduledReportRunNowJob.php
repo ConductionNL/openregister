@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Psr\Log\LoggerInterface;
 /**
  * One-shot immediate execution of a single scheduled report.
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class ScheduledReportRunNowJob extends QueuedJob
 {
@@ -67,7 +67,7 @@ class ScheduledReportRunNowJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     protected function run($argument): void
     {

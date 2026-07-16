@@ -31,7 +31,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class RdCrsTransformer
      *
      * @return bool
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
      */
     public function isSupportedCrs(string $crs): bool
     {
@@ -83,7 +83,7 @@ class RdCrsTransformer
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
      */
     public function supportedCrs(): array
     {
@@ -99,7 +99,7 @@ class RdCrsTransformer
      *
      * @return array{0: float, 1: float} `[longitude, latitude]` in WGS84.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
      */
     public function rdToWgs84(float $x, float $y): array
     {
@@ -147,7 +147,7 @@ class RdCrsTransformer
      *
      * @return array{0: float, 1: float} `[x, y]` in RD New meters.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-015
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-015
      */
     public function wgs84ToRd(float $longitude, float $latitude): array
     {

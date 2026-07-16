@@ -27,7 +27,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-chat-proxy-deprecation/specs/chat-ai/spec.md#req-007
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);

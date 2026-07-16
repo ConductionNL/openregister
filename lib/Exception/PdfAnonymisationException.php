@@ -56,7 +56,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+ * @spec openspec/specs/pdf-anonymisation/spec.md
  */
 class PdfAnonymisationException extends \Exception
 {
@@ -137,7 +137,7 @@ class PdfAnonymisationException extends \Exception
      * @phpstan-param array<string, mixed> $diagnostic
      * @psalm-param   array<string, mixed> $diagnostic
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function __construct(
         string $reason,
@@ -161,7 +161,7 @@ class PdfAnonymisationException extends \Exception
      *
      * @return string One of the REASON_* constants
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function getReason(): string
     {
@@ -173,7 +173,7 @@ class PdfAnonymisationException extends \Exception
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function getDiagnostic(): array
     {

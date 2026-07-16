@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md "Request/Response Validation Against OAS Schema"
+ * @spec openspec/specs/oas-validation/spec.md "Request/Response Validation Against OAS Schema"
  */
 
 declare(strict_types=1);

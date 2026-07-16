@@ -81,7 +81,7 @@ final class WidgetAnnotationValidator
      *
      * @return array<int, array{code: string, message: string}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-2
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function validate(array $schema): array
     {

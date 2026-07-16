@@ -35,7 +35,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);
@@ -119,7 +119,7 @@ class CaseTokenService
      * @throws InvalidArgumentException When objectUuid is empty or the
      *                                  minter is anonymous.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function mint(
         string $objectUuid,
@@ -186,7 +186,7 @@ class CaseTokenService
      *                                  null when the token cannot be
      *                                  resolved.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function resolve(string $token): ?array
     {
@@ -265,7 +265,7 @@ class CaseTokenService
      *
      * @return bool True when a token was revoked, false when none matched.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function revoke(string $tokenOrId): bool
     {
@@ -295,7 +295,7 @@ class CaseTokenService
      *
      * @return array<int,array<string,mixed>> Token metadata rows.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function listForObject(string $objectUuid): array
     {

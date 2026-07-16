@@ -70,7 +70,7 @@
 /**
  * Link-object search dialog — drives the three-tab sidebar's Link tab.
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
@@ -99,7 +99,7 @@ export default {
 	watch: {
 		/**
 		 * @param val
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		visible(val) {
 			if (val) {
@@ -116,7 +116,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onSearchInput() {
 			if (this.debounceTimer) {
@@ -130,7 +130,7 @@ export default {
 			this.debounceTimer = setTimeout(() => this.doSearch(), 300)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async doSearch() {
 			this.searching = true
@@ -156,7 +156,7 @@ export default {
 		},
 		/**
 		 * @param result
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		selectResult(result) {
 			if (this.isAlreadyLinked(result)) {
@@ -166,7 +166,7 @@ export default {
 		},
 		/**
 		 * @param result
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		resultAriaLabel(result) {
 			const title = result.title || result.uuid
@@ -176,7 +176,7 @@ export default {
 			return title
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		confirmLink() {
 			if (this.selectedResult) {
@@ -185,13 +185,13 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		close() {
 			this.$emit('close')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		reset() {
 			this.query = ''

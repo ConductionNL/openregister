@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+ * @spec openspec/specs/vector-embeddings/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
@@ -91,7 +91,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function fetchEntities(array $options): array
     {
@@ -155,7 +155,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function extractVectorizationItems($entity): array
     {
@@ -191,7 +191,7 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *     }
      * }
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function prepareVectorMetadata($entity, array $item): array
     {

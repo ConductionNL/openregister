@@ -20,16 +20,16 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-60
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-61
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-70
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-68
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
+ * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
+ * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
+ * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
+ * @spec openspec/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
+ * @spec openspec/specs/retention-management/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -131,8 +131,8 @@ class RetentionService
      *
      * @return ObjectEntity The object with archival metadata applied
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-60
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-70
+     * @spec openspec/specs/retention-management/spec.md#requirement-objects-must-carry-mdto-compliant-archival-metadata-in-the-retention-field
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function applyArchivalMetadata(ObjectEntity $object, Schema $schema): ObjectEntity
     {
@@ -203,8 +203,8 @@ class RetentionService
      *
      * @return string|null ISO 8601 date string or null if calculation not possible
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-61
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-calculate-archiefactiedatum-using-configurable-afleidingswijzen
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function calculateArchiefactiedatum(
         ObjectEntity $object,
@@ -315,7 +315,7 @@ class RetentionService
      *
      * @return ObjectEntity The object with recalculated dates
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/retention-management/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -400,7 +400,7 @@ class RetentionService
      *
      * @return array|null The selectielijst entry data or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function lookupSelectielijstEntry(string $categorie): ?array
     {
@@ -473,7 +473,7 @@ class RetentionService
      *
      * @return ObjectEntity The object with legal hold applied
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function placeLegalHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -505,7 +505,7 @@ class RetentionService
      *
      * @return ObjectEntity The object with legal hold released
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function releaseLegalHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -552,7 +552,7 @@ class RetentionService
      *
      * @return bool True if object has active legal hold
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function hasActiveLegalHold(ObjectEntity $object): bool
     {
@@ -568,7 +568,7 @@ class RetentionService
      *
      * @return ObjectEntity The object with extended archiefactiedatum
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function extendArchiefactiedatum(ObjectEntity $object, ?string $extensionPeriod=null): ObjectEntity
     {
@@ -616,7 +616,7 @@ class RetentionService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function findEligibleForDestruction(array $excludeUuids=[]): array
     {
@@ -694,7 +694,7 @@ class RetentionService
      *
      * @return string[] Array of object UUIDs
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
+     * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
      */
     public function getObjectsOnPendingDestructionLists(): array
     {
@@ -747,7 +747,7 @@ class RetentionService
      *
      * @return array|null The destruction list data or null on failure
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-68
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function createDestructionList(array $objects): ?array
     {
@@ -809,9 +809,9 @@ class RetentionService
      *
      * @return array The destruction certificate data
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-62
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-67
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-2
+     * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-generate-destruction-lists-via-a-background-job
+     * @spec openspec/specs/retention-management/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function generateDestructionCertificate(
         array $destructionList,

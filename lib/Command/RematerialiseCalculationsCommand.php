@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+ * @spec openspec/specs/computed-fields/spec.md
  */
 
 declare(strict_types=1);
@@ -67,7 +67,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
      * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
      */
@@ -88,7 +88,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function configure(): void
     {
@@ -113,7 +113,7 @@ class RematerialiseCalculationsCommand extends Command
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -287,7 +287,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return array<string, mixed> Payload with `@self` injected.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
@@ -322,7 +322,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function getCalculations(Schema $schema): ?array
     {

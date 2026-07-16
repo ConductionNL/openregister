@@ -19,15 +19,15 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-66
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-70
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-71
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-lifecycle-events
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-sync-hook-response-format
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-execution-order
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-failure-mode-behavior
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-filter-condition-for-conditional-hook-execution
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-async-hook-execution-fire-and-forget
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
+ * @spec openspec/specs/schema-hooks/spec.md
  */
 
 declare(strict_types=1);
@@ -103,8 +103,8 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-71
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
+     * @spec openspec/specs/schema-hooks/spec.md
      */
     public function executeHooks(Event $event, Schema $schema): void
     {
@@ -145,7 +145,7 @@ class HookExecutor
      *
      * @return string|null The event type string (e.g. 'creating') or null
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
      */
     private function resolveEventType(Event $event): ?string
     {
@@ -168,7 +168,7 @@ class HookExecutor
      *
      * @return array<int, array<string, mixed>> Sorted array of hook configurations
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
      */
     private function loadHooks(Schema $schema, string $eventType): array
     {
@@ -204,7 +204,7 @@ class HookExecutor
      *
      * @return ObjectEntity|null The object entity or null
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
      */
     private function getObjectFromEvent(Event $event): ?ObjectEntity
     {
@@ -242,7 +242,7 @@ class HookExecutor
      *
      * @return bool True if propagation is stopped
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-execution-order
      */
     private function isEventStopped(Event $event): bool
     {
@@ -272,7 +272,7 @@ class HookExecutor
      *
      * @return bool True if the hook should execute
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-70
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-filter-condition-for-conditional-hook-execution
      */
     private function evaluateFilterCondition(array $hook, ObjectEntity $object): bool
     {
@@ -311,7 +311,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dispatch: filter, engine, async/sync, result, exception - each a required lifecycle branch
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-65
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-configuration-on-schema
      */
     private function executeSingleHook(
         array $hook,
@@ -428,7 +428,7 @@ class HookExecutor
      *
      * @return array<string, mixed> CloudEvent-formatted payload
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-66
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-lifecycle-events
      */
     private function buildCloudEventPayload(
         ObjectEntity $object,
@@ -472,7 +472,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-71
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-async-hook-execution-fire-and-forget
      */
     private function executeAsyncHook(
         $adapter,
@@ -522,7 +522,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-sync-hook-response-format
      */
     private function processWorkflowResult(
         WorkflowResult $result,
@@ -610,7 +610,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-67
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-sync-hook-response-format
      */
     private function setModifiedDataOnEvent(Event $event, array $data): void
     {
@@ -631,7 +631,7 @@ class HookExecutor
      *
      * @return string The failure mode to apply
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-failure-mode-behavior
      */
     private function determineFailureMode(Exception $exception, array $hook): string
     {
@@ -668,7 +668,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Failure modes reject/allow/flag/queue plus unknown fallback - each case has distinct side effects
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-failure-mode-behavior
      */
     private function applyFailureMode(
         string $failureMode,
@@ -736,7 +736,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-failure-mode-behavior
      */
     private function stopEvent(Event $event, array $errors, string $fallbackError): void
     {
@@ -767,7 +767,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-69
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-failure-mode-behavior
      */
     private function setValidationMetadata(
         ObjectEntity $object,
@@ -796,7 +796,7 @@ class HookExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
      */
     private function scheduleRetryJob(ObjectEntity $object, array $hook): void
     {
@@ -827,7 +827,7 @@ class HookExecutor
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) hook, timing, event type, object, and 4 optional fields; extracted from logHookExecution
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-68
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-execution-order
      */
     private function logHookExecution(
         array $hook,

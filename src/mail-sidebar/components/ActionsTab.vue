@@ -66,7 +66,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-50
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
  */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
@@ -117,7 +117,7 @@ export default {
 			return !!this.creating[schema.id] || !!this.linking[schema.id]
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectName(obj) {
 			return obj['@self']?.name
@@ -128,7 +128,7 @@ export default {
 				|| obj.id
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadSchemas() {
 			this.loading = true
@@ -167,7 +167,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadInitialResults(schema) {
 			const register = this.registerCache[schema.id]
@@ -189,13 +189,13 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		showResults(schema) {
 			this.$set(this.visibleResults, schema.id, true)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		debounceSearch(schema) {
 			if (this.debounceTimers[schema.id]) {
@@ -206,7 +206,7 @@ export default {
 			}, 300)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async searchObjects(schema) {
 			const term = this.searchTerms[schema.id] || ''
@@ -241,7 +241,7 @@ export default {
 		/**
 		 * Fetch every schema page by page (capped at 10 pages of 500).
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async fetchAllSchemas() {
 			const limit = 500
@@ -261,14 +261,14 @@ export default {
 		 * Schemas opt into create-from-email by declaring a field template in
 		 * `configuration.mailObjectTemplate` (e.g. pipelinq lead, shillinq invoice).
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		hasCreateTemplate(schema) {
 			const tpl = schema.configuration?.mailObjectTemplate
 			return tpl && typeof tpl === 'object' && Object.keys(tpl).length > 0
 		},
 		/**
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async fetchEnvelope() {
 			if (this.envelopeCache[this.messageId]) {
@@ -283,7 +283,7 @@ export default {
 		/**
 		 * Build the placeholder map available to mailObjectTemplate values.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		buildPlaceholders(envelope) {
 			const from = (envelope.from || [])[0] || {}
@@ -311,7 +311,7 @@ export default {
 		 * Substitute {{placeholder}} tokens in string template values; pass
 		 * non-string values (numbers, booleans) through untouched.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		applyTemplate(template, placeholders) {
 			const data = {}
@@ -330,7 +330,7 @@ export default {
 		 * Open the create-object dialog, prefilled from the schema's
 		 * mailObjectTemplate applied to the current email.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async openCreate(schema) {
 			if (!this.accountId || !this.messageId || this.creating[schema.id]) return
@@ -354,7 +354,7 @@ export default {
 		/**
 		 * Dismiss the create-object dialog.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		closeCreate() {
 			if (this.createSaving) return
@@ -364,7 +364,7 @@ export default {
 		 * Create the object from the (possibly edited) dialog data, then
 		 * connect the email to it.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		async submitCreate(data) {
 			const schema = this.createDialog.schema
@@ -390,7 +390,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-50
+		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-link-and-unlink-actions-from-the-sidebar
 		 */
 		async linkObject(schema, obj) {
 			const objectUuid = obj.id || obj.uuid || obj._uuid

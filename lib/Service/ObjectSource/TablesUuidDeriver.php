@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ final class TablesUuidDeriver
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uuid::v5/fromString are the standard symfony/uid factories.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function deriveObjectUuid(int $tableId, int $rowId): string
     {
@@ -84,7 +84,7 @@ final class TablesUuidDeriver
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is the standard symfony/uid validator.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function looksLikeUuid(string $id): bool
     {

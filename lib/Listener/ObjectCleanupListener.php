@@ -118,7 +118,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         NoteService $noteService,
@@ -148,7 +148,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -185,7 +185,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupNotes(string $objectUuid): void
     {
@@ -207,7 +207,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupTasks(string $objectUuid): void
     {
@@ -242,7 +242,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupEmails(string $objectUuid): void
     {
@@ -266,7 +266,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupCalendarEvents(string $objectUuid): void
     {
@@ -288,7 +288,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupContacts(string $objectUuid): void
     {
@@ -310,7 +310,7 @@ class ObjectCleanupListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function cleanupDeckCards(string $objectUuid): void
     {

@@ -87,7 +87,7 @@ class OpenRegisterAdmin implements ISettings
      * @param IAppConfig    $appConfig    App config for reading push_available flag
      * @param IInitialState $initialState Initial state service for Vue data
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/changes/add-live-updates/tasks.md#task-10
      */
     public function __construct(
@@ -140,7 +140,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return TemplateResponse<200, array<string, mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/changes/add-live-updates/tasks.md#task-10
      */
     public function getForm()
@@ -170,7 +170,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 'openregister'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSection()
     {
@@ -189,7 +189,7 @@ class OpenRegisterAdmin implements ISettings
      *
      * @psalm-return 11
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getPriority()
     {

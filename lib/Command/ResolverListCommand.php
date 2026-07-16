@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+ * @spec openspec/specs/register-resolver-service/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * List every resolver-shaped app-config key for the given app.
  *
- * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+ * @spec openspec/specs/register-resolver-service/spec.md
  */
 class ResolverListCommand extends Command
 {
@@ -60,7 +60,7 @@ class ResolverListCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Phase 3 — Convention check + diagnostics: console command surface)
      */
     protected function configure(): void
@@ -85,7 +85,7 @@ class ResolverListCommand extends Command
      *
      * @return int Symfony command exit code.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: enumerateAppConfigs — driven via this CLI for admin diagnostics)
      */
     protected function execute(InputInterface $input, OutputInterface $output): int

@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class ToolRegistryFacade
      * @param ToolRegistry    $toolRegistry The chat-side tool registry.
      * @param LoggerInterface $logger       PSR logger.
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         private readonly ToolRegistry $toolRegistry,
@@ -106,7 +106,7 @@ class ToolRegistryFacade
      *
      * @return array<int,array<string,mixed>> Flattened LLPhant function descriptors.
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function listTools(array $toolWhitelist=[]): array
     {
@@ -143,7 +143,7 @@ class ToolRegistryFacade
      * @return array{result: array<string,mixed>, isError: bool} Result envelope
      *         (same shape as McpToolsService::invokeTool()).
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function invokeTool(string $toolId, array $arguments): array
     {

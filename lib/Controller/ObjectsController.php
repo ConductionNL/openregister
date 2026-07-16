@@ -3897,7 +3897,7 @@ class ObjectsController extends Controller
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
+     * @spec openspec/specs/export-pdf-format/spec.md
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse
     {

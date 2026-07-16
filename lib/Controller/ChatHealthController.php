@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#health-probe-endpoint-get-apichathealth
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -103,7 +103,7 @@ class ChatHealthController extends Controller
      *
      * @return JSONResponse 200 or 503 JSON response
      *
-     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#health-probe-endpoint-get-apichathealth
+     * @spec openspec/specs/chat-ai/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]

@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
 /**
  * ScheduledReportsController handles CRUD + run-now for scheduled report exports.
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class ScheduledReportsController extends Controller
 {
@@ -120,7 +120,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      *
      * @SuppressWarnings(PHPMD.ElseExpression) Deliberate branch, not a
      *     default-then-overwrite — see the inline comment: each arm must
@@ -162,7 +162,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -193,7 +193,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -236,7 +236,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -288,7 +288,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -329,7 +329,7 @@ class ScheduledReportsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

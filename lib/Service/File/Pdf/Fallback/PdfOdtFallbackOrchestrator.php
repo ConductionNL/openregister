@@ -49,7 +49,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+ * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+ * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
  */
 class PdfOdtFallbackOrchestrator
 {
@@ -124,7 +124,7 @@ class PdfOdtFallbackOrchestrator
      *
      * @return bool True only when both the flag and the bridge are ready.
      *
-     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function isEnabled(): bool
     {
@@ -166,7 +166,7 @@ class PdfOdtFallbackOrchestrator
      *                                   inapplicable) or raises
      *                                   REASON_VALIDATION_FAILED_AFTER_FALLBACK.
      *
-     * @spec openspec/changes/pdf-anonymisation-odt-fallback/specs/pdf-anonymisation-odt-fallback/spec.md
+     * @spec openspec/specs/pdf-anonymisation-odt-fallback/spec.md
      */
     public function attempt(string $pdfBytes, array $substitutions, PdfAnonymisationException $cause): string
     {

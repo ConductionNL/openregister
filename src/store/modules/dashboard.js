@@ -69,7 +69,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Initialize the dashboard store and set up watchers for register and schema changes
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-1
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		init() {
 			const registerStore = useRegisterStore()
@@ -327,7 +327,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Preload dashboard data
 		 * @return {Promise<Array>}
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-1
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async preload() {
 			if (!this.isInitialized && !this.loading) {
@@ -386,7 +386,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Reset dashboard store state
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-1
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		reset() {
 			this.registers = []
@@ -424,7 +424,7 @@ export const useDashboardStore = defineStore('dashboard', {
  * Sets up watchers for register and schema changes to refresh dashboard data.
  * Call this function once in your app entry point after creating the stores.
  * @return {void}
- * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-1
+ * @spec openspec/specs/frontend-store-client-state/spec.md
  */
 export function setupDashboardStoreWatchers() {
 	const dashboardStore = useDashboardStore()

@@ -65,7 +65,7 @@ class TranslationStatusService
      *
      * @throws InvalidArgumentException When status is invalid or no slot exists.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-3
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation
     {
@@ -116,7 +116,7 @@ class TranslationStatusService
      *
      * @return array<string, array{translated: int, total: int, ratio: float}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-4
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function completenessForObject(string $objectUuid, Schema $schema): array
     {
@@ -286,7 +286,7 @@ class TranslationStatusService
      *
      * @return string[] Subset of `$candidateUuids` lacking the language.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-6
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function findObjectsMissingLanguage(string $language, Schema $schema, array $candidateUuids): array
     {

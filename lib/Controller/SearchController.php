@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-dutch-language-search-support-i18n
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -63,7 +63,7 @@ class SearchController extends Controller
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function __construct(
         string $appName,
@@ -91,7 +91,7 @@ class SearchController extends Controller
      *                                type: 'object', url: mixed|null, source: 'openregister'}>, total: 0|int,
      *                                facets: array<never, never>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function search(): JSONResponse
     {
@@ -192,7 +192,7 @@ class SearchController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-92
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-dutch-language-search-support-i18n
      */
     private function processSearchQuery(string $query): string
     {

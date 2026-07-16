@@ -16,8 +16,8 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/specs/content-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -67,8 +67,8 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/specs/content-versioning/spec.md
  *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.TooManyMethods)
@@ -304,7 +304,7 @@ class FilesController extends Controller
      *
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function index(
         string $register,
@@ -533,7 +533,7 @@ class FilesController extends Controller
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
      *
      * @PublicPage
      */
@@ -1114,7 +1114,7 @@ class FilesController extends Controller
      *     array{error?: string, success?: bool},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
      *
      * @PublicPage
      */
@@ -1391,7 +1391,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      *
      * @PublicPage
      */
@@ -1461,7 +1461,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      *
      * @PublicPage
      */
@@ -1563,7 +1563,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      *
      * @PublicPage
      */
@@ -1665,7 +1665,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      *
      * @PublicPage
      */
@@ -1713,7 +1713,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      *
      * @PublicPage
      */
@@ -1786,7 +1786,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     * @spec openspec/specs/file-actions/spec.md
      *
      * @PublicPage
      */
@@ -1849,7 +1849,7 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     * @spec openspec/specs/file-actions/spec.md
      *
      * @PublicPage
      */
@@ -1979,7 +1979,7 @@ class FilesController extends Controller
      * @NoCSRFRequired
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
     {

@@ -210,7 +210,7 @@ export default {
 		 * Change to a specific page
 		 * @param {number} page - The page number to change to
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-1
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		changePage(page) {
 			if (page !== this.currentPage && page >= 1 && page <= this.totalPages) {

@@ -21,13 +21,13 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-15
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-81
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-82
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-83
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+ * @spec openspec/specs/audit-hash-chain/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/audit-trail-immutable/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
+ * @spec openspec/specs/verwerkingsregister-api/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -130,7 +130,7 @@ class AuditTrailController extends Controller
      *   two alternative parameter names (with and without underscore prefix); the resulting
      *   if/else-if pairs are required to preserve backward compatibility with both formats.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     private function extractRequestParameters(): array
     {
@@ -277,8 +277,8 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-17
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function index(): JSONResponse
     {
@@ -326,8 +326,8 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -360,7 +360,7 @@ class AuditTrailController extends Controller
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
      *   route contract; the method intentionally ignores it to enforce immutability.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     public function update(int $id): JSONResponse
     {
@@ -393,7 +393,7 @@ class AuditTrailController extends Controller
      *     total?: int<0, max>, page?: int|null, pages?: float, limit?: int,
      *     offset?: int|null}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     public function objects(string $register, string $schema, string $id): JSONResponse
     {
@@ -445,8 +445,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response with export data or error
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-81
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function export(): JSONResponse
     {
@@ -526,7 +526,7 @@ class AuditTrailController extends Controller
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $id is required by the OCP Controller
      *   route contract; the method intentionally ignores it to enforce immutability.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     public function destroy(int $id): JSONResponse
     {
@@ -547,7 +547,7 @@ class AuditTrailController extends Controller
      * @no-admin-idor-exempt Immutability stub: returns HTTP 405 unconditionally and
      *   performs no object read or write, so there is no per-object resource to guard.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     public function destroyMultiple(): JSONResponse
     {
@@ -567,8 +567,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse JSON response confirming clear or error
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-2
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function clearAll(): JSONResponse
     {
@@ -623,8 +623,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse Verification result with valid/invalid status
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-12
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/audit-hash-chain/spec.md
      */
     public function verify(): JSONResponse
     {
@@ -672,8 +672,8 @@ class AuditTrailController extends Controller
      *   (@NoAdminRequired, @NoCSRFRequired, @psalm-return) inflates the reported line
      *   count; the actual executable body is 12 lines.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-83
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function verwerkingsregister(): JSONResponse
     {
@@ -701,8 +701,8 @@ class AuditTrailController extends Controller
      *
      * @return JSONResponse Matching audit trail entries grouped by schema
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-82
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function inzageverzoek(): JSONResponse
     {

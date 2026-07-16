@@ -33,7 +33,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Contract for importing a register schema from an external standard.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 interface SchemaDialectImporter
 {
@@ -42,7 +42,7 @@ interface SchemaDialectImporter
      *
      * @return string The dialect key.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function dialect(): string;
 
@@ -53,7 +53,7 @@ interface SchemaDialectImporter
      *
      * @return array<int, array<string, mixed>> Candidates: id, label, description, parent (where applicable), snapshotVersion.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function discover(string $query): array;
 
@@ -67,7 +67,7 @@ interface SchemaDialectImporter
      *
      * @throws SchemaImportException When the reference is unknown to the snapshot.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $reference, ImportOptions $options): ImportedSchema;
 
@@ -76,7 +76,7 @@ interface SchemaDialectImporter
      *
      * @return string The snapshot/release version identifier.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function snapshotVersion(): string;
 }//end interface

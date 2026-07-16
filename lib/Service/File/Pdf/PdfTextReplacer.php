@@ -70,7 +70,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+ * @spec openspec/specs/pdf-anonymisation/spec.md
  */
 class PdfTextReplacer
 {
@@ -109,7 +109,7 @@ class PdfTextReplacer
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict forwards the fail-closed vs lenient validation policy.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function replaceInPdf(string $pdfBytes, array $substitutions, bool $strict=false, array &$residualEntities=[]): string
     {
@@ -243,7 +243,7 @@ class PdfTextReplacer
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed (entity anonymisation) vs lenient (ad-hoc) behaviour.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[], bool $strict=false): array
     {
@@ -400,7 +400,7 @@ class PdfTextReplacer
      *
      * @return string Text with adjacent identical placeholders collapsed.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public static function collapseAdjacentDuplicatePlaceholders(string $text): string
     {

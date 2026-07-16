@@ -200,7 +200,7 @@ class RenderObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) All parameters are DI-injected dependencies
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
      */
     public function __construct(
         private readonly FileMapper $fileMapper,

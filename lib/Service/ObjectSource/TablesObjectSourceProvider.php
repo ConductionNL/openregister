@@ -31,7 +31,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -96,7 +96,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string The provider id.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function getId(): string
     {
@@ -111,7 +111,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return bool True when Tables can serve reads on this instance.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function isEnabled(): bool
     {
@@ -132,7 +132,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity|null The virtual object, or null when absent/denied.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function find(Register $register, Schema $schema, string $id, array $config=[]): ?ObjectEntity
     {
@@ -176,7 +176,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity[] The matching virtual objects.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function findAll(Register $register, Schema $schema, array $query=[], array $config=[]): array
     {
@@ -216,7 +216,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register/$schema unused; the count is source-side.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function count(Register $register, Schema $schema, array $query=[], array $config=[]): int
     {
@@ -249,7 +249,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity|null The virtual object, or null when not found.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function findByUuid(Register $register, Schema $schema, string $uuid, array $config, string $userId): ?ObjectEntity
     {
@@ -280,7 +280,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return array<int, array<string, mixed>> The row descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function fetchRows(array $config, int $tableId, string $userId, int $limit, int $offset): array
     {
@@ -300,7 +300,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function warnUnpushedFilters(array $query): void
     {
@@ -324,7 +324,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return ObjectEntity The virtual object (never saved).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function toObjectEntity(Register $register, Schema $schema, array $row, int $tableId, string $userId): ObjectEntity
     {
@@ -354,7 +354,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function applyMetadata(ObjectEntity $entity, array $row): void
     {
@@ -376,7 +376,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function applyDate(ObjectEntity $entity, string $setter, mixed $value): void
     {
@@ -396,7 +396,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return callable(int): bool The relation-target predicate.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function targetSchemaResolver(): callable
     {
@@ -416,7 +416,7 @@ class TablesObjectSourceProvider implements ObjectSourceProvider
      *
      * @return string|null The acting user id.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function userId(): ?string
     {

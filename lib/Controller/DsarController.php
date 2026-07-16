@@ -87,7 +87,7 @@ class DsarController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-6
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function inzage(): JSONResponse
     {
@@ -136,7 +136,7 @@ class DsarController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-6
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function portabiliteit(): JSONResponse
     {
@@ -194,7 +194,7 @@ class DsarController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-6
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function vergetelheid(): JSONResponse
     {
@@ -242,7 +242,7 @@ class DsarController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-6
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function rectificatie(): JSONResponse
     {
@@ -298,7 +298,7 @@ class DsarController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-6
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function compliance(): JSONResponse
     {

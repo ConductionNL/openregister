@@ -113,14 +113,14 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#per-webhook-health-counts-render
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		webhooks() {
 			return qualityStore.webhooks
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#recent-failures-are-listed
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		webhookFailures() {
 			return qualityStore.webhookFailures

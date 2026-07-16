@@ -96,7 +96,7 @@ export const useReportsStore = defineStore('reports', {
 		 * Reset cached widget data — useful after editing a dashboard
 		 * to force fresh fetches on the next render.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-3
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		clearWidgetCache() {
 			this.widgetData = {}
@@ -165,7 +165,7 @@ export const useReportsStore = defineStore('reports', {
 		 * @param {object} widget Widget descriptor with `dataSource`.
 		 * @param {boolean} forceRefresh When true, bypasses the cache.
 		 * @return {Promise<object>}
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-3
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchWidgetData(widget, forceRefresh = false) {
 			const dataSource = widget?.dataSource
@@ -217,7 +217,7 @@ export const useReportsStore = defineStore('reports', {
 		 *
 		 * @param {object} dashboard Dashboard object with `widgets[]`.
 		 * @param {boolean} forceRefresh Bypass cache.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-3
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchDashboardData(dashboard, forceRefresh = false) {
 			const widgets = dashboard?.widgets ?? []

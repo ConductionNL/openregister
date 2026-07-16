@@ -42,7 +42,7 @@
  * own file (ADR-004 modal-isolation) and is driven entirely by the parent
  * via `show`/`removing` props and `confirm`/`cancel` events.
  *
- * @spec openspec/changes/integration-email/tasks.md
+ * @spec openspec/specs/integration-email/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'

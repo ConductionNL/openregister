@@ -189,7 +189,7 @@ export default {
 		 * path is handled inside the store and surfaces as
 		 * `store.contactsUnavailable`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 *
 		 * @return {Promise<void>}
 		 */

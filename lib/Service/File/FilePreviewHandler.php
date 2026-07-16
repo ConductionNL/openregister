@@ -82,7 +82,7 @@ class FilePreviewHandler
      *
      * @throws Exception If preview cannot be generated.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getPreview(File $file, ?int $width=null, ?int $height=null): ISimpleFile
     {

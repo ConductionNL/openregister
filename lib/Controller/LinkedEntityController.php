@@ -13,10 +13,10 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+ * @spec openspec/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -44,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 class LinkedEntityController extends Controller
 {
@@ -103,7 +103,7 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     public function addObjectLink(string $uuid, string $type): JSONResponse
@@ -147,8 +147,8 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse
@@ -184,7 +184,7 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
@@ -224,7 +224,7 @@ class LinkedEntityController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
@@ -263,8 +263,8 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

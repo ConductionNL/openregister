@@ -67,7 +67,7 @@ class ValidationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with validation results
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function validateAllObjects(): JSONResponse
     {
@@ -102,7 +102,7 @@ class ValidationSettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function massValidateObjects(): JSONResponse
     {
@@ -187,7 +187,7 @@ class ValidationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with memory prediction
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-7
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function predictMassValidationMemory(): JSONResponse
     {

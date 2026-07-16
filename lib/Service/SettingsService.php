@@ -1895,7 +1895,7 @@ class SettingsService
      *
      * @return array{boardId:int,stackId:int}|null Default pair, or null when none has been recorded yet.
      *
-     * @spec openspec/changes/integration-deck/tasks.md
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function getDeckDefault(string $schemaSlug): ?array
     {
@@ -1928,7 +1928,7 @@ class SettingsService
      *
      * @return void
      *
-     * @spec openspec/changes/integration-deck/tasks.md
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function setDeckDefault(string $schemaSlug, int $boardId, int $stackId): void
     {

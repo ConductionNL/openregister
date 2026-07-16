@@ -20,11 +20,11 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/workflow-in-import/spec.md#requirement-schema-hook-wiring-during-import
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
@@ -329,7 +329,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function setObjectService(ObjectService $objectService): void
     {
@@ -346,7 +346,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function setOpenConnectorConfigurationService(mixed $service): void
     {
@@ -434,7 +434,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     * @spec openspec/specs/import-resilient-per-entity-and-no-user-context/spec.md
      */
     public function setGroupManager(?IGroupManager $groupManager): void
     {
@@ -449,7 +449,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     * @spec openspec/specs/import-resilient-per-entity-and-no-user-context/spec.md
      */
     public function setUserManager(?IUserManager $userManager): void
     {
@@ -473,7 +473,7 @@ class ImportHandler
      *
      * @return IUser|null The resolved acting user, or null when none available.
      *
-     * @spec openspec/changes/import-resilient-per-entity-and-no-user-context/tasks.md
+     * @spec openspec/specs/import-resilient-per-entity-and-no-user-context/spec.md
      */
     private function resolveActingUser(): ?IUser
     {
@@ -533,7 +533,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function setMagicMapper(MagicMapper $magicMapper): void
     {
@@ -550,7 +550,7 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function setObjectMapper(MagicMapper $objectMapper): void
     {
@@ -567,7 +567,7 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Yaml::parse is standard Symfony Yaml pattern
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function decode(string $data, ?string $type): ?array
     {
@@ -605,7 +605,7 @@ class ImportHandler
      *
      * @return array The converted array data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function ensureArrayStructure(mixed $data): array
     {
@@ -636,7 +636,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'MIME-type'?: string}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getJSONfromFile(array $uploadedFile, ?string $_type=null): array|JSONResponse
     {
@@ -669,7 +669,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: string, 'Content-Type'?: string}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -703,7 +703,7 @@ class ImportHandler
      *
      * @psalm-return JSONResponse<400, array{error: 'Failed to decode JSON input'}, array<never, never>>|array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getJSONfromBody(array | string $phpArray): array|JSONResponse
     {
@@ -739,7 +739,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Register import has multiple exception and version checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Version checking and update/create paths add complexity
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importRegister(
         array $data,
@@ -868,7 +868,7 @@ class ImportHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force flag to override version checks
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function importMapping(
         array $data,
@@ -950,7 +950,7 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate register information.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function handleDuplicateRegisterError(string $slug, string $appId, string $version)
     {
@@ -1026,7 +1026,7 @@ class ImportHandler
      *
      * @throws Exception Always throws with duplicate schema information.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function handleDuplicateSchemaError(string $slug, string $appId, string $version)
     {
@@ -1110,7 +1110,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importSchema(
         array $data,
@@ -1535,7 +1535,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-component import has many branching conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full configuration import involves many entity types
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromJson(
         array $data,
@@ -2837,7 +2837,7 @@ class ImportHandler
      *
      * @return array<string, mixed> Updated result array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-86
+     * @spec openspec/specs/workflow-in-import/spec.md#requirement-schema-hook-wiring-during-import
      */
     private function processWorkflowHookWiring(
         array $workflows,
@@ -2965,7 +2965,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration lookup and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) App import with entity tracking requires detailed logic
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromApp(string $appId, array $data, string $version, bool $force=false): array
     {
@@ -3513,7 +3513,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File path resolution has multiple fallback conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Path resolution and JSON parsing have multiple outcomes
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function importFromFilePath(string $appId, string $filePath, string $version, bool $force=false): array
     {
@@ -3617,7 +3617,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Entity ID collection and metadata mapping has many branches
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Configuration tracking involves detailed entity management
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-4
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function createOrUpdateConfiguration(
         array $data,

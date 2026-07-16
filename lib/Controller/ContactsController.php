@@ -130,7 +130,7 @@ class ContactsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -172,7 +172,7 @@ class ContactsController extends Controller
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -343,7 +343,7 @@ class ContactsController extends Controller
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Route-bound; method 501 pending role updates.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function update(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
@@ -388,7 +388,7 @@ class ContactsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function destroy(string $register, string $schema, string $id, string $contactUid): JSONResponse
     {
@@ -438,7 +438,7 @@ class ContactsController extends Controller
      *   for the session principal) and returns [] for an anonymous session, so a caller only
      *   ever sees links for contacts in addressbooks they own.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function objects(string $contactUid): JSONResponse
     {
@@ -484,7 +484,7 @@ class ContactsController extends Controller
      *   email/name/organization strings against schemas that opt into linkedTypes:["contact"];
      *   takes no caller-supplied object id.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function match(): JSONResponse
     {
@@ -535,7 +535,7 @@ class ContactsController extends Controller
      *
      * @return array Enriched matches
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     private function enrichMatches(array $matches): array
     {

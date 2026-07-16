@@ -58,7 +58,7 @@ class MigrationHandler
      * @param DataManipulationHandler $dataManipHandler Handler for data manipulation.
      * @param LoggerInterface         $logger           Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -93,7 +93,7 @@ class MigrationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple migration paths for different object types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive migration requires detailed processing
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function migrateObjects(
         string|int $sourceRegister,

@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ namespace OCA\OpenRegister\Service\Mcp;
 /**
  * Validate the `x-openregister-mcp` annotation on a schema.
  *
- * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  *   (Requirement: REQ-DIALECT-001, REQ-DIALECT-002, REQ-DIALECT-003)
  */
 class McpAnnotationValidator
@@ -76,7 +76,7 @@ class McpAnnotationValidator
      *
      * @return array<int, array{code: string, message: string}> Aggregated errors (empty = valid).
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DIALECT-001 — The x-openregister-mcp schema dialect)
      */
     public function validate(array $schema): array
@@ -116,7 +116,7 @@ class McpAnnotationValidator
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Scenario: enabled must be boolean)
      */
     private function validateEnabled(array $annotation, array &$errors): void
@@ -149,7 +149,7 @@ class McpAnnotationValidator
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Scenario: Unknown verb key is rejected; Scenario: The verb set is closed)
      */
     private function validateTools(array $annotation, array $properties, array &$errors): void
@@ -204,7 +204,7 @@ class McpAnnotationValidator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Aggregating every per-verb shape rule in one pass is inherent.
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
      */
     private function validateVerbConfig(string $verb, array $config, array $properties, array &$errors): void
@@ -271,7 +271,7 @@ class McpAnnotationValidator
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Scenario: search filter must reference an existing property; Scenario: filters are permitted only on the search verb)
      */
     private function validateFilters(string $verb, array $config, array $properties, array &$errors): void

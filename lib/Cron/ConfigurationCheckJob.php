@@ -88,7 +88,7 @@ class ConfigurationCheckJob extends TimedJob
      * @param IAppConfig           $appConfig            App configuration
      * @param LoggerInterface      $logger               Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -139,7 +139,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     protected function run($argument): void
     {
@@ -189,7 +189,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return bool True if job is disabled, false otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function isJobDisabled(): bool
     {
@@ -213,7 +213,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function checkSingleConfiguration($configuration, array &$stats): void
     {
@@ -282,7 +282,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function handleAutoUpdate($configuration, array &$stats): void
     {
@@ -320,7 +320,7 @@ class ConfigurationCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-18
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function sendUpdateNotification($configuration): void
     {

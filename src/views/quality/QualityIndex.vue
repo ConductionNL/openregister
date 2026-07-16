@@ -177,21 +177,21 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#kpi-cards-and-histogram-reflect-the-stats-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		qualityStats() {
 			return qualityStore.qualityStats || {}
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#empty-state-on-an-unscored-schema
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		isEmpty() {
 			return (this.qualityStats.total ?? 0) === 0
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#kpi-cards-and-histogram-reflect-the-stats-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		formattedAverage() {
 			const avg = this.qualityStats.average
@@ -199,7 +199,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#kpi-cards-and-histogram-reflect-the-stats-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		histogram() {
 			return this.qualityStats.histogram ?? []
@@ -220,28 +220,28 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		lowQualityObjects() {
 			return qualityStore.lowQualityObjects
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		lowQualityTotal() {
 			return qualityStore.lowQualityTotal
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		lowQualityLimit() {
 			return qualityStore.lowQualityLimit
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#lowest-quality-table-lists-scored-objects
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		lowQualityOffset() {
 			return qualityStore.lowQualityOffset
@@ -249,7 +249,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+	 * @spec openspec/specs/mdm-frontend/spec.md
 	 */
 	mounted() {
 		if (this.hasSelection) {

@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+ * @spec openspec/specs/integration-maps-overview/spec.md
  */
 
 declare(strict_types=1);
@@ -84,7 +84,7 @@ class MapsOverviewController extends Controller
      *
      * @return JSONResponse The stored widget render contract, or 400.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     #[NoAdminRequired]
     public function register(): JSONResponse
@@ -144,7 +144,7 @@ class MapsOverviewController extends Controller
      *
      * @return JSONResponse The RBAC-scoped marker point set, or 400.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     #[NoAdminRequired]
     public function points(string $register, string $schema): JSONResponse

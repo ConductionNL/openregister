@@ -64,7 +64,7 @@ class DatabaseConstraintException extends Exception
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
     {
@@ -80,7 +80,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return int The HTTP status code (typically 409 for constraint violations)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getHttpStatusCode(): int
     {
@@ -100,7 +100,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function fromDatabaseException(
         Exception $dbException,
@@ -132,7 +132,7 @@ class DatabaseConstraintException extends Exception
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private static function parseConstraintError(string $dbMessage, string $entityType): string
     {

@@ -47,7 +47,7 @@ final class LifecycleAnnotationValidator
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function validate(array $schema): array

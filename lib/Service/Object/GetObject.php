@@ -65,7 +65,7 @@ class GetObject
      * @param ObjectSourceRegistry $objectSourceRegistry Registry of object-source providers (virtual schemas).
      * @param LoggerInterface      $logger               Logger for object-source delegation warnings.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -140,7 +140,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function find(
         string $id,
@@ -210,7 +210,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findSilent(
         string $id,
@@ -276,7 +276,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible query interface
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findAll(
         ?int $limit=null,
@@ -360,7 +360,7 @@ class GetObject
      *
      * @return ObjectEntity The hydrated object.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function hydrateFiles(ObjectEntity $object, array $files): ObjectEntity
     {
@@ -403,7 +403,7 @@ class GetObject
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flags required for flexible API filtering
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findLogs(
         ObjectEntity $object,
@@ -433,7 +433,7 @@ class GetObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isAuditTrailsEnabled(): bool
     {

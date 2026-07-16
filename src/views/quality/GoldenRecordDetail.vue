@@ -139,8 +139,8 @@ export default {
 		 * reading the golden record sees WHY an attribute took a manual value
 		 * (design.md D3).
 		 *
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-survivorship/spec.md#requirement-per-object-attribute-overrides-are-materialised-and-preserved
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
+		 * @spec openspec/specs/mdm-survivorship/spec.md#requirement-per-object-attribute-overrides-are-materialised-and-preserved
 		 * @return {Array<object>}
 		 */
 		provenanceEntries() {
@@ -187,7 +187,7 @@ export default {
 		/**
 		 * Refresh the golden record after the conflict-resolution modal saves.
 		 *
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#requirement-steward-chooses-persistent-rule-or-one-off-outcome
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#requirement-steward-chooses-persistent-rule-or-one-off-outcome
 		 * @return {Promise<void>}
 		 */
 		async handleConflictsResolved() {

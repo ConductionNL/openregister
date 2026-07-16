@@ -108,7 +108,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcButton,
@@ -142,7 +142,7 @@ export default {
 		 * Check if audit trail has changes data
 		 * @return {boolean} True if has changes
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		hasChanges() {
 			const changed = auditTrailStore.auditTrailItem?.changed
@@ -163,7 +163,7 @@ export default {
 		 * Get additional fields that aren't in the main display
 		 * @return {Array} Array of key-value pairs
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		additionalFields() {
 			if (!auditTrailStore.auditTrailItem) return []
@@ -183,7 +183,7 @@ export default {
 		 * Close the dialog
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -194,7 +194,7 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'
@@ -210,7 +210,7 @@ export default {
 		 * @param {*} changes - Changes data
 		 * @return {string} Formatted changes
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatChanges(changes) {
 			if (!changes) return ''
@@ -237,7 +237,7 @@ export default {
 		 * @param {*} data - Data to format
 		 * @return {string} Formatted JSON
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatJson(data) {
 			if (!data) return ''
@@ -264,7 +264,7 @@ export default {
 		 * @param {string} fieldName - Field name to format
 		 * @return {string} Formatted field name
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatFieldName(fieldName) {
 			return fieldName
@@ -278,7 +278,7 @@ export default {
 		 * @param {*} value - Value to format
 		 * @return {string} Formatted value
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatFieldValue(value) {
 			if (value === null || value === undefined) return '-'
@@ -298,7 +298,7 @@ export default {
 		 * Copy full audit trail data to clipboard
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async copyFullData() {
 			try {
@@ -315,7 +315,7 @@ export default {
 		 * Copy changes data to clipboard
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async copyChanges() {
 			try {

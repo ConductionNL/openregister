@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);

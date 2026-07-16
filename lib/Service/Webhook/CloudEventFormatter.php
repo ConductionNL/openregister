@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class CloudEventFormatter
      *     subject: null|string, dataschema: null, data: array,
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -131,7 +131,7 @@ class CloudEventFormatter
      *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -285,7 +285,7 @@ class CloudEventFormatter
      *
      * @return string Content type header value
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-26
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function getContentTypeHeader(IRequest $request): string
     {

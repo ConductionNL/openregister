@@ -36,7 +36,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/specs/notificatie-engine/spec.md "VNG Notificaties API compliance"
+ * @spec openspec/specs/notificatie-engine/spec.md "VNG Notificaties API compliance"
  */
 
 declare(strict_types=1);

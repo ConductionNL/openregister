@@ -29,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/add-time-bucket-aggregation/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 
 declare(strict_types=1);
@@ -115,7 +115,7 @@ class TimeseriesRequestValidator
      *   AggregationQuery::create() is the canonical, validated factory
      *   for the value object.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-2
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function validate(array $input, Schema $schema): AggregationQuery
     {

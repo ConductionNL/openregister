@@ -251,7 +251,7 @@ class IntegrationRegistry
      * @return bool True when accepted, false when rejected (missing id or
      *              duplicate).
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function registerPageWidget(array $descriptor): bool
     {
@@ -288,7 +288,7 @@ class IntegrationRegistry
      *
      * @return array<int, array<string,mixed>>
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function listPageWidgets(): array
     {
@@ -302,7 +302,7 @@ class IntegrationRegistry
      *
      * @return array<string,mixed>|null The descriptor, or null when unknown.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function getPageWidget(string $id): ?array
     {

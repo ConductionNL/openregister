@@ -72,7 +72,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         private readonly IMcpToolProvider $provider,
@@ -87,7 +87,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function setOnlyMcpId(string $mcpId): void
     {
@@ -99,7 +99,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string The provider's appId, used as the tool-group name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getName(): string
     {
@@ -113,7 +113,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string Human-readable description of the bridged tool group.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getDescription(): string
     {
@@ -189,7 +189,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return array<string,mixed> Sanitised schema.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function sanitiseSchema(array $schema): array
     {
@@ -215,7 +215,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string The first non-null string type, or `string` as fallback.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function collapseType(array $types): string
     {
@@ -237,7 +237,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return array<string,mixed> MCP-shaped response or error envelope.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -278,7 +278,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void
     {
@@ -300,7 +300,7 @@ class McpProviderBridge implements ToolInterface
      * @return string executeFunction()'s result JSON-encoded (LLPhant requires a string
      *                tool result — see OR#269).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __call(string $functionName, array $args): mixed
     {
@@ -337,7 +337,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string Safe function name with dots replaced by underscores.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function safeFunctionName(string $mcpId): string
     {
@@ -353,7 +353,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string|null Original MCP id, or null when no match is found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function resolveMcpId(string $functionName): ?string
     {

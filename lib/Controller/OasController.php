@@ -24,9 +24,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-generation/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -87,7 +87,7 @@ class OasController extends Controller
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
+     * @spec openspec/specs/oas-generation/spec.md
      */
     public function generateAll(): JSONResponse
     {
@@ -109,7 +109,7 @@ class OasController extends Controller
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
+     * @spec openspec/specs/oas-generation/spec.md
      */
     public function generate(string $id): JSONResponse
     {
@@ -126,7 +126,7 @@ class OasController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-22
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function generateInternal(?string $registerId): JSONResponse
     {

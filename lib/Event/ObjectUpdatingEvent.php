@@ -90,7 +90,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return ObjectEntity The object entity after update
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getNewObject(): ObjectEntity
     {
@@ -102,7 +102,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return ObjectEntity|null The object entity before update (null if not available)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getOldObject(): ?ObjectEntity
     {
@@ -114,7 +114,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return bool True if propagation is stopped
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function isPropagationStopped(): bool
     {
@@ -126,7 +126,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function stopPropagation(): void
     {
@@ -140,7 +140,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function setErrors(array $errors): void
     {
@@ -152,7 +152,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The error details
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function getErrors(): array
     {
@@ -166,7 +166,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function setModifiedData(array $data): void
     {
@@ -178,7 +178,7 @@ class ObjectUpdatingEvent extends Event implements StoppableEventInterface
      *
      * @return array<string, mixed> The modified data
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-listener-isolation-must-prevent-cascading-failures
      */
     public function getModifiedData(): array
     {

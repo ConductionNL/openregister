@@ -23,8 +23,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
- * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -79,8 +79,8 @@ use OCP\AppFramework\Db\Entity;
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
- * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  *
  * @SuppressWarnings(PHPMD.TooManyFields) 19 columns is the row's actual
  *     shape (design.md's table plus deliveryMode/recipients) — scheduling
@@ -261,7 +261,7 @@ class ScheduledReport extends Entity implements JsonSerializable
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function getFiltersArray(): array
     {
@@ -283,7 +283,7 @@ class ScheduledReport extends Entity implements JsonSerializable
      *
      * @return string[]
      *
-     * @spec openspec/changes/scheduled-report-email-delivery/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function getRecipientsArray(): array
     {
@@ -304,7 +304,7 @@ class ScheduledReport extends Entity implements JsonSerializable
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function jsonSerialize(): array
     {

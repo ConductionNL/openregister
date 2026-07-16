@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class AnalyticsSeriesController extends Controller
      *
      * @return JSONResponse The stored series render contract, or 400.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     #[NoAdminRequired]
     public function register(): JSONResponse
@@ -128,7 +128,7 @@ class AnalyticsSeriesController extends Controller
      *
      * @return JSONResponse The series render contract, or 404.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     #[NoAdminRequired]
     public function fetch(string $seriesKey): JSONResponse

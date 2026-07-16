@@ -292,7 +292,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,

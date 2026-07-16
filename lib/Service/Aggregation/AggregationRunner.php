@@ -24,9 +24,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
@@ -67,7 +67,7 @@ use RuntimeException;
  *   helper; extracting them into a separate class would require passing
  *   the full constructor dependency graph through.
  *
- * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class AggregationRunner
 {
@@ -619,7 +619,7 @@ class AggregationRunner
      *   the projection loop; each guard adds a branch but keeps the hot
      *   path a single early return.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function projectTranslatableGroupKeys(
         array $envelope,
@@ -684,7 +684,7 @@ class AggregationRunner
      *
      * @return mixed The projected scalar value, or the original key when not a map.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function projectSingleTranslatableKey(
         mixed $rawKey,
@@ -733,7 +733,7 @@ class AggregationRunner
      * @throws RuntimeException        When the register or schema cannot be resolved.
      * @throws NotAuthorizedException  When the caller lacks list-permission.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function runAdhocByRef(
         string $registerRef,
@@ -1005,7 +1005,7 @@ class AggregationRunner
      *
      * @return array<int, string> Ordered, de-duplicated group field names.
      *
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function resolveGroupFields(mixed $groupBy): array
     {
@@ -1043,7 +1043,7 @@ class AggregationRunner
      * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value: int|float|null}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/aggregation-multi-field-groupby/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields): array
     {

@@ -173,7 +173,7 @@ class TranslationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function showByObject(string $uuid, ?string $schema=null): JSONResponse
     {
@@ -210,7 +210,7 @@ class TranslationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function setStatus(string $uuid, string $property, string $language, ?string $status=null): JSONResponse
     {
@@ -251,7 +251,7 @@ class TranslationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-8
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function bulkTranslate(
         string $uuid,

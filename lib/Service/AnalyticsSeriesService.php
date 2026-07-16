@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);
@@ -100,7 +100,7 @@ class AnalyticsSeriesService
      *
      * @throws InvalidArgumentException When no user is logged in.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function ensureCanRegister(): void
     {
@@ -121,7 +121,7 @@ class AnalyticsSeriesService
      *
      * @return array<string,mixed>|null The render contract, or null.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function ensureReadableOrNull(string $seriesKey): ?array
     {
@@ -149,7 +149,7 @@ class AnalyticsSeriesService
      *
      * @throws InvalidArgumentException On invalid key / visibility / chart type.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function register(
         string $seriesKey,
@@ -230,7 +230,7 @@ class AnalyticsSeriesService
      *
      * @return array<string,mixed>|null The render contract, or null.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     public function fetch(string $seriesKey): ?array
     {

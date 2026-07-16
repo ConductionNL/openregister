@@ -31,7 +31,7 @@ import { generateUrl } from '@nextcloud/router'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 export default {
 	name: 'ApprovalStepList',
@@ -50,7 +50,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-2
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async fetchSteps() {
 			try {

@@ -16,7 +16,7 @@
  * @version GIT: <git-id>
  * @link    https://www.OpenRegister.nl
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);

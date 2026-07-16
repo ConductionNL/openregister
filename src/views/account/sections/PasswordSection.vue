@@ -73,7 +73,7 @@ export default {
 		 * Submit the current password + new password to the API and surface the result
 		 * inline. Does not sign the user out of other sessions.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-4
+		 * @spec openspec/specs/account-self-service/spec.md
 		 * @return {Promise<void>}
 		 */
 		async changePassword() {

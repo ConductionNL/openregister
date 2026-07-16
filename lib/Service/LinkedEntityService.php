@@ -13,12 +13,12 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-42
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-magic-tables
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+ * @spec openspec/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -134,8 +134,8 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function addLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -170,8 +170,8 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function removeLink(string $objectUuid, string $type, string $entityId): array
     {
@@ -211,7 +211,7 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
      */
     public function addLinkToRegister(string $registerUuid, string $type, string $entityId): array
     {
@@ -248,7 +248,7 @@ class LinkedEntityService
      *
      * @return array The updated linked IDs array
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
      */
     public function addLinkToSchema(string $schemaUuid, string $type, string $entityId): array
     {
@@ -287,8 +287,8 @@ class LinkedEntityService
      *
      * @return array Array of result objects with entityType, uuid, name, etc.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function reverseLookup(string $type, string $entityId): array
     {
@@ -314,7 +314,7 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-42
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-magic-tables
      */
     private function scanMagicTables(string $type, string $columnName, string $entityId): array
     {
@@ -402,7 +402,7 @@ class LinkedEntityService
      *
      * @return array Array of matching results
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -494,8 +494,8 @@ class LinkedEntityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateType(string $type): void
     {
@@ -527,7 +527,7 @@ class LinkedEntityService
      *
      * @return array<int, string>
      *
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
      */
     private static function legacyLinkedTypeIds(): array
     {

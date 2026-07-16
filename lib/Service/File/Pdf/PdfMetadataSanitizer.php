@@ -31,7 +31,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+ * @spec openspec/specs/pdf-anonymisation/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+ * @spec openspec/specs/pdf-anonymisation/spec.md
  */
 class PdfMetadataSanitizer
 {
@@ -128,7 +128,7 @@ class PdfMetadataSanitizer
      *
      * @throws PdfAnonymisationException On reflection / SAPP errors.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function sanitize(PDFDoc $doc): array
     {

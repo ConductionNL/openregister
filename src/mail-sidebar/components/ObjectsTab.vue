@@ -80,8 +80,8 @@
  * as the drop target for Mail attachments (drops upload the file to the
  * linked OR object via /api/objects/{r}/{s}/{id}/filesMultipart).
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-3
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
@@ -125,7 +125,7 @@ export default {
 	},
 	watch: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		messageId() {
 			this.loadObjects()
@@ -141,7 +141,7 @@ export default {
 		 * OR sometimes derives object names as a JSON-encoded locale map
 		 * (e.g. `{"nl":"…"}`); unwrap it so the card shows the readable name.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		displayName(obj) {
 			const raw = obj.name || obj.uuid || ''
@@ -161,7 +161,7 @@ export default {
 		 * deep-link registry); otherwise fall back to OpenRegister's own
 		 * object page.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectUrl(obj) {
 			if (obj.url) {
@@ -174,7 +174,7 @@ export default {
 			})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadObjects() {
 			if (!this.accountId || !this.messageId) {
@@ -200,7 +200,7 @@ export default {
 		/**
 		 * Open the confirmation dialog for removing a connection.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		promptUnlink(obj) {
 			this.removeTarget = obj
@@ -217,7 +217,7 @@ export default {
 		/**
 		 * Confirmed removal of the pending connection.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async confirmUnlink() {
 			const obj = this.removeTarget
@@ -242,7 +242,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onAttachmentDragOver(event) {
 			if (event.dataTransfer) {
@@ -250,7 +250,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async onAttachmentDrop(event, obj) {
 			const raw = event.dataTransfer?.getData(ATTACHMENT_MIME)
@@ -277,7 +277,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-2
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async uploadAttachmentToObject(attachment, target) {
 			const response = await fetch(attachment.downloadUrl, { credentials: 'same-origin' })

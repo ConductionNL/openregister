@@ -72,7 +72,7 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-1
+     * @spec openspec/specs/computed-fields/spec.md
      * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
      * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
      */
@@ -93,7 +93,7 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     public function handle(Event $event): void
     {
@@ -124,7 +124,7 @@ class CalculationOnSaveListener implements IEventListener
      *   strip the synthetic keys); the steps share one payload and must stay in order, so
      *   extracting them would only scatter a strictly-sequential flow across helpers.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-3
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function process(ObjectEntity $object, bool $isUpdate): void
     {
@@ -251,7 +251,7 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @return mixed JSON-serialisable representation of the value.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-4
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function serialise(mixed $value): mixed
     {
@@ -269,7 +269,7 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @return Schema|null Resolved schema, or null on lookup failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-5
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function loadSchema(ObjectEntity $object): ?Schema
     {
@@ -292,7 +292,7 @@ class CalculationOnSaveListener implements IEventListener
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-6
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function getCalculations(Schema $schema): ?array
     {

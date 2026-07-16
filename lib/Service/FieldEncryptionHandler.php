@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md
+ * @spec openspec/specs/field-level-encryption/spec.md
  */
 
 declare(strict_types=1);
@@ -153,7 +153,7 @@ class FieldEncryptionHandler
      *
      * @return array The data with flagged properties replaced by their envelope form.
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function encryptProperties(array $data, Schema $schema): array
     {
@@ -228,7 +228,7 @@ class FieldEncryptionHandler
      *                                              fail-marked disposition, matching the
      *                                              established _rbac/_multitenancy flag idiom.
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-authorized-reads-are-decrypted-unauthorized-reads-never-see-ciphertext
      */
     public function decryptProperties(array $data, Schema $schema, bool $throwOnFailure=false): array
     {

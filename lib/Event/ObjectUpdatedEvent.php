@@ -66,7 +66,7 @@ class ObjectUpdatedEvent extends Event
      *
      * @return ObjectEntity The object entity after update
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getObject(): ObjectEntity
     {
@@ -78,7 +78,7 @@ class ObjectUpdatedEvent extends Event
      *
      * @return ObjectEntity The object entity after update
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getNewObject(): ObjectEntity
     {
@@ -90,7 +90,7 @@ class ObjectUpdatedEvent extends Event
      *
      * @return ObjectEntity|null The object entity before update (null if not available)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getOldObject(): ?ObjectEntity
     {

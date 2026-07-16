@@ -20,7 +20,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use OCP\IDBConnection;
  *
  * @template-extends QBMapper<ScheduledReport>
  *
- * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+ * @spec openspec/specs/scheduled-report-jobs/spec.md
  */
 class ScheduledReportMapper extends QBMapper
 {
@@ -60,7 +60,7 @@ class ScheduledReportMapper extends QBMapper
      * @throws \OCP\AppFramework\Db\DoesNotExistException When no row matches.
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException When more than one row matches (should never happen on a PK lookup).
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function find(int $id): ScheduledReport
     {
@@ -79,7 +79,7 @@ class ScheduledReportMapper extends QBMapper
      *
      * @return ScheduledReport[]
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function findByOwner(string $owner): array
     {
@@ -97,7 +97,7 @@ class ScheduledReportMapper extends QBMapper
      *
      * @return ScheduledReport[]
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function findAll(): array
     {
@@ -115,7 +115,7 @@ class ScheduledReportMapper extends QBMapper
      *
      * @return ScheduledReport[]
      *
-     * @spec openspec/changes/scheduled-report-jobs/specs/scheduled-report-jobs/spec.md
+     * @spec openspec/specs/scheduled-report-jobs/spec.md
      */
     public function findEnabled(): array
     {

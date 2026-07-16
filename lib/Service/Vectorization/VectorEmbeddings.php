@@ -88,7 +88,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -154,7 +154,7 @@ class VectorEmbeddings
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
@@ -233,7 +233,7 @@ class VectorEmbeddings
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -313,7 +313,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If batch embedding generation fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateBatchEmbeddings(array $texts, ?string $provider=null): array
     {
@@ -411,7 +411,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If storage fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function storeVector(
         string $entityType,
@@ -453,7 +453,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If search fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function semanticSearch(
         string $query,
@@ -488,7 +488,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If hybrid search fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function hybridSearch(
         string $query,
@@ -521,7 +521,7 @@ class VectorEmbeddings
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int|mixed>, object_vectors: int, file_vectors: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getVectorStats(): array
     {
@@ -541,7 +541,7 @@ class VectorEmbeddings
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple database queries and conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Thorough model mismatch detection
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -655,7 +655,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function clearAllEmbeddings(): array
     {
@@ -719,7 +719,7 @@ class VectorEmbeddings
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Provider-specific configuration mapping
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function getEmbeddingConfig(?string $provider=null): array
     {

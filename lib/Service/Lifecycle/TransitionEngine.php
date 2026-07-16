@@ -58,7 +58,7 @@ class TransitionEngine
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -83,7 +83,7 @@ class TransitionEngine
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function transition(string $objectId, string $action): ObjectEntity
@@ -223,7 +223,7 @@ class TransitionEngine
      * guard + per-transition from/requires/description checks each add one branch; none can be removed
      * without losing safety or fidelity.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function availableActions(string $objectId): array

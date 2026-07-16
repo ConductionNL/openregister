@@ -737,7 +737,7 @@ final class NotificationAnnotationValidator
      *
      * @return array<int, array{code: string, message: string}>
      *
-     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function validateCriticalAndDigest(array $spec, string $name): array
     {

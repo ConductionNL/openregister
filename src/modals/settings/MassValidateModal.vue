@@ -434,7 +434,7 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 * @spec openspec/specs/platform-administration-modals/spec.md
 		 */
 		startMassValidate() {
 			this.$emit('start-validate', this.localConfig)

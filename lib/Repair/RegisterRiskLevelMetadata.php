@@ -41,7 +41,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @param RiskLevelService $riskLevelService Risk level service
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly RiskLevelService $riskLevelService
@@ -53,7 +53,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getName(): string
     {
@@ -67,7 +67,7 @@ class RegisterRiskLevelMetadata implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function run(IOutput $output): void
     {
