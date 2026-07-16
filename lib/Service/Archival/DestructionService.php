@@ -498,50 +498,6 @@ class DestructionService
     }//end rejectList()
 
     /**
-     * Validate a destruction list for pre-flight checks.
-     *
-     * Scans all objects (and their cascade targets) for legal holds.
-     *
-     * @param array<string, mixed> $destructionList The destruction list to validate.
-     *
-     * @return array<string, mixed> Validation result with warnings and blocked objects.
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     */
-    public function validateDestructionList(array $destructionList): array
-    {
-        $warnings = [];
-        $blocked  = [];
-
-        foreach ($destructionList['objects'] as $objectEntry) {
-            $uuid = $objectEntry['uuid'];
-
-            try {
-                $object = $this->objectMapper->findByUuid($uuid);
-
-                // Check for legal hold.
-                if ($this->legalHoldService->hasActiveHold($object) === true) {
-                    $blocked[] = [
-                        'uuid'   => $uuid,
-                        'reason' => 'active_legal_hold',
-                    ];
-                }
-            } catch (\Exception $e) {
-                $warnings[] = [
-                    'uuid'   => $uuid,
-                    'reason' => 'object_not_found',
-                ];
-            }
-        }
-
-        return [
-            'valid'    => empty($blocked),
-            'warnings' => $warnings,
-            'blocked'  => $blocked,
-        ];
-    }//end validateDestructionList()
-
-    /**
      * Extend the archiefactiedatum for an object by the configured period.
      *
      * @param string $uuid            The object UUID.
