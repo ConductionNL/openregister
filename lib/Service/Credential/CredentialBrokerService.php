@@ -400,10 +400,20 @@ class CredentialBrokerService
             $data['organisation'] = $organisation;
         }
 
+        // Persist the credential-metadata object in system context. Mint is a trusted,
+        // caller-authorized operation ("authorization is the caller's" — the controller
+        // runs the provider-catalogue + organisation-admin gate; a repair-step migration
+        // is itself system-trusted), so the write MUST NOT be re-gated by RBAC here.
+        // Without `_rbac: false` a SESSIONLESS caller (an occ/repair migration folding an
+        // inline source secret into the broker) fails the create with NotAuthorizedException
+        // — the write ran as the anonymous principal. This mirrors the rollback delete
+        // below, which already bypasses RBAC for exactly this reason.
         $saved = $this->objectService->saveObject(
             object: $data,
             register: self::REGISTER,
-            schema: self::SCHEMA
+            schema: self::SCHEMA,
+            _rbac: false,
+            _multitenancy: false
         );
 
         $uuid = (string) $saved->getUuid();
