@@ -82,11 +82,19 @@ class ProviderMetricSource implements MetricSourceInterface
         $alias = IMetricsProvider::class.'::'.$appId;
 
         try {
-            if ($this->container->has($alias) === false) {
+            // Resolve the provider from the CALLING APP's own container — where
+            // the app registered its `IMetricsProvider::<appId>` alias — not from
+            // OpenRegister's container, which never sees another app's DI
+            // registrations (Nextcloud app containers are isolated). Resolving
+            // against `$this->container` here silently returned [] for every
+            // consuming app (same root cause as the MCP-provider fix, #390).
+            $container = $this->resolveAppContainer(appId: $appId);
+
+            if ($container->has($alias) === false) {
                 return [];
             }
 
-            $provider = $this->container->get($alias);
+            $provider = $container->get($alias);
             if (($provider instanceof IMetricsProvider) === false) {
                 return [];
             }
@@ -107,4 +115,35 @@ class ProviderMetricSource implements MetricSourceInterface
             return [];
         }//end try
     }//end collect()
+
+    /**
+     * Resolve the calling app's OWN DI container so its
+     * `IMetricsProvider::<appId>` alias resolves from where the leaf app
+     * actually registered it (#390).
+     *
+     * Wraps `\OC::$server->getRegisteredAppContainer($appId)`, which throws
+     * when the app has no bootstrapped container. Fail-soft: on any error the
+     * OpenRegister container is returned so a single misbehaving app never
+     * fatals a metrics scrape (its alias simply will not resolve there).
+     *
+     * @param string $appId The calling app id.
+     *
+     * @return ContainerInterface The app's own container, or OpenRegister's as a fallback.
+     */
+    private function resolveAppContainer(string $appId): ContainerInterface
+    {
+        try {
+            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
+            if ($appContainer instanceof ContainerInterface) {
+                return $appContainer;
+            }
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                message: sprintf('[AppHost\\Metrics] no registered app container for "%s": %s', $appId, $e->getMessage()),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }//end try
+
+        return $this->container;
+    }//end resolveAppContainer()
 }//end class
