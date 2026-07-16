@@ -52,7 +52,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
-use DateTimeImmutable;
 use Throwable;
 
 /**
@@ -238,6 +237,11 @@ class CredentialController extends Controller
      * secret (if given) is written straight to the vault under the new object UUID
      * (its scope's vault owner) — never persisted to the OR object.
      *
+     * This method owns only the REQUEST half — parsing, provider-catalogue validation,
+     * and the organisation-administrator gate. The mint itself (metadata object + vault
+     * secret, atomic) belongs to {@see CredentialBrokerService::mint()} so an in-process
+     * caller without an HTTP session mints through the exact same path (ADR-022).
+     *
      * Personal (scope absent / `personal`): unchanged — any authenticated user may
      * create their own. Organisation (`scope = organisation`): the `organisation`
      * defaults to the caller's active organisation when omitted, and the caller MUST
@@ -265,35 +269,34 @@ class CredentialController extends Controller
             return new JSONResponse(['message' => 'Invalid credential request'], Http::STATUS_BAD_REQUEST);
         }
 
-        $data = [
-            'name'        => $name,
-            'provider'    => $provider,
-            'owner'       => $uid,
-            'allowedApps' => $allowed,
-            'createdAt'   => (new DateTimeImmutable())->format(DATE_ATOM),
-        ];
-
-        // Organisation scope: resolve + admin-gate the owning organisation (D4).
+        // Organisation scope: resolve + admin-gate the owning organisation (D4). This is a
+        // request/authz concern and stays here; the broker is handed the resolved value.
+        $organisation = null;
         if ($scope === self::SCOPE_ORGANISATION) {
-            $data = $this->applyOrganisationScope(data: $data, uid: $uid);
-            if ($data instanceof JSONResponse) {
-                return $data;
+            $organisation = $this->gatedOrganisation(uid: $uid);
+            if ($organisation instanceof JSONResponse) {
+                return $organisation;
             }
         }
 
+        if (is_string($secret) === false) {
+            $secret = null;
+        }
+
         try {
-            $saved = $this->objectService->saveObject(
-                object: $data,
-                register: CredentialBrokerService::REGISTER,
-                schema: CredentialBrokerService::SCHEMA
+            // The single mint path (metadata object + vault secret) lives in the broker so
+            // an in-process caller can mint identically without an HTTP session.
+            $saved = $this->broker->mint(
+                name: $name,
+                provider: $provider,
+                owner: $uid,
+                allowedApps: $allowed,
+                secret: $secret,
+                scope: $scope,
+                organisation: $organisation
             );
         } catch (Throwable $e) {
             return new JSONResponse(['message' => 'Unable to create credential'], Http::STATUS_INTERNAL_SERVER_ERROR);
-        }
-
-        $uuid = (string) $saved->getUuid();
-        if (is_string($secret) === true && $secret !== '') {
-            $this->credentialStore->put($uuid, $secret, $scope);
         }
 
         return new JSONResponse($this->serialise(object: $saved), Http::STATUS_CREATED);
@@ -655,20 +658,20 @@ class CredentialController extends Controller
     }//end resolveOrganisation()
 
     /**
-     * Resolve + admin-gate the owning organisation, returning the enriched data or an error.
+     * Resolve + admin-gate the owning organisation for an organisation-scoped create.
      *
      * The `organisation` defaults to the caller's active organisation when omitted;
-     * the caller MUST be an administrator of it (or a Nextcloud admin). On success
-     * the `scope` + `organisation` fields are set on the property bag (design D4).
+     * the caller MUST be an administrator of it (or a Nextcloud admin) — design D4.
+     * This is the authz half of an organisation create and deliberately stays in the
+     * controller: the broker's mint takes the ALREADY-GATED organisation and trusts it.
      *
-     * @param array<string, mixed> $data The credential property bag under construction.
-     * @param string               $uid  The current user's UID.
+     * @param string $uid The current user's UID.
      *
-     * @return array<string, mixed>|JSONResponse The enriched data, or a static error response.
+     * @return string|JSONResponse The gated organisation UUID, or a static error response.
      *
      * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
      */
-    private function applyOrganisationScope(array $data, string $uid): array | JSONResponse
+    private function gatedOrganisation(string $uid): string | JSONResponse
     {
         $organisation = $this->resolveOrganisation(requested: (string) $this->request->getParam('organisation', ''));
         if ($organisation === '') {
@@ -679,11 +682,8 @@ class CredentialController extends Controller
             return new JSONResponse(['message' => 'Forbidden'], Http::STATUS_FORBIDDEN);
         }
 
-        $data['scope']        = self::SCOPE_ORGANISATION;
-        $data['organisation'] = $organisation;
-
-        return $data;
-    }//end applyOrganisationScope()
+        return $organisation;
+    }//end gatedOrganisation()
 
     /**
      * Serialise a credential entity to a metadata-only array (never carries a secret).
