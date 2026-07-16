@@ -189,8 +189,29 @@ def resolve(root, path, frag):
         if not frag:
             return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': cap}
         if slugify(frag) in heading_slugs(absf):
-            return {'category': 'REPOINT_ANCHOR', 'new_target': f'{rel}#{frag}', 'note': cap}
+            # Emit the SLUGIFIED fragment, never the raw one. Gate-46 compares the
+            # fragment verbatim against slugify(heading), so a raw fragment carrying
+            # trailing punctuation (the @spec regex swallows a sentence-ending '.')
+            # or mixed case would still be flagged broken after the repoint.
+            return {'category': 'REPOINT_ANCHOR', 'new_target': f'{rel}#{slugify(frag)}', 'note': cap}
         # fragment lost — capability proven, drop to file-level
         return {'category': 'REPOINT_FILE', 'new_target': rel, 'note': f'{cap} (anchor {frag} not in canonical)'}
-    # anything else (specs/* anchor-nf, design.md, proposal.md, OTHER) -> human review
+    # Shape 3: an ALREADY-canonical specs/<cap>/spec.md#frag whose fragment fails
+    # gate-46's verbatim compare but whose SLUGIFIED form is a real heading. The
+    # capability and the requirement are both already proven — only the fragment's
+    # punctuation/case is off (the @spec regex swallows a sentence-ending '.').
+    # Normalising it is unambiguous: we are not choosing a target, just spelling
+    # the one that is already there the way gate-46 reads it.
+    # This also self-heals the raw-fragment leak emitted by earlier tool rounds.
+    m = re.match(r'openspec/specs/([^/]+)/spec\.md$', path)
+    if m and frag:
+        absf = os.path.join(root, path)
+        if os.path.isfile(absf):
+            slugs = heading_slugs(absf)
+            if frag not in slugs and slugify(frag) in slugs:
+                return {'category': 'REPOINT_ANCHOR',
+                        'new_target': f'{path}#{slugify(frag)}',
+                        'note': f'{m.group(1)} (fragment normalised to gate-46 form)'}
+    # anything else (specs/* anchor genuinely re-headed, design.md, proposal.md,
+    # OTHER) -> human review
     return {'category': 'DANGLING', 'new_target': None, 'note': 'unrecognised shape'}
