@@ -66,3 +66,38 @@ spec is left dangling; (3) the rewrite is comment-only (logic byte-identical).
 - Re-heading canonical specs to ADR-037 form — out of scope.
 - Adding new requirements — this change asserts existing traceability, it does
   not author it.
+
+## Round-2 addendum (2026-07-16) — three tool defects found by wider use
+
+Running this tool across the remaining fleet (procest, opencatalogi,
+softwarecatalog, decidesk, docudesk, openconnector) exposed three defects in the
+version that shipped here. All three are fixed in `tool/`, each covered by a
+regression test verified to FAIL against the old tool:
+
+1. **CRLF normalisation** (found on procest). Universal-newline read + default
+   write silently rewrote CRLF files to LF — 2,462 non-`@spec` diff lines, a
+   whitespace reformat wearing an anchor-repair hat. The comment-only assertion
+   caught it. Fixed with `newline=''` on read and write; files that cannot be
+   decoded losslessly are now skipped rather than rewritten via
+   `errors='replace'` (which would burn U+FFFD into source).
+2. **Raw-fragment leak** (found on decidesk). The `@spec` regex swallows a
+   sentence-ending `.` into the fragment. The resolver matched on
+   `slugify(frag)` but emitted the RAW frag, so it "repaired" an anchor into
+   another gate-46-broken anchor — and its own post-condition check was blind
+   because `is_broken()` used the same lenient compare. Fixed by emitting
+   `slugify(frag)` and making `is_broken()` byte-identical to gate-46 (verbatim
+   fragment compare).
+3. **No self-heal path** for defect 2's output: the leaked anchors are already
+   `openspec/specs/...`, a shape the resolver did not recognise, so they were
+   stuck as DANGLING. Added shape 3 — normalise a fragment on an
+   already-canonical target when only its punctuation/case differs from a real
+   heading. Unambiguous: it does not choose a target, it spells the existing one
+   the way gate-46 reads it.
+
+Defect 2 had already shipped, leaving residue: **openregister 3, pipelinq 49,
+shillinq 0**. Both are repaired by this round. The reconciliation identity
+`before − repointed == after` (tool count vs gate-46 count) is what exposed
+defect 2 and is now checked per app.
+
+**OpenRegister gate-46: 1,411 → 1,408.** (The original round reported 1,408 but
+actually landed 1,411 — the 3-anchor gap *was* the raw-fragment leak.)

@@ -23,6 +23,14 @@ def slugify(t): return resolver.slugify(t)
 def heading_slugs(p): return resolver.heading_slugs(p)
 
 def is_broken(root, target):
+    """Brokenness EXACTLY as hydra gate-46 computes it.
+
+    The fragment is compared VERBATIM against slugify(heading) — the fragment is
+    NOT slugified first. Slugifying it here would be more lenient than the gate,
+    which (a) hides genuinely-broken anchors carrying trailing punctuation or
+    mixed case, and (b) makes the post-repoint sanity check below unable to
+    reject a target the gate would still flag.
+    """
     if '#' in target:
         path, frag = target.split('#', 1)
     else:
@@ -30,7 +38,7 @@ def is_broken(root, target):
     absf = os.path.join(root, path)
     if not os.path.exists(absf):
         return True, path, frag
-    if frag and absf.endswith('.md') and slugify(frag) not in heading_slugs(absf):
+    if frag and absf.endswith('.md') and frag not in heading_slugs(absf):
         return True, path, frag
     return False, path, frag
 
@@ -55,8 +63,15 @@ def main():
     repoint_map_global = {}  # target -> new (for report)
     for fp in iter_files(root):
         try:
-            src = open(fp, encoding='utf-8', errors='replace').read()
-        except OSError:
+            # newline='' -> universal-newline translation OFF, so CRLF files keep
+            # their CRLF endings verbatim on the round-trip. Without this, Python
+            # normalises CRLF->LF on write and silently reformats the whole file
+            # (observed on procest: 5 CRLF files, 2462 non-@spec diff lines).
+            with open(fp, encoding='utf-8', errors='strict', newline='') as fh:
+                src = fh.read()
+        except (OSError, UnicodeDecodeError):
+            # errors='strict' + skip: never rewrite a file we cannot decode
+            # losslessly (errors='replace' would burn U+FFFD into the source).
             continue
         local = {}  # old_target -> new_target
         for m in TAG.finditer(src):
@@ -86,7 +101,8 @@ def main():
                 return mo.group(0)
             new = TAG.sub(_sub, src)
             if new != src:
-                open(fp, 'w', encoding='utf-8').write(new)
+                with open(fp, 'w', encoding='utf-8', newline='') as fh:
+                    fh.write(new)
                 files_changed.append(fp)
         elif local:
             files_changed.append(fp)

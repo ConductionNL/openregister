@@ -559,7 +559,7 @@ export const useQualityStore = defineStore('quality', {
 		 * (webhooks#index, webhooks#logStats, webhooks#allLogs) — no new
 		 * backend endpoint (design.md D1).
 		 *
-		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-queue--sync-health-view
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-queue-sync-health-view
 		 */
 		async fetchWebhookHealth() {
 			this.loading = true
