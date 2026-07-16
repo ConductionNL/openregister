@@ -41,6 +41,15 @@
  * context, never request input); the broker applies the full guard chain
  * against it, failing closed.
  *
+ * MINTING (app-facing): {@see mint()} is the single path that brings a credential
+ * into existence — it writes the metadata object AND the vault secret, atomically
+ * from the caller's point of view, and needs no HTTP session. The controller and
+ * in-process callers (an openconnector migration repair step folding an inline
+ * plaintext secret into the broker) both go through it, so the metadata shape and
+ * the vault write live in exactly one place. Authorization for a mint (provider
+ * validation, the organisation-administrator gate) stays with the CALLER — those
+ * are request/authz concerns, not mint concerns.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
  *
@@ -64,6 +73,8 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use DateTimeImmutable;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -274,6 +285,142 @@ class CredentialBrokerService
 
         return (string) $secret;
     }//end resolveInjectable()
+
+    /**
+     * Mint a credential: persist its metadata object and store its secret to the vault.
+     *
+     * The single mint path for the whole instance — the HTTP controller and any
+     * in-process caller (an openconnector migration repair step folding an inline
+     * plaintext source secret into the broker, say) go through here, so the metadata
+     * shape, the vault write, and the atomicity contract are defined exactly once.
+     *
+     * SESSIONLESS BY CONSTRUCTION: no `IUserSession` is consulted — the `$owner` is
+     * an ASSERTION by the trusted caller (the controller passes the session uid; a
+     * repair step derives it from durable job context, never from request input).
+     * This mirrors the `actingUserId` posture of {@see request()} / {@see resolveInjectable()}
+     * (design D-K) and lets a background job mint without an HTTP session.
+     *
+     * AUTHORIZATION IS THE CALLER'S: minting is not itself a guarded operation — the
+     * provider-catalogue validation and the organisation-administrator gate are
+     * request/authz concerns that live in {@see \OCA\OpenRegister\Controller\CredentialController}.
+     * This method takes an ALREADY-RESOLVED `$scope` + `$organisation` and trusts them.
+     *
+     * ATOMICITY: the metadata object and the vault secret are two stores with no shared
+     * transaction. When the vault write fails AFTER the object was saved we would be left
+     * with a metadata object that no secret backs — a credential that looks usable in the
+     * UI and fails closed at broker time with "no secret stored". Rather than ship that,
+     * the orphaned object is deleted and the original vault failure is rethrown, so a mint
+     * either yields a complete credential or yields nothing. A failure to delete the orphan
+     * is logged (secret-free) and does not mask the original error.
+     *
+     * The `$secret` NEVER reaches an OR object, a log line, or the return value — it is
+     * handed straight to the {@see CredentialStore} leaf and otherwise untouched
+     * (the CredentialStore contract).
+     *
+     * @param string             $name         The human-readable credential name (non-empty).
+     * @param string             $provider     The provider identifier (the CALLER validates it against the catalogue).
+     * @param string             $owner        The owning user's UID (asserted by the trusted caller; never request input).
+     * @param array<int, string> $allowedApps  The app ids permitted to use this credential (Guard 2 at broker time).
+     * @param string|null        $secret       The raw secret, or null/'' to mint metadata only (no vault write).
+     * @param string             $scope        The ALREADY-RESOLVED scope (`personal`|`organisation`); selects the vault owner.
+     * @param string|null        $organisation The ALREADY-GATED owning organisation UUID; required for the organisation scope.
+     *
+     * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
+     *
+     * @throws \InvalidArgumentException When the name is empty, or an organisation-scoped mint carries no organisation.
+     * @throws Throwable                 When the object save or the vault write fails (the orphaned object is removed first).
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     */
+    public function mint(
+        string $name,
+        string $provider,
+        string $owner,
+        array $allowedApps=[],
+        ?string $secret=null,
+        string $scope=self::SCOPE_PERSONAL,
+        ?string $organisation=null
+    ): ObjectEntity {
+        $name = trim($name);
+        if ($name === '' || trim($provider) === '') {
+            throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
+        }
+
+        $data = [
+            'name'        => $name,
+            'provider'    => $provider,
+            'owner'       => $owner,
+            'allowedApps' => array_values($allowedApps),
+            'createdAt'   => (new DateTimeImmutable())->format(DATE_ATOM),
+        ];
+
+        // Only an organisation-scoped credential carries scope/organisation — a personal
+        // credential's property bag stays byte-for-byte what it has always been (design D1).
+        if ($scope !== self::SCOPE_ORGANISATION) {
+            $scope = self::SCOPE_PERSONAL;
+        }
+
+        if ($scope === self::SCOPE_ORGANISATION) {
+            $organisation = trim((string) $organisation);
+            if ($organisation === '') {
+                throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
+            }
+
+            $data['scope']        = self::SCOPE_ORGANISATION;
+            $data['organisation'] = $organisation;
+        }
+
+        $saved = $this->objectService->saveObject(
+            object: $data,
+            register: self::REGISTER,
+            schema: self::SCHEMA
+        );
+
+        $uuid = (string) $saved->getUuid();
+        if ($secret === null || $secret === '') {
+            return $saved;
+        }
+
+        try {
+            $this->credentialStore->put($uuid, $secret, $scope);
+        } catch (Throwable $e) {
+            $this->discardOrphanedCredential(uuid: $uuid);
+            throw $e;
+        }
+
+        return $saved;
+    }//end mint()
+
+    /**
+     * Remove a credential metadata object whose vault write failed (mint rollback).
+     *
+     * Best-effort by design: the caller is already unwinding a vault failure and that
+     * error must reach it unmasked, so a delete failure is logged (secret-free) and
+     * swallowed. Worst case the orphan survives and fails closed at broker time.
+     *
+     * @param string $uuid The orphaned credential object's UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     */
+    private function discardOrphanedCredential(string $uuid): void
+    {
+        try {
+            $this->objectService->deleteObject(
+                uuid: $uuid,
+                register: self::REGISTER,
+                schema: self::SCHEMA,
+                _rbac: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'Credential broker: failed to roll back credential {uuid} after its secret could not be stored',
+                ['uuid' => $uuid, 'exception' => $e]
+            );
+        }
+    }//end discardOrphanedCredential()
 
     /**
      * Whether a resolved provider entry is inject-only (app-side injection, never proxied).
