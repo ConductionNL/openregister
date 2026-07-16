@@ -660,32 +660,6 @@ class SearchQueryHandler
     }//end flushSearchTrails()
 
     /**
-     * Check if search trails are enabled in the settings
-     *
-     * @return bool True if search trails are enabled, false otherwise
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
-     */
-    public function isSearchTrailsEnabled(): bool
-    {
-        try {
-            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-            return $retentionSettings['searchTrailsEnabled'] ?? true;
-        } catch (Exception $e) {
-            // If we can't get settings, default to enabled for safety.
-            $this->logger->warning(
-                message: '[SearchQueryHandler] Failed to check search trails setting, defaulting to enabled',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return true;
-        }
-    }//end isSearchTrailsEnabled()
-
-    /**
      * Resolve the effective search-trail recording mode.
      *
      * Returns 'none' when search trails are disabled (master switch /

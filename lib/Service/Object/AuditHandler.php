@@ -122,62 +122,6 @@ class AuditHandler
     }//end getLogs()
 
     /**
-     * Validate object ownership
-     *
-     * Checks if object belongs to specified register and schema.
-     *
-     * @param object|array $object            Object to validate
-     * @param string       $requestedRegister Requested register ID or slug
-     * @param string       $requestedSchema   Requested schema ID or slug
-     *
-     * @return bool True if object belongs to register/schema
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
-     */
-    public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
-    {
-        try {
-            // Get object's register and schema.
-            $objectRegister = $object->getRegister();
-            $objectSchema   = $object->getSchema();
-            if (is_array($object) === true) {
-                $objectRegister = $object['register'] ?? null;
-                $objectSchema   = $object['schema'] ?? null;
-            }
-
-            // Normalize and compare register.
-            $objectRegisterNorm = strtolower((string) $objectRegister);
-            $reqRegisterNorm    = strtolower($requestedRegister);
-            $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
-
-            // Normalize schema (handle array/object/string).
-            $objectSchemaId   = $this->extractSchemaId(schema: $objectSchema);
-            $objectSchemaSlug = $this->extractSchemaSlug(schema: $objectSchema);
-
-            $requestedSchemaNorm  = strtolower($requestedSchema);
-            $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-            $objectSchemaSlugNorm = null;
-            if ($objectSchemaSlug !== null) {
-                $objectSchemaSlugNorm = strtolower($objectSchemaSlug);
-            }
-
-            // Check schema match (by ID or slug).
-            $schemaMatch = (
-                $requestedSchemaNorm === $objectSchemaIdNorm ||
-                ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-            );
-
-            return $registerMatch && $schemaMatch;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[AuditHandler] Failed to validate object ownership',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return false;
-        }//end try
-    }//end validateObjectOwnership()
-
-    /**
      * Prepare filters for audit trail query
      *
      * @param string $uuid    Object UUID
