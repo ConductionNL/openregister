@@ -486,13 +486,41 @@ This bypass MUST NOT extend to `writeOnly` (see the requirement below): `_rbac =
 - **THEN** the rendered object MUST contain `internalNote`
 
 ### Requirement: writeOnly stripping MUST NOT be bypassed by _rbac or system context
-`writeOnly` stripping is a hard render-boundary rule: it MUST apply on every render regardless of `_rbac`, `SystemOperationContext`, or admin status. An admin HTTP read renders with `_rbac: false`, so gating `writeOnly` on `_rbac` returns plaintext secrets to admin-context reads (openregister#389). The only supported way for internal code to obtain a `writeOnly` value is to not render: `ObjectService::find(_render: false)` returns the raw entity before `renderEntity()` is reached, which is how the credential migration and `CallService` re-resolve secrets.
+`writeOnly` stripping is a hard render-boundary rule: it MUST apply on every read regardless of `_rbac`, `SystemOperationContext`, or admin status. An admin HTTP read renders with `_rbac: false`, so gating `writeOnly` on `_rbac` returns plaintext secrets to admin-context reads (openregister#389). The only supported way for internal code to obtain a `writeOnly` value is to not render: `ObjectService::find(_render: false)` returns the raw entity before `renderEntity()` is reached, which is how the credential migration and `CallService` re-resolve secrets.
+
+This rule binds BOTH read paths, which are separate code paths that MUST agree:
+1. the single-object path (`RenderObject::renderEntity()`), and
+2. the list/search cheap path (`RenderObject::redactWriteOnlyFromRows()`), which lists take when no `_extend`/`_fields`/`_filter`/`_unset` is requested and which therefore never enters `renderEntity()` at all.
+
+Applying the rule to only one of them is a live disclosure, not a partial fix: `ObjectsController` derives `_rbac` as `($isAdmin === false)`, so an ADMIN list/search read arrives on path 2 with `_rbac: false`. Gating the strip there returned every `writeOnly` secret in cleartext for admin list reads even while path 1 was correctly hardened (openregister#460 — the list half of openregister#389). `_rbac: false` on an HTTP read means "this caller bypasses WHICH OBJECTS it may see"; it never means "this caller may see secrets". Conflating those two is the defect both issues describe.
+
+Both paths MUST decide via the same schema-level predicate (top-level `writeOnly` OR a declared `x-openregister-writeonly-paths` entry) and strip via the same choke point, so a rule added to one is enforced by the other. The `@self.relations` mirror (openregister#429) MUST be stripped on the same boundary on both paths.
 
 #### Scenario: writeOnly is stripped even when _rbac is false
 - **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
 - **WHEN** a caller renders `cred-1` with `_rbac: false`
 - **THEN** the rendered object MUST NOT contain `apiToken`
 - **AND** `@self.relations` MUST NOT contain `apiToken`
+
+#### Scenario: An admin list read does not return writeOnly secrets
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **AND** the caller is an admin, so the controller derives `_rbac: false`
+- **WHEN** the admin lists `credential` objects on the cheap path (no `_extend`/`_fields`/`_filter`/`_unset`)
+- **THEN** no row in the response MUST contain `apiToken`
+- **AND** no row's `@self.relations` MUST contain `apiToken`
+
+#### Scenario: An admin list read does not return a nested writeOnly path
+- **GIVEN** schema `source` declares `x-openregister-writeonly-paths: ["configuration.authentication.client_secret"]`
+- **AND** the caller is an admin, so the controller derives `_rbac: false`
+- **WHEN** the admin lists `source` objects on the cheap path
+- **THEN** no row MUST contain `configuration.authentication.client_secret`
+- **AND** each row MUST still contain the non-secret siblings under `configuration`
+
+#### Scenario: A system-context list read does not return writeOnly secrets
+- **GIVEN** `SystemOperationContext::isActive()` is true
+- **AND** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** `credential` objects are listed on the cheap path
+- **THEN** no row in the result MUST contain `apiToken`
 
 #### Scenario: _render false returns the raw value for the engine
 - **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`

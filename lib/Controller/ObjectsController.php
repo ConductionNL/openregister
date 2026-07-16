@@ -940,9 +940,13 @@ class ObjectsController extends Controller
         $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
         // Redact write-only secrets before serialising (openregister#380, ocon#147): this
-        // direct-magic-mapper path bypasses renderEntity, so without this a non-admin read
-        // returns write-only fields in cleartext. redactWriteOnlyFromRows resolves each
-        // row's schema individually, so the cross-schema result set is handled correctly.
+        // direct-magic-mapper path bypasses renderEntity, so without this the read returns
+        // write-only fields in cleartext. redactWriteOnlyFromRows resolves each row's schema
+        // individually, so the cross-schema result set is handled correctly.
+        //
+        // `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
+        // NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
+        // and an admin is not exempt from the writeOnly render boundary (#389).
         $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
         $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
@@ -1243,6 +1247,9 @@ class ObjectsController extends Controller
                     // This is the exact path the OpenConnector Source leak used: a plain
                     // list read (no _extend) hit this branch. Redact the raw entities with
                     // the same read-strip renderEntity applies, then serialize.
+                    // `$rbac` is `($isAdmin === false)` and gates ONLY the property
+                    // `authorization.read` strip — writeOnly strips unconditionally, admin
+                    // included (#389/#460).
                     $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                     $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 
@@ -2254,6 +2261,8 @@ class ObjectsController extends Controller
 
                         // Redact write-only secrets before serialising (openregister#380,
                         // ocon#147) — this direct-magic-mapper path bypasses renderEntity.
+                        // `_rbac` (false for an admin) gates only the property
+                        // `authorization.read` strip; writeOnly strips unconditionally (#460).
                         $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                         $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
