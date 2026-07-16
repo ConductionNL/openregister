@@ -810,9 +810,31 @@ class RenderObject
     {
         return $schema !== null
             && ($schema->hasPropertyAuthorization() === true
-                || $schema->hasWriteOnlyProperties() === true
+                || $this->schemaHasWriteOnlyRule(schema: $schema) === true
                 || $schema->hasEncryptedProperties() === true);
     }//end schemaNeedsReadStrip()
+
+    /**
+     * Whether a schema carries ANY write-only rule — a declared property with
+     * `writeOnly: true`, or a nested dot-path declared via
+     * `x-openregister-writeonly-paths`.
+     *
+     * Both spellings answer the same question ("must this render strip secrets?") and
+     * ride the same unconditional render boundary, so every gate asks it through here
+     * rather than checking one and forgetting the other — which is precisely how the
+     * nested paths would have ended up as a phantom annotation.
+     *
+     * @param Schema|null $schema The schema to inspect.
+     *
+     * @return bool True when the render path must apply write-only stripping.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    private function schemaHasWriteOnlyRule(?Schema $schema): bool
+    {
+        return $schema !== null
+            && ($schema->hasWriteOnlyProperties() === true || $schema->hasWriteOnlyPaths() === true);
+    }//end schemaHasWriteOnlyRule()
 
     /**
      * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
@@ -1876,9 +1898,15 @@ class RenderObject
         // Fail-safe ordering: both run AFTER caller-supplied `fields`/`unset` selection
         // above, so a caller can never re-surface a stripped property by naming it
         // (e.g. ?fields=apiToken).
+        // Nested write-only paths (x-openregister-writeonly-paths) ride the SAME
+        // unconditional boundary as top-level `writeOnly`, deliberately: they exist
+        // because a secret nested in an untyped `object` property has no property to
+        // hang `writeOnly: true` on, not because it deserves a weaker rule. Gating
+        // them on `_rbac` would reintroduce #389 for exactly the values that motivated
+        // this mechanism (an admin HTTP GET renders with `_rbac: false`).
         $schema      = $readSchema ?? $this->getSchema(id: $entity->getSchema());
         $stripAuthz  = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
-        $doWriteOnly = ($schema !== null && $schema->hasWriteOnlyProperties() === true);
+        $doWriteOnly = $this->schemaHasWriteOnlyRule(schema: $schema);
         $doAuthz     = ($stripAuthz === true && $schema !== null && $schema->hasPropertyAuthorization() === true);
         if ($doWriteOnly === true || $doAuthz === true) {
             if ($doAuthz === true) {

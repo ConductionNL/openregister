@@ -262,17 +262,23 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
     }
 
     /**
-     * A system-context render (`_rbac: false`) is NOT redacted.
+     * `writeOnly` is NOT `_rbac`-gated: even a `_rbac: false` render is redacted.
      *
-     * The engine reads sources, configurations and credentials through `ObjectService::find()`
-     * with `_rbac: false`, and find() always renders through renderEntity(). If redaction
-     * applied there too, every synchronisation and the credential engine would lose the
-     * secret they legitimately need. `_rbac: false` is OR's existing marker for trusted
-     * internal reads, so it is the bypass.
+     * This test previously asserted the OPPOSITE — that `_rbac: false` returned the
+     * secret — and had been failing at HEAD ever since #389 changed the rule. It was the
+     * pre-#389 contract left behind, which is worse than no test: it documented a leak as
+     * the intended behaviour. #389 made the strip unconditional precisely because an admin
+     * HTTP GET renders with `_rbac: false`, so gating writeOnly on `_rbac` handed every
+     * admin-context read the plaintext secret.
+     *
+     * The real bypass for internal engines is `_render: false` (ObjectService::find), which
+     * returns the raw entity WITHOUT entering renderEntity at all — see
+     * testRenderFalseBypassesRedactionEntirelyForTheEngine(). Redaction is a property of the
+     * render boundary; code that must not cross it does not render.
      *
      * @return void
      */
-    public function testSystemContextReadIsNotRedacted(): void
+    public function testWriteOnlyIsStrippedEvenForARbacFalseRender(): void
     {
         $entity = $this->sourceEntity();
 
@@ -292,8 +298,9 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
 
         $data = $rendered->getObject();
 
-        $this->assertSame('SECRET_APIKEY_MUST_NOT_LEAK', $data['apiKey'], 'The engine (system context) must still receive the secret');
-        $this->assertSame('SECRET_CLIENTSECRET_MUST_NOT_LEAK', $data['secret']);
+        $this->assertArrayNotHasKey('apiKey', $data, 'writeOnly is a hard render-boundary rule and is not _rbac-gated (#389)');
+        $this->assertArrayNotHasKey('secret', $data);
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rendered->jsonSerialize()));
     }
 
     /**

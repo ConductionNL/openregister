@@ -469,18 +469,71 @@ Property-level read stripping (both `writeOnly` and property `authorization.read
 - **WHEN** `case-1` is read with the relation expanded
 - **THEN** the expanded `credential` MUST NOT contain `apiToken`
 
-### Requirement: Read-time field stripping MUST bypass for trusted internal reads
-Read-time field stripping MUST be bypassed when the render is invoked with `_rbac === false` or while `SystemOperationContext::isActive()` is true, mirroring `PermissionHandler::hasPermission()`. This guarantees the application's own service and repair-step reads receive the full object, including `writeOnly` secrets it needs to operate. Internal reads that use the raw entity (`ObjectEntity::getObject()`) never reach the render path and are inherently unaffected.
+### Requirement: Property authorization stripping MUST bypass for trusted internal reads
+Property `authorization.read` (group-based) stripping MUST be bypassed when the render is invoked with `_rbac === false` or while `SystemOperationContext::isActive()` is true, mirroring `PermissionHandler::hasPermission()`. This guarantees the application's own service and repair-step reads receive the full object.
 
-#### Scenario: Internal render with _rbac false returns the full object
-- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
-- **WHEN** an internal caller renders `cred-1` with `_rbac: false`
-- **THEN** the rendered object MUST contain `apiToken`
+This bypass MUST NOT extend to `writeOnly` (see the requirement below): `_rbac === false` is not a secret-bearing trust boundary, because an admin HTTP read renders with `_rbac: false`. Internal code that needs a raw `writeOnly` value MUST read with `_render: false` (or take `ObjectEntity::getObject()` off the mapper), which never enters the render path at all.
 
-#### Scenario: System operation context returns the full object
+#### Scenario: Internal render with _rbac false returns group-restricted properties
+- **GIVEN** schema `case` has property `internalNote` with `authorization.read` restricted to group `staff`
+- **WHEN** an internal caller renders `case-1` with `_rbac: false`
+- **THEN** the rendered object MUST contain `internalNote`
+
+#### Scenario: System operation context returns group-restricted properties
 - **GIVEN** `SystemOperationContext::isActive()` is true
-- **WHEN** `cred-1` is rendered
-- **THEN** the rendered object MUST contain `apiToken`
+- **AND** schema `case` has a group-restricted property `internalNote`
+- **WHEN** `case-1` is rendered
+- **THEN** the rendered object MUST contain `internalNote`
+
+### Requirement: writeOnly stripping MUST NOT be bypassed by _rbac or system context
+`writeOnly` stripping is a hard render-boundary rule: it MUST apply on every render regardless of `_rbac`, `SystemOperationContext`, or admin status. An admin HTTP read renders with `_rbac: false`, so gating `writeOnly` on `_rbac` returns plaintext secrets to admin-context reads (openregister#389). The only supported way for internal code to obtain a `writeOnly` value is to not render: `ObjectService::find(_render: false)` returns the raw entity before `renderEntity()` is reached, which is how the credential migration and `CallService` re-resolve secrets.
+
+#### Scenario: writeOnly is stripped even when _rbac is false
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** a caller renders `cred-1` with `_rbac: false`
+- **THEN** the rendered object MUST NOT contain `apiToken`
+- **AND** `@self.relations` MUST NOT contain `apiToken`
+
+#### Scenario: _render false returns the raw value for the engine
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** an internal caller reads `cred-1` with `_render: false`
+- **THEN** the returned entity's `getObject()` MUST contain `apiToken`
+
+### Requirement: Nested writeOnly paths MUST never be returned on any read
+A secret nested inside an untyped `object` property cannot be declared with `writeOnly: true`, because JSON Schema keywords attach only to properties the schema declares — and marking the whole parent object `writeOnly` would break the editors that legitimately read the rest of it back. Schemas MUST therefore be able to declare individual nested dot-paths as write-only via the schema-level annotation `x-openregister-writeonly-paths`, a list of dot-separated paths rooted at a declared property (e.g. `configuration.authentication.client_secret`).
+
+A declared path MUST be stripped from the value at that location AND its entire sub-tree, on the same hard render boundary as top-level `writeOnly`: unconditionally, for every caller including admin, on single get, list (including the cheap path), and nested expansion, after any caller-supplied `fields`/`extend`/`unset` selection, and from the `@self.relations` search-index mirror — which `SaveObject::scanForRelations()` populates with flattened literal dot-path keys, so a nested secret is mirrored there under its full path. `_render: false` remains the internal bypass.
+
+This closes openconnector#235 (`source.configuration.authentication.*`) and the openconnector#147 residual (`rule.configuration.authentication.keys`) at the platform level. It is strictly opt-in: a schema without the annotation is unaffected.
+
+#### Scenario: A declared nested path is stripped for admin
+- **GIVEN** schema `source` declares `x-openregister-writeonly-paths: ["configuration.authentication.client_secret"]`
+- **AND** object `src-1` has `configuration.authentication.client_secret: "s3cr3t"` and `configuration.endpoint: "https://api.example.gov"`
+- **WHEN** an admin reads `src-1`
+- **THEN** the response MUST NOT contain `configuration.authentication.client_secret`
+- **AND** the response MUST still contain `configuration.endpoint`
+
+#### Scenario: A declared path strips its whole sub-tree
+- **GIVEN** schema `rule` declares `x-openregister-writeonly-paths: ["configuration.authentication.keys"]`
+- **AND** `configuration.authentication.keys` is a map whose leaf keys are caller-supplied apiKeys
+- **WHEN** any user reads the rule
+- **THEN** the response MUST NOT contain `keys` nor any entry beneath it
+
+#### Scenario: The relations mirror does not leak a nested path
+- **GIVEN** `@self.relations` holds the flattened key `configuration.authentication.client_secret`
+- **WHEN** the object is rendered
+- **THEN** `@self.relations` MUST NOT contain that key nor any key prefixed by a declared path
+
+#### Scenario: A caller cannot re-widen a nested path via fields
+- **GIVEN** schema `source` declares a nested write-only path under `configuration`
+- **WHEN** a caller reads with `fields=configuration`
+- **THEN** the returned `configuration` MUST NOT contain the declared path
+
+#### Scenario: An invalid path declaration fails loudly at save
+- **GIVEN** a schema whose `x-openregister-writeonly-paths` contains a malformed path or one rooted at an undeclared property
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error naming the offending path
+- **AND** the annotation MUST NOT be silently dropped, because a dropped write-only declaration would persist a schema whose secrets are unprotected while appearing annotated
 
 ## Current Implementation Status
 
@@ -496,6 +549,7 @@ Read-time field stripping MUST be bypassed when the render is invoked with `_rba
 - `ConditionMatcher` (`lib/Service/ConditionMatcher.php`) — Evaluates match conditions with dynamic variable resolution (`$organisation`, `$userId`, `$now`), `@self` property lookup for system fields, and delegation to `OperatorEvaluator`.
 - `OperatorEvaluator` (`lib/Service/OperatorEvaluator.php`) — MongoDB-style operator evaluation for PHP-level condition matching (`$eq`, `$ne`, `$in`, `$nin`, `$exists`, `$gt`, `$gte`, `$lt`, `$lte`).
 - `Schema` entity (`lib/Db/Schema.php`) — `hasPropertyAuthorization()`, `getPropertyAuthorization()`, `getPropertiesWithAuthorization()` methods for inspecting property-level authorization rules.
+- Write-only secrets (`lib/Db/Schema.php`, `lib/Service/PropertyRbacHandler.php`) — top-level `writeOnly: true` via `hasWriteOnlyProperties()`/`getWriteOnlyProperties()`, and nested dot-paths via the `x-openregister-writeonly-paths` annotation (`Schema::WRITEONLY_PATHS_ANNOTATION`, `hasWriteOnlyPaths()`, `getWriteOnlyPaths()`). Both are enforced by `PropertyRbacHandler::stripWriteOnlyProperties()`, which strips the object body and the flattened `@self.relations` mirror. Enforcement is unconditional at the render boundary (`RenderObject::renderEntity()` and the list cheap path `redactWriteOnlyFromRows()`), gated only by `RenderObject::schemaHasWriteOnlyRule()`. The annotation is validated at save time by `Schema::validateWriteOnlyPathsValue()` and is the one configuration key exempt from per-key isolation: a malformed declaration aborts the save rather than being dropped, because a dropped write-only declaration is fail-open.
 
 **Fully integrated across access methods:**
 - REST API: `RenderObject` calls `PropertyRbacHandler::filterReadableProperties()` during object rendering (line ~1065).

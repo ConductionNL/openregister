@@ -209,22 +209,111 @@ class PropertyRbacHandler
      */
     public function stripWriteOnlyProperties(Schema $schema, array $object): array
     {
-        if ($schema->hasWriteOnlyProperties() === false) {
+        $hasProperties = $schema->hasWriteOnlyProperties();
+        $paths         = $schema->getWriteOnlyPaths();
+
+        if ($hasProperties === false && empty($paths) === true) {
             return $object;
         }
 
-        foreach ($schema->getWriteOnlyProperties() as $propertyName) {
-            if (array_key_exists($propertyName, $object) === true) {
-                unset($object[$propertyName]);
-                $this->logger->debug(
-                    message: '[PropertyRbacHandler] Stripped write-only property',
-                    context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
-                );
+        if ($hasProperties === true) {
+            foreach ($schema->getWriteOnlyProperties() as $propertyName) {
+                if (array_key_exists($propertyName, $object) === true) {
+                    unset($object[$propertyName]);
+                    $this->logger->debug(
+                        message: '[PropertyRbacHandler] Stripped write-only property',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
+                    );
+                }
             }
+        }
+
+        foreach ($paths as $path) {
+            $object = $this->stripWriteOnlyPath(path: $path, object: $object);
         }
 
         return $object;
     }//end stripWriteOnlyProperties()
+
+    /**
+     * Remove one declared write-only dot-path from an outgoing array.
+     *
+     * This handles BOTH shapes OpenRegister renders a write-only value in,
+     * because the same declaration has to cover both and every caller of
+     * stripWriteOnlyProperties() passes one or the other:
+     *
+     * 1. The object BODY, where `configuration.authentication.client_secret`
+     *    is a nested structure to descend into and unset.
+     * 2. The `relations` search-index MIRROR, where SaveObject::scanForRelations()
+     *    flattens nested values into LITERAL dot-path keys — the mirror map is
+     *    already keyed `configuration.authentication.client_secret`. jsonSerialize()
+     *    surfaces that map as `@self.relations`, so a nested secret leaks there
+     *    even after the body strip, exactly as top-level writeOnly did in #429.
+     *
+     * Both operations are applied unconditionally and are mutually inert: a body
+     * has no literal dotted key (dots are not used in property names), and a flat
+     * mirror map has nothing to descend. That keeps this method total over every
+     * input the render path hands it, rather than relying on the caller to know
+     * which shape it holds.
+     *
+     * A declared path removes the value at that location AND its whole sub-tree —
+     * declaring `configuration.authentication` strips every key beneath it, and in
+     * the mirror that means every flattened key prefixed `configuration.authentication.`
+     * (this is what covers `configuration.authentication.keys.<apiKey>`, whose leaf
+     * segments are attacker-supplied and therefore cannot be enumerated in advance).
+     *
+     * @param string $path   The declared dot-path.
+     * @param array  $object The object body or relations mirror.
+     *
+     * @return array The array with the path removed.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    private function stripWriteOnlyPath(string $path, array $object): array
+    {
+        // Shape 2: the flattened relations mirror. Remove an exact dot-path key
+        // and every key beneath it.
+        $prefix = $path.'.';
+        foreach (array_keys($object) as $key) {
+            $key = (string) $key;
+            if ($key === $path || str_starts_with($key, $prefix) === true) {
+                unset($object[$key]);
+                $this->logger->debug(
+                    message: '[PropertyRbacHandler] Stripped write-only path from relations mirror',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $key]
+                );
+            }
+        }
+
+        // Shape 1: the nested object body. Walk the path by reference and unset
+        // the final segment. Bail out the moment the path stops resolving —
+        // a declared path that is absent from this object is normal (the value
+        // was never set) and must not create keys on the way down.
+        $segments = explode('.', $path);
+        $leaf     = array_pop($segments);
+        $cursor   = &$object;
+
+        foreach ($segments as $segment) {
+            if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+                unset($cursor);
+                return $object;
+            }
+
+            $cursor = &$cursor[$segment];
+        }
+
+        if (is_array($cursor) === true && array_key_exists($leaf, $cursor) === true) {
+            unset($cursor[$leaf]);
+            $this->logger->debug(
+                message: '[PropertyRbacHandler] Stripped write-only path',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
+            );
+        }
+
+        unset($cursor);
+
+        return $object;
+    }//end stripWriteOnlyPath()
 
     /**
      * Validate writable properties on incoming data
