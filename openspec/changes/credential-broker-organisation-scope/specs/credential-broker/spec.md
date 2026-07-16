@@ -37,6 +37,8 @@ An organisation credential's secret SHALL be stored in the Nextcloud vault under
 
 The broker's owner guard SHALL dispatch on `scope` such that a `personal` credential is admitted only when the acting user equals its `owner` (unchanged), and an `organisation` credential is admitted only when the acting user is a member of the credential's `organisation`; the existing allowedApps, provider allow-rule, and host-lock guards then apply to both scopes.
 
+When a user session exists it is AUTHORITATIVE for the organisation branch: membership is resolved against the session user and any asserted acting organisation is ignored, so a request-context caller can never escalate via an assertion. When NO session exists, an `organisation` credential MAY be admitted for a trusted in-process caller that asserts an `actingOrganisationId` equal to the credential's `organisation` (openregister#450); this is the only sessionless admit path, it is honored ONLY without a session, and the value SHALL NOT be settable from request input — the HTTP-routed broker call passes none, and the assertion is reachable only through the non-routed in-process resolution path. The match keeps resolution decoupled from any individual user's membership (ADR-064 Rule 4): the sessionless `actingUserId` fallback SHALL NOT be consulted for the organisation branch, so org scope is never recoupled to one user.
+
 #### Scenario: Organisation member drives an organisation credential
 
 - **WHEN** an authenticated member of the credential's organisation triggers a broker call for an app listed in `allowedApps`
@@ -48,10 +50,21 @@ The broker's owner guard SHALL dispatch on `scope` such that a `personal` creden
 - **WHEN** a user who is not a member of the credential's organisation triggers a broker call against it
 - **THEN** the broker denies the call before any provider call is made
 
-#### Scenario: Organisation call requires a session
+#### Scenario: Routed organisation call still requires a session
 
-- **WHEN** a broker call for an organisation credential has no authenticated user session
-- **THEN** the broker denies it (the sessionless `actingUserId` fallback applies to personal credentials only)
+- **WHEN** an HTTP-routed broker call for an organisation credential has no authenticated user session
+- **THEN** the broker denies it (the routed path asserts no acting organisation, and the sessionless `actingUserId` fallback applies to personal credentials only)
+
+#### Scenario: Sessionless in-process caller resolves an organisation credential by matching assertion
+
+- **WHEN** a trusted in-process caller with no user session resolves an organisation-scoped inject-only credential and asserts an `actingOrganisationId`
+- **THEN** the credential is admitted and its organisation-scoped secret is returned only when the asserted organisation equals the credential's `organisation`
+- **AND** it is denied when the assertion is absent, empty, or does not match
+
+#### Scenario: A session ignores an asserted acting organisation
+
+- **WHEN** a broker call for an organisation credential has an authenticated user session AND also carries an `actingOrganisationId`
+- **THEN** membership is resolved against the session user and the asserted organisation is ignored, so a session member is admitted despite a wrong assertion and a session non-member is denied despite a matching one
 
 #### Scenario: Personal guard is unchanged
 
