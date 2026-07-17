@@ -3692,6 +3692,16 @@ class SaveObject
         // "skip validation when reference unchanged" check honest.
         $oldData = $existingObject->getObject();
 
+        // Detect which declared write-only locations this payload OMITS, so the stored
+        // values can be carried forward below instead of being nulled (openregister#463).
+        // This runs on the RAW $data on purpose: prepareObjectData's setDefaultValues()
+        // applies a property's `default` when the key is absent, which would materialize
+        // an omitted key and hide the omission from this check.
+        $omittedWriteOnly = $this->propertyRbacHandler->collectOmittedWriteOnlyPaths(
+            schema: $schema,
+            incoming: $data
+        );
+
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
@@ -3702,6 +3712,28 @@ class SaveObject
             data: $preparedData,
             register: $existingObject->getRegister(),
             oldData: $oldData
+        );
+
+        // Carry omitted write-only values forward from the stored object (openregister#463).
+        // The read boundary strips writeOnly from every response, so a client doing the
+        // natural GET/edit/PUT round-trip re-sends a body without the secret it was never
+        // shown; the PUT-semantic null-fill immediately below would then destroy it. This
+        // is the save-side half of the writeOnly contract, symmetric with the read-side
+        // strip in PropertyRbacHandler::stripWriteOnlyProperties().
+        //
+        // Ordering is load-bearing in both directions. It must run AFTER prepareObjectData
+        // because that is where FieldEncryptionHandler::encryptProperties() runs: $oldData
+        // holds the stored value, which for an encrypted property is ciphertext, and
+        // restoring it any earlier would double-encrypt it. It must run BEFORE the null-fill
+        // because that fill materializes every absent property as null, after which an
+        // omitted secret is indistinguishable from one the client explicitly cleared.
+        //
+        // $oldData is the raw ObjectEntity::getObject() snapshot taken above — never a
+        // rendered read, which by construction would already have the secret stripped.
+        $preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
+            prepared: $preparedData,
+            stored: $oldData,
+            omittedPaths: $omittedWriteOnly
         );
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
