@@ -3817,20 +3817,24 @@ class SaveObject
         // - For background / system contexts (no IUserSession user) applyOwnerAttribution
         // only fills in owner when it is empty, so a client-supplied value would
         // persist — that is the actual attack vector closed by this change.
-        // SECURITY (wave-11 SB1): organisation must only be accepted from @self when the
-        // caller is an admin or has verified membership in that organisation.
+        // SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
+        // @self when the caller is an admin or has verified membership in that organisation.
         // Blindly applying a client-supplied organisation UUID allows any authenticated
         // user to plant data inside another tenant's view (cross-tenant data injection).
+        //
+        // Wave-12 closed SB1 with an admin-ONLY gate; this lineage later widened the
+        // allow-list to admins OR verified members of the requested organisation. That
+        // widening does not reopen SB1: hasAccessToOrganisation() verifies the caller
+        // actually belongs to the target organisation, so a caller can still never plant
+        // data in a tenant they are not a member of — which is the vector SB1 describes.
+        // The admin arm delegates to wave-12's callerIsAdmin() helper, which is the same
+        // session-user + IGroupManager check this lineage had inlined, additionally
+        // hardened against IGroupManager throwing.
         if (array_key_exists('organisation', $selfData) === true
             && empty($selfData['organisation']) === false
         ) {
-            $sessionUser = $this->userSession->getUser();
-            $isAdmin     = $sessionUser !== null
-                && $this->groupManager !== null
-                && $this->groupManager->isAdmin($sessionUser->getUID()) === true;
-
             // Only allow admin, or callers who actually belong to the requested organisation.
-            if ($isAdmin === true
+            if ($this->callerIsAdmin() === true
                 || $this->organisationService->hasAccessToOrganisation($selfData['organisation']) === true
             ) {
                 $objectEntity->setOrganisation($selfData['organisation']);
@@ -3901,6 +3905,31 @@ class SaveObject
         // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
         // (No setTmlo() call — the field is intentionally omitted).
     }//end setSelfMetadata()
+
+    /**
+     * Resolve whether the current session user is in the admin group.
+     *
+     * Used as the gate for accepting `@self.organisation` overrides on write
+     * (Wave-12 Fix 3). Returns false when:
+     *  - no session user (anonymous / background);
+     *  - no IGroupManager was injected (legacy DI in tests);
+     *  - IGroupManager raises an exception.
+     *
+     * @return bool True when the current caller is an admin.
+     */
+    private function callerIsAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null || $this->groupManager === null) {
+            return false;
+        }
+
+        try {
+            return $this->groupManager->isAdmin($user->getUID());
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end callerIsAdmin()
 
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.

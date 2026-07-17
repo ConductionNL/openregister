@@ -159,6 +159,46 @@ class PermissionHandler
     ];
 
     /**
+     * Write actions affected by the `enforce_default_closed` opt-in flag.
+     *
+     * When `IAppConfig::getValueBool('openregister', 'enforce_default_closed')`
+     * is set to `true`, schemas without an `authorization` block AND without an
+     * explicit `public: true` opt-in default-CLOSED for these actions for
+     * authenticated principals (admin still bypasses; object-owner still
+     * bypasses). Reads remain default-open since `@PublicPage` is the OR-wide
+     * read model.
+     *
+     * The flag defaults to `false` for BC: the fleet ships ~15 leaf apps whose
+     * `*_register.json` files do not yet declare authorization blocks. Flipping
+     * the default would brick them overnight. The flag is the opt-in path to
+     * the next-major default flip — see the tracking issue in the PR
+     * description.
+     *
+     * @var string[]
+     */
+    private const DEFAULT_CLOSED_WRITE_ACTIONS = [
+        'create',
+        'update',
+        'delete',
+    ];
+
+    /**
+     * App identifier used for `IAppConfig` lookups.
+     *
+     * @var string
+     */
+    private const APP_ID = 'openregister';
+
+    /**
+     * `IAppConfig` key for the default-closed enforcement opt-in flag.
+     *
+     * Default value (when unset): `false` (preserves Wave-11 behaviour).
+     *
+     * @var string
+     */
+    public const CONFIG_ENFORCE_DEFAULT_CLOSED = 'enforce_default_closed';
+
+    /**
      * PermissionHandler constructor.
      *
      * @param IUserSession                               $userSession        User session for getting current user.
@@ -167,7 +207,8 @@ class PermissionHandler
      * @param SchemaMapper                               $schemaMapper       Mapper for schema operations.
      * @param MagicMapper                                $objectEntityMapper Mapper for object entity operations.
      * @param ConditionMatcher                           $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
-     * @param IAppConfig                                 $appConfig          App config for the inheritFromPublic tenant default.
+     * @param IAppConfig                                 $appConfig          App config for the inheritFromPublic tenant default and
+     *                                                                       the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
      * @param LoggerInterface                            $logger             Logger for permission auditing.
      * @param ContainerInterface                         $container          Container for lazy loading services.
      * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
@@ -328,6 +369,16 @@ class PermissionHandler
                 // Object supplied but has no stable identity — caching is unsafe.
                 return null;
             }
+
+            // Wave-12 Fix 5: per-object `_authorization` overrides the schema
+            // baseline. The verdict depends on data that may have been mutated
+            // earlier in the same request (e.g. an admin updating the rule on
+            // the same object), so we cannot safely reuse a pre-mutation
+            // verdict — drop the cache when the object carries an override.
+            $objectAuth = $object->getAuthorization();
+            if (empty($objectAuth) === false) {
+                return null;
+            }
         }
 
         return sprintf(
@@ -422,8 +473,14 @@ class PermissionHandler
         // Previously the resolver swallowed the error and returned null, which this
         // method's `empty($authorization)` treatment read as "no rules configured"
         // and granted every action to every caller (CWE-863).
+        //
+        // Wave-12 Fix 5: per-object `_authorization` (when present) overrides
+        // schema/register rules action-by-action — hence the `object:` argument;
+        // see resolveAuthorization(). Both rules apply: the per-object override
+        // selects WHICH rules are effective, the try/catch decides what happens
+        // when no rules can be resolved at all.
         try {
-            $authorization = $this->resolveAuthorization(schema: $schema);
+            $authorization = $this->resolveAuthorization(schema: $schema, object: $object);
         } catch (AuthorizationUnresolvableException $e) {
             $this->logger->error(
                 message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
@@ -1065,15 +1122,56 @@ class PermissionHandler
             return true;
         }
 
-        // If no authorization is set, everyone has all permissions.
-        if (empty($authorization) === true) {
+        // Wave-12 Fix 2: schemas without an `authorization` block AND without
+        // an explicit `public: true` opt-in are evaluated under the
+        // `enforce_default_closed` policy when the operator has opted in via
+        // IAppConfig. Default behaviour (flag unset/false) is preserved for BC —
+        // see the {@see CONFIG_ENFORCE_DEFAULT_CLOSED} docblock for the rationale
+        // and the tracking issue for the next-major default flip.
+        $publicOptIn = (is_array($authorization) === true
+            && array_key_exists('public', $authorization) === true
+            && $authorization['public'] === true);
+
+        if (empty($authorization) === true || $publicOptIn === true) {
+            if ($this->isDefaultClosedEnforced() === true
+                && in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === true
+                && $publicOptIn === false
+            ) {
+                // Default-CLOSED write action: deny unless the caller is admin
+                // (handled at evaluatePermission) or the object owner (handled
+                // above). Both branches have already returned by this point.
+                return false;
+            }
+
+            // Default-OPEN behaviour preserved.
+            // Emit a deprecation WARNING the FIRST time this branch is hit for
+            // a given schema/action pair when the flag is OFF, so leaf-app
+            // maintainers see actionable signal in NC logs ahead of the flip.
+            if ($this->isDefaultClosedEnforced() === false
+                && in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === true
+                && $publicOptIn === false
+                && empty($authorization) === true
+            ) {
+                $this->logDefaultOpenDeprecation(action: $action);
+            }
+
             return true;
-        }
+        }//end if
 
         // Fail-closed: once a schema opts into authorization (non-empty block),
         // an action that is not explicitly listed is denied — including for the
         // `public`/unauthenticated pseudo-group. Only the empty-block default
         // above still grants by default; the admin/owner bypasses precede this.
+        //
+        // This unconditional deny SUBSUMES wave-12's narrower rule here, which
+        // denied an unlisted action only when `enforce_default_closed` was on AND
+        // the action was a write, and otherwise granted it. Every input this
+        // branch denies, wave-12 denied or granted; it never grants where wave-12
+        // denied, so wave-12's default-closed intent is preserved and tightened.
+        // Wave-12's default-closed enforcement for the EMPTY-block case remains
+        // intact above (see isDefaultClosedEnforced/DEFAULT_CLOSED_WRITE_ACTIONS).
+        // `empty()` rather than `isset()` additionally denies an explicitly empty
+        // rule list (e.g. `"create": []`), which reads as "grant to nobody".
         if (empty($authorization[$action]) === true) {
             return false;
         }
@@ -1278,6 +1376,89 @@ class PermissionHandler
 
         return false;
     }//end publicGroupExplicitlyGranted()
+
+    /**
+     * Whether the `enforce_default_closed` opt-in flag is active.
+     *
+     * Reads `IAppConfig::getValueBool('openregister', 'enforce_default_closed', false)`.
+     * Returns `false` when no IAppConfig is wired (legacy tests using the
+     * 8-arg constructor) so behaviour stays default-open by default.
+     *
+     * Wave-12 Fix 2.
+     *
+     * @return bool True when the flag is set; false otherwise (BC default).
+     */
+    private function isDefaultClosedEnforced(): bool
+    {
+        // Wave-12 injected IAppConfig as an optional trailing constructor arg and
+        // guarded `$this->appConfig === null` here for BC with the then-current
+        // 8-arg signature. On this lineage IAppConfig is already a REQUIRED
+        // constructor dependency (it also backs the inheritFromPublic tenant
+        // default), so that guard is unreachable by construction and has been
+        // dropped rather than kept as an always-false comparison. The try/catch
+        // below still preserves the BC default-open on an unreachable appconfig.
+        try {
+            return $this->appConfig->getValueBool(
+                app: self::APP_ID,
+                key: self::CONFIG_ENFORCE_DEFAULT_CLOSED,
+                default: false
+            );
+        } catch (\Throwable $e) {
+            // Defensive: if appconfig is unreachable, preserve BC default-open.
+            return false;
+        }
+    }//end isDefaultClosedEnforced()
+
+    /**
+     * Tracks per-process which (action) keys we've already deprecation-warned for.
+     *
+     * Avoids flooding the log on hot list endpoints — we only want one entry per
+     * action per request lifecycle. Resets implicitly with the PHP-FPM worker.
+     *
+     * @var array<string, bool>
+     */
+    private array $deprecationWarnedActions = [];
+
+    /**
+     * Emit a one-shot deprecation warning when a schema with no `authorization`
+     * block is granted a write action under the legacy default-open behaviour.
+     *
+     * Surfaces the gap leaf-app maintainers will need to address ahead of the
+     * next-major default flip (tracking issue in PR description). Quieted to
+     * one entry per action per request to avoid log noise on hot paths.
+     *
+     * Wave-12 Fix 2.
+     *
+     * @param string $action The CRUD action being permitted under default-open.
+     *
+     * @return void
+     */
+    private function logDefaultOpenDeprecation(string $action): void
+    {
+        if (isset($this->deprecationWarnedActions[$action]) === true) {
+            return;
+        }
+
+        $this->deprecationWarnedActions[$action] = true;
+        $messageParts = [
+            '[PermissionHandler] DEPRECATION: schema without an authorization block grants ',
+            $action,
+            ' to any authenticated user. Set the IAppConfig flag ',
+            self::APP_ID,
+            ':',
+            self::CONFIG_ENFORCE_DEFAULT_CLOSED,
+            ' to true to require an explicit authorization block (or set `"public": true` on the schema to keep open writes).',
+        ];
+        $this->logger->warning(
+            message: implode('', $messageParts),
+            context: [
+                'file'   => __FILE__,
+                'line'   => __LINE__,
+                'action' => $action,
+                'flag'   => self::CONFIG_ENFORCE_DEFAULT_CLOSED,
+            ]
+        );
+    }//end logDefaultOpenDeprecation()
 
     /**
      * Get all groups that have permission for a specific action
@@ -1495,11 +1676,29 @@ class PermissionHandler
     /**
      * Resolve the effective authorization for a schema.
      *
-     * If the schema has its own authorization block, use it directly.
-     * If not, fall back to the parent register's authorization block.
-     * Role references in the authorization are expanded to action-level permissions.
+     * Precedence (highest wins):
+     *   1. Per-object `_authorization` (column on ObjectEntity)
+     *      — overrides schema/register rules for that specific object only,
+     *        merged action-by-action (an object that defines `update` overrides
+     *        the schema's `update`; actions absent from the object inherit from
+     *        the schema).
+     *   2. Schema-level `authorization` block.
+     *   3. Parent register's `authorization` block.
+     *   4. `null` (no rules configured → default-open under
+     *      {@see hasGroupPermission()} unless the
+     *      {@see CONFIG_ENFORCE_DEFAULT_CLOSED} flag is set).
      *
-     * @param Schema $schema The schema to resolve authorization for.
+     * Role references in the authorization are expanded to action-level
+     * permissions.
+     *
+     * Wave-12 Fix 5: per-object `_authorization` was dead storage before this
+     * change. The audit at `/tmp/wave11-or-engine-primitives.md` Section F
+     * documents the gap.
+     *
+     * @param Schema            $schema The schema to resolve authorization for.
+     * @param ObjectEntity|null $object Optional object entity whose `_authorization`
+     *                                  column (when non-empty) overrides
+     *                                  schema/register rules action-by-action.
      *
      * @return array|null The effective authorization array, or null if none configured.
      *
@@ -1511,27 +1710,46 @@ class PermissionHandler
      *
      * @spec openspec/specs/authorization-rbac/spec.md#requirement-authorization-resolution-fails-closed
      */
-    public function resolveAuthorization(Schema $schema): ?array
+    public function resolveAuthorization(Schema $schema, ?ObjectEntity $object=null): ?array
     {
-        $authorization = $schema->getAuthorization();
+        $schemaAuthorization = $schema->getAuthorization();
 
-        // If schema has its own authorization, expand roles and return.
-        if (empty($authorization) === false) {
-            return $this->expandRoles(authorization: $authorization, schema: $schema);
+        // Compute the schema-or-register baseline first.
+        if (empty($schemaAuthorization) === false) {
+            $baseline = $this->expandRoles(authorization: $schemaAuthorization, schema: $schema);
+        } else {
+            $baseline = null;
+            $register = $this->getRegisterForSchema(schema: $schema);
+            if ($register !== null) {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+                if (empty($registerAuth) === false) {
+                    $baseline = $this->expandRoles(authorization: $registerAuth, schema: $schema);
+                }
+            }
         }
 
-        // Fall back to register authorization.
-        $register = $this->getRegisterForSchema(schema: $schema);
-        if ($register === null) {
-            return null;
+        // Wave-12 Fix 5: layer per-object overrides on top.
+        if ($object === null) {
+            return $baseline;
         }
 
-        $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
-        if (empty($registerAuth) === false) {
-            return $this->expandRoles(authorization: $registerAuth, schema: $schema);
+        $objectAuth = $object->getAuthorization();
+        if (empty($objectAuth) === false && is_array($objectAuth) === true) {
+            $expandedObjectAuth = $this->expandRoles(authorization: $objectAuth, schema: $schema);
+            if ($baseline === null) {
+                return $expandedObjectAuth;
+            }
+
+            // Action-by-action override: keys present on the object replace the
+            // schema/register values for the same key. Keys NOT on the object
+            // inherit from the baseline. This lets a schema author publish a
+            // base policy and let individual objects narrow or widen specific
+            // actions (e.g. seal an audited record by overriding `update` /
+            // `delete` to `["admin"]` only).
+            return array_replace($baseline, $expandedObjectAuth);
         }
 
-        return null;
+        return $baseline;
     }//end resolveAuthorization()
 
     /**

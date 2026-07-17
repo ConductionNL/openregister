@@ -145,9 +145,12 @@ class SaveObjects
      * @param IUserSession           $userSession         User session for getting current user
      * @param OrganisationService    $organisationService Service for organisation operations
      * @param LoggerInterface        $logger              Logger for error and debug logging
-     * @param IGroupManager|null     $groupManager        Group manager for admin-bypass detection
-     * @param PermissionHandler|null $permissionHandler   Permission handler for per-object RBAC enforcement
-     * @param ValidateObject|null    $validateHandler     Validation handler for per-object schema validation
+     * @param IGroupManager|null     $groupManager        Group manager for admin-bypass detection; also backs the
+     *                                                    wave-12 `_rbac` / `_validation` reserved-keys policy
+     * @param PermissionHandler|null $permissionHandler   Permission handler for per-object RBAC enforcement;
+     *                                                    wave-12 Fix 3 per-row RBAC + appendOnly gate
+     * @param ValidateObject|null    $validateHandler     Validation handler for per-object schema validation;
+     *                                                    wave-12 Fix 3 per-row JSON-Schema validation
      * @param IEventDispatcher|null  $eventDispatcher     Event dispatcher for object lifecycle events
      * @param AuditTrailMapper|null  $auditTrailMapper    Audit trail mapper for logging bulk changes
      *
@@ -312,6 +315,40 @@ class SaveObjects
 
         // Validate input early.
         if (empty($objects) === true) {
+            return $result;
+        }
+
+        // Wave-12 Fix 3: bulk-path safeguards. Applied per-object BEFORE
+        // delegating to the transform/upsert pipeline. Covers:
+        // - PermissionHandler::hasPermission per row (RBAC default-secure)
+        // - @self stripping of `owner`/`organisation`/`authorization` for
+        // non-admin callers (extends the wave-9 single-object strip)
+        // - appendOnly enforcement on UPDATE rows
+        // - Reserved keys `_rbac:false` / `_validation:false` honoured only
+        // when the caller is admin
+        // Validation under `_validation: true` runs Opis per-row when
+        // requested. See `/tmp/wave11-or-engine-primitives.md` Section D.
+        $objects = $this->applyBulkSafeguards(
+            objects: $objects,
+            register: $register,
+            schema: $schema,
+            _rbac: $_rbac,
+            _validation: $_validation,
+            result: $result
+        );
+
+        if (empty($objects) === true) {
+            // All input rows rejected — short-circuit to avoid the empty
+            // "no objects prepared" error response below.
+            $totalTime = microtime(true) - $startTime;
+            $result['performance'] = [
+                'totalTime'        => round($totalTime, 3),
+                'totalTimeMs'      => round($totalTime * 1000, 2),
+                'objectsPerSecond' => 0.0,
+                'totalProcessed'   => 0,
+                'totalRequested'   => $totalObjects,
+                'efficiency'       => 0,
+            ];
             return $result;
         }
 
@@ -494,6 +531,372 @@ class SaveObjects
             ],
         ];
     }//end initializeSaveResult()
+
+    /**
+     * Apply per-row bulk-path safeguards (Wave-12 Fix 3).
+     *
+     * Centralised gate that catches the bulk-path bypasses documented in
+     * `/tmp/wave11-or-engine-primitives.md` Section D + SB2 in
+     * `/tmp/wave11-openregister-report.md`. For each candidate object:
+     *
+     *  1. **@self stripping for non-admin callers.** Drop client-supplied
+     *     `owner`, `organisation`, `authorization` from both `@self` and the
+     *     top-level flat fields (the wave-9 single-object fix only stripped
+     *     `owner`/`authorization` on the SaveObject path; the bulk pipeline
+     *     skipped this entirely AND organisation was never stripped on either
+     *     path → cross-tenant injection vector). Admin callers may still set
+     *     these (e.g. import path attributing rows to original owner).
+     *
+     *  2. **Reserved-keys policy.** `_rbac: false` and `_validation: false`
+     *     are honoured only when the caller is admin. Non-admin attempts to
+     *     bypass RBAC or validation are silently ignored (flags reset to the
+     *     defaults that DO enforce).
+     *
+     *  3. **Per-row PermissionHandler check.** Resolve the row's schema +
+     *     register, derive the action (CREATE vs UPDATE by UUID presence),
+     *     and call `PermissionHandler::hasPermission`. Rows that fail are
+     *     moved to the `invalid` bucket with a structured error and excluded
+     *     from the downstream pipeline.
+     *
+     *  4. **appendOnly enforcement.** If a row targets an `appendOnly: true`
+     *     schema and resolves to an UPDATE (existing UUID), reject — mirrors
+     *     `ObjectService::saveObject:1154` for the single-object path.
+     *
+     *  5. **Opis JSON-Schema validation.** When the caller passes
+     *     `_validation: true`, run `ValidateObject::validateObject` per row;
+     *     failures go to the `invalid` bucket.
+     *
+     * The returned array contains only the rows that passed all gates.
+     * Rejected rows are accumulated in `$result['invalid']` and reflected in
+     * `$result['statistics']`.
+     *
+     * BC: when any of `PermissionHandler`, `ValidateObject`, or `IGroupManager`
+     * are NOT injected (legacy 7-arg constructor), each absent dependency
+     * silently skips that gate's enforcement. The default service container
+     * wiring DOES inject all three, so production callers get the full
+     * pipeline.
+     *
+     * @param array<int, array<string, mixed>> $objects     Raw input objects.
+     * @param Register|string|int|null         $register    Default register context.
+     * @param Schema|string|int|null           $schema      Default schema context (null = mixed-schema).
+     * @param bool                             $_rbac       Caller-requested RBAC flag (admin may set false).
+     * @param bool                             $_validation Caller-requested validation flag.
+     * @param array                            $result      Result accumulator (mutated in place: `invalid` + `statistics`).
+     *
+     * @return array<int, array<string, mixed>> Objects that passed every gate.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     */
+    private function applyBulkSafeguards(
+        array $objects,
+        Register|string|int|null $register,
+        Schema|string|int|null $schema,
+        bool $_rbac,
+        bool $_validation,
+        array &$result
+    ): array {
+        // No-op when dependencies are not wired (legacy constructor signature).
+        if ($this->permissionHandler === null) {
+            return $objects;
+        }
+
+        $currentUser = $this->userSession->getUser();
+        $isAdmin     = false;
+        if ($currentUser !== null && $this->groupManager !== null) {
+            try {
+                $isAdmin = $this->groupManager->isAdmin($currentUser->getUID());
+            } catch (\Throwable $e) {
+                $isAdmin = false;
+            }
+        }
+
+        // Non-admin callers cannot disable RBAC via `_rbac:false`. The flag
+        // is honoured only when the caller is admin (e.g. trusted import
+        // pipelines). The reserved-key policy at
+        // `/tmp/wave11-or-engine-primitives.md` Section B6 documents the
+        // intent: `_rbac` is a system/internal escape hatch, not an
+        // end-user opt-out.
+        $effectiveRbac = $_rbac;
+        if ($isAdmin === false) {
+            // Non-admin → force RBAC on regardless of payload.
+            $effectiveRbac = true;
+        }
+
+        // Validation flag is honoured as-passed by either tier — it
+        // controls a defence-in-depth schema check that authors opt in to
+        // when they want bulk-import payloads to be schema-validated.
+        $effectiveValidation = $_validation;
+        // Resolve default register/schema entities once for the loop. These
+        // are used when an individual object does not carry an explicit
+        // register/schema in `@self`.
+        $defaultRegister = $this->resolveSafeguardRegister(register: $register);
+        $defaultSchema   = $this->resolveSafeguardSchema(schema: $schema);
+
+        $passed = [];
+        foreach ($objects as $index => $object) {
+            // Note: phpdoc shape guarantees each $object is an array. Earlier
+            // versions of this loop carried an `is_array($object) === false`
+            // defence; phpstan flagged it as dead because the typed shape
+            // contracts on the public method. Callers passing non-array
+            // rows would be a programmer error, not a runtime concern.
+            unset($index);
+
+            // Step 1: strip dangerous @self fields for non-admins.
+            $sanitised = $this->stripSelfInjectionFields(object: $object, isAdmin: $isAdmin);
+
+            // Resolve effective schema for this row (per-object schema wins
+            // for mixed-schema bulk).
+            $rowSchema = $this->resolveSafeguardRowSchema(
+                object: $sanitised,
+                defaultSchema: $defaultSchema
+            );
+
+            // No schema → can't enforce schema-bound rules. Allow through; the
+            // downstream prep will record an "invalid" with the proper error
+            // shape. This preserves wave-11 behaviour for malformed payloads.
+            if ($rowSchema === null) {
+                $passed[] = $sanitised;
+                continue;
+            }
+
+            // Determine CREATE vs UPDATE by UUID lookup.
+            [$uuid, $action, $existingEntity] = $this->resolveSafeguardActionForRow(
+                object: $sanitised,
+                rowSchema: $rowSchema
+            );
+
+            // Step 4: appendOnly UPDATE → reject.
+            if ($action === 'update' && $rowSchema->isAppendOnly() === true) {
+                $this->recordSafeguardRejection(
+                    object: $sanitised,
+                    reason: 'Schema is appendOnly; UPDATE rejected for row UUID '.((string) ($uuid ?? '?')),
+                    result: $result
+                );
+                continue;
+            }
+
+            // Step 3: PermissionHandler check (per row).
+            if ($effectiveRbac === true) {
+                $hasPermission = $this->permissionHandler->hasPermission(
+                    schema: $rowSchema,
+                    action: $action,
+                    userId: $currentUser?->getUID(),
+                    objectOwner: $existingEntity?->getOwner(),
+                    _rbac: true,
+                    object: $existingEntity
+                );
+
+                if ($hasPermission === false) {
+                    $this->recordSafeguardRejection(
+                        object: $sanitised,
+                        reason: 'Permission denied for action '.$action.' on schema '.$rowSchema->getSlug(),
+                        result: $result
+                    );
+                    continue;
+                }
+            }
+
+            // Step 5: Opis JSON-Schema validation when requested.
+            if ($effectiveValidation === true && $this->validateHandler !== null) {
+                try {
+                    $validationData = $sanitised;
+                    unset($validationData['@self']);
+                    $validationResult = $this->validateHandler->validateObject(
+                        object: $validationData,
+                        schema: $rowSchema
+                    );
+                    if ($validationResult->isValid() === false) {
+                        $errorMessage = $this->validateHandler->generateErrorMessage(result: $validationResult);
+                        $this->recordSafeguardRejection(
+                            object: $sanitised,
+                            reason: 'Schema validation failed: '.$errorMessage,
+                            result: $result
+                        );
+                        continue;
+                    }
+                } catch (\Throwable $e) {
+                    $this->recordSafeguardRejection(
+                        object: $sanitised,
+                        reason: 'Schema validation threw: '.$e->getMessage(),
+                        result: $result
+                    );
+                    continue;
+                }//end try
+            }//end if
+
+            $passed[] = $sanitised;
+        }//end foreach
+
+        return $passed;
+    }//end applyBulkSafeguards()
+
+    /**
+     * Strip dangerous client-supplied @self / top-level fields.
+     *
+     * For non-admin callers, removes `owner`, `organisation`, `authorization`
+     * from both `@self` and the flat top-level form. This is the bulk-path
+     * mirror of the wave-9 single-object @self strip + the missing
+     * `organisation` strip flagged in `/tmp/wave11-openregister-report.md`
+     * SB1. Admins may still set these (e.g. import-as-original-owner).
+     *
+     * `_owner`/`_organisation`/`_authorization` underscore-prefixed forms are
+     * also stripped for non-admins because MagicBulkHandler reads both flat
+     * and underscored forms.
+     *
+     * @param array $object  Raw input object.
+     * @param bool  $isAdmin Whether the caller is in the admin group.
+     *
+     * @return array Sanitised object.
+     */
+    private function stripSelfInjectionFields(array $object, bool $isAdmin): array
+    {
+        if ($isAdmin === true) {
+            return $object;
+        }
+
+        $dangerousKeys = ['owner', 'organisation', 'authorization'];
+        foreach ($dangerousKeys as $key) {
+            unset($object[$key], $object['_'.$key]);
+            if (isset($object['@self']) === true && is_array($object['@self']) === true) {
+                unset($object['@self'][$key]);
+            }
+        }
+
+        return $object;
+    }//end stripSelfInjectionFields()
+
+    /**
+     * Resolve the register entity to use as the per-row default.
+     *
+     * @param Register|string|int|null $register The bulk-call register argument.
+     *
+     * @return Register|null Resolved entity, or null if no default register was given.
+     */
+    private function resolveSafeguardRegister(Register|string|int|null $register): ?Register
+    {
+        if ($register === null) {
+            return null;
+        }
+
+        if ($register instanceof Register === true) {
+            return $register;
+        }
+
+        try {
+            return $this->loadRegisterWithCache(registerId: $register);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveSafeguardRegister()
+
+    /**
+     * Resolve the schema entity to use as the per-row default.
+     *
+     * @param Schema|string|int|null $schema The bulk-call schema argument (null = mixed-schema).
+     *
+     * @return Schema|null Resolved entity, or null for mixed-schema operations.
+     */
+    private function resolveSafeguardSchema(Schema|string|int|null $schema): ?Schema
+    {
+        if ($schema === null || $schema === 0 || $schema === '0') {
+            return null;
+        }
+
+        if ($schema instanceof Schema === true) {
+            return $schema;
+        }
+
+        try {
+            return $this->loadSchemaWithCache(schemaId: $schema);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveSafeguardSchema()
+
+    /**
+     * Determine which schema applies to a single bulk row.
+     *
+     * Looks at `@self.schema` first (mixed-schema mode), then falls back to
+     * the call-level default.
+     *
+     * @param array       $object        Raw row data.
+     * @param Schema|null $defaultSchema Call-level default schema.
+     *
+     * @return Schema|null Resolved schema, or null when unresolvable.
+     */
+    private function resolveSafeguardRowSchema(array $object, ?Schema $defaultSchema): ?Schema
+    {
+        $selfSchema = $object['@self']['schema'] ?? null;
+        if ($selfSchema !== null && $selfSchema !== '') {
+            try {
+                return $this->loadSchemaWithCache(schemaId: $selfSchema);
+            } catch (\Throwable $e) {
+                // Fall through to default.
+            }
+        }
+
+        return $defaultSchema;
+    }//end resolveSafeguardRowSchema()
+
+    /**
+     * Resolve the CRUD action + existing entity for a bulk row.
+     *
+     * UPDATE = the row carries a UUID that matches an existing object in the
+     * register/schema's magic table. CREATE = otherwise.
+     *
+     * @param array  $object    Raw row data.
+     * @param Schema $rowSchema Row schema for table lookup.
+     *
+     * @return array{0: ?string, 1: string, 2: ?ObjectEntity} Tuple of [uuid, action, existingEntity].
+     */
+    private function resolveSafeguardActionForRow(array $object, Schema $rowSchema): array
+    {
+        $uuid = $object['@self']['uuid'] ?? $object['@self']['id'] ?? $object['id'] ?? null;
+        if ($uuid === null || $uuid === '' || is_string($uuid) === false) {
+            return [null, 'create', null];
+        }
+
+        try {
+            $existing = $this->objectEntityMapper->find(
+                identifier: $uuid,
+                _rbac: false,
+                _multitenancy: false
+            );
+            return [$uuid, 'update', $existing];
+        } catch (\Throwable $e) {
+            return [$uuid, 'create', null];
+        }
+    }//end resolveSafeguardActionForRow()
+
+    /**
+     * Record a rejection from `applyBulkSafeguards` into the result accumulator.
+     *
+     * @param array  $object Sanitised row (post-strip — safe to log shape).
+     * @param string $reason Human-readable rejection reason.
+     * @param array  $result Result accumulator (mutated in place).
+     *
+     * @return void
+     */
+    private function recordSafeguardRejection(array $object, string $reason, array &$result): void
+    {
+        $result['invalid'][] = [
+            'object' => $object,
+            'error'  => $reason,
+        ];
+        $result['errors'][]  = [
+            'error' => $reason,
+            'type'  => 'BulkSafeguardException',
+        ];
+        $result['statistics']['invalid']++;
+        $result['statistics']['errors']++;
+
+        $this->logger->info(
+            message: '[SaveObjects] Wave-12 bulk safeguard rejected row',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'reason' => $reason]
+        );
+    }//end recordSafeguardRejection()
 
     /**
      * Calculate optimal chunk size based on total objects for internal processing

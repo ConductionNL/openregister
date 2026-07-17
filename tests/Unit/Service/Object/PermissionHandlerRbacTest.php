@@ -51,8 +51,26 @@ class PermissionHandlerRbacTest extends TestCase
         $this->container = $this->createMock(ContainerInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
 
+        // Key-aware IAppConfig stub. PermissionHandler now reads TWO independent
+        // boolean flags through this one service:
+        //   - `rbac.inherit_from_public_default` (default true)  — this lineage;
+        //   - `enforce_default_closed`           (default false) — wave-12 Fix 2.
+        // A blanket `willReturn(true)` would silently switch the wave-12
+        // default-closed policy ON for every test in this class, turning the
+        // default-OPEN assertions below into failures for a reason that cannot
+        // happen in production (the flag is opt-in and defaults to false).
+        // Returning the caller-supplied $default for any key the test does not
+        // explicitly care about mirrors real IAppConfig behaviour.
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueBool')->willReturn(true);
+        $appConfig->method('getValueBool')->willReturnCallback(
+            static function (string $app, string $key, bool $default=false): bool {
+                if ($key === 'rbac.inherit_from_public_default') {
+                    return true;
+                }
+
+                return $default;
+            }
+        );
 
         $this->handler = new PermissionHandler(
             $this->userSession,
@@ -673,8 +691,18 @@ class PermissionHandlerRbacTest extends TestCase
             $operatorEvaluator,
             $this->logger
         );
+        // Key-aware stub — see the rationale in setUp(): a blanket true would
+        // switch wave-12's opt-in `enforce_default_closed` policy on.
         $appConfig = $this->createMock(IAppConfig::class);
-        $appConfig->method('getValueBool')->willReturn(true);
+        $appConfig->method('getValueBool')->willReturnCallback(
+            static function (string $app, string $key, bool $default=false): bool {
+                if ($key === 'rbac.inherit_from_public_default') {
+                    return true;
+                }
+
+                return $default;
+            }
+        );
 
         return new PermissionHandler(
             $this->userSession,
