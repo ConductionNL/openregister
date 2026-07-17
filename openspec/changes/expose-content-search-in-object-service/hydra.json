@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "spec_slug": "expose-content-search-in-object-service",
+  "repo": "https://codeberg.org/conduction/openregister",
+  "issue": 472,
+  "cycles": [
+    {
+      "cycle": 1,
+      "trigger": "build:queued",
+      "started_at": "2026-07-17T19:07:57Z",
+      "ended_at": null,
+      "outcome": "in-flight",
+      "outcome_reason": null,
+      "pattern_tags": [],
+      "stages": []
+    }
+  ]
+}
