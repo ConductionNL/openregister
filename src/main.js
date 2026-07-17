@@ -10,11 +10,13 @@ import {
 	CnPageRenderer,
 	defaultPageTypes,
 	registerIcons,
+	buildManifest,
 } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
 import { Fragment } from 'vue-frag'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
+import menuLayout from './menu-layout.json'
 import registry from './registry.js'
 
 import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
@@ -44,6 +46,10 @@ import Webhook from 'vue-material-design-icons/Webhook.vue'
 import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import Api from 'vue-material-design-icons/Api.vue'
+import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
+import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
+import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import Merge from 'vue-material-design-icons/Merge.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -110,6 +116,10 @@ registerIcons({
 	ShieldLockOutline,
 	ChartBoxOutline,
 	Api,
+	ViewDashboardOutline,
+	ContentDuplicate,
+	AccountMultipleOutline,
+	Merge,
 })
 
 Vue.mixin({ methods: { t, n } })
@@ -127,6 +137,19 @@ Vue.component('Fragment', Fragment)
 // gives Vue Router an extensible component-options object without altering the
 // lib's internals.
 const RoutePageRenderer = { ...CnPageRenderer }
+
+// The manifest→menu pipeline (fragment merge, canonical relocations, duplicate
+// removals, and promotion of config/integration entries into the settings
+// foldout) lives in @conduction/nextcloud-vue's buildManifest(), so every
+// manifest-v2 app shares one implementation. See src/menu-layout.json for this
+// app's relocations / removals / settingsSection.
+
+// Collect the app's manifest.d/*.json fragments — require.context is resolved
+// by this app's own webpack build, so it stays app-local — then hand the base
+// manifest, fragments, and menu-layout to the shared pipeline.
+const fragmentCtx = require.context('./manifest.d/', false, /\.json$/)
+const fragments = fragmentCtx.keys().sort().map((key) => fragmentCtx(key))
+const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
 
 /**
  * Build the vue-router config from the manifest. Each manifest page becomes one
@@ -149,10 +172,19 @@ function routesFromManifest(manifest) {
 	return routes
 }
 
+// Hash mode (not history): the PHP backend registers exactly one frontend
+// route — `dashboard#page` at `/` (appinfo/routes.php) — and no catch-all that
+// serves the SPA shell for deep sub-paths like `/registers` or `/schemas`. In
+// history mode a full-page load or bookmark to `#/registers` drops the fragment
+// and resolves the base path `/` → the Dashboard surface, so the relocated /
+// grouped index pages render empty (no Add button, no list) on deep-link — the
+// #133 regression. Hash mode keeps every route under the single `/` server
+// route, so `#/registers` etc. resolve client-side to their correct index
+// surface. This also matches the e2e harness contract (tests deep-link via
+// `/index.php/apps/openregister/#/<route>`).
 const router = new VueRouter({
-	mode: 'history',
-	base: '/index.php/apps/openregister/',
-	routes: routesFromManifest(bundledManifest),
+	mode: 'hash',
+	routes: routesFromManifest(mergedManifest),
 })
 
 // Pass shallow copies of the registry maps to App.vue → CnAppRoot. The lib
@@ -171,7 +203,7 @@ new Vue(
 		router,
 		render: h => h(App, {
 			props: {
-				manifest: bundledManifest,
+				manifest: mergedManifest,
 				registry: registryProp,
 				pageTypes: pageTypesProp,
 			},

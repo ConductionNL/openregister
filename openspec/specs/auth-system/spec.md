@@ -12,9 +12,7 @@ retrofit_extensions:
 Define the authentication and authorization system for OpenRegister, supporting Nextcloud session auth, Basic Auth for API consumers, JWT bearer tokens for external systems, API key auth for MCP and service-to-service integration, and SSO integration via SAML/OIDC. The auth system MUST map all external identities to Nextcloud users via the Consumer entity and enforce consistent RBAC across every access method (REST, GraphQL, MCP, public endpoints), ensuring that a single identity model drives schema-level, property-level, and row-level security decisions.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype.
-
 ## Requirements
-
 ### Requirement: The system MUST support multiple authentication methods with unified identity resolution
 OpenRegister MUST accept authentication via Nextcloud session cookies, HTTP Basic Auth, Bearer JWT tokens, OAuth2 bearer tokens, and API keys. All methods MUST resolve to a Nextcloud user identity (via `OCP\IUserSession::setUser()`) before any RBAC evaluation occurs, ensuring that authorization decisions are independent of the authentication method used.
 
@@ -647,6 +645,212 @@ The `Schema "%s" not found.` / `Register "%s" not found.` 404 path is preserved:
 - **GIVEN** a new caller is added that calls `SchemaMapper::find($id)` without specifying `_multitenancy`
 - **THEN** the call MUST continue to use the default `_multitenancy: true` (the safe-for-mutation default)
 - **AND** the new caller MUST explicitly opt into `_multitenancy: false` if it is a metadata-read path, per this requirement
+
+### Requirement: The system MUST provide a public self-service login and logout surface with brute-force protection
+
+`UserController` MUST expose `login` and `logout` as `@PublicPage` endpoints that complement the Consumer/API authentication methods with an interactive, session-based self-service flow. `login` MUST: validate and sanitize credentials via `SecurityService::validateLoginCredentials()`; enforce per-username and per-IP rate limiting via `SecurityService::checkLoginRateLimit()` (returning HTTP 429 with `retry_after`/`lockout_until` and applying any progressive delay); authenticate via `IUserManager::checkPassword()`; reject disabled accounts; record success/failure via `SecurityService`; on success call `IUserSession::setUser()` and return the sanitized user data with `session_created: true`. A pre-auth memory guard MUST return HTTP 503 when usage already exceeds 80% of the memory limit. Failed authentication MUST return a generic HTTP 401 ("Invalid username or password") that does not reveal whether the username exists. `logout` MUST end the session via `IUserSession::logout()`. Every response MUST pass through `SecurityService::addSecurityHeaders()`.
+
+#### Scenario: Successful login creates a session
+- **GIVEN** valid credentials for an enabled user that is not rate-limited
+- **WHEN** `login` processes the request
+- **THEN** the user MUST be set on the session via `IUserSession::setUser()`
+- **AND** the response MUST contain `{message: "Login successful", user, session_created: true}` with security headers
+
+#### Scenario: Rate limit returns 429
+- **GIVEN** the username/IP combination is over the failed-attempt threshold
+- **WHEN** `login` checks `SecurityService::checkLoginRateLimit()`
+- **THEN** the response MUST be HTTP 429 with `retry_after` / `lockout_until`
+- **AND** any specified progressive delay MUST be applied before responding
+
+#### Scenario: Failure does not leak username existence
+- **GIVEN** an invalid password (or unknown username)
+- **WHEN** authentication fails
+- **THEN** the response MUST be a generic HTTP 401 "Invalid username or password"
+- **AND** the failed attempt MUST be recorded via `SecurityService::recordFailedLoginAttempt()`
+
+#### Scenario: Disabled account is rejected
+- **GIVEN** valid credentials for a disabled account
+- **THEN** the response MUST be HTTP 401 "Account is disabled" and the failure MUST be recorded
+
+### Requirement: The system MUST let an authenticated user manage their own profile, credentials, and avatar
+
+`UserController` MUST provide self-service profile management gated by an authenticated session (HTTP 401 when `UserService::getCurrentUser()` is null). `me` MUST return the current user's profile (`UserService::buildUserDataArray()`). `updateMe` MUST sanitize the payload, strip leading-underscore internal keys and the immutable `id`/`uid`/`created` fields, and persist via `UserService::updateUserProperties()`. `changePassword` MUST require `currentPassword` and `newPassword`, apply login rate limiting, delegate to `UserService::changePassword()`, and on a 403 ("incorrect current password") record a failed attempt for brute-force protection. `uploadAvatar` MUST read the raw request body, reject an empty body with HTTP 400, and delegate to `UserService::uploadAvatar()`; `deleteAvatar` MUST delegate to `UserService::deleteAvatar()`. All responses MUST carry security headers.
+
+#### Scenario: Unauthenticated access is rejected
+- **GIVEN** no authenticated session
+- **WHEN** any of `me`, `updateMe`, `changePassword`, `uploadAvatar`, `deleteAvatar` is called
+- **THEN** the response MUST be HTTP 401 with `{error: "Not authenticated"}`
+
+#### Scenario: Profile update drops immutable and internal fields
+- **GIVEN** an `updateMe` payload containing `id`, `uid`, `created`, and `_internal`
+- **WHEN** the controller prepares the data
+- **THEN** those keys MUST be removed before `UserService::updateUserProperties()` is called
+- **AND** the remaining values MUST be sanitized via `SecurityService::sanitizeInput()`
+
+#### Scenario: Wrong current password is rate-limit tracked
+- **GIVEN** `changePassword` with an incorrect `currentPassword` (service throws with code 403)
+- **THEN** the response MUST surface the 403
+- **AND** a failed attempt MUST be recorded via `SecurityService::recordFailedLoginAttempt()` with reason `password_change_incorrect`
+
+#### Scenario: Avatar upload requires a body
+- **GIVEN** an `uploadAvatar` request with an empty body
+- **THEN** the response MUST be HTTP 400 with `{error: "No image data provided"}`
+
+### Requirement: The system MUST provide personal-data, activity, notification, token, and account-deactivation self-service
+
+`UserController` MUST expose the remaining authenticated self-service operations, each rejecting an unauthenticated caller with HTTP 401 and carrying security headers:
+
+- `exportData` (GDPR) MUST return the user's personal data as a downloadable JSON attachment (`DataDownloadResponse`, filename `openregister-export-{uid}-{date}.json`); a rate-limit (service code 429) MUST surface as HTTP 429.
+- `getActivity` MUST return paginated personal activity history (`_limit`/`_offset`, optional `type`/`_from`/`_to` filters).
+- `getNotificationPreferences` / `updateNotificationPreferences` MUST read and write the user's notification preferences (internal `_`-prefixed keys stripped on write; invalid input → HTTP 400).
+- `listTokens`, `createToken`, `revokeToken` MUST manage the user's personal API tokens; `createToken` MUST require a non-empty `name` (HTTP 400 otherwise) and return HTTP 201.
+- `requestDeactivation`, `getDeactivationStatus`, `cancelDeactivation` MUST drive the account-deactivation lifecycle; a conflicting request (service code 409) MUST surface as HTTP 409.
+
+#### Scenario: Personal data export is a download
+- **GIVEN** an authenticated user calls `exportData`
+- **WHEN** the export is generated
+- **THEN** the response MUST be a `DataDownloadResponse` with `application/json` and filename `openregister-export-{uid}-{date}.json`
+
+#### Scenario: Token creation requires a name
+- **GIVEN** a `createToken` request with an empty `name`
+- **THEN** the response MUST be HTTP 400 with `{error: "Token name is required"}`
+- **AND** a valid request MUST return HTTP 201 with the created token
+
+#### Scenario: Deactivation conflict
+- **GIVEN** `requestDeactivation` when a request already exists (service throws code 409)
+- **THEN** the response MUST be HTTP 409 with the service's conflict payload
+
+#### Scenario: Notification preference update rejects invalid input
+- **GIVEN** `updateNotificationPreferences` with invalid input (service throws `InvalidArgumentException`)
+- **THEN** the response MUST be HTTP 400 with the exception message
+
+### Requirement: The system MUST let a user manage their own GitHub personal access token without exposing it
+
+`UserSettingsController` MUST provide per-user GitHub PAT management, each endpoint requiring an authenticated session (HTTP 401 otherwise). `getGitHubTokenStatus` MUST report `{hasToken, isValid, message}` and MUST NOT return the token value itself; when a token exists it MUST be validated via `GitHubHandler::validateToken()`. `setGitHubToken` MUST require a non-empty `token`, validate it via `GitHubHandler` before considering it saved, and reject an invalid token with HTTP 400 ("Invalid GitHub token"). `removeGitHubToken` MUST clear the user's token. The token MUST be stored and validated per `userId` so one user's token is never resolvable by another.
+
+#### Scenario: Status never echoes the token
+- **GIVEN** the user has a stored GitHub token
+- **WHEN** `getGitHubTokenStatus` is called
+- **THEN** the response MUST contain only `{hasToken: true, isValid, message}` and MUST NOT contain the token string
+
+#### Scenario: Invalid token is rejected on save
+- **GIVEN** a `setGitHubToken` request whose token fails `GitHubHandler::validateToken()`
+- **THEN** the response MUST be HTTP 400 with `{error: "Invalid GitHub token"}`
+- **AND** an empty/missing token MUST return HTTP 400 with `{error: "Token is required"}`
+
+#### Scenario: Token operations require authentication
+- **GIVEN** no authenticated session
+- **WHEN** any of `getGitHubTokenStatus`, `setGitHubToken`, `removeGitHubToken` is called
+- **THEN** the response MUST be HTTP 401 with `{error: "User not authenticated"}`
+
+### Requirement: Writes without an active user session MUST be attributed to a system identifier
+When an OpenRegister object is created via `ObjectService::saveObject()` and `IUserSession::getUser()` returns `null` (cron job, queue worker, internal service call), the system MUST set `_owner` on the new row to a configured system identifier instead of leaving it empty. The identifier is read from the `openregister.systemUserId` app-config key. The default value is `__system__`, which Nextcloud's user-ID validator rejects for real user creation, guaranteeing the identifier cannot collide with any logged-in user.
+
+#### Scenario: Cron-job write gets system owner
+- **GIVEN** a background job (no `IUserSession` user) calls `ObjectService::saveObject(...)` on a register/schema it is allowed to write
+- **WHEN** `SaveObject::prepareObjectForCreation()` runs
+- **THEN** the persisted `ObjectEntity` MUST have `_owner = '__system__'` (or the configured `openregister.systemUserId` value)
+- **AND** the object MUST still receive an `_organisation` value via the existing `OrganisationService::getOrganisationForNewEntity()` fallback to the default organisation
+
+#### Scenario: Logged-in writes are unchanged
+- **GIVEN** a user `alice` is in the active `IUserSession`
+- **WHEN** `SaveObject::prepareObjectForCreation()` runs
+- **THEN** `_owner` MUST be set to `alice` (NOT the system identifier)
+
+#### Scenario: Operator can override the system identifier
+- **GIVEN** an operator sets `openregister.systemUserId` to `cron-bot` via OCC or app-config
+- **WHEN** a session-less write happens
+- **THEN** the persisted row MUST have `_owner = 'cron-bot'`
+
+### Requirement: System-owned rows MUST be visible to admin readers in the RBAC filter
+Both `MagicRbacHandler::applyRbacFilters()` and `MagicRbacHandler::buildRbacConditionsSql()` MUST treat rows where `_owner` equals the configured system identifier as visible to:
+- any user in the `admin` Nextcloud group (in addition to the existing full RBAC bypass for admins), AND
+- any user in any group listed in `openregister.systemReaderGroups` (comma-separated, default empty).
+
+For other users, system-owned rows MUST remain subject to the usual RBAC rule evaluation. The organisation/multitenancy filter is NOT modified — system rows MUST carry an `_organisation` and tenant boundaries hold independently of this carve-out.
+
+#### Scenario: Admin lists call_log and sees system-written rows
+- **GIVEN** a `call_log` row exists with `_owner = '__system__'` and `_organisation = <default-org-uuid>`
+- **AND** admin user has the default-org-uuid as their active organisation
+- **WHEN** admin GETs `/api/objects/openregister/api/objects/openconnector/call_log`
+- **THEN** the response `total` MUST include the system-written row
+- **AND** the row MUST appear in `results[]`
+
+#### Scenario: Non-admin without reader group does not see system rows from other authorization rules
+- **GIVEN** user `bob` is not in `admin` and not in any group listed in `openregister.systemReaderGroups`
+- **AND** the schema's `authorization.read` rule does NOT grant `bob` access by group
+- **AND** a row exists with `_owner = '__system__'`
+- **WHEN** `bob` lists that register/schema
+- **THEN** the response MUST NOT include the system-owned row (only rows matching `_owner = 'bob'` or the schema's group rules, exactly as before)
+
+#### Scenario: Configured reader-group member sees system rows
+- **GIVEN** `openregister.systemReaderGroups = "log-readers"` and user `carol` is in `log-readers`
+- **AND** a row exists with `_owner = '__system__'` in carol's active organisation
+- **WHEN** `carol` lists the schema
+- **THEN** the system row MUST be visible
+
+#### Scenario: Cross-organisation isolation still holds
+- **GIVEN** admin-of-org-A and a system-owned row exists in org-B
+- **AND** admin bypass is disabled (SaaS mode) so admin cannot see other orgs
+- **WHEN** admin-of-org-A lists the schema
+- **THEN** the row MUST NOT appear (the organisation filter excludes it before RBAC evaluates)
+
+### Requirement: The system identifier MUST be discoverable via a single service method
+A dedicated service method MUST expose the system identifier so that both `SaveObject` and `MagicRbacHandler` read the same value. The method MUST read `openregister.systemUserId` via `IAppConfig`, falling back to the constant default `__system__` when the key is unset or empty. The companion method MUST return the configured reader groups as a normalised `string[]` (trimmed, no empty entries).
+
+#### Scenario: Default identifier when unset
+- **GIVEN** `openregister.systemUserId` is unset
+- **WHEN** the service method is called
+- **THEN** it MUST return `__system__`
+
+#### Scenario: Reader-groups parse
+- **GIVEN** `openregister.systemReaderGroups = " log-readers , audit-readers ,, "`
+- **WHEN** the reader-groups method is called
+- **THEN** it MUST return `['log-readers', 'audit-readers']` (trimmed, empties removed)
+
+### Requirement: JWT verification algorithm is pinned server-side
+
+When verifying a JWT presented for authorization, OpenRegister SHALL determine
+the verification algorithm exclusively from the consumer's stored
+`authorizationConfiguration`. It SHALL NOT fall back to the algorithm declared
+in the attacker-supplied JWT header. If the consumer configuration does not pin
+an algorithm, the token SHALL be rejected.
+
+#### Scenario: Algorithm-confusion attack is rejected
+
+- **WHEN** a consumer is configured for an asymmetric algorithm (RS/PS) with an
+  RSA public key, and no explicit `algorithm` override
+- **AND** an attacker submits a token with header `alg: HS256` signed using the
+  public key as an HMAC secret
+- **THEN** verification fails and the request is not authenticated
+
+#### Scenario: Header algorithm must match the pinned class
+
+- **WHEN** the pinned algorithm class is asymmetric (RS/PS)
+- **AND** a presented token's header `alg` is an HMAC algorithm (or vice versa)
+- **THEN** the token is rejected before signature verification
+
+#### Scenario: Asymmetric tokens are verified asymmetrically
+
+- **WHEN** a consumer is configured for RS256 with a valid RSA public key
+- **AND** a correctly RS256-signed token is presented
+- **THEN** the signature is verified with the public key via asymmetric
+  verification (not HMAC) and authentication succeeds
+
+### Requirement: Basic-auth header parsing is defensive
+
+Parsing of an HTTP Basic authorization header SHALL guard against malformed
+base64 input and SHALL preserve passwords that contain a colon.
+
+#### Scenario: Malformed basic header fails cleanly
+
+- **WHEN** a Basic auth header contains invalid base64
+- **THEN** the request fails authentication without raising a runtime error
+
+#### Scenario: Colon in password is preserved
+
+- **WHEN** a Basic auth credential's password contains one or more `:` characters
+- **THEN** the full password (after the first `:`) is used, not a truncated prefix
 
 ## Current Implementation Status
 - **Fully implemented:**

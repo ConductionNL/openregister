@@ -70,7 +70,7 @@ class ApiTokenSettingsController extends Controller
      *     array{error?: string, github_token?: string, gitlab_token?: string,
      *     gitlab_url?: string}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getApiTokens(): JSONResponse
     {
@@ -114,7 +114,7 @@ class ApiTokenSettingsController extends Controller
      *
      * @return JSONResponse JSON response with save result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function saveApiTokens(): JSONResponse
     {
@@ -162,7 +162,7 @@ class ApiTokenSettingsController extends Controller
      *
      * @return JSONResponse Test result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function testGitHubToken(): JSONResponse
     {
@@ -203,7 +203,7 @@ class ApiTokenSettingsController extends Controller
                     'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,
@@ -221,7 +221,7 @@ class ApiTokenSettingsController extends Controller
      *
      * @return JSONResponse Test result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-10
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function testGitLabToken(): JSONResponse
     {
@@ -270,7 +270,7 @@ class ApiTokenSettingsController extends Controller
                     'instance' => $apiUrl,
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,

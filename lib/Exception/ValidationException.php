@@ -70,7 +70,7 @@ class ValidationException extends Exception
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         string $message,
@@ -94,7 +94,7 @@ class ValidationException extends Exception
      *
      * @return ValidationError|null The validation errors object or null if not available
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getErrors(): ?ValidationError
     {

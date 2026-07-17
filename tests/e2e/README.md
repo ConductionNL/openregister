@@ -21,16 +21,29 @@ npm run test:e2e:install          # one-time: install the chromium browser
 NEXTCLOUD_URL=http://localhost:8080 npm run test:e2e
 ```
 
-## Specs
+## Specs (UI regression project — `chromium`)
 
 | Spec | What it asserts | Layer |
 | --- | --- | --- |
-| `api-smoke.spec.ts` | OR REST API smoke | API |
-| `integration-registry.spec.ts` | Every provider is advertised via OCS capabilities with the documented shape; sub-resource endpoints never 5xx | API |
-| `leaf-verification.spec.ts` | Per-leaf probe report (status, shape, latency) → `leaf-verification.json` | API |
+| `manifest-shell.spec.ts` | CnAppRoot manifest shell mounts; registry dispatch for index/detail/dashboard routes; nav sections + order; no deprecation warning | UI (manifest) |
+| `ui-navigation.spec.ts` | All main nav routes load the app-content shell | UI (nav) |
+| `core-crud.spec.ts` | Register/schema/object create + edit through the real UI modals | UI (CRUD) |
 | `leaf-screenshots.spec.ts` | One PNG per provider tab — via the **isolated** `IntegrationsView` | UI (screenshots) |
 | **`integration-mount.spec.ts`** | **Each advertised provider tab MOUNTS a component on the real `ObjectDetails.vue` page** | **UI (mount)** |
 | `docs-screenshots.spec.ts` | Journeydoc tutorial screenshots (`--project docs-capture`) | UI (screenshots) |
+
+The `spec-coverage/` subdir holds additional UI specs (entity-management
+modals, files-sidebar tabs, platform-administration modals, saved-search views,
+register i18n, data import/export).
+
+## API-direct specs → Newman (`api-direct/`, excluded)
+
+Specs that assert HTTP/JSON contracts via Playwright's `request` fixture (no
+browser) have been relocated to `tests/e2e/api-direct/` and are **excluded from
+the `chromium` regression project** (`testIgnore: ['**/api-direct/**']`). Per
+ADR-020 / gate-19 the API contracts they cover live in the Newman collections
+under `tests/integration/` + `tests/newman/`. See `api-direct/README.md` for the
+per-spec → Newman-collection mapping.
 
 ## Integration mount-check — `npm run test:e2e:integrations` (Phase K / K3)
 

@@ -51,7 +51,7 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class ApplicationsController extends Controller
 {
@@ -157,7 +157,12 @@ class ApplicationsController extends Controller
      *     results?: array<\OCA\OpenRegister\Db\Application>},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
+     *
+     * @no-admin-idor-exempt List endpoint for the application-registry resource (app/template
+     * metadata, not per-user objects); access follows OpenRegister's fleet-wide registry-controller
+     * convention where authorisation lives in the ObjectService/RBAC layer behind ApplicationService,
+     * not per-controller-method. Pre-existing; this PR only touches the docblock, not the handler.
      */
     public function index(): JSONResponse
     {
@@ -235,7 +240,13 @@ class ApplicationsController extends Controller
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Application not found'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec exclude Thin read endpoint for the applications resource route; delegates to
+     *     ApplicationService (domain layer), not a raw ObjectService duplication. gate-17's
+     *     receiver regex over-matches any $this->*Service call.
+     *
+     * @no-admin-idor-exempt Read of an application-registry entry (app/template metadata);
+     * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+     * behind ApplicationService::find). Pre-existing; untouched by this PR's functional diff.
      */
     public function show(int $id): JSONResponse
     {
@@ -280,7 +291,11 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse JSON response with created application
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
+     *
+     * @no-admin-idor-exempt Write to the application-registry resource (app/template metadata);
+     * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+     * behind ApplicationService::create). Pre-existing; untouched by this PR's functional diff.
      */
     public function create(): JSONResponse
     {
@@ -331,7 +346,12 @@ class ApplicationsController extends Controller
      *
      * @return JSONResponse JSON response with updated application
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
+     *
+     * @no-admin-idor-exempt Update of an application-registry entry (app/template metadata);
+     * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+     * behind ApplicationService::update). Immutable fields (id/organisation/owner/created) are
+     * stripped here. Pre-existing; untouched by this PR's functional diff.
      */
     public function update(int $id): JSONResponse
     {
@@ -391,7 +411,10 @@ class ApplicationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
+     *
+     * @no-admin-idor-exempt Pure delegation to update(), which carries the same registry-controller
+     * authorisation posture; this method has no body of its own. Pre-existing; untouched by this PR.
      */
     public function patch(int $id): JSONResponse
     {
@@ -417,7 +440,11 @@ class ApplicationsController extends Controller
      *     array{error?: 'Failed to delete application',
      *     message?: 'Application deleted successfully'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
+     *
+     * @no-admin-idor-exempt Delete of an application-registry entry (app/template metadata);
+     * authorisation follows OpenRegister's registry-controller convention (ObjectService/RBAC
+     * behind ApplicationService::delete). Pre-existing; untouched by this PR's functional diff.
      */
     public function destroy(int $id): JSONResponse
     {

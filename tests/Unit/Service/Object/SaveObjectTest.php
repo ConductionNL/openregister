@@ -133,8 +133,11 @@ class SaveObjectTest extends TestCase
             $this->propertyRbacHandler,
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             $arrayLoader
         );
     }
@@ -1731,6 +1734,38 @@ class SaveObjectTest extends TestCase
         $this->assertNull($entity->getOwner());
     }
 
+    public function testSetSelfMetadataSetsOrganisation(): void
+    {
+        // SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
+        // has verified membership in the requested organisation.  With the default mock
+        // setup (userSession→null user, groupManager→null, hasAccessToOrganisation→false)
+        // the organisation must NOT be stamped from client input.
+        $entity   = new ObjectEntity();
+        $selfData = ['organisation' => 'org-uuid'];
+
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        // Entity stays null — the caller has no access to 'org-uuid'.
+        $this->assertNull($entity->getOrganisation());
+    }
+
+    public function testSetSelfMetadataSetsOrganisationWhenCallerHasAccess(): void
+    {
+        // SECURITY (wave-11 SB1): When hasAccessToOrganisation returns true the
+        // organisation value IS applied (admin / verified member use case).
+        $this->organisationService
+            ->method('hasAccessToOrganisation')
+            ->with('org-uuid')
+            ->willReturn(true);
+
+        $entity   = new ObjectEntity();
+        $selfData = ['organisation' => 'org-uuid'];
+
+        $this->invokePrivateMethod('setSelfMetadata', [$entity, $selfData]);
+
+        $this->assertSame('org-uuid', $entity->getOrganisation());
+    }
+
     public function testSetSelfMetadataIgnoresOrganisationForNonAdminCaller(): void
     {
         // Wave-12 Fix 3 / Wave-11 SB1: organisation must NOT be settable from
@@ -1738,7 +1773,9 @@ class SaveObjectTest extends TestCase
         // vector closed here previously let any authenticated user plant data
         // in another tenant by submitting `@self.organisation: "<victim-uuid>"`.
         // The test SaveObject is constructed without an IGroupManager, so
-        // `callerIsAdmin()` returns false — organisation should be dropped.
+        // `callerIsAdmin()` returns false. The default organisationService mock
+        // also reports no membership, so the member arm of the gate is closed
+        // too — organisation should be dropped.
         $entity   = new ObjectEntity();
         $selfData = ['organisation' => 'org-uuid'];
 
@@ -1753,6 +1790,16 @@ class SaveObjectTest extends TestCase
         // attributing rows to source tenant). Rebuild the SaveObject with an
         // IGroupManager that reports admin = true so the gate accepts the
         // value.
+        //
+        // The organisationService mock deliberately reports NO membership, so the
+        // member arm of the gate is closed and this test isolates the ADMIN arm.
+        //
+        // Named arguments: this lineage's SaveObject constructor grew several
+        // required dependencies (translationProjectionService,
+        // translationStatusService, folderManagementHandler) after wave-12 was
+        // branched, so the positional list wave-12 shipped would now bind
+        // arguments to the wrong parameters. Binding by name keeps this fixture
+        // correct regardless of constructor order.
         $user = $this->createMock(\OCP\IUser::class);
         $user->method('getUID')->willReturn('root');
         $userSession = $this->createMock(\OCP\IUserSession::class);
@@ -1761,27 +1808,33 @@ class SaveObjectTest extends TestCase
         $groupManager = $this->createMock(\OCP\IGroupManager::class);
         $groupManager->method('isAdmin')->with('root')->willReturn(true);
 
+        $organisationService = $this->createMock(\OCA\OpenRegister\Service\OrganisationService::class);
+        $organisationService->method('hasAccessToOrganisation')->willReturn(false);
+
         $handler = new \OCA\OpenRegister\Service\Object\SaveObject(
-            $this->objectEntityMapper,
-            $this->unifiedObjectMapper,
-            $this->metaHydrationHandler,
-            $this->filePropertyHandler,
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
-            $userSession,
-            $this->auditTrailMapper,
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->urlGenerator,
-            $this->organisationService,
-            $this->cacheHandler,
-            $this->settingsService,
-            $this->propertyRbacHandler,
-            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
-            $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
-            $this->logger,
-            $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
-            new \Twig\Loader\ArrayLoader(),
-            $groupManager
+            objectEntityMapper: $this->objectEntityMapper,
+            unifiedObjectMapper: $this->unifiedObjectMapper,
+            metaHydrationHandler: $this->metaHydrationHandler,
+            filePropertyHandler: $this->filePropertyHandler,
+            linkedEntityHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler::class),
+            userSession: $userSession,
+            auditTrailMapper: $this->auditTrailMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            urlGenerator: $this->urlGenerator,
+            organisationService: $organisationService,
+            cacheHandler: $this->cacheHandler,
+            settingsService: $this->settingsService,
+            propertyRbacHandler: $this->propertyRbacHandler,
+            computedFieldHandler: $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            translationHandler: $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            translationProjectionService: $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            translationStatusService: $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            logger: $this->logger,
+            tmloService: $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            folderManagementHandler: $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
+            arrayLoader: new \Twig\Loader\ArrayLoader(),
+            groupManager: $groupManager
         );
 
         $entity   = new ObjectEntity();

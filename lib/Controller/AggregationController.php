@@ -32,9 +32,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
 
@@ -44,6 +44,7 @@ namespace OCA\OpenRegister\Controller;
 
 use InvalidArgumentException;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
+use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Aggregation\TimeseriesRequestValidator;
 use OCP\AppFramework\Controller;
@@ -111,6 +112,130 @@ class AggregationController extends Controller
         $response->addHeader('X-OR-Cache', $cacheHeader);
         return $response;
     }//end aggregate()
+
+    /**
+     * Ad-hoc single-value aggregation entry point.
+     *
+     * The non-bucketed sibling of {@see timeseries()} — returns one scalar
+     * `value` for manifest-configured KPI widgets (nextcloud-vue CnStatWidget).
+     * RBAC + multi-tenancy are enforced inside AggregationRunner::runAdhocByRef.
+     *
+     * Accepts: metric (default count), field (required for non-count),
+     * filter[...] (operator-aware). The literal `value` URL never collides with
+     * the named `{name}` aggregate route.
+     *
+     * @param string $register Register reference.
+     * @param string $schema   Schema reference.
+     *
+     * @return JSONResponse JSON response with the scalar aggregation value.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    public function value(string $register, string $schema): JSONResponse
+    {
+        $metric = (string) $this->request->getParam('metric', 'count');
+        $field  = $this->request->getParam('field');
+        $filter = (array) ($this->request->getParam('filter', []));
+
+        $resolvedField = $field;
+        if ($field === '') {
+            $resolvedField = null;
+        }
+
+        try {
+            $query = AggregationQuery::create(
+                metric: $metric,
+                field: $resolvedField,
+                filter: $filter
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        }
+
+        try {
+            $result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        } catch (RuntimeException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse($result);
+
+    }//end value()
+
+    /**
+     * Ad-hoc categorical group-by aggregation entry point.
+     *
+     * The non-time sibling of {@see timeseries()} — groups by a NON-date field
+     * and returns `{ groups: [{ key, value }] }` for manifest-configured
+     * category charts (nextcloud-vue CnChartWidget group-by source).
+     *
+     * Accepts: groupBy (required field), metric (default count), field
+     * (required for non-count), sort (asc|desc), limit (top-N), filter[...].
+     *
+     * @param string $register Register reference.
+     * @param string $schema   Schema reference.
+     *
+     * @return JSONResponse JSON response with `{ groups, backend, cached }`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     */
+    public function grouped(string $register, string $schema): JSONResponse
+    {
+        $metric  = (string) $this->request->getParam('metric', 'count');
+        $field   = $this->request->getParam('field');
+        $groupBy = (string) $this->request->getParam('groupBy', '');
+        $filter  = (array) ($this->request->getParam('filter', []));
+
+        if ($groupBy === '') {
+            return new JSONResponse(['error' => 'groupBy is required'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $groupSpec = ['field' => $groupBy];
+        $sort      = $this->request->getParam('sort');
+        if ($sort === 'asc' || $sort === 'desc') {
+            $groupSpec['sort'] = $sort;
+        }
+
+        $limit = $this->request->getParam('limit');
+        if ($limit !== null && (string) $limit !== '' && (int) $limit > 0) {
+            $groupSpec['limit'] = (int) $limit;
+        }
+
+        $resolvedField = $field;
+        if ($field === '') {
+            $resolvedField = null;
+        }
+
+        try {
+            $query = AggregationQuery::create(
+                metric: $metric,
+                field: $resolvedField,
+                filter: $filter,
+                groupBy: $groupSpec
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        }
+
+        try {
+            $result = $this->runner->runAdhocByRef(registerRef: $register, schemaRef: $schema, query: $query);
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        } catch (RuntimeException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse($result);
+
+    }//end grouped()
 
     /**
      * Ad-hoc time-bucket aggregation entry point.

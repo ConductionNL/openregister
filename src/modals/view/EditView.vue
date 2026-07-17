@@ -57,8 +57,8 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Groups') }}</label>
 								<NcSelect
-						input-label="Selected Groups"
 									v-model="selectedGroups"
+									input-label="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
@@ -87,8 +87,8 @@
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Share with Users') }}</label>
 								<NcSelect
-						input-label="Selected Users"
 									v-model="selectedUsers"
+									input-label="Selected Users"
 									:disabled="loading || loadingUsers"
 									:options="availableUsers"
 									label="name"
@@ -202,6 +202,7 @@ export default {
 		view: {
 			immediate: true,
 			/**
+			 * @param newView
 			 * @spec exclude Watcher hydrating the local form model from the view prop; UI reactivity plumbing.
 			 */
 			handler(newView) {
@@ -238,7 +239,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer

@@ -44,6 +44,61 @@ class NotificationPreferenceServiceTest extends TestCase
         );
     }
 
+    /**
+     * Phase-0 regression: a natural (slug, key) pair that fits in the 64-char
+     * oc_preferences.configkey column must be returned UNCHANGED so every
+     * already-stored preference keeps resolving (full backward compatibility).
+     */
+    public function testConfigKeyUnchangedWhenItFitsTheColumn(): void
+    {
+        $key = $this->service->configKey('meldingen', 'object_created');
+        $this->assertLessThanOrEqual(64, strlen($key));
+        $this->assertSame('notification_pref/meldingen/object_created', $key);
+    }
+
+    /**
+     * Phase-0 regression: a (slug, key) pair that overflows the 64-char column
+     * (e.g. the system schema `openregister_configuration` +
+     * `configuration-changed` = 66 chars) must be deterministically compressed
+     * to a stable <=64-char key instead of letting NC throw
+     * "for key is too long (64)".
+     */
+    public function testConfigKeyCompressesWhenOverSixtyFourChars(): void
+    {
+        $slug = 'openregister_configuration';
+        $note = 'configuration-changed';
+
+        // Sanity: the natural key really does overflow.
+        $natural = 'notification_pref/'.$slug.'/'.$note;
+        $this->assertGreaterThan(64, strlen($natural));
+
+        $key = $this->service->configKey($slug, $note);
+
+        // Compressed key fits the column.
+        $this->assertLessThanOrEqual(64, strlen($key));
+        // Still namespaced under the readable prefix.
+        $this->assertStringStartsWith('notification_pref/', $key);
+        // Carries the stable 16-char hash separator so distinct pairs never collide.
+        $this->assertStringContainsString('~', $key);
+    }
+
+    /**
+     * Phase-0 regression: the compression is deterministic (same pair -> same
+     * key) and collision-resistant (distinct pairs -> distinct keys), so a
+     * stored override is always found again.
+     */
+    public function testConfigKeyCompressionIsDeterministicAndDistinct(): void
+    {
+        $a1 = $this->service->configKey('openregister_configuration', 'configuration-changed');
+        $a2 = $this->service->configKey('openregister_configuration', 'configuration-changed');
+        $b  = $this->service->configKey('openregister_configuration', 'configuration-removed');
+
+        $this->assertSame($a1, $a2, 'Same pair must map to the same compressed key.');
+        $this->assertNotSame($a1, $b, 'Distinct pairs must map to distinct compressed keys.');
+        $this->assertLessThanOrEqual(64, strlen($a1));
+        $this->assertLessThanOrEqual(64, strlen($b));
+    }
+
     public function testFallThroughToSchemaDefaultWhenNoOverride(): void
     {
         // No stored value → resolve to the schema default, tagged schema-default.
@@ -141,6 +196,7 @@ class NotificationPreferenceServiceTest extends TestCase
         $schema->setId(1);
         $schema->setSlug('meldingen');
         $schema->setTitle('Meldingen');
+        $schema->setApplication('pipelinq');
         $schema->setConfiguration([
             'x-openregister-notifications' => [
                 'object_created' => ['enabled' => true, 'channels' => ['nc-notification']],
@@ -168,5 +224,7 @@ class NotificationPreferenceServiceTest extends TestCase
         $this->assertSame('user-override', $byKey['object_created']['source']);
         $this->assertFalse($byKey['object_updated']['enabled']);
         $this->assertSame('schema-default', $byKey['object_updated']['source']);
+        $this->assertSame('pipelinq', $byKey['object_created']['application']);
+        $this->assertSame('pipelinq', $byKey['object_updated']['application']);
     }
 }

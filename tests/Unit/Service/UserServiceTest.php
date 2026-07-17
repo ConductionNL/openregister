@@ -222,19 +222,24 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
-            public function canChangeAvatar()
+            public function canChangeAvatar(): bool
             {
-                return $this->v['canChangeAvatar'];
+                return (bool) $this->v['canChangeAvatar'];
             }
 
-            public function canChangePassword()
+            public function canChangePassword(): bool
             {
-                return $this->v['canChangePassword'];
+                return (bool) $this->v['canChangePassword'];
             }
 
-            public function canChangeDisplayName()
+            public function canChangeDisplayName(): bool
             {
-                return $this->v['canChangeDisplayName'];
+                return (bool) $this->v['canChangeDisplayName'];
+            }
+
+            public function canEditProperty(string $property): bool
+            {
+                return (bool) ($this->v['canEditProperty'] ?? true);
             }
 
             public function isEnabled()
@@ -1158,17 +1163,22 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
-            public function canChangeAvatar()
+            public function canChangeAvatar(): bool
             {
                 return false;
             }
 
-            public function canChangePassword()
+            public function canChangePassword(): bool
             {
                 return false;
             }
 
-            public function canChangeDisplayName()
+            public function canChangeDisplayName(): bool
+            {
+                return false;
+            }
+
+            public function canEditProperty(string $property): bool
             {
                 return false;
             }
@@ -1969,17 +1979,22 @@ class UserServiceTest extends TestCase
                 return null;
             }
 
-            public function canChangeAvatar()
+            public function canChangeAvatar(): bool
             {
                 return false;
             }
 
-            public function canChangePassword()
+            public function canChangePassword(): bool
             {
                 return false;
             }
 
-            public function canChangeDisplayName()
+            public function canChangeDisplayName(): bool
+            {
+                return false;
+            }
+
+            public function canEditProperty(string $property): bool
             {
                 return false;
             }

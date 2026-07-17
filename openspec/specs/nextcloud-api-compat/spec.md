@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # nextcloud-api-compat Specification
 
 ## Purpose

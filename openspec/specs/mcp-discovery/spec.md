@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: in-progress
 ---
 
 # MCP Discovery
@@ -8,6 +8,21 @@ status: implemented
 
 @e2e exclude MCP/REST discovery API — covered by Newman
 Provides AI agents and MCP-compatible clients with two complementary interfaces to the OpenRegister platform: a tiered REST-based discovery API for token-efficient API exploration, and a full MCP standard protocol endpoint implementing JSON-RPC 2.0 over Streamable HTTP for native tool and resource access. Together these interfaces allow any LLM or MCP client to discover capabilities, establish sessions, and perform CRUD operations on registers, schemas, and objects without prior knowledge of the API surface.
+
+## In-flight Changes (ADR-063 — MCP as Platform Abstraction)
+
+Per **ADR-063** (hydra), the JSON-RPC `tools/list` / `tools/call` surface gains
+tools OpenRegister derives centrally rather than tools each app hand-writes:
+
+- `or-mcp-derived-tool-provider` — **shipped** (see "Derived schema tools are
+  served over the JSON-RPC MCP surface" below). Serves schema-derived
+  `{appId}.{schema}.{verb}` CRUD tools (from the `x-openregister-mcp` dialect)
+  over JSON-RPC, obeying hand-written > derived precedence and auditing every
+  `tools/call`.
+- `or-mcp-tool-attribute` — **shipped** (see "Attributed service tools are
+  served over the JSON-RPC MCP surface" below; ADR-063 chain 3/3 — the chain
+  is now COMPLETE). Serves `#[McpTool]`-annotated `{appId}.{toolName}` service
+  tools, invoked in-process in the owning app (ADR-041, no cross-app RPC).
 
 ## Requirements
 
@@ -379,6 +394,43 @@ All JSON-RPC error responses from the MCP standard endpoint MUST follow the JSON
 - **GIVEN** the `McpServerController` defines error constants
 - **WHEN** error codes are used
 - **THEN** `-32700` MUST be used for parse errors, `-32600` for invalid requests, `-32601` for method not found, `-32602` for invalid params, `-32603` for internal errors, and `-32000` for session-related errors
+
+### Requirement: Derived schema tools are served over the JSON-RPC MCP surface
+
+The JSON-RPC MCP server (`POST /api/mcp`, `tools/list` + `tools/call` via `McpToolsService`) MUST serve the tools derived from the `x-openregister-mcp` schema dialect, in addition to the built-in and hand-written per-app provider tools. Derived tools MUST be namespaced `{appId}.{schema}.{verb}` and MUST obey
+the hand-written-over-derived precedence rule on tool-name collision (first-wins,
+with derived providers ordered after hand-written providers and self-suppressing
+colliding ids). No change to the JSON-RPC envelope, session handling, or the
+`tools/list` / `tools/call` method contracts is required.
+
+#### Scenario: tools/list includes derived tools
+- **GIVEN** at least one schema opted into `x-openregister-mcp`
+- **WHEN** an MCP client calls `tools/list`
+- **THEN** the derived `{appId}.{schema}.{verb}` tools MUST appear in the returned catalog alongside built-in tools
+
+#### Scenario: tools/call routes to the derived provider
+- **GIVEN** a derived tool `pipelinq.lead.get` in the catalog
+- **WHEN** an MCP client calls `tools/call` with name `pipelinq.lead.get`
+- **THEN** the call MUST route to the derived provider's `invokeTool()`
+- **AND** the invocation MUST be audited per the `ai-mcp` invocation-audit requirement
+
+### Requirement: Attributed service tools are served over the JSON-RPC MCP surface
+
+The JSON-RPC MCP server (`POST /api/mcp`, `tools/list` + `tools/call` via `McpToolsService`) MUST serve tools declared by the `#[McpTool]` attribute, namespaced `{appId}.{toolName}`, alongside built-in, hand-written, and schema-derived tools. `tools/call` on an attributed tool MUST route to an
+in-process invocation of the owning app's method (ADR-041 — no cross-app RPC) and
+MUST be audited per the `ai-mcp` invocation-audit requirement. No change to the
+JSON-RPC envelope or method contracts is required.
+
+#### Scenario: tools/list includes attributed tools
+- **GIVEN** an installed app exposes a `#[McpTool]`-annotated service method
+- **WHEN** an MCP client calls `tools/list`
+- **THEN** the attributed `{appId}.{toolName}` tool MUST appear in the catalog
+
+#### Scenario: tools/call invokes the owning app's method in-process
+- **GIVEN** an attributed tool `pipelinq.createLead` in the catalog
+- **WHEN** an MCP client calls `tools/call` with name `pipelinq.createLead`
+- **THEN** the call MUST resolve and invoke pipelinq's own service method in-process
+- **AND** the invocation MUST be audited
 
 ## Current Implementation Status
 - **Fully implemented -- Discovery API**: `McpDiscoveryService` (`lib/Service/McpDiscoveryService.php`) provides Tier 1 public catalog via `getCatalog()` and Tier 2 authenticated detail via `getCapabilityDetail()`. Routes registered at `/api/mcp/v1/discover` and `/api/mcp/v1/discover/{capability}` in `appinfo/routes.php`.

@@ -16,8 +16,8 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function index(
         string $register,
@@ -162,7 +162,7 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function create(
         string $register,
@@ -228,7 +228,7 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function destroy(
         string $register,
@@ -272,7 +272,12 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+     * @no-admin-idor-exempt Guarded downstream: EmailService::searchBySender scopes the
+     *   mailbox scan to the caller's own Mail accounts (oc_mail_accounts.user_id = session
+     *   UID) and returns [] for an anonymous session, so a caller only ever sees links for
+     *   mail their own accounts received.
+     *
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function search(): JSONResponse
     {
@@ -328,7 +333,11 @@ class EmailsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+     * @no-admin-idor-exempt Guarded downstream: EmailService::searchBySender scopes the
+     *   mailbox scan to the caller's own Mail accounts (oc_mail_accounts.user_id = session
+     *   UID) and returns [] for an anonymous session.
+     *
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function bySender(): JSONResponse
     {

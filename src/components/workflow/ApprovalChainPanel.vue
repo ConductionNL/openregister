@@ -39,7 +39,7 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 /**
- * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 export default {
 	name: 'ApprovalChainPanel',
@@ -59,7 +59,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-approval-workflow/tasks.md#task-1
+		 * @spec openspec/specs/approval-workflow/spec.md
 		 */
 		async fetchChains() {
 			try {

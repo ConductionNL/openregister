@@ -6,28 +6,31 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Controller
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Controller
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+ * @spec openspec/specs/linked-entity-types/spec.md
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
 
 use Exception;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LinkedEntityService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -41,7 +44,7 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 class LinkedEntityController extends Controller
 {
@@ -52,15 +55,41 @@ class LinkedEntityController extends Controller
      * @param IRequest            $request             The request object
      * @param LinkedEntityService $linkedEntityService The linked entity service
      * @param LoggerInterface     $logger              Logger
+     * @param IUserSession        $userSession         Active user session for caller identity
+     * @param IGroupManager       $groupManager        Group manager for admin checks
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly LinkedEntityService $linkedEntityService,
         private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * Register/schema link mutations change register/schema configuration, and
+     * reverseLookup scans across all tenants (RBAC/multitenancy intentionally
+     * disabled — see LinkedEntityService, TODO #1273); both are admin-only.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
+
+    // SEC-CTRL-8: CSRF protection retained — this is an SPA-called authenticated write
+    // (axios sends the CSRF token); #[NoCSRFRequired] removed.
 
     /**
      * Add a linked entity to an object.
@@ -73,12 +102,10 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addObjectLink(string $uuid, string $type): JSONResponse
     {
         try {
@@ -92,6 +119,9 @@ class LinkedEntityController extends Controller
             $result = $this->linkedEntityService->addLink($uuid, $type, (string) $entityId);
 
             return new JSONResponse(['_'.$type => $result]);
+        } catch (NotAuthorizedException $e) {
+            // SEC-CTRL-4: write-permission denial maps to 403.
+            return new JSONResponse(['error' => $e->getMessage()], 403);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] addObjectLink failed',
@@ -99,8 +129,10 @@ class LinkedEntityController extends Controller
             );
 
             return new JSONResponse(['error' => $e->getMessage()], 400);
-        }
+        }//end try
     }//end addObjectLink()
+
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
 
     /**
      * Remove a linked entity from an object.
@@ -114,19 +146,20 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-45
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-48
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-remove-link-entities-and-mappers
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function removeObjectLink(string $uuid, string $type, string $entityId): JSONResponse
     {
         try {
             $result = $this->linkedEntityService->removeLink($uuid, $type, $entityId);
 
             return new JSONResponse(['_'.$type => $result]);
+        } catch (NotAuthorizedException $e) {
+            // SEC-CTRL-4: write-permission denial maps to 403.
+            return new JSONResponse(['error' => $e->getMessage()], 403);
         } catch (Exception $e) {
             $this->logger->error(
                 '[LinkedEntityController] removeObjectLink failed',
@@ -136,6 +169,8 @@ class LinkedEntityController extends Controller
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }
     }//end removeObjectLink()
+
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
 
     /**
      * Add a linked entity to a register.
@@ -148,14 +183,17 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addRegisterLink(string $uuid, string $type): JSONResponse
     {
+        // SEC-CTRL: admin-only — mutates register configuration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $body     = $this->request->getParams();
             $entityId = $body['id'] ?? null;
@@ -172,6 +210,8 @@ class LinkedEntityController extends Controller
         }
     }//end addRegisterLink()
 
+    // SEC-CTRL-8: CSRF protection retained — SPA-called authenticated write; #[NoCSRFRequired] removed.
+
     /**
      * Add a linked entity to a schema.
      *
@@ -183,14 +223,17 @@ class LinkedEntityController extends Controller
      * @return JSONResponse The updated linked IDs
      *
      * @NoAdminRequired
-     * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
-    #[NoCSRFRequired]
     public function addSchemaLink(string $uuid, string $type): JSONResponse
     {
+        // SEC-CTRL: admin-only — mutates schema configuration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $body     = $this->request->getParams();
             $entityId = $body['id'] ?? null;
@@ -220,13 +263,21 @@ class LinkedEntityController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-44
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-49
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-reverse-lookup-across-tables
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
     public function reverseLookup(string $type, string $entityId): JSONResponse
     {
+        // SEC-CTRL: admin-only — LinkedEntityService::reverseLookup scans magic
+        // tables with RBAC + multitenancy intentionally disabled (cross-tenant;
+        // TODO #1273). Until per-tenant scoping lands, restrict to admins so an
+        // arbitrary user cannot enumerate cross-tenant object links by entity id.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $results = $this->linkedEntityService->reverseLookup($type, $entityId);
 

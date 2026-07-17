@@ -53,9 +53,6 @@ export default {
 			return this.$route.path === '/objects' || this.$route.name === 'objectDetail'
 		},
 	},
-	mounted() {
-		this.loadFromRoute()
-	},
 	watch: {
 		'$route.params.id': {
 			/**
@@ -68,6 +65,9 @@ export default {
 				this.loadFromRoute()
 			},
 		},
+	},
+	mounted() {
+		this.loadFromRoute()
 	},
 	methods: {
 		/**
@@ -95,6 +95,19 @@ export default {
 				if (typeof objectStore.setFilters === 'function') {
 					objectStore.setFilters({ register, schema })
 				}
+				// Load the surrounding context the detail panel and the object
+				// list both need. Without this a deep-link renders an empty
+				// object list ("No objects defined yet") and leaves the detail
+				// panel without register/schema context. Order matters: the
+				// list's `currentType` is derived from the register/schema
+				// stores, so those must be primed before refreshObjectList
+				// runs. Non-fatal: a context load failure must not block the
+				// object itself from rendering.
+				await Promise.allSettled([
+					registerStore.getRegister(register),
+					schemaStore.getSchema(schema, { setItem: true }),
+				])
+				await objectStore.refreshObjectList().catch(() => {})
 				const url = `/index.php/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}/${encodeURIComponent(id)}`
 				const response = await fetch(url, {
 					headers: {

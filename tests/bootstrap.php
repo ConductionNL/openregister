@@ -22,6 +22,45 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Load minimal Doctrine DBAL stubs so nextcloud/ocp interface constants
+// (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated in
+// the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
+// The stubs are class_exists-guarded, so they are skipped when the real
+// doctrine/dbal is present (e.g. inside a bootstrapped Nextcloud container).
+// Mirrors tests/bootstrap-unit.php; without this, mocking IQueryBuilder in a
+// pure-unit run fatals with "Class Doctrine\DBAL\ParameterType not found".
+require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
+
+// Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
+// the nextcloud/ocp stubs reference but the OCP package does not ship.
+require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
+// Register the nextcloud/ocp stubs for OCP\* / NCU\* — but ONLY here, in the test
+// entry point, and only when no live Nextcloud already supplies them. Registered
+// AFTER the Doctrine stubs above: IQueryBuilder declares constants that reference
+// Doctrine\DBAL\ParameterType, evaluated the moment the file is parsed, so the
+// placeholders must already be in the class table.
+//
+// This mapping must NEVER live in composer.json. `autoload-dev` IS baked into the
+// generated autoloader by a plain `composer install`, and in the dev topology the
+// app checkout IS the served app — Application.php requires vendor/autoload.php, so
+// the stubs would shadow core's OCP on every request. With stubs pinned to a
+// different Nextcloud major than the running server, core's `#[\Override]`
+// attributes then have no matching parent method and PHP raises a COMPILE-TIME
+// fatal that takes down the WHOLE instance (occ dead, 0 apps, every route 404/500).
+// That is the 2026-07-12 outage. Static analysis does not need the mapping either:
+// PHPStan reads the stubs via `scanDirectories`, Psalm via `<extraFiles>`.
+if (interface_exists(\OCP\IUser::class) === false) {
+    $ocpLoader = new \Composer\Autoload\ClassLoader();
+    $ocpLoader->addPsr4('OCP\\', __DIR__ . '/../vendor/nextcloud/ocp/OCP/');
+    $ocpLoader->addPsr4('NCU\\', __DIR__ . '/../vendor/nextcloud/ocp/NCU/');
+    $ocpLoader->register();
+}
+
+// Load the Doriath contract stubs + test fixtures for the credential-broker
+// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 /**
  * Resolve the Nextcloud installation root.
  *

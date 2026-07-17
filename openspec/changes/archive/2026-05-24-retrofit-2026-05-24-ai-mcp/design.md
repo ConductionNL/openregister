@@ -14,7 +14,7 @@ The ghost change `retrofit-2026-05-24-ai-mcp` carries the spec delta + 5 REQs + 
 ## Goals / Non-Goals
 
 **Goals:**
-- Spec the in-process cross-app tool registration surface so consuming apps (decidesk, opencatalogi, openbuilt, …) have a stable contract.
+- Spec the in-process cross-app tool registration surface so consuming apps (decidesk, opencatalogi, openbuild, …) have a stable contract.
 - Spec the LLPhant adapter so the dotted-id ↔ safe-alias round-trip and JSON-Schema nullable collapse are testable (these are the two pieces that historically caused silent tool-loop crashes during the AI Chat Companion bring-up).
 - Annotate 14 methods with `@spec` tags pointing at the 5 new REQs.
 

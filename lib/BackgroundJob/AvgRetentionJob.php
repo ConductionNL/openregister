@@ -22,9 +22,9 @@
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
- * @author  Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -81,7 +81,7 @@ class AvgRetentionJob extends TimedJob
      * @param AvgRetentionService $retentionService Domain service.
      * @param LoggerInterface     $logger           Logger.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -103,7 +103,7 @@ class AvgRetentionJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-1
+     * @spec openspec/specs/retention-management/spec.md
      */
     protected function run($argument): void
     {

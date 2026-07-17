@@ -79,17 +79,23 @@ class Wave12BulkSafeguardsTest extends TestCase
         $this->validateHandler   = $this->createMock(ValidateObject::class);
         $this->groupManager      = $this->createMock(IGroupManager::class);
 
+        // Named arguments: this lineage's SaveObjects orders the optional tail as
+        // groupManager, permissionHandler, validateHandler, eventDispatcher,
+        // auditTrailMapper — a different order from the one wave-12 was written
+        // against (permissionHandler, validateHandler, groupManager). Binding by
+        // name keeps this fixture correct regardless of order; the positional list
+        // wave-12 shipped would bind permissionHandler into $groupManager here.
         $this->handler = new SaveObjects(
-            $this->objectMapper,
-            $this->schemaMapper,
-            $this->registerMapper,
-            $this->saveHandler,
-            $this->userSession,
-            $this->organisationService,
-            $this->logger,
-            $this->permissionHandler,
-            $this->validateHandler,
-            $this->groupManager
+            objectEntityMapper: $this->objectMapper,
+            schemaMapper: $this->schemaMapper,
+            registerMapper: $this->registerMapper,
+            saveHandler: $this->saveHandler,
+            userSession: $this->userSession,
+            organisationService: $this->organisationService,
+            logger: $this->logger,
+            groupManager: $this->groupManager,
+            permissionHandler: $this->permissionHandler,
+            validateHandler: $this->validateHandler
         );
 
         // Reset static caches between tests.

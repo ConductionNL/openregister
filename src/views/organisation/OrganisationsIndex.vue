@@ -508,7 +508,6 @@ export default {
 				showSuccess(t('openregister', 'Active organisation changed successfully'))
 
 				// Reload all hot-loaded data for the new organisation context
-				console.info('[OrganisationsIndex] Reloading application data after organisation switch...')
 				await reloadAppData()
 			} catch (error) {
 				showError(t('openregister', 'Failed to change active organisation: {error}', { error: error.message }))

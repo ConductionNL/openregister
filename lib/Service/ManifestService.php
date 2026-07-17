@@ -316,14 +316,24 @@ class ManifestService
         $created = $profile->getCreated();
         $updated = $profile->getUpdated();
 
+        $createdStr = null;
+        if ($created !== null) {
+            $createdStr = $created->format(DateTimeInterface::ATOM);
+        }
+
+        $updatedStr = null;
+        if ($updated !== null) {
+            $updatedStr = $updated->format(DateTimeInterface::ATOM);
+        }
+
         return [
             'id'       => $profile->getUuid(),
             'uuid'     => $profile->getUuid(),
             'register' => $profile->getRegister(),
             'schema'   => $profile->getSchema(),
             'owner'    => $profile->getOwner(),
-            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
+            'created'  => $createdStr,
+            'updated'  => $updatedStr,
         ];
     }//end buildSelfMeta()
 

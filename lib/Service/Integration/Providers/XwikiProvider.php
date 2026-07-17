@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-xwiki/tasks.md
+ * @spec openspec/specs/integration-xwiki/spec.md
  */
 
 declare(strict_types=1);
@@ -192,7 +192,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function authRequirements(): array
     {
@@ -224,7 +224,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -314,7 +314,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -344,7 +344,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -374,7 +374,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -404,7 +404,7 @@ class XwikiProvider extends AbstractIntegrationProvider
      *
      * @return void
      *
-     * @spec openspec/changes/integration-xwiki/tasks.md
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

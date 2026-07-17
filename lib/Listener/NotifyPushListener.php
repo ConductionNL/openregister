@@ -156,14 +156,14 @@ class NotifyPushListener implements IEventListener
      *   extracted private helper methods (resolveEventAction, resolveQueue, dispatchPushes,
      *   accumulateBatchEntry) into this orchestrator's score; handle() itself only contains
      *   lightweight guard checks and delegates to those helpers.
-     * @SuppressWarnings(PHPMD.NPathComplexity) NPath inflation mirrors the CC accumulation
+     * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CC accumulation
      *   issue; the orchestrator cannot be simplified further without removing necessary guards.
      *
      * @spec openspec/changes/add-live-updates/tasks.md#task-4
      */
     public function handle(Event $event): void
     {
-        $resolved = $this->resolveEventAction($event);
+        $resolved = $this->resolveEventAction(event: $event);
         if ($resolved === null) {
             return;
         }
@@ -349,7 +349,7 @@ class NotifyPushListener implements IEventListener
      *
      * @internal For use in unit tests only.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-7
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     public static function resetStaticState(): void
     {
@@ -360,29 +360,77 @@ class NotifyPushListener implements IEventListener
     }//end resetStaticState()
 
     /**
+     * Whether any (register, schema) pairs have been accumulated in batch mode.
+     *
+     * Lets import callers skip IQueue resolution entirely when nothing was
+     * accumulated (e.g. notify_push not installed, so handle() never reached
+     * the accumulator) — avoiding even the one DEBUG log of a failed resolve.
+     *
+     * @return bool True when at least one collection event is pending flush.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function hasBatchedCollections(): bool
+    {
+        return self::$batchedCollections !== [];
+    }//end hasBatchedCollections()
+
+    /**
+     * Accumulate a (register-slug, schema-slug) pair directly, bypassing event dispatch.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * throughout ImportService / SaveObjects), so handle() never fires during a
+     * standard import and the accumulator would stay empty. Import callers that
+     * already know which collection changed use this entry point to queue the
+     * collection hint themselves; flushBatch() then broadcasts it. Duplicate
+     * pairs collapse onto the same accumulator key — safe to combine with
+     * event-driven accumulation when events ARE enabled.
+     *
+     * @param string $registerSlug The register slug (empty = ignored).
+     * @param string $schemaSlug   The schema slug (empty = ignored).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function addBatchedCollection(string $registerSlug, string $schemaSlug): void
+    {
+        if ($registerSlug === '' || $schemaSlug === '') {
+            return;
+        }
+
+        self::$batchedCollections[$registerSlug.'|'.$schemaSlug] = [
+            'register' => $registerSlug,
+            'schema'   => $schemaSlug,
+        ];
+    }//end addBatchedCollection()
+
+    /**
      * Emit one collection event per accumulated (register, schema) pair and clear state.
      *
-     * Should be called in a `finally` block after a bulk-import loop:
+     * Should be called in a `finally` block after a bulk-import loop, BEFORE
+     * setBatchMode(false) — disabling batch mode clears the accumulator:
      * ```php
      * NotifyPushListener::setBatchMode(true);
      * try {
      *     // ... import loop
      * } finally {
-     *     NotifyPushListener::flushBatch($queue, $permissionHandler);
+     *     NotifyPushListener::flushBatch($queue);
      *     NotifyPushListener::setBatchMode(false);
      * }
      * ```
      *
-     * @param object            $queue       Resolved IQueue instance.
-     * @param PermissionHandler $permHandler Permission handler for user resolution.
+     * The flush is a broadcast: collection events carry no per-user targeting
+     * (payload is slugs + action only); clients refetch through the RBAC-filtered
+     * REST API, so no data can leak to unauthorised subscribers.
+     *
+     * @param object $queue Resolved IQueue instance.
      *
      * @return void
      *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-4
-     *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Permission handler retained on the signature for upcoming per-user batch routing
+     * @spec openspec/specs/realtime-updates/spec.md
      */
-    public static function flushBatch(object $queue, PermissionHandler $permHandler): void
+    public static function flushBatch(object $queue): void
     {
         foreach (self::$batchedCollections as $entry) {
             $registerSlug = $entry['register'];
@@ -424,7 +472,7 @@ class NotifyPushListener implements IEventListener
      *
      * @return object|null The IQueue instance, or null when unavailable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-8
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveQueue(): ?object
     {
@@ -455,7 +503,7 @@ class NotifyPushListener implements IEventListener
      *
      * @return string|null The register slug, or null when not resolvable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-9
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveRegisterSlug(?string $registerUuid): ?string
     {
@@ -487,7 +535,7 @@ class NotifyPushListener implements IEventListener
      *
      * @return string|null The schema slug, or null when not resolvable.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-listener-all/tasks.md#task-10
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveSchemaSlug(?string $schemaUuid): ?string
     {

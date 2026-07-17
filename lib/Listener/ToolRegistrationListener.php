@@ -93,7 +93,7 @@ class ToolRegistrationListener implements IEventListener
      * @param McpToolsService $mcpToolsService MCP tools service used to register MCP-sourced tools.
      * @param LoggerInterface $logger          PSR logger.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         RegisterTool $registerTool,
@@ -118,7 +118,7 @@ class ToolRegistrationListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handle(Event $event): void
     {
@@ -200,7 +200,7 @@ class ToolRegistrationListener implements IEventListener
      *
      * ToolRegistry enforces the id format `app_name.tool_name` so we register ONE
      * bridge instance per (provider, function) pair under its full MCP id (e.g.
-     * `openbuilt.createApp`). The bridge is configured via setOnlyMcpId() so each
+     * `openbuild.createApp`). The bridge is configured via setOnlyMcpId() so each
      * entry's getFunctions() returns just that one descriptor — preventing the LLM
      * from seeing the same provider's tool list duplicated across N registry entries.
      *
@@ -244,10 +244,12 @@ class ToolRegistrationListener implements IEventListener
     {
         foreach ($provider->getTools() as $descriptor) {
             $mcpId = (string) ($descriptor['id'] ?? '');
-            if ($mcpId === '' || preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $mcpId) === 0) {
-                // Tool id is non-conforming (camelCase or missing dot).
-                // Skip — the LLM-visible id MUST match the ToolRegistry regex,
-                // and the agent's tools array stores MCP ids verbatim.
+            if ($mcpId === '' || preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $mcpId) === 0) {
+                // Tool id is non-conforming (camelCase or missing dot). Skip
+                // — the LLM-visible id MUST match the ToolRegistry regex
+                // (app_name.tool_name, or app_name.schema.verb for ADR-063
+                // chain-2 schema-derived tools), and the agent's tools array
+                // stores MCP ids verbatim.
                 continue;
             }
 

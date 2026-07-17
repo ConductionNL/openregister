@@ -2,6 +2,34 @@
 
 This document describes the quality assurance tools and processes used in the OpenRegister application and all Conduction Nextcloud apps.
 
+## CI Gate — `composer check:strict`
+
+The authoritative pre-merge gate is:
+
+```bash
+composer check:strict
+```
+
+This runs `phpcs + phpmd + phpstan + psalm + test:all` in sequence. The same command runs in CI via `.forgejo/workflows/pre-merge-check-strict.yaml` on every PR targeting `development`, `main`, or `beta`. **All commands must exit 0 before pushing.**
+
+### Current baseline state (2026-06-04)
+
+| Gate | Status |
+|---|---|
+| PHPCS | ✅ 0 errors — gate clean |
+| PHPMD | ⚠️ 52 violations — tracked in `openspec/changes/openregister-legacy-quality-cleanup/` |
+| PHPStan | ⚠️ 1,371 baseline entries — tracked in `phpstan-baseline.neon` |
+| Psalm | ✅ baseline managed |
+| PHPUnit | ✅ passing |
+
+Burn-down progress is tracked in issue #25 and spec
+`openspec/changes/openregister-legacy-quality-cleanup/` (audit report:
+`quality-inventory-2026-06-04.md`).
+
+**Note:** The `composer phpmd` script uses a `|| echo 'PHPMD not installed, skipping...'`
+fallback that causes PHPMD to exit 0 even when violations exist. This will be fixed once
+all violations are cleared (see task 5.2 in the burn-down spec).
+
 ## Overview
 
 We use two main tools for quality assurance:

@@ -17,11 +17,11 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-entity-must-support-an-optional-mapping-reference-for-payload-transformation
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-testing-must-support-dry-run-delivery
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -38,13 +38,16 @@ use OCA\OpenRegister\Db\WebhookLog;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
 use OCP\IRequest;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * WebhookService handles webhook delivery and request interception
@@ -96,6 +99,13 @@ class WebhookService
     private ?CloudEventFormatter $cloudEventFormatter;
 
     /**
+     * Job list used to enqueue asynchronous webhook delivery.
+     *
+     * @var IJobList
+     */
+    private IJobList $jobList;
+
+    /**
      * Mapping service for payload transformation
      *
      * @var MappingService
@@ -110,14 +120,27 @@ class WebhookService
     private MappingMapper $mappingMapper;
 
     /**
+     * Cache of the "has interception webhooks" flag per event type.
+     *
+     * Nullable so the service stays constructible without a cache backend
+     * (unit tests, degraded environments); the fast path then falls back to
+     * the direct lookup.
+     *
+     * @var WebhookInterceptionCache|null
+     */
+    private ?WebhookInterceptionCache $interceptionCache;
+
+    /**
      * Constructor
      *
-     * @param WebhookMapper            $webhookMapper       Webhook mapper
-     * @param LoggerInterface          $logger              Logger
-     * @param WebhookLogMapper         $webhookLogMapper    Webhook log mapper
-     * @param MappingService           $mappingService      Mapping service
-     * @param MappingMapper            $mappingMapper       Mapping mapper
-     * @param CloudEventFormatter|null $cloudEventFormatter CloudEvent formatter (optional)
+     * @param WebhookMapper                 $webhookMapper       Webhook mapper
+     * @param LoggerInterface               $logger              Logger
+     * @param WebhookLogMapper              $webhookLogMapper    Webhook log mapper
+     * @param MappingService                $mappingService      Mapping service
+     * @param MappingMapper                 $mappingMapper       Mapping mapper
+     * @param IJobList                      $jobList             Background job list for async delivery
+     * @param CloudEventFormatter|null      $cloudEventFormatter CloudEvent formatter (optional)
+     * @param WebhookInterceptionCache|null $interceptionCache   Interception-flag cache (optional)
      *
      * @return void
      */
@@ -127,14 +150,18 @@ class WebhookService
         WebhookLogMapper $webhookLogMapper,
         MappingService $mappingService,
         MappingMapper $mappingMapper,
-        ?CloudEventFormatter $cloudEventFormatter=null
+        IJobList $jobList,
+        ?CloudEventFormatter $cloudEventFormatter=null,
+        ?WebhookInterceptionCache $interceptionCache=null
     ) {
         $this->webhookMapper    = $webhookMapper;
         $this->logger           = $logger;
         $this->webhookLogMapper = $webhookLogMapper;
         $this->mappingService   = $mappingService;
         $this->mappingMapper    = $mappingMapper;
+        $this->jobList          = $jobList;
         $this->cloudEventFormatter = $cloudEventFormatter;
+        $this->interceptionCache   = $interceptionCache;
         $this->initializeHttpClient();
     }//end __construct()
 
@@ -163,6 +190,20 @@ class WebhookService
     private const LOG_BODY_PREVIEW_BYTES = 1024;
 
     /**
+     * Connect + total timeout for request-interception deliveries, in seconds.
+     *
+     * Interception is request-blocking BY DESIGN: the object write waits for
+     * the hook's answer. A hook that cannot respond within 2 seconds must not
+     * gate writes — with the client default of 30s total / 10s connect, one
+     * slow endpoint stalled every object create for up to 30 seconds. This cap
+     * applies ONLY to the synchronous interception path; post-save deliveries
+     * run async via WebhookDeliveryJob and keep the per-webhook timeout.
+     *
+     * @var integer
+     */
+    private const INTERCEPTION_TIMEOUT_SECONDS = 2;
+
+    /**
      * Initialize HTTP client with default configuration
      *
      * Creates a GuzzleHttp\Client instance with secure defaults for webhook delivery.
@@ -172,7 +213,7 @@ class WebhookService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-22
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function initializeHttpClient(): void
     {
@@ -232,29 +273,49 @@ class WebhookService
      *  - Unresolvable hosts are allowed through so that DNS failures surface
      *    as the normal Guzzle ConnectException, not a 400 here.
      *
-     * @param string $uri Full request URI to validate.
+     * When $allowPrivate is true (an admin-set, per-hook opt-in stored as
+     * `configuration.allowPrivateTargets`), the IP-range checks are skipped so a
+     * developer can deliver to a local target such as http://localhost:8000. The
+     * scheme (http/https only) and parse/host checks are ALWAYS enforced — only
+     * the loopback/RFC-1918/link-local/IPv6 range checks are bypassed.
+     *
+     * @param string  $uri          Full request URI to validate.
+     * @param boolean $allowPrivate When true, skip the private/loopback IP-range checks.
      *
      * @return void
      *
      * @throws \RuntimeException When the URI is blocked.
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is the per-hook
+     * allowPrivateTargets opt-in; a boolean toggle is the clearest API for a
+     * binary "bypass the IP-range checks" decision threaded from the caller.
      */
-    private function assertSafeWebhookUri(string $uri): void
+    private function assertSafeWebhookUri(string $uri, bool $allowPrivate=false): void
     {
         $parsed = parse_url($uri);
         if ($parsed === false) {
-            throw new \RuntimeException('Webhook target URL is not parseable');
+            throw new RuntimeException('Webhook target URL is not parseable');
         }
 
         $scheme = strtolower($parsed['scheme'] ?? '');
         if (in_array($scheme, ['http', 'https'], true) === false) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL must use http or https scheme; got "'.$scheme.'"'
             );
         }
 
         $host = strtolower($parsed['host'] ?? '');
         if ($host === '') {
-            throw new \RuntimeException('Webhook target URL is missing a host');
+            throw new RuntimeException('Webhook target URL is missing a host');
+        }
+
+        // Per-hook opt-in: the admin deliberately allowed private/loopback
+        // targets for this webhook. Scheme + host/parse checks above stay
+        // enforced; only the IP-range checks below are bypassed.
+        if ($allowPrivate === true) {
+            return;
         }
 
         // ── IPv6 literal detection ──────────────────────────────────────
@@ -263,14 +324,14 @@ class WebhookService
         // before validation. A colon anywhere in $host (brackets or not) is
         // the reliable heuristic that we have an IPv6 address rather than a
         // plain hostname.
-        $bareHost     = trim($host, '[]');
+        $bareHost      = trim($host, '[]');
         $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
             || strpos($host, ':') !== false;
 
         if ($isIpv6Literal === true) {
-            $reason = $this->blockedIpv6Reason($bareHost);
+            $reason = $this->blockedIpv6Reason(ip: $bareHost);
             if ($reason !== null) {
-                throw new \RuntimeException(
+                throw new RuntimeException(
                     'Webhook target URL resolves to a blocked IP range ('.$reason.')'
                 );
             }
@@ -290,9 +351,9 @@ class WebhookService
                     continue;
                 }
 
-                $reason = $this->blockedIpv6Reason($ipv6);
+                $reason = $this->blockedIpv6Reason(ip: $ipv6);
                 if ($reason !== null) {
-                    throw new \RuntimeException(
+                    throw new RuntimeException(
                         'Webhook target URL resolves to a blocked IP range ('.$reason.')'
                     );
                 }
@@ -322,35 +383,35 @@ class WebhookService
 
         // Loopback 127.0.0.0/8.
         if (($longIp & 0xFF000000) === 0x7F000000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (loopback)'
             );
         }
 
         // RFC-1918 10.0.0.0/8.
         if (($longIp & 0xFF000000) === 0x0A000000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // RFC-1918 172.16.0.0/12.
         if (($longIp & 0xFFF00000) === 0xAC100000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // RFC-1918 192.168.0.0/16.
         if (($longIp & 0xFFFF0000) === 0xC0A80000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (RFC-1918)'
             );
         }
 
         // Link-local 169.254.0.0/16 — includes cloud metadata 169.254.169.254.
         if (($longIp & 0xFFFF0000) === 0xA9FE0000) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'Webhook target URL resolves to a blocked IP range (link-local/metadata)'
             );
         }
@@ -396,13 +457,13 @@ class WebhookService
             return 'unspecified';
         }
 
-        // fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
+        // Fc00::/7 — unique local (covers fc00:: and fd00:: blocks).
         // First byte with mask 0xFE must equal 0xFC.
         if ((ord($bin[0]) & 0xFE) === 0xFC) {
             return 'unique-local';
         }
 
-        // fe80::/10 — link-local unicast.
+        // Fe80::/10 — link-local unicast.
         // First byte 0xFE, second byte upper 6 bits = 0x80 → mask 0xC0.
         if (ord($bin[0]) === 0xFE && (ord($bin[1]) & 0xC0) === 0x80) {
             return 'link-local';
@@ -472,12 +533,12 @@ class WebhookService
 
         // ── IPv6 literal ────────────────────────────────────────────────
         // Strip brackets that parse_url() may leave around IPv6 literals.
-        $bareHost     = trim($host, '[]');
+        $bareHost      = trim($host, '[]');
         $isIpv6Literal = filter_var($bareHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false
             || strpos($host, ':') !== false;
 
         if ($isIpv6Literal === true) {
-            return $this->blockedIpv6Reason($bareHost) !== null;
+            return $this->blockedIpv6Reason(ip: $bareHost) !== null;
         }
 
         // ── IPv6 DNS (AAAA) ─────────────────────────────────────────────
@@ -485,7 +546,7 @@ class WebhookService
         if (is_array($aaaaRecords) === true) {
             foreach ($aaaaRecords as $record) {
                 $ipv6 = $record['ipv6'] ?? '';
-                if ($ipv6 !== '' && $this->blockedIpv6Reason($ipv6) !== null) {
+                if ($ipv6 !== '' && $this->blockedIpv6Reason(ip: $ipv6) !== null) {
                     return true;
                 }
             }
@@ -574,8 +635,8 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook dispatch conditions
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-86
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function dispatchEvent(Event $_event, string $eventName, array $payload): void
     {
@@ -618,18 +679,35 @@ class WebhookService
             ]
         );
 
+        // Enqueue delivery (including the FIRST attempt) as a background job so
+        // the object-write response never blocks on an external endpoint — with
+        // N webhooks each up to a 30s timeout, synchronous delivery made write
+        // latency a function of third-party uptime (async-webhook-delivery /
+        // ADR-009 Rule 5). WebhookDeliveryJob performs the same delivery + logging.
         foreach ($webhooks as $webhook) {
-            $this->deliverWebhook(webhook: $webhook, eventName: $eventName, payload: $payload);
+            $this->jobList->add(
+                WebhookDeliveryJob::class,
+                [
+                    'webhook_id' => $webhook->getId(),
+                    'event_name' => $eventName,
+                    'payload'    => $payload,
+                    'attempt'    => 1,
+                ]
+            );
         }
     }//end dispatchEvent()
 
     /**
      * Deliver webhook to target URL
      *
-     * @param Webhook $webhook   Webhook configuration
-     * @param string  $eventName Event name
-     * @param array   $payload   Payload data
-     * @param int     $attempt   Current attempt number (for retries)
+     * @param Webhook  $webhook           Webhook configuration
+     * @param string   $eventName         Event name
+     * @param array    $payload           Payload data
+     * @param int      $attempt           Current attempt number (for retries)
+     * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout;
+     *                                    used by the synchronous interception path
+     *                                    (INTERCEPTION_TIMEOUT_SECONDS). Null keeps the
+     *                                    per-webhook timeout (async deliveries).
      *
      * @return bool Success status
      *
@@ -638,10 +716,15 @@ class WebhookService
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive webhook delivery with logging
      * Fallback for connection errors without response
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
-    public function deliverWebhook(Webhook $webhook, string $eventName, array $payload, int $attempt=1): bool
-    {
+    public function deliverWebhook(
+        Webhook $webhook,
+        string $eventName,
+        array $payload,
+        int $attempt=1,
+        ?int $timeoutCapSeconds=null
+    ): bool {
         if ($webhook->getEnabled() === false) {
             $this->logger->debug(
                 message: '[WebhookService] Webhook is disabled, skipping delivery',
@@ -686,7 +769,51 @@ class WebhookService
         $webhookLog->setAttempt($attempt);
 
         try {
-            $response = $this->sendRequest(webhook: $webhook, payload: $webhookPayload);
+            $response = $this->sendRequest(
+                webhook: $webhook,
+                payload: $webhookPayload,
+                timeoutCapSeconds: $timeoutCapSeconds
+            );
+
+            // BUG-SVC-1: http_errors is disabled on the Guzzle client, so a 4xx/5xx
+            // response does NOT throw — it lands here. Treat any non-2xx status as a
+            // delivery failure (log it, record failed statistics, schedule a retry)
+            // instead of silently recording it as a successful delivery.
+            $statusCode = (int) $response['status_code'];
+            if ($statusCode < 200 || $statusCode >= 300) {
+                $webhookLog->setSuccess(false);
+                $webhookLog->setStatusCode($statusCode);
+                $webhookLog->setResponseBody($this->capResponseBody(body: (string) $response['body']));
+                $webhookLog->setErrorMessage('Webhook endpoint returned non-2xx status: '.$statusCode);
+                $webhookLog->setRequestBody(json_encode($webhookPayload));
+
+                $this->logger->error(
+                    message: '[WebhookService] Webhook delivery failed with non-2xx status',
+                    context: [
+                        'file'         => __FILE__,
+                        'line'         => __LINE__,
+                        'webhook_id'   => $webhook->getId(),
+                        'webhook_name' => $webhook->getName(),
+                        'event'        => $eventName,
+                        'status_code'  => $statusCode,
+                        'attempt'      => $attempt,
+                        'max_retries'  => $webhook->getMaxRetries(),
+                    ]
+                );
+
+                $this->webhookMapper->updateStatistics(webhook: $webhook, success: false);
+
+                // Schedule retry if within retry limit.
+                if ($attempt < $webhook->getMaxRetries()) {
+                    $nextRetryAt = $this->calculateNextRetryTime(webhook: $webhook, attempt: $attempt);
+                    $webhookLog->setNextRetryAt($nextRetryAt);
+                    $this->scheduleRetry(webhook: $webhook, eventName: $eventName, _payload: $payload, attempt: $attempt + 1);
+                }
+
+                $this->webhookLogMapper->insert($webhookLog);
+
+                return false;
+            }//end if
 
             // Log success.
             $webhookLog->setSuccess(true);
@@ -862,7 +989,7 @@ class WebhookService
      *
      * @return mixed
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-23
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function getNestedValue(array $array, string $key)
     {
@@ -896,7 +1023,7 @@ class WebhookService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Three payload format strategies
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-entity-must-support-an-optional-mapping-reference-for-payload-transformation
      */
     private function buildPayload(Webhook $webhook, string $eventName, array $payload, int $attempt): array
     {
@@ -969,7 +1096,7 @@ class WebhookService
      *
      * @return array|null Transformed payload, or null on failure
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-76
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-entity-must-support-an-optional-mapping-reference-for-payload-transformation
      */
     private function applyMappingTransformation(
         int $mappingId,
@@ -1038,7 +1165,7 @@ class WebhookService
      *
      * @return string Short class name (e.g., "ObjectCreatedEvent")
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-24
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function getShortEventName(string $eventName): string
     {
@@ -1049,8 +1176,10 @@ class WebhookService
     /**
      * Send HTTP request to webhook URL
      *
-     * @param Webhook $webhook Webhook configuration
-     * @param array   $payload Payload to send
+     * @param Webhook  $webhook           Webhook configuration
+     * @param array    $payload           Payload to send
+     * @param int|null $timeoutCapSeconds Optional hard cap on connect + total timeout
+     *                                    (request-blocking interception deliveries)
      *
      * @return (int|string)[] Response data
      *
@@ -1059,13 +1188,20 @@ class WebhookService
      * @psalm-return array{status_code: int, body: string}
      *
      * Different handling for GET vs POST/PUT/PATCH/DELETE methods
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
-    private function sendRequest(Webhook $webhook, array $payload): array
+    private function sendRequest(Webhook $webhook, array $payload, ?int $timeoutCapSeconds=null): array
     {
+        // Per-hook opt-in (admin-set) to allow private/loopback targets for
+        // local testing. Defaults to false (full SSRF blocking) when the key
+        // is absent. See configuration.allowPrivateTargets.
+        $allowPrivate = (bool) ($webhook->getConfigurationArray()['allowPrivateTargets'] ?? false);
+
         // SSRF guard: validate the webhook target before issuing the request.
-        // Redirects are re-validated by the on_redirect callback in
-        // initializeHttpClient().
-        $this->assertSafeWebhookUri(uri: $webhook->getUrl());
+        // Redirects are re-validated by the per-request on_redirect callback set
+        // in $options below, which honours the same per-hook flag.
+        $this->assertSafeWebhookUri(uri: $webhook->getUrl(), allowPrivate: $allowPrivate);
 
         $headers = array_merge(
             [
@@ -1084,6 +1220,40 @@ class WebhookService
         $options = [
             'headers' => $headers,
             'timeout' => $webhook->getTimeout(),
+        ];
+
+        // Hard-cap connect + total timeout for request-blocking deliveries
+        // (interception). The cap never RAISES a webhook's own shorter timeout,
+        // but a non-positive per-webhook timeout (Guzzle: 0 = wait forever)
+        // must not escape the cap either.
+        if ($timeoutCapSeconds !== null) {
+            $webhookTimeout     = (int) $webhook->getTimeout();
+            $options['timeout'] = $timeoutCapSeconds;
+            if ($webhookTimeout > 0 && $webhookTimeout < $timeoutCapSeconds) {
+                $options['timeout'] = $webhookTimeout;
+            }
+
+            $options['connect_timeout'] = $timeoutCapSeconds;
+        }
+
+        // Override the shared client's redirect guard per-request so the
+        // on_redirect callback can see this hook's allowPrivate flag. Mirrors
+        // the client default (max/strict/protocols) from initializeHttpClient();
+        // the only difference is the flag-aware re-validation. The shared client
+        // default keeps allowPrivate = false as the safe fallback.
+        $options['allow_redirects'] = [
+            'max'             => 5,
+            'strict'          => true,
+            'referer'         => false,
+            'protocols'       => ['http', 'https'],
+            'track_redirects' => true,
+            'on_redirect'     => function (
+                RequestInterface $request,
+                ResponseInterface $response,
+                \Psr\Http\Message\UriInterface $uri
+            ) use ($allowPrivate): void {
+                $this->assertSafeWebhookUri(uri: (string) $uri, allowPrivate: $allowPrivate);
+            },
         ];
 
         // For GET requests, use query parameters; for others, send JSON body.
@@ -1136,7 +1306,7 @@ class WebhookService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-testing-must-support-dry-run-delivery
      */
     private function scheduleRetry(Webhook $webhook, string $eventName, array $_payload, int $attempt): void
     {
@@ -1185,7 +1355,7 @@ class WebhookService
      *
      * @return int Delay in seconds
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-78
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-testing-must-support-dry-run-delivery
      */
     private function calculateRetryDelay(Webhook $webhook, int $attempt): int
     {
@@ -1232,11 +1402,19 @@ class WebhookService
      */
     public function interceptRequest(IRequest $request, string $eventType): array
     {
-        // Find webhooks configured for this event type.
+        // Fast path: a cached (or freshly computed) tenant-agnostic flag tells
+        // us whether ANY interception webhook exists for this event type. On
+        // installs without interception webhooks — the common case — this
+        // avoids the webhook table scan on every object write.
+        if ($this->hasInterceptionWebhooks(eventType: $eventType) === false) {
+            return $request->getParams();
+        }
+
+        // Find webhooks configured for this event type (organisation-filtered).
         $webhooks = $this->findWebhooksForInterception(eventType: $eventType);
 
         if (empty($webhooks) === true) {
-            // No webhooks configured, return original request data.
+            // No webhooks configured for this organisation, return original request data.
             return $request->getParams();
         }
 
@@ -1269,12 +1447,14 @@ class WebhookService
                     'cloudEvent' => $cloudEvent,
                 ];
 
-                // Deliver webhook.
+                // Deliver webhook. Interception blocks the object write, so the
+                // delivery timeout is capped hard — see INTERCEPTION_TIMEOUT_SECONDS.
                 $success = $this->deliverWebhook(
                     webhook: $webhook,
                     eventName: $eventType,
                     payload: $webhookPayload,
-                    attempt: 1
+                    attempt: 1,
+                    timeoutCapSeconds: self::INTERCEPTION_TIMEOUT_SECONDS
                 );
 
                 // Process response if webhook is configured to handle responses.
@@ -1328,39 +1508,99 @@ class WebhookService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple webhook filtering conditions
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter matching paths
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
      */
     private function findWebhooksForInterception(string $eventType): array
     {
-        // Get all enabled webhooks.
+        // Get all enabled webhooks (organisation-filtered).
         $allWebhooks = $this->webhookMapper->findEnabled();
 
         // Filter webhooks that match this event type and are configured for interception.
         $matchingWebhooks = [];
 
         foreach ($allWebhooks as $webhook) {
-            $config = $webhook->getConfigurationArray();
-
-            // Check if webhook is configured for request interception.
-            if (($config['interceptRequests'] ?? false) !== true) {
-                continue;
+            if ($this->matchesInterception(webhook: $webhook, eventType: $eventType) === true) {
+                $matchingWebhooks[] = $webhook;
             }
-
-            // Check if webhook listens to this event type.
-            $events = $webhook->getEventsArray();
-            if (empty($events) === false) {
-                // Check if event type matches.
-                $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
-                if ($webhook->matchesEvent($eventClass) === false) {
-                    continue;
-                }
-            }
-
-            $matchingWebhooks[] = $webhook;
-        }//end foreach
+        }
 
         return $matchingWebhooks;
     }//end findWebhooksForInterception()
+
+    /**
+     * Check whether a webhook intercepts requests for an event type
+     *
+     * A webhook intercepts when its configuration opts into interception AND
+     * it either listens to all events or matches the given event type.
+     *
+     * @param Webhook $webhook   Webhook to check
+     * @param string  $eventType Event type (e.g., 'object.creating')
+     *
+     * @return bool True when the webhook intercepts requests for the event type
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     */
+    private function matchesInterception(Webhook $webhook, string $eventType): bool
+    {
+        $config = $webhook->getConfigurationArray();
+
+        // Check if webhook is configured for request interception.
+        if (($config['interceptRequests'] ?? false) !== true) {
+            return false;
+        }
+
+        // Check if webhook listens to this event type (empty events = all events).
+        $events = $webhook->getEventsArray();
+        if (empty($events) === false) {
+            $eventClass = $this->eventTypeToEventClass(eventType: $eventType);
+            if ($webhook->matchesEvent($eventClass) === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }//end matchesInterception()
+
+    /**
+     * Determine whether ANY interception webhook exists for an event type
+     *
+     * Answers the question globally (tenant-agnostic) and caches the boolean
+     * in the distributed cache so the common zero-webhook case skips the
+     * table scan on every object write. A global "true" is a superset check:
+     * the caller still runs the organisation-filtered lookup to select the
+     * webhooks that actually apply. A per-organisation flag is deliberately
+     * NOT cached — one tenant's "false" must never disable another tenant's
+     * interception hooks. Cache entries are invalidated on webhook CRUD (see
+     * WebhookMapper) and expire via TTL as a safety net.
+     *
+     * @param string $eventType Event type (e.g., 'object.creating')
+     *
+     * @return bool True when at least one enabled interception webhook exists for the event type
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     */
+    private function hasInterceptionWebhooks(string $eventType): bool
+    {
+        $cached = $this->interceptionCache?->get(eventType: $eventType);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // Cache miss (or no cache backend): compute the flag from a
+        // tenant-agnostic scan so the cached answer is valid for every
+        // organisation.
+        $hasWebhooks = false;
+        foreach ($this->webhookMapper->findEnabledForInterceptionScan() as $webhook) {
+            if ($this->matchesInterception(webhook: $webhook, eventType: $eventType) === true) {
+                $hasWebhooks = true;
+                break;
+            }
+        }
+
+        $this->interceptionCache?->set(eventType: $eventType, hasWebhooks: $hasWebhooks);
+
+        return $hasWebhooks;
+    }//end hasInterceptionWebhooks()
 
     /**
      * Check if webhook response should be processed
@@ -1390,7 +1630,7 @@ class WebhookService
      *
      * @return string Event class name (e.g., 'OCA\OpenRegister\Event\ObjectCreatingEvent')
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-25
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function eventTypeToEventClass(string $eventType): string
     {

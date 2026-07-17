@@ -84,7 +84,10 @@ class TextExtractionServiceTest extends TestCase
             $this->entityRelationMapper,
             $this->settingsService,
             $this->riskLevelService,
-            $this->emlParser
+            $this->emlParser,
+            new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+            new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
+            new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger)
         );
     }
 
@@ -2717,34 +2720,40 @@ class TextExtractionServiceTest extends TestCase
     // extractWord (private) — via performTextExtraction
     // ────────────────────────────────────────────────────────
 
-    public function testExtractWordDocxWithInvalidContentThrows(): void
+    public function testExtractWordDocxWithInvalidContentDegradesGracefully(): void
     {
+        // extractWord() now degrades to null on a per-document parse failure
+        // (logs structure only, per ADR-005) rather than throwing — commit
+        // 51a289ec1. Invalid DOCX content therefore yields empty extraction,
+        // not an exception.
         $file = $this->createMock(File::class);
         $file->method('getId')->willReturn(1);
         $file->method('getName')->willReturn('doc.docx');
         $file->method('getContent')->willReturn('not a valid docx');
         $this->rootFolder->method('getById')->willReturn([$file]);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessageMatches('/Word extraction failed/');
-        $this->invokePrivate('performTextExtraction', [
+        $result = $this->invokePrivate('performTextExtraction', [
             1, ['mimetype' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'path' => '/doc.docx'],
         ]);
+
+        $this->assertSame('', (string) $result);
     }
 
-    public function testExtractWordDocWithInvalidContentThrows(): void
+    public function testExtractWordDocWithInvalidContentDegradesGracefully(): void
     {
+        // See testExtractWordDocxWithInvalidContentDegradesGracefully — .doc
+        // binary parse failures also degrade to null rather than throwing.
         $file = $this->createMock(File::class);
         $file->method('getId')->willReturn(1);
         $file->method('getName')->willReturn('doc.doc');
         $file->method('getContent')->willReturn('not a valid doc');
         $this->rootFolder->method('getById')->willReturn([$file]);
 
-        $this->expectException(Exception::class);
-        $this->expectExceptionMessageMatches('/Word extraction failed/');
-        $this->invokePrivate('performTextExtraction', [
+        $result = $this->invokePrivate('performTextExtraction', [
             1, ['mimetype' => 'application/msword', 'path' => '/doc.doc'],
         ]);
+
+        $this->assertSame('', (string) $result);
     }
 
     // ────────────────────────────────────────────────────────
@@ -3476,12 +3485,15 @@ class TextExtractionServiceTest extends TestCase
     // isWordDocument — odt mime type returns false
     // ────────────────────────────────────────────────────────
 
-    public function testIsWordDocumentReturnsFalseForOdt(): void
+    public function testIsWordDocumentReturnsTrueForOdt(): void
     {
+        // OpenDocument Text (.odt) is now handled by the Word extraction
+        // path (PhpWord supports ODText), so isWordDocument() reports true.
+        // See commit 51a289ec1 (.doc/.odt support).
         $result = $this->invokePrivate('isWordDocument', [
             'application/vnd.oasis.opendocument.text',
         ]);
-        $this->assertFalse($result);
+        $this->assertTrue($result);
     }
 
     // ────────────────────────────────────────────────────────

@@ -19,8 +19,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -42,8 +42,12 @@ use Symfony\Component\Uid\Uuid;
  *
  * Transfer lists track which objects are pending, approved, or completed for
  * e-Depot transfer. They follow the same review-approve pattern as destruction lists.
+ * Records persist through ObjectService via TransferRecordService, and carry the
+ * per-connection output-format setting (zip default | bagit).
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
@@ -64,20 +68,48 @@ class TransferListService
     /**
      * Constructor.
      *
-     * @param MagicMapper          $objectMapper        The object mapper.
-     * @param AuditTrailMapper     $auditTrailMapper    The audit trail mapper.
-     * @param IAppConfig           $appConfig           The app configuration.
-     * @param INotificationManager $notificationManager The notification manager.
-     * @param LoggerInterface      $logger              Logger.
+     * @param MagicMapper           $objectMapper          The object mapper.
+     * @param AuditTrailMapper      $auditTrailMapper      The audit trail mapper.
+     * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
+     * @param IAppConfig            $appConfig             The app configuration.
+     * @param INotificationManager  $notificationManager   The notification manager.
+     * @param LoggerInterface       $logger                Logger.
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
+        private readonly TransferRecordService $transferRecordService,
         private readonly IAppConfig $appConfig,
         private readonly INotificationManager $notificationManager,
         private readonly LoggerInterface $logger,
     ) {
     }//end __construct()
+
+    /**
+     * Persist a transfer-list mutation to the durable e-Depot transfer record
+     * (best-effort — a persistence failure logs a warning and returns the
+     * in-memory list so callers keep working; the archivist-facing record is
+     * the durable source of truth once written).
+     *
+     * @param array<string,mixed> $transferList The transfer-list data.
+     *
+     * @return array<string,mixed> The persisted (or in-memory on failure) list.
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+     *   (Requirement: Durable transfer-list objects served over the API)
+     */
+    private function persist(array $transferList): array
+    {
+        try {
+            return $this->transferRecordService->saveTransferList($transferList);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[TransferListService] Could not persist transfer list: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => ($transferList['uuid'] ?? '')]
+            );
+            return $transferList;
+        }
+    }//end persist()
 
     /**
      * Create a new transfer list from eligible objects.
@@ -94,8 +126,8 @@ class TransferListService
      *
      * @throws InvalidArgumentException If no objects provided.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+     * @spec openspec/specs/edepot-transfer/spec.md
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -114,13 +146,20 @@ class TransferListService
             ];
         }
 
+        $packageFormat = $this->appConfig->getValueString('openregister', 'edepot_package_format', 'zip');
+        if (in_array($packageFormat, ['zip', 'bagit'], true) === false) {
+            $packageFormat = 'zip';
+        }
+
         $transferList = [
             'uuid'             => (string) Uuid::v4(),
             'status'           => self::STATUS_IN_REVIEW,
             'objectReferences' => $objectReferences,
             'exclusions'       => [],
             'approvalMetadata' => null,
+            'attempts'         => [],
             'transferResult'   => null,
+            'packageFormat'    => $packageFormat,
             'createdAt'        => (new DateTime())->format('c'),
             'objectCount'      => count($objectReferences),
         ];
@@ -133,7 +172,7 @@ class TransferListService
             ]
         );
 
-        return $transferList;
+        return $this->persist(transferList: $transferList);
     }//end createTransferList()
 
     /**
@@ -146,8 +185,8 @@ class TransferListService
      *
      * @throws InvalidArgumentException If the list is not in review status.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     public function approveTransferList(array $transferList, string $archivistId): array
     {
@@ -171,7 +210,7 @@ class TransferListService
             ]
         );
 
-        return $transferList;
+        return $this->persist(transferList: $transferList);
     }//end approveTransferList()
 
     /**
@@ -185,8 +224,8 @@ class TransferListService
      *
      * @throws InvalidArgumentException If the list is not in review status.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     public function rejectTransferList(array $transferList, string $archivistId, string $reason): array
     {
@@ -216,7 +255,7 @@ class TransferListService
             ]
         );
 
-        return $transferList;
+        return $this->persist(transferList: $transferList);
     }//end rejectTransferList()
 
     /**
@@ -228,7 +267,7 @@ class TransferListService
      *
      * @return array<string,mixed> The updated transfer list data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
      */
     public function excludeObjects(array $transferList, array $objectUuids, string $reason): array
     {
@@ -271,7 +310,7 @@ class TransferListService
             ]
         );
 
-        return $transferList;
+        return $this->persist(transferList: $transferList);
     }//end excludeObjects()
 
     /**
@@ -284,7 +323,7 @@ class TransferListService
      *
      * @return array<int, string> UUIDs of objects on active transfer lists.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
      */
     public function getObjectsOnActiveTransferLists(array $activeTransferLists): array
     {
@@ -311,7 +350,7 @@ class TransferListService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
      */
     public function notifyArchivists(array $transferList): void
     {

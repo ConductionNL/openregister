@@ -14,49 +14,25 @@
  * page therefore stays a bespoke view referenced here by name — a pure shell
  * dispatch with no page-rendering behaviour change.
  *
+ * PERFORMANCE (frontend-code-splitting-and-fetch-efficiency): each view is
+ * registered as a Vue async component (`() => import(...)`) rather than a static
+ * import, so webpack emits a per-view chunk and the initial bundle no longer
+ * front-loads the parser/eval cost of every view (charts, editors, chat, AVG,
+ * roadmap, …). A view's chunk is fetched only when its route is first visited.
+ *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
-import Dashboard from './views/dashboard/DashboardIndex.vue'
-import RegistersIndex from './views/register/RegistersIndex.vue'
-import RegisterDetail from './views/register/RegisterDetail.vue'
-import SchemasIndex from './views/schema/SchemasIndex.vue'
-import SchemaDetails from './views/schema/SchemaDetails.vue'
-import SourcesIndex from './views/source/SourcesIndex.vue'
-import OrganisationsIndex from './views/organisation/OrganisationsIndex.vue'
-import ApplicationsIndex from './views/application/ApplicationsIndex.vue'
-import ApplicationDetails from './views/application/ApplicationDetails.vue'
-import ObjectsIndex from './views/object/ObjectsIndex.vue'
-import SearchIndex from './views/search/SearchIndex.vue'
-import ChatIndex from './views/chat/ChatIndex.vue'
-import FilesIndex from './views/files/FilesIndex.vue'
-import AgentsIndex from './views/agents/AgentsIndex.vue'
-import ConfigurationsIndex from './views/configuration/ConfigurationsIndex.vue'
-import DeletedIndex from './views/deleted/DeletedIndex.vue'
-import AuditTrailIndex from './views/logs/AuditTrailIndex.vue'
-import SearchTrailIndex from './views/logs/SearchTrailIndex.vue'
-import WebhooksIndex from './views/webhooks/WebhooksIndex.vue'
-import WebhookLogsIndex from './views/webhooks/WebhookLogsIndex.vue'
-import EndpointsIndex from './views/Endpoint/EndpointsIndex.vue'
-import EntitiesIndex from './views/entities/EntitiesIndex.vue'
-import EntityDetail from './views/entities/EntityDetail.vue'
-import TemplatesIndex from './views/templates/TemplatesIndex.vue'
-import MyAccount from './views/account/MyAccount.vue'
-import AvgIndex from './views/avg/AvgIndex.vue'
-import ReportsIndex from './views/reports/ReportsIndex.vue'
-import ReportView from './views/reports/ReportView.vue'
-import FeaturesRoadmapIndex from './views/roadmap/FeaturesRoadmapIndex.vue'
-import IntegrationsView from './views/integration/IntegrationsView.vue'
-
 /**
- * Wrap a Vue component into the v2 registry shape required by CnAppRoot's
- * `registry` prop (`kind: "page"` is the discriminator CnPageRenderer keys
- * page dispatch off — `kind: "widget"`/`"modal"`/`"form-field"`/
- * `"cell-renderer"` entries with the same name are NOT used for page
- * dispatch).
+ * Wrap a Vue component (or async-component loader) into the v2 registry shape
+ * required by CnAppRoot's `registry` prop (`kind: "page"` is the discriminator
+ * CnPageRenderer keys page dispatch off — `kind: "widget"`/`"modal"`/
+ * `"form-field"`/`"cell-renderer"` entries with the same name are NOT used for
+ * page dispatch).
  *
- * @param {object} component Vue component options.
+ * @param {(object|Function)} component Vue component options, or an async
+ *   component loader `() => import(...)`.
  *
  * @return {object} A `{ kind: "page", component }` registry entry.
  */
@@ -65,34 +41,37 @@ function page(component) {
 }
 
 export default {
-	Dashboard: page(Dashboard),
-	RegistersIndex: page(RegistersIndex),
-	RegisterDetail: page(RegisterDetail),
-	SchemasIndex: page(SchemasIndex),
-	SchemaDetails: page(SchemaDetails),
-	SourcesIndex: page(SourcesIndex),
-	OrganisationsIndex: page(OrganisationsIndex),
-	ApplicationsIndex: page(ApplicationsIndex),
-	ApplicationDetails: page(ApplicationDetails),
-	ObjectsIndex: page(ObjectsIndex),
-	SearchIndex: page(SearchIndex),
-	ChatIndex: page(ChatIndex),
-	FilesIndex: page(FilesIndex),
-	AgentsIndex: page(AgentsIndex),
-	ConfigurationsIndex: page(ConfigurationsIndex),
-	DeletedIndex: page(DeletedIndex),
-	AuditTrailIndex: page(AuditTrailIndex),
-	SearchTrailIndex: page(SearchTrailIndex),
-	WebhooksIndex: page(WebhooksIndex),
-	WebhookLogsIndex: page(WebhookLogsIndex),
-	EndpointsIndex: page(EndpointsIndex),
-	EntitiesIndex: page(EntitiesIndex),
-	EntityDetail: page(EntityDetail),
-	TemplatesIndex: page(TemplatesIndex),
-	MyAccount: page(MyAccount),
-	AvgIndex: page(AvgIndex),
-	ReportsIndex: page(ReportsIndex),
-	ReportView: page(ReportView),
-	FeaturesRoadmapIndex: page(FeaturesRoadmapIndex),
-	IntegrationsView: page(IntegrationsView),
+	Dashboard: page(() => import('./views/dashboard/DashboardIndex.vue')),
+	RegistersIndex: page(() => import('./views/register/RegistersIndex.vue')),
+	RegisterDetail: page(() => import('./views/register/RegisterDetail.vue')),
+	SchemasIndex: page(() => import('./views/schema/SchemasIndex.vue')),
+	SchemaDetails: page(() => import('./views/schema/SchemaDetails.vue')),
+	SourcesIndex: page(() => import('./views/source/SourcesIndex.vue')),
+	OrganisationsIndex: page(() => import('./views/organisation/OrganisationsIndex.vue')),
+	ApplicationsIndex: page(() => import('./views/application/ApplicationsIndex.vue')),
+	ApplicationDetails: page(() => import('./views/application/ApplicationDetails.vue')),
+	ObjectsIndex: page(() => import('./views/object/ObjectsIndex.vue')),
+	SearchIndex: page(() => import('./views/search/SearchIndex.vue')),
+	FilesIndex: page(() => import('./views/files/FilesIndex.vue')),
+	ConfigurationsIndex: page(() => import('./views/configuration/ConfigurationsIndex.vue')),
+	DeletedIndex: page(() => import('./views/deleted/DeletedIndex.vue')),
+	AuditTrailIndex: page(() => import('./views/logs/AuditTrailIndex.vue')),
+	SearchTrailIndex: page(() => import('./views/logs/SearchTrailIndex.vue')),
+	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
+	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
+	EndpointsIndex: page(() => import('./views/Endpoint/EndpointsIndex.vue')),
+	EntitiesIndex: page(() => import('./views/entities/EntitiesIndex.vue')),
+	EntityDetail: page(() => import('./views/entities/EntityDetail.vue')),
+	TemplatesIndex: page(() => import('./views/templates/TemplatesIndex.vue')),
+	MyAccount: page(() => import('./views/account/MyAccount.vue')),
+	AvgIndex: page(() => import('./views/avg/AvgIndex.vue')),
+	ReportsIndex: page(() => import('./views/reports/ReportsIndex.vue')),
+	ReportView: page(() => import('./views/reports/ReportView.vue')),
+	FeaturesRoadmapIndex: page(() => import('./views/roadmap/FeaturesRoadmapIndex.vue')),
+	IntegrationsView: page(() => import('./views/integration/IntegrationsView.vue')),
+	QualityIndex: page(() => import('./views/quality/QualityIndex.vue')),
+	DuplicatesIndex: page(() => import('./views/quality/DuplicatesIndex.vue')),
+	MasterEntitiesIndex: page(() => import('./views/quality/MasterEntitiesIndex.vue')),
+	QueueHealthIndex: page(() => import('./views/quality/QueueHealthIndex.vue')),
+	MergeOperationsIndex: page(() => import('./views/quality/MergeOperationsIndex.vue')),
 }

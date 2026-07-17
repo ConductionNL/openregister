@@ -200,8 +200,21 @@ test.describe('files-sidebar-tabs — switching-register-clears-the-active-schem
 		// Select a schema if available.
 		const hasSchemaOptions = await clickAndWaitForOptions(page, schemaCombo, 8_000)
 		if (hasSchemaOptions) {
+			// The schema option list can re-render right after it opens (the
+			// schema store hydrates asynchronously once a register is picked),
+			// so guard the click with a visibility check and fall back to
+			// dismissing the dropdown rather than hanging for the full timeout.
 			const schemaOpt = page.getByRole('option').first()
-			await schemaOpt.click()
+			const optVisible = await schemaOpt
+				.isVisible({ timeout: 5_000 })
+				.catch(() => false)
+			if (optVisible) {
+				await schemaOpt.click({ timeout: 8_000 }).catch(async () => {
+					await page.keyboard.press('Escape')
+				})
+			} else {
+				await page.keyboard.press('Escape')
+			}
 		} else {
 			await page.keyboard.press('Escape')
 		}

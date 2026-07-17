@@ -324,9 +324,9 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 				<div class="filterGroup">
 					<label for="activityPeriodSelect">{{ t('openregister', 'Activity Period') }}</label>
 					<NcSelect
-						input-label="Selected Activity Period"
 						id="activityPeriodSelect"
 						v-model="selectedActivityPeriod"
+						input-label="Selected Activity Period"
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
 						@input="loadActivityData">
@@ -603,7 +603,7 @@ export default {
 	/**
 	 * Load every search-trail analytics dataset on mount and seed state from the route.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 	 * @return {void}
 	 */
 	mounted() {
@@ -641,7 +641,7 @@ export default {
 	methods: {
 		/**
 		 * Load search trail data and update filtered count
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
@@ -799,7 +799,7 @@ export default {
 		},
 		/**
 		 * Update filtered count from store
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {void}
 		 */
 		updateFilteredCount() {
@@ -807,7 +807,7 @@ export default {
 		},
 		/**
 		 * Load statistics
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -842,7 +842,7 @@ export default {
 		},
 		/**
 		 * Load popular search terms
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadPopularTerms() {
@@ -856,7 +856,7 @@ export default {
 		},
 		/**
 		 * Load register schema statistics
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterSchemaStats() {
@@ -870,7 +870,7 @@ export default {
 		},
 		/**
 		 * Load user agent statistics
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadUserAgentStats() {
@@ -884,7 +884,7 @@ export default {
 		},
 		/**
 		 * Load activity data for selected period
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadActivityData() {
@@ -901,7 +901,7 @@ export default {
 		},
 		/**
 		 * Get complexity percentage for progress bar
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {string} type - The complexity type
 		 * @return {number} The percentage
 		 */
@@ -912,7 +912,7 @@ export default {
 		},
 		/**
 		 * Format activity period for display
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {string} period - The period string
 		 * @return {string} Formatted period
 		 */
@@ -956,7 +956,7 @@ export default {
 		},
 		/**
 		 * Get register/schema name for display
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {object} stat - The register/schema stat object
 		 * @return {string} The display name
 		 */
@@ -971,7 +971,7 @@ export default {
 		},
 		/**
 		 * Get browser name for display
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-3
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {object} agent - The user agent stat object
 		 * @return {string} The browser name
 		 */

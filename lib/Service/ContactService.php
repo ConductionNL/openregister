@@ -27,6 +27,7 @@ use Exception;
 use OCA\DAV\CardDAV\CardDavBackend;
 use OCA\OpenRegister\Db\ContactLink;
 use OCA\OpenRegister\Db\ContactLinkMapper;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -37,9 +38,15 @@ use Sabre\VObject\Reader;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Class exposes get/link/unlink/list for contact-to-object bindings and an internal vCard enrichment path; complexity is distributed across multiple private helpers and is not reducible without splitting the dual-storage (vCard + link table) abstraction.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Depends on ContactLinkMapper, CardDavBackend, IUserSession, LoggerInterface, DateTime, and the Sabre VObject Reader — each is a required integration point for the dual CardDAV+link-table storage strategy.
- * @SuppressWarnings(PHPMD.StaticAccess) Sabre\VObject\Reader::read() is a static factory; Sabre provides no injectable alternative in the library.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Class exposes get/link/unlink/list for
+ * contact-to-object bindings and an internal vCard enrichment path; complexity is distributed across
+ * multiple private helpers and is not reducible without splitting the dual-storage
+ * (vCard + link table) abstraction.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Depends on ContactLinkMapper, CardDavBackend,
+ * IUserSession, LoggerInterface, DateTime, and the Sabre VObject Reader — each is a required
+ * integration point for the dual CardDAV+link-table storage strategy.
+ * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory; Sabre
+ * provides no injectable alternative in the library.
  */
 class ContactService
 {
@@ -73,12 +80,20 @@ class ContactService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param ContactLinkMapper $contactLinkMapper Contact link mapper
      * @param CardDavBackend    $cardDavBackend    CardDAV backend
      * @param IUserSession      $userSession       User session
      * @param LoggerInterface   $logger            Logger
+     * @param IURLGenerator     $urlGenerator      URL generator
      *
      * @return void
      */
@@ -86,12 +101,14 @@ class ContactService
         ContactLinkMapper $contactLinkMapper,
         CardDavBackend $cardDavBackend,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->contactLinkMapper = $contactLinkMapper;
         $this->cardDavBackend    = $cardDavBackend;
         $this->userSession       = $userSession;
         $this->logger            = $logger;
+        $this->urlGenerator      = $urlGenerator;
     }//end __construct()
 
     /**
@@ -134,7 +151,7 @@ class ContactService
      *
      * @return array{results: array, total: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function getContactsForObject(string $objectUuid): array
     {
@@ -188,6 +205,15 @@ class ContactService
                     $row['avatarUrl'] = $vfields['avatarUrl'];
                 }//end if
 
+                // Deep-link to the specific contact in the Contacts app.
+                $deepLink = $this->buildContactDeepLink(
+                    addressbookId: $link->getAddressbookId(),
+                    contactUid: $link->getContactUid()
+                );
+                if ($deepLink !== null) {
+                    $row['url'] = $deepLink;
+                }
+
                 return $row;
             },
             $links
@@ -195,6 +221,54 @@ class ContactService
 
         return ['results' => $results, 'total' => $total];
     }//end getContactsForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific contact.
+     *
+     * Nextcloud Contacts (8.x) opens a contact at
+     * `/apps/contacts/All contacts/{token}` where `token` is the
+     * base64url-encoded `"{uid}~{addressbookUri}"`. The addressbook URI is
+     * resolved from the numeric addressbook id via the CardDAV backend.
+     *
+     * Returns null (record gets no `url`) when the uid is missing or the
+     * addressbook can no longer be resolved, rather than a broken link.
+     *
+     * @param int|null    $addressbookId The numeric CardDAV addressbook id.
+     * @param string|null $contactUid    The vCard UID of the contact.
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildContactDeepLink(?int $addressbookId, ?string $contactUid): ?string
+    {
+        if ($contactUid === null || $contactUid === '' || $addressbookId === null) {
+            return null;
+        }
+
+        try {
+            $addressbook = $this->cardDavBackend->getAddressBookById($addressbookId);
+            if (is_array($addressbook) === false) {
+                return null;
+            }
+
+            $addressbookUri = ($addressbook['uri'] ?? null);
+            if ($addressbookUri === null || $addressbookUri === '') {
+                return null;
+            }
+
+            // NC Contacts opens a contact via `atob(routeParam)`, i.e. STANDARD
+            // base64 of "{uid}~{addressbookUri}" (matches its own generated
+            // links, e.g. base64("admin~z-server-generated--system")). The
+            // token is URL-encoded so any `+`/`/`/`=` survive as a single path
+            // segment; NC routing decodes it back to standard base64 before atob.
+            $token = rawurlencode(base64_encode($contactUid.'~'.$addressbookUri));
+            $base  = $this->urlGenerator->linkToRoute('contacts.page.index');
+
+            return rtrim($base, '/').'/'.rawurlencode('All contacts').'/'.$token;
+        } catch (\Throwable $e) {
+            $this->logger->debug('Failed to build contact deep-link: '.$e->getMessage());
+            return null;
+        }//end try
+    }//end buildContactDeepLink()
 
     /**
      * Resolve the supplementary vCard fields (`phone`, `org`, `avatarUrl`)
@@ -211,9 +285,15 @@ class ContactService
      *
      * @return array{phone: ?string, org: ?string, avatarUrl: ?string}
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each vCard property (TEL, ORG, PHOTO) requires distinct handling: TEL is iterable or scalar, PHOTO may be URI/data-URL/raw bytes requiring format detection; collapsing branches loses semantic specificity.
-     * @SuppressWarnings(PHPMD.NPathComplexity) TEL iterable vs scalar + PHOTO URI vs data vs bytes + contactUid fallback produce many distinct execution paths; all are in-method because extracting each to a helper would scatter the single "resolve phone+org+avatar" contract.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method resolves phone, org, and avatar from vCard in one pass; splitting into three sub-helpers would require re-reading and re-parsing the vCard three times or passing the parsed vCard object across helpers.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each vCard property (TEL, ORG, PHOTO) requires
+     * distinct handling: TEL is iterable or scalar, PHOTO may be URI/data-URL/raw bytes requiring
+     * format detection; collapsing branches loses semantic specificity.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       TEL iterable vs scalar + PHOTO URI vs data vs bytes +
+     * contactUid fallback produce many distinct execution paths; all are in-method because extracting
+     * each to a helper would scatter the single "resolve phone+org+avatar" contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method resolves phone, org, and avatar from
+     * vCard in one pass; splitting into three sub-helpers would require re-reading and re-parsing the
+     * vCard three times or passing the parsed vCard object across helpers.
      */
     private function extractVcardFields(?int $addressbookId, ?string $contactUri, ?string $contactUid): array
     {
@@ -369,13 +449,17 @@ class ContactService
      *
      * @throws Exception If the contact does not exist.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Single switch on upsert state — extracting a sub-method
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Single switch on upsert state — extracting a sub-method
      *                                                doesn't add clarity and would split the vCard hydration
      *                                                from the DB write that consumes it.
-     * @SuppressWarnings(PHPMD.NPathComplexity) insert vs update branches plus optional role/schemaId null-checks plus best-effort persist error path expand NPath; each path serves a distinct upsert variant in the idempotent link contract.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard hydration, existence check, and insert-or-update in sequence; splitting would scatter the idempotent upsert contract across multiple methods.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       insert vs update branches plus optional role/schemaId
+     * null-checks plus best-effort persist error path expand NPath; each path serves a distinct upsert
+     * variant in the idempotent link contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) linkContact() covers card lookup, user auth, vCard
+     * hydration, existence check, and insert-or-update in sequence; splitting would scatter the
+     * idempotent upsert contract across multiple methods.
      */
     public function linkContact(
         string $objectUuid,
@@ -502,7 +586,7 @@ class ContactService
      *
      * @throws Exception If no user or addressbook.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function createAndLinkContact(
         string $objectUuid,
@@ -594,7 +678,7 @@ class ContactService
      *
      * @throws Exception If link not found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function updateRole(int $linkId, string $role): ContactLink
     {
@@ -641,7 +725,7 @@ class ContactService
      *
      * @throws Exception If the link row itself isn't found (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function unlinkContact(int $linkId): void
     {
@@ -718,19 +802,61 @@ class ContactService
      *
      * @return array Array of contact links with object UUIDs and roles.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-2
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function getObjectsForContact(string $contactUid): array
     {
+        // IDOR guard: only surface object links for contacts that live in the
+        // caller's own addressbooks. Without this any authenticated user could
+        // pass an arbitrary (enumerable CardDAV) contact UID and learn which
+        // OpenRegister objects reference contacts belonging to other users.
+        $allowedAddressbookIds = $this->currentUserAddressbookIds();
+        if ($allowedAddressbookIds === []) {
+            return [];
+        }
+
         $links = $this->contactLinkMapper->findByContactUid($contactUid);
 
-        return array_map(
-            static function (ContactLink $link): array {
-                return $link->jsonSerialize();
-            },
-            $links
+        return array_values(
+            array_map(
+                static function (ContactLink $link): array {
+                    return $link->jsonSerialize();
+                },
+                array_filter(
+                    $links,
+                    static function (ContactLink $link) use ($allowedAddressbookIds): bool {
+                        return in_array((int) $link->getAddressbookId(), $allowedAddressbookIds, true);
+                    }
+                )
+            )
         );
     }//end getObjectsForContact()
+
+    /**
+     * Collect the addressbook IDs owned by the current session user.
+     *
+     * Used to scope contact-link reads to the caller's own addressbooks so a
+     * user cannot resolve links for contacts they do not own.
+     *
+     * @return array<int, int> Addressbook IDs, or [] when anonymous / none.
+     */
+    private function currentUserAddressbookIds(): array
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return [];
+        }
+
+        $principal    = 'principals/users/'.$user->getUID();
+        $addressbooks = $this->cardDavBackend->getAddressBooksForUser($principal);
+
+        return array_map(
+            static function (array $addressbook): int {
+                return (int) $addressbook['id'];
+            },
+            $addressbooks
+        );
+    }//end currentUserAddressbookIds()
 
     /**
      * Delete all contact links for an object (cleanup).
@@ -739,7 +865,7 @@ class ContactService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function deleteLinksForObject(string $objectUuid): void
     {
@@ -774,7 +900,7 @@ class ContactService
      *
      * @return array|null Addressbook data or null.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-1
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     private function findUserAddressbook(): ?array
     {

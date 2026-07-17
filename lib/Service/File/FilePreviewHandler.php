@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -82,7 +82,7 @@ class FilePreviewHandler
      *
      * @throws Exception If preview cannot be generated.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getPreview(File $file, ?int $width=null, ?int $height=null): ISimpleFile
     {

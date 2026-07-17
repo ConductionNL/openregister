@@ -113,7 +113,7 @@ class PhotosProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
-     * @spec openspec/changes/integration-photos/tasks.md
+     * @spec openspec/specs/integration-photos/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

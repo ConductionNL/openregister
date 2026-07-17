@@ -39,7 +39,7 @@ class IdentityTranslationProvider implements TranslationProviderInterface
      *
      * @return string|null Always the source text (passthrough).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-8
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string
     {
@@ -54,7 +54,7 @@ class IdentityTranslationProvider implements TranslationProviderInterface
      *
      * @return string The literal `identity`.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-9
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function getIdentifier(): string
     {

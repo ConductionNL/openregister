@@ -102,28 +102,12 @@
 			"_note": "Faceted cross-schema search via OR's bespoke SearchIndex; the built-in search page would change behaviour."
 		},
 		{
-			"id": "chat",
-			"route": "/chat",
-			"type": "custom",
-			"title": "AI Chat",
-			"component": "ChatIndex",
-			"_note": "Bespoke realtime AI chat shell wired to OR's conversation store; not the library's generic chat page."
-		},
-		{
 			"id": "files",
 			"route": "/files",
 			"type": "custom",
 			"title": "Files",
 			"component": "FilesIndex",
 			"_note": "Files workspace, not a standard object list."
-		},
-		{
-			"id": "agents",
-			"route": "/agents",
-			"type": "custom",
-			"title": "Agents",
-			"component": "AgentsIndex",
-			"_note": "AI agents configuration UI; bespoke, not a generic object list."
 		},
 		{
 			"id": "configurations",
@@ -252,64 +236,123 @@
 			"title": "Integrations",
 			"component": "IntegrationsView",
 			"_note": "Standalone integration-registry surface for the per-leaf screenshot harness; bypasses object-detail so sub-resource plugins do not race the render."
+		},
+		{
+			"id": "quality",
+			"route": "/quality",
+			"type": "custom",
+			"title": "Data Quality",
+			"component": "QualityIndex",
+			"_note": "MDM steward surface (ADR-045 #3): quality KPI cards + score histogram + lowest-quality listing over the read-only quality#stats / quality#index APIs."
+		},
+		{
+			"id": "duplicates",
+			"route": "/duplicates",
+			"type": "custom",
+			"title": "Duplicate Candidates",
+			"component": "DuplicatesIndex",
+			"_note": "MDM steward surface (ADR-045 #3): read-only duplicate-candidate pair listing over duplicate#index; no merge/write control."
+		},
+		{
+			"id": "masterEntities",
+			"route": "/master-entities",
+			"type": "custom",
+			"title": "Master entities",
+			"component": "MasterEntitiesIndex",
+			"_note": "MDM steward surface (ADR-045 #3): survivorship-enabled object list with qualityScore/qualityStatus + golden-record detail panel; a dedicated view rather than an extension of the generic object browser (design.md D2)."
+		},
+		{
+			"id": "queueHealth",
+			"route": "/queue-health",
+			"type": "custom",
+			"title": "Queue / sync health",
+			"component": "QueueHealthIndex",
+			"_note": "MDM steward surface (ADR-045 #3): read-only webhook queue-health summary consuming OR's EXISTING webhook telemetry (webhooks#index/logStats/allLogs); no new backend endpoint (design.md D1)."
+		},
+		{
+			"id": "mergeOperations",
+			"route": "/mergeOperations",
+			"type": "custom",
+			"title": "Merge Operations",
+			"component": "MergeOperationsIndex",
+			"_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
 		}
 	],
 	"menu": [
 		{
-			"id": "Chat",
-			"label": "AI Chat",
-			"icon": "MessageTextOutline",
-			"route": "chat",
+			"id": "Dashboard",
+			"label": "Dashboard",
+			"icon": "ViewDashboardOutline",
+			"route": "dashboard",
 			"section": "main",
 			"order": 10
 		},
 		{
-			"id": "Registers",
-			"label": "Registers",
+			"id": "DataGroup",
+			"label": "Data",
 			"icon": "DatabaseOutline",
-			"route": "registers",
 			"section": "main",
-			"order": 20
+			"order": 20,
+			"children": [
+				{ "id": "Registers", "label": "Registers", "icon": "DatabaseOutline", "route": "registers", "order": 20 },
+				{ "id": "Schemas", "label": "Schemas", "icon": "FileTreeOutline", "route": "schemas", "order": 30 },
+				{ "id": "Templates", "label": "Templates", "icon": "FileOutline", "route": "templates", "order": 40 },
+				{ "id": "Tables", "label": "Search / views", "icon": "Magnify", "route": "tables", "order": 50 },
+				{ "id": "Files", "label": "Files", "icon": "FileDocumentMultipleOutline", "route": "files", "order": 60 }
+			]
 		},
 		{
-			"id": "Schemas",
-			"label": "Schemas",
-			"icon": "FileTreeOutline",
-			"route": "schemas",
+			"id": "IntegrationGroup",
+			"label": "Integration",
+			"icon": "Api",
 			"section": "main",
-			"order": 30
+			"order": 90,
+			"children": [
+				{ "id": "Organisations", "label": "Organisations", "icon": "OfficeBuildingOutline", "route": "organisation", "order": 91 },
+				{ "id": "Applications", "label": "Applications", "icon": "ApplicationOutline", "route": "applications", "order": 92 },
+				{ "id": "Sources", "label": "Data sources", "icon": "DatabaseArrowRightOutline", "route": "sources", "order": 93 },
+				{ "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "endpoints", "order": 94 },
+				{ "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "webhooks", "order": 95 }
+			]
 		},
 		{
-			"id": "Templates",
-			"label": "Templates",
-			"icon": "FileOutline",
-			"route": "templates",
+			"id": "AdministrationGroup",
+			"label": "Administration",
+			"icon": "CogOutline",
 			"section": "main",
-			"order": 40
+			"order": 100,
+			"children": [
+				{ "id": "Configurations", "label": "Configurations", "icon": "CogOutline", "route": "configurations", "order": 94 },
+				{ "id": "Entities", "label": "Entities", "icon": "AccountOutline", "route": "entities", "order": 95 },
+				{ "id": "Avg", "label": "AVG / Verwerkingsregister", "icon": "ShieldLockOutline", "route": "avg", "order": 100 },
+				{ "id": "Reports", "label": "Reports", "icon": "ChartBoxOutline", "route": "reports", "order": 101 }
+			]
 		},
 		{
-			"id": "Tables",
-			"label": "Search / views",
-			"icon": "Magnify",
-			"route": "tables",
+			"id": "AuditGroup",
+			"label": "Audit",
+			"icon": "TextBoxOutline",
 			"section": "main",
-			"order": 50
+			"order": 110,
+			"children": [
+				{ "id": "Deleted", "label": "Deleted", "icon": "DeleteRestore", "route": "deleted", "order": 96 },
+				{ "id": "AuditTrails", "label": "Audit Trails", "icon": "TextBoxOutline", "route": "audit-trails", "order": 97 },
+				{ "id": "SearchTrails", "label": "Search Trails", "icon": "MagnifyPlus", "route": "search-trails", "order": 98 }
+			]
 		},
 		{
-			"id": "Files",
-			"label": "Files",
-			"icon": "FileDocumentMultipleOutline",
-			"route": "files",
+			"id": "DataQualityGroup",
+			"label": "Data quality",
+			"icon": "ChartBoxOutline",
 			"section": "main",
-			"order": 60
-		},
-		{
-			"id": "Agents",
-			"label": "Agents",
-			"icon": "RobotOutline",
-			"route": "agents",
-			"section": "main",
-			"order": 70
+			"order": 120,
+			"children": [
+				{ "id": "Quality", "label": "Data Quality", "icon": "ChartBoxOutline", "route": "quality", "order": 10 },
+				{ "id": "Duplicates", "label": "Duplicate Candidates", "icon": "ContentDuplicate", "route": "duplicates", "order": 20 },
+				{ "id": "MasterEntities", "label": "Master entities", "icon": "AccountMultipleOutline", "route": "masterEntities", "order": 30 },
+				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "Webhook", "route": "queueHealth", "order": 40 },
+				{ "id": "MergeOperations", "label": "Merge Operations", "icon": "Merge", "route": "mergeOperations", "order": 50 }
+			]
 		},
 		{
 			"id": "Documentation",
@@ -326,102 +369,102 @@
 			"route": "features-roadmap",
 			"section": "footer",
 			"order": 2
-		},
-		{
-			"id": "Organisations",
-			"label": "Organisations",
-			"icon": "OfficeBuildingOutline",
-			"route": "organisation",
-			"section": "settings",
-			"order": 91
-		},
-		{
-			"id": "Applications",
-			"label": "Applications",
-			"icon": "ApplicationOutline",
-			"route": "applications",
-			"section": "settings",
-			"order": 92
-		},
-		{
-			"id": "Sources",
-			"label": "Data sources",
-			"icon": "DatabaseArrowRightOutline",
-			"route": "sources",
-			"section": "settings",
-			"order": 93
-		},
-		{
-			"id": "Configurations",
-			"label": "Configurations",
-			"icon": "CogOutline",
-			"route": "configurations",
-			"section": "settings",
-			"order": 94
-		},
-		{
-			"id": "Entities",
-			"label": "Entities",
-			"icon": "AccountOutline",
-			"route": "entities",
-			"section": "settings",
-			"order": 95
-		},
-		{
-			"id": "Deleted",
-			"label": "Deleted",
-			"icon": "DeleteRestore",
-			"route": "deleted",
-			"section": "settings",
-			"order": 96
-		},
-		{
-			"id": "AuditTrails",
-			"label": "Audit Trails",
-			"icon": "TextBoxOutline",
-			"route": "audit-trails",
-			"section": "settings",
-			"order": 97
-		},
-		{
-			"id": "SearchTrails",
-			"label": "Search Trails",
-			"icon": "MagnifyPlus",
-			"route": "search-trails",
-			"section": "settings",
-			"order": 98
-		},
-		{
-			"id": "Webhooks",
-			"label": "Webhooks",
-			"icon": "Webhook",
-			"route": "webhooks",
-			"section": "settings",
-			"order": 99
-		},
-		{
-			"id": "Avg",
-			"label": "AVG / Verwerkingsregister",
-			"icon": "ShieldLockOutline",
-			"route": "avg",
-			"section": "settings",
-			"order": 100
-		},
-		{
-			"id": "Reports",
-			"label": "Reports",
-			"icon": "ChartBoxOutline",
-			"route": "reports",
-			"section": "settings",
-			"order": 101
-		},
-		{
-			"id": "Endpoints",
-			"label": "Endpoints",
-			"icon": "Api",
-			"route": "endpoints",
-			"section": "settings",
-			"order": 102
 		}
-	]
+	],
+	"observability": {
+		"_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles.",
+		"health": {
+			"statusCodePolicy": "adr006",
+			"checks": [
+				{ "id": "database", "type": "database", "severity": "critical" },
+				{ "id": "filesystem", "type": "filesystem", "severity": "degraded" }
+			]
+		},
+		"metrics": [
+			{
+				"name": "registers_total",
+				"type": "gauge",
+				"help": "Total number of registers",
+				"source": { "kind": "tableCount", "table": "openregister_registers" }
+			},
+			{
+				"name": "schemas_total",
+				"type": "gauge",
+				"help": "Total number of schemas",
+				"source": { "kind": "tableCount", "table": "openregister_schemas" }
+			},
+			{
+				"name": "objects_total",
+				"type": "gauge",
+				"help": "Total objects by register and schema",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_objects",
+					"groupBy": ["register", "schema"]
+				}
+			},
+			{
+				"name": "search_requests_total",
+				"type": "counter",
+				"help": "Total search requests",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_metrics",
+					"filter": { "metric_type": { "like": "search_%" } }
+				}
+			},
+			{
+				"name": "objects_created_total",
+				"type": "counter",
+				"help": "Total object create operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "create" } }
+				}
+			},
+			{
+				"name": "objects_updated_total",
+				"type": "counter",
+				"help": "Total object update operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "update" } }
+				}
+			},
+			{
+				"name": "objects_deleted_total",
+				"type": "counter",
+				"help": "Total object delete operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "delete" } }
+				}
+			},
+			{
+				"name": "objects_read_total",
+				"type": "counter",
+				"help": "Total object read operations recorded in the audit trail",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_audit_trails",
+					"filter": { "action": { "eq": "read" } }
+				}
+			},
+			{
+				"name": "webhook_deliveries_total",
+				"type": "counter",
+				"help": "Total webhook delivery attempts grouped by status",
+				"source": {
+					"kind": "tableCount",
+					"table": "openregister_webhook_logs",
+					"groupBy": ["success"],
+					"labelMap": { "success": "status" },
+					"labelDefaults": { "success": "failure" }
+				}
+			}
+		]
+	}
 }

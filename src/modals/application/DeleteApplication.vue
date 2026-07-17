@@ -52,7 +52,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async deleteApplication() {
 			try {
@@ -63,6 +63,7 @@ export default {
 			}
 		},
 		/**
+		 * @param open
 		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose(open) {

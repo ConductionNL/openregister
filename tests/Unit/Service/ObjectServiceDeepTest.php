@@ -13,7 +13,6 @@
  * - checkSavePermissions (null schema, null uuid, uuid exists, uuid not found)
  * - normalizeDateValues (no schema, date format, datetime conversion)
  * - ensureObjectFolder (null uuid, existing folder, DoesNotExistException)
- * - ensureObjectFolderExists (null folder, string path, folder creation)
  * - count
  * - findByRelations
  * - deleteObject
@@ -45,7 +44,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -59,6 +57,7 @@ use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -77,8 +76,6 @@ class ObjectServiceDeepTest extends TestCase
 {
 
     private ObjectService $service;
-
-    private MockObject|PerformanceHandler $performanceHandler;
 
     private MockObject|RegisterMapper $registerMapper;
 
@@ -119,7 +116,6 @@ class ObjectServiceDeepTest extends TestCase
         $dataManipHandler   = $this->createMock(DataManipulationHandler::class);
         $this->deleteHandler = $this->createMock(DeleteObject::class);
         $this->getHandler    = $this->createMock(GetObject::class);
-        $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->permissionHandler  = $this->createMock(PermissionHandler::class);
         $this->renderHandler      = $this->createMock(RenderObject::class);
         $this->saveHandler        = $this->createMock(SaveObject::class);
@@ -171,7 +167,6 @@ class ObjectServiceDeepTest extends TestCase
             $dataManipHandler,
             $this->deleteHandler,
             $this->getHandler,
-            $this->performanceHandler,
             $this->permissionHandler,
             $this->renderHandler,
             $this->saveHandler,
@@ -205,7 +200,8 @@ class ObjectServiceDeepTest extends TestCase
             $cacheHandler,
             $settingsService,
             $dateTimeNormalizer,
-            $this->container
+            $this->container,
+            $this->createMock(ObjectSourceRegistry::class)
         );
 
     }//end setUp()
@@ -264,41 +260,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setRegister with numeric ID uses cache
+     * Test setRegister with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetRegisterWithNumericIdUsesCache(): void
+    public function testSetRegisterWithNumericIdUsesMapper(): void
     {
         $register = $this->createMock(Register::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$register]);
-
-        $result = $this->service->setRegister(42);
-        $this->assertSame($this->service, $result);
-
-    }//end testSetRegisterWithNumericIdUsesCache()
-
-
-    /**
-     * Test setRegister with numeric ID falls back when cache fails
-     *
-     * @return void
-     */
-    public function testSetRegisterWithNumericIdCacheFallback(): void
-    {
-        $register = $this->createMock(Register::class);
-
-        // Cache returns non-register (e.g., string or null).
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn(['not-a-register']);
-
         $this->registerMapper->method('find')->willReturn($register);
 
         $result = $this->service->setRegister(42);
         $this->assertSame($this->service, $result);
 
-    }//end testSetRegisterWithNumericIdCacheFallback()
+    }//end testSetRegisterWithNumericIdUsesMapper()
 
 
     // =========================================================================
@@ -320,20 +294,19 @@ class ObjectServiceDeepTest extends TestCase
 
 
     /**
-     * Test setSchema with numeric ID uses cache
+     * Test setSchema with numeric ID resolves via the mapper
      *
      * @return void
      */
-    public function testSetSchemaWithNumericIdUsesCache(): void
+    public function testSetSchemaWithNumericIdUsesMapper(): void
     {
         $schema = $this->createMock(Schema::class);
-        $this->performanceHandler->method('getCachedEntities')
-            ->willReturn([$schema]);
+        $this->schemaMapper->method('find')->willReturn($schema);
 
         $result = $this->service->setSchema(5);
         $this->assertSame($this->service, $result);
 
-    }//end testSetSchemaWithNumericIdUsesCache()
+    }//end testSetSchemaWithNumericIdUsesMapper()
 
 
     /**
@@ -781,111 +754,6 @@ class ObjectServiceDeepTest extends TestCase
         $this->assertNull($result);
 
     }//end testEnsureObjectFolderObjectNotFound()
-
-
-    // =========================================================================
-    // ensureObjectFolderExists (public)
-    // =========================================================================
-
-    /**
-     * Test ensureObjectFolderExists with null folder creates folder
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsNullFolder(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $folderNode = $this->createMock(\OCP\Files\Folder::class);
-        $folderNode->method('getId')->willReturn(42);
-
-        $this->fileService->method('createEntityFolder')->willReturn($folderNode);
-
-        $this->objectEntityMapper->expects($this->once())
-            ->method('update')
-            ->willReturnArgument(0);
-
-        $this->service->ensureObjectFolderExists($entity);
-
-        $this->assertSame('42', $entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsNullFolder()
-
-
-    /**
-     * Test ensureObjectFolderExists with empty string creates folder
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsEmptyString(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder('');
-
-        $folderNode = $this->createMock(\OCP\Files\Folder::class);
-        $folderNode->method('getId')->willReturn(99);
-
-        $this->fileService->method('createEntityFolder')->willReturn($folderNode);
-
-        $this->objectEntityMapper->method('update')->willReturnArgument(0);
-
-        $this->service->ensureObjectFolderExists($entity);
-
-        $this->assertSame('99', $entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsEmptyString()
-
-
-    /**
-     * Test ensureObjectFolderExists handles createEntityFolder returning null
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsFolderNull(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $this->fileService->method('createEntityFolder')->willReturn(null);
-
-        // Should not call update since no folder node returned.
-        $this->objectEntityMapper->expects($this->never())
-            ->method('update');
-
-        $this->service->ensureObjectFolderExists($entity);
-
-    }//end testEnsureObjectFolderExistsFolderNull()
-
-
-    /**
-     * Test ensureObjectFolderExists handles folder creation exception
-     *
-     * @return void
-     */
-    public function testEnsureObjectFolderExistsException(): void
-    {
-        $entity = new ObjectEntity();
-        $entity->setUuid('test-uuid');
-        $entity->setFolder(null);
-
-        $this->fileService->method('createEntityFolder')
-            ->willThrowException(new \Exception('Cannot create folder'));
-
-        // Should not call update since exception is caught before update.
-        $this->objectEntityMapper->expects($this->never())
-            ->method('update');
-
-        // Should not throw - silently handles exception.
-        $this->service->ensureObjectFolderExists($entity);
-
-        // Folder should remain null since creation failed.
-        $this->assertNull($entity->getFolder());
-
-    }//end testEnsureObjectFolderExistsException()
 
 
     // =========================================================================

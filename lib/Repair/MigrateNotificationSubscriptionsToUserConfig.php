@@ -51,7 +51,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Repair step: migrate legacy notification subscriptions to user-config overrides.
  *
- * @SuppressWarnings(PHPMD.LongClassName) Class name mirrors the IRepairStep convention of describing exactly what the one-shot migration does; abbreviating it would break the self-documenting intent that makes repair steps auditable in occ and the admin UI.
+ * @SuppressWarnings(PHPMD.LongClassName) Class name mirrors the IRepairStep convention of describing
+ * exactly what the one-shot migration does; abbreviating it would break the self-documenting intent
+ * that makes repair steps auditable in occ and the admin UI.
  */
 class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 {
@@ -59,6 +61,13 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
      * Legacy subscription table (without the oc_ prefix).
      */
     private const TABLE = 'openregister_notification_subscriptions';
+
+    /**
+     * Appconfig marker key. Once set, the migration has already run and must not
+     * run again — re-running would force enabled:true and resurrect overrides a
+     * user has since manually disabled (OPS-8).
+     */
+    private const DONE_KEY = 'notification_subscription_migration_done';
 
     /**
      * Constructor.
@@ -91,12 +100,28 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) run() validates table availability, iterates subscription rows, and per row: guards on null userId/schemaId, finds the schema, validates the notification annotation, and loops keys — each check is a defensive guard required for the idempotent migration contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Multiple independent early-returns (table absent, no rows, service unavailable, null userId, null schemaId, schema not found, missing annotation) represent distinct migration-skip conditions, not extractable sub-paths.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) run() validates table availability, iterates
+     * subscription rows, and per row: guards on null userId/schemaId, finds the schema, validates
+     * the notification annotation, and loops keys — each check is a defensive guard required for
+     * the idempotent migration contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple independent early-returns (table absent, no
+     * rows, service unavailable, null userId, null schemaId, schema not found, missing annotation)
+     * represent distinct migration-skip conditions, not extractable sub-paths.
      */
     public function run(IOutput $output): void
     {
         $output->info('[OpenRegister] Migrating legacy notification subscriptions to user-config...');
+
+        // Run-once guard: if the marker is set the migration already executed on a
+        // previous upgrade. Re-running would force enabled:true and re-enable
+        // overrides the user has since manually disabled (OPS-8).
+        $appConfig = $this->resolveAppConfig();
+        if ($appConfig !== null
+            && $appConfig->getValueBool('openregister', self::DONE_KEY, false) === true
+        ) {
+            $output->info('[OpenRegister] Notification subscription migration already completed — skipping.');
+            return;
+        }
 
         $rows = $this->loadSubscriptionRows();
         if ($rows === null) {
@@ -106,6 +131,7 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
 
         if ($rows === []) {
             $output->info('[OpenRegister] No notification subscriptions to migrate.');
+            $this->markDone(appConfig: $appConfig);
             return;
         }
 
@@ -155,7 +181,50 @@ class MigrateNotificationSubscriptionsToUserConfig implements IRepairStep
         }//end foreach
 
         $output->info(sprintf('[OpenRegister] Migrated %d notification subscription override(s).', $migrated));
+        $this->markDone(appConfig: $appConfig);
     }//end run()
+
+    /**
+     * Persist the run-once marker so subsequent upgrades skip the migration (OPS-8).
+     *
+     * @param \OCP\IAppConfig|null $appConfig The app-config service, or null when unresolvable.
+     *
+     * @return void
+     */
+    private function markDone(?\OCP\IAppConfig $appConfig): void
+    {
+        if ($appConfig === null) {
+            return;
+        }
+
+        try {
+            $appConfig->setValueBool('openregister', self::DONE_KEY, true);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                '[OpenRegister] Could not persist notification-migration marker',
+                ['exception' => $e]
+            );
+        }
+    }//end markDone()
+
+    /**
+     * Lazily resolve the app-config service.
+     *
+     * @return \OCP\IAppConfig|null The service, or null when unresolvable.
+     */
+    private function resolveAppConfig(): ?\OCP\IAppConfig
+    {
+        try {
+            $appConfig = $this->container->get(\OCP\IAppConfig::class);
+            if ($appConfig instanceof \OCP\IAppConfig) {
+                return $appConfig;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveAppConfig()
 
     /**
      * Read the legacy subscription rows directly. Returns null when the

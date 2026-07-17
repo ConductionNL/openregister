@@ -1,33 +1,24 @@
 <template>
-	<div>
-		<!-- Page Title with Documentation Link -->
-		<NcSettingsSection
-			name="OpenRegister Settings"
-			description="Configure your OpenRegister installation"
-			doc-url="https://docs.openregister.nl" />
-
-		<!-- Version Information Section -->
-		<VersionInfoCard
-			:app-name="settingsStore.versionInfo.appName || 'Open Register'"
-			:app-version="settingsStore.versionInfo.appVersion || 'Unknown'"
-			:loading="settingsStore.loadingVersionInfo"
-			:is-up-to-date="true"
-			:show-update-button="true"
-			:title="t('openregister', 'Version Information')"
-			:description="t('openregister', 'Information about the current OpenRegister installation')">
-			<template #actions>
-				<NcButton
-					type="secondary"
-					:disabled="settingsStore.clearingAppStoreCache"
-					@click="settingsStore.clearAppStoreCache('all')">
-					<template #icon>
-						<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
-						<Refresh v-else :size="20" />
-					</template>
-					{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
-				</NcButton>
-			</template>
-		</VersionInfoCard>
+	<CnAdminSettingsShell
+		app-id="openregister"
+		app-name="Open Register"
+		doc-url="https://docs.openregister.nl"
+		:app-version="settingsStore.versionInfo.appVersion || 'Unknown'"
+		:is-up-to-date="true"
+		:show-reimport="false">
+		<!-- Clear App Store Cache action in the version card header -->
+		<template #actions>
+			<NcButton
+				type="secondary"
+				:disabled="settingsStore.clearingAppStoreCache"
+				@click="settingsStore.clearAppStoreCache('all')">
+				<template #icon>
+					<NcLoadingIcon v-if="settingsStore.clearingAppStoreCache" :size="20" />
+					<Refresh v-else :size="20" />
+				</template>
+				{{ settingsStore.clearingAppStoreCache ? 'Clearing...' : 'Clear App Store Cache' }}
+			</NcButton>
+		</template>
 
 		<!-- System Statistics Section -->
 		<StatisticsOverview />
@@ -50,9 +41,6 @@
 		<!-- Retention Configuration Section -->
 		<RetentionConfiguration />
 
-		<!-- SOLR Configuration Section -->
-		<SolrConfiguration />
-
 		<!-- Push Notifications Status Section -->
 		<PushNotificationsConfiguration :push-status="pushStatus" />
 
@@ -70,18 +58,16 @@
 
 		<!-- Dialogs -->
 		<Dialogs />
-	</div>
+	</CnAdminSettingsShell>
 </template>
 
 <script>
-/* eslint-disable no-console */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../store/settings.js'
 
-import { NcSettingsSection, NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
+import { CnAdminSettingsShell } from '@conduction/nextcloud-vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
-import VersionInfoCard from '../../components/shared/VersionInfoCard.vue'
-import SolrConfiguration from './sections/SolrConfiguration.vue'
 import StatisticsOverview from './sections/StatisticsOverview.vue'
 import CacheManagement from './sections/CacheManagement.vue'
 import RbacConfiguration from './sections/RbacConfiguration.vue'
@@ -104,12 +90,10 @@ export default {
 	name: 'Settings',
 
 	components: {
-		NcSettingsSection,
+		CnAdminSettingsShell,
 		NcButton,
 		NcLoadingIcon,
 		Refresh,
-		VersionInfoCard,
-		SolrConfiguration,
 		StatisticsOverview,
 		CacheManagement,
 		RbacConfiguration,
@@ -147,8 +131,6 @@ export default {
 	 * @return {Promise<void>}
 	 */
 	async created() {
-		console.log('🔧 Settings component created - loading data from store')
-
 		try {
 			// Load all settings data through the store
 			await this.settingsStore.loadSettings()
@@ -158,8 +140,6 @@ export default {
 				this.settingsStore.loadStats(),
 				this.settingsStore.loadCacheStats(),
 			])
-
-			console.log('✅ Settings data loaded successfully')
 		} catch (error) {
 			console.error('❌ Failed to load settings data:', error)
 		}

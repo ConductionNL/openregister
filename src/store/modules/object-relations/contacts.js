@@ -18,7 +18,7 @@ import axios from '@nextcloud/axios'
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/contact-relations/spec.md
  *
- * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+ * @spec openspec/specs/contacts-actions/spec.md
  */
 export const useContactRelationsStore = defineStore('contactRelations', {
 	state: () => ({
@@ -30,7 +30,11 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 
 	actions: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/contacts' + suffix, {
@@ -41,7 +45,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
@@ -75,7 +82,11 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async createOrLink(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
@@ -84,7 +95,11 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param contactUid
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		async unlink(register, schema, id, contactUid) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(contactUid)))
@@ -95,7 +110,10 @@ export const useContactRelationsStore = defineStore('contactRelations', {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []

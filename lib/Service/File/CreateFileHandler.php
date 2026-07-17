@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -122,7 +122,7 @@ class CreateFileHandler
      * File creation requires handling multiple content formats and error cases.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple execution paths for content processing and validation.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function addFile(
         ObjectEntity|string $objectEntity,
@@ -176,15 +176,20 @@ class CreateFileHandler
             // Security: Block executable files.
             $this->fileValidHandler->blockExecutableFile(fileName: $fileName, fileContent: $content);
 
+            // The newFile() call already enforces create permission on the folder; it
+            // creates the node owned by the folder's mount owner (the openregister
+            // system user for the OpenRegister folder, or the original owner for a
+            // folder linked from outside it).
             $file = $folder->newFile($fileName);
 
-            // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+            // Assert the session can reach the freshly created node.
             $this->fileValidHandler->checkOwnership($file);
 
             // Write content to the file.
             $file->putContent($content);
 
-            // Transfer ownership to OpenRegister and share with current user if needed.
+            // Re-own to the openregister user only as a fallback when the session
+            // lacks write rights; otherwise ownership is left following the folder.
             $this->fileOwnershipHandler->transferFileOwnershipIfNeeded($file);
 
             // Create a share link for the file if requested.
@@ -249,7 +254,7 @@ class CreateFileHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function saveFile(
         ObjectEntity $objectEntity,

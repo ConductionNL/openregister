@@ -48,6 +48,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\ICache;
 use OCP\ICacheFactory;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -189,6 +190,7 @@ class MagicFacetHandler
      * @param ICacheFactory|null                                 $cacheFactory  Cache factory for distributed caching
      * @param MagicSearchHandler|null                            $searchHandler Search handler for shared query building
      * @param ContainerInterface|null                            $container     Container for lazy resolution
+     * @param IConfig|null                                       $config        Nextcloud config for reading the table prefix
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -196,7 +198,8 @@ class MagicFacetHandler
         ?\OCA\OpenRegister\Service\Object\CacheHandler $cacheHandler=null,
         ?ICacheFactory $cacheFactory=null,
         ?MagicSearchHandler $searchHandler=null,
-        ?ContainerInterface $container=null
+        ?ContainerInterface $container=null,
+        private readonly ?IConfig $config=null
     ) {
         $this->cacheHandler  = $cacheHandler;
         $this->cacheFactory  = $cacheFactory;
@@ -215,6 +218,24 @@ class MagicFacetHandler
             }
         }
     }//end __construct()
+
+    /**
+     * Get the configured database table prefix.
+     *
+     * Uses the injected Nextcloud config so raw-SQL paths work on installs
+     * with a custom `dbtableprefix`, falling back to `oc_` when config is
+     * unavailable (BUG-DB-3).
+     *
+     * @return string The configured table prefix (e.g. `oc_`).
+     */
+    private function getTablePrefix(): string
+    {
+        if ($this->config === null) {
+            return 'oc_';
+        }
+
+        return (string) $this->config->getSystemValue('dbtableprefix', 'oc_');
+    }//end getTablePrefix()
 
     /**
      * Lazily resolve CacheHandler and ICacheFactory from container.
@@ -576,11 +597,26 @@ class MagicFacetHandler
             return ['type' => 'terms', 'buckets' => []];
         }
 
+        // BUG-DB-2: $field is interpolated raw into the SQL below (CAST/WHERE/GROUP BY).
+        // For @self metadata facets it is built straight from request facet keys
+        // ("_".$rawKey) without going through sanitizeColumnName, so a crafted key
+        // could inject arbitrary SQL. Validate it is a safe column identifier and
+        // matches its own sanitized form before using it; otherwise skip the facet
+        // (empty buckets), mirroring the columnExists guard the other facet paths use.
+        $safeField = $this->sanitizeColumnName(name: $field);
+        if ($safeField !== $field || preg_match('/^[a-z_][a-z0-9_]*$/', $field) !== 1) {
+            $this->logger->warning(
+                message: '[MagicFacetHandler] Rejected unsafe terms-facet field name',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field]
+            );
+            return ['type' => 'terms', 'buckets' => []];
+        }
+
         // Build UNION ALL query with simple GROUP BY.
         // Array values will come as JSON strings like '["uuid1", "uuid2"]'
         // and will be post-processed in PHP.
         $unionParts = [];
-        $prefix     = 'oc_';
+        $prefix     = $this->getTablePrefix();
 
         // Cast field to text for consistent types in UNION ALL queries.
         // Different magic tables may have the same field name but different types
@@ -595,6 +631,12 @@ class MagicFacetHandler
             $tableName     = $tc['tableName'];
             $fullTableName = $prefix.$tableName;
             $tcSchema      = $tc['schema'];
+
+            // Defence in depth: skip tables that do not actually have this column
+            // (mirrors getDateHistogramFacetUnion's columnExists guard).
+            if ($this->columnExists(tableName: $tableName, columnName: $field) === false) {
+                continue;
+            }
 
             // Simple SELECT with GROUP BY - no jsonb_array_elements_text complexity.
             $subSql = "SELECT {$castField} as facet_value, COUNT(*) as cnt FROM {$fullTableName} WHERE {$field} IS NOT NULL";
@@ -818,7 +860,7 @@ class MagicFacetHandler
         }
 
         $unionParts = [];
-        $prefix     = 'oc_';
+        $prefix     = $this->getTablePrefix();
 
         foreach ($tableConfigs as $tc) {
             $tableName     = $tc['tableName'];
@@ -1463,8 +1505,8 @@ class MagicFacetHandler
     {
         try {
             // The table name passed may or may not include the prefix.
-            // Normalize to always have the 'oc_' prefix for information_schema lookup.
-            $prefix        = 'oc_';
+            // Normalize to always have the configured prefix for information_schema lookup.
+            $prefix        = $this->getTablePrefix();
             $fullTableName = $prefix.$tableName;
             if (str_starts_with($tableName, $prefix) === true) {
                 $fullTableName = $tableName;

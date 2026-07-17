@@ -127,4 +127,68 @@ class SearchTrailControllerCoverageTest extends TestCase
         $data = $result->getData();
         $this->assertStringContainsString('Deletion failed', $data['error']);
     }
+
+    // =========================================================================
+    // Read + destructive endpoint authorization (gate-read-endpoint-authorization).
+    // A non-admin caller must get 403 and the service must never be touched.
+    // =========================================================================
+
+    private function buildNonAdminController(): SearchTrailController
+    {
+        $request           = $this->createMock(IRequest::class);
+        $searchTrailService = $this->createMock(SearchTrailService::class);
+        $userSession       = $this->createMock(IUserSession::class);
+        $groupManager      = $this->createMock(IGroupManager::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager->method('isAdmin')->with('alice')->willReturn(false);
+
+        // The service must never be reached once the gate rejects the caller.
+        $searchTrailService->expects($this->never())->method($this->anything());
+        $this->nonAdminService = $searchTrailService;
+
+        return new SearchTrailController(
+            'openregister',
+            $request,
+            $searchTrailService,
+            $userSession,
+            $groupManager
+        );
+    }
+
+    /** @var SearchTrailService&MockObject */
+    private $nonAdminService;
+
+    public static function guardedEndpointProvider(): array
+    {
+        return [
+            'statistics'         => ['statistics', []],
+            'popularTerms'       => ['popularTerms', []],
+            'activity'           => ['activity', []],
+            'registerSchemaStats'=> ['registerSchemaStats', []],
+            'userAgentStats'     => ['userAgentStats', []],
+            'cleanup'            => ['cleanup', []],
+            'destroy'            => ['destroy', [1]],
+            'destroyMultiple'    => ['destroyMultiple', []],
+            'clearAll'           => ['clearAll', []],
+        ];
+    }
+
+    /**
+     * @dataProvider guardedEndpointProvider
+     */
+    public function testGuardedEndpointRejectsNonAdminWith403(string $method, array $args): void
+    {
+        $controller = $this->buildNonAdminController();
+
+        $result = $controller->{$method}(...$args);
+
+        $this->assertEquals(
+            403,
+            $result->getStatus(),
+            sprintf('%s() must reject a non-admin caller with 403', $method)
+        );
+    }
 }

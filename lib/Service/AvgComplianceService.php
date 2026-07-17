@@ -20,9 +20,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -31,9 +31,11 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCA\OpenRegister\Db\ProcessingLogMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\VerwerkingsactiviteitMapper;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -55,19 +57,40 @@ class AvgComplianceService
     public const ANNOTATION_KEY = 'x-openregister-processing-activity';
 
     /**
+     * Declarative processing dialect key — the new
+     * `x-openregister-processing` annotation. A schema/register carrying
+     * an `attribution` block here is also considered annotated.
+     *
+     * @var string
+     */
+    public const DIALECT_KEY = 'x-openregister-processing';
+
+    /**
+     * Code of the per-organisation flagged fallback activity whose entry
+     * count is the platform's "unclassified processing" compliance gap.
+     *
+     * @var string
+     */
+    public const FALLBACK_CODE = 'niet-geclassificeerde-verwerking';
+
+    /**
      * Constructor.
      *
-     * @param IDBConnection   $db             DB for the GdprEntity join.
-     * @param SchemaMapper    $schemaMapper   Schema lookup.
-     * @param RegisterMapper  $registerMapper Register lookup (annotation
-     *                                        fallback).
-     * @param LoggerInterface $logger         Logger.
+     * @param IDBConnection                    $db             DB for the GdprEntity join.
+     * @param SchemaMapper                     $schemaMapper   Schema lookup.
+     * @param RegisterMapper                   $registerMapper Register lookup (annotation
+     *                                                         fallback).
+     * @param LoggerInterface                  $logger         Logger.
+     * @param ProcessingLogMapper|null         $logMapper      Read-log mapper (fallback-gap count).
+     * @param VerwerkingsactiviteitMapper|null $vrwMapper      Activity resolver (fallback uuid).
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly SchemaMapper $schemaMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly LoggerInterface $logger,
+        private readonly ?ProcessingLogMapper $logMapper=null,
+        private readonly ?VerwerkingsactiviteitMapper $vrwMapper=null,
     ) {
 
     }//end __construct()
@@ -157,7 +180,8 @@ class AvgComplianceService
      */
     public function runAllChecks(): array
     {
-        $unannotated = $this->findUnannotatedSchemasWithPii();
+        $unannotated       = $this->findUnannotatedSchemasWithPii();
+        $unclassifiedReads = $this->countUnclassifiedProcessing();
         return [
             'generated' => date('c'),
             'issues'    => [
@@ -165,10 +189,48 @@ class AvgComplianceService
             ],
             'totals'    => [
                 'unannotatedSchemasWithPii' => count($unannotated),
+                'unclassifiedProcessing'    => $unclassifiedReads,
             ],
         ];
 
     }//end runAllChecks()
+
+    /**
+     * Count processing-log entries attributed to the flagged fallback
+     * activity (`niet-geclassificeerde-verwerking`).
+     *
+     * This is the platform's visible "unclassified processing" gap
+     * (OR-PA-4): reads/exports on opted-in schemas whose attribution did
+     * not resolve and were absorbed by the fallback rather than dropped.
+     * Returns 0 when the read-log machinery is unavailable (fail-soft).
+     *
+     * @return int Number of fallback-attributed processing-log entries.
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
+     */
+    public function countUnclassifiedProcessing(): int
+    {
+        if ($this->logMapper === null || $this->vrwMapper === null) {
+            return 0;
+        }
+
+        try {
+            $fallback = $this->vrwMapper->findByCode(code: self::FALLBACK_CODE);
+            if ($fallback === null) {
+                return 0;
+            }
+
+            $counts = $this->logMapper->countByActivity();
+            return (int) ($counts[(string) $fallback->getUuid()] ?? 0);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[AVG compliance] Failed to count unclassified processing',
+                context: ['error' => $e->getMessage()]
+            );
+            return 0;
+        }
+
+    }//end countUnclassifiedProcessing()
 
     /**
      * Aggregate `oc_openregister_entities` × `oc_openregister_entity_relations`
@@ -225,8 +287,7 @@ class AvgComplianceService
             return false;
         }
 
-        $value = $config[self::ANNOTATION_KEY] ?? null;
-        return is_string($value) === true && $value !== '';
+        return $this->configHasAttribution(config: $config);
 
     }//end registerHasAnnotation()
 
@@ -256,10 +317,41 @@ class AvgComplianceService
             return false;
         }
 
-        $value = $config[self::ANNOTATION_KEY] ?? null;
-        return is_string($value) === true && $value !== '';
+        return $this->configHasAttribution(config: $config);
 
     }//end schemaHasAnnotation()
+
+    /**
+     * Whether a configuration array satisfies the attribution
+     * requirement via either annotation form.
+     *
+     * Accepts the legacy single-string `x-openregister-processing-activity`
+     * OR the new `x-openregister-processing` dialect carrying an
+     * `attribution.default` reference.
+     *
+     * @param array<string, mixed> $config Configuration column.
+     *
+     * @return bool
+     */
+    private function configHasAttribution(array $config): bool
+    {
+        $legacy = $config[self::ANNOTATION_KEY] ?? null;
+        if (is_string($legacy) === true && $legacy !== '') {
+            return true;
+        }
+
+        $dialect = $config[self::DIALECT_KEY] ?? null;
+        if (is_array($dialect) === true) {
+            $attribution = ($dialect['attribution'] ?? null);
+            if (is_array($attribution) === true) {
+                $default = ($attribution['default'] ?? null);
+                return is_string($default) === true && $default !== '';
+            }
+        }
+
+        return false;
+
+    }//end configHasAttribution()
 
     /**
      * Best-effort title lookup for an issue row. Returns empty string on miss.

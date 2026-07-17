@@ -19,9 +19,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+ * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+ * @spec openspec/specs/tenant-quotas/spec.md
+ * @spec openspec/specs/tenant-quotas/spec.md
  */
 
 declare(strict_types=1);
@@ -96,8 +96,8 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function beforeController(string|Controller $controller, string $methodName): void
     {
@@ -167,8 +167,8 @@ class TenantQuotaMiddleware extends Middleware
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
@@ -227,7 +227,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-4
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response
     {
@@ -270,7 +270,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
      */
     private function checkRequestQuota(object $organisation): void
     {

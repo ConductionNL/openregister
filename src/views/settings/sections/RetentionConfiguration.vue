@@ -75,6 +75,21 @@
 						Record search queries and analytics for performance monitoring and usage insights
 					</p>
 				</div>
+
+				<div v-if="searchTrailsEnabled" class="trail-switch-row">
+					<NcSelect v-model="selectedRecordingMode"
+						:options="recordingModeOptions"
+						:clearable="false"
+						:disabled="loading || saving"
+						:input-label="t('openregister', 'Search recording mode')"
+						label="label"
+						class="recording-mode-select" />
+					<p class="trail-description">
+						Which searches are recorded: <strong>All searches</strong> logs every list and query,
+						<strong>Text searches only</strong> logs free-text searches (default), and
+						<strong>Disabled</strong> records nothing.
+					</p>
+				</div>
 			</div>
 		</div>
 
@@ -276,12 +291,12 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+ * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -289,6 +304,7 @@ export default {
 	name: 'RetentionConfiguration',
 
 	components: {
+		NcSelect,
 		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
@@ -365,6 +381,54 @@ export default {
 				this.settingsStore.retentionOptions.searchTrailsEnabled = value
 			},
 		},
+		searchTrailRecordingMode: {
+			/**
+			 * Read the search-trail recording mode from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {string} One of 'all', '_search', 'none'.
+			 */
+			get() {
+				return this.settingsStore.retentionOptions.searchTrailRecordingMode ?? '_search'
+			},
+			/**
+			 * Write the search-trail recording mode to the store.
+			 *
+			 * @param {string} value The new mode.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
+			set(value) {
+				this.settingsStore.retentionOptions.searchTrailRecordingMode = value
+			},
+		},
+		/**
+		 * Options for the search-trail recording-mode select.
+		 *
+		 * @spec exclude UI plumbing — static option list for display
+		 * @return {Array<object>}
+		 */
+		recordingModeOptions() {
+			return [
+				{ value: 'all', label: this.t('openregister', 'All searches') },
+				{ value: '_search', label: this.t('openregister', 'Text searches only') },
+				{ value: 'none', label: this.t('openregister', 'Disabled') },
+			]
+		},
+		/**
+		 * The currently selected recording-mode option object (for NcSelect).
+		 *
+		 * @spec exclude UI plumbing — maps the stored value to its option object
+		 * @return {object}
+		 */
+		selectedRecordingMode: {
+			get() {
+				return this.recordingModeOptions.find(o => o.value === this.searchTrailRecordingMode) || this.recordingModeOptions[1]
+			},
+			set(option) {
+				this.searchTrailRecordingMode = option ? option.value : '_search'
+			},
+		},
 
 		/**
 		 * Whether the settings store is loading, for display.
@@ -439,7 +503,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+		 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)

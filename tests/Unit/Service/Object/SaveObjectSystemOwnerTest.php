@@ -100,8 +100,11 @@ class SaveObjectSystemOwnerTest extends TestCase
             $this->createMock(PropertyRbacHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
             $this->createMock(\OCA\OpenRegister\Service\Object\TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->createMock(LoggerInterface::class),
             $this->createMock(\OCA\OpenRegister\Service\TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             new ArrayLoader()
         );
     }//end setUp()

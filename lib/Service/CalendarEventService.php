@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-webhookeventlistener-must-extract-structured-payloads-from-all-event-types
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCP\IConfig;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -93,12 +94,20 @@ class CalendarEventService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param CalDavBackend   $calDavBackend CalDAV backend
      * @param IUserSession    $userSession   User session
      * @param IConfig         $config        NC config (user-value store)
      * @param LoggerInterface $logger        Logger
+     * @param IURLGenerator   $urlGenerator  URL generator for deep links
      *
      * @return void
      */
@@ -106,10 +115,12 @@ class CalendarEventService
         CalDavBackend $calDavBackend,
         IUserSession $userSession,
         IConfig $config,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->calDavBackend = $calDavBackend;
         $this->userSession   = $userSession;
+        $this->urlGenerator  = $urlGenerator;
         $this->config        = $config;
         $this->logger        = $logger;
     }//end __construct()
@@ -123,7 +134,7 @@ class CalendarEventService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getEventsForObject(string $objectUuid): array
     {
@@ -156,6 +167,15 @@ class CalendarEventService
                     uri: $calendarObject['uri']
                 );
                 if ($eventArray !== null && $eventArray['objectUuid'] === $objectUuid) {
+                    // Deep-link to the specific event in the Calendar app.
+                    $deepLink = $this->buildEventDeepLink(
+                        calendarUri: ($calendar['uri'] ?? null),
+                        objectUri: $calendarObject['uri']
+                    );
+                    if ($deepLink !== null) {
+                        $eventArray['url'] = $deepLink;
+                    }
+
                     $events[] = $eventArray;
                 }
             } catch (Exception $e) {
@@ -163,11 +183,146 @@ class CalendarEventService
                     'Failed to parse calendar event: '.$e->getMessage(),
                     ['uri' => $calendarObject['uri']]
                 );
-            }
+            }//end try
         }//end foreach
 
         return $events;
     }//end getEventsForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific calendar event.
+     *
+     * The Calendar app opens a specific event via its `/edit/{objectId}` route
+     * (`calendar.view.index` postfix `direct.edit`), where `objectId` is the
+     * base64 of the object's full DAV path *including* the `/remote.php/dav/`
+     * prefix — i.e. `{webroot}/remote.php/dav/calendars/{userId}/{calendarUri}/{objectUri}`
+     * (this matches the `objectId` the Calendar UI itself generates; the app
+     * does `atob(objectId)` and fetches that DAV href). NC cannot generate the
+     * postfixed route by name (it yields an empty string), so we resolve the
+     * webroot-aware app base via `calendar.view.index` and append the
+     * `edit/{token}` segment ourselves (token URL-encoded so the base64 `/`/`+`
+     * survive as one path segment).
+     *
+     * Returns null (record gets no `url`) when a required part is missing or the
+     * Calendar app / route is unavailable.
+     *
+     * @param string|null $calendarUri The CalDAV calendar URI owning the event.
+     * @param string|null $objectUri   The VEVENT object URI (.ics).
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildEventDeepLink(?string $calendarUri, ?string $objectUri): ?string
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null || $calendarUri === null || $calendarUri === ''
+            || $objectUri === null || $objectUri === ''
+        ) {
+            return null;
+        }
+
+        try {
+            $base = $this->urlGenerator->linkToRoute('calendar.view.index');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($base === '') {
+            return null;
+        }
+
+        // The Calendar app decodes objectId to a DAV href and fetches it, so it
+        // must carry the (webroot-aware) `/remote.php/dav/` prefix.
+        $davPath = $this->urlGenerator->getWebroot().'/remote.php/dav/calendars/'.$user->getUID().'/'.$calendarUri.'/'.$objectUri;
+        $token   = rawurlencode(base64_encode($davPath));
+
+        return rtrim($base, '/').'/edit/'.$token;
+    }//end buildEventDeepLink()
+
+    /**
+     * Get all VEVENTs across the acting user's VEVENT-supporting calendars.
+     *
+     * Read-only directory listing that mirrors {@see \OCA\OpenRegister\Service\TaskService::getAllUserTasks()}
+     * for events: it enumerates every calendar the user owns (not just the pinned
+     * one), skips non-VEVENT objects, and returns the parsed event arrays sorted by
+     * start date (soonest first, undated last). Backs the `calendar-event-source`
+     * ObjectSourceProvider.
+     *
+     * @param int $limit  Maximum number of events to return.
+     * @param int $offset Number of events to skip.
+     *
+     * @return array{results: array<int, array<string, mixed>>, total: int} Events with total count.
+     *
+     * @throws Exception If no user is logged in.
+     *
+     * @spec openspec/changes/virtual-schema-semantic-providers/tasks.md#task-5.1
+     */
+    public function getAllUserEvents(int $limit=200, int $offset=0): array
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            throw new Exception('No user logged in');
+        }
+
+        $principal = 'principals/users/'.$user->getUID();
+        $calendars = $this->calDavBackend->getCalendarsForUser($principal);
+
+        $allEvents = [];
+        foreach ($calendars as $calendar) {
+            if ($this->calendarSupportsVevent(calendar: $calendar) === false) {
+                continue;
+            }
+
+            $calendarId      = $calendar['id'];
+            $calendarObjects = $this->calDavBackend->getCalendarObjects($calendarId);
+
+            foreach ($calendarObjects as $calendarObject) {
+                $fullObject = $this->calDavBackend->getCalendarObject($calendarId, $calendarObject['uri']);
+                if ($fullObject === null || empty($fullObject['calendardata']) === true) {
+                    continue;
+                }
+
+                $calendarData = $fullObject['calendardata'];
+
+                if (strpos($calendarData, 'VEVENT') === false) {
+                    continue;
+                }
+
+                try {
+                    $eventArray = $this->veventToArray(
+                        calendarData: $calendarData,
+                        calendarId: (string) $calendarId,
+                        uri: $calendarObject['uri']
+                    );
+                    if ($eventArray !== null) {
+                        $allEvents[] = $eventArray;
+                    }
+                } catch (Exception $e) {
+                    $this->logger->warning(
+                        'Failed to parse calendar event: '.$e->getMessage(),
+                        ['uri' => $calendarObject['uri']]
+                    );
+                }
+            }//end foreach
+        }//end foreach
+
+        // Sort by start date (soonest first, undated last).
+        usort(
+            array: $allEvents,
+            callback: function ($a, $b) {
+                $startA = ($a['dtstart'] ?? '9999-12-31');
+                $startB = ($b['dtstart'] ?? '9999-12-31');
+                return strcmp($startA, $startB);
+            }
+        );
+
+        $total   = count($allEvents);
+        $results = array_slice($allEvents, $offset, $limit);
+
+        return [
+            'results' => $results,
+            'total'   => $total,
+        ];
+    }//end getAllUserEvents()
 
     /**
      * Create a new CalDAV event linked to an OpenRegister object.
@@ -182,7 +337,7 @@ class CalendarEventService
      *
      * @throws Exception If no user or calendar found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function createEvent(
         int $registerId,
@@ -265,7 +420,7 @@ class CalendarEventService
      *
      * @throws Exception If the event is not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function linkEvent(
         int $calendarId,
@@ -306,7 +461,7 @@ class CalendarEventService
      *
      * @throws Exception If the event is not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function unlinkEvent(string $calendarId, string $eventUri): void
     {
@@ -348,7 +503,7 @@ class CalendarEventService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {
@@ -599,7 +754,7 @@ class CalendarEventService
      *
      * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-webhookeventlistener-must-extract-structured-payloads-from-all-event-types
      */
     private function extractOpenRegisterProperties(mixed $vevent): array
     {

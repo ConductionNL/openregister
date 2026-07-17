@@ -303,7 +303,6 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
 					</template>
 				</NcCheckboxRadioSwitch>
-
 			</div>
 		</div>
 
@@ -330,7 +329,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+ * @spec openspec/specs/data-import-export/spec.md
  */
 import {
 	NcButton,
@@ -418,7 +417,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -465,7 +464,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -606,41 +605,34 @@ export default {
 				return
 			}
 
-			console.info('ImportRegister: Starting import, setting loading to true')
 			this.loading = true
 			this.error = null
 
 			// Activate heartbeat indicator for large files (>500KB) to show timeout prevention
 			const isLargeFile = this.selectedFile.size > 500 * 1024 // 500KB threshold
 			if (isLargeFile) {
-				console.info('ImportRegister: Large file detected, activating heartbeat indicator')
 				this.isHeartbeatActive = true
 			}
 
 			try {
-				console.info('ImportRegister: Calling registerStore.importRegister')
 				// Call importRegister with heartbeat status monitoring
 				const result = await registerStore.importRegister(
 					this.selectedFile,
 					// Heartbeat status callback
 					(status) => {
 						this.heartbeatStatus = status
-						console.info('ImportRegister: Heartbeat status updated:', status)
 					},
 				)
 
-				console.info('ImportRegister: Import completed, setting success state')
 				// Store the import summary from the backend response
 				this.importSummary = result?.responseData?.summary || result?.summary || null
 				this.importResults = result?.responseData?.summary || result?.summary || null
 				this.success = true
 
-				console.info('ImportRegister: Setting loading to false')
 				// Turn off loading immediately after import completes
 				// The register refresh will happen in the background
 				this.loading = false
 
-				console.info('ImportRegister: Loading state set to false, success:', this.success)
 				// Do not auto-close; let user review the summary and close manually
 			} catch (error) {
 				console.error('ImportRegister: Import failed:', error)
@@ -649,7 +641,6 @@ export default {
 			} finally {
 				// Always disable heartbeat indicator when import ends
 				this.isHeartbeatActive = false
-				console.info('ImportRegister: Heartbeat indicator deactivated')
 			}
 		},
 		/**
@@ -666,6 +657,7 @@ export default {
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 		/**
+		 * @param option
 		 * @spec exclude select-change UI handler updating register/schema stores
 		 */
 		async handleRegisterChange(option) {
@@ -694,7 +686,8 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @param option
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

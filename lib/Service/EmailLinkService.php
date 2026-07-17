@@ -50,7 +50,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes EmailLinkMapper, IDBConnection,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes EmailLinkMapper, IDBConnection,
  *   IAppManager, IUserSession, and LoggerInterface; each is a required dependency for
  *   direct-SQL Mail table queries, availability checks, and user-session handling.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL queries against NC Mail
@@ -78,7 +78,7 @@ use Throwable;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes mapper +
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes mapper +
  *     IDBConnection (direct Mail-table queries) + IAppManager +
  *     IUserSession + LoggerInterface. Each dependency is required.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Spans send, link, list,
@@ -138,7 +138,7 @@ class EmailLinkService
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function isMailAvailable(): bool
     {
@@ -176,7 +176,7 @@ class EmailLinkService
      *     clauses for the four required preconditions (user, Mail
      *     available, message exists, upsert idempotency).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkEmail(
         string $objectUuid,
@@ -274,7 +274,11 @@ class EmailLinkService
 
         $link->setMailAccountId($mailAccountId);
         $link->setMailMessageId($messageIdInt);
-        $effectiveUid = ($uidForMatch !== null || $message['uid'] === '') ? $uidForMatch : $message['uid'];
+        $effectiveUid = $message['uid'];
+        if ($uidForMatch !== null || $message['uid'] === '') {
+            $effectiveUid = $uidForMatch;
+        }
+
         $link->setMailMessageUid($effectiveUid);
         $link->setSubject($message['subject']);
         $link->setSender($message['sender']);
@@ -303,7 +307,7 @@ class EmailLinkService
      *
      * @throws Exception When no matching link is found (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkEmail(string $objectUuid, int $linkId): void
     {
@@ -330,7 +334,7 @@ class EmailLinkService
      *
      * @return array{items: array<int,array<string,mixed>>, total: int, nextCursor: ?int}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedEmails(string $objectUuid, ?string $cursor=null, int $limit=self::DEFAULT_LIMIT): array
     {
@@ -379,7 +383,7 @@ class EmailLinkService
      *
      * @return array<int,array{id:int,label:string,email:string}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailableAccounts(): array
     {
@@ -440,7 +444,7 @@ class EmailLinkService
      *
      * @return array<int,array{id:int,name:string,displayName:string}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getMailboxesForAccount(int $accountId): array
     {
@@ -507,7 +511,7 @@ class EmailLinkService
      *     resolution, cursor parse, ownership) then a defensive
      *     try/catch around the join query.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getMessagesForMailbox(
         int $accountId,
@@ -540,7 +544,10 @@ class EmailLinkService
         }
 
         $items      = $this->normalizeMessageRows(rows: $rows);
-        $nextCursor = ($hasMore === true && $items !== []) ? $items[count($items) - 1]['id'] : null;
+        $nextCursor = null;
+        if ($hasMore === true && $items !== []) {
+            $nextCursor = $items[count($items) - 1]['id'];
+        }
 
         return [
             'items'      => $items,
@@ -594,7 +601,11 @@ class EmailLinkService
                 ->addOrderBy('m.id', 'DESC')
                 ->setMaxResults($fetch);
 
-            $cursorId = ($afterCursor !== null && $afterCursor !== '') ? (int) $afterCursor : 0;
+            $cursorId = 0;
+            if ($afterCursor !== null && $afterCursor !== '') {
+                $cursorId = (int) $afterCursor;
+            }
+
             if ($cursorId > 0) {
                 $qb->andWhere(
                     $qb->expr()->lt(

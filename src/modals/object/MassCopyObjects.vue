@@ -16,8 +16,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<div class="form-group">
 				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
-						input-label="Selected Naming Pattern"
 					v-model="selectedNamingPattern"
+					input-label="Selected Naming Pattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
 					label="label"
@@ -145,7 +145,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -159,6 +159,7 @@ export default {
 			objectStore.selectedObjects = []
 		},
 		/**
+		 * @param object
 		 * @spec exclude computed display helper for copy-name preview
 		 */
 		getPreviewName(object) {

@@ -126,15 +126,21 @@ import formatBytes from '../../services/formatBytes.js'
 								Managed
 							</span>
 						</h3>
-						<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
+						<NcActions :primary="true" menu-name="Schema Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="editSchema(schema)">
+							<NcActionButton close-after-click @click="viewObjects(schema)">
+								<template #icon>
+									<TableEye :size="20" />
+								</template>
+								{{ t('openregister', 'View objects') }}
+							</NcActionButton>
+							<NcActionButton v-if="!managingConfiguration" close-after-click @click="editSchema(schema)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
-								Edit Schema
+								{{ t('openregister', 'Edit Schema') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -213,6 +219,7 @@ import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import TableEye from 'vue-material-design-icons/TableEye.vue'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
@@ -235,6 +242,7 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		Database,
+		TableEye,
 	},
 	data() {
 		return {
@@ -560,6 +568,25 @@ export default {
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
+		},
+		/**
+		 * Drill into this register's objects for the given schema by deep-linking
+		 * to the search/tables view with both ids preselected. The SearchSideBar
+		 * reads `?register=&schema=` and runs the search automatically.
+		 *
+		 * @spec exclude UI plumbing — router navigation to the pre-filtered tables view.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
+		viewObjects(schema) {
+			const registerId = registerStore.getRegisterItem?.id
+			if (!registerId || !schema?.id) {
+				return
+			}
+			this.$router.push({
+				path: '/tables',
+				query: { register: String(registerId), schema: String(schema.id) },
+			}).catch(() => {})
 		},
 		/**
 		 * Load full schema details from schema IDs

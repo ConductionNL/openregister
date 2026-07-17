@@ -156,7 +156,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-							v-if="branches.length > 0"
+							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
 							input-label="Branch"
@@ -558,6 +558,7 @@ export default {
 			}
 		},
 		/**
+		 * @param result
 		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
 		 */
 		async importDiscoveredConfiguration(result) {
@@ -751,6 +752,7 @@ export default {
 			}
 		},
 		/**
+		 * @param event
 		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileSelect(event) {
@@ -760,6 +762,7 @@ export default {
 			}
 		},
 		/**
+		 * @param event
 		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
 		 */
 		handleFileDrop(event) {
@@ -770,6 +773,7 @@ export default {
 			}
 		},
 		/**
+		 * @param file
 		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
 		 */
 		validateAndSetFile(file) {
@@ -800,6 +804,7 @@ export default {
 			}
 		},
 		/**
+		 * @param bytes
 		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
 		 */
 		formatFileSize(bytes) {
@@ -833,6 +838,7 @@ export default {
 			return response.data
 		},
 		/**
+		 * @param configuration
 		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
 		 */
 		async handleCheckVersion(configuration) {

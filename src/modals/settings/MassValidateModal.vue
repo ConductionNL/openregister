@@ -412,6 +412,7 @@ export default {
 	watch: {
 		config: {
 			/**
+			 * @param newConfig
 			 * @spec exclude Watcher syncing the incoming config prop into local state; UI reactivity plumbing.
 			 */
 			handler(newConfig) {
@@ -421,6 +422,7 @@ export default {
 		},
 		localConfig: {
 			/**
+			 * @param newConfig
 			 * @spec exclude Watcher emitting config changes to the parent; UI reactivity plumbing.
 			 */
 			handler(newConfig) {
@@ -432,7 +434,7 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 * @spec openspec/specs/platform-administration-modals/spec.md
 		 */
 		startMassValidate() {
 			this.$emit('start-validate', this.localConfig)
@@ -591,7 +593,7 @@ export default {
 </script>
 
 <style scoped>
-/* Dialog content styles (consistent with SolrWarmupModal.vue) */
+/* Dialog content styles */
 .dialog-content {
 	padding: 0 20px;
 }
@@ -818,7 +820,7 @@ export default {
 	font-size: 0.9rem;
 }
 
-/* Results state styles (consistent with SolrWarmupModal) */
+/* Results state styles */
 .validate-results {
 	padding: 1rem 0;
 }

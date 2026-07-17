@@ -42,8 +42,8 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'HTTP Method') }}</label>
 							<NcSelect
-						input-label="Selected Method"
 								v-model="selectedMethod"
+								input-label="Selected Method"
 								:options="httpMethodOptions"
 								label="label"
 								track-by="value"
@@ -86,8 +86,8 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event') }}</label>
 							<NcSelect
-						input-label="Selected Event"
 								v-model="selectedEvent"
+								input-label="Selected Event"
 								:options="eventOptions"
 								label="label"
 								track-by="value"
@@ -118,8 +118,8 @@
 						<div v-if="selectedEvent" class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Event Property for Payload') }}</label>
 							<NcSelect
-						input-label="Selected Event Property"
 								v-model="selectedEventProperty"
+								input-label="Selected Event Property"
 								:options="eventPropertyOptions"
 								label="label"
 								track-by="value"
@@ -170,11 +170,22 @@
 							</p>
 						</div>
 
+						<div class="checkboxField">
+							<NcCheckboxRadioSwitch
+								:checked="configuration.allowPrivateTargets === true"
+								@update:checked="updateAllowPrivateTargets">
+								{{ t('openregister', 'Allow private/loopback targets') }}
+							</NcCheckboxRadioSwitch>
+							<p class="field-hint">
+								{{ t('openregister', 'Disable the SSRF guard for this webhook so it can deliver to private, loopback or link-local addresses (e.g. http://localhost:8000). Only enable this for local testing.') }}
+							</p>
+						</div>
+
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Retry Policy') }}</label>
 							<NcSelect
-						input-label="Selected Retry Policy"
 								v-model="selectedRetryPolicy"
+								input-label="Selected Retry Policy"
 								:options="retryPolicyOptions"
 								label="label"
 								track-by="value"
@@ -349,6 +360,7 @@ export default {
 			configuration: {
 				sendCloudEvent: true,
 				waitForResponse: false,
+				allowPrivateTargets: false,
 				eventProperty: null,
 				responseMapping: {},
 			},
@@ -460,7 +472,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeWebhook() {
 			// Get webhook item from navigation store transferData or initialize new one.
@@ -484,6 +496,7 @@ export default {
 					configuration: {
 						sendCloudEvent: true,
 						waitForResponse: false,
+						allowPrivateTargets: false,
 						eventProperty: null,
 						responseMapping: {},
 					},
@@ -496,6 +509,7 @@ export default {
 			}
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook name.
 		 */
 		updateName(value) {
@@ -505,6 +519,7 @@ export default {
 			this.webhookItem.name = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook URL.
 		 */
 		updateUrl(value) {
@@ -514,6 +529,7 @@ export default {
 			this.webhookItem.url = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the HTTP method.
 		 */
 		updateMethod(value) {
@@ -524,6 +540,7 @@ export default {
 			this.selectedMethod = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the enabled flag.
 		 */
 		updateEnabled(value) {
@@ -533,6 +550,7 @@ export default {
 			this.webhookItem.enabled = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the subscribed event and resets event property.
 		 */
 		updateEvent(value) {
@@ -555,6 +573,7 @@ export default {
 			}
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the selected event property.
 		 */
 		updateEventProperty(value) {
@@ -568,6 +587,7 @@ export default {
 			this.selectedEventProperty = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the sendCloudEvent configuration flag.
 		 */
 		updateSendCloudEvent(value) {
@@ -581,6 +601,7 @@ export default {
 			this.webhookItem.configuration.sendCloudEvent = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the waitForResponse configuration flag.
 		 */
 		updateWaitForResponse(value) {
@@ -594,6 +615,21 @@ export default {
 			this.webhookItem.configuration.waitForResponse = value
 		},
 		/**
+		 * @param value
+		 * @spec exclude Form-field binding — sets the allowPrivateTargets configuration flag.
+		 */
+		updateAllowPrivateTargets(value) {
+			if (!this.webhookItem) {
+				this.webhookItem = {}
+			}
+			if (!this.webhookItem.configuration) {
+				this.webhookItem.configuration = {}
+			}
+			this.configuration.allowPrivateTargets = value
+			this.webhookItem.configuration.allowPrivateTargets = value
+		},
+		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the retry policy.
 		 */
 		updateRetryPolicy(value) {
@@ -604,6 +640,7 @@ export default {
 			this.selectedRetryPolicy = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the max-retries count.
 		 */
 		updateMaxRetries(value) {
@@ -613,6 +650,7 @@ export default {
 			this.webhookItem.maxRetries = parseInt(value) || 3
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the request timeout.
 		 */
 		updateTimeout(value) {
@@ -622,6 +660,7 @@ export default {
 			this.webhookItem.timeout = parseInt(value) || 30
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — sets the webhook secret.
 		 */
 		updateSecret(value) {
@@ -631,6 +670,7 @@ export default {
 			this.webhookItem.secret = value || null
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — parses header text into a headers object.
 		 */
 		updateHeaders(value) {
@@ -649,6 +689,7 @@ export default {
 			this.webhookItem.headers = headers
 		},
 		/**
+		 * @param value
 		 * @spec exclude Form-field binding — parses filter text into a filters object.
 		 */
 		updateFilters(value) {
@@ -700,6 +741,7 @@ export default {
 			}
 		},
 		/**
+		 * @param _query
 		 * @spec exclude UI event handler — no-op search hook (NcSelect filters internally).
 		 */
 		searchEvents(_query) {
@@ -766,6 +808,7 @@ export default {
 			this.configuration = {
 				sendCloudEvent: true,
 				waitForResponse: false,
+				allowPrivateTargets: false,
 				eventProperty: null,
 				responseMapping: {},
 			}

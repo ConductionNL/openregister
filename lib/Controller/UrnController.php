@@ -38,7 +38,7 @@ use OCP\IRequest;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-7
+ * @spec openspec/specs/urn-resource-addressing/spec.md
  */
 class UrnController extends Controller
 {
@@ -70,6 +70,7 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No object body: URN-to-URL address translation returning a canonical URL and parsed addressing parts, not object content.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
@@ -116,6 +117,7 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No object body: URL-to-URN address translation returning addressing parts, not object content.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */
@@ -154,6 +156,8 @@ class UrnController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No object body: batch URN address translation (input capped at 1000 for DoS safety);
+     *   returns addressing parts, not object content.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-9
      */

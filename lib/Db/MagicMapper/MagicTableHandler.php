@@ -183,11 +183,35 @@ class MagicTableHandler
             // columns aren't still on the legacy JSONB storage type (issue #1720).
             $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
             $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
-            $missingColumns  = array_diff_key($requiredColumns, $currentColumns);
-            $retypeColumns   = $this->magicMapper->findJsonbColumnsNeedingRetype(
+            // Compare on PHYSICAL column names: required columns are keyed by
+            // property name (camelCase) while the live table reports snake_case,
+            // so a raw array_diff_key() flags every camelCase property as missing
+            // and the forced sync below re-fires on every request forever.
+            $missingColumns = $this->magicMapper->findMissingColumns(
                 currentColumns: $currentColumns,
                 requiredColumns: $requiredColumns
             );
+            $retypeColumns  = $this->magicMapper->findJsonbColumnsNeedingRetype(
+                currentColumns: $currentColumns,
+                requiredColumns: $requiredColumns
+            );
+
+            // A property that BECOMES a relation stops holding a document and starts
+            // holding a bare UUID, so its column must go from json to VARCHAR. Without
+            // this the table stays broken forever after such an edit — every save is
+            // rejected with "invalid input syntax for type json".
+            $relationRetype = $this->magicMapper->findRelationColumnsNeedingRetype(
+                currentColumns: $currentColumns,
+                requiredColumns: $requiredColumns
+            );
+            if (empty($relationRetype) === false) {
+                $this->magicMapper->migrateRelationColumnsToVarchar(
+                    tableName: $tableName,
+                    currentColumns: $currentColumns,
+                    requiredColumns: $requiredColumns
+                );
+                $retypeColumns = array_merge($retypeColumns, $relationRetype);
+            }
 
             if (empty($missingColumns) === true && empty($retypeColumns) === true) {
                 MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);

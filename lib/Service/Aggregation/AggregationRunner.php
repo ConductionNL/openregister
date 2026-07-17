@@ -7,8 +7,8 @@
  * matched objects via the existing findAll path (RBAC + multi-tenancy
  * still applied), and computes the metric in PHP.
  *
- * v1 trades performance for simplicity: backend-native aggregation
- * (Postgres GROUP BY / Solr facets / ES aggs) ships in a follow-up.
+ * v1 trades performance for simplicity: Postgres-native aggregation
+ * (GROUP BY) is the fast path; PHP fallback covers non-Postgres setups.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -24,9 +24,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-4
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
  */
@@ -37,19 +37,21 @@ namespace OCA\OpenRegister\Service\Aggregation;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
-use OCA\OpenRegister\Service\Index\SearchBackendInterface;
+use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
 use OCP\IUserSession;
-use ReflectionClass;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -64,6 +66,8 @@ use RuntimeException;
  *   PHP fallback). The method count rises with each platform-specific
  *   helper; extracting them into a separate class would require passing
  *   the full constructor dependency graph through.
+ *
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class AggregationRunner
 {
@@ -80,16 +84,18 @@ class AggregationRunner
     /**
      * Constructor.
      *
-     * @param MagicMapper                 $magicMapper         Magic-table mapper used for the PHP fallback path.
-     * @param RegisterMapper              $registerMapper      Register loader.
-     * @param SchemaMapper                $schemaMapper        Schema loader.
-     * @param PlaceholderResolver         $placeholders        Resolves dynamic placeholders inside filters.
-     * @param IDBConnection               $db                  Database connection for the Postgres-native fast path.
-     * @param AggregationCache            $cache               60s aggregation result cache.
-     * @param PermissionHandler           $permissionHandler   RBAC verdict on the schema's `list` action.
-     * @param IUserSession                $userSession         Active session, for the RBAC + cache-key user scope.
-     * @param OrganisationService         $organisationService Active-organisation lookup for the cache key.
-     * @param SearchBackendInterface|null $searchBackend       Optional Solr/ES backend for native aggregation.
+     * @param MagicMapper          $magicMapper         Magic-table mapper used for the PHP fallback path.
+     * @param RegisterMapper       $registerMapper      Register loader.
+     * @param SchemaMapper         $schemaMapper        Schema loader.
+     * @param PlaceholderResolver  $placeholders        Resolves dynamic placeholders inside filters.
+     * @param IDBConnection        $db                  Database connection for the Postgres-native fast path.
+     * @param AggregationCache     $cache               60s aggregation result cache.
+     * @param PermissionHandler    $permissionHandler   RBAC verdict on the schema's `list` action.
+     * @param IUserSession         $userSession         Active session, for the RBAC + cache-key user scope.
+     * @param OrganisationService  $organisationService Active-organisation lookup for the cache key.
+     * @param TranslationHandler   $translationHandler  Resolves translatable group keys to the negotiated language.
+     * @param LanguageService      $languageService     Request-scoped language negotiation (Accept-Language / _lang).
+     * @param LoggerInterface|null $logger              Optional logger for diagnostics.
      *
      * @return void
      *
@@ -107,7 +113,9 @@ class AggregationRunner
         private readonly PermissionHandler $permissionHandler,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
-        private readonly ?SearchBackendInterface $searchBackend=null
+        private readonly TranslationHandler $translationHandler,
+        private readonly LanguageService $languageService,
+        private readonly ?LoggerInterface $logger=null
     ) {
     }//end __construct()
 
@@ -240,6 +248,13 @@ class AggregationRunner
         $filter  = (array) ($spec['filter'] ?? $spec['where'] ?? []);
         $groupBy = ($spec['groupBy'] ?? null);
 
+        // Normalized groupBy spec (array or null) — used both for the native
+        // path argument and for translatable group-key projection.
+        $groupByArg = null;
+        if (is_array($groupBy) === true) {
+            $groupByArg = $groupBy;
+        }
+
         $resolvedFilter = $this->placeholders->resolveArray($filter);
 
         // Cache lookup: the resolved filter (with placeholders concrete)
@@ -264,65 +279,14 @@ class AggregationRunner
         );
         if ($cached !== null) {
             $cached['cached'] = true;
-            return $cached;
+            // Cache stores raw group keys (language-agnostic key), project on read.
+            return $this->projectTranslatableGroupKeys(
+                envelope: $cached,
+                schema: $schema,
+                register: $register,
+                groupBy: $groupByArg
+            );
         }
-
-        // Try the configured external search backend (Solr / ES) first
-        // when one is wired in. The backend returns null when it can't
-        // execute the query (unsupported metric, unreachable instance,
-        // etc) — we then fall through to the Postgres-native fast path
-        // and finally to the PHP fallback.
-        if ($this->searchBackend !== null) {
-            try {
-                $fieldArg = null;
-                if (is_string($field) === true) {
-                    $fieldArg = $field;
-                }
-
-                $groupByArg = null;
-                if (is_array($groupBy) === true) {
-                    $groupByArg = $groupBy;
-                }
-
-                $portableQuery = AggregationQuery::create(
-                    metric: $metric,
-                    field: $fieldArg,
-                    filter: $resolvedFilter,
-                    groupBy: $groupByArg
-                );
-                $external      = $this->searchBackend->aggregate(query: $portableQuery);
-                if ($external !== null) {
-                    $backendName = $this->detectBackendName(backend: $this->searchBackend);
-                    // R05: surface `truncated` on every backend so the
-                    // shape is consistent. Search backends propagate the
-                    // flag from the engine when supplied; otherwise
-                    // assume the engine returned the full set.
-                    $fieldValue = null;
-                    if (is_string($field) === true) {
-                        $fieldValue = $field;
-                    }
-
-                    $result = [
-                        'name'      => $name,
-                        'metric'    => $metric,
-                        'field'     => $fieldValue,
-                        'backend'   => $backendName,
-                        'truncated' => (bool) ($external['truncated'] ?? false),
-                    ] + $external;
-                    $this->cache->set(
-                        registerSlug: (string) $register->getSlug(),
-                        schemaSlug: (string) $schema->getSlug(),
-                        name: $name,
-                        filter: $cacheKey,
-                        result: $result
-                    );
-                    return $result;
-                }//end if
-            } catch (\Throwable $e) {
-                // External backend errored — fall through to native /
-                // PHP path so a flaky Solr/ES never breaks aggregations.
-            }//end try
-        }//end if
 
         // Try the Postgres-native fast path. Falls back to PHP when the
         // query shape isn't supported (operator filters, complex values,
@@ -332,10 +296,7 @@ class AggregationRunner
             $nativeFieldArg = $field;
         }
 
-        $nativeGroupByArg = null;
-        if (is_array($groupBy) === true) {
-            $nativeGroupByArg = $groupBy;
-        }
+        $nativeGroupByArg = $groupByArg;
 
         $native = $this->tryNativeAggregation(
             register: $register,
@@ -369,7 +330,12 @@ class AggregationRunner
                 filter: $cacheKey,
                 result: $result
             );
-            return $result;
+            return $this->projectTranslatableGroupKeys(
+                envelope: $result,
+                schema: $schema,
+                register: $register,
+                groupBy: $nativeGroupByArg
+            );
         }//end if
 
         // Fall back: pull objects and filter in PHP.
@@ -415,12 +381,13 @@ class AggregationRunner
             'truncated' => $truncated,
         ];
 
-        if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
+        $runGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($runGroupFields) > 0) {
             $result['groups'] = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $runGroupFields
             );
         }
 
@@ -435,7 +402,12 @@ class AggregationRunner
             filter: $cacheKey,
             result: $result
         );
-        return $result;
+        return $this->projectTranslatableGroupKeys(
+            envelope: $result,
+            schema: $schema,
+            register: $register,
+            groupBy: $groupByArg
+        );
     }//end run()
 
     /**
@@ -537,7 +509,15 @@ class AggregationRunner
         );
         if ($cached !== null) {
             $cached['cached'] = true;
-            return $cached;
+            // The cache stores RAW group keys (the cache key is language-
+            // agnostic), so translatable keys must be projected on every
+            // read, including cache hits.
+            return $this->projectTranslatableGroupKeys(
+                envelope: $cached,
+                schema: $schema,
+                register: $register,
+                groupBy: $query->groupBy
+            );
         }
 
         // Try the Postgres / MySQL / SQLite native fast path. The runner
@@ -560,14 +540,22 @@ class AggregationRunner
                 'backend' => $this->detectDatabasePlatform(),
                 'cached'  => false,
             ] + $native;
+            // Cache the RAW (un-projected) group keys — the cache key does
+            // not encode the negotiated language, so language projection
+            // must happen after the cache boundary on every read.
             $this->cache->setAdhoc(
                 registerSlug: (string) $register->getSlug(),
                 schemaSlug: (string) $schema->getSlug(),
                 query: $resolvedQuery,
                 result: $envelope
             );
-            return $envelope;
-        }
+            return $this->projectTranslatableGroupKeys(
+                envelope: $envelope,
+                schema: $schema,
+                register: $register,
+                groupBy: $query->groupBy
+            );
+        }//end if
 
         // PHP fallback path. Pull the RBAC-filtered row set + bucket in
         // PHP. Correctness path; the native paths above are the
@@ -587,9 +575,147 @@ class AggregationRunner
             query: $resolvedQuery,
             result: $envelope
         );
-        return $envelope;
+        return $this->projectTranslatableGroupKeys(
+            envelope: $envelope,
+            schema: $schema,
+            register: $register,
+            groupBy: $query->groupBy
+        );
 
     }//end runAdhoc()
+
+    /**
+     * Project translatable group keys in a grouped-aggregation envelope to
+     * the negotiated display language.
+     *
+     * `GET /api/objects/aggregations/{register}/{schema}/grouped` groups on
+     * a single field via SQL `GROUP BY` (native path) or PHP bucketing
+     * (fallback). When that field is `translatable: true`, the stored value
+     * is a language-keyed map (e.g. `{"nl":"Foo","en":"Bar"}`), so each
+     * group `key` comes back as the raw map (native: a JSON string; PHP: an
+     * associative array) instead of the single projected string a normal
+     * read returns.
+     *
+     * This projects each such key to the caller's negotiated language,
+     * reusing {@see TranslationHandler::resolveTranslationsForRender()} for
+     * the language chain / fallback logic rather than reimplementing it.
+     *
+     * No-op when:
+     * - the envelope carries no `groups`;
+     * - there is no single scalar `groupBy.field`;
+     * - the groupBy field is NOT translatable on the schema;
+     * - `?_translations=all` is requested (keys are returned verbatim).
+     *
+     * @param array<string, mixed>      $envelope The aggregation result envelope.
+     * @param Schema                    $schema   The schema being aggregated.
+     * @param Register                  $register The owning register (language config).
+     * @param array<string, mixed>|null $groupBy  The groupBy spec ({field: ...}).
+     *
+     * @return array<string, mixed> The envelope with translatable group keys projected.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *   The method is a chain of cheap short-circuit guards (no groups /
+     *   no groupBy field / not translatable / _translations=all) before
+     *   the projection loop; each guard adds a branch but keeps the hot
+     *   path a single early return.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function projectTranslatableGroupKeys(
+        array $envelope,
+        Schema $schema,
+        Register $register,
+        ?array $groupBy
+    ): array {
+        if (isset($envelope['groups']) === false || is_array($envelope['groups']) === false) {
+            return $envelope;
+        }
+
+        if ($groupBy === null || isset($groupBy['field']) === false) {
+            return $envelope;
+        }
+
+        $groupField = (string) $groupBy['field'];
+
+        // Only project when the grouped field is actually translatable.
+        // getTranslatableProperties() is cheap and this keeps NON-translatable
+        // grouped fields byte-for-byte unchanged.
+        $translatableProps = $this->translationHandler->getTranslatableProperties(schema: $schema);
+        if (in_array($groupField, $translatableProps, true) === false) {
+            return $envelope;
+        }
+
+        // `?_translations=all` returns keys verbatim.
+        if ($this->languageService->shouldReturnAllTranslations() === true) {
+            return $envelope;
+        }
+
+        foreach ($envelope['groups'] as $index => $group) {
+            if (is_array($group) === false || array_key_exists('key', $group) === false) {
+                continue;
+            }
+
+            $envelope['groups'][$index]['key'] = $this->projectSingleTranslatableKey(
+                rawKey: $group['key'],
+                groupField: $groupField,
+                schema: $schema,
+                register: $register
+            );
+        }
+
+        return $envelope;
+
+    }//end projectTranslatableGroupKeys()
+
+    /**
+     * Project a single grouped key value to the negotiated language.
+     *
+     * Normalizes the raw key to a language-keyed map (native path yields a
+     * JSON string, PHP path an array), then delegates to
+     * {@see TranslationHandler::resolveTranslationsForRender()} by wrapping
+     * the map under the grouped field name and reading the resolved value
+     * back. Non-map keys (already scalar, e.g. legacy untranslated rows) are
+     * returned unchanged.
+     *
+     * @param mixed    $rawKey     The raw group key (JSON string or array).
+     * @param string   $groupField The grouped field name.
+     * @param Schema   $schema     The schema being aggregated.
+     * @param Register $register   The owning register (language config).
+     *
+     * @return mixed The projected scalar value, or the original key when not a map.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function projectSingleTranslatableKey(
+        mixed $rawKey,
+        string $groupField,
+        Schema $schema,
+        Register $register
+    ): mixed {
+        $map = $rawKey;
+
+        // Native SQL returns the JSON column value as a string; decode it.
+        if (is_string($rawKey) === true) {
+            $decoded = json_decode($rawKey, true);
+            if (is_array($decoded) === true) {
+                $map = $decoded;
+            }
+        }
+
+        // Not a language-keyed map (scalar / legacy untranslated) — leave it.
+        if (is_array($map) === false) {
+            return $rawKey;
+        }
+
+        $resolved = $this->translationHandler->resolveTranslationsForRender(
+            objectData: [$groupField => $map],
+            schema: $schema,
+            register: $register
+        );
+
+        return $resolved[$groupField] ?? $rawKey;
+
+    }//end projectSingleTranslatableKey()
 
     /**
      * Convenience: run an ad-hoc aggregation by register/schema ref.
@@ -607,7 +733,7 @@ class AggregationRunner
      * @throws RuntimeException        When the register or schema cannot be resolved.
      * @throws NotAuthorizedException  When the caller lacks list-permission.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-2
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function runAdhocByRef(
         string $registerRef,
@@ -715,7 +841,10 @@ class AggregationRunner
                     continue;
                 }
 
-                $stamp = is_numeric($raw) ? (int) $raw : strtotime((string) $raw);
+                $stamp = strtotime((string) $raw);
+                if (is_numeric($raw) === true) {
+                    $stamp = (int) $raw;
+                }
 
                 if ($stamp === false || $stamp < $start || $stamp >= $end) {
                     continue;
@@ -743,12 +872,13 @@ class AggregationRunner
             ];
         }//end if
 
-        if ($groupBy !== null && isset($groupBy['field']) === true) {
+        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($groupFields) > 0) {
             $groups = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $groupFields
             );
 
             return [
@@ -862,36 +992,94 @@ class AggregationRunner
     }//end computeMetric()
 
     /**
-     * Compute a grouped metric, bucketing rows by `$groupField`.
+     * Resolve a raw groupBy spec to an ordered list of non-empty group field
+     * names, honouring every accepted shape (single `{field}`, multi
+     * `{fields:[...]}`, plain list `[...]`).
      *
-     * @param array<int, array<string, mixed>> $rows       Already-filtered rows.
-     * @param string                           $metric     One of count/sum/avg/min/max/count_distinct.
-     * @param mixed                            $field      Field to aggregate over.
-     * @param string                           $groupField Field used as the bucket key.
+     * Invalid members (non-string / empty) are dropped defensively for the
+     * named-annotation path where the spec is not pre-validated by
+     * {@see AggregationQuery::create()}. Returns an empty list for an
+     * ungrouped request, which the callers treat as "compute a scalar".
      *
-     * @return array<int, array{key: mixed, value: int|float|null}>
+     * @param mixed $groupBy Raw groupBy spec from the annotation or query.
+     *
+     * @return array<int, string> Ordered, de-duplicated group field names.
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    private function resolveGroupFields(mixed $groupBy): array
+    {
+        $fields = [];
+        foreach (AggregationQuery::normaliseGroupByFields(groupBy: $groupBy) as $field) {
+            if (is_string($field) === false || $field === '') {
+                continue;
+            }
+
+            if (in_array($field, $fields, true) === true) {
+                continue;
+            }
+
+            $fields[] = $field;
+        }
+
+        return $fields;
+
+    }//end resolveGroupFields()
+
+    /**
+     * Compute a grouped metric, bucketing rows by one or more group fields.
+     *
+     * Single-field groupBy yields the backward-compatible `{key, value}`
+     * row shape. Multi-field (cross-tab) groupBy yields a composite
+     * `{keys: {fieldA: ..., fieldB: ...}, value}` row per distinct tuple so
+     * a consumer can pivot the result into a cross-tab. The bucket order is
+     * the first-seen order of each distinct tuple.
+     *
+     * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
+     * @param string                           $metric      One of count/sum/avg/min/max/count_distinct.
+     * @param mixed                            $field       Field to aggregate over.
+     * @param array<int, string>               $groupFields Ordered field(s) used as the bucket key.
+     *
+     * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value: int|float|null}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/aggregation-api/spec.md
      */
-    private function computeGrouped(array $rows, string $metric, mixed $field, string $groupField): array
+    private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields): array
     {
+        $isMulti = (count($groupFields) > 1);
         $buckets = [];
         foreach ($rows as $row) {
-            $bucket = $row[$groupField] ?? null;
-            $key = is_scalar($bucket) ? (string) $bucket : json_encode($bucket);
+            $tuple = [];
+            foreach ($groupFields as $groupField) {
+                $tuple[$groupField] = ($row[$groupField] ?? null);
+            }
 
+            // Composite cache key over the whole tuple; json_encode keeps
+            // distinct tuples distinct regardless of scalar/null members.
+            $key = json_encode($tuple);
             if (isset($buckets[$key]) === false) {
-                $buckets[$key] = ['key' => $bucket, 'rows' => []];
+                $buckets[$key] = ['tuple' => $tuple, 'rows' => []];
             }
 
             $buckets[$key]['rows'][] = $row;
         }
 
         $out = [];
-        foreach ($buckets as $b) {
+        foreach ($buckets as $bucket) {
+            $value = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
+            if ($isMulti === true) {
+                $out[] = [
+                    'keys'  => $bucket['tuple'],
+                    'value' => $value,
+                ];
+                continue;
+            }
+
+            // Single-field: unwrap the tuple to the legacy `{key, value}` shape.
             $out[] = [
-                'key'   => $b['key'],
-                'value' => $this->computeMetric(rows: $b['rows'], metric: $metric, field: $field),
+                'key'   => reset($bucket['tuple']),
+                'value' => $value,
             ];
         }
 
@@ -919,7 +1107,12 @@ class AggregationRunner
             }
 
             $count++;
-            $acc = ($acc === null) ? (float) $value : $reducer((float) $acc, (float) $value);
+            if ($acc === null) {
+                $acc = (float) $value;
+                continue;
+            }
+
+            $acc = $reducer((float) $acc, (float) $value);
         }
 
         if ($count === 0 && $acc === null) {
@@ -974,7 +1167,18 @@ class AggregationRunner
             foreach ($filter as $field => $criterion) {
                 $value = $row[$field] ?? null;
                 if (is_array($criterion) === false) {
-                    if ($value !== $criterion) {
+                    // BUG-SVC-9: magic-table column values come back as strings,
+                    // while the criterion may be int/bool/float. A strict !==
+                    // then drops rows the Postgres path would keep (e.g. "1" vs
+                    // 1). Compare as strings when both sides are scalar so the
+                    // PHP fallback matches the native equality semantics; keep
+                    // strict comparison for non-scalars (null/array/object).
+                    if (is_scalar($value) === true && is_scalar($criterion) === true) {
+                        if ((string) $value !== (string) $criterion) {
+                            $keep = false;
+                            break;
+                        }
+                    } else if ($value !== $criterion) {
                         $keep = false;
                         break;
                     }
@@ -988,7 +1192,7 @@ class AggregationRunner
                         break 2;
                     }
                 }
-            }
+            }//end foreach
 
             if ($keep === true) {
                 $result[] = $row;
@@ -1002,7 +1206,7 @@ class AggregationRunner
      * Apply a single operator check.
      *
      * @param mixed  $value   The value extracted from the row.
-     * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in').
+     * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in','notIn').
      * @param mixed  $opValue The operand value to compare against.
      *
      * @return bool True when the value satisfies the operator.
@@ -1014,13 +1218,14 @@ class AggregationRunner
         $cmp = $this->normaliseForCompare(v: $value);
         $rhs = $this->normaliseForCompare(v: $opValue);
         return match ($op) {
-            'eq'  => $cmp === $rhs,
-            'ne'  => $cmp !== $rhs,
-            'gt'  => $cmp !== null && $rhs !== null && $cmp > $rhs,
-            'gte' => $cmp !== null && $rhs !== null && $cmp >= $rhs,
-            'lt'  => $cmp !== null && $rhs !== null && $cmp < $rhs,
-            'lte' => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-            'in'  => is_array($opValue) === true && in_array($value, $opValue, true),
+            'eq'    => $cmp === $rhs,
+            'ne'    => $cmp !== $rhs,
+            'gt'    => $cmp !== null && $rhs !== null && $cmp > $rhs,
+            'gte'   => $cmp !== null && $rhs !== null && $cmp >= $rhs,
+            'lt'    => $cmp !== null && $rhs !== null && $cmp < $rhs,
+            'lte'   => $cmp !== null && $rhs !== null && $cmp <= $rhs,
+            'in'    => is_array($opValue) === true && in_array($value, $opValue, true),
+            'notIn' => is_array($opValue) === false || in_array($value, $opValue, true) === false,
             default => true,
         };
     }//end checkOp()
@@ -1052,8 +1257,16 @@ class AggregationRunner
     /**
      * Try to compute the aggregation directly in SQL on the magic table.
      *
-     * Supports: count/sum/avg/min/max + simple equality filters
-     * + optional groupBy on a single field. Postgres only.
+     * Supports: count/sum/avg/min/max + simple equality/operator filters
+     * + optional categorical groupBy on ONE OR MORE fields (`GROUP BY a, b`
+     * → one row per distinct tuple) + optional time-bucketing. The
+     * categorical groupBy and time-bucket paths run natively on Postgres,
+     * MySQL and SQLite; the ungrouped scalar path is Postgres-only (the
+     * others fall through to the PHP fallback).
+     *
+     * Multi-field groupBy returns each group row as
+     * `{keys: {fieldA: ..., fieldB: ...}, value}`; single-field groupBy
+     * keeps the backward-compatible `{key, value}` shape.
      *
      * Returns the result fragment ('value' or 'groups') on success, null
      * to signal the caller should fall back to PHP-side aggregation.
@@ -1063,7 +1276,8 @@ class AggregationRunner
      * @param string                    $metric     Metric name (count/sum/avg/min/max).
      * @param string|null               $field      Field to aggregate over (ignored for count).
      * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
-     * @param array<string, mixed>|null $groupBy    Optional group spec ({field: ...}).
+     * @param array<string, mixed>|null $groupBy    Optional group spec: single-field ({field: ...}),
+     *                                              multi-field ({fields: [...]}), or a plain list ([...]).
      * @param array<string, mixed>|null $dateBucket Optional time-bucket spec ({field, start, end, gap}).
      *                                              When supplied, the query becomes a `date_trunc`-bucketed
      *                                              series with explicit `WHERE field >= start AND field < end`
@@ -1094,16 +1308,22 @@ class AggregationRunner
     ): ?array {
         $platformName = $this->detectDatabasePlatform();
 
+        // Ordered list of categorical group fields (single-field, multi-field
+        // cross-tab, or plain-list shape all normalise here).
+        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+
         // Postgres handles every query shape natively. MySQL and SQLite
-        // currently support only the time-bucket path; the categorical
-        // groupBy + ungrouped paths still depend on Postgres-specific
-        // operators (`::jsonb`, `::numeric`) and fall through to the PHP
-        // fallback on non-Postgres engines.
+        // support the time-bucket path AND the categorical groupBy path
+        // (single- or multi-field) — both reuse the platform-branched
+        // aggregate SQL + identifier quoting below. The remaining
+        // non-Postgres gap is the *ungrouped* scalar path, which still
+        // depends on the Postgres-specific numeric cast and falls through
+        // to the PHP fallback.
         if ($platformName === 'unknown') {
             return null;
         }
 
-        if ($platformName !== 'postgres' && $dateBucket === null) {
+        if ($platformName !== 'postgres' && $dateBucket === null && count($groupFields) === 0) {
             return null;
         }
 
@@ -1111,16 +1331,27 @@ class AggregationRunner
             return null;
         }
 
+        // BUG-SVC-7: value metrics (sum/avg/min/max) operate on a column, so a
+        // null/empty $field would build malformed SQL (e.g. SUM(NULLIF(::text,
+        // ''))). Bail to the PHP fallback when no field is supplied for a
+        // value metric; only `count` is valid without a field.
+        if (in_array($metric, ['sum', 'avg', 'min', 'max'], true) === true
+            && ($field === null || $field === '')
+        ) {
+            return null;
+        }
+
         // Validate filter shapes are translatable. Supported:
         // {field: scalar}              → field = ?
         // {field: {in: [...]}}         → field IN (?, ?, ?)
+        // {field: {notIn: [...]}}      → field NOT IN (?, ?, ?)
         // {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
         // {field: {ne: x}}             → field <> ?
         // Reject anything else.
         foreach ($filter as $value) {
             if (is_array($value) === true) {
                 foreach (array_keys($value) as $op) {
-                    if (in_array((string) $op, ['in', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
+                    if (in_array((string) $op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
                         return null;
                     }
                 }
@@ -1183,6 +1414,29 @@ class AggregationRunner
 
                     $placeholders = implode(', ', array_fill(0, count($list), '?'));
                     $whereParts[] = $quote.$col.$quote.' IN ('.$placeholders.')';
+                    foreach ($list as $item) {
+                        $bindings[] = $this->bindValue(value: $item);
+                    }
+
+                    continue;
+                }//end if
+
+                if ($op === 'notIn') {
+                    $list = [];
+                    if (is_array($opValue) === true) {
+                        $list = $opValue;
+                    }
+
+                    if (count($list) === 0) {
+                        // `notIn` with an empty exclusion list excludes
+                        // nothing — emit an always-true condition so every
+                        // row is retained (mirrors SQL `NOT IN ()` intent).
+                        $whereParts[] = '1 = 1';
+                        continue;
+                    }
+
+                    $placeholders = implode(', ', array_fill(0, count($list), '?'));
+                    $whereParts[] = $quote.$col.$quote.' NOT IN ('.$placeholders.')';
                     foreach ($list as $item) {
                         $bindings[] = $this->bindValue(value: $item);
                     }
@@ -1299,13 +1553,23 @@ class AggregationRunner
                 return ['groups' => $groups];
             }//end if
 
-            if ($groupBy !== null && isset($groupBy['field']) === true) {
-                $groupCol = '"'.$this->sanitizeColumnName(name: (string) $groupBy['field']).'"';
-                $sql      = "SELECT {$groupCol} AS bucket, {$aggSql} AS agg
+            if (count($groupFields) > 0) {
+                $isMulti     = (count($groupFields) > 1);
+                $selectParts = [];
+                $groupCols   = [];
+                foreach ($groupFields as $index => $groupField) {
+                    $groupCol      = $quote.$this->sanitizeColumnName(name: $groupField).$quote;
+                    $groupCols[]   = $groupCol;
+                    $selectParts[] = $groupCol.' AS g'.$index;
+                }
+
+                $selectSql = implode(', ', $selectParts);
+                $groupSql  = implode(', ', $groupCols);
+                $sql       = "SELECT {$selectSql}, {$aggSql} AS agg
                              FROM {$fullTable}
                              WHERE {$whereSql}
-                             GROUP BY {$groupCol}";
-                $stmt     = $this->db->prepare($sql);
+                             GROUP BY {$groupSql}";
+                $stmt      = $this->db->prepare($sql);
                 $stmt->execute($bindings);
                 $groups = [];
                 while (($row = $stmt->fetch()) !== false) {
@@ -1316,8 +1580,18 @@ class AggregationRunner
                         $value = (int) $value;
                     }
 
-                    $groups[] = ['key' => $row['bucket'], 'value' => $value];
-                }
+                    if ($isMulti === true) {
+                        $keys = [];
+                        foreach ($groupFields as $index => $groupField) {
+                            $keys[$groupField] = ($row['g'.$index] ?? null);
+                        }
+
+                        $groups[] = ['keys' => $keys, 'value' => $value];
+                        continue;
+                    }
+
+                    $groups[] = ['key' => ($row['g0'] ?? null), 'value' => $value];
+                }//end while
 
                 return ['groups' => $groups];
             }//end if
@@ -1362,9 +1636,7 @@ class AggregationRunner
      * `2026-05-21 13:00:00`. We need a stable wire format that the
      * client can parse identically across Postgres versions / timezone
      * settings AND across the PHP-fallback path on non-Postgres
-     * databases. Mirrors the behaviour the
-     * `SolrAggregationQueryBuilder` and
-     * `ElasticsearchAggregationQueryBuilder` produce.
+     * databases.
      *
      * @param mixed $raw Raw bucket value from the DB row (typically a string).
      *
@@ -1381,8 +1653,25 @@ class AggregationRunner
             return (string) $raw;
         }
 
-        // Try strtotime then format — defensive but covers every Postgres
-        // text-cast shape we'll see.
+        // BUG-SVC-4: Postgres emits date/timestamp text WITHOUT a timezone
+        // designator (e.g. "2026-06-01 00:00:00"). strtotime() parses such
+        // offset-less text in the SERVER timezone, then gmdate() re-expresses
+        // it as UTC, shifting every bucket label by the server's UTC offset
+        // (e.g. CET buckets land an hour early). Parse offset-less shapes as
+        // UTC explicitly; only fall back to strtotime for offset-bearing text.
+        $hasTimezone = (preg_match('/(Z|[+-]\d{2}:?\d{2})$/', trim($raw)) === 1);
+        if ($hasTimezone === false) {
+            $formats = ['Y-m-d H:i:s', 'Y-m-d\TH:i:s', 'Y-m-d H:i', 'Y-m-d'];
+            foreach ($formats as $format) {
+                $parsed = DateTimeImmutable::createFromFormat($format, trim($raw), new DateTimeZone('UTC'));
+                if ($parsed !== false) {
+                    return $parsed->format('Y-m-d\TH:i:s\Z');
+                }
+            }
+        }
+
+        // Offset-bearing (or otherwise unhandled) shapes: strtotime understands
+        // the embedded offset, so converting to UTC via gmdate is correct here.
         $stamp = strtotime($raw);
         if ($stamp === false) {
             return $raw;
@@ -1788,12 +2077,13 @@ class AggregationRunner
             'truncated' => $truncated,
         ];
 
-        if (is_array($groupBy) === true && isset($groupBy['field']) === true) {
+        $crossGroupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        if (count($crossGroupFields) > 0) {
             $result['groups'] = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupField: (string) $groupBy['field']
+                groupFields: $crossGroupFields
             );
         }
 
@@ -1971,28 +2261,4 @@ class AggregationRunner
 
         return null;
     }//end getAnnotation()
-
-    /**
-     * Map a SearchBackendInterface implementation to its short backend
-     * label for the result envelope. Falls back to `'external'` when the
-     * concrete class name doesn't match a known prefix.
-     *
-     * @param SearchBackendInterface $backend The backend instance.
-     *
-     * @return string Short backend label ('solr', 'elasticsearch', or 'external').
-     */
-    private function detectBackendName(SearchBackendInterface $backend): string
-    {
-        $shortName = (new ReflectionClass($backend))->getShortName();
-        if (str_contains($shortName, 'Solr') === true) {
-            return 'solr';
-        }
-
-        if (str_contains($shortName, 'Elasticsearch') === true) {
-            return 'elasticsearch';
-        }
-
-        return 'external';
-
-    }//end detectBackendName()
 }//end class

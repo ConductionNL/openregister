@@ -38,15 +38,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-shares/tasks.md
+ * @spec openspec/specs/integration-shares/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
-// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
-
+// phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata;
+// Getters mirror the contract in the interface.
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\Files\Folder;
@@ -64,9 +64,16 @@ use Throwable;
  * Always-on metadata: id='shares', group='core', requiredApp=null
  * (NC core sharing is always available), storage='query-time'.
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus lazy container resolution helpers (lookup, resolveContainer, resolveCurrentUserId, resolveObjectFolder, normaliseShare, mapServiceRow); each serves a distinct phase of the query-time share-walk and cannot be combined.
- * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Server::get() is the Nextcloud-prescribed static service-locator pattern for optional late-bound dependencies; no injectable alternative exists for the lazy-resolution policy (constructor injection would fail when the optional services are absent).
- * @SuppressWarnings(PHPMD.UnusedPrivateMethod) mapServiceRow() is used as a callable in array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references and incorrectly flags it as unused.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Provider exposes list/delete/health plus lazy
+ * container resolution helpers (lookup, resolveContainer, resolveCurrentUserId, resolveObjectFolder,
+ * normaliseShare, mapServiceRow); each serves a distinct phase of the query-time share-walk and
+ * cannot be combined.
+ * @SuppressWarnings(PHPMD.StaticAccess)             \OCP\Server::get() is the Nextcloud-prescribed static
+ * service-locator pattern for optional late-bound dependencies; no injectable alternative exists
+ * for the lazy-resolution policy (constructor injection would fail when optional services are absent).
+ * @SuppressWarnings(PHPMD.UnusedPrivateMethod)      mapServiceRow() is used as a callable in
+ * array_map([$this, 'mapServiceRow'], ...) — PHPMD does not trace callable-array references
+ * and incorrectly flags it as unused.
  */
 class SharesProvider extends AbstractIntegrationProvider
 {
@@ -220,11 +227,18 @@ class SharesProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-shares/tasks.md
+     * @spec openspec/specs/integration-shares/spec.md
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) list() tries the ShareLinkService delegate first, then falls back to a local folder-walk; per-node, per-type, and per-share dedup logic are sequential — extracting them would split the single "get shares for object" contract across multiple helpers.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Service-delegate + local-walk + Throwable fallback + folder-null + MAX_NODES cap + per-type Throwable swallow produce many paths; each guards a distinct degradation level per AD-23.
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates (register, schema, objectId, filters); $register and $schema are unused because shares are indexed per-object-uuid and there is no register/schema scope for NC core sharing.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  list() tries the ShareLinkService delegate first,
+     * then falls back to a local folder-walk; per-node, per-type, and per-share dedup logic are
+     * sequential — extracting them would split the single "get shares for object" contract across
+     * multiple helpers.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Service-delegate + local-walk + Throwable fallback +
+     * folder-null + MAX_NODES cap + per-type Throwable swallow produce many paths; each guards a
+     * distinct degradation level per AD-23.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates
+     * (register, schema, objectId, filters); $register and $schema are unused because shares are
+     * indexed per-object-uuid and there is no register/schema scope for NC core sharing.
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -343,23 +357,105 @@ class SharesProvider extends AbstractIntegrationProvider
     }//end mapServiceRow()
 
     /**
-     * Revoke / unlink a share by id.
+     * Mint a public token-based "track your case" link to the object.
      *
-     * Delegates to `IManager::deleteShare()`. Failures defer to the
-     * abstract base's NotImplementedException so the controller layer
-     * translates them into the canonical HTTP code.
+     * ADDITIVE: the legacy SharesProvider inherited the abstract
+     * NotImplementedException for create() (NC file shares are minted via
+     * the Files share panel, not here). This override adds a SECOND,
+     * independent create path — a public case-token link — without
+     * changing the existing list()/delete() NC-file-share behaviour.
+     *
+     * The payload selects the kind of thing to create:
+     *   - `type: 'public-token'` (or `type` omitted) — mint a case token
+     *     bound to the object via {@see CaseTokenService::mint()}. Optional
+     *     `label` (string) and `ttlSeconds` (int) tune the link. Returns
+     *     the token metadata + the public resolve URL.
+     *
+     * The token is an addressing handle only — the public resolve
+     * endpoint enforces RBAC (`_rbac: true`), so minting never grants
+     * read access beyond what the public group already has.
+     *
+     * When the CaseTokenService can't be resolved (older build) the call
+     * defers to the abstract NotImplementedException so the controller
+     * returns the canonical 501 — preserving backward compatibility.
+     *
+     * @param string              $register Register slug or numeric id.
+     * @param string              $schema   Schema slug or numeric id.
+     * @param string              $objectId Owning object uuid.
+     * @param array<string,mixed> $payload  Mint options (type/label/ttlSeconds).
+     *
+     * @return array<string,mixed> Minted token metadata + public URL.
+     *
+     * @throws \OCA\OpenRegister\Exception\NotImplementedException When the
+     *         token service is unavailable.
+     *
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
+     */
+    public function create(string $register, string $schema, string $objectId, array $payload): array
+    {
+        $type = (string) ($payload['type'] ?? 'public-token');
+        if ($type !== 'public-token') {
+            // Only the public-token surface is supported by this provider;
+            // anything else defers to the abstract 501 contract.
+            return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+        }
+
+        $service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
+        if ($service === null || method_exists($service, 'mint') === false) {
+            return parent::create(register: $register, schema: $schema, objectId: $objectId, payload: $payload);
+        }
+
+        $label      = $payload['label'] ?? null;
+        $ttlSeconds = null;
+        if (isset($payload['ttlSeconds']) === true && is_numeric($payload['ttlSeconds']) === true) {
+            $ttlSeconds = (int) $payload['ttlSeconds'];
+        }
+
+        $resolvedLabel = null;
+        if ($label !== null) {
+            $resolvedLabel = (string) $label;
+        }
+
+        return $service->mint(
+            objectUuid: $objectId,
+            registerId: $this->numericOrNull(value: $register),
+            schemaId: $this->numericOrNull(value: $schema),
+            label: $resolvedLabel,
+            ttlSeconds: $ttlSeconds
+        );
+    }//end create()
+
+    /**
+     * Revoke / unlink a share OR a public case-token by id.
+     *
+     * ADDITIVE: keeps the original NC-file-share revoke
+     * (`IManager::deleteShare()`) untouched and adds a case-token revoke
+     * path. A `token:`-prefixed entityId addresses a case token; anything
+     * else is treated as an NC share id exactly as before.
      *
      * @param string $register Register slug.
      * @param string $schema   Schema slug.
      * @param string $objectId Owning object uuid.
-     * @param string $entityId Share id to revoke.
+     * @param string $entityId Share id, or `token:<token-or-id>`.
      *
      * @return void
      *
-     * @spec openspec/changes/integration-shares/tasks.md
+     * @spec openspec/specs/integration-shares/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
+        // Case-token revoke path: `token:<token-or-id>`.
+        if (str_starts_with($entityId, 'token:') === true) {
+            $service = $this->lookup(serviceName: 'OCA\\OpenRegister\\Service\\CaseTokenService');
+            if ($service !== null && method_exists($service, 'revoke') === true) {
+                $service->revoke(substr($entityId, strlen('token:')));
+                return;
+            }
+
+            parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
+            return;
+        }
+
         try {
             $shareManager = $this->lookup(serviceName: 'OCP\\Share\\IManager');
             if ($shareManager === null) {
@@ -373,6 +469,23 @@ class SharesProvider extends AbstractIntegrationProvider
             parent::delete(register: $register, schema: $schema, objectId: $objectId, entityId: $entityId);
         }
     }//end delete()
+
+    /**
+     * Coerce a register/schema route param to an int, or null when it is
+     * a slug rather than a numeric id.
+     *
+     * @param string $value Register or schema slug / numeric id.
+     *
+     * @return int|null Numeric id, or null for a slug.
+     */
+    private function numericOrNull(string $value): ?int
+    {
+        if (ctype_digit($value) === true) {
+            return (int) $value;
+        }
+
+        return null;
+    }//end numericOrNull()
 
     /**
      * Provider health descriptor.

@@ -21,15 +21,15 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -38,10 +38,8 @@ namespace OCA\OpenRegister\Service\Archival;
 
 use DateInterval;
 use DateTime;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
-use OCA\OpenRegister\Service\Object\DeleteObject;
 use OCP\BackgroundJob\IJobList;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -79,11 +77,6 @@ class DestructionService
     private const DEFAULT_EXTENSION_PERIOD = 'P1Y';
 
     /**
-     * Default batch size for destruction execution.
-     */
-    private const DEFAULT_BATCH_SIZE = 100;
-
-    /**
      * Object entity mapper.
      *
      * @var MagicMapper
@@ -96,20 +89,6 @@ class DestructionService
      * @var LegalHoldService
      */
     private LegalHoldService $legalHoldService;
-
-    /**
-     * Delete object handler for permanent deletion.
-     *
-     * @var DeleteObject
-     */
-    private DeleteObject $deleteObject;
-
-    /**
-     * Audit trail mapper for logging destruction events.
-     *
-     * @var AuditTrailMapper
-     */
-    private AuditTrailMapper $auditTrailMapper;
 
     /**
      * App configuration.
@@ -144,8 +123,6 @@ class DestructionService
      *
      * @param MagicMapper      $objectMapper     Object entity data mapper.
      * @param LegalHoldService $legalHoldService Legal hold checking service.
-     * @param DeleteObject     $deleteObject     Delete object handler.
-     * @param AuditTrailMapper $auditTrailMapper Audit trail mapper.
      * @param IAppConfig       $appConfig        App configuration.
      * @param IJobList         $jobList          Background job list.
      * @param IUserSession     $userSession      User session service.
@@ -154,8 +131,6 @@ class DestructionService
     public function __construct(
         MagicMapper $objectMapper,
         LegalHoldService $legalHoldService,
-        DeleteObject $deleteObject,
-        AuditTrailMapper $auditTrailMapper,
         IAppConfig $appConfig,
         IJobList $jobList,
         IUserSession $userSession,
@@ -163,8 +138,6 @@ class DestructionService
     ) {
         $this->objectMapper     = $objectMapper;
         $this->legalHoldService = $legalHoldService;
-        $this->deleteObject     = $deleteObject;
-        $this->auditTrailMapper = $auditTrailMapper;
         $this->appConfig        = $appConfig;
         $this->jobList          = $jobList;
         $this->userSession      = $userSession;
@@ -185,8 +158,8 @@ class DestructionService
      *
      * @return array<int, array<string, mixed>> Array of eligible object data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function findEligibleObjects(array $existingListObjectIds=[]): array
     {
@@ -267,8 +240,8 @@ class DestructionService
      *
      * @return array<string, mixed> The created destruction list data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function createDestructionList(array $eligibleObjects): array
     {
@@ -312,27 +285,37 @@ class DestructionService
      * @param array<int, string>    $excludedIds      UUIDs of objects to exclude (for partial approval).
      * @param array<string, string> $exclusionReasons Reasons per excluded object UUID.
      * @param bool                  $requiresDual     Whether two-step approval is required.
+     * @param string|null           $listUuid         UUID of the persisted destruction list; passed to the
+     *                                                execution job so it can reload the list from storage.
      *
      * @return array<string, mixed> The updated destruction list.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function approveList(
         array $destructionList,
         string $action='approve_all',
         array $excludedIds=[],
         array $exclusionReasons=[],
-        bool $requiresDual=false
+        bool $requiresDual=false,
+        ?string $listUuid=null
     ): array {
         $userId = $this->getCurrentUserId();
         $now    = new DateTime();
 
-        // Record the approval.
+        // Record the approval. The `userId` key is CANONICAL: it is the shape
+        // RetentionController writes, and the shape both readers of the approvals
+        // list consume — RetentionService::generateDestructionCertificate() and
+        // DestructionExecutionJob both do array_column($approvals, 'userId'). This
+        // method previously wrote `approvedBy`, so the destruction certificate's
+        // approver list — the legal record of WHO authorised the destruction —
+        // came out empty (openregister#393).
         $destructionList['approvals'][] = [
-            'approvedBy' => $userId,
+            'userId'     => $userId,
             'approvedAt' => $now->format('c'),
             'action'     => $action,
         ];
@@ -364,8 +347,8 @@ class DestructionService
 
         // Check dual approval: second approver must be different from first.
         if ($requiresDual === true && count($destructionList['approvals']) >= 2) {
-            $firstApprover  = $destructionList['approvals'][0]['approvedBy'] ?? null;
-            $secondApprover = $destructionList['approvals'][1]['approvedBy'] ?? null;
+            $firstApprover  = $destructionList['approvals'][0]['userId'] ?? null;
+            $secondApprover = $destructionList['approvals'][1]['userId'] ?? null;
             if ($firstApprover === $secondApprover) {
                 $this->logger->warning(
                     message: '[DestructionService] Same archivist cannot provide both approvals',
@@ -385,12 +368,17 @@ class DestructionService
         $destructionList['status'] = self::STATUS_APPROVED;
 
         // Queue the destruction execution job.
+        //
+        // The job argument key MUST be `destructionListUuid`: DestructionExecutionJob
+        // reads $argument['destructionListUuid'] and returns early when it is absent.
+        // This call previously passed the whole list under the key `destructionList`,
+        // so the job bailed out on every run — objects were never destroyed and no
+        // verklaring van vernietiging was ever produced through the /api/archival
+        // approve route (openregister#393). The job reloads the list from storage by
+        // uuid, which is why the caller must have persisted it first.
         $this->jobList->add(
             \OCA\OpenRegister\BackgroundJob\DestructionExecutionJob::class,
-            [
-                'destructionList' => $destructionList,
-                'approvedBy'      => $userId,
-            ]
+            ['destructionListUuid' => ($listUuid ?? $destructionList['uuid'] ?? null)]
         );
 
         $this->logger->info(
@@ -415,7 +403,7 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function handlePartialApproval(
         array $destructionList,
@@ -466,8 +454,8 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function rejectList(array $destructionList, string $reason): array
     {
@@ -510,215 +498,6 @@ class DestructionService
     }//end rejectList()
 
     /**
-     * Execute destruction for an approved destruction list.
-     *
-     * Permanently deletes objects in batches, re-checking legal holds before each deletion.
-     *
-     * @param array<string, mixed> $destructionList The approved destruction list.
-     * @param string               $approvedBy      The user who approved the list.
-     *
-     * @return array<string, mixed> Execution result with counts and skipped objects.
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple checks per object during destruction
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
-     */
-    public function executeDestruction(array $destructionList, string $approvedBy): array
-    {
-        $destroyed = 0;
-        $skipped   = [];
-        $files     = 0;
-
-        $batchSize = (int) $this->appConfig->getValueString(
-            app: 'openregister',
-            key: 'destruction_batch_size',
-            default: (string) self::DEFAULT_BATCH_SIZE
-        );
-
-        $objects = $destructionList['objects'] ?? [];
-        $batches = array_chunk($objects, $batchSize);
-
-        foreach ($batches as $batch) {
-            foreach ($batch as $objectEntry) {
-                $uuid = $objectEntry['uuid'];
-
-                try {
-                    $object = $this->objectMapper->findByUuid(
-                        $uuid
-                    );
-
-                    // Re-check legal hold before deletion.
-                    if ($this->legalHoldService->hasActiveHold($object) === true) {
-                        $skipped[] = [
-                            'uuid'   => $uuid,
-                            'reason' => 'legal_hold_placed_after_approval',
-                        ];
-                        continue;
-                    }
-
-                    // Permanently delete the object.
-                    $this->deleteObject->delete(
-                        objectEntity: $object,
-                        permanent: true
-                    );
-
-                    $destroyed++;
-                } catch (\Exception $e) {
-                    $this->logger->error(
-                        message: '[DestructionService] Failed to destroy object',
-                        context: [
-                            'file'      => __FILE__,
-                            'line'      => __LINE__,
-                            'uuid'      => $uuid,
-                            'exception' => $e->getMessage(),
-                        ]
-                    );
-                    $skipped[] = [
-                        'uuid'   => $uuid,
-                        'reason' => 'error: '.$e->getMessage(),
-                    ];
-                }//end try
-            }//end foreach
-        }//end foreach
-
-        $result = [
-            'destroyed'      => $destroyed,
-            'skipped'        => $skipped,
-            'skippedCount'   => count($skipped),
-            'filesDestroyed' => $files,
-            'approvedBy'     => $approvedBy,
-            'executedAt'     => (new DateTime())->format('c'),
-        ];
-
-        $this->logger->info(
-            message: '[DestructionService] Destruction execution completed',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'destroyed' => $destroyed,
-                'skipped'   => count($skipped),
-            ]
-        );
-
-        return $result;
-    }//end executeDestruction()
-
-    /**
-     * Generate a destruction certificate (verklaring van vernietiging).
-     *
-     * @param array<string, mixed> $destructionList The completed destruction list.
-     * @param array<string, mixed> $executionResult The execution result data.
-     *
-     * @return array<string, mixed> The destruction certificate data.
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-4
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
-     */
-    public function generateCertificate(array $destructionList, array $executionResult): array
-    {
-        $now = new DateTime();
-
-        // Group destroyed objects by schema and selectielijst category.
-        $groupedBySchema    = [];
-        $groupedByCategorie = [];
-        foreach ($destructionList['objects'] as $objectEntry) {
-            $schema    = $objectEntry['schema'] ?? 'unknown';
-            $categorie = $objectEntry['classificatie'] ?? 'unknown';
-
-            if (isset($groupedBySchema[$schema]) === false) {
-                $groupedBySchema[$schema] = 0;
-            }
-
-            $groupedBySchema[$schema]++;
-
-            if (isset($groupedByCategorie[$categorie]) === false) {
-                $groupedByCategorie[$categorie] = 0;
-            }
-
-            $groupedByCategorie[$categorie]++;
-        }
-
-        $approvers = array_map(
-            static function (array $approval): string {
-                return $approval['approvedBy'] ?? 'unknown';
-            },
-            $destructionList['approvals'] ?? []
-        );
-
-        $certificate = [
-            'type'                   => 'verklaring_van_vernietiging',
-            'destructionDate'        => $now->format('c'),
-            'approvers'              => $approvers,
-            'totalObjectsDestroyed'  => $executionResult['destroyed'] ?? 0,
-            'totalObjectsSkipped'    => $executionResult['skippedCount'] ?? 0,
-            'skippedObjects'         => $executionResult['skipped'] ?? [],
-            'objectsBySchema'        => $groupedBySchema,
-            'objectsBySelectielijst' => $groupedByCategorie,
-            'totalFilesDestroyed'    => $executionResult['filesDestroyed'] ?? 0,
-            'complianceStatement'    => 'Conform Archiefwet 1995 en Archiefbesluit 1995, artikelen 6-8.',
-            'createdAt'              => $now->format('c'),
-            'immutable'              => true,
-        ];
-
-        $this->logger->info(
-            message: '[DestructionService] Destruction certificate generated',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'destroyed' => $certificate['totalObjectsDestroyed'],
-                'skipped'   => $certificate['totalObjectsSkipped'],
-            ]
-        );
-
-        return $certificate;
-    }//end generateCertificate()
-
-    /**
-     * Validate a destruction list for pre-flight checks.
-     *
-     * Scans all objects (and their cascade targets) for legal holds.
-     *
-     * @param array<string, mixed> $destructionList The destruction list to validate.
-     *
-     * @return array<string, mixed> Validation result with warnings and blocked objects.
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     */
-    public function validateDestructionList(array $destructionList): array
-    {
-        $warnings = [];
-        $blocked  = [];
-
-        foreach ($destructionList['objects'] as $objectEntry) {
-            $uuid = $objectEntry['uuid'];
-
-            try {
-                $object = $this->objectMapper->findByUuid($uuid);
-
-                // Check for legal hold.
-                if ($this->legalHoldService->hasActiveHold($object) === true) {
-                    $blocked[] = [
-                        'uuid'   => $uuid,
-                        'reason' => 'active_legal_hold',
-                    ];
-                }
-            } catch (\Exception $e) {
-                $warnings[] = [
-                    'uuid'   => $uuid,
-                    'reason' => 'object_not_found',
-                ];
-            }
-        }
-
-        return [
-            'valid'    => empty($blocked),
-            'warnings' => $warnings,
-            'blocked'  => $blocked,
-        ];
-    }//end validateDestructionList()
-
-    /**
      * Extend the archiefactiedatum for an object by the configured period.
      *
      * @param string $uuid            The object UUID.
@@ -727,7 +506,7 @@ class DestructionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void
     {
@@ -771,7 +550,7 @@ class DestructionService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function getCurrentUserId(): string
     {

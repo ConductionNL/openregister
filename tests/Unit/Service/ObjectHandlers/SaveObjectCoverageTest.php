@@ -211,8 +211,11 @@ class SaveObjectCoverageTest extends TestCase
             $this->propertyRbacHandler,
             $this->createMock(ComputedFieldHandler::class),
             $this->createMock(TranslationHandler::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationProjectionService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
             $this->logger,
             $this->createMock(TmloService::class),
+            $this->createMock(\OCA\OpenRegister\Service\File\FolderManagementHandler::class),
             new ArrayLoader()
         );
 
@@ -1510,22 +1513,50 @@ class SaveObjectCoverageTest extends TestCase
     }
 
     /**
-     * Test setSelfMetadata sets organisation.
+     * Test setSelfMetadata does NOT set organisation when caller has no access.
+     *
+     * SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
+     * has verified membership.  Default mock → hasAccessToOrganisation → false.
      *
      * @return void
      */
     public function testSetSelfMetadataWithOrganisation(): void
     {
-        // Wave-12 Fix 3 / Wave-11 SB1: non-admin callers cannot inject
-        // organisation via @self — the cross-tenant data-injection vector
-        // closed in PR #(this). Test fixture has no IGroupManager so
-        // callerIsAdmin() returns false; organisation is dropped.
-        $entity = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+        // Wave-12 Fix 3 / Wave-11 SB1: non-admin callers cannot inject organisation
+        // via @self — the cross-tenant data-injection vector. The fixture has no
+        // IGroupManager so callerIsAdmin() returns false, and the default
+        // organisationService mock reports no membership, so both arms of the gate
+        // are closed and the organisation is dropped.
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['organisation' => 'org-uuid'];
 
         $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
 
+        // Organisation must NOT be stamped from client input without access verification.
         $this->assertNull($entity->getOrganisation());
+    }
+
+    /**
+     * Test setSelfMetadata sets organisation when caller has verified access.
+     *
+     * SECURITY (wave-11 SB1): When hasAccessToOrganisation returns true the
+     * organisation value IS applied (admin / verified member use case).
+     *
+     * @return void
+     */
+    public function testSetSelfMetadataWithOrganisationWhenCallerHasAccess(): void
+    {
+        $this->organisationService
+            ->method('hasAccessToOrganisation')
+            ->with('org-uuid')
+            ->willReturn(true);
+
+        $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
+        $selfData = ['organisation' => 'org-uuid'];
+
+        $this->invokePrivate('setSelfMetadata', [$entity, $selfData, []]);
+
+        $this->assertSame('org-uuid', $entity->getOrganisation());
     }
 
     /**

@@ -40,9 +40,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="type-select">{{ t('openregister', 'Type') }}</label>
 							<NcSelect
-						input-label="Selected Type"
 								id="type-select"
 								v-model="selectedType"
+								input-label="Selected Type"
 								:options="typeOptions"
 								label="label"
 								track-by="value"
@@ -86,9 +86,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="registers-select">{{ t('openregister', 'Registers') }}</label>
 							<NcSelect
-						input-label="Selected Registers"
 								id="registers-select"
 								v-model="selectedRegisters"
+								input-label="Selected Registers"
 								:options="registerOptions"
 								:loading="loadingRegisters"
 								:multiple="true"
@@ -119,9 +119,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="schemas-select">{{ t('openregister', 'Schemas') }}</label>
 							<NcSelect
-						input-label="Selected Schemas"
 								id="schemas-select"
 								v-model="selectedSchemas"
+								input-label="Selected Schemas"
 								:options="schemaOptions"
 								:loading="loadingSchemas"
 								:multiple="true"
@@ -152,9 +152,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="objects-select">{{ t('openregister', 'Objects') }}</label>
 							<NcSelect
-						input-label="Selected Objects"
 								id="objects-select"
 								v-model="selectedObjects"
+								input-label="Selected Objects"
 								:options="objectOptions"
 								:loading="loadingObjects"
 								:multiple="true"
@@ -188,9 +188,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="sources-select">{{ t('openregister', 'Data Sources') }}</label>
 							<NcSelect
-						input-label="Selected Sources"
 								id="sources-select"
 								v-model="selectedSources"
+								input-label="Selected Sources"
 								:options="sourceOptions"
 								:loading="loadingSources"
 								:multiple="true"
@@ -221,9 +221,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="agents-select">{{ t('openregister', 'Agents') }}</label>
 							<NcSelect
-						input-label="Selected Agents"
 								id="agents-select"
 								v-model="selectedAgents"
+								input-label="Selected Agents"
 								:options="agentOptions"
 								:loading="loadingAgents"
 								:multiple="true"
@@ -254,9 +254,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="views-select">{{ t('openregister', 'Views') }}</label>
 							<NcSelect
-						input-label="Selected Views"
 								id="views-select"
 								v-model="selectedViews"
+								input-label="Selected Views"
 								:options="viewOptions"
 								:loading="loadingViews"
 								:multiple="true"
@@ -287,9 +287,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="managed-applications-select">Applications</label>
 							<NcSelect
-						input-label="Selected Managed Applications"
 								id="managed-applications-select"
 								v-model="selectedManagedApplications"
+								input-label="Selected Managed Applications"
 								:options="applicationOptions"
 								:loading="loadingApplications"
 								:multiple="true"
@@ -330,9 +330,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="source-type-select">Source Type *</label>
 							<NcSelect
-						input-label="Selected Source Type"
 								id="source-type-select"
 								v-model="selectedSourceType"
+								input-label="Selected Source Type"
 								:options="sourceTypeOptions"
 								label="label"
 								track-by="value"
@@ -375,9 +375,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="application-select">Owner Application</label>
 							<NcSelect
-						input-label="Selected Application"
 								id="application-select"
 								v-model="selectedApplication"
+								input-label="Selected Application"
 								:options="applicationOptions"
 								label="name"
 								track-by="id"
@@ -433,9 +433,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<div class="selectField">
 							<label for="notification-groups-select">Notification Groups</label>
 							<NcSelect
-						input-label="Selected Notification Groups"
 								id="notification-groups-select"
 								v-model="selectedNotificationGroups"
+								input-label="Selected Notification Groups"
 								:options="notificationGroupOptions"
 								:multiple="true"
 								label="label"
@@ -707,7 +707,8 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @param value
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		updateTitle(value) {
 			if (!configurationStore.configurationItem) {
@@ -716,6 +717,7 @@ export default {
 			configurationStore.configurationItem.title = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateDescription(value) {
@@ -725,6 +727,7 @@ export default {
 			configurationStore.configurationItem.description = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateVersion(value) {
@@ -734,6 +737,7 @@ export default {
 			configurationStore.configurationItem.version = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding select value to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateType(value) {
@@ -744,6 +748,7 @@ export default {
 			this.selectedType = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApp(value) {
@@ -753,6 +758,7 @@ export default {
 			configurationStore.configurationItem.app = value || ''
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding selected application to configurationStore.configurationItem; UI plumbing.
 		 */
 		updateApplication(value) {
@@ -764,6 +770,7 @@ export default {
 			this.selectedApplication = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected registers to IDs on configurationItem; UI plumbing.
 		 */
 		updateRegisters(value) {
@@ -775,6 +782,7 @@ export default {
 			this.selectedRegisters = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected schemas to IDs on configurationItem; UI plumbing.
 		 */
 		updateSchemas(value) {
@@ -786,6 +794,7 @@ export default {
 			this.selectedSchemas = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected objects to IDs on configurationItem; UI plumbing.
 		 */
 		updateObjects(value) {
@@ -797,6 +806,7 @@ export default {
 			this.selectedObjects = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected sources to IDs on configurationItem; UI plumbing.
 		 */
 		updateSources(value) {
@@ -808,6 +818,7 @@ export default {
 			this.selectedSources = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected agents to IDs on configurationItem; UI plumbing.
 		 */
 		updateAgents(value) {
@@ -819,6 +830,7 @@ export default {
 			this.selectedAgents = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping selected views to IDs on configurationItem; UI plumbing.
 		 */
 		updateViews(value) {
@@ -830,6 +842,7 @@ export default {
 			this.selectedViews = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping managed applications to IDs on configurationItem; UI plumbing.
 		 */
 		updateManagedApplications(value) {
@@ -842,6 +855,7 @@ export default {
 		},
 		// Management tab update methods
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding source-type select to configurationItem; UI plumbing.
 		 */
 		updateSourceType(value) {
@@ -852,6 +866,7 @@ export default {
 			this.selectedSourceType = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateSourceUrl(value) {
@@ -861,6 +876,7 @@ export default {
 			configurationStore.configurationItem.sourceUrl = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateLocalVersion(value) {
@@ -870,6 +886,7 @@ export default {
 			configurationStore.configurationItem.localVersion = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding toggle to configurationItem; UI plumbing.
 		 */
 		updateAutoUpdate(value) {
@@ -879,6 +896,7 @@ export default {
 			configurationStore.configurationItem.autoUpdate = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive multi-select setter mapping notification groups to values on configurationItem; UI plumbing.
 		 */
 		updateNotificationGroups(value) {
@@ -889,6 +907,7 @@ export default {
 			this.selectedNotificationGroups = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubRepo(value) {
@@ -898,6 +917,7 @@ export default {
 			configurationStore.configurationItem.githubRepo = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubBranch(value) {
@@ -907,6 +927,7 @@ export default {
 			configurationStore.configurationItem.githubBranch = value
 		},
 		/**
+		 * @param value
 		 * @spec exclude Reactive form-field setter binding input to configurationItem; UI plumbing.
 		 */
 		updateGithubPath(value) {
@@ -1058,6 +1079,7 @@ export default {
 		},
 		// Search methods with debouncing
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchRegisters(query) {
@@ -1083,6 +1105,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSchemas(query) {
@@ -1108,6 +1131,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch (register/schema-filtered) populating select options; UI search plumbing.
 		 */
 		searchObjects(query) {
@@ -1152,6 +1176,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchSources(query) {
@@ -1177,6 +1202,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchAgents(query) {
@@ -1202,6 +1228,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchViews(query) {
@@ -1227,6 +1254,7 @@ export default {
 			}, 300)
 		},
 		/**
+		 * @param query
 		 * @spec exclude Debounced autocomplete fetch populating select options; UI search plumbing.
 		 */
 		searchApplications(query) {

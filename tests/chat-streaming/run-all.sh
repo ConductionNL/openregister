@@ -11,7 +11,7 @@
 #   3. Newman collection: HTTP contract checks against the live
 #      /api/chat/* endpoints.
 #   4. Playwright e2e: browser-level smoke of the FAB → thinking →
-#      response flow against /apps/openbuilt/.
+#      response flow against /apps/openbuild/.
 #
 # Exit code is the highest non-zero across all four layers. CI runs
 # this; devs can run it locally too.
@@ -34,7 +34,7 @@ BASE_URL=${BASE_URL:-"http://localhost:8080"}
 CONTAINER_NAME=${CONTAINER_NAME:-"nextcloud"}
 PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-"$BASE_URL"}
 OR_DIR=${OR_DIR:-"$(cd "$(dirname "${BASE_SOURCE[0]:-${BASH_SOURCE[0]}}")/../.." && pwd)"}
-OPENBUILT_DIR=${OPENBUILT_DIR:-"$(cd "$OR_DIR/.." && pwd)/openbuilt"}
+OPENBUILD_DIR=${OPENBUILD_DIR:-"$(cd "$OR_DIR/.." && pwd)/openbuild"}
 
 RED=$'\033[0;31m'
 GREEN=$'\033[0;32m'
@@ -131,13 +131,13 @@ fi
 if [ "${SKIP_PLAYWRIGHT:-0}" != "1" ]; then
   section "Playwright — chat companion FAB + streaming flow"
 
-  SPEC="$OPENBUILT_DIR/tests/e2e/chat-companion-streaming.spec.ts"
+  SPEC="$OPENBUILD_DIR/tests/e2e/chat-companion-streaming.spec.ts"
   if [ ! -f "$SPEC" ]; then
     echo "${RED}spec missing: $SPEC${NC}"
     mark_layer "playwright" 2
   else
     (
-      cd "$OPENBUILT_DIR" || exit 2
+      cd "$OPENBUILD_DIR" || exit 2
       PLAYWRIGHT_BASE_URL="$PLAYWRIGHT_BASE_URL" \
         npx playwright test tests/e2e/chat-companion-streaming.spec.ts --reporter=list
     )

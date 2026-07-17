@@ -28,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-deck/tasks.md
+ * @spec openspec/specs/integration-deck/spec.md
  */
 
 declare(strict_types=1);
@@ -118,7 +118,7 @@ class DeckProvider extends AbstractIntegrationProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
      *
-     * @spec openspec/changes/integration-deck/tasks.md
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -145,7 +145,7 @@ class DeckProvider extends AbstractIntegrationProvider
      *
      * @throws Exception When payload is missing required fields.
      *
-     * @spec openspec/changes/integration-deck/tasks.md
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -206,7 +206,7 @@ class DeckProvider extends AbstractIntegrationProvider
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
      *
-     * @spec openspec/changes/integration-deck/tasks.md
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

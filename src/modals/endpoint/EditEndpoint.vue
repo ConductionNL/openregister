@@ -27,14 +27,14 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					required
 					maxlength="255" />
 				<NcSelect
-						input-label="Endpoint Store Endpoint Item Method"
 					v-model="endpointStore.endpointItem.method"
+					input-label="Endpoint Store Endpoint Item Method"
 					:options="methodOptions"
 					:label="t('openregister', 'Method*')"
 					:placeholder="t('openregister', 'Select HTTP method')" />
 				<NcSelect
-						input-label="Endpoint Store Endpoint Item Target Type"
 					v-model="endpointStore.endpointItem.targetType"
+					input-label="Endpoint Store Endpoint Item Target Type"
 					:options="targetTypeOptions"
 					:label="t('openregister', 'Target Type*')"
 					:placeholder="t('openregister', 'Select target type')" />
@@ -107,7 +107,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		saveEndpoint() {
 			if (endpointStore.endpointItem.id) {

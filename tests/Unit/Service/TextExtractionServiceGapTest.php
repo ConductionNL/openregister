@@ -133,6 +133,9 @@ class TextExtractionServiceGapTest extends TestCase
             settingsService: $this->settingsService,
             riskLevelService: $this->riskLevelService,
             emlParser: $this->emlParser,
+            spreadsheetExtractor: new \OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor($this->logger),
+            pdfExtractor: new \OCA\OpenRegister\Service\TextExtraction\PdfExtractor($this->logger),
+            wordExtractor: new \OCA\OpenRegister\Service\TextExtraction\WordExtractor($this->logger),
         );
     }
 

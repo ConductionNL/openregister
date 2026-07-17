@@ -49,6 +49,18 @@ phpqa_output.log
 **/implements *
 **/ALL *
 **/endpoints *
+**/*Analysis*
+!**/*Analysis*.php
+**/*references*
+!**/*references*.php
+!**/*references*/
+**/*encoding*
+!**/*encoding*.php
+**/ter
+**/clearCache*
+**/update*Settings*
+**/rebase*
+**/setup*
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
@@ -59,6 +71,7 @@ test-solr-connection.php
 *.bak2
 *.bak3
 *.orig
+*.backup_*
 
 phpqa/
 
@@ -84,3 +97,5 @@ bom-npm.cdx.json
 tests/e2e/.auth/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
+tests/e2e/.mdm-seed.json
+.hydra

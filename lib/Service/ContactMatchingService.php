@@ -188,7 +188,7 @@ class ContactMatchingService
      *
      * @return array The match results with confidence 1.0
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByEmail(string $email): array
     {
@@ -252,7 +252,7 @@ class ContactMatchingService
      *
      * @return array The match results
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByName(?string $name): array
     {
@@ -316,7 +316,7 @@ class ContactMatchingService
      *
      * @return array The match results with confidence 0.5
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByOrganization(?string $organization): array
     {
@@ -380,7 +380,7 @@ class ContactMatchingService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchContact(
         string $email,
@@ -453,7 +453,7 @@ class ContactMatchingService
      *
      * @return array Associative array of schema title => count
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function getRelatedObjectCounts(array $matches): array
     {
@@ -477,7 +477,7 @@ class ContactMatchingService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function invalidateCache(string $email): void
     {
@@ -501,7 +501,7 @@ class ContactMatchingService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-3
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function invalidateCacheForObject(array $object): void
     {

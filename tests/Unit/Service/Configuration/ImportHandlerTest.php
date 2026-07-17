@@ -153,6 +153,60 @@ class ImportHandlerTest extends TestCase
 
 
     /**
+     * Build an ImportHandler whose appDataPath resolves to a real, deep base
+     * directory under the system temp dir, so importFromFilePath()'s SEC-SVC-7
+     * containment (appDataPath/../../../) yields a normal base dir (not "/").
+     *
+     * A contained config file written at "<base>/config.json" and referenced by
+     * the relative path "config.json" then exercises the legitimate accepted path.
+     *
+     * @return array{0: ImportHandler, 1: string} The handler and its base dir.
+     */
+    private function makeContainedHandler(): array
+    {
+        // <base>/a/b/c is the appDataPath; /../../../ collapses back to <base>.
+        $base        = sys_get_temp_dir().'/or_import_'.uniqid('', true);
+        $appDataPath = $base.'/a/b/c';
+        mkdir($appDataPath, 0777, true);
+
+        $handler = new ImportHandler(
+            schemaMapper:        $this->schemaMapper,
+            registerMapper:      $this->registerMapper,
+            objectEntityMapper:  $this->objectEntityMapper,
+            configurationMapper: $this->configurationMapper,
+            mappingMapper:       $this->mappingMapper,
+            client:              $this->client,
+            appConfig:           $this->appConfig,
+            logger:              $this->logger,
+            appDataPath:         $appDataPath,
+            uploadHandler:       $this->uploadHandler,
+            objectService:       $this->objectService
+        );
+
+        return [$handler, $base];
+
+    }//end makeContainedHandler()
+
+
+    /**
+     * Remove the temporary base directory created by makeContainedHandler().
+     */
+    private function cleanupContainedHandler(string $base): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($base, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $path) {
+            $path->isDir() === true ? rmdir($path->getPathname()) : unlink($path->getPathname());
+        }
+
+        rmdir($base);
+
+    }//end cleanupContainedHandler()
+
+
+    /**
      * Set the integer id on an Entity instance via reflection.
      */
     private function setEntityId(object $entity, int $id): void
@@ -1049,6 +1103,10 @@ class ImportHandlerTest extends TestCase
 
     /**
      * importFromJson() returns empty result when stored version is equal and force is false.
+     *
+     * #426: the fast-skip now requires BOTH an equal-or-older version AND an unchanged
+     * content hash, so the stored hash must match the definitional content for the skip
+     * to fire.
      */
     public function testImportFromJsonSkipsWhenVersionNotNewer(): void
     {
@@ -1057,10 +1115,23 @@ class ImportHandlerTest extends TestCase
             'appId'   => 'myapp',
             'version' => '1.0.0',
         ];
+        // No `components`, so the hash falls back to the whole payload.
+        $contentHash = hash('sha256', json_encode($data));
 
         $this->appConfig->method('getValueString')
-            ->with('openregister', 'imported_config_myapp_version', '')
-            ->willReturn('1.0.0');
+            ->willReturnCallback(function (string $app, string $key, string $default = '') use ($contentHash) {
+                if ($key === 'imported_config_myapp_version') {
+                    return '1.0.0';
+                }
+
+                if ($key === 'imported_config_myapp_hash') {
+                    return $contentHash;
+                }
+
+                return $default;
+            });
+        // The skip path early-returns BEFORE the store, so the version/hash are never written.
+        $this->appConfig->expects($this->never())->method('setValueString');
 
         $result = $this->handler->importFromJson(
             data:          $data,
@@ -1073,6 +1144,56 @@ class ImportHandlerTest extends TestCase
         $this->assertSame([], $result['objects']);
 
     }//end testImportFromJsonSkipsWhenVersionNotNewer()
+
+
+    /**
+     * #426: same app version but changed definitional content must NOT fast-skip — the
+     * stored hash differs, so the import proceeds past the version-only gate (reaching
+     * the per-entity gates and the post-import version/hash store).
+     */
+    public function testImportFromJsonProceedsWhenContentHashDiffers(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $data = [
+            'appId'   => 'myapp',
+            'version' => '1.0.0',
+        ];
+
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(function (string $app, string $key, string $default = '') {
+                if ($key === 'imported_config_myapp_version') {
+                    return '1.0.0';
+                }
+
+                if ($key === 'imported_config_myapp_hash') {
+                    return 'STALE_HASH_THAT_DOES_NOT_MATCH_CURRENT_CONTENT';
+                }
+
+                return $default;
+            });
+
+        $storedHash = false;
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$storedHash) {
+                if (str_ends_with($key, '_hash') === true) {
+                    $storedHash = true;
+                }
+
+                return true;
+            });
+
+        $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            force:         false
+        );
+
+        $this->assertTrue(
+            $storedHash,
+            '#426: a changed content hash must let the import proceed past the version-only gate'
+        );
+
+    }//end testImportFromJsonProceedsWhenContentHashDiffers()
 
 
     /**
@@ -1174,9 +1295,13 @@ class ImportHandlerTest extends TestCase
 
         $this->appConfig->method('getValueString')->willReturn('');
 
-        $this->appConfig->expects($this->once())
-            ->method('setValueString')
-            ->with('openregister', 'imported_config_myapp_version', '1.2.3');
+        // #426: the store now writes BOTH the version and the content hash.
+        $stored = [];
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$stored) {
+                $stored[$key] = $value;
+                return true;
+            });
 
         $data = ['appId' => 'myapp', 'version' => '1.2.3'];
 
@@ -1186,6 +1311,9 @@ class ImportHandlerTest extends TestCase
             appId:         'myapp',
             version:       '1.2.3'
         );
+
+        $this->assertSame('1.2.3', $stored['imported_config_myapp_version'] ?? null);
+        $this->assertArrayHasKey('imported_config_myapp_hash', $stored);
 
     }//end testImportFromJsonStoresVersionInAppConfig()
 
@@ -1197,13 +1325,23 @@ class ImportHandlerTest extends TestCase
     {
         $configuration = $this->makeConfiguration(1);
 
+        // Version 3.0.0 > stored 0.0.0, so the gate proceeds regardless of hash.
         $this->appConfig->method('getValueString')
-            ->with('openregister', 'imported_config_extracted-app_version', '')
-            ->willReturn('0.0.0');
+            ->willReturnCallback(function (string $app, string $key, string $default = '') {
+                if ($key === 'imported_config_extracted-app_version') {
+                    return '0.0.0';
+                }
 
-        $this->appConfig->expects($this->once())
-            ->method('setValueString')
-            ->with('openregister', 'imported_config_extracted-app_version', '3.0.0');
+                return $default;
+            });
+
+        // #426: the store writes both the version and the content hash.
+        $stored = [];
+        $this->appConfig->method('setValueString')
+            ->willReturnCallback(function (string $app, string $key, string $value) use (&$stored) {
+                $stored[$key] = $value;
+                return true;
+            });
 
         $data = [
             'appId'   => 'extracted-app',
@@ -1217,6 +1355,7 @@ class ImportHandlerTest extends TestCase
         );
 
         $this->assertIsArray($result);
+        $this->assertSame('3.0.0', $stored['imported_config_extracted-app_version'] ?? null);
 
     }//end testImportFromJsonExtractsAppIdAndVersionFromData()
 
@@ -1862,10 +2001,15 @@ class ImportHandlerTest extends TestCase
      */
     public function testImportFromFilePathInjectsSourceMetadata(): void
     {
-        // Write valid JSON to a temp file.
-        // Include 'description' to avoid PHP undefined array key warning in ImportHandler::importFromApp (line 2188).
-        $tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_or_');
-        file_put_contents($tmpFile, json_encode(['description' => 'test config', 'components' => []]));
+        // SEC-SVC-7: importFromFilePath now contains the resolved file inside the
+        // Nextcloud root (appDataPath/../../../). Use a realistic deep appDataPath
+        // and a config file that lives *under* the resulting base directory, so
+        // the fixture exercises the legitimate contained-path branch (a real
+        // relative config path is accepted; only traversal/out-of-base is denied).
+        [$handler, $base] = $this->makeContainedHandler();
+
+        // Include 'description' to avoid PHP undefined array key warning in ImportHandler::importFromApp.
+        file_put_contents($base.'/config.json', json_encode(['description' => 'test config', 'components' => []]));
 
         // Arrange: configuration mapper returns nothing for insert.
         $config = $this->makeConfiguration(1, 'myapp', '1.0.0');
@@ -1880,17 +2024,16 @@ class ImportHandlerTest extends TestCase
 
         // We cannot easily assert what data importFromApp received without deep mocking,
         // but we can verify the call chain completes without error.
-        $relativePath = ltrim($tmpFile, '/');
-        $result = $this->handler->importFromFilePath(
+        $result = $handler->importFromFilePath(
             appId:    'myapp',
-            filePath: $relativePath,
+            filePath: 'config.json',
             version:  '1.0.0'
         );
 
         $this->assertIsArray($result);
         $this->assertArrayHasKey('registers', $result);
 
-        unlink($tmpFile);
+        $this->cleanupContainedHandler($base);
 
     }//end testImportFromFilePathInjectsSourceMetadata()
 
@@ -2011,6 +2154,111 @@ class ImportHandlerTest extends TestCase
         $this->assertCount(1, $result['objects']);
 
     }//end testImportFromJsonCreatesNewObjectWhenNotExisting()
+
+
+    /**
+     * Phase-0 regression: installer-time seed objects MUST be saved with
+     * `_rbac: false` and `_multitenancy: false`. Import runs in the repair/CLI
+     * context with no user session ('Anonymous'); without the bypass, seed
+     * objects on RBAC-guarded schemas abort the whole import.
+     */
+    public function testImportFromJsonSeedsNewObjectWithRbacBypass(): void
+    {
+        $configuration = $this->makeConfiguration(1);
+        $schema        = $this->makeSchema(10, 'person');
+        $register      = $this->makeRegister(20, 'registry');
+
+        $this->appConfig->method('getValueString')->willReturn('');
+        $this->appConfig->method('setValueString')->willReturn(true);
+
+        $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->schemaMapper->method('createFromArray')->willReturn($schema);
+        $this->schemaMapper->method('update')->willReturn($schema);
+        $this->schemaMapper->method('updateFromArray')->willReturn($schema);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('not found'));
+        $this->registerMapper->method('createFromArray')->willReturn($register);
+        $this->registerMapper->method('update')->willReturn($register);
+
+        // searchObjects must also bypass RBAC/multitenancy so existing seed
+        // objects are found regardless of organisation context. Capture the
+        // resolved positional args and assert _rbac/_multitenancy are false.
+        $searchRbac = null;
+        $searchMt   = null;
+        $this->objectService->expects($this->atLeastOnce())
+            ->method('searchObjects')
+            ->willReturnCallback(
+                function (array $query, bool $_rbac=true, bool $_multitenancy=true) use (&$searchRbac, &$searchMt) {
+                    $searchRbac = $_rbac;
+                    $searchMt   = $_multitenancy;
+                    return [];
+                }
+            );
+
+        $savedObject = new ObjectEntity();
+        $this->setEntityId($savedObject, 100);
+
+        // The seed saveObject() call MUST carry _rbac: false and _multitenancy: false.
+        $saveRbac = null;
+        $saveMt   = null;
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturnCallback(
+                function (
+                    $object,
+                    $extend=[],
+                    $register=null,
+                    $schema=null,
+                    $uuid=null,
+                    bool $_rbac=true,
+                    bool $_multitenancy=true
+                ) use (&$saveRbac, &$saveMt, $savedObject) {
+                    $saveRbac = $_rbac;
+                    $saveMt   = $_multitenancy;
+                    return $savedObject;
+                }
+            );
+
+        $data = [
+            'appId'      => 'myapp',
+            'version'    => '1.0.0',
+            'components' => [
+                'schemas'   => [
+                    'person' => ['slug' => 'person', 'title' => 'Person', 'version' => '1.0.0'],
+                ],
+                'registers' => [
+                    'registry' => ['slug' => 'registry', 'title' => 'Registry', 'version' => '1.0.0'],
+                ],
+                'objects' => [
+                    [
+                        '@self' => [
+                            'register' => 'registry',
+                            'schema'   => 'person',
+                            'slug'     => 'john-doe',
+                            'version'  => '1.0.0',
+                        ],
+                        'name' => 'John Doe',
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->handler->importFromJson(
+            data:          $data,
+            configuration: $configuration,
+            version:       '1.0.0'
+        );
+
+        $this->assertCount(1, $result['objects']);
+        $this->assertFalse($saveRbac, 'Seed saveObject() must run with _rbac: false.');
+        $this->assertFalse($saveMt, 'Seed saveObject() must run with _multitenancy: false.');
+        $this->assertFalse($searchRbac, 'Seed searchObjects() must run with _rbac: false.');
+        $this->assertFalse($searchMt, 'Seed searchObjects() must run with _multitenancy: false.');
+
+    }//end testImportFromJsonSeedsNewObjectWithRbacBypass()
 
 
     /**
@@ -5955,7 +6203,9 @@ class ImportHandlerTest extends TestCase
         $this->objectEntityMapper->method('insert')
             ->willThrowException(new Exception('Insert failed'));
 
-        $this->logger->expects($this->atLeastOnce())->method('error');
+        // Per-entity-resilience: a failing seed object is skipped with a WARNING
+        // (not an error) and the import continues.
+        $this->logger->expects($this->atLeastOnce())->method('warning');
 
         $data = [
             'appId'   => 'myapp',
@@ -5984,6 +6234,8 @@ class ImportHandlerTest extends TestCase
         );
 
         $this->assertIsArray($result);
+        // The failing seed object is counted as skipped for observability.
+        $this->assertSame(1, $result['skipped']['seedObjects']);
 
     }//end testImportSeedDataContinuesWhenInsertThrows()
 
@@ -6128,16 +6380,18 @@ class ImportHandlerTest extends TestCase
      */
     public function testImportFromFilePathDoesNotOverwriteExistingSourceMetadata(): void
     {
-        // Write valid JSON with existing x-openregister metadata.
-        $tmpFile = tempnam(sys_get_temp_dir(), 'phpunit_or_');
-        $data    = [
+        // SEC-SVC-7: contained relative path under the Nextcloud root (see
+        // testImportFromFilePathInjectsSourceMetadata for the containment note).
+        [$handler, $base] = $this->makeContainedHandler();
+
+        $data = [
             'description'    => 'test config',
             'x-openregister' => [
                 'sourceUrl'  => 'https://existing.com/config.json',
                 'sourceType' => 'github',
             ],
         ];
-        file_put_contents($tmpFile, json_encode($data));
+        file_put_contents($base.'/config.json', json_encode($data));
 
         $config = $this->makeConfiguration(1, 'myapp', '1.0.0');
 
@@ -6148,16 +6402,15 @@ class ImportHandlerTest extends TestCase
         $this->appConfig->method('setValueString')->willReturn(true);
         $this->schemaMapper->method('getSlugToIdMap')->willReturn([]);
 
-        $relativePath = ltrim($tmpFile, '/');
-        $result       = $this->handler->importFromFilePath(
+        $result = $handler->importFromFilePath(
             appId:    'myapp',
-            filePath: $relativePath,
+            filePath: 'config.json',
             version:  '1.0.0'
         );
 
         $this->assertIsArray($result);
 
-        unlink($tmpFile);
+        $this->cleanupContainedHandler($base);
 
     }//end testImportFromFilePathDoesNotOverwriteExistingSourceMetadata()
 

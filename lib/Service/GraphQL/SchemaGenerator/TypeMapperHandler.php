@@ -8,14 +8,14 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
- * @author   Conduction B.V. <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @author    Conduction B.V. <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+ * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
@@ -183,7 +183,7 @@ class TypeMapperHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
      */
     public function resetCache(): void
     {
@@ -203,7 +203,7 @@ class TypeMapperHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
      */
     public function setScalars(array $scalars): void
     {
@@ -218,7 +218,7 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -271,7 +271,7 @@ class TypeMapperHandler
      *
      * @return Type The GraphQL input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-3
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -320,7 +320,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The filter input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getFilterInputType(RegisterSchema $schema): InputObjectType
     {
@@ -381,7 +381,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The create input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -439,7 +439,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The update input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getUpdateInputType(RegisterSchema $schema): InputObjectType
     {
@@ -480,7 +480,7 @@ class TypeMapperHandler
      *
      * @return array<string, Type|array<string,mixed>> The input fields
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function buildInputFields(RegisterSchema $schema): array
     {
@@ -509,7 +509,7 @@ class TypeMapperHandler
      *
      * @return ObjectType The connection type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getConnectionType(RegisterSchema $schema, ObjectType $objectType): ObjectType
     {
@@ -562,7 +562,7 @@ class TypeMapperHandler
      *
      * @return ObjectType The GroupBucket type.
      *
-     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getGroupBucketType(): ObjectType
     {
@@ -590,7 +590,7 @@ class TypeMapperHandler
      *
      * @return EnumType The TimeInterval enum.
      *
-     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getTimeIntervalType(): EnumType
     {
@@ -623,7 +623,7 @@ class TypeMapperHandler
      *
      * @return EnumType The AggregationMetric enum.
      *
-     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getAggregationMetricType(): EnumType
     {
@@ -654,7 +654,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The GroupByInput type.
      *
-     * @spec openspec/changes/add-time-bucket-aggregation/specs/graphql-api/spec.md
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getGroupByInputType(): InputObjectType
     {
@@ -705,7 +705,7 @@ class TypeMapperHandler
      *
      * @return ObjectType The PageInfo type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-5
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function getPageInfoType(): ObjectType
     {
@@ -734,7 +734,7 @@ class TypeMapperHandler
      *
      * @return ObjectType The AuditTrail type
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function getAuditTrailType(): ObjectType
     {
@@ -770,7 +770,7 @@ class TypeMapperHandler
      *
      * @return array<string, array<string, mixed>> The argument definitions
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
      */
     public function getListArgs(RegisterSchema $schema): array
     {
@@ -800,7 +800,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The sort input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function getSortInputType(): InputObjectType
     {
@@ -831,7 +831,7 @@ class TypeMapperHandler
      *
      * @return InputObjectType The self-filter input type
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-4
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function getSelfFilterType(): InputObjectType
     {
@@ -863,7 +863,7 @@ class TypeMapperHandler
      *
      * @return array<string, string> Map of property name to auth description
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-6
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

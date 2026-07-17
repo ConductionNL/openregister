@@ -60,7 +60,18 @@ export default defineConfig({
 		// PR pipelines don't reshoot screenshots on every push.
 		{
 			name: 'chromium',
-			testIgnore: ['**/docs-screenshots.spec.ts'],
+			// NOTE: a project-level testIgnore REPLACES the top-level
+			// testIgnore for this project (Playwright does not merge them),
+			// so the api-direct exclusion must be repeated here. These
+			// specs are API/contract assertions covered by the Newman suite
+			// (tests/integration/*.postman_collection.json), not UI tests —
+			// gate-19: API-direct → Newman.
+			testIgnore: [
+				'**/docs-screenshots.spec.ts',
+				'**/api-direct/**',
+				// Visual specs run only under the opt-in `visual` project.
+				'**/visual/**',
+			],
 			use: { ...devices['Desktop Chrome'] },
 		},
 		// Documentation capture project (ADR-030 / journeydoc). Opt-in:
@@ -76,11 +87,34 @@ export default defineConfig({
 			},
 			timeout: 90_000,
 		},
+		// Visual-regression project (GAP-5). Opt-in / non-gating:
+		//   npx playwright test --project visual
+		//   npx playwright test --project visual --update-snapshots  (rebaseline)
+		// Fixed viewport + authenticated session => deterministic shots.
+		// Baselines live in tests/e2e/visual/*-snapshots/ and ARE committed.
+		// PLATFORM CAVEAT: PNG baselines are host-font/GPU specific, so a CI
+		// Linux runner will not byte-match a dev-container baseline; the visual
+		// project must regenerate its baselines in-CI on first run before it
+		// can gate. See tests/e2e/visual/_visual-helpers.ts.
+		{
+			name: 'visual',
+			testMatch: /visual\/.*\.visual\.spec\.ts$/,
+			use: {
+				...devices['Desktop Chrome'],
+				viewport: { width: 1280, height: 800 },
+				storageState: path.resolve(__dirname, 'tests/e2e/.auth/admin.json'),
+			},
+			timeout: 90_000,
+		},
 	],
 
 	testIgnore: [
 		'**/node_modules/**',
 		'**/custom_apps/**',
 		'**/.claude/**',
+		// API-direct specs are API/contract assertions (Newman-equivalent),
+		// not real UI-driving Playwright tests. They live here for reference
+		// but are excluded from the UI test run (gate-19: API-direct → Newman).
+		'**/api-direct/**',
 	],
 })

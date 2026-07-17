@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-bookmarks/tasks.md
+ * @spec openspec/specs/integration-bookmarks/spec.md
  */
 
 declare(strict_types=1);
@@ -119,7 +119,7 @@ class BookmarksProvider extends AbstractIntegrationProvider
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/filters
      *     are part of the IntegrationProvider::list() contract.
      *
-     * @spec openspec/changes/integration-bookmarks/tasks.md
+     * @spec openspec/specs/integration-bookmarks/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

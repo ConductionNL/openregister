@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -23,6 +23,7 @@ use finfo;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Service\FileService;
+use OCA\OpenRegister\Service\SecurityService;
 use OCP\Files\File;
 use Psr\Log\LoggerInterface;
 
@@ -56,7 +57,7 @@ class FilePropertyHandler
      * @param LoggerInterface $logger      Logger for logging operations
      * @param FileService     $fileService File service for file operations
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -89,7 +90,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file reading fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function processUploadedFiles(array $uploadedFiles, array $data): array
     {
@@ -111,7 +112,13 @@ class FilePropertyHandler
                 continue;
             }
 
-            // Read file content.
+            // Read file content. Check readability first so an absent/unreadable
+            // tmp path throws our clear exception instead of leaking a
+            // file_get_contents() warning before returning false.
+            if (is_readable((string) ($fileInfo['tmp_name'] ?? '')) === false) {
+                throw new Exception("Failed to read uploaded file for field '$fieldName'");
+            }
+
             $fileContent = file_get_contents($fileInfo['tmp_name']);
             if ($fileContent === false) {
                 throw new Exception("Failed to read uploaded file for field '$fieldName'");
@@ -168,7 +175,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many conditional paths for different file input formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file type detection requires checking many formats
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function isFileProperty($value, ?Schema $schema=null, ?string $propertyName=null): bool
     {
@@ -313,7 +320,7 @@ class FilePropertyHandler
      * @psalm-return   bool
      * @phpstan-return bool
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function isFileObject(array $value): bool
     {
@@ -370,7 +377,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function generateFileName(
         string $propertyName,
@@ -408,7 +415,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $index kept for API consistency with other methods
      * @psalm-suppress                                UnusedParam $index kept for API consistency and future use
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function prepareAutoTags(
         array $fileConfig,
@@ -464,7 +471,7 @@ class FilePropertyHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional branches for file property processing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file property handling requires many steps
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function handleFileProperty(
         ObjectEntity $objectEntity,
@@ -494,14 +501,28 @@ class FilePropertyHandler
             throw new Exception("Property '$propertyName' is not configured as a file property");
         }
 
-        // Merge schema-level autoPublish setting if not set at property level.
-        // Schema configuration.autoPublish serves as a default for all file properties.
-        if (isset($fileConfig['autoPublish']) === false) {
+        // Merge schema-level autoShare setting if not set at property level.
+        // Schema configuration.autoShare serves as a default for all file properties:
+        // when true, an NC share is automatically created for each uploaded file.
+        if (isset($fileConfig['autoShare']) === false) {
             $schemaConfig = $schema->getConfiguration() ?? [];
-            if (isset($schemaConfig['autoPublish']) === true) {
-                $fileConfig['autoPublish'] = $schemaConfig['autoPublish'];
+            if (isset($schemaConfig['autoShare']) === true) {
+                $fileConfig['autoShare'] = $schemaConfig['autoShare'];
+            } else if (isset($schemaConfig['autoPublish']) === true) {
+                // DEPRECATED: autoPublish was renamed to autoShare in 2026.
+                // Log a one-time deprecation warning and do NOT act on the legacy value.
+                $this->logger->warning(
+                    message: "[FilePropertyHandler] Schema config key 'autoPublish' is deprecated and ignored; "
+                        ."rename it to 'autoShare' to keep auto-sharing uploaded files.",
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'app'      => 'openregister',
+                        'schemaId' => $schema->getId(),
+                    ]
+                );
             }
-        }
+        }//end if
 
         // Handle file deletion: null for single files, empty array for array properties.
         if ($fileValue === null || (is_array($fileValue) === true && empty($fileValue) === true)) {
@@ -679,7 +700,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file validation fails or file operations fail.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function processSingleFileProperty(
         ObjectEntity $objectEntity,
@@ -746,7 +767,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function processStringFileInput(
         ObjectEntity $objectEntity,
@@ -791,14 +812,14 @@ class FilePropertyHandler
             index: $index
         );
 
-        $autoPublish = $fileConfig['autoPublish'] ?? false;
+        $autoShare = $fileConfig['autoShare'] ?? false;
 
         // Create the file using FileService.
         $file = $this->fileService->addFile(
             objectEntity: $objectEntity,
             fileName: $filename,
             content: $fileData['content'],
-            share: $autoPublish,
+            share: $autoShare,
             tags: $autoTags
         );
 
@@ -832,7 +853,7 @@ class FilePropertyHandler
      *
      * @throws Exception If file processing fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function processFileObjectInput(
         ObjectEntity $objectEntity,
@@ -911,19 +932,27 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function fetchFileFromUrl(string $url): string
     {
+        // SEC-SVC-2: validate the user-supplied URL against the shared anti-SSRF guard
+        // BEFORE issuing any request. This rejects non-http(s) schemes and any host that
+        // resolves to a loopback / private / reserved address (e.g. cloud metadata,
+        // localhost, RFC-1918), closing the full read-SSRF on this object-write path.
+        SecurityService::assertSafeFetchUrl($url);
+
         // Create a context with appropriate options.
+        // SEC-SVC-2: redirects are DISABLED — follow_location would let a public URL
+        // 302-redirect to an internal address, defeating the point-in-time guard above.
         $context = stream_context_create(
             [
                 'http' => [
                     'timeout'         => 30,
             // 30 second timeout.
                     'user_agent'      => 'OpenRegister/1.0',
-                    'follow_location' => true,
-                    'max_redirects'   => 5,
+                    'follow_location' => false,
+                    'max_redirects'   => 0,
                 ],
             ]
         );
@@ -956,7 +985,7 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function parseFileDataFromUrl(string $url, string $content): array
     {
@@ -1002,7 +1031,7 @@ class FilePropertyHandler
      * @psalm-return   array{content: string, mimeType: string, extension: string, size: int<0, max>}
      * @phpstan-return array{content: string, mimeType: string, extension: string, size: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function parseFileData(string $fileContent): array
     {
@@ -1077,7 +1106,7 @@ class FilePropertyHandler
      *
      * @throws Exception If validation fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function validateFileAgainstConfig(
         array $fileData,
@@ -1141,7 +1170,7 @@ class FilePropertyHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple security checks for executable detection
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function blockExecutableFiles(array $fileData, string $errorPrefix): void
     {
@@ -1218,7 +1247,7 @@ class FilePropertyHandler
      *
      * @throws Exception If executable magic bytes are detected.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function detectExecutableMagicBytes(string $content, string $errorPrefix): void
     {
@@ -1288,7 +1317,7 @@ class FilePropertyHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function getExtensionFromMimeType(string $mimeType): string
     {
@@ -1365,7 +1394,7 @@ class FilePropertyHandler
      *     'xml', 'json', 'sql', 'exe', 'dmg', 'iso', 'deb', 'rpm'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function getCommonFileExtensions(): array
     {
@@ -1445,7 +1474,7 @@ class FilePropertyHandler
      *     'out', 'o', 'so', 'dylib'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function getDangerousExecutableExtensions(): array
     {
@@ -1530,7 +1559,7 @@ class FilePropertyHandler
      *     'application/x-python-code', 'application/java-archive'}
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-13
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function getExecutableMimeTypes(): array
     {

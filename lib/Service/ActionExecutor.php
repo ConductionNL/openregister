@@ -19,11 +19,11 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -85,7 +85,7 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     public function executeActions(array $actions, Event $event, array $payload, string $eventType): void
     {
@@ -117,7 +117,7 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     private function executeSingleAction(Action $action, Event $event, array $payload, string $eventType): void
     {
@@ -147,7 +147,10 @@ class ActionExecutor
                         $cloudEventPayload,
                         $action->getTimeout()
                     );
-                    $response = ($result instanceof WorkflowResult) ? $result->toArray() : (array) $result;
+                    $response = (array) $result;
+                    if ($result instanceof WorkflowResult) {
+                        $response = $result->toArray();
+                    }
                 } catch (Exception $e) {
                     $status = 'failure';
                     $error  = $e->getMessage();
@@ -212,7 +215,7 @@ class ActionExecutor
      *
      * @return array The CloudEvent-formatted payload
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
+     * @spec openspec/specs/actions/spec.md
      */
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {
@@ -244,7 +247,7 @@ class ActionExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     private function processWorkflowResult(WorkflowResult $result, Action $action, Event $event): void
     {
@@ -278,7 +281,7 @@ class ActionExecutor
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-3
+     * @spec openspec/specs/actions/spec.md
      */
     private function handleFailure(Action $action, array $payload, string $error): void
     {
@@ -319,7 +322,7 @@ class ActionExecutor
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Log entries require many fields
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     private function createLogEntry(
         Action $action,

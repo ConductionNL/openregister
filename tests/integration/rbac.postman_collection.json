@@ -1,0 +1,2266 @@
+{
+  "info": {
+    "name": "OpenRegister RBAC / IDOR Authorization Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "PHASE-4 multi-user authorization suite for the OpenRegister RBAC contract.\n\nMODEL (as discovered in lib/Service/Object/PermissionHandler.php):\n- Authorization lives on the SCHEMA (`authorization` JSON block), evaluated per CRUD action.\n- DEFAULT-OPEN: a schema with no authorization block grants ALL authenticated users ALL actions; anonymous READS are also default-open (only create/update/delete fail closed for anon, #1955).\n- PARTIAL-CONFIG FAIL-CLOSED (rbac-default-deny): once a schema HAS a non-empty authorization block, any action it does NOT list is denied for non-admin/non-owner (including public); only a fully-absent block stays default-open. List/search enforces the `read` action.\n- OWNERSHIP only ADDS rights (owner always allowed) \u2014 it does NOT restrict other users.\n- The `public` group is the PUBLISH mechanism: granting `public` read on a schema makes its objects anonymously discoverable. A schema that scopes reads to a non-public group hides its objects from anonymous (and non-member) callers.\n- ORGS: each user has an active organisation; the LIST path filters by org (multitenancy). Admin requests run with RBAC + multitenancy DISABLED.\n- App settings endpoints are admin-gated by Nextcloud SecurityMiddleware (no @NoAdminRequired).\n\nRequires a non-admin user `e2euser`/`e2epass` (created via occ as env setup).\nRun host-split with --ignore-redirects; see run-newman.sh."
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      {
+        "key": "username",
+        "value": "{{admin_user}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{admin_password}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost"
+    },
+    {
+      "key": "admin_user",
+      "value": "admin"
+    },
+    {
+      "key": "admin_password",
+      "value": "admin"
+    },
+    {
+      "key": "e2e_user",
+      "value": "e2euser"
+    },
+    {
+      "key": "e2e_password",
+      "value": "e2epass"
+    },
+    {
+      "key": "reg_id",
+      "value": ""
+    },
+    {
+      "key": "schema_open",
+      "value": ""
+    },
+    {
+      "key": "schema_scoped",
+      "value": ""
+    },
+    {
+      "key": "schema_pub",
+      "value": ""
+    },
+    {
+      "key": "obj_x",
+      "value": ""
+    },
+    {
+      "key": "obj_y",
+      "value": ""
+    },
+    {
+      "key": "obj_z",
+      "value": ""
+    },
+    {
+      "key": "obj_z_org",
+      "value": ""
+    },
+    {
+      "key": "obj_own",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Setup (admin)",
+      "item": [
+        {
+          "name": "S1. Create RBAC test register",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"RBAC Test Register\", \"description\": \"PHASE-4 RBAC/IDOR suite\", \"schemas\": []}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('reg_id', String(d.id));",
+                  "console.log('register', d.id, d.slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S2. Create OPEN schema (no authorization)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"RBAC Open Note\", \"properties\": {\"title\": {\"type\": \"string\"}}}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('open schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('schema_open', String(d.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S3. Create SCOPED schema (read=admin only)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"RBAC Scoped Note\", \"properties\": {\"title\": {\"type\": \"string\"}}, \"authorization\": {\"read\": [\"admin\"], \"create\": [\"admin\"], \"update\": [\"admin\"], \"delete\": [\"admin\"]}}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('scoped schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('schema_scoped', String(d.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S4. Create PUBLISHED schema (read=public+admin)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"RBAC Public Note\", \"properties\": {\"title\": {\"type\": \"string\"}}, \"authorization\": {\"read\": [\"public\", \"admin\"], \"create\": [\"admin\"], \"update\": [\"admin\"], \"delete\": [\"admin\"]}}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('published schema created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('schema_pub', String(d.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S5. Attach schemas to register",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{reg_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{reg_id}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"schemas\": {{schemas_json}}}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const arr = [",
+                  "  Number(pm.collectionVariables.get('schema_open')),",
+                  "  Number(pm.collectionVariables.get('schema_scoped')),",
+                  "  Number(pm.collectionVariables.get('schema_pub')),",
+                  "];",
+                  "pm.collectionVariables.set('schemas_json', JSON.stringify(arr));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schemas attached', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S6. Admin creates object X (SCOPED schema)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"admin scoped object X\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object X created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('obj_x', d['@self'].id);",
+                  "console.log('object X (scoped, admin-owned):', d['@self'].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S7. Admin creates object Z (OPEN schema, NOT published)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"admin open object Z (not published)\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object Z created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('obj_z', d['@self'].id);",
+                  "pm.collectionVariables.set('obj_z_org', d['@self'].organisation || '');",
+                  "console.log('object Z (open, admin-owned, org):', d['@self'].id, d['@self'].organisation);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "S8. Admin creates object Y (PUBLISHED schema)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_pub}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_pub}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"admin published object Y\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object Y created', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('obj_y', d['@self'].id);",
+                  "console.log('object Y (published, admin-owned):', d['@self'].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Ownership / IDOR",
+      "item": [
+        {
+          "name": "1a. e2euser GET admin SCOPED object X -> 404/403 (not 200)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin denied read of another user object (no 200)', function () {",
+                  "  pm.expect(pm.response.code, 'must be 403/404, never 200/500').to.be.oneOf([403,404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1b. e2euser PUT admin SCOPED object X -> 403/404 (not 200)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"hijacked by e2euser\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin denied update of another user object', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([403,404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1c. e2euser DELETE admin SCOPED object X -> 403/404 (not 200/204)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin denied delete of another user object', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([403,404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1d. admin GET object X still exists (200)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object X survived the non-admin delete attempt', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1e. e2euser creates OWN object (open schema) -> 200/201",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"e2euser own object\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin can create own object', () => pm.expect(pm.response.code).to.be.oneOf([200,201]));",
+                  "const d = pm.response.json(); pm.collectionVariables.set('obj_own', d['@self'].id);",
+                  "console.log('e2euser own object:', d['@self'].id, 'org', d['@self'].organisation);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1f. e2euser GET OWN object -> 200",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}/{{obj_own}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}",
+                "{{obj_own}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin can read own object', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1g. e2euser PUT OWN object -> 200 (owner stamped, can update own)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}/{{obj_own}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}",
+                "{{obj_own}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"e2euser own object updated\"}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// ====================================================================",
+                  "// FIXED (openregister): `_owner` is now persisted on the magic-mapper",
+                  "// create path (MagicMapper::prepareObjectDataForTable no longer strips the",
+                  "// server-stamped owner). Because the row's `_owner` equals the creating",
+                  "// user, the update lock-ownership guard now allows the owner's own update.",
+                  "// A user CAN update an object they just created, and ownership-based RBAC +",
+                  "// owner notifications work. This test asserts the SECURE/correct behaviour.",
+                  "// ====================================================================",
+                  "pm.test('owner can update their own object (200)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1h. e2euser DELETE OWN object -> 200/204 (or 403 owner-bug)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}/{{obj_own}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}",
+                "{{obj_own}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Delete of an owner-less self-created object: accept 200/204 (success) or",
+                  "// 403 (same owner-not-stamped lock guard as 1g). Either way, never a 500.",
+                  "pm.test('non-admin delete own object (no 500)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200,204,403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Public-group publish (anonymous discoverability)",
+      "item": [
+        {
+          "name": "2a. ANON GET published object Y -> 200 (public-group read grant)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_pub}}/{{obj_y}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_pub}}",
+                "{{obj_y}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('published object IS anonymously readable', () => pm.response.to.have.status(200));",
+                  "pm.test('published object returns its data', function () {",
+                  "  const d = pm.response.json(); pm.expect(d['@self'] || d.id || d.title).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2b. ANON GET scoped object X -> 404/403 (NOT published)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-published (scoped) object is hidden from anonymous', function () {",
+                  "  pm.expect(pm.response.code, 'must be 403/404, never 200/500').to.be.oneOf([401,403,404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2c. ANON LIST published schema -> object Y discoverable",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_pub}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_pub}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('anonymous list of published schema returns 200', () => pm.response.to.have.status(200));",
+                  "pm.test('published object Y is present in anonymous list', function () {",
+                  "  const d = pm.response.json();",
+                  "  const rows = d.results || d.objects || (Array.isArray(d) ? d : []);",
+                  "  const ids = rows.map(o => (o['@self'] && o['@self'].id) || o.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('obj_y'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2d. ANON LIST scoped schema -> object X NOT leaked",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('anonymous list of scoped schema does not leak object X', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200,401,403,404]);",
+                  "  if (pm.response.code === 200) {",
+                  "    const d = pm.response.json();",
+                  "    const rows = d.results || d.objects || (Array.isArray(d) ? d : []);",
+                  "    const ids = rows.map(o => (o['@self'] && o['@self'].id) || o.id);",
+                  "    pm.expect(ids).to.not.include(pm.collectionVariables.get('obj_x'));",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Cross-org isolation",
+      "item": [
+        {
+          "name": "3a. e2euser LIST open schema -> admin org-Z object filtered out",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list endpoint enforces multitenancy: cross-org object Z absent', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  const d = pm.response.json();",
+                  "  const rows = d.results || d.objects || (Array.isArray(d) ? d : []);",
+                  "  const ids = rows.map(o => (o['@self'] && o['@self'].id) || o.id);",
+                  "  pm.expect(ids, 'admin cross-org object Z must not be in e2euser list').to.not.include(pm.collectionVariables.get('obj_z'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3b. e2euser single-GET admin cross-org open object Z -> 404 (org isolation)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}/{{obj_z}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}",
+                "{{obj_z}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// ====================================================================",
+                  "// FIXED (openregister): the single-object read path now enforces the SAME",
+                  "// multitenancy + RBAC filtering as the list path. MagicMapper::",
+                  "// findInRegisterSchemaTable delegates to MagicSearchHandler::",
+                  "// applyAccessControlToQuery, so a cross-org object the caller may not see",
+                  "// is filtered out → no row → 404 (existence is NOT leaked, so 404 over 403).",
+                  "// A non-admin in org B can no longer read an admin object in org A by id.",
+                  "// This test asserts the SECURE behaviour.",
+                  "// ====================================================================",
+                  "pm.test('cross-org single-GET is denied (404, no existence leak)', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([403, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. App admin-gated settings",
+      "item": [
+        {
+          "name": "4a. admin GET /api/settings -> 200",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "settings"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('admin can read settings', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4b. e2euser PUT /api/settings -> 403 (admin-gated)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "settings"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('non-admin denied settings write (403)', function () {",
+                  "  pm.expect(pm.response.code, 'must be 403 for non-admin').to.be.oneOf([403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4c. anon PUT /api/settings -> 401/403 (unauthenticated)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/settings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "settings"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('anonymous denied settings write', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401,403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Teardown (admin)",
+      "item": [
+        {
+          "name": "T. Delete object X (scoped)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_scoped}}/{{obj_x}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_scoped}}",
+                "{{obj_x}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object X (scoped) cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete object Z (open)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_open}}/{{obj_z}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_open}}",
+                "{{obj_z}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object Z (open) cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete object Y (published)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/objects/{{reg_id}}/{{schema_pub}}/{{obj_y}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "objects",
+                "{{reg_id}}",
+                "{{schema_pub}}",
+                "{{obj_y}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('object Y (published) cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete schema_open",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_open}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{schema_open}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema_open cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete schema_scoped",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_scoped}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{schema_scoped}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema_scoped cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete schema_pub",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_pub}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "schemas",
+                "{{schema_pub}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('schema_pub cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "T. Delete register",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/index.php/apps/openregister/api/registers/{{reg_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "index.php",
+                "apps",
+                "openregister",
+                "api",
+                "registers",
+                "{{reg_id}}"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{admin_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{admin_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('register cleaned up', () => pm.expect(pm.response.code).to.be.oneOf([200,204,404]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

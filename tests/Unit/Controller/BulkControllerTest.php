@@ -251,6 +251,9 @@ class BulkControllerTest extends TestCase
 
     public function testSaveSuccess(): void
     {
+        // AUTHORIZATION (wave-11 WF1): caller must be admin or have manage-permission.
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('saveObjects')->willReturn([
             'statistics' => ['saved' => 2, 'updated' => 1],
@@ -270,8 +273,33 @@ class BulkControllerTest extends TestCase
         $this->assertEquals('Bulk save operation completed successfully', $data['message']);
     }
 
+    public function testSaveForbiddenWithoutManagePermission(): void
+    {
+        // AUTHORIZATION (wave-11 WF1): non-admin without manage-permission gets 403.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('regular-user');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->willReturn(false);
+
+        $schema = new \OCA\OpenRegister\Db\Schema();
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->setupResolveSuccess();
+
+        $this->request->method('getParams')->willReturn([
+            'objects' => [['name' => 'obj1']],
+        ]);
+
+        $result = $this->controller->save('1', '2');
+
+        $this->assertEquals(Http::STATUS_FORBIDDEN, $result->getStatus());
+        $data = $result->getData();
+        $this->assertStringContainsString('permission', $data['error']);
+    }
+
     public function testSaveMissingObjects(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->request->method('getParams')->willReturn([]);
 
@@ -284,6 +312,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveEmptyObjectsArray(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->request->method('getParams')->willReturn(['objects' => []]);
 
@@ -294,6 +324,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveObjectsNotArray(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->request->method('getParams')->willReturn(['objects' => 'not-an-array']);
 
@@ -337,6 +369,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveException(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('saveObjects')
             ->willThrowException(new \Exception('Save error'));
@@ -389,6 +423,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveWithStatisticsMissingSavedKey(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         // Return statistics without 'saved' key
         $this->objectService->method('saveObjects')->willReturn([
@@ -408,6 +444,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveWithStatisticsMissingUpdatedKey(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         // Return statistics without 'updated' key
         $this->objectService->method('saveObjects')->willReturn([
@@ -427,6 +465,8 @@ class BulkControllerTest extends TestCase
 
     public function testSaveWithEmptyStatistics(): void
     {
+        $this->stubAdminUser();
+        $this->stubSchemaLookup(2);
         $this->setupResolveSuccess();
         $this->objectService->method('saveObjects')->willReturn([
             'statistics' => [],

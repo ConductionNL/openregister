@@ -145,8 +145,8 @@
 
 				<!-- Organization link -->
 				<a
-					v-if="displayConfiguration.organization && displayConfiguration.organization.url"
-					:href="displayConfiguration.organization.url"
+					v-if="safeOrgUrl"
+					:href="safeOrgUrl"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="metaItem metaLink">
@@ -541,6 +541,20 @@ export default {
 			// Default to GitHub
 			return `https://github.com/${this.repositoryFullName}`
 		},
+		/**
+		 * Organization URL, validated to be a safe http(s) link to prevent
+		 * javascript:/data: URL injection via imported configuration data.
+		 *
+		 * @return {string|null}
+		 * @spec exclude computed org-URL display helper, UI plumbing
+		 */
+		safeOrgUrl() {
+			const url = this.displayConfiguration.organization?.url
+			if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+				return url
+			}
+			return null
+		},
 	},
 	watch: {
 		'configuration.config.app'() {
@@ -564,7 +578,7 @@ export default {
 		 * Check if this discovered configuration is already imported in the backend
 		 * Makes an API call to check by appId and stores the full config
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-2
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		async checkIfImported() {
 			if (!this.appId || this.checkingImportStatus) return

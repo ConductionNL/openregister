@@ -12,11 +12,11 @@
 
 - **Schema-based registers** — Define data structures with JSON Schema and organize them into registers
 - **Full CRUD API** — Create, read, update, and delete objects through a powerful REST API
-- **Full-text search with faceting** — Search across registers with filters, powered by magic tables or Solr
+- **Full-text search with faceting** — Search across registers with filters, powered by magic tables
 - **Role-based access control** — Fine-grained permissions with organization-level multitenancy
 - **Event-driven architecture** — React to data changes with events for tasks, notifications, and integrations
 - **CalDAV tasks and notes** — Attach Nextcloud tasks and comments directly to your data objects
-- **JSON-LD and Linked Data** — Standards-compliant data that connects to the broader open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output (via `Accept: application/ld+json` content negotiation) with canonical `@id`, schema-derived `@context`, and dereferenceable context documents; Schema.org alignment is per-schema opt-in mapping. Read-side only (no JSON-LD ingest)
 - **Source synchronization** — Keep your registers in sync with external data sources
 
 Open Register powers apps like OpenCatalogi, Procest, Pipelinq, and Software Catalogus, giving them a shared, federated data backbone.
@@ -29,31 +29,31 @@ Free and open source under the EUPL license.
 
 - **Schema-gebaseerde registers** — Definieer datastructuren met JSON Schema en organiseer ze in registers
 - **Volledige CRUD API** — Maak, lees, wijzig en verwijder objecten via een krachtige REST API
-- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables of Solr
+- **Full-text zoeken met facetten** — Zoek dwars door registers met filters, aangedreven door magic tables
 - **Rolgebaseerde toegangscontrole** — Fijnmazige rechten met multitenancy op organisatieniveau
 - **Event-driven architectuur** — Reageer op datawijzigingen met events voor taken, notificaties en integraties
 - **CalDAV taken en notities** — Koppel Nextcloud-taken en opmerkingen direct aan je dataobjecten
-- **JSON-LD en Linked Data** — Data conform standaarden die aansluit op het bredere open data ecosysteem
+- **JSON-LD en Linked Data** — Optionele read-side JSON-LD-uitvoer (via `Accept: application/ld+json` content-negotiation) met canonieke `@id`, een uit het schema afgeleide `@context` en dereferenceerbare context-documenten; Schema.org-uitlijning is een per-schema opt-in mapping. Alleen lezen (geen JSON-LD-import)
 - **Bronsynchronisatie** — Houd je registers in sync met externe databronnen
 
 Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Catalogus aan en geeft ze een gedeelde, gefedereerde data-backbone.
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.13-unstable.85</version>
-    <licence>agpl</licence>
+    <version>0.2.17-unstable.15</version>
+    <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
     <category>organization</category>
     <category>tools</category>
     <category>search</category>
-    <website>https://github.com/ConductionNL/OpenRegister</website>
-    <discussion>https://github.com/ConductionNL/OpenRegister/discussions</discussion>
-    <bugs>https://github.com/ConductionNL/OpenRegister/issues</bugs>
-    <repository>https://github.com/ConductionNL/OpenRegister</repository>
+    <website>https://codeberg.org/Conduction/openregister</website>
+    <bugs>https://codeberg.org/Conduction/openregister/issues</bugs>
+    <repository>https://codeberg.org/Conduction/openregister</repository>
 
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/OpenRegister/main/img/app-store.svg</screenshot>
-    <screenshot>https://raw.githubusercontent.com/ConductionNL/openregister/main/img/screenshot.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-dashboard.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-registers.png</screenshot>
+    <screenshot>https://codeberg.org/Conduction/openregister/raw/branch/main/img/screenshot-objects.png</screenshot>
 
     <documentation>
         <user>https://conduction.gitbook.io/openregister-nextcloud/</user>
@@ -74,24 +74,43 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
+			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
+			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</post-migration>
 		<install>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
+			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
+			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
+			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
+			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</install>
 	</repair-steps>
 
 	<background-jobs>
 		<job>OCA\OpenRegister\Cron\LogCleanUpTask</job>
 		<job>OCA\OpenRegister\Cron\ConfigurationCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ChunkVectorizationJob</job>
 		<job>OCA\OpenRegister\Cron\WebhookRetryJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\BlobMigrationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DestructionCheckJob</job>
 		<job>OCA\OpenRegister\Cron\TransferCheckJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\TransferExecutionJob</job>
+		<job>OCA\OpenRegister\Cron\SyncConfigurationsJob</job>
+		<job>OCA\OpenRegister\Cron\SyncDataJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledWorkflowJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ScheduledNotificationJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ActionScheduleJob</job>
@@ -99,11 +118,17 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\RealtimeEventRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
-		<job>OCA\OpenRegister\BackgroundJob\BatchNotificationJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduleReconcilerJob</job>
+		<job>OCA\OpenRegister\Cron\DbalIntrospectionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\ScheduledReportJob</job>
 	</background-jobs>
 
     <navigations>
@@ -120,18 +145,26 @@ Vrij en open source onder de EUPL-licentie.
 		<admin>OCA\OpenRegister\Settings\OpenRegisterAdmin</admin>
 		<admin>OCA\OpenRegister\Settings\IntegrationsAdminSettings</admin>
 		<admin-section>OCA\OpenRegister\Sections\OpenRegisterAdmin</admin-section>
+		<personal>OCA\OpenRegister\Settings\OpenRegisterPersonal</personal>
 	</settings>
 
 	<commands>
-		<!-- Solr / migrate-storage commands trigger circular DI during occ
-		     bootstrap (SettingsService → IndexService → many other services).
+		<!-- migrate-storage command triggers circular DI during occ bootstrap.
 		     Disabled until that's untangled. -->
-		<!-- <command>OCA\OpenRegister\Command\SolrDebugCommand</command> -->
-		<!-- <command>OCA\OpenRegister\Command\SolrManagementCommand</command> -->
 		<!-- <command>OCA\OpenRegister\Command\MigrateStorageCommand</command> -->
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
+		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
+		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
+		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
+		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
+		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
+		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
+		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
 	</commands>
 
 	<notification>

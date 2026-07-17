@@ -3,7 +3,6 @@
  *
  * Centralized state management for all settings sections using Pinia.
  * This store handles data fetching, state management, and API calls for:
- * - SOLR configuration and dashboard
  * - RBAC settings
  * - Multitenancy configuration
  * - Retention policies
@@ -32,22 +31,6 @@ export const useSettingsStore = defineStore('settings', {
 		extractionStats: null,
 		vectorStats: null,
 
-		// SOLR states
-		testingConnection: false,
-		warmingUpSolr: false,
-		settingUpSolr: false,
-		showTestDialog: false,
-		showSetupDialog: false,
-		showFieldsDialog: false,
-		loadingFields: false,
-		testResults: null,
-		setupResults: null,
-		fieldsInfo: null,
-		fieldComparison: null,
-		creatingFields: false,
-		fixingFields: false,
-		fieldCreationResult: null,
-
 		// Cache states
 		clearingCache: false,
 		warmingUpCache: false,
@@ -73,25 +56,6 @@ export const useSettingsStore = defineStore('settings', {
 		showClearBlobObjectsConfirmation: false,
 
 		// Settings data
-		solrOptions: {
-			enabled: false,
-			host: 'solr',
-			port: 8983,
-			path: '/solr',
-			core: 'openregister',
-			scheme: 'http',
-			username: '',
-			password: '',
-			timeout: 30,
-			autoCommit: true,
-			commitWithin: 1000,
-			enableLogging: true,
-			zookeeperHosts: 'zookeeper:2181',
-			collection: 'openregister',
-			useCloud: true,
-			tenantId: '',
-		},
-
 		rbacOptions: {
 			enabled: false,
 			anonymousGroup: 'public',
@@ -150,11 +114,6 @@ export const useSettingsStore = defineStore('settings', {
 		groupOptions: [],
 		userOptions: [],
 		tenantOptions: [],
-		schemeOptions: [
-			{ id: 'http', label: 'HTTP' },
-			{ id: 'https', label: 'HTTPS' },
-		],
-
 		// Statistics data
 		stats: {
 			warnings: {
@@ -226,23 +185,8 @@ export const useSettingsStore = defineStore('settings', {
 			errorMessage: 'Loading...',
 		},
 
-		// SOLR dashboard data
-		solrDashboardStats: {
-			available: false,
-			connection_status: 'unknown',
-			document_count: 0,
-			index_size: 0,
-			collection: 'openregister',
-			tenant_id: '',
-			health: 'unknown',
-			last_modified: null,
-		},
-
 		// Dialog states
 		showRebaseConfirmation: false,
-
-		// Connection status
-		solrConnectionStatus: null,
 	}),
 
 	getters: {
@@ -319,7 +263,6 @@ export const useSettingsStore = defineStore('settings', {
 			try {
 				// Load all settings sections in parallel for better performance
 				await Promise.allSettled([
-					this.loadSolrSettings(),
 					this.loadRbacSettings(),
 					this.loadMultitenancySettings(),
 					this.loadRetentionSettings(),
@@ -333,122 +276,6 @@ export const useSettingsStore = defineStore('settings', {
 			} finally {
 				this.loading = false
 				this.loadingInProgress = false
-			}
-		},
-
-		/**
-		 * Load SOLR settings
-		 * @spec exclude API passthrough to GET /api/settings/solr
-		 */
-		async loadSolrSettings() {
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/settings/solr'))
-				if (response.data) {
-					// Ensure boolean fields are properly converted from API response
-					const booleanFields = ['enabled', 'useCloud', 'autoCommit', 'enableLogging']
-					const processedData = { ...response.data }
-
-					booleanFields.forEach(field => {
-						if (processedData[field] !== undefined) {
-							processedData[field] = Boolean(processedData[field])
-						}
-					})
-
-					// Convert scheme string to object format for NcSelect component
-					// API returns "http" or "https", but NcSelect needs {id: "http", label: "HTTP"}
-					if (processedData.scheme && typeof processedData.scheme === 'string') {
-						const schemeOption = this.schemeOptions.find(opt => opt.id === processedData.scheme)
-						if (schemeOption) {
-							processedData.scheme = schemeOption
-						}
-					}
-
-					this.solrOptions = { ...this.solrOptions, ...processedData }
-				}
-			} catch (error) {
-				console.error('Failed to load SOLR settings:', error)
-				// Don't show error - this is handled by individual components
-			}
-		},
-
-		/**
-		 * Update SOLR settings
-		 * @param {object} solrData - The SOLR settings to save
-		 * @spec exclude API passthrough to PUT /api/settings/solr
-		 */
-		async updateSolrSettings(solrData) {
-			this.saving = true
-			try {
-				// Normalize the data before sending to API
-				const normalizedData = { ...solrData }
-
-				// Handle scheme field - NcSelect returns {id: "http", label: "HTTP"} but we need just "http"
-				if (normalizedData.scheme && typeof normalizedData.scheme === 'object' && normalizedData.scheme.id) {
-					normalizedData.scheme = normalizedData.scheme.id
-				}
-
-				const response = await axios.put(
-					generateUrl('/apps/openregister/api/settings/solr'),
-					normalizedData,
-				)
-
-				if (response.data) {
-					// Ensure boolean fields are properly converted from API response
-					const booleanFields = ['enabled', 'useCloud', 'autoCommit', 'enableLogging']
-					const processedData = { ...response.data }
-
-					booleanFields.forEach(field => {
-						if (processedData[field] !== undefined) {
-							processedData[field] = Boolean(processedData[field])
-						}
-					})
-
-					this.solrOptions = { ...this.solrOptions, ...processedData }
-				}
-
-				showSuccess(t('openregister', 'SOLR settings updated successfully'))
-				return response.data
-			} catch (error) {
-				console.error('Failed to update SOLR settings:', error)
-				showError(t('openregister', 'Failed to update SOLR settings: {error}', { error: error.message }))
-				throw error
-			} finally {
-				this.saving = false
-			}
-		},
-
-		/**
-		 * Warmup SOLR index
-		 * @param {object} options - The options for the warmup operation
-		 * @spec exclude API passthrough to POST /api/settings/solr/warmup
-		 */
-		async warmupSolrIndex(options = {}) {
-			this.warmingUpSolr = true
-			try {
-				const response = await axios.post(
-					generateUrl('/apps/openregister/api/settings/solr/warmup'),
-					{
-						batchSize: options.batchSize || 2000,
-						maxObjects: options.maxObjects || 0,
-						mode: options.mode || 'serial',
-						collectErrors: options.collectErrors || false,
-						selectedSchemas: options.selectedSchemas || [],
-					},
-				)
-
-				if (response.data.success) {
-					showSuccess(t('openregister', 'SOLR index warmup completed successfully'))
-				} else {
-					showError(t('openregister', 'SOLR warmup failed: {error}', { error: response.data.message }))
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('SOLR warmup failed:', error)
-				showError(t('openregister', 'SOLR warmup failed: {error}', { error: error.message }))
-				throw error
-			} finally {
-				this.warmingUpSolr = false
 			}
 		},
 
@@ -994,6 +821,45 @@ export const useSettingsStore = defineStore('settings', {
 		},
 
 		/**
+		 * Get the resolved anonymisation backend state (single source of truth).
+		 * @spec exclude API passthrough to GET /api/admin/anonymisation/backend-state
+		 */
+		async getAnonymisationBackendState() {
+			try {
+				const response = await axios.get(
+					generateUrl('/apps/openregister/api/admin/anonymisation/backend-state'),
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to load anonymisation backend state:', error)
+				return null
+			}
+		},
+
+		/**
+		 * Probe a single anonymisation backend, bypassing the cache.
+		 * @param {string} method - One of regex/presidio/openanonymiser/llm/hybrid
+		 * @spec exclude API passthrough to POST /api/admin/anonymisation/test-connection
+		 */
+		async testAnonymisationBackend(method) {
+			try {
+				const response = await axios.post(
+					generateUrl('/apps/openregister/api/admin/anonymisation/test-connection'),
+					{ method },
+				)
+				return response.data
+			} catch (error) {
+				console.error('Failed to probe anonymisation backend:', error)
+				return {
+					reachable: false,
+					latencyMs: null,
+					error: error.response?.data?.error || error.message,
+					probedAt: null,
+				}
+			}
+		},
+
+		/**
 		 * Load version information
 		 * @spec exclude API passthrough to GET /api/settings/version
 		 */
@@ -1250,9 +1116,7 @@ export const useSettingsStore = defineStore('settings', {
 			this.saving = true
 			try {
 				// Route to appropriate specific save method based on data content
-				if (data.solr) {
-					return await this.updateSolrSettings(data.solr)
-				} else if (data.rbac) {
+				if (data.rbac) {
 					return await this.updateRbacSettings(data.rbac)
 				} else if (data.multitenancy) {
 					return await this.updateMultitenancySettings(data.multitenancy)
@@ -1466,254 +1330,6 @@ export const useSettingsStore = defineStore('settings', {
 		async performClearCache() {
 			await this.clearCache(this.clearCacheType)
 			this.hideClearCacheDialog()
-		},
-
-		/**
-		 * Retry test connection
-		 * @spec exclude retry wrapper over testSolrConnection (API passthrough)
-		 */
-		retryTest() {
-			this.testSolrConnection()
-		},
-
-		/**
-		 * Load SOLR field configuration
-		 * @spec exclude API passthrough to GET /api/solr/fields (opens fields dialog)
-		 */
-		async loadSolrFields() {
-			this.loadingFields = true
-			this.showFieldsDialog = true
-			try {
-				const response = await axios.get(generateUrl('/apps/openregister/api/solr/fields'))
-				this.fieldsInfo = response.data
-				this.fieldComparison = response.data.comparison || null
-				return response.data
-			} catch (error) {
-				console.error('Failed to load SOLR fields:', error)
-				const errorData = {
-					success: false,
-					message: 'Failed to load SOLR fields: ' + error.message,
-					details: { error: error.message },
-				}
-				this.fieldsInfo = errorData
-				throw error
-			} finally {
-				this.loadingFields = false
-			}
-		},
-
-		/**
-		 * Hide fields dialog
-		 * @spec exclude store setter (local dialog-visibility toggle)
-		 */
-		hideFieldsDialog() {
-			this.showFieldsDialog = false
-			this.fieldsInfo = null
-			this.fieldComparison = null
-			this.fieldCreationResult = null
-		},
-
-		setCreatingFields(creating) {
-			this.creatingFields = creating
-		},
-
-		setFixingFields(fixing) {
-			this.fixingFields = fixing
-		},
-
-		setFieldCreationResult(result) {
-			this.fieldCreationResult = result
-		},
-
-		/**
-		 * Create missing SOLR fields
-		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
-		 * @spec exclude API passthrough to POST /api/solr/fields/create-missing
-		 */
-		async createMissingSolrFields(dryRun = false) {
-			this.creatingFields = true
-			this.fieldCreationResult = null
-			try {
-				const payload = {
-					dry_run: dryRun,
-				}
-
-				const response = await axios.post(generateUrl('/apps/openregister/api/solr/fields/create-missing'), payload)
-				this.fieldCreationResult = response.data
-
-				// If successful and not a dry run, reload the fields to show updated state
-				if (response.data.success && !dryRun) {
-					await this.loadSolrFields()
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to create missing SOLR fields:', error)
-				const result = {
-					success: false,
-					message: error.response?.data?.message || error.message,
-					error: error.response?.data?.error || error.message,
-				}
-				this.fieldCreationResult = result
-				return result
-			} finally {
-				this.creatingFields = false
-			}
-		},
-
-		/**
-		 * Fix mismatched SOLR field configurations
-		 * @param {boolean} dryRun - Whether to run the operation in dry run mode
-		 * @spec exclude API passthrough to POST /api/solr/fields/fix-mismatches
-		 */
-		async fixMismatchedSolrFields(dryRun = false) {
-			this.fixingFields = true
-			this.fieldCreationResult = null
-			try {
-				const payload = {
-					dry_run: dryRun,
-				}
-
-				const response = await axios.post(generateUrl('/apps/openregister/api/solr/fields/fix-mismatches'), payload)
-				this.fieldCreationResult = response.data
-
-				// If successful and not a dry run, reload the fields to show updated state
-				if (response.data.success && !dryRun) {
-					await this.loadSolrFields()
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to fix mismatched SOLR fields:', error)
-				this.fieldCreationResult = {
-					success: false,
-					message: 'Failed to fix mismatched SOLR fields: ' + error.message,
-					errors: [error.message],
-				}
-				throw error
-			} finally {
-				this.fixingFields = false
-			}
-		},
-
-		// ========================================
-		// SOLR Management Actions
-		// ========================================
-
-		/**
-		 * Setup SOLR configuration
-		 * @spec exclude API passthrough to POST /api/solr/setup (opens setup dialog)
-		 */
-		async setupSolr() {
-			this.settingUpSolr = true
-			this.setupResults = null
-			this.showSetupDialog = true
-
-			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/solr/setup'))
-
-				this.setupResults = response.data
-
-				if (response.data.success) {
-					showSuccess(t('openregister', 'SOLR setup completed successfully!'))
-				} else {
-					// Don't show error toast for propagation timeouts - the modal will handle it
-					const isConfigSetPropagationError = response.data.error_details?.exception_message?.includes('ConfigSet propagation timeout')
-					if (!isConfigSetPropagationError) {
-						showError(t('openregister', 'SOLR setup failed: {error}', { error: response.data.message || 'Unknown error' }))
-					}
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to setup SOLR:', error)
-
-				// Handle different error scenarios
-				let errorMessage = 'Failed to setup SOLR: ' + error.message
-				let setupResults = {
-					success: false,
-					message: errorMessage,
-					timestamp: new Date().toISOString(),
-					error_details: {
-						primary_error: 'Setup operation failed',
-						error_type: 'network_error',
-						exception_message: error.message,
-					},
-				}
-
-				// If we have response data from server, use that instead
-				if (error.response?.data) {
-					setupResults = error.response.data
-					errorMessage = setupResults.message || errorMessage
-				}
-
-				this.setupResults = setupResults
-				showError(t('openregister', 'Failed to setup SOLR: {error}', { error: errorMessage }))
-				throw error
-			} finally {
-				this.settingUpSolr = false
-			}
-		},
-
-		/**
-		 * Test SOLR connection
-		 * @spec exclude API passthrough to POST /api/settings/solr/test (opens test dialog)
-		 */
-		async testSolrConnection() {
-			this.testingConnection = true
-			this.testResults = null
-			this.showTestDialog = true
-
-			try {
-				const response = await axios.post(generateUrl('/apps/openregister/api/settings/solr/test'))
-				this.testResults = response.data
-
-				if (response.data.success) {
-					showSuccess(t('openregister', 'SOLR connection test successful!'))
-				} else {
-					showError(t('openregister', 'SOLR connection test failed: {error}', { error: response.data.message || 'Unknown error' }))
-				}
-
-				return response.data
-			} catch (error) {
-				console.error('Failed to test SOLR connection:', error)
-				const errorMessage = t('openregister', 'Failed to test SOLR connection: {error}', { error: error.message })
-				this.testResults = {
-					success: false,
-					message: errorMessage,
-					error: error.message,
-				}
-				showError(errorMessage)
-				throw error
-			} finally {
-				this.testingConnection = false
-			}
-		},
-
-		/**
-		 * Hide setup dialog
-		 * @spec exclude store setter (local dialog-visibility toggle)
-		 */
-		hideSetupDialog() {
-			this.showSetupDialog = false
-			this.setupResults = null
-		},
-
-		/**
-		 * Hide test dialog
-		 * @spec exclude store setter (local dialog-visibility toggle)
-		 */
-		hideTestDialog() {
-			this.showTestDialog = false
-			this.testResults = null
-		},
-
-		/**
-		 * Retry setup
-		 * @spec exclude retry wrapper over setupSolr (API passthrough)
-		 */
-		retrySetup() {
-			this.setupSolr()
 		},
 
 		// ========================================

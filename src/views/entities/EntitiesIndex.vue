@@ -149,6 +149,7 @@
 										<NcCheckboxRadioSwitch
 											:checked="allSelected"
 											:indeterminate="someSelected"
+											:aria-label="t('openregister', 'Select all entities')"
 											@update:checked="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Value') }}</th>
@@ -169,6 +170,7 @@
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
 											:checked="selectedEntities.includes(entity.id)"
+											:aria-label="t('openregister', 'Select entity {value}', { value: entity.value })"
 											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
@@ -364,7 +366,7 @@ export default {
 		/**
 		 * Toggle the entities filter sidebar via navigationStore.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {

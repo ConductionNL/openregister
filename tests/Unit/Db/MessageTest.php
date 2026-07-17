@@ -135,7 +135,7 @@ class MessageTest extends TestCase
 
     public function testSetAndGetContext(): void
     {
-        $context = ['app' => 'openbuilt', 'slug' => 'my-app', 'view' => 'detail'];
+        $context = ['app' => 'openbuild', 'slug' => 'my-app', 'view' => 'detail'];
         $this->message->setContext($context);
         $this->assertSame($context, $this->message->getContext());
     }//end testSetAndGetContext()
@@ -158,7 +158,7 @@ class MessageTest extends TestCase
     {
         // Frontend may send nested objects + arrays — must round-trip.
         $context = [
-            'app'  => 'openbuilt',
+            'app'  => 'openbuild',
             'page' => ['id' => 'Dashboard', 'route' => '/'],
             'tags' => ['draft', 'wip'],
         ];

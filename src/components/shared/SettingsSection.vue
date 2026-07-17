@@ -60,6 +60,7 @@
 
 <script>
 import { NcSettingsSection, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import DOMPurify from 'dompurify'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 
@@ -198,23 +199,20 @@ export default {
 
 	methods: {
 		/**
-		 * Quick and dirty way to sanitize HTML for the detailedDescription slot.
+		 * Sanitize HTML for the detailedDescription slot using an allowlist.
 		 *
-		 * Guarantees no dangerous HTML is rendered by round-tripping through
-		 * `textContent` (escapes every tag/entity); cost is that the output is
-		 * plain text, not formatted HTML.
-		 *
-		 * @TODO Replace with an allowlist-based sanitiser (e.g. DOMPurify) once
-		 * formatted descriptions are needed.
+		 * Uses DOMPurify with a narrow allowlist so basic inline formatting is
+		 * preserved while all scripting/dangerous markup is stripped.
 		 *
 		 * @param {string} html Untrusted markup
-		 * @return {string} HTML-entity-escaped string safe for v-html
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-4
+		 * @return {string} Sanitized HTML safe for v-html
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		sanitizeHtml(html) {
-			const div = document.createElement('div')
-			div.textContent = html
-			return div.innerHTML
+			return DOMPurify.sanitize(html, {
+				ALLOWED_TAGS: ['a', 'strong', 'em', 'code', 'br', 'p'],
+				ALLOWED_ATTR: ['href', 'target', 'rel'],
+			})
 		},
 	},
 }

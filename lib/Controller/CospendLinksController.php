@@ -84,7 +84,7 @@ class CospendLinksController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -134,7 +134,7 @@ class CospendLinksController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -204,7 +204,7 @@ class CospendLinksController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function createAndLink(string $register, string $schema, string $id): JSONResponse
     {
@@ -259,7 +259,7 @@ class CospendLinksController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function destroy(string $register, string $schema, string $id, string $entryId): JSONResponse
     {
@@ -295,8 +295,9 @@ class CospendLinksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: returns the current user's own Cospend projects; no caller-supplied object id.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function available(): JSONResponse
     {
@@ -325,7 +326,8 @@ class CospendLinksController extends Controller
      *
      * @return ObjectEntity|null
      *
-     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route parameter; renaming would break consistency with caller method signatures.
+     * @SuppressWarnings(PHPMD.ShortVariable) $id is the object identifier passed from the route
+     * parameter; renaming would break consistency with caller method signatures.
      */
     private function validateObject(string $register, string $schema, string $id): ?ObjectEntity
     {

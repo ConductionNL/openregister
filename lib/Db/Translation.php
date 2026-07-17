@@ -49,6 +49,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setTranslator(?string $translator)
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
+ * @method string|null getSourceLanguage()
+ * @method void setSourceLanguage(?string $sourceLanguage)
  */
 class Translation extends Entity implements JsonSerializable
 {
@@ -57,12 +59,27 @@ class Translation extends Entity implements JsonSerializable
     public const STATUS_MACHINE_TRANSLATED = 'machine_translated';
     public const STATUS_HUMAN_REVIEWED     = 'human_reviewed';
     public const STATUS_APPROVED           = 'approved';
+    public const STATUS_OUTDATED           = 'outdated';
 
     public const ALL_STATUSES = [
         self::STATUS_DRAFT,
         self::STATUS_MACHINE_TRANSLATED,
         self::STATUS_HUMAN_REVIEWED,
         self::STATUS_APPROVED,
+        self::STATUS_OUTDATED,
+    ];
+
+    /**
+     * Statuses considered "live" — i.e. eligible to be flipped to outdated
+     * when the source value changes. `draft` and `outdated` are excluded
+     * (already pre-source or already-flagged).
+     *
+     * @var string[]
+     */
+    public const FLIPPABLE_STATUSES = [
+        self::STATUS_APPROVED,
+        self::STATUS_HUMAN_REVIEWED,
+        self::STATUS_MACHINE_TRANSLATED,
     ];
 
     /**
@@ -115,6 +132,21 @@ class Translation extends Entity implements JsonSerializable
     protected ?DateTime $updated = null;
 
     /**
+     * BCP-47 source language for the property at the time of projection.
+     *
+     * Tracks which language is the canonical "source" for the slot, so
+     * the freshness automation can flip every non-source-language row to
+     * `outdated` when the source value changes. Populated by the
+     * `TranslationProjectionService` from the schema-property modifier,
+     * an object-level override, or the register default.
+     *
+     * @var string|null
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+     */
+    protected ?string $sourceLanguage = null;
+
+    /**
      * Configure typed columns for the entity.
      *
      * @return void
@@ -128,6 +160,7 @@ class Translation extends Entity implements JsonSerializable
         $this->addType(fieldName: 'status', type: 'string');
         $this->addType(fieldName: 'translator', type: 'string');
         $this->addType(fieldName: 'updated', type: 'datetime');
+        $this->addType(fieldName: 'sourceLanguage', type: 'string');
     }//end __construct()
 
     /**
@@ -138,14 +171,18 @@ class Translation extends Entity implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'id'         => $this->id,
-            'objectUuid' => $this->objectUuid,
-            'property'   => $this->property,
-            'language'   => $this->language,
-            'value'      => $this->value,
-            'status'     => $this->status,
-            'translator' => $this->translator,
-            'updated'    => $this->updated?->format(\DateTimeInterface::ATOM),
+            'id'             => $this->id,
+            'objectUuid'     => $this->objectUuid,
+            'property'       => $this->property,
+            'language'       => $this->language,
+            'value'          => $this->value,
+            'status'         => $this->status,
+            'translator'     => $this->translator,
+            'updated'        => $this->updated?->format(\DateTimeInterface::ATOM),
+            'sourceLanguage' => $this->sourceLanguage,
+            'isSource'       => ($this->language !== null
+                && $this->sourceLanguage !== null
+                && $this->language === $this->sourceLanguage),
         ];
     }//end jsonSerialize()
 }//end class

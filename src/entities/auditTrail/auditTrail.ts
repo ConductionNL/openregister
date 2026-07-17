@@ -30,6 +30,7 @@ export class AuditTrail implements TAuditTrail {
 	public size: number
 
 	/**
+	 * @param auditTrail
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(auditTrail: TAuditTrail) {

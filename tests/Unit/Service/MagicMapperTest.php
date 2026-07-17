@@ -215,12 +215,6 @@ class MagicMapperTest extends TestCase
         $this->mockSchema->setVersion('1.0');
         $this->mockSchema->testConfiguration = [];
 
-        // Reset static construct counter to avoid circular dependency guard.
-        $ref = new \ReflectionClass(MagicMapper::class);
-        $prop = $ref->getProperty('constructCount');
-        $prop->setAccessible(true);
-        $prop->setValue(null, 0);
-
         // Build a container mock that returns the DateTimeNormalizer when asked
         // — MagicMapper resolves it lazily from the container to construct
         // MagicBulkHandler, and the typed parameter rejects null.
@@ -609,10 +603,12 @@ class MagicMapperTest extends TestCase
                 // $register/$schema parameters instead (wave-7 CRITICAL C2).
                 'register'     => 'client-supplied-register',
                 'schema'       => 'client-supplied-schema',
-                // owner is intentionally supplied to verify that the security fix strips
-                // it — owner must only reach the DB via applyOwnerAttribution, not via
-                // raw @self input.
-                'owner'        => 'client-supplied-owner',
+                // owner reaches this layer ONLY as the server-stamped UID string set by
+                // SaveObject::applyOwnerAttribution (client `owner` is stripped upstream in
+                // SaveObject::setSelfMetadata, never copied onto the entity). A scalar
+                // string owner MUST be persisted so the creator owns their object; a
+                // non-string (forged-array) owner is still dropped (asserted below).
+                'owner'        => 'server-stamped-owner-uid',
                 'organisation' => 'test-org',
             ],
             'name'     => 'John Doe',
@@ -634,11 +630,21 @@ class MagicMapperTest extends TestCase
         $this->assertEquals(1, $result['_register']);
         $this->assertEquals(42, $result['_schema']);
 
-        // SECURITY (wave-7 C2): owner must be stripped from @self — it is controlled
-        // exclusively by SaveObject::applyOwnerAttribution, not via raw @self input.
-        $this->assertNull($result['_owner']);
+        // OWNERSHIP FIX: a scalar string owner (the server-stamped UID produced by
+        // SaveObject::applyOwnerAttribution) MUST be persisted to `_owner`. Previously
+        // it was unconditionally stripped, leaving an empty `_owner` so the creator
+        // could not update their own object and ownership-based RBAC was neutered.
+        $this->assertEquals('server-stamped-owner-uid', $result['_owner']);
 
         $this->assertEquals('test-org', $result['_organisation']);
+
+        // SECURITY (defence-in-depth): a non-string (forged-array) owner shape — which a
+        // raw @self injection payload would take — is still dropped at this DB-write
+        // boundary, so it can never persist as ownership.
+        $forgedData            = $objectData;
+        $forgedData['@self']['owner'] = ['group' => 'admin'];
+        $forgedResult          = $method->invoke($this->magicMapper, $forgedData, $this->mockRegister, $schema);
+        $this->assertNull($forgedResult['_owner']);
 
         // Verify schema properties are included.
         $this->assertEquals('John Doe', $result['name']);

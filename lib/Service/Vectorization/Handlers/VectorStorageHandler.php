@@ -3,7 +3,8 @@
 /**
  * Vector Storage Handler
  *
- * Handles storing vector embeddings in database and Solr.
+ * Handles storing vector embeddings in the database (serialized-BLOB storage of
+ * record plus an opportunistic PostgreSQL pgvector fast-path column).
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -27,43 +28,35 @@ namespace OCA\OpenRegister\Service\Vectorization\Handlers;
 use Exception;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
-use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
-use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
 
 /**
  * VectorStorageHandler
  *
- * Responsible for storing vector embeddings in database or Solr.
- * Routes storage based on configuration and handles both backends.
+ * Responsible for storing vector embeddings in the PostgreSQL database.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
- *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  */
 class VectorStorageHandler
 {
     /**
      * Constructor
      *
-     * @param IDBConnection   $db              Database connection
-     * @param SettingsService $settingsService Settings service
-     * @param IndexService    $indexService    Index service for Solr
-     * @param LoggerInterface $logger          PSR-3 logger
+     * @param IDBConnection    $db       Database connection
+     * @param PgVectorPlatform $pgVector pgvector fast-path capability helper
+     * @param LoggerInterface  $logger   PSR-3 logger
      */
     public function __construct(
         private readonly IDBConnection $db,
-        private readonly SettingsService $settingsService,
-        private readonly IndexService $indexService,
+        private readonly PgVectorPlatform $pgVector,
         private readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
     /**
-     * Store vector embedding
+     * Store vector embedding in the database
      *
-     * Routes to database or Solr based on configured backend.
+     * PostgreSQL is the sole vector storage backend.
      *
      * @param string      $entityType  Entity type ('object' or 'file')
      * @param string      $entityId    Entity UUID
@@ -74,15 +67,14 @@ class VectorStorageHandler
      * @param int         $totalChunks Total number of chunks
      * @param string|null $chunkText   The text that was embedded
      * @param array       $metadata    Additional metadata as associative array
-     * @param string      $backend     Backend to use ('php', 'database', or 'solr')
      *
-     * @return int The ID of the inserted vector (or pseudo-ID for Solr)
+     * @return int The ID of the inserted vector
      *
      * @throws \Exception If storage fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function storeVector(
         string $entityType,
@@ -93,66 +85,19 @@ class VectorStorageHandler
         int $chunkIndex=0,
         int $totalChunks=1,
         ?string $chunkText=null,
-        array $metadata=[],
-        string $backend='php'
+        array $metadata=[]
     ): int {
-        $this->logger->debug(
-            message: '[VectorStorageHandler] Routing vector storage',
-            context: [
-                'file'        => __FILE__,
-                'line'        => __LINE__,
-                'backend'     => $backend,
-                'entity_type' => $entityType,
-                'entity_id'   => $entityId,
-                'chunk_index' => $chunkIndex,
-                'dimensions'  => $dimensions,
-            ]
+        return $this->storeVectorInDatabase(
+            entityType: $entityType,
+            entityId: $entityId,
+            embedding: $embedding,
+            model: $model,
+            dimensions: $dimensions,
+            chunkIndex: $chunkIndex,
+            totalChunks: $totalChunks,
+            chunkText: $chunkText,
+            metadata: $metadata
         );
-
-        try {
-            // Route to selected backend.
-            if ($backend === 'solr') {
-                // Store in Solr and return a pseudo-ID.
-                $documentId = $this->storeVectorInSolr(
-                    entityType: $entityType,
-                    entityId: $entityId,
-                    embedding: $embedding,
-                    model: $model,
-                    dimensions: $dimensions,
-                    chunkIndex: $chunkIndex,
-                    totalChunks: $totalChunks,
-                    chunkText: $chunkText,
-                    metadata: $metadata
-                );
-                return crc32($documentId);
-            }
-
-            // Default: Store in database.
-            return $this->storeVectorInDatabase(
-                entityType: $entityType,
-                entityId: $entityId,
-                embedding: $embedding,
-                model: $model,
-                dimensions: $dimensions,
-                chunkIndex: $chunkIndex,
-                totalChunks: $totalChunks,
-                chunkText: $chunkText,
-                metadata: $metadata
-            );
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[VectorStorageHandler] Failed to store vector',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'backend'     => $backend,
-                    'error'       => $e->getMessage(),
-                    'entity_type' => $entityType,
-                    'entity_id'   => $entityId,
-                ]
-            );
-            throw new Exception('Vector storage failed: '.$e->getMessage());
-        }//end try
     }//end storeVector()
 
     /**
@@ -175,7 +120,7 @@ class VectorStorageHandler
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function storeVectorInDatabase(
         string $entityType,
@@ -237,6 +182,11 @@ class VectorStorageHandler
 
             $vectorId = $qb->getLastInsertId();
 
+            // Additive pgvector dual-write (hybrid-document-search, decision 1):
+            // populate the PostgreSQL fast-path column when available and the
+            // dimension matches; the BLOB write above stays the storage of record.
+            $this->populateVectorColumn(vectorId: $vectorId, embedding: $embedding);
+
             $this->logger->info(
                 message: '[VectorStorageHandler] Vector stored successfully in database',
                 context: [
@@ -265,235 +215,185 @@ class VectorStorageHandler
     }//end storeVectorInDatabase()
 
     /**
-     * Store vector embedding in Solr
+     * Upsert the pgvector ANN sidecar row for a stored vector.
      *
-     * Stores a vector embedding in the configured Solr collection using dense vector fields.
+     * PostgreSQL + matching configured dimension only (hybrid-document-search,
+     * decision 2): vectors whose embedding dimension does not match the
+     * sidecar's declared dimension get no sidecar row and keep being served by
+     * the PHP-cosine fallback. Failures are logged, never fatal — the BLOB
+     * write is the durable storage of record.
      *
-     * @param string      $entityType  Entity type ('object' or 'file')
-     * @param string      $entityId    Entity UUID
-     * @param array       $embedding   Vector embedding (array of floats)
-     * @param string      $model       Model used to generate embedding
-     * @param int         $dimensions  Number of dimensions
-     * @param int         $chunkIndex  Chunk index (0 for objects, N for file chunks)
-     * @param int         $totalChunks Total number of chunks (reserved for future use)
-     * @param string|null $chunkText   The text that was embedded (reserved for future use)
-     * @param array       $metadata    Additional metadata (reserved for future use)
+     * @param int   $vectorId  Vector row id
+     * @param array $embedding Embedding (array of floats)
      *
-     * @return string The Solr document ID
+     * @return bool True when the sidecar row was written
      *
-     * @throws \Exception If storage fails or Solr is not configured
-     *
-     * @psalm-suppress UnusedParam Parameters reserved for future atomic update enhancements
-     *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple Solr storage conditions
-     * @SuppressWarnings(PHPMD.NPathComplexity)        Multiple storage paths with error handling
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Comprehensive Solr vector storage with atomic updates
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/changes/hybrid-document-search/tasks.md#2.1
      */
-    private function storeVectorInSolr(
-        string $entityType,
-        string $entityId,
-        array $embedding,
-        string $model,
-        int $dimensions,
-        int $chunkIndex=0,
-        int $totalChunks=1,
-        ?string $chunkText=null,
-        array $metadata=[]
-    ): string {
-        $this->logger->debug(
-            message: '[VectorStorageHandler] Storing vector in Solr',
-            context: [
-                'file'        => __FILE__,
-                'line'        => __LINE__,
-                'entity_type' => $entityType,
-                'entity_id'   => $entityId,
-                'chunk_index' => $chunkIndex,
-                'dimensions'  => $dimensions,
-            ]
-        );
+    private function populateVectorColumn(int $vectorId, array $embedding): bool
+    {
+        $columnDimension = $this->pgVector->getVectorColumnDimension();
+
+        if ($columnDimension === null || count($embedding) !== $columnDimension) {
+            return false;
+        }
 
         try {
-            // Get appropriate Solr collection based on entity type.
-            $collection  = $this->getSolrCollectionForEntityType(entityType: $entityType);
-            $vectorField = $this->getSolrVectorField();
+            $this->db->executeStatement(
+                'INSERT INTO '.PgVectorPlatform::SIDECAR_TABLE.' (vector_id, embedding) '
+                .'VALUES (?, ?::vector) '
+                .'ON CONFLICT (vector_id) DO UPDATE SET embedding = EXCLUDED.embedding',
+                [(string) $vectorId, $this->pgVector->formatVector($embedding)]
+            );
 
-            if ($collection === null || $collection === '') {
-                throw new Exception("Solr collection not configured for entity type: {$entityType}");
-            }
+            return true;
+        } catch (Exception $e) {
+            $this->logger->warning(
+                message: '[VectorStorageHandler] Failed to write pgvector ANN sidecar row',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'vector_id' => $vectorId,
+                    'error'     => $e->getMessage(),
+                ]
+            );
 
-            // Get Solr backend from IndexService.
-            $solrBackend = $this->indexService->getBackend();
-            if ($solrBackend->isAvailable() === false) {
-                throw new Exception('Solr service is not available');
-            }
+            return false;
+        }//end try
+    }//end populateVectorColumn()
 
-            // Determine document ID based on entity type.
-            $entityTypeLower = strtolower($entityType);
-            $documentId      = $entityId;
-            if ($entityTypeLower === 'file' || $entityTypeLower === 'files') {
-                $documentId = "{$entityId}_chunk_{$chunkIndex}";
-            }
+    /**
+     * Warm-up backfill: convert existing BLOB rows to pgvector ANN sidecar rows.
+     *
+     * Job-only warm-up (DECIDED 2026-07-06): the migration creates the sidecar
+     * table and index only; this method — driven by ChunkVectorizationJob —
+     * converts existing rows in bounded batches, selecting vectors WITHOUT a
+     * sidecar row (the sidecar equivalent of `embedding_vector IS NULL`) whose
+     * stored dimension matches the sidecar's declared dimension (idempotent:
+     * converted rows drop out of the selection). Rows with an unparseable BLOB
+     * are logged and skipped; the `$afterId` cursor lets the caller make
+     * progress past persistently-failing rows.
+     *
+     * @param int $batchSize Maximum rows to process in this call
+     * @param int $afterId   Only process rows with id > this cursor
+     *
+     * @return array{converted: int, failed: int, last_id: int, remaining: int}
+     *
+     * @SuppressWarnings(PHPMD.ErrorControlOperator)  @unserialize: malformed BLOBs emit
+     *   E_WARNING; the false return is handled explicitly (row skipped + logged).
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One bounded batch loop with explicit
+     *   per-row failure handling (resource normalisation, parse check, upsert outcome).
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Selection + per-row tolerance +
+     *   remaining-count reporting belong to one atomic batch step.
+     *
+     * @spec openspec/changes/hybrid-document-search/tasks.md#2.2
+     */
+    public function backfillEmbeddingVectors(int $batchSize=100, int $afterId=0): array
+    {
+        $columnDimension = $this->pgVector->getVectorColumnDimension();
 
-            // Prepare atomic update document.
-            $updateDocument = [
-                'id'                => $documentId,
-                $vectorField        => ['set' => $embedding],
-                '_embedding_model_' => ['set' => $model],
-                '_embedding_dim_'   => ['set' => $dimensions],
-                'self_updated'      => ['set' => gmdate('Y-m-d\TH:i:s\Z')],
+        if ($columnDimension === null) {
+            return [
+                'converted' => 0,
+                'failed'    => 0,
+                'last_id'   => $afterId,
+                'remaining' => 0,
             ];
+        }
 
-            $this->logger->debug(
-                message: '[VectorStorageHandler] Preparing Solr atomic update',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'document_id'    => $documentId,
-                    'collection'     => $collection,
-                    'vector_field'   => $vectorField,
-                    'embedding_size' => count($embedding),
-                ]
+        $converted = 0;
+        $failed    = 0;
+        $lastId    = $afterId;
+        $sidecar   = PgVectorPlatform::SIDECAR_TABLE;
+
+        try {
+            $result = $this->db->executeQuery(
+                'SELECT v.id, v.embedding FROM *PREFIX*openregister_vectors v '
+                ."LEFT JOIN $sidecar a ON a.vector_id = v.id "
+                .'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ? AND v.id > ? '
+                .'ORDER BY v.id ASC LIMIT '.((int) $batchSize),
+                [(string) $columnDimension, (string) $afterId]
             );
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
 
-            // Perform atomic update in Solr.
-            // Cast to SolrBackend to access Solr-specific methods.
-            if ($solrBackend instanceof SolrBackend === false) {
-                throw new Exception('Vector storage requires SolrBackend');
-            }
+            foreach ($rows as $row) {
+                $lastId = (int) $row['id'];
 
-            $solrUrl = $solrBackend->getHttpClient()->buildSolrBaseUrl()."/{$collection}/update?commit=true";
+                // PostgreSQL returns BLOB columns as stream resources
+                // (live-verified on PG16); normalise to a string first.
+                $blob = $row['embedding'];
+                if (is_resource($blob) === true) {
+                    $blob = stream_get_contents($blob);
+                }
 
-            $response = $solrBackend->getHttpClient()->getHttpClient()->post(
-                $solrUrl,
-                [
-                    'json'    => [$updateDocument],
-                    'headers' => ['Content-Type' => 'application/json'],
-                ]
+                // SEC-SVC-9: embeddings are plain float arrays; never allow
+                // object instantiation during unserialize. The error-control
+                // operator suppresses the E_WARNING malformed input emits —
+                // the false return value is handled explicitly below.
+                $embedding = false;
+                if (is_string($blob) === true) {
+                    $embedding = @unserialize($blob, ['allowed_classes' => false]);
+                }
+
+                if (is_array($embedding) === false || count($embedding) !== $columnDimension) {
+                    $failed++;
+                    $this->logger->warning(
+                        message: '[VectorStorageHandler] Skipping backfill for unparseable embedding BLOB',
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'vector_id' => $row['id'],
+                        ]
+                    );
+                    continue;
+                }
+
+                $populated = $this->populateVectorColumn(vectorId: (int) $row['id'], embedding: $embedding);
+
+                if ($populated === true) {
+                    $converted++;
+                }
+
+                if ($populated === false) {
+                    // The populate call logged the failure already.
+                    $failed++;
+                }
+            }//end foreach
+
+            $remainingResult = $this->db->executeQuery(
+                'SELECT COUNT(*) FROM *PREFIX*openregister_vectors v '
+                ."LEFT JOIN $sidecar a ON a.vector_id = v.id "
+                .'WHERE a.vector_id IS NULL AND v.embedding_dimensions = ?',
+                [(string) $columnDimension]
             );
-
-            $responseData = json_decode((string) $response->getBody(), true);
-
-            $statusMissing = isset($responseData['responseHeader']['status']) === false;
-            $statusNotZero = ($responseData['responseHeader']['status'] ?? null) !== 0;
-            if ($statusMissing === true || $statusNotZero === true) {
-                throw new Exception('Solr atomic update failed: '.json_encode($responseData));
-            }
-
-            $this->logger->info(
-                message: '[VectorStorageHandler] Vector added to Solr document',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'document_id' => $documentId,
-                    'collection'  => $collection,
-                    'entity_type' => $entityType,
-                    'entity_id'   => $entityId,
-                ]
-            );
-
-            return $documentId;
+            $remaining       = (int) $remainingResult->fetchOne();
+            $remainingResult->closeCursor();
         } catch (Exception $e) {
             $this->logger->error(
-                message: '[VectorStorageHandler] Failed to store vector in Solr',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'error'       => $e->getMessage(),
-                    'entity_type' => $entityType,
-                    'entity_id'   => $entityId,
-                    'chunk_index' => $chunkIndex,
-                ]
-            );
-            throw new Exception('Solr vector storage failed: '.$e->getMessage());
-        }//end try
-    }//end storeVectorInSolr()
-
-    /**
-     * Get the appropriate Solr collection based on entity type
-     *
-     * @param string $entityType Entity type ('file' or 'object')
-     *
-     * @return string|null Solr collection name or null if not configured
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Collection resolution requires multiple conditions
-     * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple collection determination paths
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
-     */
-    private function getSolrCollectionForEntityType(string $entityType): ?string
-    {
-        try {
-            $settings = $this->settingsService->getSettings();
-
-            // Normalize entity type.
-            $entityType = strtolower($entityType);
-
-            // Determine which collection to use based on entity type.
-            $collection = null;
-            if ($entityType === 'file' || $entityType === 'files') {
-                $collection = $settings['solr']['fileCollection'] ?? null;
-            }
-
-            if ($entityType !== 'file' && $entityType !== 'files') {
-                // Default to object collection.
-                $collection = $settings['solr']['objectCollection'] ?? $settings['solr']['collection'] ?? null;
-            }
-
-            if ($collection === null || $collection === '') {
-                $this->logger->warning(
-                    message: '[VectorStorageHandler] No Solr collection configured for entity type',
-                    context: [
-                        'file'        => __FILE__,
-                        'line'        => __LINE__,
-                        'entity_type' => $entityType,
-                    ]
-                );
-            }
-
-            return $collection;
-        } catch (Exception $e) {
-            $this->logger->warning(
-                message: '[VectorStorageHandler] Failed to get Solr collection for entity type',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'entity_type' => $entityType,
-                    'error'       => $e->getMessage(),
-                ]
-            );
-            return null;
-        }//end try
-    }//end getSolrCollectionForEntityType()
-
-    /**
-     * Get the configured Solr vector field name
-     *
-     * @return string Solr vector field name (default: '_embedding_')
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
-     */
-    private function getSolrVectorField(): string
-    {
-        try {
-            $settings = $this->settingsService->getSettings();
-
-            // Get vector field from LLM configuration, default to '_embedding_' field name.
-            return $settings['llm']['vectorConfig']['solrField'] ?? '_embedding_';
-        } catch (Exception $e) {
-            $this->logger->warning(
-                message: '[VectorStorageHandler] Failed to get Solr vector field, using default',
+                message: '[VectorStorageHandler] pgvector warm-up backfill batch failed',
                 context: [
                     'file'  => __FILE__,
                     'line'  => __LINE__,
                     'error' => $e->getMessage(),
                 ]
             );
-            return '_embedding_';
-        }
-    }//end getSolrVectorField()
+
+            return [
+                'converted' => $converted,
+                'failed'    => $failed,
+                'last_id'   => $lastId,
+                'remaining' => 0,
+            ];
+        }//end try
+
+        return [
+            'converted' => $converted,
+            'failed'    => $failed,
+            'last_id'   => $lastId,
+            'remaining' => $remaining,
+        ];
+    }//end backfillEmbeddingVectors()
 
     /**
      * Sanitize text to prevent UTF-8 encoding errors
@@ -504,7 +404,7 @@ class VectorStorageHandler
      *
      * @return string Sanitized text safe for UTF-8 storage
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function sanitizeText(string $text): string
     {

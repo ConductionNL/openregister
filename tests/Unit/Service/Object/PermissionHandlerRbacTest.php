@@ -13,6 +13,7 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OperatorEvaluator;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -50,6 +51,27 @@ class PermissionHandlerRbacTest extends TestCase
         $this->container = $this->createMock(ContainerInterface::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
 
+        // Key-aware IAppConfig stub. PermissionHandler now reads TWO independent
+        // boolean flags through this one service:
+        //   - `rbac.inherit_from_public_default` (default true)  — this lineage;
+        //   - `enforce_default_closed`           (default false) — wave-12 Fix 2.
+        // A blanket `willReturn(true)` would silently switch the wave-12
+        // default-closed policy ON for every test in this class, turning the
+        // default-OPEN assertions below into failures for a reason that cannot
+        // happen in production (the flag is opt-in and defaults to false).
+        // Returning the caller-supplied $default for any key the test does not
+        // explicitly care about mirrors real IAppConfig behaviour.
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturnCallback(
+            static function (string $app, string $key, bool $default=false): bool {
+                if ($key === 'rbac.inherit_from_public_default') {
+                    return true;
+                }
+
+                return $default;
+            }
+        );
+
         $this->handler = new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -57,6 +79,7 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $this->conditionMatcher,
+            $appConfig,
             $this->logger,
             $this->container
         );
@@ -171,6 +194,28 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
     }
 
+    public function testActionNotConfiguredOnNonEmptyBlockFailsClosed(): void
+    {
+        // rbac-default-deny: once a schema opts into authorization (non-empty
+        // block), an action it does NOT list is denied for a non-admin /
+        // non-owner — while an explicitly-granted action still works. This is
+        // the behaviour change from the old "omitted action => open" default.
+        $this->mockUser('user1', ['medewerkers']);
+
+        $schema = $this->createSchema(1, [
+            'read' => ['medewerkers'],
+            // 'create' / 'update' / 'delete' deliberately omitted.
+        ]);
+
+        // Explicitly-granted action still works.
+        $this->assertTrue($this->handler->hasPermission($schema, 'read'));
+
+        // Omitted actions are now denied (were allowed under the old default).
+        $this->assertFalse($this->handler->hasPermission($schema, 'create'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'update'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
+    }
+
     // === Role Expansion Tests ===
 
     public function testRoleExpansionViewerRole(): void
@@ -219,11 +264,12 @@ class PermissionHandlerRbacTest extends TestCase
         $this->setupRegisterForSchema(1, $register);
 
         // Behandelaars has editor role => read, create, update.
-        // Actions not listed in authorization default to allowed (permissive model).
+        // rbac-default-deny: an action NOT covered by the role (delete) is now
+        // denied on this non-empty authorization block.
         $this->assertTrue($this->handler->hasPermission($schema, 'read'));
         $this->assertTrue($this->handler->hasPermission($schema, 'create'));
         $this->assertTrue($this->handler->hasPermission($schema, 'update'));
-        $this->assertTrue($this->handler->hasPermission($schema, 'delete'));
+        $this->assertFalse($this->handler->hasPermission($schema, 'delete'));
     }
 
     public function testMixedRoleAndDirectAuth(): void
@@ -645,6 +691,19 @@ class PermissionHandlerRbacTest extends TestCase
             $operatorEvaluator,
             $this->logger
         );
+        // Key-aware stub — see the rationale in setUp(): a blanket true would
+        // switch wave-12's opt-in `enforce_default_closed` policy on.
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturnCallback(
+            static function (string $app, string $key, bool $default=false): bool {
+                if ($key === 'rbac.inherit_from_public_default') {
+                    return true;
+                }
+
+                return $default;
+            }
+        );
+
         return new PermissionHandler(
             $this->userSession,
             $this->userManager,
@@ -652,6 +711,7 @@ class PermissionHandlerRbacTest extends TestCase
             $this->schemaMapper,
             $this->objectEntityMapper,
             $realMatcher,
+            $appConfig,
             $this->logger,
             $this->container
         );
@@ -1186,6 +1246,55 @@ class PermissionHandlerRbacTest extends TestCase
         $this->assertTrue(
             $this->handler->hasPermission($schema, 'create'),
             'Authenticated create behaviour MUST be unchanged by the anonymous fail-closed gate'
+        );
+    }
+
+    public function testAuthenticatedPseudoGroupGrantsAnyLoggedInUser(): void
+    {
+        // A schema that grants 'read' to the 'authenticated' pseudo-group must
+        // allow any logged-in user at the PHP layer — symmetric with the SQL
+        // MagicRbacHandler — even when the user's real groups don't match.
+        $this->mockUser('user1', ['unrelated-group']);
+
+        $schema   = $this->createSchema(1, ['read' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'read'),
+            "'authenticated' MUST grant any logged-in user regardless of group membership"
+        );
+    }
+
+    public function testAuthenticatedPseudoGroupGrantsUserWithNoGroups(): void
+    {
+        // The grant is evaluated independently of the per-group foreach, so a
+        // user with zero groups still qualifies.
+        $this->mockUser('user2', []);
+
+        $schema   = $this->createSchema(1, ['update' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertTrue(
+            $this->handler->hasPermission($schema, 'update'),
+            "'authenticated' MUST grant a logged-in user who belongs to no groups"
+        );
+    }
+
+    public function testAuthenticatedPseudoGroupDeniesAnonymous(): void
+    {
+        // Anonymous callers are NOT 'authenticated' — a schema granting an
+        // action only to 'authenticated' must deny the unauthenticated principal.
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $schema   = $this->createSchema(1, ['read' => ['authenticated']]);
+        $register = $this->createRegister(10, null);
+        $this->setupRegisterForSchema(1, $register);
+
+        $this->assertFalse(
+            $this->handler->hasPermission($schema, 'read'),
+            "'authenticated' MUST NOT grant an anonymous caller"
         );
     }
 }

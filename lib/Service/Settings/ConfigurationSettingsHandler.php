@@ -135,6 +135,7 @@ class ConfigurationSettingsHandler
      * @return bool True if multi-tenancy is enabled, false otherwise
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -619,58 +620,6 @@ class ConfigurationSettingsHandler
     }//end updateSettings()
 
     /**
-     * Update the publishing options configuration.
-     *
-     * @param array $options The publishing options data to update.
-     *
-     * @return bool[] The updated publishing options configuration.
-     *
-     * @throws \RuntimeException If publishing options update fails.
-     *
-     * @psalm-return array{
-     *     use_old_style_publishing_view?: bool,
-     *     auto_publish_objects?: bool,
-     *     auto_publish_attachments?: bool
-     * }
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
-     */
-    public function updatePublishingOptions(array $options): array
-    {
-        try {
-            // Define valid publishing option keys for security.
-            $validOptions = [
-                'auto_publish_attachments',
-                'auto_publish_objects',
-                'use_old_style_publishing_view',
-            ];
-
-            $updatedOptions = [];
-
-            // Update each publishing option in the configuration.
-            foreach ($validOptions as $option) {
-                // Check if this option is provided in the input data.
-                if (isset($options[$option]) === true) {
-                    // Convert boolean or string to string format for storage.
-                    $value = 'false';
-                    if ($options[$option] === true || $options[$option] === 'true') {
-                        $value = 'true';
-                    }
-
-                    // Store the value in the configuration.
-                    $this->appConfig->setValueString($this->appName, $option, $value);
-                    // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->appConfig->getValueString($this->appName, $option, '') === 'true';
-                }
-            }
-
-            return $updatedOptions;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update publishing options: '.$e->getMessage());
-        }//end try
-    }//end updatePublishingOptions()
-
-    /**
      * Get focused RBAC settings only
      *
      * @return (mixed|string|true)[][]
@@ -684,6 +633,7 @@ class ConfigurationSettingsHandler
      *     availableUsers: array<string, string>}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getRbacSettingsOnly(): array
     {
@@ -738,6 +688,7 @@ class ConfigurationSettingsHandler
      *     availableUsers: array<string, string>}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -775,6 +726,7 @@ class ConfigurationSettingsHandler
      * }}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -820,6 +772,7 @@ class ConfigurationSettingsHandler
      * }}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -845,6 +798,7 @@ class ConfigurationSettingsHandler
      * @return string|null Default organisation UUID or null if not set
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -866,6 +820,7 @@ class ConfigurationSettingsHandler
      * @return string|null Tenant ID (default user tenant) or null if not set
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getTenantId(): ?string
     {
@@ -885,6 +840,8 @@ class ConfigurationSettingsHandler
      * Get organisation ID (alias for getDefaultOrganisationUuid)
      *
      * @return string|null Organisation ID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationId(): ?string
     {
@@ -899,6 +856,7 @@ class ConfigurationSettingsHandler
      * @return void
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -931,6 +889,7 @@ class ConfigurationSettingsHandler
      *     adminOverride: mixed|true}, availableTenants: array}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -979,6 +938,7 @@ class ConfigurationSettingsHandler
      * @return array Updated multitenancy config with settings and available tenants.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
@@ -1017,6 +977,7 @@ class ConfigurationSettingsHandler
      *     Nested else branches handle optional vector config backward compatibility
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1100,6 +1061,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1163,6 +1125,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getFileSettingsOnly(): array
     {
@@ -1240,6 +1203,7 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -1300,6 +1264,7 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If n8n settings retrieval fails.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getN8nSettingsOnly(): array
     {
@@ -1336,6 +1301,7 @@ class ConfigurationSettingsHandler
      * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateN8nSettingsOnly(array $n8nData): array
     {
@@ -1362,22 +1328,24 @@ class ConfigurationSettingsHandler
      * @return array Version info with name, version, description, author, licence, timestamp, and date.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getVersionInfoOnly(): array
     {
         try {
-            $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
+            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+            $appInfo    = $appManager->getAppInfo($this->appName);
 
             return [
-                'version'     => $appInfo['version'] ?? 'unknown',
-                'name'        => $appInfo['name'] ?? 'OpenRegister',
-                'description' => $appInfo['description'] ?? '',
-                'author'      => $appInfo['author'] ?? 'Conduction',
-                'licence'     => $appInfo['licence'] ?? 'AGPL',
+                'version'     => ($appInfo['version'] ?? null) ?? 'unknown',
+                'name'        => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+                'description' => ($appInfo['description'] ?? null) ?? '',
+                'author'      => ($appInfo['author'] ?? null) ?? 'Conduction',
+                'licence'     => ($appInfo['licence'] ?? null) ?? 'AGPL',
                 'timestamp'   => time(),
                 'date'        => date('Y-m-d H:i:s'),
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'version' => 'unknown',
                 'error'   => 'Failed to retrieve version info: '.$e->getMessage(),

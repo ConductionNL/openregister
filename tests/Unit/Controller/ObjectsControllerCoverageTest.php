@@ -79,21 +79,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Register DI mappers — defaults throw so entities stay null.
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
+        // Entities resolved by ObjectService::setRegister()/setSchema() default
+        // to null on the mock, so resolveRegisterSchemaIds() returns null
+        // entities unless a test wires the getters explicitly.
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,
@@ -167,24 +155,19 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     /**
-     * Register DI mappers that successfully return register and schema entities,
-     * and re-create the controller to pick up the new registrations.
+     * Wire the resolved register/schema entities into the ObjectService mock
+     * (resolveRegisterSchemaIds() reuses the entities that setRegister()/
+     * setSchema() already resolved instead of re-fetching them) and the
+     * constructor-injected mappers, then re-create the controller.
      */
     private function registerDiMappersWithEntities(
         Register&MockObject $registerEntity,
         Schema&MockObject $schemaEntity
     ): void {
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
+        $this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->controller = new ObjectsController(
             'openregister',
@@ -398,6 +381,14 @@ class ObjectsControllerCoverageTest extends TestCase
 
         \OC::$server->registerService(MagicMapper::class, function () use ($magicMapper) {
             return $magicMapper;
+        });
+
+        // The fast (non-rendering) list path now redacts write-only fields via
+        // RenderObject::redactWriteOnlyFromRows (openregister#380 leak fix), so
+        // the container must resolve a RenderObject here as well.
+        $renderHandler = $this->createMock(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        \OC::$server->registerService(\OCA\OpenRegister\Service\Object\RenderObject::class, function () use ($renderHandler) {
+            return $renderHandler;
         });
 
         $this->objectService->method('buildSearchQuery')->willReturn([
@@ -1046,40 +1037,13 @@ class ObjectsControllerCoverageTest extends TestCase
         $schemaEntity1 = $this->createSchemaMock(2, 'schema1');
         $schemaEntity2 = $this->createSchemaMock(3, 'schema2');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturnCallback(function () use ($schemaEntity1, $schemaEntity2) {
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturnCallback(function () use ($schemaEntity1, $schemaEntity2) {
             static $callCount = 0;
             $callCount++;
             return $callCount <= 1 ? $schemaEntity1 : $schemaEntity2;
         });
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',
@@ -1115,6 +1079,13 @@ class ObjectsControllerCoverageTest extends TestCase
      */
     public function testIndexCrossTableSearchWithInvalidPairsReturns404(): void
     {
+        // crossTableSearch() resolves entities through the constructor-injected
+        // mappers; make resolution fail so no valid pairs remain.
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+
         $this->request->method('getParams')->willReturn([
             'schemas' => '99,100',
         ]);
@@ -1141,35 +1112,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
         $schemaEntity = $this->createSchemaMock(2, 'sch1');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',
@@ -1337,6 +1282,85 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     // =========================================================================
+    // objects() — or#286: query-param register/schema must resolve to the
+    // same numeric IDs the path-style index() route uses, not the raw slug.
+    // =========================================================================
+
+    /**
+     * Regression test for or#286: GET /api/objects?register=<slug>&schema=<slug>
+     * used to silently return zero results because buildSearchQuery() was
+     * called with only the raw request params — the register/schema slugs
+     * were never resolved to numeric IDs before being used as the '@self'
+     * metadata filter. This asserts the resolved numeric IDs (from
+     * resolveRegisterSchemaIds()) are passed through to buildSearchQuery(),
+     * matching the path-style index() route's behavior.
+     */
+    public function testObjectsWithRegisterSchemaQueryParamsResolvesSlugToNumericId(): void
+    {
+        $this->request->method('getParams')->willReturn([
+            'register' => 'my-register',
+            'schema'   => 'my-schema',
+        ]);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(5);
+        $this->objectService->method('getSchema')->willReturn(7);
+
+        // The core assertion: buildSearchQuery() must receive the resolved
+        // numeric IDs (5, 7), not the raw slug strings 'my-register'/'my-schema'.
+        $this->objectService->expects($this->once())
+            ->method('buildSearchQuery')
+            ->with($this->anything(), 5, 7)
+            ->willReturn(['_limit' => 20, '@self' => ['register' => 5, 'schema' => 7]]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'obj-1', 'title' => 'Found']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->objects($this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total']);
+        $this->assertSame('obj-1', $data['results'][0]['uuid']);
+    }
+
+    /**
+     * Regression guard: the path-style index() route (/api/objects/{register}/{schema})
+     * must keep resolving slugs to numeric IDs the same way after the objects()
+     * fix — both routes should reach buildSearchQuery() with numeric IDs.
+     */
+    public function testIndexPathFormStillResolvesRegisterSchemaToNumericId(): void
+    {
+        $this->request->method('getParams')->willReturn([]);
+        $this->request->method('getRequestUri')->willReturn('/api/objects/my-register/my-schema');
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(5);
+        $this->objectService->method('getSchema')->willReturn(7);
+
+        $this->objectService->expects($this->once())
+            ->method('buildSearchQuery')
+            ->with($this->anything(), 5, 7)
+            ->willReturn(['_limit' => 20]);
+
+        $this->objectService->method('searchObjectsPaginated')->willReturn([
+            'results' => [['uuid' => 'obj-2', 'title' => 'Found2']],
+            'total'   => 1,
+        ]);
+
+        $result = $this->controller->index('my-register', 'my-schema', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(1, $data['total']);
+        $this->assertSame('obj-2', $data['results'][0]['uuid']);
+    }
+
+    // =========================================================================
     // create() — webhook error handling (lines 1643-1657)
     // =========================================================================
 
@@ -1352,17 +1376,10 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
         $schemaEntity = $this->createSchemaMock(2, 'sch');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
+        // resolveRegisterSchemaIds() reuses the entities already resolved by
+        // ObjectService::setRegister()/setSchema().
+        $this->objectService->method('getCurrentRegisterEntity')->willReturn($registerEntity);
+        $this->objectService->method('getCurrentSchemaEntity')->willReturn($schemaEntity);
 
         // Create a fresh webhookService mock with interceptRequest throwing.
         // Note: the controller's catch block uses `Exception` which resolves to OCP\DB\Exception
@@ -1541,6 +1558,71 @@ class ObjectsControllerCoverageTest extends TestCase
     }
 
     // =========================================================================
+    // show() — single render on the response path (perf: no double render)
+    // =========================================================================
+
+    /**
+     * show() must fetch the object WITHOUT rendering (find(_render: false)) and
+     * render exactly once via renderEntity() — the controller is the single
+     * render site. The response body must be the output of that one render,
+     * which is where writeOnly redaction and read-authorization stripping run
+     * (see RenderObjectWriteOnlyRedactionTest for the redaction contract).
+     */
+    public function testShowFindsWithoutRenderAndRendersExactlyOnce(): void
+    {
+        $this->setupRegularUser();
+
+        $registerEntity = $this->createMagicMappedRegister(1, 'reg', []);
+        $schemaEntity = $this->createSchemaMock(2, 'sch');
+        $this->registerDiMappersWithEntities($registerEntity, $schemaEntity);
+
+        $this->request->method('getParams')->willReturn([]);
+
+        $objectEntity = new ObjectEntity();
+        $objectEntity->setUuid('uuid-single-render');
+        $objectEntity->setObject(['title' => 'Secret holder', 'apiKey' => 'hunter2']);
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        // Capture find() arguments to pin the _render: false contract.
+        // ObjectService::find positional args: [0]=id, [1]=_extend, [2]=files,
+        // [3]=register, [4]=schema, [5]=_rbac, [6]=_multitenancy, [7]=_render.
+        $findArgs = [];
+        $this->objectService->expects($this->once())
+            ->method('find')
+            ->willReturnCallback(
+                function (...$args) use (&$findArgs, $objectEntity): ObjectEntity {
+                    $findArgs = $args;
+                    return $objectEntity;
+                }
+            );
+
+        // Exactly ONE render on the response path; its (redacted) output IS the
+        // response body.
+        $this->objectService->expects($this->once())
+            ->method('renderEntity')
+            ->willReturn([
+                'title' => 'Secret holder',
+                '@self' => ['uuid' => 'uuid-single-render'],
+            ]);
+
+        $result = $this->controller->show('uuid-single-render', '1', '2', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+        $this->assertFalse($findArgs[7], 'show() must call find() with _render: false (single render site)');
+        $this->assertTrue($findArgs[5], 'show() must keep _rbac enabled for a non-admin read');
+
+        $data = $result->getData();
+        $this->assertArrayNotHasKey(
+            'apiKey',
+            $data,
+            'response must be the single-render output (writeOnly property redacted by renderEntity)'
+        );
+        $this->assertSame('Secret holder', $data['title']);
+    }
+
+    // =========================================================================
     // index() — normal path with large results triggers gzip header
     // =========================================================================
 
@@ -1632,35 +1714,9 @@ class ObjectsControllerCoverageTest extends TestCase
         $registerEntity = $this->createMagicMappedRegister(1, 'reg', ['2', '3']);
         $schemaEntity = $this->createSchemaMock(2, 'sch1');
 
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')->willReturn($registerEntity);
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')->willReturn($schemaEntity);
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
-        $this->controller = new ObjectsController(
-            'openregister',
-            $this->request,
-            $this->config,
-            $this->appManager,
-            $this->container,
-            $this->registerMapper,
-            $this->schemaMapper,
-            $this->auditTrailMapper,
-            $this->objectService,
-            $this->userSession,
-            $this->groupManager,
-            $this->exportService,
-            $this->importService,
-            $this->webhookService,
-            $this->logger
-        );
+        // crossTableSearch() resolves entities through the constructor-injected mappers.
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
 
         $this->request->method('getParams')->willReturn([
             'schemas' => '2,3',

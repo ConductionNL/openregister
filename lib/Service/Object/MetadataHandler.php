@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -53,7 +53,7 @@ class MetadataHandler
      * @psalm-return   mixed
      * @phpstan-return mixed
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getValueFromPath(array $data, string $path): mixed
     {
@@ -87,7 +87,7 @@ class MetadataHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function generateSlugFromValue(string $value): string|null
     {
@@ -123,7 +123,7 @@ class MetadataHandler
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function createSlugHelper(string $text): string
     {

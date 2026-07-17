@@ -40,12 +40,11 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 
 export default {
 	name: 'AccountSection',
-	components: { NcButton, NcTextField, ConfirmDeactivationModal },
+	components: { NcButton, ConfirmDeactivationModal },
 	data() {
 		return {
 			status: 'active',
@@ -84,7 +83,7 @@ export default {
 		 * does not end the current session; an admin must approve before any account
 		 * effect.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-4
+		 * @spec openspec/specs/account-self-service/spec.md
 		 * @return {Promise<void>}
 		 */
 		async requestDeactivation() {

@@ -1,8 +1,7 @@
 ---
-status: implemented
+status: done
 ---
 # Workflow Engine Abstraction
-
 
 # Workflow Engine Abstraction
 ## Purpose
@@ -16,9 +15,7 @@ Provides an engine-agnostic interface for OpenRegister to interact with workflow
 OpenRegister needs to trigger external workflow engines for validation, enrichment, notifications, and automation. Currently n8n runs as a Nextcloud ExApp (FastAPI proxy to n8n at :5678) and Windmill exists as a separate ExApp. Rather than coupling to either engine, OpenRegister defines a shared interface (`WorkflowEngineInterface`) with per-engine adapters (`N8nAdapter`, `WindmillAdapter`). The `WorkflowEngineRegistry` service manages engine configurations, resolves the correct adapter for each request, encrypts credentials via `ICrypto`, and supports auto-discovery of installed ExApps via `IAppManager`.
 
 Multiple engines can be active simultaneously. Each individual hook on a schema specifies which engine it uses, so a single schema can have hooks targeting different engines (e.g., hook 1 uses n8n for validation, hook 2 uses Windmill for enrichment).
-
 ## Requirements
-
 ### Requirement: Engine Interface Definition
 Each engine adapter MUST implement the `WorkflowEngineInterface` PHP interface, providing a unified contract for workflow lifecycle management and execution. The interface MUST define methods for deploying, updating, retrieving, deleting, activating, deactivating, and executing workflows, as well as listing workflows, obtaining webhook URLs, and performing health checks. All adapters MUST accept configuration via a `configure(string $baseUrl, array $authConfig)` method that sets the engine connection parameters before any API calls.
 
@@ -516,6 +513,107 @@ Workflows deployed through the import pipeline MUST be tracked via the `Deployed
 - **GIVEN** three deployed workflows are attached to schema `"organisation"`
 - **WHEN** `DeployedWorkflowMapper::findBySchema("organisation")` is called
 - **THEN** all three workflows MUST be returned for export purposes
+
+### Requirement: Lifecycle Transition HTTP Surface
+
+The system MUST provide a sugar HTTP entry point over the lifecycle transition
+engine so apps adopting the `x-openregister-lifecycle` annotation do not write a
+per-schema action endpoint. `TransitionController::transition()` MUST read the
+transition `action` from the request body (HTTP 400 when missing or empty),
+delegate to `TransitionEngine::transition()`, and map failures to distinct
+statuses: HTTP 403 when the caller lacks `update` permission
+(`NotAuthorizedException`), HTTP 422 when a hook rejects the save
+(`HookStoppedException`) or the transition is refused/invalid (`RuntimeException`),
+and the serialized object on success. `availableActions()` MUST return the list
+of actions allowed from the object's current state, mapping `NotAuthorizedException`
+to HTTP 403 and a missing object/schema to HTTP 404.
+
+#### Scenario: Apply a named transition from the request body
+- **GIVEN** an object that supports a `publish` transition and a caller with `update` permission
+- **WHEN** a request is sent to the transition endpoint with body `{"action": "publish"}`
+- **THEN** `TransitionEngine::transition()` MUST be invoked with that action and object id
+- **AND** the response MUST be the transitioned object's `jsonSerialize()` output
+
+#### Scenario: Missing action is rejected
+- **GIVEN** a transition request with no `action` field
+- **WHEN** `transition()` validates the body
+- **THEN** the response MUST be HTTP 400 with `error: 'Missing required field "action".'`
+
+#### Scenario: Transition error mapping
+- **GIVEN** a transition request
+- **WHEN** the engine throws
+- **THEN** `NotAuthorizedException` MUST map to HTTP 403, `HookStoppedException` and `RuntimeException` MUST map to HTTP 422
+
+#### Scenario: List available actions from current state
+- **GIVEN** an object in a known lifecycle state
+- **WHEN** `availableActions()` runs
+- **THEN** the response MUST be `{"actions": [...]}` for the actions allowed from that state
+- **AND** a missing object MUST map to HTTP 404, an unauthorized caller to HTTP 403
+
+### Requirement: Storage Migration HTTP Surface
+
+The system MUST expose a storage-migration HTTP surface for moving object data
+between blob storage and magic tables. `MigrationController::migrate()` MUST
+require `register` and `schema` parameters (HTTP 400 when missing), validate
+`direction` against `to-magic`/`to-blob` (HTTP 400 otherwise), accept optional
+`batchSize` (default 100) and `dryRun` (boolean) parameters, resolve the
+register/schema via `MigrationService::resolveRegisterAndSchema()`, and run the
+matching migration returning the migration report. `status()` MUST return the
+storage status for a register/schema pair. Errors MUST return HTTP 500 with an
+`error` message.
+
+#### Scenario: Trigger a migration to magic tables
+- **GIVEN** a request with `register`, `schema`, and `direction=to-magic`
+- **WHEN** `migrate()` runs
+- **THEN** `MigrationService::migrateToMagicTable()` MUST be invoked with the resolved register/schema, `batchSize`, and `dryRun`
+- **AND** the migration report MUST be returned
+
+#### Scenario: Invalid direction is rejected
+- **GIVEN** a migration request with `direction` other than `to-magic` or `to-blob`
+- **WHEN** `migrate()` validates the direction
+- **THEN** the response MUST be HTTP 400 with `error: 'direction must be "to-magic" or "to-blob"'`
+
+#### Scenario: Missing register or schema is rejected
+- **GIVEN** a migration request missing `register` or `schema`
+- **WHEN** `migrate()` validates the parameters
+- **THEN** the response MUST be HTTP 400 with `error: 'register and schema parameters are required'`
+
+#### Scenario: Report storage status for a pair
+- **GIVEN** a request for a register/schema pair
+- **WHEN** `status()` runs
+- **THEN** the response MUST be the `MigrationService::getStorageStatus()` result for the resolved pair
+
+### Requirement: Magic-Table Sync HTTP Surface
+
+The system MUST expose a magic-table synchronisation HTTP surface that updates a
+schema-backed table structure to match its schema without dropping or recreating
+the table. `TablesController::sync()` MUST accept a register and schema reference
+(numeric id or slug), resolve both (HTTP 404 when either is not found), invoke
+`MagicMapper::syncTableForRegisterSchema()`, and return a result reporting the
+columns added, removed, de-required, re-required, and unchanged plus metadata and
+property counts. `syncAll()` MUST iterate every register/schema pair, accumulate
+per-pair success results and per-pair errors without aborting on a single
+failure, and return a summary with `synced`, `errors`, `totalSynced`, and
+`totalErrors`. On unexpected failure both endpoints MUST return HTTP 500 with an
+`error` message.
+
+#### Scenario: Sync the magic table for one register/schema pair
+- **GIVEN** a request for an existing register and schema
+- **WHEN** `sync()` runs
+- **THEN** `MagicMapper::syncTableForRegisterSchema()` MUST be invoked
+- **AND** the response MUST include column add/remove/de-require/re-require/unchanged statistics and the resolved table name
+
+#### Scenario: Unknown register or schema returns 404
+- **GIVEN** a sync request whose register or schema cannot be resolved
+- **WHEN** the controller resolves the references
+- **THEN** the response MUST be HTTP 404 with the appropriate `error`
+
+#### Scenario: Sync all pairs tolerates per-pair failures
+- **GIVEN** several register/schema pairs where one sync throws
+- **WHEN** `syncAll()` runs
+- **THEN** the failing pair MUST be recorded in `errors` while the others succeed
+- **AND** the response MUST report `totalSynced` and `totalErrors`
+- **AND** `success` MUST be true only when `errors` is empty
 
 ## Non-Requirements
 - This spec does NOT define how workflows are triggered by object lifecycle events (see Schema Hooks spec)

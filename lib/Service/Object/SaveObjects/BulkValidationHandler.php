@@ -53,7 +53,7 @@ class BulkValidationHandler
      *
      * @param LoggerInterface $logger Logger interface for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -75,7 +75,7 @@ class BulkValidationHandler
      *
      * @return array Schema analysis with metadataFields, inverseProperties, validationRequired, etc.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function performComprehensiveSchemaAnalysis(Schema $schema): array
     {
@@ -158,7 +158,7 @@ class BulkValidationHandler
      *
      * @return bool The boolean value.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function castToBoolean($value): bool
     {
@@ -190,7 +190,7 @@ class BulkValidationHandler
      *
      * @psalm-return list{array, string}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handlePreValidationCascading(array $object, ?string $uuid): array
     {

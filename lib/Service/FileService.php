@@ -27,7 +27,7 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/content-versioning/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
@@ -324,6 +324,25 @@ class FileService
      * @var FileAuditHandler
      */
     private FileAuditHandler $fileAuditHandler;
+
+    /**
+     * Per-request memoization for the defense-in-depth folder-access
+     * re-validation done by `assertObjectFolderAccessible`.
+     *
+     * Keyed `"{uid}:{folderId}"` (or `"__no_user__:{folderId}"` when no
+     * acting user resolves). Only successful re-validations are cached;
+     * denials re-throw and re-check on retry. The cache lives for the
+     * lifetime of the FileService instance — i.e. one HTTP request — so
+     * bulk imports / cascade saves stop re-running
+     * `getUserFolder() + getById()` filesystem I/O on every iteration.
+     * PR #1431 concern.
+     *
+     * Access changes are not propagated mid-request anyway, so a cache
+     * hit here returns the same verdict the live check would.
+     *
+     * @var array<string, true>
+     */
+    private array $folderAccessRevalidationCache = [];
 
     /**
      * Root folder name for all OpenRegister files.
@@ -678,6 +697,9 @@ class FileService
             }
 
             return $this->createObjectFolderById(objectEntity: $entity, currentUser: $currentUser);
+        } catch (\OCA\OpenRegister\Exception\FolderAccessDeniedException $e) {
+            // Access denials must propagate to the controller for HTTP 403 with structured body.
+            throw $e;
         } catch (exception $e) {
             $this->logger->error(
                 message: '[FileService] Failed to create folder for entity: {message}',
@@ -689,7 +711,7 @@ class FileService
                 ]
             );
             return null;
-        }
+        }//end try
     }//end createEntityFolder()
 
     /**
@@ -777,15 +799,33 @@ class FileService
      */
     public function getFilesForEntity(Register|ObjectEntity $entity, ?bool $sharedFilesOnly=false): array
     {
-
-        $folder = $this->getObjectFolder(objectEntity: $entity);
         if ($entity instanceof Register) {
             $folder = $this->getRegisterFolderById(register: $entity);
-        }
 
-        if ($folder === null) {
-            throw new Exception("Cannot access folder for entity ".$entity->getId());
-        }
+            if ($folder === null) {
+                throw new Exception("Cannot access folder for entity ".$entity->getId());
+            }
+        } else {
+            // Read/list path for an object. Objects that have never had a files
+            // folder created (null/legacy/empty folder property), whose bound
+            // folder node no longer resolves, or whose folder is not accessible
+            // to the current caller simply have no files to list. Resolving the
+            // folder must not fail the whole request: degrade to an empty list
+            // (HTTP 200) instead of surfacing a 500. See ObjectFilesController::index.
+            try {
+                $folder = $this->getObjectFolder(objectEntity: $entity);
+            } catch (\Throwable $e) {
+                $this->logger->info(
+                    message: '[FileService] No accessible files folder for object '.$entity->getId().'; returning empty list: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+                return [];
+            }
+
+            if ($folder === null) {
+                return [];
+            }
+        }//end if
 
         $files = $folder->getDirectoryListing();
 
@@ -828,7 +868,7 @@ class FileService
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -837,6 +877,86 @@ class FileService
             registerId: $registerId
         );
     }//end getObjectFolder()
+
+    /**
+     * Re-validate the access check on an existing object's bound folder.
+     *
+     * Used by `ObjectService::ensureObjectFolder` to close the
+     * defense-in-depth gap flagged on PR #1431: pre-PR cross-tenant
+     * bindings (rows where `_folder` references a node the current
+     * actor cannot read) would otherwise pass through subsequent
+     * saves that don't touch `@self.folder` because `setSelfMetadata`
+     * only fires when `@self.folder` is present in the write payload.
+     *
+     * Re-running `assertFolderIsAccessible` on every save through
+     * `ensureObjectFolder` makes the check apply uniformly. A
+     * denial throws `FolderAccessDeniedException` (HTTP 403) at the
+     * controller layer.
+     *
+     * No-op when the object has no folder bound or the bound value
+     * is non-numeric (legacy path-style folder, handled by the
+     * auto-create branch in ensureObjectFolder).
+     *
+     * **Acting user resolution.** `$currentUser` is forwarded verbatim
+     * to `assertFolderIsAccessible` and follows that method's
+     * documented precedence: when non-null it is used as-is, otherwise
+     * `IUserSession::getUser()` is consulted, otherwise the bind is
+     * denied. Non-HTTP callers (cron, import pipelines, event listeners)
+     * MUST pass an explicit `$currentUser` to avoid the
+     * session-user-is-null → default-deny path; HTTP callers can omit
+     * the argument and rely on session resolution.
+     *
+     * @param ObjectEntity $object      The existing object whose folder must be re-validated.
+     * @param IUser|null   $currentUser Explicit acting user; falls back to session resolution.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\FolderAccessDeniedException When the acting user cannot access the bound folder.
+     */
+    public function assertObjectFolderAccessible(ObjectEntity $object, ?IUser $currentUser=null): void
+    {
+        $folder = $object->getFolder();
+        if ($folder === null || $folder === '' || is_numeric($folder) === false) {
+            return;
+        }
+
+        // Per-request memoization. Resolve the acting user the same way
+        // `FolderManagementHandler::assertFolderIsAccessible` will (explicit
+        // arg → session → null) so the cache key matches the access-grant
+        // tuple the inner method actually evaluates.
+        $actingUser = ($currentUser ?? $this->userSession->getUser());
+        $cacheKey   = (($actingUser?->getUID() ?? '__no_user__').':'.$folder);
+        if (isset($this->folderAccessRevalidationCache[$cacheKey]) === true) {
+            return;
+        }
+
+        $this->folderManagementHandler->assertFolderIsAccessible(
+            folderId: (string) $folder,
+            currentUser: $currentUser,
+            objectEntity: $object
+        );
+
+        // Only cache successes — failures re-throw and re-check on retry.
+        $this->folderAccessRevalidationCache[$cacheKey] = true;
+    }//end assertObjectFolderAccessible()
+
+    /**
+     * Reset the per-request folder-access revalidation cache.
+     *
+     * `isReadable()` is a snapshot of mount/share/ACL/trash state. Within a
+     * single request that state CAN change — a cascade save may move or trash
+     * the parent folder. Because the cache lives for the FileService instance
+     * (≈ the whole request), a stale "accessible" verdict could otherwise
+     * survive such a mutation. Callers bound the cache to a single save API
+     * call by invoking this at the entry of `saveObject` / `saveObjects`, so
+     * each top-level write re-validates against current state.
+     *
+     * @return void
+     */
+    public function resetFolderAccessRevalidationCache(): void
+    {
+        $this->folderAccessRevalidationCache = [];
+    }//end resetFolderAccessRevalidationCache()
 
     /**
      * Returns a share link for the given IShare object.
@@ -1282,7 +1402,7 @@ class FileService
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -1389,7 +1509,7 @@ class FileService
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getAllTags(): array
     {
@@ -1532,7 +1652,7 @@ class FileService
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -1541,11 +1661,46 @@ class FileService
 
         // Set appropriate headers.
         $response->addHeader('Content-Type', $file->getMimeType());
-        $response->addHeader('Content-Disposition', 'attachment; filename="'.$file->getName().'"');
+        // SEC-CTRL-9: RFC 6266-encode the filename to prevent header injection /
+        // response splitting via quotes, control chars, or non-ASCII bytes.
+        $response->addHeader(
+            'Content-Disposition',
+            $this->buildContentDisposition(disposition: 'attachment', filename: $file->getName())
+        );
         $response->addHeader('Content-Length', (string) $file->getSize());
 
         return $response;
     }//end streamFile()
+
+    /**
+     * Build an RFC 6266 compliant Content-Disposition header value.
+     *
+     * SEC-CTRL-9: emits a sanitised ASCII `filename="..."` fallback plus a UTF-8
+     * `filename*` parameter so a hostile or non-ASCII filename cannot split the
+     * header or corrupt the response.
+     *
+     * @param string $disposition Either 'inline' or 'attachment'.
+     * @param string $filename    The raw file name.
+     *
+     * @return string The encoded Content-Disposition header value.
+     */
+    private function buildContentDisposition(string $disposition, string $filename): string
+    {
+        $clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
+        if ($clean === null) {
+            $clean = '';
+        }
+
+        $ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
+        if ($ascii === null) {
+            $ascii = '';
+        }
+
+        $ascii   = str_replace(['\\', '"'], '_', $ascii);
+        $encoded = rawurlencode($clean);
+
+        return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;
+    }//end buildContentDisposition()
 
     /**
      * Publish a file by creating a public share link using direct database operations.
@@ -1816,8 +1971,11 @@ class FileService
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node  $node     The file node to anonymize.
-     * @param array $entities Array of detected entities with 'text' and 'key' fields.
+     * @param Node        $node       The file node to anonymize.
+     * @param array       $entities   Array of detected entities with 'text' and 'key' fields.
+     * @param string      $scope      Placeholder-numbering scope: 'document' (default) or 'dossier'.
+     * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
+     *                                back to the file's parent folder.
      *
      * @throws Exception If anonymization fails.
      *
@@ -1825,20 +1983,60 @@ class FileService
      *
      * @spec exclude One-line delegation to DocumentProcessingHandler::anonymizeDocument; no facade-owned logic.
      */
-    public function anonymizeDocument(Node $node, array $entities): Node
-    {
+    public function anonymizeDocument(
+        Node $node,
+        array $entities,
+        string $scope='document',
+        ?string $dossierKey=null
+    ): Node {
         return $this->documentProcessingHandler->anonymizeDocument(
             node: $node,
-            entities: $entities
+            entities: $entities,
+            scope: $scope,
+            dossierKey: $dossierKey
         );
     }//end anonymizeDocument()
+
+    /**
+     * Residual entities from the most recent anonymizeDocument() call.
+     *
+     * Best-effort policy: the anonymised file is produced even when some entity
+     * text could not be removed (e.g. ExApp NER over-capture across table
+     * cells); these records describe what remains so the caller can warn the
+     * operator. Empty when the last run fully redacted everything.
+     *
+     * @return array<int, array{text: string, type: string, id: string}> Residual records.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastResidualEntities.
+     */
+    public function getLastResidualEntities(): array
+    {
+        return $this->documentProcessingHandler->getLastResidualEntities();
+    }//end getLastResidualEntities()
+
+    /**
+     * Per-entity placeholder map from the most recent anonymizeDocument() call.
+     *
+     * Maps the internal global entity id (stringified) to the exact placeholder
+     * string emitted into the document (e.g. `"7" => "[PERSOON: 1]"`), so the
+     * caller (DocuDesk's grondslagen-summary) can render the same placeholder
+     * the document carries rather than re-deriving it from the global id.
+     *
+     * @return array<string, string> Map of global entity id → emitted placeholder.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastPlaceholderMap.
+     */
+    public function getLastPlaceholderMap(): array
+    {
+        return $this->documentProcessingHandler->getLastPlaceholderMap();
+    }//end getLastPlaceholderMap()
 
     /**
      * Get the file versioning handler.
      *
      * @return FileVersioningHandler The versioning handler.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -1896,7 +2094,7 @@ class FileService
      *
      * @throws Exception If the rename fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -1951,7 +2149,7 @@ class FileService
      *
      * @throws Exception If the copy fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -2056,7 +2254,7 @@ class FileService
      *
      * @throws Exception If the move fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {

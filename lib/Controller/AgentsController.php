@@ -19,8 +19,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Exception;
  *
  * @psalm-suppress UnusedClass
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class AgentsController extends Controller
 {
@@ -146,32 +146,6 @@ class AgentsController extends Controller
     }//end __construct()
 
     /**
-     * Render the Agents page
-     *
-     * Returns the template for the main agents page.
-     * All routing is handled client-side by the SPA.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @return TemplateResponse Template response for agents SPA
-     *
-     * @psalm-return TemplateResponse<200, array<never, never>>
-     *
-     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
-     */
-    public function page(): TemplateResponse
-    {
-        // Return SPA template response (routing handled client-side).
-        return new TemplateResponse(
-            appName: 'openregister',
-            templateName: 'index',
-            params: []
-        );
-    }//end page()
-
-    /**
      * Get all agents accessible by current user
      *
      * RBAC filtering is handled in the mapper layer.
@@ -185,7 +159,7 @@ class AgentsController extends Controller
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve agents',
      *     results?: array<Agent>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function index(): JSONResponse
     {
@@ -270,7 +244,7 @@ class AgentsController extends Controller
      *     array{error: 'Access denied to this agent'|'Agent not found'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -320,7 +294,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with created agent
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function create(): JSONResponse
     {
@@ -408,7 +382,7 @@ class AgentsController extends Controller
      *
      * @return JSONResponse JSON response with updated agent
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -491,7 +465,7 @@ class AgentsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function patch(int $id): JSONResponse
     {
@@ -518,7 +492,7 @@ class AgentsController extends Controller
      *     'User not authenticated', message?: 'Agent deleted successfully'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -584,7 +558,7 @@ class AgentsController extends Controller
      *     array{error?: 'Failed to retrieve statistics', total?: int,
      *     active?: int, inactive?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function stats(): JSONResponse
     {
@@ -626,12 +600,14 @@ class AgentsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Capability discovery: returns the static tool-registry metadata (ToolRegistry::getAllTools);
+     *   no caller-supplied object id.
      *
      * @return JSONResponse List of available tools with metadata
      *
      * @psalm-return JSONResponse<200|500, array{error?: 'Failed to retrieve tools', results?: array}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-4
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function tools(): JSONResponse
     {

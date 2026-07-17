@@ -45,7 +45,7 @@ interface TranslationProviderInterface
      *
      * @return string|null The translated text, or null on miss/error.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-10
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string;
 
@@ -58,7 +58,7 @@ interface TranslationProviderInterface
      *
      * @return string The provider identifier slug.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-11
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function getIdentifier(): string;
 }//end interface

@@ -185,6 +185,34 @@ class TimeTrackerLinkMapper extends QBMapper
     }//end deleteByObjectAndEntryId()
 
     /**
+     * Return every link row, optionally scoped to an object uuid.
+     *
+     * Used by the `openregister:time:reconcile` command to walk every
+     * link and re-fetch upstream NC TimeManager metadata (duration,
+     * billable, started_at, name) so the denormalised fields match the
+     * authoritative source after schema/data drift.
+     *
+     * @param string|null $objectUuid Optional object uuid scope. Null returns every row.
+     *
+     * @return TimeTrackerLink[]
+     *
+     * @spec openspec/specs/integration-time-tracker/spec.md
+     */
+    public function findAll(?string $objectUuid=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->orderBy('id', 'ASC');
+
+        if ($objectUuid !== null) {
+            $qb->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
+        }
+
+        return $this->findEntities(query: $qb);
+    }//end findAll()
+
+    /**
      * Apply an id-component constraint to the query builder, using
      * `IS NULL` when the component is absent so the composite-unique
      * match is exact.

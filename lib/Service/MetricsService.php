@@ -106,6 +106,27 @@ class MetricsService
     public const METRIC_CHAT_MESSAGE = 'chat_message';
 
     /**
+     * Metric type constant for object creation (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_CREATED = 'object_created';
+
+    /**
+     * Metric type constant for object update (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_UPDATED = 'object_updated';
+
+    /**
+     * Metric type constant for object deletion (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_DELETED = 'object_deleted';
+
+    /**
      * Constructor
      *
      * @param IDBConnection   $db     Database connection
@@ -204,7 +225,7 @@ class MetricsService
      *
      * @psalm-return array<int>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-27
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getFilesProcessedPerDay(int $days=30): array
     {
@@ -252,7 +273,7 @@ class MetricsService
      * @psalm-return array{total: int, successful: int, failed: int,
      *               success_rate: float, estimated_cost_usd: float, period_days: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-28
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getEmbeddingStats(int $days=30): array
     {
@@ -314,7 +335,7 @@ class MetricsService
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-29
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getSearchLatencyStats(int $days=7): array
     {
@@ -388,7 +409,7 @@ class MetricsService
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-30
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getStorageGrowth(int $days=30): array
     {
@@ -459,7 +480,7 @@ class MetricsService
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-31
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getDashboardMetrics(): array
     {
@@ -552,7 +573,7 @@ class MetricsService
      *
      * @return float Success rate as percentage (0-100), rounded to 2 decimal places
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-32
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function calculateSuccessRate(int $total, int $successful): float
     {
@@ -579,7 +600,7 @@ class MetricsService
      *
      * @psalm-suppress MixedArgument
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-33
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function roundAverageMs($avgMs): float
     {
@@ -603,7 +624,7 @@ class MetricsService
      *
      * @return float Average vectors per day, rounded to 2 decimal places
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-34
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function calculateAverageVectorsPerDay(array $growthData): float
     {

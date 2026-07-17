@@ -305,7 +305,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async loadPreview() {
 			const configuration = configurationStore.configurationItem
@@ -340,6 +340,7 @@ export default {
 			return this.selectedSchemas.includes(slug)
 		},
 		/**
+		 * @param change
 		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
 		 */
 		isObjectSelected(change) {
@@ -347,6 +348,8 @@ export default {
 			return this.selectedObjects.includes(objectId)
 		},
 		/**
+		 * @param slug
+		 * @param checked
 		 * @spec exclude Toggles a register slug in/out of the selection set; UI selection plumbing.
 		 */
 		toggleRegisterSelection(slug, checked) {
@@ -359,6 +362,8 @@ export default {
 			}
 		},
 		/**
+		 * @param slug
+		 * @param checked
 		 * @spec exclude Toggles a schema slug in/out of the selection set; UI selection plumbing.
 		 */
 		toggleSchemaSelection(slug, checked) {
@@ -371,6 +376,8 @@ export default {
 			}
 		},
 		/**
+		 * @param change
+		 * @param checked
 		 * @spec exclude Toggles an object id in/out of the selection set; UI selection plumbing.
 		 */
 		toggleObjectSelection(change, checked) {
@@ -415,6 +422,7 @@ export default {
 			this.selectedObjects = []
 		},
 		/**
+		 * @param value
 		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
 		 */
 		formatValue(value) {

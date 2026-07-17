@@ -9,9 +9,9 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author  Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
@@ -35,7 +35,7 @@ use OCP\IRequest;
  *
  * @package OCA\OpenRegister\Controller
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class ConsumersController extends Controller
 {
@@ -64,7 +64,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function index(): JSONResponse
     {
@@ -88,7 +88,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -108,7 +108,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function create(): JSONResponse
     {
@@ -135,7 +135,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -164,7 +164,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -188,7 +188,7 @@ class ConsumersController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function patch(int $id): JSONResponse
     {

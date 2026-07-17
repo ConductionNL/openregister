@@ -37,6 +37,8 @@ use OCA\OpenRegister\Service\Aggregation\AggregationQuery;
 use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\LanguageService;
+use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\DB\IPreparedStatement;
 use OCP\DB\IResult;
@@ -52,25 +54,32 @@ class AggregationRunnerNativeBucketTest extends TestCase
 {
 
     private MagicMapper&MockObject $magicMapper;
-    private RegisterMapper&MockObject $registerMapper;
-    private SchemaMapper&MockObject $schemaMapper;
-    private PlaceholderResolver $placeholderResolver;
-    private IDBConnection&MockObject $db;
-    private AggregationCache&MockObject $cache;
-    private PermissionHandler&MockObject $permissionHandler;
-    private IUserSession&MockObject $userSession;
-    private OrganisationService&MockObject $organisationService;
 
+    private RegisterMapper&MockObject $registerMapper;
+
+    private SchemaMapper&MockObject $schemaMapper;
+
+    private PlaceholderResolver $placeholderResolver;
+
+    private IDBConnection&MockObject $db;
+
+    private AggregationCache&MockObject $cache;
+
+    private PermissionHandler&MockObject $permissionHandler;
+
+    private IUserSession&MockObject $userSession;
+
+    private OrganisationService&MockObject $organisationService;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->magicMapper         = $this->createMock(MagicMapper::class);
-        $this->registerMapper      = $this->createMock(RegisterMapper::class);
-        $this->schemaMapper        = $this->createMock(SchemaMapper::class);
-        $this->db                  = $this->createMock(IDBConnection::class);
-        $this->cache               = $this->createMock(AggregationCache::class);
+        $this->magicMapper    = $this->createMock(MagicMapper::class);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->schemaMapper   = $this->createMock(SchemaMapper::class);
+        $this->db    = $this->createMock(IDBConnection::class);
+        $this->cache = $this->createMock(AggregationCache::class);
         $this->permissionHandler   = $this->createMock(PermissionHandler::class);
         $this->userSession         = $this->createMock(IUserSession::class);
         $this->organisationService = $this->createMock(OrganisationService::class);
@@ -84,7 +93,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         $this->magicMapper->method('getTableNameForRegisterSchema')->willReturn('register_1_schema_calllogs');
 
     }//end setUp()
-
 
     public function testMysqlPlatformEmitsDateFormatWithBackticks(): void
     {
@@ -110,7 +118,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end testMysqlPlatformEmitsDateFormatWithBackticks()
 
-
     public function testMysqlHourBucketEmitsHourFormat(): void
     {
         $this->wirePlatform(platform: $this->createMock(MySQLPlatform::class));
@@ -133,7 +140,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         );
 
     }//end testMysqlHourBucketEmitsHourFormat()
-
 
     public function testMysqlMinuteBucketUsesPercentI(): void
     {
@@ -158,7 +164,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end testMysqlMinuteBucketUsesPercentI()
 
-
     public function testSqlitePlatformEmitsStrftimeWithDoubleQuotes(): void
     {
         $this->wirePlatform(platform: $this->createMock(SqlitePlatform::class));
@@ -181,7 +186,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end testSqlitePlatformEmitsStrftimeWithDoubleQuotes()
 
-
     public function testSqliteMinuteBucketUsesPercentM(): void
     {
         // Counter-test to testMysqlMinuteBucketUsesPercentI() — SQLite
@@ -203,7 +207,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end testSqliteMinuteBucketUsesPercentM()
 
-
     public function testPostgresPlatformStillEmitsDateTrunc(): void
     {
         // Regression: the Postgres path emitted by #1611 stays unchanged.
@@ -221,7 +224,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         $this->assertSame('postgres', $result['backend']);
 
     }//end testPostgresPlatformStillEmitsDateTrunc()
-
 
     public function testUnknownPlatformFallsBackToPhp(): void
     {
@@ -242,7 +244,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         $this->assertSame('php-fallback', $result['backend'], 'unknown platform MUST fall through to PHP fallback');
 
     }//end testUnknownPlatformFallsBackToPhp()
-
 
     public function testMysqlBucketBindsStartAndEndBounds(): void
     {
@@ -268,11 +269,62 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end testMysqlBucketBindsStartAndEndBounds()
 
+    public function testNotInFilterEmitsNotInSqlAndBindsOperands(): void
+    {
+        // Postgres handles every query shape natively, including the
+        // ungrouped count with a notIn filter. The native path MUST emit
+        // a `NOT IN (?, ?)` predicate and bind both exclusion operands.
+        $this->wirePlatform(platform: $this->createMock(PostgreSQLPlatform::class));
+        $captured = $this->captureSql();
+
+        $runner = $this->makeRunner();
+        $runner->runAdhoc(
+            register: $this->makeRegister(),
+            schema: $this->makeSchema(),
+            query: AggregationQuery::create(
+                metric: 'count',
+                filter: ['status' => ['notIn' => ['archived', 'deleted']]]
+            )
+        );
+
+        $this->assertNotNull($captured['sql'], 'runAdhoc MUST prepare a SQL statement');
+        $this->assertStringContainsString(
+            '"status" NOT IN (?, ?)',
+            $captured['sql'],
+            'notIn filter MUST emit a NOT IN predicate with one placeholder per operand'
+        );
+        $this->assertContains('archived', $captured['bindings'] ?? [], 'first notIn operand MUST be bound');
+        $this->assertContains('deleted', $captured['bindings'] ?? [], 'second notIn operand MUST be bound');
+
+    }//end testNotInFilterEmitsNotInSqlAndBindsOperands()
+
+    public function testEmptyNotInListRetainsAllRows(): void
+    {
+        // `notIn []` excludes nothing, so the runner MUST emit an
+        // always-true predicate (1 = 1) rather than a malformed
+        // `NOT IN ()` clause that errors on some engines.
+        $this->wirePlatform(platform: $this->createMock(PostgreSQLPlatform::class));
+        $captured = $this->captureSql();
+
+        $runner = $this->makeRunner();
+        $runner->runAdhoc(
+            register: $this->makeRegister(),
+            schema: $this->makeSchema(),
+            query: AggregationQuery::create(
+                metric: 'count',
+                filter: ['status' => ['notIn' => []]]
+            )
+        );
+
+        $this->assertNotNull($captured['sql'], 'runAdhoc MUST prepare a SQL statement');
+        $this->assertStringContainsString('1 = 1', $captured['sql'], 'empty notIn MUST emit an always-true predicate');
+        $this->assertStringNotContainsString('NOT IN', $captured['sql'], 'empty notIn MUST NOT emit a NOT IN () clause');
+
+    }//end testEmptyNotInListRetainsAllRows()
 
     // -----------------------------------------------------------------------
     // Helpers.
     // -----------------------------------------------------------------------
-
 
     /**
      * Capture the SQL passed to `db->prepare()` and the bindings passed
@@ -290,21 +342,24 @@ class AggregationRunnerNativeBucketTest extends TestCase
         $captured = new \ArrayObject(['sql' => null, 'bindings' => null]);
         $stmt     = $this->createMock(IPreparedStatement::class);
         $result   = $this->createMock(IResult::class);
-        $stmt->method('execute')->willReturnCallback(function (array $bindings=[]) use ($captured, $result) {
-            $captured['bindings'] = $bindings;
-            return $result;
-        });
+        $stmt->method('execute')->willReturnCallback(
+                function (array $bindings=[]) use ($captured, $result) {
+                    $captured['bindings'] = $bindings;
+                    return $result;
+                }
+                );
         $stmt->method('fetch')->willReturn(false);
 
-        $this->db->method('prepare')->willReturnCallback(function (string $sql) use ($stmt, $captured) {
-            $captured['sql'] = $sql;
-            return $stmt;
-        });
+        $this->db->method('prepare')->willReturnCallback(
+                function (string $sql) use ($stmt, $captured) {
+                    $captured['sql'] = $sql;
+                    return $stmt;
+                }
+                );
 
         return $captured;
 
     }//end captureSql()
-
 
     /**
      * Wire the db connection mock to return the given platform instance.
@@ -318,7 +373,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         $this->db->method('getDatabasePlatform')->willReturn($platform);
 
     }//end wirePlatform()
-
 
     private function dayBucketQuery(): AggregationQuery
     {
@@ -334,7 +388,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end dayBucketQuery()
 
-
     private function makeSchema(): Schema
     {
         $schema = new Schema();
@@ -344,7 +397,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
 
     }//end makeSchema()
 
-
     private function makeRegister(): Register
     {
         $register = new Register();
@@ -353,7 +405,6 @@ class AggregationRunnerNativeBucketTest extends TestCase
         return $register;
 
     }//end makeRegister()
-
 
     private function makeRunner(): AggregationRunner
     {
@@ -367,10 +418,9 @@ class AggregationRunnerNativeBucketTest extends TestCase
             permissionHandler: $this->permissionHandler,
             userSession: $this->userSession,
             organisationService: $this->organisationService,
-            searchBackend: null
+            translationHandler: $this->createMock(TranslationHandler::class),
+            languageService: $this->createMock(LanguageService::class),
         );
 
     }//end makeRunner()
-
-
 }//end class

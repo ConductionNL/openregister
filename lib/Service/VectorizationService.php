@@ -93,7 +93,7 @@ class VectorizationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void
     {
@@ -126,7 +126,7 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -268,7 +268,7 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -389,7 +389,7 @@ class VectorizationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function storeVector($entity, array $item, array $embeddingData, VectorizationStrategyInterface $strategy): void
     {
@@ -417,7 +417,7 @@ class VectorizationService
      *
      * @throws \Exception If strategy not registered
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-3
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
@@ -450,7 +450,7 @@ class VectorizationService
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -483,15 +483,16 @@ class VectorizationService
     }//end semanticSearch()
 
     /**
-     * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
+     * Perform hybrid search combining keyword and semantic (vector) results
      *
-     * Delegates to VectorEmbeddings.
+     * Delegates to VectorEmbeddings. Caller supplies keyword search results;
+     * vector search runs against the PostgreSQL database.
      *
-     * @param string      $query       Query text
-     * @param array       $solrFilters SOLR-specific filters
-     * @param int         $limit       Maximum results
-     * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
-     * @param string|null $provider    Embedding provider
+     * @param string      $query          Query text
+     * @param array       $keywordResults Pre-fetched keyword search results to fuse
+     * @param int         $limit          Maximum results
+     * @param array       $weights        Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider       Embedding provider
      *
      * @return array Hybrid search results with combined scores and source breakdown.
      *
@@ -501,14 +502,14 @@ class VectorizationService
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters=[],
+        array $keywordResults=[],
         int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        array $weights=['keyword' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
         return $this->vectorService->hybridSearch(
             query: $query,
-            solrFilters: $solrFilters,
+            keywordResults: $keywordResults,
             limit: $limit,
             weights: $weights,
             provider: $provider
@@ -522,7 +523,7 @@ class VectorizationService
      *
      * @return array Vector statistics with totals and breakdowns by type and model.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getVectorStats(): array
     {
@@ -545,7 +546,7 @@ class VectorizationService
      *     vectorLength: int<0, max>, sampleValues: array<float>,
      *     testText: string}}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -564,7 +565,7 @@ class VectorizationService
      *     existing_models?: list{0?: mixed,...}, total_vectors?: int,
      *     null_model_count?: int, mismatched_models?: list<mixed>}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -580,7 +581,7 @@ class VectorizationService
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function clearAllEmbeddings(): array
     {

@@ -20,8 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -62,8 +62,12 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter) testChat() declares ($provider, $config, $_testMessage) matching the public contract expected by callers and the backup implementation; the simplified stub body doesn't use all three but changing the signature would break callers.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a separate concern extracted per SOLID, and removing any would lose a capability.
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
+ * matching the public contract expected by callers and the backup implementation; the simplified stub
+ * body doesn't use all three but changing the signature would break callers.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
+ * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
+ * separate concern extracted per SOLID, and removing any would lose a capability.
  */
 class ChatService
 {
@@ -207,7 +211,7 @@ class ChatService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function processMessage(
         int $conversationId,
@@ -340,6 +344,8 @@ class ChatService
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+                // Per-run LLM token/latency usage for run-cost recording (run-analytics).
+                'usage'     => $this->responseHandler->lastUsage,
             ];
         } catch (Exception $e) {
             $this->logger->error(
@@ -363,7 +369,7 @@ class ChatService
      *
      * @return string Generated title
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -381,7 +387,7 @@ class ChatService
      *
      * @return string Unique title
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {

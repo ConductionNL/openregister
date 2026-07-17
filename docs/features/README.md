@@ -46,6 +46,8 @@ OpenRegister implements or supports the following GEMMA (Gemeentelijke Model Arc
 | Feature | Doc | Category | Status | Key Standards |
 |---------|-----|----------|--------|---------------|
 | Registers & Schemas | [registers-and-schemas.md](registers-and-schemas.md) | Core | Implemented | JSON Schema, Schema.org, GGM |
+| External Databases as Virtual Registers | [dbal-virtual-registers.md](dbal-virtual-registers.md) | Core | Implemented | Doctrine DBAL, JSON Schema, Common Ground (data at the source) |
+| Nextcloud Tables as Virtual Registers | [tables-virtual-register.md](tables-virtual-register.md) | Core | Implemented | Nextcloud Tables, JSON Schema, Common Ground (data at the source) |
 | Object Storage & Lifecycle | [object-storage.md](object-storage.md) | Core | Implemented | UUID, soft delete, versioning |
 | Search, Filtering & Faceting | [search-and-faceting.md](search-and-faceting.md) | Core | Implemented | NL API Design Rules, PostgreSQL, Solr, Elasticsearch |
 | Access Control (RBAC) | [access-control.md](access-control.md) | Security | Implemented | OAuth2 scopes, ZGW Autorisaties, BIO |
@@ -84,6 +86,7 @@ Meeting Dutch government regulatory requirements.
 
 - [Content Versioning & Audit Trail](versioning-and-audit.md) — Immutable hash-chained audit log, semantic versioning, rollback
 - [Archiving & Records Management](archiving.md) — Retention schedules, destruction workflows, MDTO XML, e-Depot transfer (SIP)
+- [DSAR Deadline Escalation & DPIA Detection](dsar-escalation-and-dpia.md) — Temporal deadline-reminder/escalation/breach sweep + GDPR art-35 DPIA pattern detection, policy-pack-driven (ADR-047)
 
 ### Integration
 Connecting OpenRegister to external systems and workflows.
@@ -94,6 +97,7 @@ Connecting OpenRegister to external systems and workflows.
 - [Workflow Automation](workflow-automation.md) — Schema hooks, n8n/Windmill integration, import-time workflow triggers
 - [OpenAPI & GraphQL APIs](api-generation.md) — Auto-generated specs and GraphQL schema per register
 - [Real-Time Updates](realtime-updates.md) — SSE subscriptions, RBAC-filtered events, reconnection with replay
+- [Semantic Object Handoff](semantic-object-handoff.md) — Cross-app object conversion via canonical kinds (ns#Case, ns#Quote, …), declarative dialect, queue-mode deferral, provenance both ways (ADR-051)
 
 ### AI & Agent Interfaces
 Enabling AI systems and LLMs to access register data.

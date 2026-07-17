@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 
 # RBAC Scopes
@@ -24,9 +24,7 @@ This spec primarily documents and validates existing functionality, with targete
 - **Scope caching (fully implemented)**: `MagicRbacHandler.$cachedActiveOrg`, `ConditionMatcher.$cachedActiveOrg`, `OasService.$schemaRbacMap`.
 - **Consumer identity mapping (fully implemented)**: `Consumer` entity with `userId` field, `AuthorizationService` resolving all auth methods to Nextcloud users.
 - **What this spec adds as extensions**: Register-level default authorization cascade, permission matrix UI for administrators, scope migration tooling for group renames, and explicit RBAC policy change audit logging.
-
 ## Requirements
-
 ### Requirement: Scope Model Hierarchy (Register > Schema > Object > Property)
 The RBAC scope model SHALL follow a four-level hierarchy: register-level scopes govern access to an entire register and serve as defaults for schemas without their own authorization, schema-level scopes control CRUD operations per schema (zaaktype/objecttype), object-level scopes apply to individual records via conditional matching, and property-level scopes restrict visibility and mutability of specific fields. Each level MUST be independently configurable via the `authorization` JSON structure. Register-level authorization SHALL cascade to schemas that do not define their own authorization block. Named roles defined at register level SHALL be expandable in authorization blocks at any level.
 
@@ -542,6 +540,240 @@ The frontend MUST be able to determine the current user's effective permissions 
 - **WHEN** it inspects the `security` block of the POST operation for schema `meldingen`
 - **THEN** it MUST find the OAuth2 scopes required for creating objects
 - **AND** it can compare these against the current user's groups to determine if the "Create" button should be shown
+
+### Requirement: Effective-Scope Discovery API
+
+The system MUST expose an effective-scope discovery endpoint so clients
+(frontend feature gates, OAuth2 token exchange, downstream apps) can learn which
+`(register, schema, action)` tuples the current user may perform without probing
+every endpoint. `ScopesController::index()` (`GET /api/scopes`) MUST return an
+envelope `{user, isAdmin, groups, scopes}` where `scopes` is a list of
+`{register, schema, actions}` entries keyed by slug. For each in-scope
+(register, schema) pair the controller MUST probe `PermissionHandler::hasPermission()`
+for the five canonical actions (`read`, `create`, `update`, `delete`, `list`)
+and include only the granted ones, omitting pairs with no granted actions. Admin
+callers MUST short-circuit to the full action vocabulary for every pair,
+mirroring the admin-bypass in `PermissionHandler`. Unauthenticated callers MUST
+be supported with `user: null`. Optional `register` and `schema` query
+parameters (id|uuid|slug) MUST narrow the response, and resolution MUST keep the
+multitenancy filter on so the endpoint cannot enumerate across tenants.
+
+#### Scenario: Authenticated user discovers effective scopes
+- **GIVEN** an authenticated non-admin user in groups `users` and `hr`
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST include `user`, `isAdmin: false`, `groups`, and a `scopes` list
+- **AND** each scope entry MUST list only the actions granted by `PermissionHandler::hasPermission()` for that (register, schema) pair
+- **AND** pairs with no granted action MUST be omitted
+
+#### Scenario: Admin receives the full action vocabulary
+- **GIVEN** a caller in the `admin` group
+- **WHEN** `index()` builds the response
+- **THEN** `isAdmin` MUST be `true`
+- **AND** `collectActionsForUser()` MUST short-circuit to `["read", "create", "update", "delete", "list"]` for every (register, schema) pair
+
+#### Scenario: Filter discovery by register and schema
+- **GIVEN** a GET request to `/api/scopes?register=decidesk&schema=meeting`
+- **WHEN** `resolveRegisters()` and `resolveSchemas()` apply the filters
+- **THEN** only the matching register/schema MUST be evaluated
+- **AND** the multitenancy filter MUST remain on so cross-tenant enumeration is not possible
+
+#### Scenario: Unauthenticated caller is supported
+- **GIVEN** no active user session
+- **WHEN** a GET request is sent to `/api/scopes`
+- **THEN** the response MUST set `user: null` and `isAdmin: false`
+- **AND** only scopes reachable by the `public` pseudo-group MUST be returned
+
+### Requirement: RBAC settings configuration API
+The system SHALL expose an admin-gated API for reading and writing the RBAC enablement and
+configuration dials that govern scope enforcement. `ConfigurationSettingsController`
+provides `getRbacSettings` (delegating to `SettingsService::getRbacSettingsOnly()`) and
+`updateRbacSettings` (delegating to `SettingsService::updateRbacSettingsOnly()`). Both
+return HTTP 500 with an `error` field on service failure.
+
+#### Scenario: Read RBAC settings
+- **WHEN** `getRbacSettings` is called
+- **THEN** it MUST return the RBAC settings document from `SettingsService::getRbacSettingsOnly()`
+
+#### Scenario: Update RBAC settings
+- **GIVEN** an admin toggles RBAC enforcement and posts the change
+- **WHEN** `updateRbacSettings` runs
+- **THEN** it MUST persist the change via `SettingsService::updateRbacSettingsOnly()` and return the updated settings
+
+### Requirement: Custom (non-canonical) action verbs MUST be resolvable via a voting event pair
+When `PermissionHandler` evaluates an action that is NOT one of the canonical five (`read`, `create`, `update`, `delete`, `list`), it MUST dispatch a `CustomScopeEvaluatingEvent` so consuming apps that declare custom action verbs on a register can contribute a verdict. The verdict is first-vote-wins: the first listener to call `allow()` OR `deny()` decides, and subsequent votes are ignored so the outcome is deterministic regardless of listener registration order. When no listener votes, the handler MUST fall through to the standard rule chain. After a listener-driven verdict, a paired telemetry `CustomScopeEvaluatedEvent` MUST be dispatched for observers (audit, dashboards, analytics) without participating in the decision.
+
+#### Scenario: Custom verb dispatches the evaluating event with full context
+- **GIVEN** a register declares a custom action verb `approve` and a user `jan` (groups `["behandelaars"]`) attempts it on schema `besluiten`
+- **WHEN** `PermissionHandler` evaluates the `approve` action
+- **THEN** a `CustomScopeEvaluatingEvent` MUST be dispatched
+- **AND** `getSchema()` MUST return the `besluiten` schema, `getAction()` MUST return `"approve"`, `getUserId()` MUST return `"jan"`, and `getUserGroups()` MUST return `["behandelaars"]`
+- **AND** `getObject()` MUST return the target `ObjectEntity` when one was supplied, otherwise `null`
+
+#### Scenario: First listener vote wins and short-circuits
+- **GIVEN** two listeners are registered for `CustomScopeEvaluatingEvent`
+- **WHEN** the first listener calls `allow()` and the second calls `deny()`
+- **THEN** `getVerdict()` MUST return `true` (the first vote)
+- **AND** `hasVerdict()` MUST return `true`
+- **AND** the second listener's `deny()` MUST be ignored
+
+#### Scenario: No listener votes falls through to the standard rule chain
+- **GIVEN** no listener casts a verdict on the `CustomScopeEvaluatingEvent`
+- **WHEN** evaluation completes
+- **THEN** `hasVerdict()` MUST return `false` and `getVerdict()` MUST return `null`
+- **AND** `PermissionHandler` MUST evaluate the action against the standard static rule chain
+- **AND** no `CustomScopeEvaluatedEvent` MUST be dispatched (the standard rule-chain audit paths capture that outcome)
+
+#### Scenario: Telemetry event reports the resolved verdict and its origin
+- **GIVEN** a listener resolved a custom-scope evaluation to `true`
+- **WHEN** the paired `CustomScopeEvaluatedEvent` is dispatched
+- **THEN** `getVerdict()` MUST return `true` and `isFromListener()` MUST return `true`
+- **AND** `getSchema()`, `getAction()`, and `getUserId()` MUST mirror the evaluating event's context
+
+### Requirement: Schema and register authorization MUST accept an optional `inheritFromPublic` boolean
+
+Schema and register authorization blocks MUST accept an optional `inheritFromPublic` field, boolean. The default value (when the field is absent or `null`) MUST be resolved via the cascade documented below. Existing schemas and registers that do not set the field MUST behave identically to before this change (default `true`).
+
+#### Scenario: Schema authorization without inheritFromPublic preserves pre-change behaviour
+
+- **GIVEN** a schema whose authorization block has no `inheritFromPublic` field
+- **AND** the register's authorization block also has no `inheritFromPublic` field
+- **AND** the tenant default IAppConfig key is unset
+- **WHEN** RBAC checks run
+- **THEN** the effective `inheritFromPublic` value is `true` (the pre-change behaviour)
+- **AND** authenticated users qualify for `public` rules as they did before
+
+#### Scenario: Schema sets inheritFromPublic explicitly
+
+- **GIVEN** a schema whose authorization block contains `"inheritFromPublic": false`
+- **WHEN** RBAC checks run
+- **THEN** the effective value is `false` for that schema
+- **AND** authenticated users do NOT qualify for `public` rules on that schema
+
+#### Scenario: Schema authorization round-trip preserves the field
+
+- **GIVEN** a schema saved with `"inheritFromPublic": false` in its authorization block
+- **WHEN** the schema is fetched and re-serialised via `Schema::getAuthorization()`
+- **THEN** the returned array contains `inheritFromPublic` with value `false`
+- **AND** the JSON serialisation includes the field
+
+### Requirement: The effective value of `inheritFromPublic` MUST be resolved via cascade
+
+The cascade order MUST be: schema's authorization → register's authorization → tenant-wide `IAppConfig` key `openregister.rbac.inherit_from_public_default` → hard-coded `true`. The first explicitly-set value wins. `null` MUST be treated as "unset" (cascade falls through to the next level).
+
+#### Scenario: Cascade falls back to register when schema has no value
+
+- **GIVEN** a schema whose authorization has NO `inheritFromPublic` field
+- **AND** the parent register's authorization has `"inheritFromPublic": false`
+- **WHEN** the resolver is called for that schema
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to tenant default when neither schema nor register sets it
+
+- **GIVEN** schema and register without the field
+- **AND** IAppConfig `openregister.rbac.inherit_from_public_default` is set to `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `false`
+
+#### Scenario: Cascade falls back to hard-coded true when nothing is set
+
+- **GIVEN** no schema, register, or tenant default is set
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true`
+
+#### Scenario: Schema explicit value wins over register and tenant
+
+- **GIVEN** schema sets `"inheritFromPublic": true`
+- **AND** register sets `"inheritFromPublic": false`
+- **AND** tenant default is `false`
+- **WHEN** the resolver is called
+- **THEN** the resolved value is `true` (schema wins)
+
+#### Scenario: null is treated as "unset"
+
+- **GIVEN** schema authorization contains `"inheritFromPublic": null`
+- **AND** register sets `"inheritFromPublic": false`
+- **WHEN** the resolver is called
+- **THEN** the cascade continues past the schema; the resolved value is `false` (from register)
+
+### Requirement: When `inheritFromPublic` is `false`, authenticated users MUST NOT qualify for `public` rules
+
+When the resolved `inheritFromPublic` is `false`, the PHP-side `PermissionHandler::hasPermission` MUST NOT fall back to `hasGroupPermission(public, ...)` for authenticated users; it MUST return only the result of evaluating the user's own group memberships (plus owner / admin checks). Anonymous users see no behaviour change — the public-fallback path was never used for them in the first place.
+
+The SQL-side filter (`MagicRbacHandler::applyRbacFilters` and `buildRbacConditionsSql`) MUST equivalently exclude `public`-grouped rules from contributing conditions for authenticated users. The simple-string `'public'` rule MUST NOT grant unconditional access to authenticated users when the flag is `false`. Conditional `{group: "public", match: ...}` rules MUST NOT add their match conditions to the WHERE clause for authenticated users when the flag is `false`.
+
+#### Scenario: Authenticated user is denied when inheritance is off and only public has access
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: <some-match>}]`
+- **AND** an authenticated user `alice` not a member of any group named in any rule
+- **AND** an object that satisfies the public match
+- **WHEN** alice attempts to read the object
+- **THEN** access is denied
+- **AND** the SQL filter excludes the object from listings for alice
+
+#### Scenario: Anonymous user is granted when public match passes (regardless of flag)
+
+- **GIVEN** the same schema as above
+- **WHEN** an anonymous (unauthenticated) request reads the object
+- **THEN** access is granted (the public match is satisfied)
+- **AND** the SQL filter includes the object
+
+#### Scenario: Authenticated user with explicit group membership is still granted
+
+- **GIVEN** a schema with `inheritFromPublic: false` and authorization `read: [{group: "public", match: ...}, "editors"]`
+- **AND** an authenticated user `bob` in the `editors` group
+- **WHEN** bob attempts to read the object
+- **THEN** access is granted (via the explicit `editors` rule)
+- **AND** the SQL filter includes the object for bob
+
+#### Scenario: Owner check is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: [{group: "public", match: ...}]`
+- **AND** an authenticated user `carol` who is the owner of an object
+- **WHEN** carol attempts to read the object
+- **THEN** access is granted via the owner shortcut, regardless of the flag
+
+#### Scenario: Admin user is unaffected by the flag
+
+- **GIVEN** a schema with `inheritFromPublic: false`
+- **AND** an authenticated user in the `admin` group
+- **WHEN** the admin reads any object on this schema
+- **THEN** access is granted via the admin bypass, regardless of the flag
+
+### Requirement: When `inheritFromPublic` is `true` (or unset), behaviour MUST be identical to before this change
+
+For any schema, register, or tenant where the resolved `inheritFromPublic` is `true` (the default), authenticated users MUST continue to qualify for `public` rules exactly as they did before this change. The new code paths MUST NOT introduce any behavioural drift for schemas that don't opt out.
+
+#### Scenario: Pre-change schema is unaffected
+
+- **GIVEN** a schema with no `inheritFromPublic` field anywhere in its cascade
+- **AND** an authenticated user
+- **AND** an object satisfying a public match rule
+- **WHEN** the user attempts to read the object
+- **THEN** access is granted
+- **AND** the result is identical to pre-change behaviour
+
+### Requirement: The simple-string `'authenticated'` rule MUST be unaffected by the flag
+
+The existing `'authenticated'` simple-rule string (recognised by `MagicRbacHandler::processSimpleRule` line 274-276) grants unconditional access to any logged-in user. This behaviour MUST be unchanged by `inheritFromPublic`. The flag concerns the `public` group only.
+
+#### Scenario: 'authenticated' rule still grants access when public inheritance is disabled
+
+- **GIVEN** a schema with `inheritFromPublic: false` and `read: ["authenticated"]`
+- **AND** an authenticated user
+- **WHEN** the user attempts to read
+- **THEN** access is granted (via the `authenticated` rule, independent of the flag)
+
+### Requirement: PHP-side and SQL-side enforcement MUST be identical
+
+For any combination of (user state, flag value, authorization rules, object data), the result of `PermissionHandler::hasPermission` (per-object check) MUST agree with whether the SQL filter (`MagicRbacHandler::applyRbacFilters`) would include the object in a listing. The two layers MUST NOT diverge.
+
+#### Scenario: Per-object check and listing filter agree across the four-state matrix
+
+- **GIVEN** a schema with `read: [{group: "public", match: <m>}]`
+- **AND** the four states: (anon, authenticated) × (inheritFromPublic true, false)
+- **AND** an object satisfying the public match
+- **WHEN** the per-object `hasPermission` check runs AND the listing endpoint runs
+- **THEN** for each of the four states, the per-object check's boolean result matches the listing's include/exclude decision for that object
 
 ## ZGW Autorisaties Mapping Guide
 

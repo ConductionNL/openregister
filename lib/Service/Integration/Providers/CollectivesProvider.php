@@ -116,7 +116,7 @@ class CollectivesProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
-     * @spec openspec/changes/integration-collectives/tasks.md
+     * @spec openspec/specs/integration-collectives/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

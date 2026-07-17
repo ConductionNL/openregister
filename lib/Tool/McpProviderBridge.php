@@ -33,10 +33,14 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tool;
 
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
 use Psr\Log\LoggerInterface;
 
 /**
  * Adapter from IMcpToolProvider to ToolInterface.
+ *
+ * @spec openspec/specs/ai-mcp/spec.md
+ *   (Requirement: REQ-DERIVED-002 — Both serving surfaces are fed from one derivation)
  */
 class McpProviderBridge implements ToolInterface
 {
@@ -68,7 +72,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         private readonly IMcpToolProvider $provider,
@@ -83,7 +87,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function setOnlyMcpId(string $mcpId): void
     {
@@ -95,7 +99,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string The provider's appId, used as the tool-group name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getName(): string
     {
@@ -109,7 +113,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string Human-readable description of the bridged tool group.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getDescription(): string
     {
@@ -119,9 +123,21 @@ class McpProviderBridge implements ToolInterface
     /**
      * Each MCP descriptor becomes one LLphant function definition.
      *
+     * Additively forwards the ADR-063 annotation hints
+     * (`readOnlyHint` / `destructiveHint` / `idempotentHint`) and `scope`
+     * onto the LLphant descriptor when the provider set them, so chat-surface
+     * consumers reached through {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::listTools()}
+     * see the same annotations the JSON-RPC `tools/list` surface already
+     * carries (previously dropped here — OR#369). A key is omitted entirely
+     * when the provider descriptor didn't set it; no defaults are invented.
+     * These hints are ADVISORY UX metadata only — OpenRegister's
+     * `ObjectService` RBAC enforcement remains the sole authoritative
+     * invoke-time gate, unaffected by this or any hint value (ADR-063).
+     *
      * @return array<int,array<string,mixed>> LLphant-shaped function descriptors.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-002 — Both serving surfaces are fed from one derivation)
      */
     public function getFunctions(): array
     {
@@ -140,12 +156,24 @@ class McpProviderBridge implements ToolInterface
             // expose the raw MCP id as the function name AND rewrite a
             // safe alias (underscore) so both forms route back the same way.
             $inputSchema = $descriptor['inputSchema'] ?? ['type' => 'object', 'properties' => []];
-            $functions[] = [
+            $function    = [
                 'name'        => $this->safeFunctionName(mcpId: $rawId),
                 'mcpId'       => $rawId,
                 'description' => (string) ($descriptor['description'] ?? $descriptor['name'] ?? $rawId),
                 'parameters'  => $this->sanitiseSchema(schema: $inputSchema),
             ];
+
+            foreach (McpAnnotationValidator::HINT_KEYS as $hintKey) {
+                if (array_key_exists($hintKey, $descriptor) === true) {
+                    $function[$hintKey] = $descriptor[$hintKey];
+                }
+            }
+
+            if (array_key_exists('scope', $descriptor) === true) {
+                $function['scope'] = $descriptor['scope'];
+            }
+
+            $functions[] = $function;
         }//end foreach
 
         return $functions;
@@ -161,7 +189,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return array<string,mixed> Sanitised schema.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function sanitiseSchema(array $schema): array
     {
@@ -187,7 +215,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string The first non-null string type, or `string` as fallback.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function collapseType(array $types): string
     {
@@ -209,7 +237,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return array<string,mixed> MCP-shaped response or error envelope.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -250,7 +278,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-4
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void
     {
@@ -269,9 +297,10 @@ class McpProviderBridge implements ToolInterface
      * @param string           $functionName The function LLPhant resolved.
      * @param array<int,mixed> $args         Positional or single-array argument list.
      *
-     * @return mixed Whatever executeFunction() returned.
+     * @return string executeFunction()'s result JSON-encoded (LLPhant requires a string
+     *                tool result — see OR#269).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __call(string $functionName, array $args): mixed
     {
@@ -284,7 +313,20 @@ class McpProviderBridge implements ToolInterface
             $parameters = $args;
         }
 
-        return $this->executeFunction(functionName: $functionName, parameters: $parameters);
+        $result = $this->executeFunction(functionName: $functionName, parameters: $parameters);
+
+        // LLPhant's tool-call handling requires the tool RESULT as a ?string, not an array
+        // (OllamaChat::callFunction → new CalledFunction(..., $return) type-hints ?string,
+        // and OpenAI tool messages are strings too). MCP tools return a structured array, so
+        // encode it to a JSON string here — the LLM reads the tool output as text. This is
+        // the fix for OR#269 (array given to CalledFunction $return → agent tool-calls 500).
+        // executeFunction() still returns the array for direct callers (the MCP server).
+        $encoded = json_encode($result);
+        if ($encoded === false) {
+            return '{"isError":true,"error":"encode_failed","message":"Tool result could not be encoded."}';
+        }
+
+        return $encoded;
     }//end __call()
 
     /**
@@ -295,7 +337,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string Safe function name with dots replaced by underscores.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function safeFunctionName(string $mcpId): string
     {
@@ -311,7 +353,7 @@ class McpProviderBridge implements ToolInterface
      *
      * @return string|null Original MCP id, or null when no match is found.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-5
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function resolveMcpId(string $functionName): ?string
     {

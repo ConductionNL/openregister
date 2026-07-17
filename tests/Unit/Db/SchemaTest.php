@@ -48,8 +48,6 @@ class SchemaTest extends TestCase
         $this->assertSame('datetime', $types['deleted']);
         $this->assertSame('json', $types['configuration']);
         $this->assertSame('json', $types['groups']);
-        $this->assertSame('datetime', $types['published']);
-        $this->assertSame('datetime', $types['depublished']);
         $this->assertSame('json', $types['hooks']);
     }
 
@@ -71,8 +69,6 @@ class SchemaTest extends TestCase
         $this->assertNull($this->schema->getOwner());
         $this->assertNull($this->schema->getApplication());
         $this->assertNull($this->schema->getOrganisation());
-        $this->assertNull($this->schema->getPublished());
-        $this->assertNull($this->schema->getDepublished());
     }
 
     // --- Getters/Setters ---
@@ -214,6 +210,39 @@ class SchemaTest extends TestCase
         $this->assertSame($auth, $result['secret']);
     }
 
+    // --- writeOnly properties (property-level-read-rbac) ---
+
+    public function testHasWriteOnlyPropertiesFalseWhenEmpty(): void
+    {
+        $this->assertFalse($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testHasWriteOnlyPropertiesFalseWhenNone(): void
+    {
+        $this->schema->setProperties(['name' => ['type' => 'string']]);
+        $this->assertFalse($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testHasWriteOnlyPropertiesTrue(): void
+    {
+        $this->schema->setProperties([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+        $this->assertTrue($this->schema->hasWriteOnlyProperties());
+    }
+
+    public function testGetWriteOnlyProperties(): void
+    {
+        $this->schema->setProperties([
+            'name'     => ['type' => 'string'],
+            'apiToken' => ['type' => 'string', 'writeOnly' => true],
+            'other'    => ['type' => 'string', 'writeOnly' => false],
+        ]);
+        $result = $this->schema->getWriteOnlyProperties();
+        $this->assertSame(['apiToken'], $result);
+    }
+
     // --- Archive ---
 
     public function testGetArchiveReturnsEmptyArrayOnNull(): void
@@ -292,8 +321,12 @@ class SchemaTest extends TestCase
 
     public function testHasPermissionMissingAction(): void
     {
+        // Fail-closed (rbac-default-deny): once a schema declares a non-empty
+        // authorization block, an action that isn't explicitly listed (here
+        // 'delete', only 'read' is declared) must be denied, not implicitly
+        // allowed. See Schema::hasPermission()'s fail-closed comment.
         $this->schema->setAuthorization(['read' => ['editors']]);
-        $this->assertTrue($this->schema->hasPermission('viewers', 'delete'));
+        $this->assertFalse($this->schema->hasPermission('viewers', 'delete'));
     }
 
     public function testHasPermissionComplexEntryWithGroup(): void
@@ -410,8 +443,6 @@ class SchemaTest extends TestCase
         $this->assertArrayHasKey('allOf', $json);
         $this->assertArrayHasKey('oneOf', $json);
         $this->assertArrayHasKey('anyOf', $json);
-        $this->assertArrayHasKey('published', $json);
-        $this->assertArrayHasKey('depublished', $json);
     }
 
     public function testJsonSerializeRequiredEnrichment(): void
@@ -441,8 +472,6 @@ class SchemaTest extends TestCase
         $this->assertNull($json['created']);
         $this->assertNull($json['updated']);
         $this->assertNull($json['deleted']);
-        $this->assertNull($json['published']);
-        $this->assertNull($json['depublished']);
     }
 
     public function testJsonSerializeHooksDefault(): void
@@ -524,6 +553,33 @@ class SchemaTest extends TestCase
         $result = $this->schema->getConfiguration();
         $this->assertIsArray($result);
         $this->assertTrue($result['allowFiles']);
+    }
+
+    /**
+     * #419: one invalid config value must not discard the whole configuration.
+     *
+     * An invalid `linkedTypes` entry used to make validateConfigurationArray()
+     * throw, and setConfiguration() propagated the throw — during app import
+     * that throw is swallowed and the schema silently lost its ENTIRE config
+     * (including `x-openregister-mcp`, so no MCP tools derived). The per-key
+     * isolation must drop only the offending key and keep valid siblings.
+     */
+    public function testSetConfigurationDropsInvalidValueKeepsRest(): void
+    {
+        $this->schema->setConfiguration([
+            'objectNameField'    => 'name',
+            'linkedTypes'        => ['mail', 'not-a-real-provider'],
+            'x-openregister-mcp' => ['search' => ['enabled' => true]],
+        ]);
+        $result = $this->schema->getConfiguration();
+        $this->assertIsArray($result);
+        // The offending key is dropped ...
+        $this->assertArrayNotHasKey('linkedTypes', $result);
+        // ... but valid siblings survive.
+        $this->assertSame('name', $result['objectNameField']);
+        $this->assertArrayHasKey('x-openregister-mcp', $result);
+        // ... and the dropped key is reported for logging.
+        $this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
     }
 
     // --- Searchable ---
@@ -632,47 +688,6 @@ class SchemaTest extends TestCase
         $this->assertSame([5, 6], $this->schema->getAnyOf());
     }
 
-    // --- Published / Depublished ---
-
-    public function testSetPublishedDateTime(): void
-    {
-        $dt = new DateTime('2024-01-15');
-        $this->schema->setPublished($dt);
-        $this->assertSame($dt, $this->schema->getPublished());
-    }
-
-    public function testSetPublishedString(): void
-    {
-        $this->schema->setPublished('2024-01-15T10:00:00+00:00');
-        $this->assertInstanceOf(DateTime::class, $this->schema->getPublished());
-    }
-
-    public function testSetPublishedNull(): void
-    {
-        $this->schema->setPublished(new DateTime());
-        $this->schema->setPublished(null);
-        $this->assertNull($this->schema->getPublished());
-    }
-
-    public function testSetDepublishedDateTime(): void
-    {
-        $dt = new DateTime('2024-06-01');
-        $this->schema->setDepublished($dt);
-        $this->assertSame($dt, $this->schema->getDepublished());
-    }
-
-    public function testSetDepublishedString(): void
-    {
-        $this->schema->setDepublished('2024-06-01T10:00:00+00:00');
-        $this->assertInstanceOf(DateTime::class, $this->schema->getDepublished());
-    }
-
-    public function testSetDepublishedNull(): void
-    {
-        $this->schema->setDepublished(null);
-        $this->assertNull($this->schema->getDepublished());
-    }
-
     // --- isManagedByConfiguration ---
 
     public function testIsManagedByConfigurationTrue(): void
@@ -749,5 +764,49 @@ class SchemaTest extends TestCase
         $this->assertSame('test-uuid', $json['uuid']);
         $this->assertSame('Test Schema', $json['title']);
         $this->assertContains('name', $json['required']);
+    }
+
+    // --- Authorization validation ---
+
+    public function testValidateAuthorizationAcceptsCrudActions(): void
+    {
+        $this->schema->setAuthorization([
+            'create' => ['admin'],
+            'read'   => ['public'],
+            'update' => ['admin'],
+            'delete' => ['admin'],
+        ]);
+        $this->assertTrue($this->schema->validateAuthorization());
+    }
+
+    public function testValidateAuthorizationAcceptsInheritFromPublicFlag(): void
+    {
+        // Regression: inheritFromPublic is a reserved cascade flag, not a CRUD
+        // action. Schemas carrying it must still validate (and thus import).
+        $this->schema->setAuthorization([
+            'inheritFromPublic' => true,
+            'read'              => ['public'],
+        ]);
+        $this->assertTrue($this->schema->validateAuthorization());
+    }
+
+    public function testValidateAuthorizationRejectsNonBooleanInheritFromPublic(): void
+    {
+        $this->schema->setAuthorization([
+            'inheritFromPublic' => ['public'],
+        ]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Authorization flag 'inheritFromPublic' in schema must be a boolean");
+        $this->schema->validateAuthorization();
+    }
+
+    public function testValidateAuthorizationRejectsUnknownAction(): void
+    {
+        $this->schema->setAuthorization([
+            'frobnicate' => ['admin'],
+        ]);
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid authorization action 'frobnicate'");
+        $this->schema->validateAuthorization();
     }
 }

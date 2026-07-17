@@ -61,6 +61,33 @@ class MagicStatisticsHandler
 {
 
     /**
+     * Per-request memo of the magic-table list from information_schema.
+     *
+     * `getStatistics()` is called once per register on a registers-list page and
+     * each call re-ran the information_schema catalog scan; caching it for the
+     * request collapses O(registers) scans to one (consolidate-request-scoped-cache).
+     * Null until first populated; only successful scans are cached.
+     *
+     * @var array<int, string>|null
+     */
+    private ?array $magicTablesCache = null;
+
+    /**
+     * Registers already fetched this request, keyed by id.
+     *
+     * @var array<int, Register>
+     */
+    private array $registerCache = [];
+
+    /**
+     * Schemas already fetched this request, keyed by id.
+     *
+     * @var array<int, Schema>
+     */
+    private array $schemaCache = [];
+
+
+    /**
      * Metadata column prefix used in magic mapper tables
      *
      * @var string
@@ -112,6 +139,59 @@ class MagicStatisticsHandler
     }//end setCountCallback()
 
     /**
+     * Find a Register, reusing the entity within this request.
+     *
+     * Statistics walk every register/schema pair, and a caller that wants stats for N
+     * registers calls getStatistics() N times — so the SAME register and schema rows were
+     * re-fetched from the database over and over. On a dev instance with 76 registers and
+     * 1,231 schemas that was ~2,500 redundant SELECTs to render one list.
+     *
+     * Registers and schemas do not change mid-request, so hold on to them.
+     *
+     * @param int $registerId The register id.
+     *
+     * @return Register The register entity.
+     *
+     * @spec exclude request-scoped identity cache; no behaviour change
+     */
+    private function findRegisterCached(int $registerId): Register
+    {
+        if (isset($this->registerCache[$registerId]) === false) {
+            $this->registerCache[$registerId] = $this->registerMapper->find(
+                $registerId,
+                _multitenancy: false,
+                _rbac: false
+            );
+        }
+
+        return $this->registerCache[$registerId];
+    }//end findRegisterCached()
+
+    /**
+     * Find a Schema, reusing the entity within this request.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return Schema The schema entity.
+     *
+     * @see self::findRegisterCached() for why this cache exists.
+     *
+     * @spec exclude request-scoped identity cache; no behaviour change
+     */
+    private function findSchemaCached(int $schemaId): Schema
+    {
+        if (isset($this->schemaCache[$schemaId]) === false) {
+            $this->schemaCache[$schemaId] = $this->schemaMapper->find(
+                $schemaId,
+                _multitenancy: false,
+                _rbac: false
+            );
+        }
+
+        return $this->schemaCache[$schemaId];
+    }//end findSchemaCached()
+
+    /**
      * Count objects in a register-schema table via the injected callback.
      *
      * @param array    $query    Query filters
@@ -145,6 +225,10 @@ class MagicStatisticsHandler
      */
     private function getAllMagicMapperTables(): array
     {
+        if ($this->magicTablesCache !== null) {
+            return $this->magicTablesCache;
+        }
+
         try {
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
@@ -171,6 +255,8 @@ class MagicStatisticsHandler
 
                 $tables[] = $tableName;
             }
+
+            $this->magicTablesCache = $tables;
 
             return $tables;
         } catch (Exception $e) {
@@ -276,8 +362,8 @@ class MagicStatisticsHandler
             }
 
             try {
-                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+                $register = $this->findRegisterCached(registerId: $pairRegisterId);
+                $schema   = $this->findSchemaCached(schemaId: $pairSchemaId);
 
                 $count  = $this->countObjectsInRegisterSchemaTable(
                     query: [],

@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
@@ -67,9 +67,9 @@ class AggregationCache
     /**
      * Constructor.
      *
-     * @param ICacheFactory      $cacheFactory        Factory used to create the distributed cache.
-     * @param IUserSession       $userSession         Current user session, used to scope the cache key.
-     * @param LoggerInterface    $logger              Logger for backend-unavailable warnings.
+     * @param ICacheFactory       $cacheFactory        Factory used to create the distributed cache.
+     * @param IUserSession        $userSession         Current user session, used to scope the cache key.
+     * @param LoggerInterface     $logger              Logger for backend-unavailable warnings.
      * @param OrganisationService $organisationService Organisation service, used to include active organisation in cache key.
      *
      * @return void
@@ -148,7 +148,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void
     {
@@ -212,7 +212,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
     {
@@ -263,9 +263,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
     {
@@ -274,11 +272,20 @@ class AggregationCache
         }
 
         try {
-            // ICache doesn't have prefix delete. Do a best-effort clear of
-            // the whole openregister_aggregations cache — coarse but safe
-            // because TTL is short. A future refinement can swap to a
-            // backing store with prefix scan support.
-            $this->cache->clear();
+            // Scoped eviction: bump this (register, schema)'s version counter so
+            // its cached aggregations become unreachable, WITHOUT wiping every
+            // other schema's/user's cache (scope-cache-invalidation). The counter
+            // outlives the data TTL so a bump can never be undone by expiry while
+            // stale data is still live.
+            $versionKey = $this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+            $current    = $this->cache->get($versionKey);
+            $next       = 1;
+            if (is_numeric($current) === true) {
+                $next = ((int) $current + 1);
+            }
+
+            // TTL well beyond the data TTL (self::TTL) so the bump persists.
+            $this->cache->set($versionKey, $next, (self::TTL * 60));
         } catch (\Throwable $e) {
             $this->logger->debug(
                 sprintf('[AggregationCache] evict failed: %s', $e->getMessage())
@@ -311,8 +318,58 @@ class AggregationCache
 
         $filterHash = sha1($filterStr);
         $rbacHash   = $this->rbacScopeHash();
-        return sprintf('agg:%s:%s:%s:%s:%s', $registerSlug, $schemaSlug, $name, $filterHash, $rbacHash);
+
+        // Fold the per-(register, schema) version into the key so eviction can be
+        // scoped by bumping that version (scope-cache-invalidation) rather than
+        // wiping the whole aggregation cache: after a bump, every key for the
+        // schema carries the new version and old entries become unreachable.
+        $version = $this->schemaVersion(registerSlug: $registerSlug, schemaSlug: $schemaSlug);
+
+        return sprintf(
+            'agg:%s:%s:v%d:%s:%s:%s',
+            $registerSlug,
+            $schemaSlug,
+            $version,
+            $name,
+            $filterHash,
+            $rbacHash
+        );
     }//end key()
+
+    /**
+     * Version-counter cache key for a (register, schema) pair.
+     *
+     * @param string $registerSlug Register slug.
+     * @param string $schemaSlug   Schema slug.
+     *
+     * @return string
+     */
+    private function versionKey(string $registerSlug, string $schemaSlug): string
+    {
+        return sprintf('aggver:%s:%s', $registerSlug, $schemaSlug);
+    }//end versionKey()
+
+    /**
+     * Current aggregation-cache version for a (register, schema) pair.
+     *
+     * @param string $registerSlug Register slug.
+     * @param string $schemaSlug   Schema slug.
+     *
+     * @return int The current version (0 when never evicted).
+     */
+    private function schemaVersion(string $registerSlug, string $schemaSlug): int
+    {
+        if ($this->cache === null) {
+            return 0;
+        }
+
+        $current = $this->cache->get($this->versionKey(registerSlug: $registerSlug, schemaSlug: $schemaSlug));
+        if (is_numeric($current) === true) {
+            return (int) $current;
+        }
+
+        return 0;
+    }//end schemaVersion()
 
     /**
      * Hash the current RBAC scope (user UID + active organisation).
@@ -325,9 +382,13 @@ class AggregationCache
      */
     private function rbacScopeHash(): string
     {
-        $uid    = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
-        $org    = $this->organisationService->getActiveOrganisation();
-        $orgId  = ($org !== null ? $org->getUuid() : 'none');
+        $uid   = ($this->userSession->getUser()?->getUID() ?? 'anonymous');
+        $org   = $this->organisationService->getActiveOrganisation();
+        $orgId = 'none';
+        if ($org !== null) {
+            $orgId = $org->getUuid();
+        }
+
         return sha1($uid.':'.$orgId);
     }//end rbacScopeHash()
 }//end class

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/data-import-export/tasks.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);

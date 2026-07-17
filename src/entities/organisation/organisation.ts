@@ -36,6 +36,7 @@ export class Organisation implements TOrganisation {
 	public updated?: string
 
 	/**
+	 * @param organisation
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(organisation: TOrganisation) {

@@ -127,6 +127,80 @@ class SecurityService
     }//end __construct()
 
     /**
+     * Assert that a user-supplied URL is safe to fetch server-side (anti-SSRF).
+     *
+     * Validates scheme (http/https only) and resolves EVERY A and AAAA record
+     * for the host, rejecting the request if ANY resolved address is loopback,
+     * private (RFC-1918 / ULA), or reserved/link-local. This is the single
+     * shared guard that every server-side URL fetcher in the app MUST call
+     * before issuing a request (UploadService, FilePropertyHandler,
+     * ConfigurationController, GitHub/GitLab handlers, webhooks).
+     *
+     * Callers that follow redirects MUST re-validate every redirect target,
+     * or disable redirect following entirely, because this check is a
+     * point-in-time DNS resolution and does not pin the connection IP.
+     *
+     * @param string $url The user-supplied URL to validate.
+     *
+     * @return void
+     *
+     * @throws \InvalidArgumentException When the URL is malformed or resolves to a non-public address.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    public static function assertSafeFetchUrl(string $url): void
+    {
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['scheme']) === true || empty($parts['host']) === true) {
+            throw new \InvalidArgumentException('Invalid URL.');
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        if (in_array($scheme, ['http', 'https'], true) === false) {
+            throw new \InvalidArgumentException('Only http and https URLs are allowed.');
+        }
+
+        $host = $parts['host'];
+
+        // Collect every IP the host resolves to (IPv4 + IPv6). If the host is
+        // already a literal IP, validate it directly.
+        $ips = [];
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            $ips[] = $host;
+        } else {
+            $v4 = gethostbynamel($host);
+            if (is_array($v4) === true) {
+                $ips = array_merge($ips, $v4);
+            }
+
+            $aaaa = @dns_get_record($host, DNS_AAAA);
+            if (is_array($aaaa) === true) {
+                foreach ($aaaa as $record) {
+                    if (isset($record['ipv6']) === true) {
+                        $ips[] = $record['ipv6'];
+                    }
+                }
+            }
+        }
+
+        if (empty($ips) === true) {
+            // Fail closed: a host we cannot resolve must not be fetched.
+            throw new \InvalidArgumentException('URL host could not be resolved.');
+        }
+
+        foreach ($ips as $ip) {
+            $isPublic = filter_var(
+                $ip,
+                FILTER_VALIDATE_IP,
+                (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+            );
+            if ($isPublic === false) {
+                throw new \InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
+            }
+        }
+    }//end assertSafeFetchUrl()
+
+    /**
      * Check if login attempt is allowed based on rate limiting rules
      *
      * @param string $username  The username attempting to login
@@ -136,7 +210,7 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -224,7 +298,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -291,7 +365,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -335,7 +409,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function clearIpRateLimits(string $ipAddress): void
     {
@@ -363,7 +437,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function clearUserRateLimits(string $username): void
     {
@@ -405,7 +479,7 @@ class SecurityService
      *
      * @return array{allowed: bool, lockout_until?: int, reason?: string} Result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function checkAuthRateLimit(string $identity, string $ipAddress): array
     {
@@ -439,7 +513,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason='inbound_auth_failed'): void
     {
@@ -499,7 +573,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordSuccessfulAuth(string $identity, string $ipAddress): void
     {
@@ -522,7 +596,7 @@ class SecurityService
      *
      * @return string The trusted client IP address
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function getTrustedClientIpAddress(IRequest $request): string
     {
@@ -544,8 +618,8 @@ class SecurityService
             $identityValue = 'anonymous';
         }
 
-        $identity  = $this->sanitizeForCacheKey(input: $identityValue);
-        $ipKey     = $this->sanitizeForCacheKey(input: $ipAddress);
+        $identity = $this->sanitizeForCacheKey(input: $identityValue);
+        $ipKey    = $this->sanitizeForCacheKey(input: $ipAddress);
 
         return $identity.'_'.$ipKey;
     }//end buildAuthCompositeKey()
@@ -560,7 +634,7 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+     * @spec openspec/specs/auth-system/spec.md#requirement-input-sanitization-must-prevent-xss-and-injection-attacks
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -606,7 +680,7 @@ class SecurityService
      *
      * @return array Validated and sanitized credentials or error information
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+     * @spec openspec/specs/auth-system/spec.md#requirement-input-sanitization-must-prevent-xss-and-injection-attacks
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -657,7 +731,7 @@ class SecurityService
      *
      * @return JSONResponse The response with added security headers
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -682,37 +756,18 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function getClientIpAddress(IRequest $request): string
     {
-        $ipAddress = $request->getRemoteAddress();
-
-        $forwardedHeaders = [
-            'HTTP_CF_CONNECTING_IP',
-            'HTTP_X_FORWARDED_FOR',
-            'HTTP_X_REAL_IP',
-            'HTTP_X_FORWARDED',
-            'HTTP_FORWARDED_FOR',
-            'HTTP_FORWARDED',
-        ];
-
-        foreach ($forwardedHeaders as $header) {
-            $headerValue = $request->getHeader($header);
-            if (empty($headerValue) === false) {
-                $ipList   = explode(',', $headerValue);
-                $clientIp = trim($ipList[0]);
-
-                $flags    = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
-                $isPublic = filter_var($clientIp, FILTER_VALIDATE_IP, $flags);
-                if ($isPublic !== false) {
-                    $ipAddress = $clientIp;
-                    break;
-                }
-            }
-        }
-
-        return $ipAddress;
+        // SEC-SVC-11: rely on Nextcloud's IRequest::getRemoteAddress(), which
+        // already resolves the real client IP via the configured
+        // `trusted_proxies` / `forwarded_for_headers` system settings. Parsing
+        // X-Forwarded-For / X-Real-IP / CF-Connecting-IP unconditionally let
+        // any client spoof its source IP and bypass per-IP rate limiting and
+        // lockouts. NC only honours those headers when the request actually
+        // originates from a configured trusted proxy.
+        return $request->getRemoteAddress();
     }//end getClientIpAddress()
 
     /**

@@ -897,6 +897,48 @@ class OrganisationService
     }//end hasAccessToOrganisation()
 
     /**
+     * Whether a user administers an organisation (may manage its shared resources).
+     *
+     * Owner-level authority: a Nextcloud administrator, or the organisation's
+     * `owner`. This is the gate for creating, updating, or deleting an
+     * organisation-scoped credential (credential-broker-organisation-scope D4).
+     *
+     * follow-up: OpenRegister exposes only owner-level organisation authority
+     * today (the `owner` field). When finer organisation roles land (an
+     * administrators list / an authorization "admin" group), widen this check to
+     * honour them — see the change's Follow-ups.
+     *
+     * @param string      $organisationUuid The organisation UUID.
+     * @param string|null $userId           The user id to test, or null for the current session user.
+     *
+     * @return bool True when the user is an org owner or a Nextcloud admin.
+     *
+     * @spec openspec/specs/credential-broker/spec.md
+     */
+    public function isOrganisationAdmin(string $organisationUuid, ?string $userId=null): bool
+    {
+        if ($userId === null) {
+            $userId = $this->getCurrentUser()?->getUID();
+        }
+
+        if ($userId === null || $userId === '') {
+            return false;
+        }
+
+        if ($this->groupManager->isAdmin($userId) === true) {
+            return true;
+        }
+
+        try {
+            $organisation = $this->organisationMapper->findByUuid($organisationUuid);
+        } catch (DoesNotExistException $e) {
+            return false;
+        }
+
+        return $organisation->getOwner() === $userId;
+    }//end isOrganisationAdmin()
+
+    /**
      * Get user organisation statistics
      *
      * @return array Statistics with total count, active organisation, and results list.

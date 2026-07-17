@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OCA\OpenRegister\Controller\Settings\ConfigurationSettingsController;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -17,23 +16,20 @@ class ConfigurationSettingsControllerTest extends TestCase
     private ConfigurationSettingsController $controller;
     private IRequest&MockObject $request;
     private SettingsService&MockObject $settingsService;
-    private IndexService&MockObject $indexService;
     private LoggerInterface&MockObject $logger;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
+        $this->request        = $this->createMock(IRequest::class);
         $this->settingsService = $this->createMock(SettingsService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->logger         = $this->createMock(LoggerInterface::class);
 
         $this->controller = new ConfigurationSettingsController(
             'openregister',
             $this->request,
             $this->settingsService,
-            $this->indexService,
             $this->logger
         );
     }
@@ -67,10 +63,10 @@ class ConfigurationSettingsControllerTest extends TestCase
     public static function settingsGetterProvider(): array
     {
         return [
-            'rbac' => ['getRbacSettings', 'getRbacSettingsOnly'],
-            'organisation' => ['getOrganisationSettings', 'getOrganisationSettingsOnly'],
-            'multitenancy' => ['getMultitenancySettings', 'getMultitenancySettingsOnly'],
-            'retention' => ['getRetentionSettings', 'getRetentionSettingsOnly'],
+            'rbac'          => ['getRbacSettings', 'getRbacSettingsOnly'],
+            'organisation'  => ['getOrganisationSettings', 'getOrganisationSettingsOnly'],
+            'multitenancy'  => ['getMultitenancySettings', 'getMultitenancySettingsOnly'],
+            'retention'     => ['getRetentionSettings', 'getRetentionSettingsOnly'],
         ];
     }
 
@@ -104,10 +100,10 @@ class ConfigurationSettingsControllerTest extends TestCase
     public static function settingsUpdaterProvider(): array
     {
         return [
-            'rbac' => ['updateRbacSettings', 'updateRbacSettingsOnly'],
+            'rbac'         => ['updateRbacSettings', 'updateRbacSettingsOnly'],
             'organisation' => ['updateOrganisationSettings', 'updateOrganisationSettingsOnly'],
             'multitenancy' => ['updateMultitenancySettings', 'updateMultitenancySettingsOnly'],
-            'retention' => ['updateRetentionSettings', 'updateRetentionSettingsOnly'],
+            'retention'    => ['updateRetentionSettings', 'updateRetentionSettingsOnly'],
         ];
     }
 
@@ -182,39 +178,5 @@ class ConfigurationSettingsControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $this->assertTrue($result->getData()['success']);
-    }
-
-    public function testGetObjectCollectionFieldsSuccess(): void
-    {
-        $this->indexService->method('getObjectCollectionFieldStatus')
-            ->willReturn(['missing' => [], 'extra' => []]);
-
-        $result = $this->controller->getObjectCollectionFields();
-
-        $this->assertEquals(200, $result->getStatus());
-        $this->assertTrue($result->getData()['success']);
-        $this->assertEquals('objects', $result->getData()['collection']);
-    }
-
-    public function testGetObjectCollectionFieldsException(): void
-    {
-        $this->indexService->method('getObjectCollectionFieldStatus')
-            ->willThrowException(new \Exception('Failed'));
-
-        $result = $this->controller->getObjectCollectionFields();
-
-        $this->assertEquals(500, $result->getStatus());
-        $this->assertFalse($result->getData()['success']);
-    }
-
-    public function testCreateMissingObjectFieldsNoCollection(): void
-    {
-        $this->settingsService->method('getSolrSettingsOnly')
-            ->willReturn(['objectCollection' => '']);
-
-        $result = $this->controller->createMissingObjectFields();
-
-        $this->assertEquals(400, $result->getStatus());
-        $this->assertFalse($result->getData()['success']);
     }
 }

@@ -30,7 +30,9 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -89,15 +91,7 @@ use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\ImportService;
-use OCA\OpenRegister\Service\Index\Backends\SolrBackend;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrHttpClient;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrCollectionManager;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrDocumentIndexer;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrQueryExecutor;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrFacetProcessor;
-use OCA\OpenRegister\Service\Index\Backends\Solr\SolrSchemaManager;
 use OCA\OpenRegister\Service\ExportService;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCA\OpenRegister\Service\Vectorization\Strategies\FileVectorizationStrategy;
@@ -118,18 +112,12 @@ use OCA\OpenRegister\Service\Settings\LlmSettingsHandler;
 use OCA\OpenRegister\Service\Settings\FileSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ObjectRetentionHandler;
 use OCA\OpenRegister\Service\Settings\CacheSettingsHandler;
-use OCA\OpenRegister\Service\Settings\SolrSettingsHandler;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
-use OCA\OpenRegister\Service\Index\SetupHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
-use OCA\OpenRegister\Command\SolrDebugCommand;
-use OCA\OpenRegister\Command\SolrManagementCommand;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Search\ObjectsProvider;
 use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCA\OpenRegister\Event\DeepLinkRegistrationEvent;
-use OCA\OpenRegister\BackgroundJob\SolrWarmupJob;
-use OCA\OpenRegister\BackgroundJob\SolrNightlyWarmupJob;
 use OCA\OpenRegister\BackgroundJob\NameCacheWarmupJob;
 use OCA\OpenRegister\BackgroundJob\BlobMigrationJob;
 use OCA\OpenRegister\BackgroundJob\CronFileTextExtractionJob;
@@ -141,7 +129,6 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\Security\IContentSecurityPolicyManager;
-use OCA\OpenRegister\EventListener\SolrEventListener;
 use OCA\OpenRegister\Listener\CommentsEntityListener;
 use OCA\OpenRegister\Listener\FileChangeListener;
 use OCA\OpenRegister\Listener\ObjectChangeListener;
@@ -150,21 +137,58 @@ use OCA\OpenRegister\Listener\ToolRegistrationListener;
 use OCA\OpenRegister\Listener\GraphQLSubscriptionListener;
 use OCA\OpenRegister\Listener\NotifyPushListener;
 use OCA\OpenRegister\Listener\WebhookEventListener;
+use OCA\OpenRegister\Listener\ActionListener;
 use OCA\OpenRegister\Listener\FilesSidebarListener;
 use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
-use OCA\OpenRegister\Listener\RealtimeEventListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\FlowActionListener;
+use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
+use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
+use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
 use OCA\OpenRegister\Service\Notification\NotificationsAnnotationInstaller;
 use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
+use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
+use OCA\OpenRegister\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Listener\SourceRecordChangeListener;
+use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
+use OCA\OpenRegister\Listener\HandoffLifecycleListener;
+use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
+use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
+use OCA\OpenRegister\Listener\ApprovalChainGateListener;
+use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
+use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Event\ApprovalStepCompletedEvent;
 use OCA\OpenRegister\Service\NoteService;
 use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
+use OCA\OpenRegister\Service\ObjectSource\CalDavVtodoObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\UserDirectoryObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\GroupObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\ContactsObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\CalendarEventObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\FilesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\DeckObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TalkObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\FederatedObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesObjectSourceProvider;
+use OCA\OpenRegister\Service\ObjectSource\TablesTableReader;
+use OCA\OpenRegister\Service\ObjectSource\TablesColumnMapper;
+use OCA\OpenRegister\Service\ObjectSource\TablesUuidDeriver;
+use OCA\OpenRegister\Service\ObjectSource\TablesSchemaSyncService;
+use OCA\OpenRegister\Listener\TablesTableDeletedListener;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
+use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
+use OCP\Federation\ICloudFederationProviderManager;
+use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -223,10 +247,14 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Mcp\IMcpScannableServices;
+use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -236,6 +264,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
+use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
 use OCA\OpenRegister\Service\Integration\Providers\CalendarProvider;
 use OCA\OpenRegister\Service\Integration\Providers\ContactsProvider;
@@ -243,6 +272,9 @@ use OCA\OpenRegister\Service\Integration\Providers\DeckProvider;
 use OCA\OpenRegister\Service\Integration\Providers\EmailProvider;
 use OCA\OpenRegister\Service\Integration\Providers\OpenProjectProvider;
 use OCA\OpenRegister\Service\Integration\Providers\PollsProvider;
+use OCA\OpenRegister\Service\Integration\Providers\KvkProvider;
+use OCA\OpenRegister\Service\Integration\Providers\MessageDispatchProvider;
+use OCA\OpenRegister\Service\Integration\Providers\OpenCorporatesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\SharesProvider;
 use OCA\OpenRegister\Service\Integration\Providers\TalkProvider;
 use OCA\OpenRegister\Service\Integration\Providers\XwikiProvider;
@@ -281,17 +313,30 @@ use OCA\OpenRegister\Service\TimeTrackerLinkService;
  *
  * @link https://github.com/nextcloud/server/blob/master/apps-extra/openregister
  *
+ * Public services exposed for consumer apps via Nextcloud DI:
+ * - {@see \OCA\OpenRegister\Service\RegisterService}            CRUD + helpers on Register entities.
+ * - {@see \OCA\OpenRegister\Service\SchemaService}              CRUD + helpers on Schema entities.
+ * - {@see \OCA\OpenRegister\Service\ObjectService}              CRUD + search on registered objects.
+ * - {@see \OCA\OpenRegister\Service\RegisterResolverService}    Resolve `<context>_register` / `<context>_schema`
+ *   IAppConfig keys to slug/UUID strings or hydrated entities; request-scoped cache + tenant aware.
+ * - {@see \OCA\OpenRegister\Service\Serializer\RegisterSerializer} Serialize Register entities with `_extend`
+ *   expansion (schemas, @self.stats) — single source of truth shared between HTTP and DI callers.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Bootstrap class must reference every
  *   service, mapper, event listener, and middleware registered for the entire app; the
  *   coupling is structural and cannot be reduced without breaking the NC bootstrap contract.
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Service registration methods enumerate
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)  Service registration methods enumerate
  *   all DI bindings in one place per NC bootstrap pattern; splitting them would spread
  *   the wire-up across unrelated files and obscure the dependency graph.
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Single IBootstrap implementation per NC
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)   Single IBootstrap implementation per NC
  *   app-info convention; all register/boot logic must live in this one class.
- * @SuppressWarnings(PHPMD.UnusedFormalParameter) IBootstrap::boot(IBootContext) signature
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  IBootstrap::boot(IBootContext) signature
  *   is fixed by the NC framework contract; the $context parameter may not be used in
  *   every version of the boot method.
+ * @SuppressWarnings(PHPMD.TooManyMethods)         Bootstrap class groups its register/boot
+ *   wire-up into per-concern helper methods (services, listeners, middleware, capabilities);
+ *   inlining them to satisfy the method-count threshold would recreate one unreadable
+ *   mega-method that the ExcessiveMethodLength suppression already guards against.
  */
 class Application extends App implements IBootstrap
 {
@@ -303,11 +348,46 @@ class Application extends App implements IBootstrap
     public const APP_ID = 'openregister';
 
     /**
+     * Distributed-cache prefix for the per-app MCP provider discovery map.
+     *
+     * @var string
+     */
+    private const MCP_PROBE_CACHE_PREFIX = 'openregister_mcp_provider_probe';
+
+    /**
+     * IAppConfig key holding the MCP provider discovery-cache TTL in seconds.
+     *
+     * @var string
+     */
+    private const MCP_PROBE_TTL_CONFIG_KEY = 'mcp.provider_probe_cache_ttl';
+
+    /**
+     * Default MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_DEFAULT = 60;
+
+    /**
+     * Minimum allowed MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_MIN = 10;
+
+    /**
+     * Maximum allowed MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_MAX = 600;
+
+    /**
      * Constructor for the Application class
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     public function __construct()
     {
@@ -321,11 +401,26 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
+     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#requirement-credential-store-backend-resolution
      */
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+
+        // Credential broker (credential-broker-service + credential-doriath-leaf):
+        // bind the CredentialStore abstraction through the CredentialStoreResolver
+        // (design D-A) — the Doriath application-vault leaf when the doriath app is
+        // eligible (enabled + service classes + application-scoped seam methods +
+        // OR self-registration), else the NC encrypted per-user vault leaf. The
+        // broker and controller keep depending only on the CredentialStore
+        // interface; this factory is the ONLY place the selection happens.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Credential\CredentialStore::class,
+            static function ($c) {
+                return $c->get(\OCA\OpenRegister\Service\Credential\CredentialStoreResolver::class)->resolve();
+            }
+        );
 
         // Register request-scoped LanguageService as a singleton (shared per request).
         $context->registerService(
@@ -363,17 +458,164 @@ class Application extends App implements IBootstrap
         // Fail-OPEN: any limiter error allows the request through.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\RateLimitMiddleware::class);
 
+        // Register the PublicApiCorsMiddleware: reflects the request Origin onto
+        // `@PublicPage` responses so browsers on other origins (e.g. a marketing
+        // site posting a lead into a public-create schema) can read the result.
+        // Scoped to public endpoints only and never sets allow-credentials.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\PublicApiCorsMiddleware::class);
+
+        // Register the ChatCompatMiddleware (or-chat-proxy-deprecation): adds
+        // Deprecation/Sunset/Link response headers to every chat/agents/
+        // conversations controller response and forwards those requests
+        // server-side to hermiq. ON by default since
+        // or-chat-engine-decommission; operators opt out via the
+        // `openregister.chat.proxyTo` appconfig value (any value != 'hermiq').
+        // Any failure falls back to serving the request locally unchanged.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ChatCompatMiddleware::class);
+
+        // Register the ObjectSourceErrorMiddleware (dbal-virtual-registers D8):
+        // maps DbalObjectSourceException thrown during reads against an
+        // external-database-backed schema onto its declared 502/503 status —
+        // an unreachable or failing external database must never surface as a
+        // bare 500. All other exceptions are rethrown untouched.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\ObjectSourceErrorMiddleware::class);
+
+        // Register the EncryptedFieldFilterMiddleware (field-level-object-encryption):
+        // maps EncryptedFieldFilterException — thrown when a caller filters/
+        // searches/facets on a field flagged `x-openregister-encrypted` — onto a
+        // clear HTTP 400 instead of a silent zero-row result or a bare 500.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
+
+        // Bind the dormant Path B PDF anonymisation fallback bridge to its
+        // null implementation. Tenants enabling Path B replace this binding
+        // with a concrete NcOfficeConverterInterface implementation that
+        // talks to Collabora Online / Code (per the
+        // `pdf-anonymisation-odt-fallback` scaffold).
+        $context->registerService(
+            \OCA\OpenRegister\Service\File\Pdf\Fallback\NcOfficeConverterInterface::class,
+            function () {
+                return new \OCA\OpenRegister\Service\File\Pdf\Fallback\NullNcOfficeConverter();
+            }
+        );
+
+        // DSAR case-engine (dsar-case-engine): bind the swappable PAdES signing
+        // seam to its default SHA-256-only stub. The real PAdES-LTV signer drops
+        // in here later by replacing this binding — the ExportBundleService
+        // depends only on the PadesSigner interface, so nothing else changes.
+        // TODO(ADR-047 Phase-1b, DEFERRED): PAdES-LTV signing deferred — the
+        // 2026-07-04 tc-lib-pdf spike was No-Go (8.65 stubs the B-T timestamp).
+        // Interim = SHA-256 hash-only. When resumed, bind a real PadesSigner
+        // against pyHanko (MIT sidecar) or a matured tc-lib-pdf; TSA URL config.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Export\PadesSigner::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Export\UnsignedPadesSigner();
+            }
+        );
+
+        // DSAR evidence-source registry (shared, so leaf-app addProvider()
+        // registrations during boot() persist for the whole request). The
+        // harvest service auto-wires it; OR core enumerates only registered
+        // providers (ADR-019 — an unregistered source contributes nothing).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Evidence\EvidenceSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // DSAR integration seams (dsar-integration-seams): two pluggable seams —
+        // identity-verify and regulator-escalate — as shared per-request
+        // registries (so a leaf app's addProvider() during boot() persists for
+        // the whole request, ADR-019) each pre-seeded with the OR fail-closed
+        // default in its constructor. Resolution is pack-selector-driven and
+        // fail-closed: an unset/unknown selector resolves the default that
+        // refuses (never null, never "verified"/"escalated" — ADR-005/CWE-863).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Identity\IdentityVerifyRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Identity\NullIdentityVerifyProvider::class)
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class,
+            function () {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Gdpr\Regulator\RegulatorEscalateRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    default: $container->get(\OCA\OpenRegister\Service\Gdpr\Regulator\NullRegulatorEscalateProvider::class)
+                );
+            }
+        );
+
+        // Web Push hex-icon service (openregister-web-push-engine): needs an
+        // app-scoped IAppData for its rendered-PNG cache, which is not
+        // auto-wirable, so resolve it via IAppDataFactory here.
+        $context->registerService(
+            \OCA\OpenRegister\Service\WebPush\HexIconService::class,
+            function (\Psr\Container\ContainerInterface $c): \OCA\OpenRegister\Service\WebPush\HexIconService {
+                return new \OCA\OpenRegister\Service\WebPush\HexIconService(
+                    $c->get(\OCP\App\IAppManager::class),
+                    $c->get(\OCP\Files\AppData\IAppDataFactory::class)->get('openregister'),
+                    $c->get(\Psr\Log\LoggerInterface::class)
+                );
+            }
+        );
+
+        // Register the data-sync source-fetcher registry pre-loaded with the
+        // built-in REST/OpenRegister fetcher. Apps can register additional
+        // fetchers (OData, SOAP, CSV) by resolving and extending this service.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry::class,
+            function ($c) {
+                $registry = new \OCA\OpenRegister\Service\Sync\SourceFetcherRegistry();
+                $registry->register($c->get(\OCA\OpenRegister\Service\Sync\RestApiSourceFetcher::class));
+                return $registry;
+            }
+        );
+
+        // Register the standards schema-import service with the bundled,
+        // versioned snapshot resources (schema-import-standards). Built
+        // explicitly so the resource root is deterministic; the dialect
+        // registry inside it makes DCAT/SKOS/ZGW importers follow-ups.
+        $context->registerService(
+            \OCA\OpenRegister\Service\SchemaImport\SchemaImportService::class,
+            function () {
+                return new \OCA\OpenRegister\Service\SchemaImport\SchemaImportService(
+                    new \OCA\OpenRegister\Service\SchemaImport\DialectDetector(),
+                    new \OCA\OpenRegister\Service\SchemaImport\ThreeWayMerge()
+                );
+            }
+        );
+
         // Register all services in phases to resolve circular dependencies.
         $this->registerMappersWithCircularDependencies(context: $context);
         $this->registerCacheAndFileHandlers(context: $context);
         $this->registerConfigurationServices(context: $context);
         $this->registerSettingsServices(context: $context);
-        $this->registerSearchBackend(context: $context);
         $this->registerVectorizationService(context: $context);
         $this->registerObjectInteractionServices(context: $context);
         $this->registerIntegrationRegistry(context: $context);
+        $this->registerObjectSourceProviders(context: $context);
         $this->registerEventListeners(context: $context);
         $this->registerMcpToolProviders(context: $context);
+        $this->registerAppHostObservability(context: $context);
 
         // Register the annotation-driven INotifier so notifications fired by
         // AnnotationNotificationDispatcher get a parsed subject — without
@@ -418,7 +660,7 @@ class Application extends App implements IBootstrap
      *   the length is structural to the NC DI pattern and cannot be shortened without
      *   obscuring the circular-dependency resolution order.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerMappersWithCircularDependencies(IRegistrationContext $context): void
     {
@@ -527,6 +769,25 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // EntityRelationMapper is registered explicitly because it constructor-injects
+        // `IEventDispatcher` to dispatch `EntityRelationDecisionUpdatedEvent`. Every
+        // other event-dispatcher-dependent mapper in this method (SchemaMapper,
+        // RegisterMapper, MagicMapper, WebhookMapper) is wired explicitly to avoid
+        // depending on NC's autowirer resolution of framework-interface keys, which
+        // has historically been version-sensitive.
+        $context->registerService(
+            EntityRelationMapper::class,
+            function (ContainerInterface $container) {
+                return new EntityRelationMapper(
+                    db: $container->get('OCP\IDBConnection'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    eventDispatcher: $container->get('OCP\EventDispatcher\IEventDispatcher'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
     }//end registerMappersWithCircularDependencies()
 
     /**
@@ -536,11 +797,10 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerCacheAndFileHandlers(IRegistrationContext $context): void
     {
-        // CacheHandler uses lazy loading of IndexService to break circular dependency.
         $context->registerService(
             CacheHandler::class,
             function (ContainerInterface $container) {
@@ -568,6 +828,7 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
                     logger: $container->get('Psr\Log\LoggerInterface'),
+                    auditTrailMapper: $container->get(\OCA\OpenRegister\Db\AuditTrailMapper::class),
                     fileService: null
                 );
             }
@@ -581,7 +842,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerConfigurationServices(IRegistrationContext $context): void
     {
@@ -670,6 +931,22 @@ class Application extends App implements IBootstrap
                 $logger->debug('[Application] IUserSession unavailable for ImportHandler: '.$e->getMessage());
             }
 
+            // Optional: group/user managers used to resolve a fallback admin
+            // acting user when import runs without a logged-in session
+            // (occ/installer/cron). Wrapped so a missing dependency never
+            // breaks import.
+            try {
+                $importHandler->setGroupManager($container->get('OCP\IGroupManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IGroupManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
+            try {
+                $importHandler->setUserManager($container->get('OCP\IUserManager'));
+            } catch (\Throwable $e) {
+                $logger->debug('[Application] IUserManager unavailable for ImportHandler: '.$e->getMessage());
+            }
+
             return $importHandler;
         };
 
@@ -742,7 +1019,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerSettingsServices(IRegistrationContext $context): void
     {
@@ -783,7 +1060,6 @@ class Application extends App implements IBootstrap
                     fileSettingsHandler: $container->get(FileSettingsHandler::class),
                     objRetentionHandler: $container->get(ObjectRetentionHandler::class),
                     cacheSettingsHandler: $container->get(CacheSettingsHandler::class),
-                    solrSettingsHandler: $container->get(SolrSettingsHandler::class),
                     cfgSettingsHandler: $container->get(ConfigurationSettingsHandler::class)
                 );
             }
@@ -803,43 +1079,13 @@ class Application extends App implements IBootstrap
     }//end registerSettingsServices()
 
     /**
-     * Register search backend interface with dynamic backend selection.
-     *
-     * @param IRegistrationContext $context The registration context
-     *
-     * @return void
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
-     */
-    private function registerSearchBackend(IRegistrationContext $context): void
-    {
-        $context->registerService(
-            \OCA\OpenRegister\Service\Index\SearchBackendInterface::class,
-            function (ContainerInterface $container): \OCA\OpenRegister\Service\Index\SearchBackendInterface {
-                $settingsService = $container->get(SettingsService::class);
-                $backendConfig   = $settingsService->getSearchBackendConfig();
-                $activeBackend   = $backendConfig['active'] ?? 'solr';
-
-                switch ($activeBackend) {
-                    case 'elasticsearch':
-                        return $container->get(\OCA\OpenRegister\Service\Index\Backends\ElasticsearchBackend::class);
-
-                    case 'solr':
-                    default:
-                        return $container->get(SolrBackend::class);
-                }
-            }
-        );
-    }//end registerSearchBackend()
-
-    /**
      * Register vectorization service with strategies.
      *
      * @param IRegistrationContext $context The registration context
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerVectorizationService(IRegistrationContext $context): void
     {
@@ -870,7 +1116,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerObjectInteractionServices(IRegistrationContext $context): void
     {
@@ -880,7 +1126,8 @@ class Application extends App implements IBootstrap
                 return new TaskService(
                     calDavBackend: $container->get('OCA\DAV\CalDAV\CalDavBackend'),
                     userSession: $container->get('OCP\IUserSession'),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    urlGenerator: $container->get('OCP\IURLGenerator')
                 );
             }
         );
@@ -893,6 +1140,15 @@ class Application extends App implements IBootstrap
                     userSession: $container->get('OCP\IUserSession'),
                     userManager: $container->get('OCP\IUserManager'),
                     logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Integration\TimeProvider::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Integration\TimeProvider(
+                    appConfig: $container->get('OCP\IAppConfig')
                 );
             }
         );
@@ -912,7 +1168,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-5
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function registerIntegrationRegistry(IRegistrationContext $context): void
     {
@@ -946,6 +1202,20 @@ class Application extends App implements IBootstrap
             function (ContainerInterface $container) {
                 return new PropertyReferenceTypeValidator(
                     registry: $container->get(IntegrationRegistry::class),
+                );
+            }
+        );
+
+        // PropertySemanticReferenceValidator — validates the opt-in
+        // `referenceSemanticType` property marker (ADR-048, cross-app
+        // semantic references) as a well-formed absolute IRI. Standalone,
+        // mirroring PropertyReferenceTypeValidator; wire into schema-save
+        // when write-time enforcement is desired.
+        $context->registerService(
+            PropertySemanticReferenceValidator::class,
+            function (ContainerInterface $container) {
+                return new PropertySemanticReferenceValidator(
+                    jsonLd: $container->get(\OCA\OpenRegister\Service\JsonLd\JsonLdContextService::class),
                 );
             }
         );
@@ -991,7 +1261,8 @@ class Application extends App implements IBootstrap
                     appName: 'openregister',
                     request: $container->get('OCP\IRequest'),
                     registry: $container->get(IntegrationRegistry::class),
-                    logger: $container->get('Psr\Log\LoggerInterface')
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class)
                 );
             }
         );
@@ -1019,6 +1290,236 @@ class Application extends App implements IBootstrap
     }//end registerIntegrationRegistry()
 
     /**
+     * Register the ObjectSourceRegistry (shared) and the built-in
+     * CalDAV-VTODO object-source provider service.
+     *
+     * The registry is shared so `addProvider()` registrations made during
+     * `boot()` persist for the whole request; GetObject auto-wires it.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#1-provider-interface-registry
+     */
+    private function registerObjectSourceProviders(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            ObjectSourceRegistry::class,
+            function (ContainerInterface $container) {
+                return new ObjectSourceRegistry(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            FederatedObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new FederatedObjectSourceProvider(
+                    clientService: $container->get('OCP\Http\Client\IClientService'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalDavVtodoObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalDavVtodoObjectSourceProvider(
+                    taskService: $container->get(TaskService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            UserDirectoryObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new UserDirectoryObjectSourceProvider(
+                    userManager: $container->get('OCP\IUserManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            GroupObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new GroupObjectSourceProvider(
+                    groupManager: $container->get('OCP\IGroupManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            ContactsObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new ContactsObjectSourceProvider(
+                    contactsManager: $container->get('OCP\Contacts\IManager'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            CalendarEventObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new CalendarEventObjectSourceProvider(
+                    calendarEventService: $container->get(\OCA\OpenRegister\Service\CalendarEventService::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            FilesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new FilesObjectSourceProvider(
+                    rootFolder: $container->get('OCP\Files\IRootFolder'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DeckObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DeckObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TalkObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TalkObjectSourceProvider(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // DBAL virtual-register services + provider (dbal-virtual-registers).
+        // The connection factory depends only on the CredentialStore interface,
+        // which is already bound to the active leaf via CredentialStoreResolver.
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DbalConnectionFactory(
+                    credentialStore: $container->get(\OCA\OpenRegister\Service\Credential\CredentialStore::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\SqlTypeMapper(
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Dbal\DatabaseIntrospectionService(
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
+                    typeMapper: $container->get(\OCA\OpenRegister\Service\Dbal\SqlTypeMapper::class),
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            DbalObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new DbalObjectSourceProvider(
+                    sourceMapper: $container->get(\OCA\OpenRegister\Db\SourceMapper::class),
+                    connectionFactory: $container->get(\OCA\OpenRegister\Service\Dbal\DbalConnectionFactory::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        // Tables provider stack — a guarded reader (the sole Tables-boundary),
+        // pure mappers, a schema-sync reconciler, and the provider itself.
+        $context->registerService(
+            TablesUuidDeriver::class,
+            function () {
+                return new TablesUuidDeriver();
+            }
+        );
+
+        $context->registerService(
+            TablesTableReader::class,
+            function (ContainerInterface $container) {
+                return new TablesTableReader(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesColumnMapper::class,
+            function (ContainerInterface $container) {
+                return new TablesColumnMapper(
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesSchemaSyncService::class,
+            function (ContainerInterface $container) {
+                return new TablesSchemaSyncService(
+                    registerMapper: $container->get(\OCA\OpenRegister\Db\RegisterMapper::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            TablesObjectSourceProvider::class,
+            function (ContainerInterface $container) {
+                return new TablesObjectSourceProvider(
+                    reader: $container->get(TablesTableReader::class),
+                    columnMapper: $container->get(TablesColumnMapper::class),
+                    uuidDeriver: $container->get(TablesUuidDeriver::class),
+                    syncService: $container->get(TablesSchemaSyncService::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+    }//end registerObjectSourceProviders()
+
+    /**
      * Register the 5 BuiltinProviders/* services so they can be
      * resolved lazily from the container.
      *
@@ -1031,7 +1532,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-12
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function registerBuiltinIntegrationProviders(IRegistrationContext $context): void
     {
@@ -1094,7 +1595,7 @@ class Application extends App implements IBootstrap
         // in-repo as the worked external-storage example; routed
         // through ExternalIntegrationRouter, credentials on the
         // OpenConnector `xwiki` source.
-        // @spec openspec/changes/integration-xwiki/tasks.md.
+        // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
         $context->registerService(
             XwikiProvider::class,
             function (ContainerInterface $container) {
@@ -1112,7 +1613,7 @@ class Application extends App implements IBootstrap
         // + router are resolved lazily so the service loads even when
         // OpenConnector is absent, mirroring the unconfigured-source
         // 503-with-cause pattern.
-        // @spec openspec/changes/integration-xwiki/tasks.md.
+        // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\XwikiLinkService::class,
             function (ContainerInterface $container) {
@@ -1126,12 +1627,73 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // Leaf provider: KvK company lookup (external, OpenConnector-backed).
+        // Stateless, read-only — no link table; routed through
+        // ExternalIntegrationRouter, credentials (the `apikey` header) on the
+        // OpenConnector `kvk` source. Centralises pipelinq's KvkApiClient
+        // onto the canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
+        $context->registerService(
+            KvkProvider::class,
+            function (ContainerInterface $container) {
+                return new KvkProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: OpenCorporates company search (external,
+        // OpenConnector-backed). Stateless, read-only — no link table;
+        // routed through ExternalIntegrationRouter, credentials (the
+        // `api_token` query param) on the OpenConnector `opencorporates`
+        // source. Centralises pipelinq's OpenCorporatesApiClient onto the
+        // canonical OR/OpenConnector path (ADR-022).
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
+        $context->registerService(
+            OpenCorporatesProvider::class,
+            function (ContainerInterface $container) {
+                return new OpenCorporatesProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // Leaf provider: outbound-messaging dispatch (external,
+        // OpenConnector-backed) — side-effecting SMS / WhatsApp send. Routed
+        // through ExternalIntegrationRouter, credentials on the per-call
+        // OpenConnector source (cmcom-sms / messagebird-sms / twilio-sms /
+        // whatsapp-cloud-api / whatsapp-bsp). NOT added to the IntegrationRegistry
+        // boot loop: it is a send-only leaf with no listable surface, reached
+        // via MessageDispatchController, not as an object-sidebar tab.
+        // Centralises only pipelinq's per-provider DISPATCH + credentials onto
+        // the canonical OR/OpenConnector path (ADR-022); all orchestration
+        // (provider selection, STOP opt-out, template-approval, 24h session,
+        // dedupe, delivery-status) stays in pipelinq.
+        // @spec openspec/specs/integration-registry/spec.md (canonical spec).
+        $context->registerService(
+            MessageDispatchProvider::class,
+            function (ContainerInterface $container) {
+                return new MessageDispatchProvider(
+                    router: $container->get(ExternalIntegrationRouter::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    l10n: $container->get('OCP\IL10N'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
         // Leaf provider: OpenProject (external, OpenConnector-backed) —
         // mirrors the XwikiProvider pattern (AD-4 / AD-22). Credentials
         // on the OpenConnector `openproject` source. Tier-2: the
         // OpenProjectLinkMapper backs the linked list so it renders from
         // the cached link rows even when the source is temporarily down.
-        // @spec openspec/changes/integration-openproject/tasks.md.
+        // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
         $context->registerService(
             OpenProjectProvider::class,
             function (ContainerInterface $container) {
@@ -1151,7 +1713,7 @@ class Application extends App implements IBootstrap
         // create / refresh flows go through the OpenConnector
         // `openproject` source, degrading to a 503-with-cause when the
         // source is missing or the upstream is unreachable (wave-5.2).
-        // @spec openspec/changes/integration-openproject/tasks.md.
+        // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\OpenProjectLinkService::class,
             function (ContainerInterface $container) {
@@ -1171,7 +1733,7 @@ class Application extends App implements IBootstrap
         // through the registry contract so they surface in the sidebar /
         // widgets / admin UI / OCS caps without per-app glue. Each
         // provider gates on its required NC app via IAppManager.
-        // @spec openspec/changes/integration-calendar/tasks.md.
+        // @spec openspec/specs/integration-calendar/spec.md (canonical spec).
         $context->registerService(
             CalendarProvider::class,
             function (ContainerInterface $container) {
@@ -1185,7 +1747,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-contacts/tasks.md.
+        // @spec openspec/specs/integration-contacts/spec.md (canonical spec).
         $context->registerService(
             ContactsProvider::class,
             function (ContainerInterface $container) {
@@ -1197,7 +1759,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-deck/tasks.md.
+        // @spec openspec/specs/integration-deck/spec.md (canonical spec).
         $context->registerService(
             DeckProvider::class,
             function (ContainerInterface $container) {
@@ -1209,7 +1771,7 @@ class Application extends App implements IBootstrap
             }
         );
 
-        // @spec openspec/changes/integration-email/tasks.md.
+        // @spec openspec/specs/integration-email/spec.md (canonical spec).
         $context->registerService(
             EmailProvider::class,
             function (ContainerInterface $container) {
@@ -1229,7 +1791,7 @@ class Application extends App implements IBootstrap
         // returns an empty array so the slot renders an empty state
         // rather than a 500.
         $greenfieldProviders = [
-            // @spec openspec/changes/integration-activity/tasks.md.
+            // @spec openspec/specs/integration-activity/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
             // NB: AnalyticsProvider + CollectivesProvider + CospendProvider
             // were Tier-1 greenfield until Tier-2; each now takes its own
@@ -1269,7 +1831,7 @@ class Application extends App implements IBootstrap
         // FormLinkMapper injected. The provider still gracefully degrades
         // to the legacy marker scan when the link table is empty (e.g.
         // forms that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-forms/tasks.md.
+        // @spec openspec/specs/integration-forms/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
             function (ContainerInterface $container) {
@@ -1284,7 +1846,7 @@ class Application extends App implements IBootstrap
 
         // SharesProvider — NC core (no app gate); wraps OCP\Share\IManager
         // (query-time, no link table — IShare is first-class NC state).
-        // @spec openspec/changes/integration-shares/tasks.md.
+        // @spec openspec/specs/integration-shares/spec.md (canonical spec).
         $context->registerService(
             SharesProvider::class,
             function (ContainerInterface $container) {
@@ -1300,7 +1862,7 @@ class Application extends App implements IBootstrap
         // backing the ShareLinksController. NO link table / NO cache:
         // OCP\Share\IManager is the single source of truth, resolved
         // lazily through the container (same pattern as SharesProvider).
-        // @spec openspec/changes/integration-shares/tasks.md.
+        // @spec openspec/specs/integration-shares/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\ShareLinkService::class,
             function (ContainerInterface $container) {
@@ -1311,13 +1873,73 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // CaseTokenService — mint/resolve/revoke public "track your case"
+        // token links (the SharesProvider create()/delete() public-token
+        // surface). ObjectService is resolved lazily through the container
+        // (same pattern as ShareLinkService) so the resolve path runs the
+        // canonical RBAC-respecting read; the token never bypasses RBAC.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
+        $context->registerService(
+            \OCA\OpenRegister\Service\CaseTokenService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\CaseTokenService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\CaseTokenMapper::class),
+                    secureRandom: $container->get('OCP\Security\ISecureRandom'),
+                    userSession: $container->get('OCP\IUserSession'),
+                    urlGenerator: $container->get('OCP\IURLGenerator'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+
+        // CaseTokenController — anonymous public resolve endpoint.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\CaseTokenController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\CaseTokenController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    tokenService: $container->get(\OCA\OpenRegister\Service\CaseTokenService::class),
+                );
+            }
+        );
+
+        // AnalyticsSeriesService — register/fetch page-level pre-computed
+        // chart series (the leaf-foundation SLA-dashboard render surface).
+        // RBAC-scoped; (re)declares its page widget on the registry.
+        // @spec openspec/specs/integration-leaf-foundation/spec.md (canonical spec).
+        $context->registerService(
+            \OCA\OpenRegister\Service\AnalyticsSeriesService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\AnalyticsSeriesService(
+                    mapper: $container->get(\OCA\OpenRegister\Db\AnalyticsSeriesMapper::class),
+                    registry: $container->get(IntegrationRegistry::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    groupManager: $container->get('OCP\IGroupManager'),
+                );
+            }
+        );
+
+        // AnalyticsSeriesController — register/fetch HTTP surface a leaf
+        // calls to feed a dashboard chart widget.
+        $context->registerService(
+            \OCA\OpenRegister\Controller\AnalyticsSeriesController::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Controller\AnalyticsSeriesController(
+                    appName: 'openregister',
+                    request: $container->get('OCP\IRequest'),
+                    seriesService: $container->get(\OCA\OpenRegister\Service\AnalyticsSeriesService::class),
+                );
+            }
+        );
+
         // BookmarksProvider — Tier-2: backed by the BookmarkLinkMapper.
         // Replaces the original `or:{uuid}` tag-marker convention with a
         // proper persistence layer; the wrapping BookmarkLinkService owns
         // the late-bound NC Bookmarks reads/writes. Needs the container
         // (NC Bookmarks classes are only on the classpath when that app is
         // installed) plus IUserSession to scope the query to the user.
-        // @spec openspec/changes/integration-bookmarks/tasks.md.
+        // @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
         $context->registerService(
             BookmarksProvider::class,
             function (ContainerInterface $container) {
@@ -1334,7 +1956,7 @@ class Application extends App implements IBootstrap
         // IUserSession to scope `getRoomsForUser`. Tier-2: the
         // TalkLinkMapper is injected so the provider can short-circuit
         // the legacy marker scan when the link table is populated.
-        // @spec openspec/changes/integration-talk/tasks.md.
+        // @spec openspec/specs/integration-talk/spec.md (canonical spec).
         $context->registerService(
             TalkProvider::class,
             function (ContainerInterface $container) {
@@ -1351,7 +1973,7 @@ class Application extends App implements IBootstrap
         // TalkLinkService — Tier-2 link/create/unlink service backing
         // the TalkLinksController. Same late-bound Talk pattern as
         // the provider (container for OCA\Talk\* lookups).
-        // @spec openspec/changes/integration-talk/tasks.md.
+        // @spec openspec/specs/integration-talk/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\TalkLinkService::class,
             function (ContainerInterface $container) {
@@ -1370,7 +1992,7 @@ class Application extends App implements IBootstrap
         // direct queries against `oc_polls_*` tables. Replaces the
         // original title-marker convention with a proper persistence
         // layer.
-        // @spec openspec/changes/integration-polls/tasks.md.
+        // @spec openspec/specs/integration-polls/spec.md (canonical spec).
         $context->registerService(
             PollsProvider::class,
             function (ContainerInterface $container) {
@@ -1388,7 +2010,7 @@ class Application extends App implements IBootstrap
         // queries against `oc_flow_operations`. Replaces the Tier-1
         // `[or:{uuid}]` name-marker convention with a proper
         // persistence layer.
-        // @spec openspec/changes/integration-flow/tasks.md.
+        // @spec openspec/specs/integration-flow/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
             function (ContainerInterface $container) {
@@ -1406,7 +2028,7 @@ class Application extends App implements IBootstrap
         // entries are core-generated; this only wraps the wave-5.3
         // MarkerLookupTrait carve-out query with type/actor/date
         // filters + cursor pagination.
-        // @spec openspec/changes/integration-activity/tasks.md.
+        // @spec openspec/specs/integration-activity/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\ActivityFilterService::class,
             function (ContainerInterface $container) {
@@ -1421,7 +2043,7 @@ class Application extends App implements IBootstrap
         // service backing the FlowLinksController. NC Flow operations
         // are configured by admins only; the service enforces that
         // gate via IGroupManager.
-        // @spec openspec/changes/integration-flow/tasks.md.
+        // @spec openspec/specs/integration-flow/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\FlowLinkService::class,
             function (ContainerInterface $container) {
@@ -1441,7 +2063,7 @@ class Application extends App implements IBootstrap
         // provider still gracefully degrades to the legacy `[or:{uuid}]`
         // favorite-name marker scan when the link table is empty (POIs
         // that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-maps/tasks.md.
+        // @spec openspec/specs/integration-maps/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
             function (ContainerInterface $container) {
@@ -1458,7 +2080,7 @@ class Application extends App implements IBootstrap
         // backing the MapLinksController. NC Maps favorites are
         // user-scoped; the FavoritesService is resolved lazily via the
         // container so the service loads even when Maps is absent.
-        // @spec openspec/changes/integration-maps/tasks.md.
+        // @spec openspec/specs/integration-maps/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\MapLinkService::class,
             function (ContainerInterface $container) {
@@ -1477,7 +2099,7 @@ class Application extends App implements IBootstrap
         // provider still gracefully degrades to the legacy `[or:{uuid}]`
         // album-name marker scan when the link table is empty (albums
         // that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-photos/tasks.md.
+        // @spec openspec/specs/integration-photos/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
             function (ContainerInterface $container) {
@@ -1494,7 +2116,7 @@ class Application extends App implements IBootstrap
         // backing the PhotoLinksController. NC Photos albums are
         // user-scoped; the AlbumMapper is resolved lazily via the
         // container so the service loads even when Photos is absent.
-        // @spec openspec/changes/integration-photos/tasks.md.
+        // @spec openspec/specs/integration-photos/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\PhotoLinkService::class,
             function (ContainerInterface $container) {
@@ -1513,7 +2135,7 @@ class Application extends App implements IBootstrap
         // The provider still gracefully degrades to the legacy
         // `[or:{uuid}]` slug-marker scan when the link table is empty
         // (pages that pre-date the Tier-2 link table).
-        // @spec openspec/changes/integration-collectives/tasks.md.
+        // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
             function (ContainerInterface $container) {
@@ -1531,7 +2153,7 @@ class Application extends App implements IBootstrap
         // `[or:{uuid}]` report-name marker scan when the link table is
         // empty (reports that pre-date the Tier-2 link table; wave-2.2
         // marker-on-name convention).
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
             function (ContainerInterface $container) {
@@ -1549,7 +2171,7 @@ class Application extends App implements IBootstrap
         // name-marker scan (projects + bills) when the link table is empty
         // (entities that pre-date the Tier-2 link table; wave-2.3
         // marker-on-name convention).
-        // @spec openspec/changes/integration-cospend/tasks.md.
+        // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
             function (ContainerInterface $container) {
@@ -1568,7 +2190,7 @@ class Application extends App implements IBootstrap
         // container (behind a class_exists guard) and bills/projects are
         // read directly from the cospend_* tables, so the service loads
         // even when Cospend is absent.
-        // @spec openspec/changes/integration-cospend/tasks.md.
+        // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\CospendLinkService::class,
             function (ContainerInterface $container) {
@@ -1588,7 +2210,7 @@ class Application extends App implements IBootstrap
         // user-scoped; CollectiveService + PageService are resolved lazily
         // via the container so the service loads even when Collectives is
         // absent.
-        // @spec openspec/changes/integration-collectives/tasks.md.
+        // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\CollectiveLinkService::class,
             function (ContainerInterface $container) {
@@ -1608,7 +2230,7 @@ class Application extends App implements IBootstrap
         // user-scoped; the ReportService is resolved lazily via
         // `\OCP\Server::get()` behind a class_exists guard so the service
         // loads even when Analytics is absent.
-        // @spec openspec/changes/integration-analytics/tasks.md.
+        // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\AnalyticsLinkService::class,
             function (ContainerInterface $container) {
@@ -1627,7 +2249,7 @@ class Application extends App implements IBootstrap
         // `timemanager_task` when the link table is empty (entries that
         // pre-date the Tier-2 link table; wave-2.4 marker convention). The
         // leaf slug is `time-tracker`; the NC app id is `timemanager`.
-        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
             function (ContainerInterface $container) {
@@ -1636,6 +2258,7 @@ class Application extends App implements IBootstrap
                     appManager: $container->get('OCP\App\IAppManager'),
                     l10n: $container->get('OCP\IL10N'),
                     linkMapper: $container->get(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                    config: $container->get('OCP\IConfig'),
                 );
             }
         );
@@ -1644,7 +2267,7 @@ class Application extends App implements IBootstrap
         // backing the TimeTrackerLinksController. NC TimeManager entries are
         // user-scoped; ClientMapper + TaskMapper are resolved lazily via the
         // container so the service loads even when TimeManager is absent.
-        // @spec openspec/changes/integration-time-tracker/tasks.md.
+        // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
         $context->registerService(
             \OCA\OpenRegister\Service\TimeTrackerLinkService::class,
             function (ContainerInterface $container) {
@@ -1658,6 +2281,59 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Schema versioning & object migration services (schema-versioning-and-object-migration).
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaDiffService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaDiffService();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner();
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaVersioningService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaVersioningService(
+                    diffService: $container->get(\OCA\OpenRegister\Service\Schema\SchemaDiffService::class),
+                    changelogMapper: $container->get(\OCA\OpenRegister\Db\SchemaChangelogMapper::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    userSession: $container->get('OCP\IUserSession'),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaRevalidationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaRevalidationService(
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    validateObject: $container->get(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
+        $context->registerService(
+            \OCA\OpenRegister\Service\Schema\SchemaMigrationService::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\Service\Schema\SchemaMigrationService(
+                    planner: $container->get(\OCA\OpenRegister\Service\Schema\SchemaMigrationPlanner::class),
+                    runMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunMapper::class),
+                    runEntryMapper: $container->get(\OCA\OpenRegister\Db\SchemaRunEntryMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    logger: $container->get('Psr\Log\LoggerInterface'),
+                );
+            }
+        );
     }//end registerBuiltinIntegrationProviders()
 
     /**
@@ -1667,23 +2343,19 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     private function registerEventListeners(IRegistrationContext $context): void
     {
-        // Solr event listeners for automatic indexing.
-        $context->registerEventListener(ObjectCreatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, SolrEventListener::class);
-
-        // Solr event listeners for schema lifecycle management.
-        $context->registerEventListener(SchemaCreatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(SchemaUpdatedEvent::class, SolrEventListener::class);
-        $context->registerEventListener(SchemaDeletedEvent::class, SolrEventListener::class);
-
         // FileChangeListener for automatic file text extraction.
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
+
+        // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
+        $context->registerEventListener(
+            \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
+            \OCA\OpenRegister\Listener\OcmResourceTypeListener::class
+        );
 
         // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
@@ -1692,15 +2364,76 @@ class Application extends App implements IBootstrap
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 
+        // Tables schema-lifecycle listener — retire the managed virtual schema of
+        // a deleted Tables table. Guarded by class_exists so boot never fatals on
+        // an instance without the (soft-dependency) Tables app installed.
+        if (class_exists('OCA\\Tables\\Event\\TableDeletedEvent') === true) {
+            $context->registerEventListener('OCA\\Tables\\Event\\TableDeletedEvent', TablesTableDeletedListener::class);
+        }
+
         // Lifecycle annotation listeners — see x-openregister-lifecycle.
         // Order matters: initial state runs on creating; validation runs on updating.
         $context->registerEventListener(ObjectCreatingEvent::class, LifecycleInitialStateListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleValidationListener::class);
 
+        // Approval-chains declarative wiring — see x-openregister-approval-chains.
+        // Provisions ApprovalChain rows from the annotation (schema save), then
+        // gates any lifecycle transition it names until the provisioned chain's
+        // steps are all approved. Registered immediately after
+        // LifecycleValidationListener: transition legality must be established
+        // before approval-chain gating runs against it.
+        $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
+        $context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+
+        // Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
+        // Runs the declared actions of a matched transition on the save path, so
+        // they fire for EVERY transition form — a named TransitionEngine action
+        // AND a plain list-form edit of the lifecycle field (issue #427). Registered
+        // after the validation + approval-gate listeners: a transition's actions
+        // must only run once its legality is established and no gate has blocked it
+        // (the listener checks isPropagationStopped()). A declared action naming an
+        // unregistered handler fails loudly via LifecycleActionRegistry.
+        $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleActionListener::class);
+
         // Calculations annotation listener — materialises declared calculations
         // into the object payload before persistence (see x-openregister-calculations).
         $context->registerEventListener(ObjectCreatingEvent::class, CalculationOnSaveListener::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, CalculationOnSaveListener::class);
+
+        // Quality annotation listener — materialises a per-object data-quality
+        // score (0-1) into the object payload before persistence
+        // (see x-openregister-quality). MDM foundation capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, QualityScoreOnSaveListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, QualityScoreOnSaveListener::class);
+
+        // Survivorship annotation listener — materialises a declared golden
+        // record + attribute provenance into the object payload before
+        // persistence (see x-openregister-survivorship). MDM capability.
+        $context->registerEventListener(ObjectCreatingEvent::class, SurvivorshipRecomputeListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, SurvivorshipRecomputeListener::class);
+
+        // Reverse-FK source-change listener — when a source object (declared via
+        // a master schema's x-openregister-survivorship sourceLink.reverseFk)
+        // is created/updated/deleted, recompute the referenced master's golden
+        // record so it stays current as its sources change. MDM capability.
+        $context->registerEventListener(ObjectCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, SourceRecordChangeListener::class);
+        // Schema lifecycle events invalidate the listener's cross-request
+        // reverse-FK index cache (reverse-FK declarations live on schemas).
+        $context->registerEventListener(SchemaCreatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SourceRecordChangeListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, SourceRecordChangeListener::class);
+
+        // CRUD metric listener — persists an operational metric row per object
+        // create/update/delete into `openregister_metrics`, which the canonical
+        // production-observability spec requires for counters that survive PHP
+        // request boundaries. Fail-soft: never aborts the write it observes.
+        $context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
@@ -1708,16 +2441,31 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
+        // Declarative flow engine — runs x-openregister-flows actions (calendar
+        // agenda tasks, email, ...) declared on the schema when an object's
+        // create/update/delete lifecycle event fires.
+        $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+
+        // System-entity notification bridge — routes create/update signals from
+        // OpenRegister's own system entities through the same annotation-notification
+        // pipeline used for stored register objects (spec: openregister-system-notifications).
+        $context->registerEventListener(RegisterCreatedEvent::class,       SystemEntityNotificationListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class,       SystemEntityNotificationListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(ConfigurationCreatedEvent::class,  SystemEntityNotificationListener::class);
+        $context->registerEventListener(ConfigurationUpdatedEvent::class,  SystemEntityNotificationListener::class);
+        $context->registerEventListener(SourceCreatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(SourceUpdatedEvent::class,         SystemEntityNotificationListener::class);
+        $context->registerEventListener(AgentCreatedEvent::class,          SystemEntityNotificationListener::class);
+        $context->registerEventListener(AgentUpdatedEvent::class,          SystemEntityNotificationListener::class);
+
         // Aggregation cache eviction on every object write.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, AggregationCacheInvalidationListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, AggregationCacheInvalidationListener::class);
-
-        // Realtime event log — append-only CloudEvent records for SSE/polling clients.
-        $context->registerEventListener(ObjectCreatedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class,      RealtimeEventListener::class);
-        $context->registerEventListener(ObjectTransitionedEvent::class, RealtimeEventListener::class);
 
         // Translation sidecar projection — keeps oc_openregister_translations in sync with JSONB property data.
         $context->registerEventListener(ObjectCreatedEvent::class,      TranslationProjectionListener::class);
@@ -1729,6 +2477,23 @@ class Application extends App implements IBootstrap
         // Webhook auto-create installer for x-openregister-notifications with webhook.persistent: true.
         $context->registerEventListener(SchemaCreatedEvent::class, NotificationsAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, NotificationsAnnotationInstaller::class);
+
+        // Semantic-object handoff engine (ADR-051):
+        // - lifecycle-triggered handoffs run off ObjectTransitionedEvent (real actors only);
+        // - queue-mode drain triggers: schema save + app enable (a provider may
+        // have appeared); the fallback HandoffQueueDrainJob catches the rest.
+        $context->registerEventListener(ObjectTransitionedEvent::class, HandoffLifecycleListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, HandoffQueueDrainListener::class);
+        $context->registerEventListener(\OCP\App\Events\AppEnableEvent::class, HandoffQueueDrainListener::class);
+
+        // Scheduled-notification per-object dedup pruning (Phase 3.4):
+        // - drop dedup rows on object purge so a re-created UUID re-arms cleanly;
+        // - drop dedup rows for rule keys removed/renamed in the schema annotation
+        // so orphan state does not pile up after edits.
+        $context->registerEventListener(ObjectDeletedEvent::class, NotificationDedupePruneListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, NotificationDedupeAnnotationSyncListener::class);
 
         // Threshold trigger evaluator: re-runs aggregations on writes and dispatches when thresholds are crossed.
         $context->registerEventListener(ObjectCreatedEvent::class, AggregationThresholdListener::class);
@@ -1745,7 +2510,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectDeletedEvent::class, HookListener::class);
 
         // WebhookEventListener for webhook delivery.
+        // OPS-2: register for EVERY event the listener's extractPayload() handles,
+        // not just create — otherwise update/delete/lock/revert/register/schema
+        // webhooks silently never deliver.
         $context->registerEventListener(ObjectCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(RegisterDeletedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaCreatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, WebhookEventListener::class);
+        $context->registerEventListener(SchemaDeletedEvent::class, WebhookEventListener::class);
+
+        // OPS-1: ActionListener drives the event-driven Actions feature. It is
+        // event-agnostic (resolves the payload from the dispatched event), so it
+        // must be wired to the object lifecycle events or configured Actions
+        // never fire.
+        $context->registerEventListener(ObjectCreatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ActionListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, ActionListener::class);
 
         // GraphQL subscription event listeners.
         $context->registerEventListener(ObjectCreatedEvent::class, GraphQLSubscriptionListener::class);
@@ -1777,6 +2565,15 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\IntegrationGlobalScriptListener::class
         );
 
+        // PushClientScriptListener loads the always-on, opt-in Web Push
+        // subscribe client on EVERY full-page render (openregister-web-push-engine).
+        // The client never prompts on load — it only subscribes on a user
+        // gesture / settings toggle.
+        $context->registerEventListener(
+            \OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent::class,
+            \OCA\OpenRegister\Listener\PushClientScriptListener::class
+        );
+
         // CommentsEntityListener registers "openregister" objectType for Nextcloud Comments.
         $context->registerEventListener(CommentsEntityEvent::class, CommentsEntityListener::class);
 
@@ -1797,6 +2594,115 @@ class Application extends App implements IBootstrap
     }//end registerEventListeners()
 
     /**
+     * Register the AppHost declarative observability engine (ADR-040).
+     *
+     * Wires the manifest loader, the health-check executor, the four metric
+     * sources, the Prometheus renderer and the metrics engine. The generic
+     * controllers are auto-resolved by Nextcloud's container (their `$appName`
+     * is supplied by the alias registration in each adopting leaf app's own
+     * Application.php). Services that need the DI container itself (lazy
+     * orAvailable + IMetricsProvider/IHealthCheckProvider alias discovery) get
+     * explicit factory closures; the rest auto-wire.
+     *
+     * @param IRegistrationContext $context The registration context.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/apphost-observability/spec.md
+     */
+    private function registerAppHostObservability(IRegistrationContext $context): void
+    {
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\ManifestLoader::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\ManifestLoader(
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor(
+                    db: $container->get('OCP\IDBConnection'),
+                    tempManager: $container->get('OCP\ITempManager'),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    appConfig: $container->get('OCP\IAppConfig'),
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource(
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    registerMapper: $container->get(RegisterMapper::class),
+                    schemaMapper: $container->get(SchemaMapper::class),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource(
+                    db: $container->get('OCP\IDBConnection'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource(
+                    appConfig: $container->get('OCP\IAppConfig')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource(
+                    container: $container,
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\PrometheusRenderer();
+            }
+        );
+
+        $context->registerService(
+            \OCA\OpenRegister\AppHost\Observability\MetricsEngine::class,
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Observability\MetricsEngine(
+                    objectSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ObjectMetricSource::class),
+                    tableSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\TableMetricSource::class),
+                    appConfigSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\AppConfigMetricSource::class),
+                    providerSource: $container->get(\OCA\OpenRegister\AppHost\Observability\Source\ProviderMetricSource::class),
+                    renderer: $container->get(\OCA\OpenRegister\AppHost\Observability\PrometheusRenderer::class),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    cacheFactory: $container->get('OCP\ICacheFactory'),
+                    config: $container->get('OCP\IConfig'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+    }//end registerAppHostObservability()
+
+    /**
      * Register MCP tool providers (built-ins first).
      *
      * Wires the four built-in IMcpToolProvider implementations into
@@ -1807,7 +2713,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
     private function registerMcpToolProviders(IRegistrationContext $context): void
     {
@@ -1828,6 +2734,30 @@ class Application extends App implements IBootstrap
                     providers: $providers
                 );
 
+                // Schema-derived providers (ADR-063 chain 2/3) MUST be
+                // appended LAST — McpToolsService is first-wins on tool
+                // name, so ordering after every hand-written per-app
+                // provider makes hand-written tools win automatically on a
+                // collision (REQ-DERIVED-003).
+                $this->collectSchemaDerivedMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
+                // Attributed providers (ADR-063 chain 3/3) MUST be collected
+                // LAST, after both hand-written and schema-derived providers,
+                // so their collision checks see the FULL existing id set:
+                // an attributed id colliding with a hand-written id is
+                // self-suppressed (hand-written wins, same as derived); an
+                // attributed id colliding with a DERIVED id is a discovery-time
+                // error (REQ-ATTR-002) — see collectAttributeMcpProviders().
+                $this->collectAttributeMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
                 return new McpToolsService(
                     providers: $providers,
                     logger: $logger
@@ -1837,17 +2767,505 @@ class Application extends App implements IBootstrap
     }//end registerMcpToolProviders()
 
     /**
+     * Derive one SchemaDerivedToolProvider per owning app that has at least
+     * one schema with a validated `x-openregister-mcp.enabled:true` block,
+     * and append it to $providers AFTER every hand-written provider already
+     * collected (built-ins + collectPerAppMcpProviders()).
+     *
+     * Fail-soft: enumeration or resolution failures are logged and leave
+     * $providers untouched — a broken derivation must never break MCP tool
+     * discovery for the rest of the instance.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+     */
+    private function collectSchemaDerivedMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $schemaMapper   = $container->get(SchemaMapper::class);
+            $registerMapper = $container->get(RegisterMapper::class);
+
+            // Catalog enumeration, not data access: every enabled schema
+            // MUST be considered regardless of the resolving request's org
+            // context, or the derived tool catalog would silently vary by
+            // caller — unlike SchemasToolProvider's user-facing `list`
+            // action, RBAC/multitenancy is deliberately bypassed here.
+            $schemas = $schemaMapper->findAll(_rbac: false, _multitenancy: false);
+
+            $schemasByApp = $this->groupOptedInSchemasByApp(
+                schemas: $schemas,
+                registerMapper: $registerMapper,
+                logger: $logger
+            );
+
+            foreach ($schemasByApp as $appId => $schemaEntries) {
+                $suppressedIds = $this->collectExistingToolIds(providers: $providers, appId: $appId);
+
+                $providers[] = new SchemaDerivedToolProvider(
+                    appId: $appId,
+                    schemaEntries: $schemaEntries,
+                    suppressedIds: $suppressedIds,
+                    objectService: $container->get(ObjectService::class),
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    logger: $logger
+                );
+            }
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[Application] Schema-derived provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectSchemaDerivedMcpProviders()
+
+    /**
+     * Group every schema with a validated `x-openregister-mcp.enabled:true`
+     * block by its owning app id, each paired with its owning register.
+     *
+     * Owning app id resolution mirrors {@see \OCA\OpenRegister\Service\SemanticTypeResolver::owningAppId()}:
+     * the schema's own `application` field, else the owning register's
+     * `application`. A schema that resolves to no owning app is skipped —
+     * the ABI requires a concrete `getAppId()` per provider instance.
+     *
+     * @param array<int, Schema>       $schemas        Every schema on the instance.
+     * @param RegisterMapper           $registerMapper Register mapper (owning-app + owning-register resolution).
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return array<string, list<array{schema: Schema, register: Register|null}>> Opted-in schemas grouped by owning app id.
+     */
+    private function groupOptedInSchemasByApp(
+        array $schemas,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): array {
+        $schemasByApp = [];
+
+        foreach ($schemas as $schema) {
+            $configuration = ($schema->getConfiguration() ?? []);
+            $annotation    = ($configuration['x-openregister-mcp'] ?? null);
+            if (is_array($annotation) === false || ($annotation['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $register  = $this->resolveSchemaRegister(schema: $schema, registerMapper: $registerMapper, logger: $logger);
+            $owningApp = $this->resolveOwningAppId(schema: $schema, register: $register);
+            if ($owningApp === null) {
+                $logger->debug(
+                    '[Application] Opted-in schema has no resolvable owning app — skipped',
+                    ['schemaId' => $schema->getId()]
+                );
+                continue;
+            }
+
+            $schemasByApp[$owningApp][] = ['schema' => $schema, 'register' => $register];
+        }//end foreach
+
+        return $schemasByApp;
+    }//end groupOptedInSchemasByApp()
+
+    /**
+     * Resolve a schema's owning register (the first register whose
+     * `schemas` id-list contains it), or null when the schema is orphaned.
+     *
+     * @param Schema                   $schema         The schema.
+     * @param RegisterMapper           $registerMapper Register mapper.
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return Register|null The owning register, or null when none is found.
+     */
+    private function resolveSchemaRegister(
+        Schema $schema,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): ?Register {
+        try {
+            $registerId = $registerMapper->getFirstRegisterWithSchema(schemaId: (int) $schema->getId());
+            if ($registerId === null) {
+                return null;
+            }
+
+            return $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[Application] Owning-register resolution failed for schema '.$schema->getId().': '.$e->getMessage()
+            );
+            return null;
+        }
+    }//end resolveSchemaRegister()
+
+    /**
+     * Resolve the owning app id: the schema's own `application` field
+     * (present and reliable on real fleet schemas), else the owning
+     * register's `application`. Null when neither names an app.
+     *
+     * @param Schema        $schema   The candidate schema.
+     * @param Register|null $register The schema's owning register, when resolvable.
+     *
+     * @return string|null The owning app id, or null when undeclared.
+     */
+    private function resolveOwningAppId(Schema $schema, ?Register $register): ?string
+    {
+        $appId = $schema->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            return $appId;
+        }
+
+        if ($register !== null) {
+            $registerApp = $register->getApplication();
+            if (is_string($registerApp) === true && $registerApp !== '') {
+                return $registerApp;
+            }
+        }
+
+        return null;
+    }//end resolveOwningAppId()
+
+    /**
+     * Collect every tool id already exposed, on the providers list built so
+     * far, by a provider for the given app id — the derived provider's
+     * self-suppression set (REQ-DERIVED-003).
+     *
+     * @param array<IMcpToolProvider> $providers Providers collected so far.
+     * @param string                  $appId     The owning app id.
+     *
+     * @return list<string> Tool ids already claimed for this app.
+     */
+    private function collectExistingToolIds(array $providers, string $appId): array
+    {
+        $ids = [];
+
+        foreach ($providers as $provider) {
+            if ($provider->getAppId() !== $appId) {
+                continue;
+            }
+
+            foreach ($provider->getTools() as $descriptor) {
+                if (isset($descriptor['id']) === true) {
+                    $ids[] = (string) $descriptor['id'];
+                }
+            }
+        }
+
+        return $ids;
+    }//end collectExistingToolIds()
+
+    /**
+     * Derive one AttributeToolProvider per app that declares at least one
+     * `#[McpTool]`-attributed method on its own scannable service classes
+     * (ADR-063 chain 3/3), and append it to $providers.
+     *
+     * MUST run LAST (after collectPerAppMcpProviders() and
+     * collectSchemaDerivedMcpProviders()) so its collision check sees every
+     * hand-written AND derived id already claimed for that app:
+     * - An attributed id colliding with a hand-written id is self-suppressed
+     *   (silent — hand-written wins, same precedence as the derived provider).
+     * - An attributed id colliding with a schema-DERIVED id is a
+     *   developer-facing discovery-time error: the ambiguous attributed tool
+     *   is rejected (logged, skipped) rather than silently resolved
+     *   (REQ-ATTR-002).
+     *
+     * Discovery scope (which classes get reflected) is the provisional
+     * resolution of design.md's DEFERRED_QUESTION: an app opts in by
+     * registering an {@see IMcpScannableServices} implementation under the
+     * alias key `OCA\OpenRegister\Mcp\IMcpScannableServices::<appId>` —
+     * mirrors the existing per-app `IMcpToolProvider::<appId>` convention
+     * used by collectPerAppMcpProviders(). Apps that register nothing under
+     * that key are simply not scanned (opt-in, not enumerate-everything).
+     *
+     * Fail-soft: enumeration, reflection, or resolution failures are logged
+     * and leave $providers untouched for the affected app — a broken scan
+     * must never break MCP tool discovery for the rest of the instance.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
+     */
+    private function collectAttributeMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $appManager = $container->get('OCP\App\IAppManager');
+            $scanner    = new AttributeToolScanner();
+
+            foreach ($appManager->getInstalledApps() as $appId) {
+                // The `IMcpScannableServices::<appId>` opt-in alias — and the
+                // scanned service class itself (ADR-041) — live in the opting-in
+                // app's OWN DI container, NOT OR's shared container: a leaf app
+                // registers them via $context->registerServiceAlias() in its own
+                // Application::register(), which binds into that app's
+                // \OC\AppFramework\DependencyInjection\DIContainer. Resolving them
+                // off the shared $container silently returns nothing (#390), so
+                // both alias and instance resolution must go through the app's
+                // own container. Fail-soft: an app with no registered container
+                // (or a container whose resolution throws) is simply skipped.
+                $appContainer = $this->getRegisteredAppContainer(appId: $appId, logger: $logger);
+                if ($appContainer === null) {
+                    continue;
+                }
+
+                $classNames = $this->resolveScannableServiceClasses(
+                    appContainer: $appContainer,
+                    logger: $logger,
+                    appId: $appId
+                );
+
+                if ($classNames === []) {
+                    continue;
+                }
+
+                $descriptors = $scanner->scanClasses(appId: $appId, classNames: $classNames, logger: $logger);
+                if ($descriptors === []) {
+                    continue;
+                }
+
+                $entries = $this->resolveAttributeEntries(
+                    appContainer: $appContainer,
+                    logger: $logger,
+                    appId: $appId,
+                    descriptors: $descriptors,
+                    providers: $providers
+                );
+
+                if ($entries === []) {
+                    continue;
+                }
+
+                $providers[] = new AttributeToolProvider(
+                    appId: $appId,
+                    entries: $entries,
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    logger: $logger
+                );
+            }//end foreach
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[Application] Attributed-tool provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectAttributeMcpProviders()
+
+    /**
+     * Obtain the opting-in app's OWN DI container so its
+     * `IMcpScannableServices::<appId>` opt-in alias (and the attributed
+     * service instances) can be resolved from where the leaf app actually
+     * registered them (#390).
+     *
+     * Wraps `\OC::$server->getRegisteredAppContainer($appId)`, which throws
+     * when the app has no bootstrapped container. Fail-soft: any error (app
+     * not registered, server seam unavailable) returns null so a single
+     * misbehaving app never fatals the whole MCP catalog. Isolated behind
+     * its own method so unit tests can override the app-container topology.
+     *
+     * @param string                   $appId  The candidate app id.
+     * @param \Psr\Log\LoggerInterface $logger PSR logger.
+     *
+     * @return ContainerInterface|null The app's own container, or null when unavailable.
+     */
+    protected function getRegisteredAppContainer(
+        string $appId,
+        \Psr\Log\LoggerInterface $logger
+    ): ?ContainerInterface {
+        try {
+            $appContainer = \OC::$server->getRegisteredAppContainer($appId);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[Application] No registered app container',
+                ['appId' => $appId, 'error' => $e->getMessage()]
+            );
+            return null;
+        }
+
+        return ($appContainer instanceof ContainerInterface) ? $appContainer : null;
+
+    }//end getRegisteredAppContainer()
+
+    /**
+     * Resolve one app's declared scannable service classes via the
+     * `IMcpScannableServices::<appId>` alias registered in THAT APP'S OWN
+     * container, or an empty list when the app has not opted in / the alias
+     * fails to resolve.
+     *
+     * The alias is registered by the leaf app in its own
+     * Application::register() and therefore lives in the app's own
+     * \OC\AppFramework\DependencyInjection\DIContainer — never in OR's shared
+     * container. Resolving it off the shared container silently discovered
+     * nothing (#390); {@see collectAttributeMcpProviders()} passes the
+     * per-app container obtained from {@see getRegisteredAppContainer()}.
+     *
+     * @param ContainerInterface       $appContainer The opting-in app's own DI container.
+     * @param \Psr\Log\LoggerInterface $logger       PSR logger.
+     * @param string                   $appId        The candidate app id.
+     *
+     * @return list<string> Candidate scannable service FQCNs (possibly empty).
+     */
+    private function resolveScannableServiceClasses(
+        ContainerInterface $appContainer,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId
+    ): array {
+        $key = 'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::'.$appId;
+
+        try {
+            if ($appContainer->has($key) === false) {
+                return [];
+            }
+
+            $declaration = $appContainer->get($key);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[Application] Scannable-services alias resolve failed',
+                ['appId' => $appId, 'error' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        if (($declaration instanceof IMcpScannableServices) === false) {
+            return [];
+        }
+
+        return $declaration->getScannableServiceClasses();
+    }//end resolveScannableServiceClasses()
+
+    /**
+     * Resolve every scanned descriptor for one app to an invocable entry
+     * (attaching the owning app's own DI-resolved service instance —
+     * ADR-041), applying the collision policy documented on
+     * {@see collectAttributeMcpProviders()}.
+     *
+     * The service instance is resolved from the owning app's OWN container
+     * (#390) — the scanned class and its dependencies are only reliably
+     * wireable there, not in OR's shared container.
+     *
+     * @param ContainerInterface               $appContainer The owning app's own DI container.
+     * @param \Psr\Log\LoggerInterface         $logger       PSR logger.
+     * @param string                           $appId        The owning app id.
+     * @param array<int, array<string, mixed>> $descriptors  Scanned descriptors (see AttributeToolScanner).
+     * @param array<IMcpToolProvider>          $providers    Providers collected so far (for collision checks).
+     *
+     * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+     */
+    private function resolveAttributeEntries(
+        ContainerInterface $appContainer,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId,
+        array $descriptors,
+        array $providers
+    ): array {
+        $derivedIds = [];
+        $otherIds   = [];
+
+        foreach ($providers as $provider) {
+            if ($provider->getAppId() !== $appId) {
+                continue;
+            }
+
+            $ids = array_column($provider->getTools(), 'id');
+            if ($provider instanceof SchemaDerivedToolProvider) {
+                $derivedIds = array_merge($derivedIds, $ids);
+                continue;
+            }
+
+            $otherIds = array_merge($otherIds, $ids);
+        }
+
+        $entries = [];
+
+        foreach ($descriptors as $descriptor) {
+            $id = (string) $descriptor['id'];
+
+            if (in_array($id, $derivedIds, true) === true) {
+                $logger->error(
+                    '[Application] Attributed tool id collides with a schema-derived tool id — rejected',
+                    ['appId' => $appId, 'toolId' => $id]
+                );
+                continue;
+            }
+
+            if (in_array($id, $otherIds, true) === true) {
+                // Hand-written-wins precedence — silent self-suppression,
+                // same as SchemaDerivedToolProvider's REQ-DERIVED-003.
+                continue;
+            }
+
+            try {
+                $descriptor['instance'] = $appContainer->get($descriptor['class']);
+            } catch (\Throwable $e) {
+                $logger->warning(
+                    '[Application] Could not resolve attributed tool service instance',
+                    [
+                        'appId' => $appId,
+                        'class' => $descriptor['class'],
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }
+
+            $entries[] = $descriptor;
+        }//end foreach
+
+        return $entries;
+    }//end resolveAttributeEntries()
+
+    /**
      * Iterate over all installed apps and append any discovered
      * IMcpToolProvider implementations to the $providers array.
      *
      * Tries up to three candidate keys per app — alias, ucfirst FQCN,
      * and namespace-from-info.xml FQCN — stopping at the first match.
      *
-     * @param ContainerInterface           $container The DI container.
-     * @param \Psr\Log\LoggerInterface     $logger    PSR logger.
-     * @param array<IMcpToolProvider>      &$providers Providers array (modified in place).
+     * PROBE CACHE (#308) — the raw probe is expensive and, for a stock NC
+     * instance, almost entirely negative: every installed app costs an
+     * info.xml read + XML parse (buildMcpProviderCandidates()) plus a
+     * throwing container lookup and an autoloader miss
+     * (tryResolveMcpProviderCandidate()). This factory is registered
+     * `$shared` so it already runs only once per request — the waste is
+     * CROSS-request, once per MCP/chat turn.
+     *
+     * We therefore cache the discovery RESOLUTION MAP (appId => winning
+     * candidate key, or null for "this app has no provider" — the negative
+     * result is the whole point) in a distributed cache. Only the small
+     * string map is cached: IMcpToolProvider instances are container-resolved
+     * and request-scoped, so a warm request still calls $container->get() for
+     * the handful of winners, but skips the per-app info.xml + candidate
+     * probing entirely.
+     *
+     * Invalidation is twofold, because neither mechanism suffices alone:
+     *  - the cache key embeds a hash of the installed-app list, so
+     *    installing/removing an app rebuilds immediately; but
+     *  - an app UPGRADE can add a provider class WITHOUT changing the app
+     *    list, so a short clamped TTL bounds that staleness.
+     *
+     * Fail-open: with no distributed cache configured the map is never read
+     * or written and behaviour is byte-for-byte the pre-cache path.
+     *
+     * NOTE: only the DISCOVERY result is cached. McpToolsService::addProvider()
+     * remains a live runtime path for apps that self-register from their own
+     * boot() when discovery misses them — it mutates the live instance and is
+     * deliberately outside this cache.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
     private function collectPerAppMcpProviders(
         ContainerInterface $container,
@@ -1856,8 +3274,29 @@ class Application extends App implements IBootstrap
     ): void {
         try {
             $appManager = $container->get('OCP\App\IAppManager');
-            foreach ($appManager->getInstalledApps() as $appId) {
-                $candidates = $this->buildMcpProviderCandidates(
+            $appIds     = $appManager->getInstalledApps();
+
+            $cache    = $this->getMcpDiscoveryCache(container: $container, logger: $logger);
+            $cacheKey = $this->buildMcpDiscoveryCacheKey(appIds: $appIds);
+            $map      = $this->readMcpDiscoveryMap(cache: $cache, cacheKey: $cacheKey);
+
+            if ($map !== null) {
+                // WARM — resolve only the known winners; no info.xml reads, no
+                // class_exists() misses, no throwing container lookups.
+                $this->materialiseMcpProvidersFromMap(
+                    container: $container,
+                    logger: $logger,
+                    map: $map,
+                    providers: $providers
+                );
+                return;
+            }
+
+            // COLD — run the full probe once and record the outcome per app.
+            $map = [];
+            foreach ($appIds as $appId) {
+                $map[$appId] = null;
+                $candidates  = $this->buildMcpProviderCandidates(
                     appId: $appId,
                     appManager: $appManager
                 );
@@ -1871,16 +3310,220 @@ class Application extends App implements IBootstrap
                     );
                     if ($resolved !== null) {
                         $providers[] = $resolved;
+                        $map[$appId] = $key;
                         break;
                     }
                 }//end foreach
             }//end foreach
+
+            $this->writeMcpDiscoveryMap(
+                container: $container,
+                cache: $cache,
+                cacheKey: $cacheKey,
+                map: $map
+            );
+
+            // One summary line per REBUILD replaces the ~2-3 debug lines per
+            // missing app the raw probe used to emit on every single request.
+            $logger->debug(
+                '[Application] Per-app MCP provider discovery rebuilt',
+                [
+                    'appsProbed' => count($map),
+                    'discovered' => array_keys(array_filter($map, static fn ($key) => $key !== null)),
+                    'cached'     => ($cache !== null),
+                ]
+            );
         } catch (\Throwable $e) {
             $logger->warning(
-                '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
+                '[Application] Per-app provider enumeration failed: '.$e->getMessage()
             );
         }//end try
     }//end collectPerAppMcpProviders()
+
+    /**
+     * Append providers for a cached discovery map's winning candidate keys.
+     *
+     * A cached key can go stale within the TTL (e.g. an app disabled mid-window),
+     * so each key is still resolved through the normal fail-soft path and a
+     * failure simply yields no provider for that app.
+     *
+     * @param ContainerInterface         $container The DI container.
+     * @param \Psr\Log\LoggerInterface   $logger    PSR logger.
+     * @param array<string, string|null> $map       Cached appId => winning key|null map.
+     * @param array<IMcpToolProvider>    $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     */
+    private function materialiseMcpProvidersFromMap(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array $map,
+        array &$providers
+    ): void {
+        foreach ($map as $appId => $key) {
+            if ($key === null) {
+                // Cached negative result — the app was probed on a previous
+                // request and ships no MCP tool provider. Skip silently.
+                continue;
+            }
+
+            $resolved = $this->tryResolveMcpProviderCandidate(
+                container: $container,
+                logger: $logger,
+                appId: (string) $appId,
+                key: $key
+            );
+            if ($resolved !== null) {
+                $providers[] = $resolved;
+            }
+        }//end foreach
+    }//end materialiseMcpProvidersFromMap()
+
+    /**
+     * Obtain the distributed discovery cache, or null when unavailable.
+     *
+     * Only armed when a genuinely DISTRIBUTED memory cache is configured
+     * (ICacheFactory::isAvailable()); createDistributed() otherwise silently
+     * degrades to a node-local backend. Returning null disables the cache and
+     * restores the exact pre-cache behaviour (constraint: fail open).
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     *
+     * @return ICache|null The cache, or null when no distributed backend exists.
+     */
+    private function getMcpDiscoveryCache(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger
+    ): ?ICache {
+        try {
+            $cacheFactory = $container->get(ICacheFactory::class);
+            if ($cacheFactory instanceof ICacheFactory === false || $cacheFactory->isAvailable() === false) {
+                return null;
+            }
+
+            return $cacheFactory->createDistributed(prefix: self::MCP_PROBE_CACHE_PREFIX);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[Application] MCP discovery cache unavailable: '.$e->getMessage()
+            );
+            return null;
+        }//end try
+    }//end getMcpDiscoveryCache()
+
+    /**
+     * Build the discovery-map cache key for an installed-app list.
+     *
+     * The list is sorted before hashing so a pure ordering change from
+     * IAppManager does not needlessly invalidate the map.
+     *
+     * @param string[] $appIds The installed app ids.
+     *
+     * @return string The cache key.
+     */
+    private function buildMcpDiscoveryCacheKey(array $appIds): string
+    {
+        $sorted = $appIds;
+        sort($sorted);
+
+        return 'map:'.hash('sha256', implode(',', $sorted));
+    }//end buildMcpDiscoveryCacheKey()
+
+    /**
+     * Read the cached discovery map, or null on miss / disabled cache.
+     *
+     * @param ICache|null $cache    The cache, or null when disabled.
+     * @param string      $cacheKey The cache key.
+     *
+     * @return array<string, string|null>|null The cached map, or null on miss.
+     */
+    private function readMcpDiscoveryMap(?ICache $cache, string $cacheKey): ?array
+    {
+        if ($cache === null) {
+            return null;
+        }
+
+        $blob = $cache->get(key: $cacheKey);
+        if (is_string($blob) === false) {
+            return null;
+        }
+
+        $data = json_decode($blob, true);
+        if (is_array($data) === false) {
+            return null;
+        }
+
+        $map = [];
+        foreach ($data as $appId => $key) {
+            if ($key === null) {
+                $map[(string) $appId] = null;
+                continue;
+            }
+
+            if (is_string($key) === false || $key === '') {
+                // Corrupt entry — discard the whole blob rather than trust it.
+                return null;
+            }
+
+            $map[(string) $appId] = $key;
+        }//end foreach
+
+        return $map;
+    }//end readMcpDiscoveryMap()
+
+    /**
+     * Write the discovery map to the cache with the clamped TTL.
+     *
+     * @param ContainerInterface         $container The DI container (for the TTL config read).
+     * @param ICache|null                $cache     The cache, or null when disabled.
+     * @param string                     $cacheKey  The cache key.
+     * @param array<string, string|null> $map       The appId => winning key|null map.
+     *
+     * @return void
+     */
+    private function writeMcpDiscoveryMap(
+        ContainerInterface $container,
+        ?ICache $cache,
+        string $cacheKey,
+        array $map
+    ): void {
+        if ($cache === null) {
+            return;
+        }
+
+        $blob = json_encode($map);
+        if (is_string($blob) === false) {
+            return;
+        }
+
+        $cache->set(key: $cacheKey, value: $blob, ttl: $this->resolveMcpProbeCacheTtl(container: $container));
+    }//end writeMcpDiscoveryMap()
+
+    /**
+     * Resolve the discovery-cache TTL, clamped to the allowed range.
+     *
+     * The TTL is the ONLY thing that catches a provider class added by an app
+     * UPGRADE (which leaves the installed-app list, and therefore the cache
+     * key, unchanged) — so it is deliberately short and bounded.
+     *
+     * @param ContainerInterface $container The DI container.
+     *
+     * @return int The TTL in seconds.
+     */
+    private function resolveMcpProbeCacheTtl(ContainerInterface $container): int
+    {
+        try {
+            $ttl = $container->get(IAppConfig::class)->getValueInt(
+                self::APP_ID,
+                self::MCP_PROBE_TTL_CONFIG_KEY,
+                self::MCP_PROBE_TTL_DEFAULT
+            );
+        } catch (\Throwable $e) {
+            $ttl = self::MCP_PROBE_TTL_DEFAULT;
+        }
+
+        return max(self::MCP_PROBE_TTL_MIN, min(self::MCP_PROBE_TTL_MAX, $ttl));
+    }//end resolveMcpProbeCacheTtl()
 
     /**
      * Build the list of candidate lookup keys for a given app's MCP tool provider.
@@ -1890,14 +3533,17 @@ class Application extends App implements IBootstrap
      * 2. The canonical FQCN built from ucfirst($appId).
      * 3. (Optional) A FQCN derived from the `<namespace>` declared in info.xml,
      *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
-     *    app names like `openbuilt` → `OpenBuilt`).
+     *    app names like `openbuild` → `OpenBuild`).
+     *
+     * Protected as a test seam (#308): the probe-cache tests override this to
+     * count how often the expensive info.xml read actually runs.
      *
      * @param string $appId      The Nextcloud app id.
      * @param mixed  $appManager The IAppManager instance.
      *
      * @return string[] Ordered candidate key list.
      */
-    private function buildMcpProviderCandidates(string $appId, $appManager): array
+    protected function buildMcpProviderCandidates(string $appId, $appManager): array
     {
         $candidates = [
             'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
@@ -1940,14 +3586,19 @@ class Application extends App implements IBootstrap
      * candidate does not exist, could not be resolved, or resolved to a
      * non-IMcpToolProvider object.
      *
+     * Protected as a test seam (#308): the probe-cache tests override this to
+     * count how many candidate resolutions a request actually performs.
+     *
      * @param ContainerInterface       $container The DI container.
      * @param \Psr\Log\LoggerInterface $logger    PSR logger.
      * @param string                   $appId     The Nextcloud app id (for logging).
      * @param string                   $key       The candidate lookup key.
      *
      * @return IMcpToolProvider|null The resolved provider or null.
+     *
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
-    private function tryResolveMcpProviderCandidate(
+    protected function tryResolveMcpProviderCandidate(
         ContainerInterface $container,
         \Psr\Log\LoggerInterface $logger,
         string $appId,
@@ -1959,31 +3610,39 @@ class Application extends App implements IBootstrap
                 // non-existent class would throw NotFoundExceptionInterface for every
                 // installed app (noisy).
                 if (class_exists($key) === false) {
-                    $logger->warning(
-                        '[McpToolsService] Class does not exist',
-                        ['appId' => $appId, 'fqcn' => $key]
-                    );
+                    // Expected for every installed app that ships no MCP tool
+                    // provider — i.e. almost all of them. Deliberately silent:
+                    // this fired ~2 lines per installed app per request (#308).
+                    // The single summary line in collectPerAppMcpProviders()
+                    // carries the same information at 1/143rd the volume.
                     return null;
                 }
             }
 
             $appProvider = $container->get($key);
             if ($appProvider instanceof IMcpToolProvider) {
-                $logger->warning(
-                    '[McpToolsService] Discovered per-app tool provider',
+                $logger->info(
+                    '[Application] Discovered per-app tool provider',
                     ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
                 );
                 return $appProvider;
             }
 
-            // get_debug_type() returns the FQCN for objects and the type name for scalars.
+            // Get_debug_type() returns the FQCN for objects and the type name for scalars.
             $logger->warning(
-                '[McpToolsService] Resolved but not IMcpToolProvider',
+                '[Application] Resolved but not IMcpToolProvider',
                 ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
             );
+        } catch (\Psr\Container\NotFoundExceptionInterface $e) {
+            // Alias key not registered — the expected case for every app
+            // without an MCP provider, i.e. almost all of them. Deliberately
+            // silent; see the class_exists() branch above (#308).
+            return null;
         } catch (\Throwable $e) {
+            // A genuine misconfiguration (the alias IS registered but its
+            // factory blew up) — this one is worth hearing about.
             $logger->warning(
-                '[McpToolsService] Resolve failed',
+                '[Application] Resolve failed',
                 ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
             );
         }//end try
@@ -1998,7 +3657,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-24
+     * @spec openspec/archive/retrofit-b2b-crossrefs-2026-04-28/tasks.md
      */
     public function boot(IBootContext $context): void
     {
@@ -2019,6 +3678,8 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootObjectSourceProviders(server: $server);
+        $this->bootFederation(server: $server);
 
         // Allow GitHub-hosted avatars in img-src so the CnRoadmapItem
         // component can render submitter faces alongside the issues
@@ -2029,6 +3690,13 @@ class Application extends App implements IBootstrap
         // the host here lifts the block instance-wide for any app that
         // proxies GitHub issues through OpenRegister.
         $this->relaxCspForGithubAvatars(server: $server);
+
+        // Allow registering the Web Push Service Worker (openregister-web-push-engine).
+        // Nextcloud's default CSP uses a nonce-based script-src, which a Service
+        // Worker script cannot carry, so navigator.serviceWorker.register() is
+        // rejected with "violates the Content Security Policy". Adding
+        // `worker-src 'self'` lets the same-origin SW register.
+        $this->relaxCspForWebPushWorker(server: $server);
     }//end boot()
 
     /**
@@ -2041,7 +3709,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/add-features-roadmap-menu/specs/features-roadmap-component/spec.md#requirement-roadmap-item-avatar
+     * @spec openspec/specs/features-roadmap-menu/spec.md
      */
     private function relaxCspForGithubAvatars($server): void
     {
@@ -2057,6 +3725,32 @@ class Application extends App implements IBootstrap
     }//end relaxCspForGithubAvatars()
 
     /**
+     * Allow the same-origin Web Push Service Worker to register by adding
+     * `worker-src 'self'` to Nextcloud's default Content-Security-Policy via
+     * `IContentSecurityPolicyManager::addDefaultPolicy()`. NC's nonce-based
+     * script-src otherwise rejects `navigator.serviceWorker.register()` with a
+     * CSP violation (a SW script cannot carry a request nonce). Idempotent —
+     * NC merges policies additively, never narrowing.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+     */
+    private function relaxCspForWebPushWorker($server): void
+    {
+        try {
+            $cspManager = $server->get(IContentSecurityPolicyManager::class);
+            $policy     = new ContentSecurityPolicy();
+            $policy->addAllowedWorkerSrcDomain("'self'");
+            $cspManager->addDefaultPolicy($policy);
+        } catch (\Throwable $e) {
+            // CSP manager unavailable (rare). Stay silent rather than fail boot.
+        }
+    }//end relaxCspForWebPushWorker()
+
+    /**
      * Resolve every BuiltinProviders/* class and register it with the
      * shared IntegrationRegistry.
      *
@@ -2070,7 +3764,7 @@ class Application extends App implements IBootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-17
+     * @spec openspec/specs/integration-registry/spec.md
      */
     private function bootBuiltinIntegrationProviders($server): void
     {
@@ -2091,46 +3785,49 @@ class Application extends App implements IBootstrap
             TagsProvider::class,
             AuditTrailProvider::class,
             // Leaves: external (OpenConnector-backed).
-            // @spec openspec/changes/integration-xwiki/tasks.md.
+            // @spec openspec/specs/integration-xwiki/spec.md (canonical spec).
             XwikiProvider::class,
-            // @spec openspec/changes/integration-openproject/tasks.md.
+            // @spec openspec/specs/integration-openproject/spec.md (canonical spec).
             OpenProjectProvider::class,
+            // @spec openspec/specs/integration-registry/spec.md (canonical spec).
+            KvkProvider::class,
+            OpenCorporatesProvider::class,
             // Leaves: NC-native, backend-shipped (wrap existing OR services).
-            // @spec openspec/changes/integration-calendar/tasks.md.
+            // @spec openspec/specs/integration-calendar/spec.md (canonical spec).
             CalendarProvider::class,
-            // @spec openspec/changes/integration-contacts/tasks.md.
+            // @spec openspec/specs/integration-contacts/spec.md (canonical spec).
             ContactsProvider::class,
-            // @spec openspec/changes/integration-deck/tasks.md.
+            // @spec openspec/specs/integration-deck/spec.md (canonical spec).
             DeckProvider::class,
-            // @spec openspec/changes/integration-email/tasks.md.
+            // @spec openspec/specs/integration-email/spec.md (canonical spec).
             EmailProvider::class,
             // Leaves: NC-app-backed greenfield (registry surface only;
             // service + link table land in per-leaf follow-ups).
-            // @spec openspec/changes/integration-activity/tasks.md.
+            // @spec openspec/specs/integration-activity/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\ActivityProvider::class,
-            // @spec openspec/changes/integration-analytics/tasks.md.
+            // @spec openspec/specs/integration-analytics/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\AnalyticsProvider::class,
-            // @spec openspec/changes/integration-bookmarks/tasks.md.
+            // @spec openspec/specs/integration-bookmarks/spec.md (canonical spec).
             BookmarksProvider::class,
-            // @spec openspec/changes/integration-collectives/tasks.md.
+            // @spec openspec/specs/integration-collectives/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\CollectivesProvider::class,
-            // @spec openspec/changes/integration-cospend/tasks.md.
+            // @spec openspec/specs/integration-cospend/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\CospendProvider::class,
-            // @spec openspec/changes/integration-flow/tasks.md.
+            // @spec openspec/specs/integration-flow/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\FlowProvider::class,
-            // @spec openspec/changes/integration-forms/tasks.md.
+            // @spec openspec/specs/integration-forms/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\FormsProvider::class,
-            // @spec openspec/changes/integration-maps/tasks.md.
+            // @spec openspec/specs/integration-maps/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\MapsProvider::class,
-            // @spec openspec/changes/integration-photos/tasks.md.
+            // @spec openspec/specs/integration-photos/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\PhotosProvider::class,
-            // @spec openspec/changes/integration-polls/tasks.md.
+            // @spec openspec/specs/integration-polls/spec.md (canonical spec).
             PollsProvider::class,
-            // @spec openspec/changes/integration-shares/tasks.md.
+            // @spec openspec/specs/integration-shares/spec.md (canonical spec).
             SharesProvider::class,
-            // @spec openspec/changes/integration-talk/tasks.md.
+            // @spec openspec/specs/integration-talk/spec.md (canonical spec).
             TalkProvider::class,
-            // @spec openspec/changes/integration-time-tracker/tasks.md.
+            // @spec openspec/specs/integration-time-tracker/spec.md (canonical spec).
             \OCA\OpenRegister\Service\Integration\Providers\TimeProvider::class,
         ];
 
@@ -2168,4 +3865,90 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Register the built-in object-source providers with the shared
+     * ObjectSourceRegistry.
+     *
+     * Runs in boot() (post-registration) because addProvider() needs the
+     * registry instance. Guarded so one absent provider never takes the app
+     * down — a failing provider simply won't serve its bound schemas.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#5-caldav-vtodo-provider
+     */
+    private function bootObjectSourceProviders($server): void
+    {
+        try {
+            $registry = $server->get(ObjectSourceRegistry::class);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        // Register each built-in provider independently so one absent provider
+        // never blocks the others — a failing provider simply won't serve its
+        // bound schemas.
+        $providerClasses = [
+            CalDavVtodoObjectSourceProvider::class,
+            UserDirectoryObjectSourceProvider::class,
+            GroupObjectSourceProvider::class,
+            ContactsObjectSourceProvider::class,
+            CalendarEventObjectSourceProvider::class,
+            FilesObjectSourceProvider::class,
+            DeckObjectSourceProvider::class,
+            TalkObjectSourceProvider::class,
+            FederatedObjectSourceProvider::class,
+            TablesObjectSourceProvider::class,
+            // Virtual registers (dbal-virtual-registers): external SQL databases over Doctrine DBAL.
+            DbalObjectSourceProvider::class,
+        ];
+        foreach ($providerClasses as $providerClass) {
+            try {
+                $registry->addProvider($server->get($providerClass));
+            } catch (\Throwable $e) {
+                try {
+                    $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                        '[ObjectSource] could not register '.$providerClass.': '.$e->getMessage()
+                    );
+                } catch (\Throwable $inner) {
+                    // Logger unavailable on this build — nothing to do.
+                }
+            }
+        }
+    }//end bootObjectSourceProviders()
+
+    /**
+     * Register OpenRegister's OCM cloud-federation provider so cross-instance
+     * shares of registers/schemas/objects ride Nextcloud's Open Cloud Mesh
+     * transport. Guarded: if the federation stack is unavailable, OpenRegister
+     * still runs (federation simply won't be offered).
+     *
+     * @param mixed $server Server container (passed from boot()).
+     *
+     * @return void
+     */
+    private function bootFederation($server): void
+    {
+        try {
+            $manager = $server->get(ICloudFederationProviderManager::class);
+            $manager->addCloudFederationProvider(
+                'openregister',
+                'OpenRegister',
+                function () use ($server) {
+                    return $server->get(OpenRegisterCloudFederationProvider::class);
+                }
+            );
+        } catch (\Throwable $e) {
+            try {
+                $server->get(\Psr\Log\LoggerInterface::class)->warning(
+                    '[Federation] could not register OCM provider: '.$e->getMessage()
+                );
+            } catch (\Throwable $inner) {
+                // Logging unavailable — never take the app down over federation.
+            }
+        }
+    }//end bootFederation()
 }//end class

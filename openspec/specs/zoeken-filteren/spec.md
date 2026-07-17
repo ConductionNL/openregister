@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: in-progress
 retrofit_extensions:
   - search-trail-analytics-dashboard
 ---
@@ -12,6 +12,9 @@ retrofit_extensions:
 Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.
 
 **Tender demand**: 78% of analyzed government tenders require advanced search and filtering capabilities, including full-text search, faceted navigation, and multi-criteria filtering across structured data.
+
+**OpenSpec changes**
+- `searchable-property-index` (in progress) — backs the existing `_name` fuzzy/full-text search with a `pg_trgm` GIN index (was an unindexed `similarity()`/`ILIKE` scan); adds an opt-in `searchable: true` schema-property flag (mirroring `facetable`) for indexed search on other string properties.
 ## Requirements
 ### Requirement: Full-text search across object properties
 The system MUST support free-text search across all string-typed properties of register objects. The `_search` query parameter MUST trigger a case-insensitive search that matches against every string column in the schema's dynamic table, plus the metadata fields `_name`, `_description`, and `_summary`. Search MUST be performed using SQL `ILIKE` patterns in the database backend and native query parsing in Solr/Elasticsearch.
@@ -548,6 +551,142 @@ The search-trail sidebar (`SearchTrailSideBar.vue`) MUST render a read-only anal
 - **WHEN** `getComplexityPercentage('simple')` runs
 - **THEN** it MUST return `75`
 - **AND** when the total is `0` it MUST return `0` without dividing by zero
+
+### Requirement: AggregationRunner MUST dispatch by configured search backend
+
+When the runner executes a named aggregation, it MUST consult `SchemaIndexService::getBackend($schema)` and dispatch to the backend-native `aggregate()` implementation when available. The dispatch order MUST be:
+
+1. Solr — when the schema is Solr-indexed and the metric is in Solr's facet/stats vocabulary.
+2. Elasticsearch — when the schema is ES-indexed.
+3. Postgres — when neither index is configured (uses the magic table directly).
+4. PHP runner — fallback when any backend rejects the input shape.
+
+#### Scenario: Solr-indexed schema uses facet path
+- GIVEN an `ActionItem` schema with `searchable: true` and a Solr collection synced
+- AND a `byStatus` aggregation declared with `metric: count, groupBy: { field: "taskStatus" }`
+- WHEN the controller calls `GET /api/objects/aggregations/decidesk/action-item/byStatus`
+- THEN the response carries `backend: "solr"`
+- AND the value matches what the PHP runner would compute
+
+### Requirement: Postgres backend MUST translate operator filters to SQL
+
+When the runner uses the Postgres backend, it MUST translate `in`/`gte`/`lte`/`gt`/`lt`/`ne` operators to SQL clauses (`IN (...)`, `>= ?`, `<= ?`, `> ?`, `< ?`, `<> ?`) and bind concrete values for placeholder strings (`$now`, `$startOfMonth`, etc.) at query time. v1 only supported equality filters and fell back to the PHP runner for everything else.
+
+#### Scenario: Range filter with placeholder binding
+- GIVEN an aggregation declared with `filters: { createdAt: { gte: "$startOfMonth" } }`
+- WHEN the runner executes against the Postgres backend
+- THEN the SQL emitted carries `created_at >= ?` with `$startOfMonth` bound to the current month's first-day timestamp at query time
+- AND the result matches what the PHP runner would compute over the same dataset
+
+### Requirement: AggregationRunner MUST cache results for 60s
+
+The runner MUST consult `AggregationCache` before computing. Cache key: `agg:{registerSlug}:{schemaSlug}:{name}:{filtersHash}:{rbacScopeHash}`. TTL: 60 seconds. The cache MUST be evicted for the affected `(register, schema)` on any `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectDeletedEvent`/`ObjectTransitionedEvent`.
+
+#### Scenario: cache hit returns within 5 ms
+- GIVEN a previous call to `byStatus` populated the cache
+- WHEN a second call arrives within 60 s
+- THEN the response carries `X-OR-Cache: hit`
+- AND total request time is under 5 ms (no backend roundtrip)
+
+### Requirement: Response MUST carry backend attribution
+
+Every aggregation response MUST include a `backend` field with one of `"postgres"`, `"solr"`, `"elasticsearch"`, or `"php-fallback"`. Apps and operators use this to debug slow queries.
+
+#### Scenario: Backend attribution surfaced on every response
+- GIVEN any aggregation request
+- WHEN the response is rendered
+- THEN the JSON body MUST include a top-level `backend` field
+- AND the value MUST be one of `"postgres"`, `"solr"`, `"elasticsearch"`, `"php-fallback"`
+- AND a fallback path (e.g. unsupported metric on Solr) MUST attribute the actual backend that produced the result, not the originally-targeted one
+
+### Requirement: Search-backend selection and reindex administration
+The system SHALL expose an admin-gated API for selecting the active search backend and for
+reindexing collections. `SettingsController` provides `getSearchBackend` (current backend
+config), `updateSearchBackend` (sets the active backend and signals `reload_required:
+true`), `testSetupHandler` (runs Solr setup via `SetupHandler` when Solr is enabled), and
+`reindexSpecificCollection` (reindexes a named collection with validated `batchSize`
+1–5000 and `maxObjects` >= 0). `SolrSettingsController` provides `getSolrSettings`,
+`updateSolrSettings`, `getSolrInfo`, and `getSolrDashboardStats` for the Solr settings and
+status surface.
+
+#### Scenario: Update search backend signals reload
+- **GIVEN** an admin posts `{backend: "solr"}`
+- **WHEN** `updateSearchBackend` runs
+- **THEN** it MUST persist the backend via `SettingsService::updateSearchBackendConfig()` and return `reload_required: true`
+- **AND** an empty backend param MUST produce HTTP 400
+
+#### Scenario: Reindex validates batch size
+- **GIVEN** an admin requests a reindex with `batchSize=10000`
+- **WHEN** `reindexSpecificCollection` runs
+- **THEN** it MUST reject with HTTP 400 because batch size must be between 1 and 5000
+
+#### Scenario: Setup test refuses when Solr disabled
+- **GIVEN** Solr is disabled in settings
+- **WHEN** `testSetupHandler` runs
+- **THEN** it MUST return HTTP 400 with a "SOLR is disabled" message
+
+### Requirement: Solr collection, configset, and field administration
+The system SHALL expose an admin-gated API for managing Solr collections, configsets, and
+schema fields. `SolrController` provides `listCollections`, `listConfigSets`,
+`createCollection`, `createConfigSet`, `deleteConfigSet`, and `copyCollection`.
+`SolrManagementController` provides `getSolrFields`, `createMissingSolrFields`,
+`fixMismatchedSolrFields`, `deleteSolrField`, `deleteSpecificSolrCollection`, and
+`updateSolrCollectionAssignments`. `SolrOperationsController` provides `setupSolr`,
+`testSolrConnection`, `warmupSolrIndex`, `inspectSolrIndex`, `getSolrMemoryPrediction`,
+and `manageSolr`. `ConfigurationSettingsController` provides `getObjectCollectionFields`
+and `createMissingObjectFields` to inspect and mirror the object collection's field set.
+
+#### Scenario: Create a Solr collection
+- **WHEN** `SolrController::createCollection` runs with a collection name
+- **THEN** it MUST create the collection and report the outcome
+
+#### Scenario: Synchronize missing object-collection fields
+- **GIVEN** the object collection is configured
+- **WHEN** `ConfigurationSettingsController::createMissingObjectFields` runs
+- **THEN** it MUST mirror schemas into the collection via `IndexService::mirrorSchemas(force: true)` and report success
+- **AND** an unconfigured object collection MUST produce HTTP 400
+
+#### Scenario: Inspect and warm the Solr index
+- **WHEN** `SolrOperationsController::warmupSolrIndex` then `inspectSolrIndex` run
+- **THEN** warmup MUST populate the index and inspection MUST report current index state
+
+### Requirement: Saved views MUST be managed through an access-controlled CRUD lifecycle with a single default per user
+
+`ViewService` MUST manage saved `View` definitions (the `{registers, schemas, filters, searchTerms}` query objects consumed by `SearchQueryHandler.applyViewsToQuery()`) with owner/public access control and a single-default-view-per-user invariant.
+
+- `find(id, owner)` MUST load the view by id and grant access only when the caller is the owner OR the view is public; otherwise it MUST throw `DoesNotExistException("View not found or access denied")` (denial is indistinguishable from not-found, so a private view's existence is not leaked).
+- `findAll(owner)` MUST return the views the user owns or that are public, delegating to `ViewMapper::findAll(owner:)`.
+- `create(name, description, owner, isPublic, isDefault, query)` MUST persist a new `View`; when `isDefault` is `true` it MUST first clear any existing default for that owner so at most one default view exists per user; `favoredBy` MUST be initialised to an empty list.
+- `update(id, name, description, owner, isPublic, isDefault, query, favoredBy?)` MUST resolve the view via the access-controlled `find()`, and when it is being newly promoted to default (`isDefault` true and previously false) MUST clear the owner's existing default first; `favoredBy` MUST be updated only when explicitly provided (non-null).
+- `delete(id, owner)` MUST resolve the view via the access-controlled `find()` before deleting, so a caller cannot delete a view they cannot access.
+- The single-default invariant MUST be enforced by `clearDefaultForUser(owner)`, which unsets `isDefault` on every default view owned by that user.
+- All write operations MUST log and re-throw on failure (the persisted state is the mapper's; the service does not swallow errors).
+
+#### Scenario: Access control on find hides other users' private views
+- **GIVEN** a private view owned by `alice`
+- **WHEN** `find(id, owner: "bob")` is called and the view is not public
+- **THEN** the method MUST throw `DoesNotExistException("View not found or access denied")`
+- **AND** when `bob` is the owner OR the view is public, the view MUST be returned
+
+#### Scenario: Creating a default view clears the previous default
+- **GIVEN** user `alice` already has a default view
+- **WHEN** `create(..., isDefault: true, ...)` is called for `alice`
+- **THEN** `clearDefaultForUser("alice")` MUST run first so the prior default is unset
+- **AND** exactly one of `alice`'s views MUST have `isDefault = true` afterwards
+- **AND** the new view's `favoredBy` MUST be an empty list
+
+#### Scenario: Update only clears the default when newly promoting
+- **GIVEN** a view that is currently not the default
+- **WHEN** `update(..., isDefault: true, ...)` promotes it to default
+- **THEN** the owner's existing default MUST be cleared first
+- **AND** when the view was already default (`isDefault` unchanged) no extra clear MUST occur
+- **AND** `favoredBy` MUST be changed only when a non-null `favoredBy` argument is supplied
+
+#### Scenario: Delete is access-controlled
+- **GIVEN** a view the caller does not own and that is not public
+- **WHEN** `delete(id, owner)` is called
+- **THEN** the access-controlled `find()` MUST throw before any deletion occurs
+- **AND** an owned-or-public view MUST be deleted via `ViewMapper::delete()`
 
 ## Current Implementation Status
 

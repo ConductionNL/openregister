@@ -258,7 +258,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		closeModal() {
 			navigationStore.setModal(false)
@@ -277,6 +277,7 @@ export default {
 			navigationStore.setDialog('deleteSource')
 		},
 		/**
+		 * @param register
 		 * @spec exclude UI navigation handler — selects a register and routes to the registers view.
 		 */
 		viewRegister(register) {
@@ -285,6 +286,7 @@ export default {
 			this.$router.push('/registers')
 		},
 		/**
+		 * @param register
 		 * @spec exclude UI event handler — opens the inline edit-register dialog.
 		 */
 		editRegister(register) {
@@ -307,6 +309,7 @@ export default {
 			}
 		},
 		/**
+		 * @param schemas
 		 * @spec exclude UI display helper — resolves schema ids to select-value objects.
 		 */
 		getSchemaSelectValue(schemas) {
@@ -318,6 +321,7 @@ export default {
 			})
 		},
 		/**
+		 * @param formData
 		 * @spec exclude Modal save plumbing — delegates register save to registerStore.saveRegister.
 		 */
 		async onSaveRegister(formData) {

@@ -63,6 +63,21 @@ class IntegrationRegistry
     private array $providers = [];
 
     /**
+     * Registered page-level widget contracts, keyed by widget id.
+     *
+     * Distinct from per-object providers: a page widget is a declarative,
+     * RBAC-scoped render surface (e.g. a dashboard chart) that a leaf app
+     * registers so the nc-vue render layer can show it on a page rather
+     * than in an object's sidebar. The value is the declarative descriptor
+     * (id / type / title / providerId / config). The series DATA itself is
+     * supplied/fetched separately (see AnalyticsSeriesService) so the
+     * registry stays a thin declaration surface.
+     *
+     * @var array<string, array<string,mixed>>
+     */
+    private array $pageWidgets = [];
+
+    /**
      * Constructor.
      *
      * @param LoggerInterface $logger Logger for collision and config warnings.
@@ -168,8 +183,8 @@ class IntegrationRegistry
      * Return the ids of every registered provider.
      *
      * Used by `Schema::validateLinkedTypesValue()` (task 7) as the
-     * authoritative existence check, replacing the hardcoded
-     * `VALID_LINKED_TYPES` constant.
+     * authoritative existence check; replaced the hardcoded public
+     * Schema linked-types constant via `cleanup-linked-entity-type-map`.
      *
      * @return array<int, string>
      *
@@ -209,6 +224,90 @@ class IntegrationRegistry
     {
         return isset($this->providers[$id]);
     }//end isValidIntegrationId()
+
+    /**
+     * Register a page-level widget contract.
+     *
+     * ADDITIVE: this surface is independent of the per-object provider
+     * registry above. A leaf app declares a renderable page widget — most
+     * commonly a chart fed by a pre-computed analytics series — so the
+     * nc-vue render layer can place it on a dashboard page. The descriptor
+     * is declarative + RBAC-scoped; it carries no per-request data.
+     *
+     * Expected descriptor shape (all but `id` optional, defaulted):
+     *   - `id`         string  — stable widget id (required).
+     *   - `type`       string  — render kind (default 'chart').
+     *   - `title`      ?string — display title.
+     *   - `providerId` ?string — the data provider/series key the render
+     *                            layer fetches data from.
+     *   - `config`     array   — declarative render config (chart type,
+     *                            axes, visibility scope, …).
+     *
+     * Duplicate id: first registration wins, second logs a warning —
+     * mirroring addProvider() so behaviour is predictable.
+     *
+     * @param array<string,mixed> $descriptor The page-widget descriptor.
+     *
+     * @return bool True when accepted, false when rejected (missing id or
+     *              duplicate).
+     *
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
+     */
+    public function registerPageWidget(array $descriptor): bool
+    {
+        $id = (string) ($descriptor['id'] ?? '');
+        if ($id === '') {
+            $this->logger->warning('[IntegrationRegistry] page widget rejected — missing id');
+            return false;
+        }
+
+        if (isset($this->pageWidgets[$id]) === true) {
+            $this->logger->warning(
+                sprintf(
+                    '[IntegrationRegistry] duplicate page widget id "%s" — keeping first registration',
+                    $id
+                )
+            );
+            return false;
+        }
+
+        // Normalise the descriptor with declared defaults so consumers
+        // always see a complete shape.
+        $this->pageWidgets[$id] = [
+            'id'         => $id,
+            'type'       => (string) ($descriptor['type'] ?? 'chart'),
+            'title'      => ($descriptor['title'] ?? null),
+            'providerId' => ($descriptor['providerId'] ?? null),
+            'config'     => (array) ($descriptor['config'] ?? []),
+        ];
+        return true;
+    }//end registerPageWidget()
+
+    /**
+     * List every registered page-level widget descriptor.
+     *
+     * @return array<int, array<string,mixed>>
+     *
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
+     */
+    public function listPageWidgets(): array
+    {
+        return array_values($this->pageWidgets);
+    }//end listPageWidgets()
+
+    /**
+     * Look up a page-level widget descriptor by id.
+     *
+     * @param string $id The widget id.
+     *
+     * @return array<string,mixed>|null The descriptor, or null when unknown.
+     *
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
+     */
+    public function getPageWidget(string $id): ?array
+    {
+        return $this->pageWidgets[$id] ?? null;
+    }//end getPageWidget()
 
     /**
      * Return only the providers that are currently usable.

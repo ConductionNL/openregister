@@ -132,6 +132,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param opened
 		 * @spec exclude UI handler/computed dialog-open trigger
 		 */
 		open(opened) {

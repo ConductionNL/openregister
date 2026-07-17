@@ -175,7 +175,7 @@ class TenantKeyService
      *
      * @return array<string,mixed>|null Database row or null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-saas-multi-tenant/tasks.md#task-1
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function fetchActiveRow(string $tenantId): ?array
     {
@@ -254,7 +254,7 @@ class TenantKeyService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-saas-multi-tenant/tasks.md#task-2
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function insertKey(string $tenantId, string $rawKey, string $rotatedAt): void
     {

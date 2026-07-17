@@ -12,6 +12,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Schema\SchemaVersioningService;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\SchemaService;
@@ -61,7 +62,11 @@ class SchemasControllerTest extends TestCase
 
     private LoggerInterface&MockObject $logger;
 
+    private SchemaVersioningService&MockObject $schemaVersioningService;
+
     private \Psr\Container\ContainerInterface&MockObject $container;
+
+    private \OCA\OpenRegister\Service\SchemaDeletionService&MockObject $schemaDeletionService;
 
     /**
      * The user the mocked session resolves to. SchemasController resolves the
@@ -86,6 +91,7 @@ class SchemasControllerTest extends TestCase
         $this->facetCacheSvc       = $this->createMock(FacetCacheHandler::class);
         $this->schemaService       = $this->createMock(SchemaService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->schemaVersioningService = $this->createMock(SchemaVersioningService::class);
 
         // SchemasController resolves IUserSession + IGroupManager lazily via the
         // container (isCurrentUserAdmin / checkSchemaManagePermission / the
@@ -99,15 +105,26 @@ class SchemasControllerTest extends TestCase
         $groupManager->method('isAdmin')->willReturnCallback(fn() => $this->currentUser !== null);
         $groupManager->method('getUserGroupIds')->willReturn(['admin']);
 
+        // destroy() also resolves SchemaDeletionService lazily (cascade + reclaim of an
+        // empty magic table on the zero-object path).
+        $this->schemaDeletionService = $this->createMock(
+            \OCA\OpenRegister\Service\SchemaDeletionService::class
+        );
+        $schemaDeletionService       = $this->schemaDeletionService;
+
         $this->container = $this->createMock(\Psr\Container\ContainerInterface::class);
         $this->container->method('get')->willReturnCallback(
-                function ($id) use ($userSession, $groupManager) {
+                function ($id) use ($userSession, $groupManager, $schemaDeletionService) {
                     if ($id === \OCP\IUserSession::class) {
                         return $userSession;
                     }
 
                     if ($id === \OCP\IGroupManager::class) {
                         return $groupManager;
+                    }
+
+                    if ($id === \OCA\OpenRegister\Service\SchemaDeletionService::class) {
+                        return $schemaDeletionService;
                     }
 
                     return null;
@@ -127,7 +144,8 @@ class SchemasControllerTest extends TestCase
             $this->facetCacheSvc,
             $this->schemaService,
             $this->logger,
-            $this->container
+            $this->container,
+            $this->schemaVersioningService
         );
     }//end setUp()
 
@@ -175,11 +193,11 @@ class SchemasControllerTest extends TestCase
 
     public function testShowAnonymousUnpublishedSchemaReturns401(): void
     {
-        // Anonymous (no user) + unpublished schema → 401 (read-visibility guard).
+        // Anonymous (no user) + schema without public read authorization → 401 (RBAC visibility guard).
+        // Use a real Schema entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $schema            = $this->createMock(Schema::class);
-        $schema->method('getPublished')->willReturn(null);
-        $schema->method('getDepublished')->willReturn(null);
+        $schema            = $this->createRealSchema(1, 'Private');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParam')->willReturn([]);
         $this->schemaMapper->method('find')->willReturn($schema);
@@ -191,12 +209,11 @@ class SchemasControllerTest extends TestCase
 
     public function testShowAnonymousPublishedSchemaReturns200(): void
     {
-        // Anonymous + published schema → 200.
+        // Anonymous + schema with public read authorization → 200.
+        // Use a real Schema entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $schema            = $this->createMock(Schema::class);
-        $schema->method('getPublished')->willReturn(new \DateTime());
-        $schema->method('getDepublished')->willReturn(null);
-        $schema->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+        $schema            = $this->createRealSchema(1, 'Public');
+        $schema->setAuthorization(['read' => ['public']]);
         $this->schemaMapper->method('findExtendedBy')->willReturn([]);
 
         $this->request->method('getParam')->willReturn([]);
@@ -209,17 +226,14 @@ class SchemasControllerTest extends TestCase
 
     public function testIndexAnonymousFiltersUnpublishedSchemas(): void
     {
-        // Anonymous list returns only published schemas.
+        // Anonymous list returns only schemas whose authorization grants public read.
+        // Use real Schema entities so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $published         = $this->createMock(Schema::class);
-        $published->method('getPublished')->willReturn(new \DateTime());
-        $published->method('getDepublished')->willReturn(null);
-        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+        $published         = $this->createRealSchema(1, 'Published');
+        $published->setAuthorization(['read' => ['public']]);
 
-        $unpublished = $this->createMock(Schema::class);
-        $unpublished->method('getPublished')->willReturn(null);
-        $unpublished->method('getDepublished')->willReturn(null);
-        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+        $unpublished = $this->createRealSchema(2, 'Unpublished');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParams')->willReturn([]);
         $this->schemaMapper->method('findAll')->willReturn([$published, $unpublished]);
@@ -516,51 +530,11 @@ class SchemasControllerTest extends TestCase
         $this->assertSame(500, $result->getStatus());
     }//end testUpdateFromExplorationReturns500OnException()
 
-    public function testPublishSetsPublicationDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testPublishSetsPublicationDate()
-
-    public function testPublishReturns404WhenSchemaNotFound(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }//end testPublishReturns404WhenSchemaNotFound()
-
-    public function testDepublishSetsDepublicationDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testDepublishSetsDepublicationDate()
-
-    public function testDepublishReturns404WhenSchemaNotFound(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }//end testDepublishReturns404WhenSchemaNotFound()
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // SchemasController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H2). Publication state is now derived
+    // server-side from the schema's published/depublished timestamps;
+    // there is no controller method to drive directly.
 
     public function testUpdateRemovesImmutableFields(): void
     {
@@ -751,7 +725,8 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->show(1);
 
         $this->assertSame(500, $result->getStatus());
-        $this->assertSame('Unexpected error', $result->getData()['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $result->getData()['error']);
     }//end testShowReturns500OnGenericException()
 
     public function testShowWithExtendStats(): void
@@ -1088,106 +1063,12 @@ class SchemasControllerTest extends TestCase
         $result = $this->controller->stats(1);
 
         $this->assertSame(500, $result->getStatus());
-        $this->assertSame('Database connection lost', $result->getData()['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $result->getData()['error']);
     }//end testStatsReturns500OnGenericException()
 
-    // ── publish() branch coverage ──
-    public function testPublishWithCustomDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-
-        $this->request->method('getParam')
-            ->willReturnMap(
-                    [
-                        ['date', null, '2025-06-15'],
-                    ]
-                    );
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testPublishWithCustomDate()
-
-    public function testPublishReturns400OnGenericException(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new Exception('Unexpected error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('Unexpected error', $result->getData()['error']);
-    }//end testPublishReturns400OnGenericException()
-
-    public function testPublishInvalidatesCaches(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'publish');
-        $this->facetCacheSvc->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'publish');
-
-        $this->controller->publish(1);
-    }//end testPublishInvalidatesCaches()
-
-    // ── depublish() branch coverage ──
-    public function testDepublishWithCustomDate(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-
-        $this->request->method('getParam')
-            ->willReturnMap(
-                    [
-                        ['date', null, '2025-12-31'],
-                    ]
-                    );
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }//end testDepublishWithCustomDate()
-
-    public function testDepublishReturns400OnGenericException(): void
-    {
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')
-            ->willThrowException(new Exception('Update failed'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('Update failed', $result->getData()['error']);
-    }//end testDepublishReturns400OnGenericException()
-
-    public function testDepublishInvalidatesCaches(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        $this->schemaCacheService->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'depublish');
-        $this->facetCacheSvc->expects($this->once())
-            ->method('invalidateForSchemaChange')
-            ->with(1, 'depublish');
-
-        $this->controller->depublish(1);
-    }//end testDepublishInvalidatesCaches()
+    // NOTE: publish()/depublish() branch-coverage tests removed — endpoints
+    // retired for security (commit 29b1de3af, H2).
 
     // ── upload() / uploadUpdate() coverage ──
     public function testUploadUpdateDelegatesToUpload(): void
@@ -1385,14 +1266,13 @@ class SchemasControllerTest extends TestCase
 
     /**
      * SchemaMapper::find positional signature is
-     * (id, _extend=[], published=null, _rbac=true, _multitenancy=true).
-     * These matchers pin the 5th arg.
+     * (id, _extend=[], _rbac=true, _multitenancy=true).
+     * These matchers pin the 4th arg (_multitenancy).
      */
     private function readBypassWithMatchers(string|int $id): array
     {
         return [
             $this->equalTo($id),
-            $this->anything(),
             $this->anything(),
             $this->anything(),
             $this->isFalse(),
@@ -1403,7 +1283,6 @@ class SchemasControllerTest extends TestCase
     {
         return [
             $this->equalTo($id),
-            $this->anything(),
             $this->anything(),
             $this->anything(),
             $this->isTrue(),
@@ -1432,12 +1311,11 @@ class SchemasControllerTest extends TestCase
             ->willReturn($target);
         // SchemaMapper::findAll signature:
         // (limit, offset, filters, searchConditions, searchParams, _extend,
-        //  published, _rbac, _multitenancy).
-        // _multitenancy is the 9th positional arg, not the 7th.
+        //  _rbac, _multitenancy).
+        // _multitenancy is the 8th positional arg.
         $this->schemaMapper->expects($this->once())
             ->method('findAll')
             ->with(
-                $this->anything(),
                 $this->anything(),
                 $this->anything(),
                 $this->anything(),
@@ -1469,39 +1347,8 @@ class SchemasControllerTest extends TestCase
         }
     }//end testStatsPassesMultitenancyFalseToFind()
 
-    public function testPublishPassesMultitenancyFalseToFind(): void
-    {
-        $schema = $this->createRealSchema(1, 'Publishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->expects($this->once())
-            ->method('find')
-            ->with(...$this->readBypassWithMatchers(1))
-            ->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        try {
-            $this->controller->publish(1);
-        } catch (\Throwable $ignored) {
-            // see testStatsPassesMultitenancyFalseToFind
-        }
-    }//end testPublishPassesMultitenancyFalseToFind()
-
-    public function testDepublishPassesMultitenancyFalseToFind(): void
-    {
-        $schema = $this->createRealSchema(1, 'Depublishable');
-        $this->request->method('getParam')->willReturn(null);
-        $this->schemaMapper->expects($this->once())
-            ->method('find')
-            ->with(...$this->readBypassWithMatchers(1))
-            ->willReturn($schema);
-        $this->schemaMapper->method('update')->willReturn($schema);
-
-        try {
-            $this->controller->depublish(1);
-        } catch (\Throwable $ignored) {
-            // see testStatsPassesMultitenancyFalseToFind
-        }
-    }//end testDepublishPassesMultitenancyFalseToFind()
+    // NOTE: publish()/depublish() multitenancy tests removed — endpoints
+    // retired for security (commit 29b1de3af, H2).
 
     public function testUpdatePassesMultitenancyDefaultTrueToFind(): void
     {

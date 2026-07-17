@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 ---
 # Webhook Payload Mapping
 
@@ -536,6 +536,80 @@ enrichment). The engine MUST support the following semantics:
 - **GIVEN** `$list` is true and the input is a collection
 - **WHEN** `executeMapping()` runs
 - **THEN** the mapping MUST be applied to each element and the results returned keyed as the input
+
+### Requirement: Webhook delivery logs MUST be listable per-webhook and globally
+`WebhooksController` MUST expose two delivery-log listing endpoints in addition to the
+already-specified `logStats` endpoint: `GET /api/webhooks/{id}/logs` (per-webhook) and
+`GET /api/webhooks/logs` (all webhooks). Both are `@NoAdminRequired` / `@NoCSRFRequired`, accept
+`limit` (default 50) and `offset` (default 0) query parameters, and return `{ results, total }`.
+The per-webhook endpoint MUST validate webhook existence first and the global endpoint MUST
+support optional `webhook_id` and `success` filtering.
+
+#### Scenario: List logs for a specific webhook
+- **GIVEN** webhook ID `7` exists with delivery history
+- **WHEN** `GET /api/webhooks/7/logs?limit=50&offset=0` is called
+- **THEN** the response MUST return HTTP 200 with `{ "results": [...WebhookLog...], "total": <count> }`
+- **AND** logs MUST be fetched via `WebhookLogMapper::findByWebhook(webhookId, limit, offset)`
+
+#### Scenario: Logs for a non-existent webhook
+- **GIVEN** no webhook exists with ID `999`
+- **WHEN** `GET /api/webhooks/999/logs` is called
+- **THEN** the response MUST return HTTP 404 with `{ "error": "Webhook not found" }`
+
+#### Scenario: Log retrieval failure
+- **GIVEN** the log mapper throws a non-`DoesNotExistException`
+- **WHEN** the logs endpoint is called
+- **THEN** the error MUST be logged and the response MUST return HTTP 500 with `{ "error": "Failed to retrieve webhook logs" }`
+
+#### Scenario: List all logs with default total
+- **WHEN** `GET /api/webhooks/logs` is called with no filters
+- **THEN** the response MUST return paginated logs from `WebhookLogMapper::findAll(limit, offset)`
+- **AND** `total` MUST be the count of all logs (unpaginated)
+
+#### Scenario: Filter all logs by webhook_id
+- **GIVEN** `GET /api/webhooks/logs?webhook_id=7`
+- **WHEN** `webhook_id` is non-empty and not `"0"`
+- **THEN** logs MUST be scoped to webhook `7` via `findByWebhook()` and `total` MUST reflect that webhook's full count
+
+#### Scenario: Filter all logs by success status
+- **GIVEN** `GET /api/webhooks/logs?success=false`
+- **WHEN** `success` is one of `true`/`1`/`false`/`0`
+- **THEN** the returned logs MUST be filtered to entries whose `getSuccess()` matches the boolean
+- **AND** `total` MUST be recomputed against the success-filtered full set
+
+### Requirement: Webhook transport internals MUST configure delivery and normalize event identifiers
+
+The webhook delivery layer MUST initialize an HTTP client tolerant of webhook endpoints, resolve dot-notation filter keys against the payload, and normalize event identifiers between the dotted event-type form and the fully qualified event class form. These helpers underpin filtering, the standard payload, and request interception.
+
+#### Scenario: HTTP client is configured for webhook delivery
+
+- **GIVEN** the webhook service is constructed
+- **WHEN** `initializeHttpClient()` runs
+- **THEN** it MUST build a Guzzle client with `timeout: 30`, `connect_timeout: 10`, `verify: false` (self-signed endpoints allowed), `allow_redirects: true`, and `http_errors: false` so 4xx/5xx responses are handled manually rather than thrown
+
+#### Scenario: Dot-notation filter key resolution
+
+- **GIVEN** a payload and a filter key such as `object.status`
+- **WHEN** `getNestedValue()` traverses the payload
+- **THEN** it MUST descend each dot-separated segment and return the nested value, or `null` when any segment is absent
+
+#### Scenario: Short event name derivation
+
+- **GIVEN** a fully qualified event class such as `OCA\OpenRegister\Event\ObjectCreatedEvent`
+- **WHEN** `getShortEventName()` runs
+- **THEN** it MUST return the trailing class segment `ObjectCreatedEvent`, which is the value enriched onto mapping input as `event`
+
+#### Scenario: Event-type to event-class mapping
+
+- **GIVEN** a dotted interception event type such as `object.creating`
+- **WHEN** `eventTypeToEventClass()` runs
+- **THEN** it MUST return `OCA\OpenRegister\Event\ObjectCreatingEvent`, capitalizing the entity and action segments and defaulting the action to `created` when absent
+
+#### Scenario: CloudEvent datacontenttype derives from the request
+
+- **GIVEN** an intercepted HTTP request being formatted as a CloudEvent
+- **WHEN** `CloudEventFormatter::getContentTypeHeader()` runs
+- **THEN** it MUST return the request's `Content-Type` header when present, otherwise default to `application/json`
 
 ## Current Implementation Status
 

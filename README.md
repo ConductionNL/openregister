@@ -1,4 +1,9 @@
-<p align="center">
+> [!IMPORTANT]
+> ## 🚚 This repository has moved to Codeberg
+>
+> Active development now happens at **https://codeberg.org/Conduction/openregister**.
+> This GitHub mirror is read-only — issues, pull requests, and new commits should go to Codeberg.
+> Update your remote with: `git remote set-url origin https://codeberg.org/Conduction/openregister`<p align="center">
   <img src="img/app-store.svg" alt="OpenRegister logo" width="80" height="80">
 </p>
 
@@ -70,9 +75,9 @@ It is the shared data backbone for apps like [OpenCatalogi](https://github.com/C
 - **Pluggable integration registry** — Object surfaces (sidebar tabs, dashboard widgets, detail pages, reference properties) are driven by a registry of `IntegrationProvider`s. Five built-ins ship out of the box (Files, Notes, Tags, Tasks, Audit Trail); apps add their own — including OpenConnector-backed external integrations like xWiki — without touching OpenRegister core. See [docs/Integrations/pluggable-integration-registry.md](docs/Integrations/pluggable-integration-registry.md) for the "how to add an integration" walkthrough.
 - **SOLR Integration** — Optional Apache Solr for advanced search scenarios
 - **Source Synchronization** — Keep registers in sync with external data sources
-- **Schema Import** — Import schemas from Schema.org, OpenAPI, and GGM standards
+- **Schema Import** — Import schemas from Schema.org types and GGM (Gemeentelijk Gegevensmodel) objecttypes from bundled, versioned snapshots: datatype mapping, Dutch metadata preserved, pre-filled JSON-LD vocabulary, import provenance, and a guarded update-from-source flow. The upload path also detects (or is told) its dialect (`json-schema` / `openapi` / `schema.org` / `ggm`) and rejects unidentifiable input with HTTP 422. OpenAPI/JSON Schema ingestion is unchanged. See [docs/Features/schema-import.md](docs/Features/schema-import.md).
 - **CalDAV Tasks** — Attach Nextcloud tasks and comments directly to data objects
-- **JSON-LD and Linked Data** — Standards-compliant output for the open data ecosystem
+- **JSON-LD and Linked Data** — Opt-in read-side JSON-LD output via content negotiation (`Accept: application/ld+json`) on the object read endpoints, with `@id` set to the canonical object URI, a `@context` derived from the schema definition, and dereferenceable `/api/contexts/*` documents. Schema.org alignment is per-schema mapping (opt-in via the schema's `configuration.jsonld` block); zero-config schemas still emit valid JSON-LD with OpenRegister-local terms. Read-side only — no JSON-LD ingest. See [docs/Features/json-ld.md](docs/Features/json-ld.md).
 
 ## Architecture
 
@@ -171,10 +176,14 @@ npm run build      # Production build
 ### Code quality
 
 ```bash
-# PHP
-composer phpcs          # Check coding standards
-composer cs:fix         # Auto-fix issues
-composer phpmd          # Mess detection
+# Authoritative gate (same as CI) — must pass before pushing
+composer check:strict   # phpcs + phpmd + phpstan + psalm + all tests
+
+# Individual tools
+composer phpcs          # Check coding standards (0 errors required)
+composer cs:fix         # Auto-fix coding-standard issues
+composer phpmd          # Mess detection (52 violations tracked in openspec/changes/openregister-legacy-quality-cleanup/)
+composer phpstan        # Static analysis (baseline: 1371 entries, tracked in phpstan-baseline.neon)
 composer phpmetrics     # HTML metrics report
 
 # Frontend
@@ -209,7 +218,7 @@ Full documentation is available at **[openregisters.app](https://openregisters.a
 
 ## Standards & Compliance
 
-- **Data standard:** JSON Schema, JSON-LD, Schema.org
+- **Data standard:** JSON Schema; JSON-LD read-side output (opt-in via content negotiation); Schema.org alignment per-schema mapping (opt-in) — see [docs/Features/json-ld.md](docs/Features/json-ld.md)
 - **API standard:** NLGov REST API Design Rules (Logius)
 - **Dutch interoperability:** Common Ground principles, VNG standards
 - **Accessibility:** WCAG AA (Dutch government requirement)

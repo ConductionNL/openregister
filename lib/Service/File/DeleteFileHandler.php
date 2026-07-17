@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -27,6 +27,7 @@ use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
+use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -83,7 +84,7 @@ class DeleteFileHandler
      *
      * @psalm-param Node|string|int $file
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
@@ -116,8 +117,14 @@ class DeleteFileHandler
         // Reject when the file is locked by someone else.
         $this->fileLockHandler->assertCanModify($file->getId());
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+        // Assert the session can reach the file (owned or shared).
         $this->fileValidHandler->checkOwnership($file);
+
+        // Deleting additionally requires delete permission. NC enforces this
+        // natively on delete(), but we fail fast with a clear message.
+        if ($file->isDeletable() === false) {
+            throw new NotPermittedException("File {$file->getName()} is not deletable by the current session");
+        }
 
         try {
             $file->delete();
@@ -142,7 +149,7 @@ class DeleteFileHandler
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

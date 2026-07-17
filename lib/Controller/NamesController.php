@@ -37,6 +37,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -66,12 +67,14 @@ class NamesController extends Controller
      * @param IRequest        $request            HTTP request object
      * @param CacheHandler    $objectCacheService Object cache service for name operations
      * @param LoggerInterface $logger             Logger for performance monitoring
+     * @param IUserSession    $userSession        User session for the current user
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly CacheHandler $objectCacheService,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -103,19 +106,27 @@ class NamesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @PublicPage
-     *
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    #[PublicPage]
     public function index(): JSONResponse
     {
+        // SEC-CTRL-2: require authentication — this endpoint must not leak object/
+        // organisation names anonymously. Dropped @PublicPage.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+        }
+
+        // TODO(SEC-CTRL-2): make name resolution RBAC/tenant-aware. getMultipleObjectNames()
+        // and getAllObjectNames() in lib/Service/Object/CacheHandler.php
+        // (warmupNameCache / findAllWithUserCount / getObjectMapper()->findAll()) currently
+        // return names across ALL organisations with no RBAC filtering. Filter by the
+        // caller's read permissions + active organisation there before widening exposure.
         $startTime = microtime(true);
 
         try {
@@ -245,19 +256,24 @@ class NamesController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @PublicPage
-     *
      * @throws \Exception If name lookup fails
      *
      * @return JSONResponse JSON response with object names or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
-    #[PublicPage]
     public function create(): JSONResponse
     {
+        // SEC-CTRL-2: require authentication — per-ids name resolution must not be
+        // reachable anonymously. Dropped @PublicPage.
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+        }
+
+        // TODO(SEC-CTRL-2): getMultipleObjectNames() in CacheHandler resolves names with
+        // no RBAC/tenant filtering; restrict resolved ids to those the caller may read.
         $startTime = microtime(true);
 
         try {
@@ -356,7 +372,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with object name or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -453,7 +469,7 @@ class NamesController extends Controller
      *     distributed_cache_available: true, warmup_available: true}},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -501,7 +517,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with warmup result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
- * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+ * @spec openspec/specs/computed-fields/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,9 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -55,22 +57,28 @@ class RematerialiseCalculationsCommand extends Command
     /**
      * Wire the mappers, evaluator, and object service used by the command.
      *
-     * @param RegisterMapper       $registerMapper Register lookup mapper.
-     * @param SchemaMapper         $schemaMapper   Schema lookup mapper.
-     * @param MagicMapper          $magicMapper    Magic table mapper for objects.
-     * @param ObjectService        $objectService  Object persistence service.
-     * @param CalculationEvaluator $evaluator      Expression evaluator.
+     * @param RegisterMapper             $registerMapper Register lookup mapper.
+     * @param SchemaMapper               $schemaMapper   Schema lookup mapper.
+     * @param MagicMapper                $magicMapper    Magic table mapper for objects.
+     * @param ObjectService              $objectService  Object persistence service.
+     * @param CalculationEvaluator       $evaluator      Expression evaluator.
+     * @param ReferenceResolver          $references     Cross-object reference pre-resolver.
+     * @param AggregateReferenceResolver $aggregates     Aggregate-reference pre-resolver.
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $magicMapper,
         private readonly ObjectService $objectService,
-        private readonly CalculationEvaluator $evaluator
+        private readonly CalculationEvaluator $evaluator,
+        private readonly ReferenceResolver $references,
+        private readonly AggregateReferenceResolver $aggregates
     ) {
         parent::__construct();
     }//end __construct()
@@ -80,7 +88,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function configure(): void
     {
@@ -105,7 +113,7 @@ class RematerialiseCalculationsCommand extends Command
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -160,6 +168,21 @@ class RematerialiseCalculationsCommand extends Command
             limit: 100000
         );
 
+        // Declared cross-object references are pre-resolved per object so the
+        // recompute path refreshes references the same way the save path does.
+        $referenceSpecs = ($schema->getConfiguration()['x-openregister-references'] ?? null);
+        if (is_array($referenceSpecs) === false || count($referenceSpecs) === 0) {
+            $referenceSpecs = null;
+        }
+
+        // Declared aggregate-references are pre-resolved per object so the
+        // recompute path refreshes save-time aggregate snapshots the same way
+        // the save path does.
+        $aggregateSpecs = ($schema->getConfiguration()['x-openregister-aggregate-refs'] ?? null);
+        if (is_array($aggregateSpecs) === false || count($aggregateSpecs) === 0) {
+            $aggregateSpecs = null;
+        }
+
         $touched   = 0;
         $unchanged = 0;
         $failed    = 0;
@@ -167,6 +190,22 @@ class RematerialiseCalculationsCommand extends Command
         foreach ($entities as $entity) {
             $data    = $entity->getObject() ?? [];
             $payload = $this->withSelf(data: $data, entity: $entity);
+
+            if ($referenceSpecs !== null) {
+                $payload['@ref'] = $this->references->resolveAll(
+                    payload: $payload,
+                    references: $referenceSpecs,
+                    register: $entity->getRegister()
+                );
+            }
+
+            if ($aggregateSpecs !== null) {
+                $payload['@aggregate'] = $this->aggregates->resolveAll(
+                    payload: $payload,
+                    aggregates: $aggregateSpecs,
+                    registerRef: $entity->getRegister()
+                );
+            }
 
             $changed = false;
             foreach ($calcs as $name => $spec) {
@@ -248,7 +287,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return array<string, mixed> Payload with `@self` injected.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
@@ -283,7 +322,7 @@ class RematerialiseCalculationsCommand extends Command
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-2
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function getCalculations(Schema $schema): ?array
     {

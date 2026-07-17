@@ -185,16 +185,76 @@ test.describe('docs: user track', () => {
 
 	test('UN create-an-object', async ({ page }) => {
 		// docs/tutorials/user/04-create-an-object.md
-		await go(page, '/objects')
+		// Objects are created from the Search / views (tables) page after a
+		// register + schema is selected. Discover a real pair at runtime and
+		// deep-link to it (?register=&schema=), which SearchSideBar applies and
+		// then runs the search — so the Add Object button is enabled.
+		// Generous timeout: the register list (~4s) + deep-link retry (≤8s) +
+		// a search over a populated instance can be slow on dev containers.
+		test.setTimeout(180000)
+		let reg = ''
+		let sch = ''
+		try {
+			const res = await page.request.get(`/index.php${APP}/api/registers?_extend=schemas&limit=50`, {
+				headers: { 'OCS-APIRequest': 'true' },
+			})
+			if (res.ok()) {
+				const json = await res.json()
+				for (const r of (json.results || [])) {
+					const schemas = Array.isArray(r.schemas) ? r.schemas : []
+					const first = schemas[0]
+					const fid = (first && typeof first === 'object') ? first.id : first
+					if (r.id && fid) {
+						reg = String(r.id)
+						sch = String(fid)
+						break
+					}
+				}
+			}
+		} catch { /* fall back to a bare /tables view */ }
+
+		const route = (reg && sch) ? `/#/tables?register=${reg}&schema=${sch}` : '/#/tables'
+		await go(page, route)
+		// Wait for the deep-linked register/schema selection to actually apply
+		// (SearchSideBar.applyQueryParamsFromRoute retries while the register
+		// list loads) before the first screenshot — otherwise the shot catches
+		// the "0 register(s) selected" pre-apply state. On a clean env this is
+		// ~1s; the long timeout tolerates populated dev containers.
+		if (reg && sch) {
+			await page.waitForFunction(
+				() => !document.body.innerText.includes('register(s) selected')
+					|| !document.body.innerText.includes('0 register(s) selected'),
+				{ timeout: 30000 },
+			).catch(() => { /* proceed even if it never settles */ })
+			await page.waitForTimeout(1200)
+		}
 		await shoot(page, 'user', '04-create-an-object-01.png')
-		const had = await captureCreateDialog(page, 'user', '04-create-an-object-02.png', /Add Object|Add Item/i)
-		if (had) {
-			await captureCreateDialog(page, 'user', '04-create-an-object-03.png', /Add Object|Add Item/i)
+
+		// Open the Add Object dialog once and capture both the empty-form (02)
+		// and "fields filled" (03) steps from the same open instance — re-opening
+		// the dialog a second time was the slow/flaky path. No typing: saving
+		// would mutate the dev container.
+		const addBtn = page.getByRole('button', { name: /Add Object|Add Item/i }).first()
+		if (await addBtn.isVisible().catch(() => false)) {
+			await addBtn.click().catch(() => {})
+			const dialog = page.locator('[role="dialog"]:not(#firstrunwizard)').first()
+			await dialog.waitFor({ state: 'visible', timeout: 8000 }).catch(() => { /* no dialog */ })
+			await page.waitForTimeout(500)
+			await shoot(page, 'user', '04-create-an-object-02.png')
+			await shoot(page, 'user', '04-create-an-object-03.png')
+			const cancel = dialog.getByRole('button', { name: /Cancel|Close/i }).first()
+			if (await cancel.isVisible().catch(() => false)) {
+				await cancel.click().catch(() => {})
+			} else {
+				await page.keyboard.press('Escape').catch(() => {})
+			}
+			await page.waitForTimeout(300)
 		} else {
 			await shoot(page, 'user', '04-create-an-object-02.png')
 			await shoot(page, 'user', '04-create-an-object-03.png')
 		}
-		await go(page, '/objects')
+
+		await go(page, route)
 		await shoot(page, 'user', '04-create-an-object-04.png')
 		await shoot(page, 'user', '04-create-an-object-05.png')
 	})

@@ -15,7 +15,7 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+ * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -69,7 +69,7 @@ class QueryComplexityAnalyzer
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     public function setSchemaCosts(array $costs): void
     {
@@ -87,7 +87,7 @@ class QueryComplexityAnalyzer
      *
      * @throws Error If query exceeds complexity limits
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     public function analyze(DocumentNode $document, ?array $variables=null): array
     {
@@ -169,7 +169,7 @@ class QueryComplexityAnalyzer
      *
      * @return array{depth: int, cost: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function analyzeSelectionSet(
         SelectionSetNode $selectionSet,
@@ -231,7 +231,7 @@ class QueryComplexityAnalyzer
      *
      * @return int The multiplier
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function getListMultiplier(FieldNode $field, ?array $variables): int
     {
@@ -269,7 +269,7 @@ class QueryComplexityAnalyzer
      *
      * @return int The cost
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function getResolverCost(string $fieldName): int
     {

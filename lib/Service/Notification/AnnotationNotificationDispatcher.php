@@ -34,13 +34,21 @@ use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\QueuedNotification;
+use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\Activity\IManager as IActivityManager;
+use OCP\App\IAppManager;
+use OCP\AppFramework\Utility\ITimeFactory;
+use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
 use OCP\IGroupManager;
 use OCP\IServerContainer;
+use OCP\IURLGenerator;
 use OCP\IUserManager;
 use OCP\Mail\IMailer;
 use OCP\Notification\IManager as INotificationManager;
@@ -49,32 +57,65 @@ use Psr\Log\LoggerInterface;
 /**
  * Reads notification annotations and dispatches matching ones.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Dispatcher wires SchemaMapper, INotificationManager, IGroupManager, IUserManager, IMailer, IActivityManager, IClientService, IServerContainer, RateLimiter, IConfig, NotificationHistoryMapper, NotificationCoalescer, NotificationSubscriptionMapper, NotificationDispatchLogMapper, NotificationPreferenceService — every dependency serves a distinct notification channel or cross-cutting concern (audit, dedup, rate-limit, preference).
- * @SuppressWarnings(PHPMD.ExcessiveClassLength) Class implements the full notification dispatch pipeline (nc-notification, email, activity, webhook, talk channels) plus recipient resolution, rate-limiting, coalescing, idempotency, history audit, and organisation gating; each concern requires its own helper method and cannot be moved to a separate class without breaking the single-dispatch-per-call contract.
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 20+ private helpers each testing a distinct dispatch condition; PHPMD accumulates scores from every helper into the class total.
- * @SuppressWarnings(PHPMD.TooManyMethods) Each notification channel (nc-notification, email, activity, webhook, talk), each gate (rate-limit, coalesce, preference, subscription, organisation), each helper (recipient resolve, locale, history record, idempotency) requires its own method per the single-responsibility principle.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Dispatcher wires SchemaMapper, INotificationManager,
+ * IGroupManager, IUserManager, IMailer, IActivityManager, IClientService, IServerContainer, RateLimiter,
+ * IConfig, NotificationHistoryMapper, NotificationCoalescer, NotificationSubscriptionMapper,
+ * NotificationDispatchLogMapper, NotificationPreferenceService — every dependency serves a distinct
+ * notification channel or cross-cutting concern (audit, dedup, rate-limit, preference).
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Class implements the full notification dispatch pipeline
+ * (nc-notification, email, activity, webhook, talk channels) plus recipient resolution, rate-limiting,
+ * coalescing, idempotency, history audit, and organisation gating; each concern requires its own helper
+ * method and cannot be moved to a separate class without breaking the single-dispatch-per-call contract.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complexity is spread across 20+ private helpers each
+ * testing a distinct dispatch condition; PHPMD accumulates scores from every helper into the class total.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Each notification channel (nc-notification, email, activity,
+ * webhook, talk), each gate (rate-limit, coalesce, preference, subscription, organisation), each helper
+ * (recipient resolve, locale, history record, idempotency) requires its own method per the
+ * single-responsibility principle.
+ *
+ * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
  */
 class AnnotationNotificationDispatcher
 {
+
+    /**
+     * Per-instance cache of resolved relation display names, keyed by UUID.
+     * Avoids repeat ObjectService lookups when the same relation is
+     * interpolated across a recipient fan-out.
+     *
+     * @var array<string, string|null>
+     */
+    private array $relationDisplayCache = [];
+
     /**
      * Constructor.
      *
-     * @param SchemaMapper                                             $schemaMapper        Mapper used to resolve the object's schema.
-     * @param INotificationManager                                     $notificationManager Nextcloud notification API.
-     * @param LoggerInterface                                          $logger              Logger for dispatch diagnostics.
-     * @param IGroupManager                                            $groupManager        Group resolver for `groups` recipient kinds.
-     * @param IUserManager                                             $userManager         User resolver for `users` recipient kinds.
-     * @param IMailer                                                  $mailer              Mailer for the `email` channel.
-     * @param IActivityManager                                         $activityManager     Activity manager for the `activity` channel.
-     * @param IClientService                                           $httpClient          HTTP client for the `webhook` and `talk` channels.
-     * @param IServerContainer                                         $serverContainer     Server container for expression resolvers (F06).
-     * @param RateLimiter|null                                         $rateLimiter         Optional rate limiter (per-rule, per-recipient).
-     * @param IConfig|null                                             $config              Optional config service for runtime tunables.
-     * @param NotificationHistoryMapper|null                           $historyMapper       Optional history mapper for delivery audit rows.
-     * @param NotificationCoalescer|null                               $coalescer           Optional coalescer for burst suppression.
-     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper  Optional subscription mapper (DEPRECATED).
-     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper   Optional dispatch-log mapper for idempotency-key dedup.
-     * @param NotificationPreferenceService|null                       $preferenceService   Override-only preference resolver (delivery gate).
+     * @param SchemaMapper                                             $schemaMapper             Mapper used to resolve the object's schema.
+     * @param INotificationManager                                     $notificationManager      Nextcloud notification API.
+     * @param LoggerInterface                                          $logger                   Logger for dispatch diagnostics.
+     * @param IGroupManager                                            $groupManager             Group resolver for `groups` recipient kinds.
+     * @param IUserManager                                             $userManager              User resolver for `users` recipient kinds.
+     * @param IMailer                                                  $mailer                   Mailer for the `email` channel.
+     * @param IActivityManager                                         $activityManager          Activity manager for the `activity` channel.
+     * @param IClientService                                           $httpClient               HTTP client for the `webhook` and `talk` channels.
+     * @param IServerContainer                                         $serverContainer          Server container for expression resolvers (F06).
+     * @param RateLimiter|null                                         $rateLimiter              Optional rate limiter (per-rule, per-recipient).
+     * @param IConfig|null                                             $config                   Optional config service for runtime tunables.
+     * @param NotificationHistoryMapper|null                           $historyMapper            Optional history mapper for delivery audit rows.
+     * @param NotificationCoalescer|null                               $coalescer                Optional coalescer for burst suppression.
+     * @param \OCA\OpenRegister\Db\NotificationSubscriptionMapper|null $subscriptionMapper       Optional subscription mapper (DEPRECATED).
+     * @param NotificationDispatchLogMapper|null                       $dispatchLogMapper        Dispatch-log mapper for idempotency dedup.
+     * @param NotificationPreferenceService|null                       $preferenceService        Override-only preference resolver (delivery gate).
+     * @param IJobList|null                                            $jobList                  Job list used to enqueue the web-push dispatch job.
+     * @param IURLGenerator|null                                       $urlGenerator             URL generator for action-target deeplinks.
+     * @param RegisterMapper|null                                      $registerMapper           Register mapper used for the default originApp.
+     * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService            Object resolver for relation-target deeplinks (RBAC).
+     * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry         Canonical per-app deeplink resolver.
+     * @param IAppManager|null                                         $appManager               Resolves originApp display name (auto body).
+     * @param NotificationDeliveryWindowService|null                   $deliveryWindowService    Override-only quiet-hours resolver + evaluator.
+     * @param QueuedNotificationMapper|null                            $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
+     * @param DigestScheduleEvaluator|null                             $digestScheduleEvaluator  Live evaluator for the `digest` fixed-time schedule.
+     * @param ITimeFactory|null                                        $timeFactory              Time source for the delivery/digest gate.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -94,7 +135,17 @@ class AnnotationNotificationDispatcher
         private readonly ?NotificationCoalescer $coalescer=null,
         private readonly ?\OCA\OpenRegister\Db\NotificationSubscriptionMapper $subscriptionMapper=null,
         private readonly ?NotificationDispatchLogMapper $dispatchLogMapper=null,
-        private readonly ?NotificationPreferenceService $preferenceService=null
+        private readonly ?NotificationPreferenceService $preferenceService=null,
+        private readonly ?IJobList $jobList=null,
+        private readonly ?IURLGenerator $urlGenerator=null,
+        private readonly ?RegisterMapper $registerMapper=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null,
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null,
+        private readonly ?IAppManager $appManager=null,
+        private readonly ?NotificationDeliveryWindowService $deliveryWindowService=null,
+        private readonly ?QueuedNotificationMapper $queuedNotificationMapper=null,
+        private readonly ?DigestScheduleEvaluator $digestScheduleEvaluator=null,
+        private readonly ?ITimeFactory $timeFactory=null
     ) {
     }//end __construct()
 
@@ -108,10 +159,19 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) dispatch() iterates notifications, filters by organisation gate, idempotency, recipient resolution, rate-limit, coalesce, and preference per recipient per channel — each branch is a required dispatch condition; extracting sub-methods would split the sequential guard chain.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Per-rule: trigger match + org gate + idempotency claim + subscription filter + rate-limit + coalesce + preference check + channel fan-out produce many independent paths; all are required for the notification contract.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) dispatch() is the single entry point that chains all notification gates in order; splitting the chain would break the sequential guard semantics (e.g. rate-limit must run after idempotency claim).
-     * @SuppressWarnings(PHPMD.LongVariable) $resolvedIdempotencyKey and $idempotencyKeyTemplate are descriptive names for distinct lifecycle stages of the same template value; abbreviating would obscure the claim-before-send ordering that prevents duplicate dispatches.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  dispatch() iterates notifications, filters by
+     * organisation gate, idempotency, recipient resolution, rate-limit, coalesce, and preference per
+     * recipient per channel — each branch is a required dispatch condition; extracting sub-methods
+     * would split the sequential guard chain.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Per-rule: trigger match + org gate + idempotency claim
+     * + subscription filter + rate-limit + coalesce + preference check + channel fan-out produce many
+     * independent paths; all are required for the notification contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) dispatch() is the single entry point that chains
+     * all notification gates in order; splitting the chain would break the sequential guard semantics
+     * (e.g. rate-limit must run after idempotency claim).
+     * @SuppressWarnings(PHPMD.LongVariable)          $resolvedIdempotencyKey and $idempotencyKeyTemplate are
+     * descriptive names for distinct lifecycle stages of the same template value; abbreviating would
+     * obscure the claim-before-send ordering that prevents duplicate dispatches.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
@@ -122,6 +182,36 @@ class AnnotationNotificationDispatcher
             return;
         }
 
+        $this->dispatchWithSchema(object: $object, trigger: $trigger, context: $context, schema: $schema);
+
+    }//end dispatch()
+
+    /**
+     * Fire notifications declared on a pre-resolved Schema.
+     *
+     * Called by dispatch() after schema resolution, and directly by the
+     * SystemEntityNotificationBridge for system entities whose schema is not in
+     * the SchemaMapper but is instead provided by SystemSchemaRules::buildSchema().
+     *
+     * This is the single entry point for the notification pipeline: every
+     * dispatch path (stored objects and system entities) goes through here.
+     *
+     * @param ObjectEntity         $object  The object (or virtual adapter) the event happened on.
+     * @param string               $trigger 'created' | 'updated' | 'transition' | 'calculatedChange'.
+     * @param array<string, mixed> $context Trigger-specific extras.
+     * @param Schema               $schema  Pre-resolved schema carrying the rules.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     * @SuppressWarnings(PHPMD.LongVariable)
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-2
+     */
+    public function dispatchWithSchema(ObjectEntity $object, string $trigger, array $context, Schema $schema): void
+    {
         $notifications = $this->getAnnotation(schema: $schema);
         if ($notifications === null) {
             return;
@@ -146,7 +236,7 @@ class AnnotationNotificationDispatcher
             $matches = $this->matches(
                 triggerSpec: $spec['trigger'] ?? [],
                 trigger: $trigger,
-                context: $context
+                context: array_merge($context, ['_data' => $data])
             );
             if ($matches === false) {
                 continue;
@@ -227,6 +317,12 @@ class AnnotationNotificationDispatcher
             }
 
             $subjectTemplate = $spec['subject'] ?? (string) $name;
+            // The notification BODY template (distinct from the title).
+            // Absent when the rule declares no `message`; the per-recipient
+            // and broadcast resolvers below fall back to an auto-derived
+            // body ("Open in {AppName}.") when the rule has actions, else
+            // an empty body (back-compat).
+            $messageTemplate = ($spec['message'] ?? null);
             // Pre-render the broadcast (webhook/talk) subject using the
             // default locale fallback chain — these channels don't have
             // a per-recipient locale, so they use the spec's `defaultLocale`
@@ -251,6 +347,46 @@ class AnnotationNotificationDispatcher
             }
 
             $ruleId = (string) $name;
+
+            // Resolve the rule's originApp (declared value wins, else the
+            // app owning the schema's register) and the per-action deeplinks
+            // once per rule — these drive the icon + action buttons in the
+            // emitted notification and the web-push payload.
+            $originApp       = $this->resolveOriginApp(spec: $spec, object: $object);
+            $resolvedActions = $this->resolveActions(
+                spec: $spec,
+                object: $object,
+                data: $data,
+                originApp: $originApp
+            );
+
+            // Resolve the broadcast (webhook/talk/web-push) BODY once per
+            // rule using the default-locale fallback chain — these channels
+            // have no per-recipient locale. Mirrors $broadcastSubject.
+            $broadcastMessage = $this->resolveMessageBody(
+                template: $messageTemplate,
+                locale: null,
+                data: $data,
+                context: $context,
+                hasActions: count($resolvedActions) > 0,
+                originApp: $originApp
+            );
+
+            // Route the web-push channel out of band: enqueue a background
+            // job per recipient so the originating save request is never
+            // blocked on push I/O. The job re-resolves recipients to their
+            // stored subscriptions and sends the encrypted VAPID payload.
+            if (in_array('web-push', $channels, true) === true) {
+                $this->enqueueWebPush(
+                    recipients: $recipients,
+                    ruleId: $ruleId,
+                    originApp: $originApp,
+                    subject: $broadcastSubject,
+                    message: $broadcastMessage,
+                    actions: $resolvedActions,
+                    object: $object
+                );
+            }
 
             // Webhook is fired once per dispatch, not once per recipient,
             // and includes the recipient list in the payload.
@@ -317,6 +453,17 @@ class AnnotationNotificationDispatcher
                     context: $context,
                     fallbackName: (string) $name
                 );
+                // The notification BODY for this recipient: the rule's
+                // localised `message`, or — when absent and the rule has
+                // actions — the auto-derived "Open in {AppName}." body.
+                $recipientMessage = $this->resolveMessageBody(
+                    template: $messageTemplate,
+                    locale: $recipientLocale,
+                    data: $data,
+                    context: $context,
+                    hasActions: count($resolvedActions) > 0,
+                    originApp: $originApp
+                );
 
                 // Per-recipient coalesce: silences duplicate dispatches
                 // inside the configured window. Applied to every
@@ -369,6 +516,40 @@ class AnnotationNotificationDispatcher
                     }
                 }//end if
 
+                // Delivery-window (quiet-hours) / digest-schedule gate.
+                // Evaluated only for the per-recipient channels
+                // (nc-notification, email, activity) — webhook/talk are
+                // broadcast and already fired above, unaffected. A
+                // `critical: true` rule skips this gate entirely and
+                // dispatches immediately (still subject to the preference
+                // gate above). When the gate suppresses, the event is
+                // QUEUED (never dropped) as a durable QueuedNotification
+                // row and flushed later by NotificationQueueFlushJob.
+                $queueableChannels = array_values(
+                    array_intersect($effectiveChannels, ['nc-notification', 'email', 'activity'])
+                );
+                if (count($queueableChannels) > 0
+                    && $this->deliveryWindowOrDigestSuppresses(
+                        spec: $spec,
+                        uid: $uid,
+                        ruleId: $ruleId,
+                        schemaId: (int) $schema->getId(),
+                        queueableChannels: $queueableChannels,
+                        channels: $channels,
+                        object: $object,
+                        subjectKey: $subjectKey,
+                        name: (string) $name,
+                        subject: $recipientSubject,
+                        message: $recipientMessage,
+                        context: $context,
+                        originApp: $originApp,
+                        actions: $resolvedActions,
+                        locale: $recipientLocale
+                    ) === true
+                ) {
+                    continue;
+                }
+
                 if (in_array('nc-notification', $effectiveChannels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
@@ -376,7 +557,11 @@ class AnnotationNotificationDispatcher
                         subjectKey: $subjectKey,
                         name: (string) $name,
                         subject: $recipientSubject,
-                        context: $context
+                        message: $recipientMessage,
+                        context: $context,
+                        originApp: $originApp,
+                        actions: $resolvedActions,
+                        webPushActive: in_array('web-push', $channels, true)
                     );
                     $this->recordHistory(
                         ruleId: $ruleId,
@@ -387,7 +572,7 @@ class AnnotationNotificationDispatcher
                         subject: $recipientSubject,
                         locale: $recipientLocale
                     );
-                }
+                }//end if
 
                 if (in_array('email', $effectiveChannels, true) === true) {
                     $this->emitEmail(
@@ -426,7 +611,334 @@ class AnnotationNotificationDispatcher
             }//end foreach
         }//end foreach
 
-    }//end dispatch()
+    }//end dispatchWithSchema()
+
+    /**
+     * Resolve "now" for the delivery-window / digest-schedule gate. Uses
+     * the injected `ITimeFactory` when present (tests inject a controllable
+     * clock), else the real wall clock.
+     *
+     * @return DateTimeImmutable
+     */
+    private function currentTime(): DateTimeImmutable
+    {
+        if ($this->timeFactory !== null) {
+            return DateTimeImmutable::createFromInterface($this->timeFactory->getDateTime());
+        }
+
+        return new DateTimeImmutable('now');
+
+    }//end currentTime()
+
+    /**
+     * Evaluate the delivery-window (quiet-hours) / digest-schedule gate for
+     * one recipient and, when it suppresses, persist a `QueuedNotification`
+     * row (never drop the event) and record notification history with the
+     * matching `queued-*` status.
+     *
+     * A `critical: true` rule bypasses this gate entirely — the caller
+     * checks this before invoking the method (see `deliveryWindowService`
+     * usage in `dispatchWithSchema()`), so this method itself does not
+     * need to special-case `critical` beyond the check below (defence in
+     * depth: a caller invoking this directly still gets the bypass).
+     *
+     * @param array<string, mixed> $spec              The full notification spec block.
+     * @param string               $uid               Recipient user UID.
+     * @param string               $ruleId            The rule id.
+     * @param int                  $schemaId          Owning schema id.
+     * @param array<int, string>   $queueableChannels Per-recipient channels eligible for queueing
+     *                                                (effectiveChannels ∩ {nc-notification,
+     *                                                email, activity}).
+     * @param array<int, string>   $channels          The rule's full declared channel list (for history audit).
+     * @param ObjectEntity         $object            The triggering object.
+     * @param string               $subjectKey        Canonical INotification subject key.
+     * @param string               $name              Notification annotation key.
+     * @param string               $subject           Pre-rendered, per-recipient subject.
+     * @param string               $message           Pre-rendered, per-recipient message body.
+     * @param array<string, mixed> $context           Trigger context (action, from, to).
+     * @param string               $originApp         Resolved origin app id.
+     * @param array<int, mixed>    $actions           Resolved action buttons.
+     * @param string|null          $locale            Recipient locale.
+     *
+     * @return bool True when the event was queued (caller must skip immediate dispatch).
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the call-site context in dispatchWithSchema().
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
+     */
+    private function deliveryWindowOrDigestSuppresses(
+        array $spec,
+        string $uid,
+        string $ruleId,
+        int $schemaId,
+        array $queueableChannels,
+        array $channels,
+        ObjectEntity $object,
+        string $subjectKey,
+        string $name,
+        string $subject,
+        string $message,
+        array $context,
+        string $originApp,
+        array $actions,
+        ?string $locale
+    ): bool {
+        if (($spec['critical'] ?? false) === true) {
+            return false;
+        }
+
+        $now = $this->currentTime();
+
+        $windowActive = false;
+        if ($this->deliveryWindowService !== null) {
+            $window = $this->deliveryWindowService->getForUser(userId: $uid);
+            if ($window !== null) {
+                $windowActive = $this->deliveryWindowService->isInsideWindow(window: $window, now: $now);
+            }
+        }
+
+        $digestSpec     = ($spec['digest'] ?? null);
+        $digestDeclared = is_array($digestSpec) === true
+            && $this->digestScheduleEvaluator !== null
+            && $this->digestScheduleEvaluator->isValidDigestSpec($digestSpec) === true;
+
+        if ($windowActive === false && $digestDeclared === false) {
+            // No window and no digest schedule — dispatch immediately,
+            // exactly as before this change (backward compatibility).
+            return false;
+        }
+
+        $reason = QueuedNotification::REASON_QUIET_HOURS;
+        if ($windowActive === true && $digestDeclared === true) {
+            $reason = QueuedNotification::REASON_BOTH;
+        } else if ($digestDeclared === true) {
+            $reason = QueuedNotification::REASON_DIGEST_SCHEDULE;
+        }
+
+        $status = 'queued-quiet-hours';
+        if ($reason === QueuedNotification::REASON_DIGEST_SCHEDULE) {
+            $status = 'queued-digest';
+        }
+
+        if ($this->queuedNotificationMapper !== null) {
+            $payload = [
+                'subject'        => $subject,
+                'message'        => $message,
+                'channels'       => $queueableChannels,
+                'subjectKey'     => $subjectKey,
+                'name'           => $name,
+                'originApp'      => $originApp,
+                'actions'        => $actions,
+                'locale'         => $locale,
+                'action'         => (string) ($context['action'] ?? ''),
+                'objectUuid'     => (string) ($object->getUuid() ?? ''),
+                'objectRegister' => $object->getRegister(),
+                'objectSchema'   => $object->getSchema(),
+                'objectName'     => $object->getName(),
+            ];
+
+            $entity = new QueuedNotification();
+            $entity->setSchemaId($schemaId);
+            $entity->setRuleKey($ruleId);
+            $entity->setRecipient($uid);
+            $entity->setReason($reason);
+            $entity->setObjectUuid((string) ($object->getUuid() ?? ''));
+            $entity->setPayload((string) json_encode($payload));
+            $entity->setDueAtHint(DateTime::createFromImmutable($now));
+            $entity->setCreatedAt(DateTime::createFromImmutable($now));
+
+            try {
+                $this->queuedNotificationMapper->insert(entity: $entity);
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    sprintf('[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s', $ruleId, $uid, $e->getMessage())
+                );
+            }
+        }//end if
+
+        $this->recordHistoryAcrossChannels(
+            ruleId: $ruleId,
+            recipient: $uid,
+            channels: $channels,
+            broadcastChannels: ['webhook', 'talk'],
+            status: $status,
+            object: $object,
+            subject: $subject,
+            locale: $locale
+        );
+
+        return true;
+
+    }//end deliveryWindowOrDigestSuppresses()
+
+    /**
+     * Flush a group of `QueuedNotification` rows sharing the same
+     * `(rule_key, recipient)` pair, called by `NotificationQueueFlushJob`
+     * once it has determined the group's holding condition has cleared.
+     *
+     * Reuses the existing channel fan-out unchanged (`emitNotification`,
+     * `emitEmail`, `emitActivity`). A single row flushes as its own
+     * pre-resolved subject/message; multiple rows are merged into one
+     * summary message so the recipient gets one notification instead of N.
+     * Notification history is updated to `dispatched` on success.
+     *
+     * @param array<int, QueuedNotification> $queuedRows Rows sharing one (rule_key, recipient) pair.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
+     */
+    public function dispatchQueued(array $queuedRows): void
+    {
+        if (count($queuedRows) === 0) {
+            return;
+        }
+
+        $first     = $queuedRows[0];
+        $payload   = $first->getDecodedPayload();
+        $ruleId    = (string) $first->getRuleKey();
+        $recipient = (string) $first->getRecipient();
+
+        [$subject, $message] = $this->buildQueuedSummary(rows: $queuedRows);
+
+        $channels = (array) ($payload['channels'] ?? []);
+
+        $object = new ObjectEntity();
+        $object->setUuid((string) ($payload['objectUuid'] ?? ''));
+        if (isset($payload['objectRegister']) === true && $payload['objectRegister'] !== null) {
+            $object->setRegister((string) $payload['objectRegister']);
+        }
+
+        if (isset($payload['objectSchema']) === true && $payload['objectSchema'] !== null) {
+            $object->setSchema((string) $payload['objectSchema']);
+        }
+
+        if (isset($payload['objectName']) === true && $payload['objectName'] !== null) {
+            $object->setName((string) $payload['objectName']);
+        }
+
+        $locale = null;
+        if (($payload['locale'] ?? null) !== null) {
+            $locale = (string) $payload['locale'];
+        }
+
+        if (in_array('nc-notification', $channels, true) === true) {
+            $this->emitNotification(
+                uid: $recipient,
+                object: $object,
+                subjectKey: (string) ($payload['subjectKey'] ?? $this->canonicalSubject(trigger: 'updated')),
+                name: (string) ($payload['name'] ?? $ruleId),
+                subject: $subject,
+                message: $message,
+                context: [],
+                originApp: (string) ($payload['originApp'] ?? 'openregister'),
+                actions: (array) ($payload['actions'] ?? [])
+            );
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'nc-notification',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }//end if
+
+        if (in_array('email', $channels, true) === true) {
+            $emailBody = $subject;
+            if ($message !== '') {
+                $emailBody = $message;
+            }
+
+            $this->emitEmail(uid: $recipient, subject: $subject, body: $emailBody);
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'email',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+        if (in_array('activity', $channels, true) === true) {
+            $this->emitActivity(
+                uid: $recipient,
+                objectId: (string) ($payload['objectUuid'] ?? ''),
+                name: (string) ($payload['name'] ?? $ruleId),
+                subject: $subject
+            );
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'activity',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+    }//end dispatchQueued()
+
+    /**
+     * Build the flushed subject/message for a group of queued rows. A
+     * single row flushes verbatim; multiple rows are merged into a
+     * digest-style summary (breakdown by the stored `action`, e.g.
+     * "3 nieuw, 2 gewijzigd" — reusing the rolling-digest breakdown
+     * pattern already documented for the coalescer).
+     *
+     * @param array<int, QueuedNotification> $rows Rows sharing one (rule_key, recipient) pair.
+     *
+     * @return array{0: string, 1: string} [subject, message]
+     */
+    private function buildQueuedSummary(array $rows): array
+    {
+        if (count($rows) === 1) {
+            $payload = $rows[0]->getDecodedPayload();
+            return [(string) ($payload['subject'] ?? ''), (string) ($payload['message'] ?? '')];
+        }
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $payload = $row->getDecodedPayload();
+            $action  = (string) ($payload['action'] ?? '');
+            if ($action === '') {
+                $action = 'other';
+            }
+
+            $counts[$action] = (($counts[$action] ?? 0) + 1);
+        }
+
+        $labels = [
+            'created' => 'nieuw',
+            'updated' => 'gewijzigd',
+        ];
+
+        $parts = [];
+        foreach ($counts as $action => $count) {
+            $parts[] = sprintf('%d %s', $count, ($labels[$action] ?? $action));
+        }
+
+        $breakdown = implode(', ', $parts);
+        $subject   = sprintf('%d meldingen (%s)', count($rows), $breakdown);
+
+        $titles = [];
+        foreach (array_slice($rows, 0, 10) as $row) {
+            $payload  = $row->getDecodedPayload();
+            $titles[] = (string) ($payload['subject'] ?? '');
+        }
+
+        $message = implode('; ', array_filter($titles));
+        if (count($rows) > 10) {
+            $message .= sprintf(' ... en %d meer', (count($rows) - 10));
+        }
+
+        return [$subject, $message];
+
+    }//end buildQueuedSummary()
 
     /**
      * Helper to dispatch a broadcast-style channel (webhook / talk).
@@ -451,7 +963,10 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) dispatchBroadcastChannel() centralises the rate-limit+coalesce+history pattern for webhook and talk; all 11 parameters are forwarded from the dispatch() call-site context and cannot be bundled into a value-object without creating a throw-away struct that obscures the data flow.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) dispatchBroadcastChannel() centralises the
+     * rate-limit+coalesce+history pattern for webhook and talk; all 11 parameters are forwarded from
+     * the dispatch() call-site context and cannot be bundled into a value-object without creating a
+     * throw-away struct that obscures the data flow.
      */
     private function dispatchBroadcastChannel(
         string $channel,
@@ -554,7 +1069,7 @@ class AnnotationNotificationDispatcher
      *
      * @return bool True when the dispatch may proceed.
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function coalesceAllows(string $ruleId, string $recipient, ?array $coalesce): bool
     {
@@ -698,7 +1213,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function recordHistory(
         string $ruleId,
@@ -775,7 +1290,7 @@ class AnnotationNotificationDispatcher
      *
      * @return void
      *
-     * @spec openspec/changes/notificatie-engine/tasks.md
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     private function recordHistoryAcrossChannels(
         string $ruleId,
@@ -1013,8 +1528,13 @@ class AnnotationNotificationDispatcher
      *
      * @return bool True when the rule should fire for this event.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) matches() handles four trigger types (created/updated/transition/calculatedChange) each with sub-conditions (action filter, field-change condition, boundary-crossing operators); each branch is a distinct spec requirement and cannot be merged.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Each trigger type has optional sub-conditions that can independently pass or fail; the NPath count reflects spec-mandated combinations, not accidental branching.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) matches() handles four trigger types
+     * (created/updated/transition/calculatedChange) each with sub-conditions (action filter,
+     * field-change condition, boundary-crossing operators); each branch is a distinct spec
+     * requirement and cannot be merged.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Each trigger type has optional sub-conditions that
+     * can independently pass or fail; the NPath count reflects spec-mandated combinations,
+     * not accidental branching.
      */
     private function matches(array $triggerSpec, string $trigger, array $context): bool
     {
@@ -1033,6 +1553,25 @@ class AnnotationNotificationDispatcher
             } else if ((string) $expected !== (string) $actual) {
                 return false;
             }
+        }
+
+        // Optional field filter for `created` triggers — the rule fires only
+        // when the created object's fields satisfy every declared equality
+        // (e.g. `channel == "telefoon"`). Evaluated against the created
+        // object's data forwarded as `_data`. A condition-less `created` rule
+        // matches on type alone (back-compat). Fail-closed when data is absent.
+        if ($trigger === 'created' && isset($triggerSpec['filter']) === true) {
+            $filter = $triggerSpec['filter'];
+            if (is_array($filter) === false) {
+                return false;
+            }
+
+            $data = ($context['_data'] ?? null);
+            if (is_array($data) === false) {
+                return false;
+            }
+
+            return $this->createdFilterMatches(filter: $filter, data: $data);
         }
 
         // Optional non-numeric field-change `condition` for `updated` triggers.
@@ -1113,29 +1652,97 @@ class AnnotationNotificationDispatcher
      *
      * @return bool True when the value satisfies every declared operator.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) numericConditionMatches() evaluates six comparison operators (lt, lte, gt, gte, eq, ne) in a match expression; each arm is a distinct spec-defined operator and cannot be reduced further.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) numericConditionMatches() evaluates six comparison
+     * operators (lt, lte, gt, gte, eq, ne) in a match expression; each arm is a distinct spec-defined
+     * operator and cannot be reduced further.
      */
     private function numericConditionMatches(mixed $value, array $operators): bool
     {
         foreach ($operators as $op => $threshold) {
-            $numeric = is_numeric($value) === true && is_numeric($threshold) === true;
-            $result  = match ((string) $op) {
+            $numeric = (is_numeric($value) === true && is_numeric($threshold) === true);
+
+            // BUG-SVC-8: when both sides are numeric, compare as floats so
+            // numerically-equal-but-differently-formatted values match
+            // (e.g. `1.0` eq `1`). Fall back to string compare otherwise.
+            if ($numeric === true) {
+                $equals = ((float) $value === (float) $threshold);
+            } else {
+                $equals = ((string) $value === (string) $threshold);
+            }
+
+            $result = match ((string) $op) {
                 'lt'  => $numeric && (float) $value < (float) $threshold,
                 'lte' => $numeric && (float) $value <= (float) $threshold,
                 'gt'  => $numeric && (float) $value > (float) $threshold,
                 'gte' => $numeric && (float) $value >= (float) $threshold,
-                'eq'  => (string) $value === (string) $threshold,
-                'ne'  => (string) $value !== (string) $threshold,
+                'eq'  => $equals,
+                'ne'  => ($equals === false),
                 default => false,
             };
 
             if ($result === false) {
                 return false;
             }
-        }
+        }//end foreach
 
         return true;
     }//end numericConditionMatches()
+
+    /**
+     * Evaluate a `created`-trigger field filter against the created object's data.
+     *
+     * Supports the contract's single-field shape `{ field, operator, value|values }`
+     * with operators `equals` (default), `in`, and `notIn`. Scalar comparison is
+     * string-cast (mirrors `fieldChangeConditionMatches`). A filter naming an
+     * unknown field fails closed.
+     *
+     * @param array<string, mixed> $filter The `trigger.filter` sub-document.
+     * @param array<string, mixed> $data   The created object's data.
+     *
+     * @return bool True when the object satisfies the filter.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function createdFilterMatches(array $filter, array $data): bool
+    {
+        $field = (string) ($filter['field'] ?? '');
+        if ($field === '') {
+            return false;
+        }
+
+        $operator  = (string) ($filter['operator'] ?? 'equals');
+        $actual    = ($data[$field] ?? null);
+        $actualStr = '';
+        if (is_scalar($actual) === true) {
+            $actualStr = (string) $actual;
+        }
+
+        if ($operator === 'in' || $operator === 'notIn') {
+            $values = ($filter['values'] ?? []);
+            if (is_array($values) === false) {
+                return false;
+            }
+
+            $haystack = [];
+            foreach ($values as $candidate) {
+                if (is_scalar($candidate) === true) {
+                    $haystack[] = (string) $candidate;
+                } else {
+                    $haystack[] = '';
+                }
+            }
+
+            $present = in_array($actualStr, $haystack, true);
+            if ($operator === 'in') {
+                return $present;
+            }
+
+            return ($present === false);
+        }//end if
+
+        // Default: equals.
+        return $actualStr === (string) ($filter['value'] ?? '');
+    }//end createdFilterMatches()
 
     /**
      * Evaluate a non-numeric field-change condition for an `updated` trigger.
@@ -1206,9 +1813,16 @@ class AnnotationNotificationDispatcher
      *
      * @return array<int, string>
      *
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) resolveRecipients() handles five recipient kinds (users, groups, field, acl-read, acl-manage) plus expression evaluation, deduplication, and exclusion; each kind requires its own resolution logic and must run in one pass to produce a deduplicated uid list.
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each recipient entry is dispatched by kind; within each kind there are null-guards and type checks — all are required branches of the spec's recipient model.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Combinations of recipient kinds, expression evaluation, null-guards, and exclusion list produce many paths; each is required by the spec's recipient-resolution contract.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) resolveRecipients() handles five recipient kinds
+     * (users, groups, field, acl-read, acl-manage) plus expression evaluation, deduplication, and
+     * exclusion; each kind requires its own resolution logic and must run in one pass to produce a
+     * deduplicated uid list.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each recipient entry is dispatched by kind; within
+     * each kind there are null-guards and type checks — all are required branches of the spec's
+     * recipient model.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Combinations of recipient kinds, expression evaluation,
+     * null-guards, and exclusion list produce many paths; each is required by the spec's
+     * recipient-resolution contract.
      */
     private function resolveRecipients(array $recipientsSpec, array $data, ?ObjectEntity $object=null, array $context=[]): array
     {
@@ -1342,7 +1956,10 @@ class AnnotationNotificationDispatcher
      *
      * @return array<int, string>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveObjectAclRecipients() walks owner, per-user, per-role, and per-group ACL entries; each entry type requires separate null-guards and uid-extraction logic that cannot be merged without losing the distinction between role-based and explicit-user grants.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveObjectAclRecipients() walks owner,
+     * per-user, per-role, and per-group ACL entries; each entry type requires separate null-guards
+     * and uid-extraction logic that cannot be merged without losing the distinction between
+     * role-based and explicit-user grants.
      */
     private function resolveObjectAclRecipients(ObjectEntity $object, string $permission): array
     {
@@ -1494,7 +2111,9 @@ class AnnotationNotificationDispatcher
      *
      * @return array<int, string>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractUidsFromRelation() handles six distinct relation shapes (null, array-of-strings, array-of-objects with uid/id/userId, plain string); each shape requires a separate extraction branch that cannot be unified.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractUidsFromRelation() handles six distinct
+     * relation shapes (null, array-of-strings, array-of-objects with uid/id/userId, plain string);
+     * each shape requires a separate extraction branch that cannot be unified.
      */
     private function extractUidsFromRelation(mixed $value): array
     {
@@ -1566,8 +2185,12 @@ class AnnotationNotificationDispatcher
      *
      * @return string The interpolated subject string.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template shapes (string, locale-keyed map, default-locale fallback) and within each shape applies template-variable interpolation; each branch is required by the i18n subject contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Template shape × locale-match × defaultLocale fallback × interpolation presence produce many paths; all are required by the spec's subject-resolution priority chain.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) resolveLocalizedSubject() handles three template
+     * shapes (string, locale-keyed map, default-locale fallback) and within each shape applies
+     * template-variable interpolation; each branch is required by the i18n subject contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Template shape × locale-match × defaultLocale fallback
+     * × interpolation presence produce many paths; all are required by the spec's subject-resolution
+     * priority chain.
      */
     private function resolveLocalizedSubject(
         mixed $template,
@@ -1620,6 +2243,98 @@ class AnnotationNotificationDispatcher
         return $fallbackName;
 
     }//end resolveLocalizedSubject()
+
+    /**
+     * Resolve the notification BODY (message) for a recipient/broadcast.
+     *
+     * The body is distinct from the title (`subject`):
+     *
+     *   1. When the rule declares a `message` template (string or per-locale
+     *      map), it is localised + `{{prop}}`-interpolated through the SAME
+     *      resolver as the subject (`resolveLocalizedSubject()`).
+     *   2. When the rule declares NO `message` but DOES declare `actions[]`,
+     *      the body is auto-derived as "Open in {AppName}." where {AppName}
+     *      is the originApp's human display name (via IAppManager; falls back
+     *      to ucfirst(originApp) when unavailable).
+     *   3. When the rule declares neither `message` nor `actions`, the body
+     *      is empty — exactly today's behaviour (back-compat).
+     *
+     * @param mixed                $template   Raw `message` value (string, array, or null).
+     * @param string|null          $locale     Recipient locale, or null for broadcast channels.
+     * @param array<string, mixed> $data       Object data for `{{prop}}` interpolation.
+     * @param array<string, mixed> $context    Trigger-specific context.
+     * @param bool                 $hasActions Whether the rule declared resolvable actions.
+     * @param string               $originApp  Resolved origin app id (drives the auto-body app name).
+     *
+     * @return string The interpolated body string, or '' for the empty back-compat body.
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function resolveMessageBody(
+        mixed $template,
+        ?string $locale,
+        array $data,
+        array $context,
+        bool $hasActions,
+        string $originApp
+    ): string {
+        $hasTemplate = (is_string($template) === true && $template !== '') || (is_array($template) === true && $template !== []);
+        if ($hasTemplate === true) {
+            // Reuse the subject resolver: identical shape, locale-resolution
+            // and {{prop}} interpolation contract. The empty fallbackName
+            // means an unresolvable map degrades to '' rather than a name.
+            return $this->resolveLocalizedSubject(
+                template: $template,
+                locale: $locale,
+                data: $data,
+                context: $context,
+                fallbackName: ''
+            );
+        }
+
+        // No explicit body: auto-derive only when the rule has actions.
+        if ($hasActions === false) {
+            return '';
+        }
+
+        return sprintf('Open in %s.', $this->resolveAppDisplayName(app: $originApp));
+
+    }//end resolveMessageBody()
+
+    /**
+     * Resolve an app's human display name for the auto-derived body.
+     *
+     * Reads the app's `name` from IAppManager::getAppInfo() when the manager
+     * is available; falls back to ucfirst(app) when the manager is absent
+     * (older fixtures) or the lookup yields no usable name.
+     *
+     * @param string $app The app id.
+     *
+     * @return string The human-readable app display name.
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function resolveAppDisplayName(string $app): string
+    {
+        $fallback = ucfirst($app);
+        if ($this->appManager === null || $app === '') {
+            return $fallback;
+        }
+
+        try {
+            $info = $this->appManager->getAppInfo($app);
+            if (is_array($info) === true && is_string($info['name'] ?? null) === true && $info['name'] !== '') {
+                return $info['name'];
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf('[AnnotationNotificationDispatcher] app display-name lookup failed: %s', $e->getMessage())
+            );
+        }
+
+        return $fallback;
+
+    }//end resolveAppDisplayName()
 
     /**
      * Resolve a Nextcloud user's preferred locale.
@@ -1691,14 +2406,20 @@ class AnnotationNotificationDispatcher
     {
         return preg_replace_callback(
             '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
-            static function (array $matches) use ($data, $context): string {
+            function (array $matches) use ($data, $context): string {
                 $key = $matches[1];
                 if (array_key_exists($key, $data) === true) {
                     if (is_scalar($data[$key]) === false) {
                         return '';
                     }
 
-                    return htmlspecialchars((string) $data[$key], ENT_QUOTES, 'UTF-8');
+                    // Relation fields hold a UUID reference; show the related
+                    // object's display name instead of the raw UUID so
+                    // "{{client}}" reads "Acme Gemeente BV", not a UUID string.
+                    $raw     = (string) $data[$key];
+                    $display = $this->resolveRelationDisplayName(value: $raw);
+
+                    return htmlspecialchars(($display ?? $raw), ENT_QUOTES, 'UTF-8');
                 }
 
                 if (array_key_exists($key, $context) === true) {
@@ -1714,6 +2435,58 @@ class AnnotationNotificationDispatcher
             $template
         ) ?? $template;
     }//end interpolate()
+
+    /**
+     * Resolve a relation-reference UUID to the related object's display name.
+     *
+     * Notification subjects/bodies interpolate `{{prop}}` from the object's
+     * data; a relation field holds a UUID, which reads poorly in a popup
+     * ("Incoming call from 3b9f…"). When the value is UUID-shaped, resolve the
+     * related object through OpenRegister (RBAC-scoped, mirroring the action
+     * deeplink resolver) and return its name. Returns null — so the caller
+     * keeps the raw value — for non-UUID values, an absent ObjectService, an
+     * unresolvable id, or a nameless object. Cached per dispatcher instance to
+     * avoid repeat lookups across a recipient fan-out.
+     *
+     * @param string $value The interpolated field value.
+     *
+     * @return string|null The related object's display name, or null to keep the raw value.
+     *
+     * @spec openspec/changes/openregister-notification-relation-names/specs/notificatie-engine/spec.md
+     */
+    private function resolveRelationDisplayName(string $value): ?string
+    {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $value) !== 1) {
+            return null;
+        }
+
+        if ($this->objectService === null) {
+            return null;
+        }
+
+        if (array_key_exists($value, $this->relationDisplayCache) === true) {
+            return $this->relationDisplayCache[$value];
+        }
+
+        $name = null;
+        try {
+            $related = $this->objectService->find(id: $value, _rbac: true);
+            if ($related !== null) {
+                $candidate = $related->getName();
+                if (is_string($candidate) === true && $candidate !== '') {
+                    $name = $candidate;
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->debug('[AnnotationNotificationDispatcher] relation display-name resolve failed: '.$e->getMessage());
+            $name = null;
+        }
+
+        $this->relationDisplayCache[$value] = $name;
+
+        return $name;
+
+    }//end resolveRelationDisplayName()
 
     /**
      * Map a trigger to the canonical INotification subject the Notifier
@@ -1734,6 +2507,397 @@ class AnnotationNotificationDispatcher
     }//end canonicalSubject()
 
     /**
+     * Resolve the rule's originApp: the declared value, else the app owning
+     * the schema's register, else 'openregister'.
+     *
+     * @param array<string, mixed> $spec   The notification rule spec.
+     * @param ObjectEntity         $object The triggering object.
+     *
+     * @return string The resolved origin app id.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function resolveOriginApp(array $spec, ObjectEntity $object): string
+    {
+        $declared = ($spec['originApp'] ?? null);
+        if (is_string($declared) === true && $declared !== '') {
+            return $declared;
+        }
+
+        // Default: the app that owns the schema's register.
+        $registerId     = $object->getRegister();
+        $registerMapper = $this->registerMapper;
+        if ($registerMapper !== null && $registerId !== null && (string) $registerId !== '') {
+            try {
+                $register  = $registerMapper->find(
+                    $registerId,
+                    _rbac: false,
+                    _multitenancy: false
+                );
+                $owningApp = $register->getApplication();
+                if (is_string($owningApp) === true && $owningApp !== '') {
+                    return $owningApp;
+                }
+            } catch (\Throwable $e) {
+                $this->logger->debug(
+                    sprintf('[AnnotationNotificationDispatcher] originApp register lookup failed: %s', $e->getMessage())
+                );
+            }
+        }
+
+        return 'openregister';
+    }//end resolveOriginApp()
+
+    /**
+     * Resolve declared `actions[]` to concrete, server-side deeplinks.
+     *
+     * Each returned action carries the i18n `label` map, the `primary` flag,
+     * and a resolved absolute `url`. Targets that cannot be resolved (e.g. an
+     * unreadable relation object) are dropped, never leaked.
+     *
+     * @param array<string, mixed> $spec      The notification rule spec.
+     * @param ObjectEntity         $object    The triggering object.
+     * @param array<string, mixed> $data      The triggering object's data.
+     * @param string               $originApp The resolved origin app id.
+     *
+     * @return array<int, array{label: array<string,string>, primary: bool, url: string}>
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function resolveActions(array $spec, ObjectEntity $object, array $data, string $originApp): array
+    {
+        $declared = ($spec['actions'] ?? null);
+        if (is_array($declared) === false || count($declared) === 0) {
+            return [];
+        }
+
+        $resolved = [];
+        foreach ($declared as $action) {
+            if (is_array($action) === false) {
+                continue;
+            }
+
+            $label = ($action['label'] ?? []);
+            if (is_array($label) === false) {
+                $label = [];
+            }
+
+            $url = $this->resolveActionTarget(
+                target: ($action['target'] ?? []),
+                object: $object,
+                data: $data,
+                originApp: $originApp
+            );
+            if ($url === null || $url === '') {
+                // Target unresolved (e.g. relation not readable) — drop the
+                // action rather than emit a dead or leaking button.
+                continue;
+            }
+
+            $resolved[] = [
+                'label'   => $label,
+                'primary' => (bool) ($action['primary'] ?? false),
+                'url'     => $url,
+            ];
+        }//end foreach
+
+        return $resolved;
+    }//end resolveActions()
+
+    /**
+     * Resolve a single action `target` to an absolute deeplink.
+     *
+     * Supported kinds:
+     *  - object-detail: deeplink to the triggering object's detail page.
+     *  - object-detail + { object: { kind: "relation", field } }: resolve the
+     *    relation field on the triggering object to a related object's
+     *    register/schema/uuid THROUGH OR RBAC ("Open client") — the related
+     *    id is never trusted from the wire.
+     *  - route: an originApp frontend route with {{prop}} interpolation (HTML-escaped).
+     *  - url: an absolute URL, passed through verbatim.
+     *
+     * @param mixed                $target    The raw target spec.
+     * @param ObjectEntity         $object    The triggering object.
+     * @param array<string, mixed> $data      The triggering object's data.
+     * @param string               $originApp The resolved origin app id.
+     *
+     * @return string|null The resolved absolute URL, or null when unresolvable.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per target kind.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function resolveActionTarget(mixed $target, ObjectEntity $object, array $data, string $originApp): ?string
+    {
+        if (is_array($target) === false) {
+            return null;
+        }
+
+        $kind = (string) ($target['kind'] ?? '');
+
+        if ($kind === 'url') {
+            $href = (string) ($target['href'] ?? '');
+            if (filter_var($href, FILTER_VALIDATE_URL) === false) {
+                return null;
+            }
+
+            return $href;
+        }
+
+        if ($kind === 'route') {
+            $app   = (string) ($target['app'] ?? $originApp);
+            $route = (string) ($target['route'] ?? '');
+            if ($route === '') {
+                return null;
+            }
+
+            // Interpolate {{prop}} tokens from the object data, HTML-escaped.
+            $interpolated = preg_replace_callback(
+                '/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/',
+                static function (array $m) use ($data): string {
+                    $value = ($data[$m[1]] ?? '');
+                    if (is_scalar($value) === false) {
+                        return '';
+                    }
+
+                    return rawurlencode(htmlspecialchars((string) $value, (ENT_QUOTES | ENT_HTML5)));
+                },
+                $route
+            );
+
+            return $this->appRouteBase(app: $app).ltrim((string) $interpolated, '/');
+        }//end if
+
+        if ($kind === 'object-detail') {
+            $relationSpec = ($target['object'] ?? null);
+            if (is_array($relationSpec) === true && (string) ($relationSpec['kind'] ?? '') === 'relation') {
+                return $this->resolveRelationDeeplink(
+                    field: (string) ($relationSpec['field'] ?? ''),
+                    data: $data,
+                    originApp: $originApp
+                );
+            }
+
+            // Deeplink to the triggering object itself.
+            return $this->buildObjectDetailLink(
+                originApp: $originApp,
+                registerId: (string) ($object->getRegister() ?? ''),
+                schemaId: (string) ($object->getSchema() ?? ''),
+                objectUuid: (string) ($object->getUuid() ?? '')
+            );
+        }//end if
+
+        return null;
+    }//end resolveActionTarget()
+
+    /**
+     * Resolve a relation-field deeplink ("Open client") through OR RBAC.
+     *
+     * The field value on the triggering object is treated only as a lookup
+     * key; the related object is re-resolved via ObjectService::find() with
+     * RBAC enabled so a deeplink is built only for an object the current
+     * context may read. The wire-supplied id is never trusted directly.
+     *
+     * @param string               $field     The relation field name.
+     * @param array<string, mixed> $data      The triggering object's data.
+     * @param string               $originApp The resolved origin app id.
+     *
+     * @return string|null The deeplink, or null when the relation is empty/unreadable.
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function resolveRelationDeeplink(string $field, array $data, string $originApp): ?string
+    {
+        if ($field === '' || $this->objectService === null) {
+            return null;
+        }
+
+        $raw    = ($data[$field] ?? null);
+        $lookup = null;
+        if (is_string($raw) === true && $raw !== '') {
+            $lookup = $raw;
+        } else if (is_array($raw) === true) {
+            // Array relation: take the first id/uuid candidate.
+            $candidate = ($raw['id'] ?? ($raw['uuid'] ?? ($raw[0] ?? null)));
+            if (is_string($candidate) === true && $candidate !== '') {
+                $lookup = $candidate;
+            }
+        }
+
+        if ($lookup === null) {
+            return null;
+        }
+
+        try {
+            $related = $this->objectService->find(id: $lookup, _rbac: true);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                sprintf('[AnnotationNotificationDispatcher] relation deeplink resolve failed: %s', $e->getMessage())
+            );
+            return null;
+        }
+
+        if ($related === null) {
+            return null;
+        }
+
+        return $this->buildObjectDetailLink(
+            originApp: $originApp,
+            registerId: (string) ($related->getRegister() ?? ''),
+            schemaId: (string) ($related->getSchema() ?? ''),
+            objectUuid: (string) ($related->getUuid() ?? '')
+        );
+    }//end resolveRelationDeeplink()
+
+    /**
+     * Build an object-detail deeplink against the originApp frontend route.
+     *
+     * @param string $originApp  The resolved origin app id.
+     * @param string $registerId The object's register id.
+     * @param string $schemaId   The object's schema id.
+     * @param string $objectUuid The object's uuid.
+     *
+     * @return string|null The absolute deeplink, or null when ids are missing.
+     */
+    private function buildObjectDetailLink(string $originApp, string $registerId, string $schemaId, string $objectUuid): ?string
+    {
+        if ($registerId === '' || $schemaId === '' || $objectUuid === '') {
+            return null;
+        }
+
+        // Prefer the canonical per-app deeplink registered via
+        // DeepLinkRegistrationEvent (e.g. pipelinq::client →
+        // /apps/pipelinq/clients/{uuid}). This is the app-correct route the
+        // rest of the platform uses; the openregister hash-route below is only
+        // a fallback for schemas no leaf app has registered a deeplink for.
+        if ($this->deepLinkRegistry !== null && is_numeric($registerId) === true && is_numeric($schemaId) === true) {
+            $registered = $this->deepLinkRegistry->resolveUrl(
+                registerId: (int) $registerId,
+                schemaId: (int) $schemaId,
+                objectData: ['uuid' => $objectUuid, 'id' => $objectUuid]
+            );
+            if ($registered !== null && $registered !== '') {
+                // Return a RELATIVE path so the Service Worker / browser resolves
+                // it against the real page origin (preserving a non-standard port
+                // such as :8080). Wrapping with getAbsoluteURL() injects
+                // overwrite.cli.url, which can drop the port (e.g. http://localhost
+                // instead of http://localhost:8080) and 404 the deeplink.
+                if (str_starts_with($registered, 'http') === true) {
+                    $parts = parse_url($registered);
+                    $path  = ($parts['path'] ?? '/');
+                    if (isset($parts['query']) === true) {
+                        $path .= '?'.$parts['query'];
+                    }
+
+                    if (isset($parts['fragment']) === true) {
+                        $path .= '#'.$parts['fragment'];
+                    }
+
+                    return $path;
+                }
+
+                return $registered;
+            }//end if
+        }//end if
+
+        return $this->appRouteBase(app: $originApp)
+            .sprintf('#/registers/%s/schemas/%s/objects/%s', $registerId, $schemaId, $objectUuid);
+    }//end buildObjectDetailLink()
+
+    /**
+     * Resolve the absolute frontend route base for an app id.
+     *
+     * Falls back to the openregister dashboard route when the app is not
+     * installed or the URL generator is unavailable.
+     *
+     * @param string $app The app id.
+     *
+     * @return string The absolute route base (always ends without a trailing fragment).
+     */
+    private function appRouteBase(string $app): string
+    {
+        if ($this->urlGenerator === null) {
+            return '/index.php/apps/'.$app.'/';
+        }
+
+        $routeName = $app.'.dashboard.page';
+        if ($app === 'openregister') {
+            $routeName = 'openregister.dashboard.page';
+        }
+
+        try {
+            return $this->urlGenerator->linkToRouteAbsolute($routeName);
+        } catch (\Throwable $e) {
+            // App has no dashboard.page route — fall back to the app base path.
+            return $this->urlGenerator->getAbsoluteURL('/index.php/apps/'.$app.'/');
+        }//end try
+
+    }//end appRouteBase()
+
+    /**
+     * Enqueue a background web-push dispatch job per recipient.
+     *
+     * Push I/O (VAPID signing + aes128gcm encryption + endpoint POST) runs in
+     * WebPushDispatchJob so the originating object-save request returns
+     * immediately. Anonymous / non-uid recipients are skipped (web-push is
+     * user+browser scoped).
+     *
+     * @param array<int, mixed>                $recipients Resolved recipient uids (validated at runtime).
+     * @param string                           $ruleId     The rule id.
+     * @param string                           $originApp  The resolved origin app id.
+     * @param string                           $subject    The notification subject text (push title).
+     * @param string                           $message    The notification body text (push body).
+     * @param array<int, array<string, mixed>> $actions    Resolved action buttons.
+     * @param ObjectEntity                     $object     The triggering object.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     * @spec openspec/changes/openregister-web-push-engine/specs/web-push-delivery/spec.md
+     */
+    private function enqueueWebPush(
+        array $recipients,
+        string $ruleId,
+        string $originApp,
+        string $subject,
+        string $message,
+        array $actions,
+        ObjectEntity $object
+    ): void {
+        if ($this->jobList === null) {
+            $this->logger->debug('[AnnotationNotificationDispatcher] web-push declared but IJobList unavailable.');
+            return;
+        }
+
+        $objectUuid = (string) ($object->getUuid() ?? '');
+        $tagSuffix  = $ruleId;
+        if ($objectUuid !== '') {
+            $tagSuffix = $objectUuid;
+        }
+
+        $tag = sprintf('openregister-%s-%s', $ruleId, $tagSuffix);
+
+        foreach ($recipients as $uid) {
+            if (is_string($uid) === false || $uid === '' || $this->userExists(uid: $uid) === false) {
+                continue;
+            }
+
+            $this->jobList->add(
+                WebPushDispatchJob::class,
+                [
+                    'uid'       => $uid,
+                    'ruleId'    => $ruleId,
+                    'originApp' => $originApp,
+                    'title'     => $subject,
+                    'body'      => $message,
+                    'tag'       => $tag,
+                    'actions'   => $actions,
+                ]
+            );
+        }//end foreach
+    }//end enqueueWebPush()
+
+    /**
      * Persist + dispatch a single in-app Nextcloud notification row.
      *
      * The INotification carries the canonical `$subjectKey` (which the
@@ -1746,14 +2910,21 @@ class AnnotationNotificationDispatcher
      * Push delivery needs no extra code: `notify_push` auto-intercepts this
      * same `IManager::notify()` call and relays it to connected devices.
      *
-     * @param string               $uid        Recipient user UID.
-     * @param ObjectEntity         $object     The object the event happened on.
-     * @param string               $subjectKey Canonical subject identifier (object_created/_updated/_transitioned).
-     * @param string               $name       Annotation rule name (notification type identifier).
-     * @param string               $subject    Pre-interpolated subject text.
-     * @param array<string, mixed> $context    Trigger context (action, from, to).
+     * @param string                           $uid           Recipient user UID.
+     * @param ObjectEntity                     $object        The object the event happened on.
+     * @param string                           $subjectKey    Canonical subject identifier (object_created/_updated/_transitioned).
+     * @param string                           $name          Annotation rule name (notification type identifier).
+     * @param string                           $subject       Pre-interpolated subject text (notification title).
+     * @param string                           $message       Pre-interpolated body text (notification body); may be empty.
+     * @param array<string, mixed>             $context       Trigger context (action, from, to).
+     * @param string                           $originApp     Resolved originApp (declared or register-owning app).
+     * @param array<int, array<string, mixed>> $actions       Resolved action buttons (label map + deeplink url + primary).
+     * @param bool                             $webPushActive Whether the rule also delivers over web-push (drives duplicate suppression).
      *
      * @return void
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
     private function emitNotification(
         string $uid,
@@ -1761,14 +2932,42 @@ class AnnotationNotificationDispatcher
         string $subjectKey,
         string $name,
         string $subject,
-        array $context
+        string $message,
+        array $context,
+        string $originApp='openregister',
+        array $actions=[],
+        bool $webPushActive=false
     ): void {
         $objectUuid = (string) ($object->getUuid() ?? '');
+        $tagSuffix  = $name;
+        if ($objectUuid !== '') {
+            $tagSuffix = $objectUuid;
+        }
+
         $linkParams = [
-            'objectTitle' => (string) ($object->getName() ?? $objectUuid),
-            'registerId'  => $object->getRegister(),
-            'schemaId'    => $object->getSchema(),
-            'objectUuid'  => $objectUuid,
+            'objectTitle'              => (string) ($object->getName() ?? $objectUuid),
+            'registerId'               => $object->getRegister(),
+            'schemaId'                 => $object->getSchema(),
+            'objectUuid'               => $objectUuid,
+            // The resolved origin app drives the notifier icon (originApp hex
+            // composite) and the deeplink base for declared actions.
+            'originApp'                => $originApp,
+            // Declared, server-resolved action buttons. The notifier renders
+            // these via addAction(); an empty array keeps the implicit "View".
+            '_actions'                 => $actions,
+            // Pre-interpolated notification BODY (distinct from the title).
+            // The notifier sets it via setParsedMessage() when non-empty;
+            // an empty string leaves the body unset (back-compat).
+            '_message'                 => $message,
+            // Stable notification tag used by the Service Worker / foreground
+            // client to COLLAPSE the web-push and the stock popup so the
+            // recipient never sees a duplicate. Keyed by (rule, object).
+            '_tag'                     => sprintf('openregister-%s-%s', $name, $tagSuffix),
+            // Foreground-suppression flag: when web-push is active for this
+            // rule, an open tab that holds an active push subscription
+            // declines to render the plain duplicate popup for this tag
+            // (see js/openregister-push-sw.js + src/webpush/register.js).
+            '_suppressForegroundPopup' => $webPushActive,
         ];
 
         $objectRef = $name;

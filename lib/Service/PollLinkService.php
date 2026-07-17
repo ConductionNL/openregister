@@ -35,7 +35,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Composes PollLinkMapper, IDBConnection,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Composes PollLinkMapper, IDBConnection,
  *   IAppManager, IUserSession, and LoggerInterface; each is a distinct orchestration
  *   concern for direct-DB poll creation and user-session handling.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Direct SQL inserts into oc_polls_polls
@@ -117,7 +117,7 @@ class PollLinkService
      *
      * @throws Exception On missing user, missing poll (404), duplicate (409).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkPoll(string $objectUuid, int $registerId, int $schemaId, int $pollId): PollLink
     {
@@ -172,7 +172,7 @@ class PollLinkService
      *
      * @throws Exception When no matching link is found (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkPoll(string $objectUuid, int $pollId): void
     {
@@ -200,7 +200,7 @@ class PollLinkService
      *   available/unavailable) combined with per-link row hydration requires nested guards;
      *   the logic cannot be split without losing the "degrade gracefully" contract.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedPolls(string $objectUuid): array
     {
@@ -226,7 +226,10 @@ class PollLinkService
                 }
             }
 
-            $row['url'] = '/index.php/apps/polls/vote/'.($row['pollId'] ?? '');
+            // NC Polls routes votes at /apps/polls/vote/{id}; the legacy
+            // /index.php prefix breaks under the SPA's <base href> (the path
+            // doubled to /apps/polls/index.php/apps/polls/vote/… on navigation).
+            $row['url'] = '/apps/polls/vote/'.($row['pollId'] ?? '');
             $results[]  = $row;
         }//end foreach
 
@@ -243,7 +246,7 @@ class PollLinkService
      *
      * @return array<int,array{id:int,title:string,type:string,deadline:?string,closed:bool,voterCount:int,optionCount:int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailablePolls(?string $search=null): array
     {
@@ -314,7 +317,7 @@ class PollLinkService
      *
      * @throws Exception On missing user, Polls unavailable, or create failure.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) PHPMD 2.x accumulates the complexity
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   PHPMD 2.x accumulates the complexity
      *   of insertPollRecord and buildPollLink (extracted helpers) into this orchestrator;
      *   the method itself only validates preconditions and delegates to those helpers.
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Poll creation requires seven distinct
@@ -322,7 +325,7 @@ class PollLinkService
      *   deadline); grouping them into a DTO would add an extra abstraction layer with no
      *   functional benefit since callers already have all values as discrete variables.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkPoll(
         string $objectUuid,
@@ -397,7 +400,10 @@ class PollLinkService
         ?DateTimeInterface $deadline
     ): int {
         $now    = time();
-        $expire = ($deadline !== null) ? $deadline->getTimestamp() : 0;
+        $expire = 0;
+        if ($deadline !== null) {
+            $expire = $deadline->getTimestamp();
+        }
 
         try {
             $insert = $this->db->getQueryBuilder();
@@ -447,15 +453,15 @@ class PollLinkService
     /**
      * Assemble an unsaved PollLink entity from poll creation data.
      *
-     * @param string                 $objectUuid    Parent OR object uuid.
-     * @param int                    $registerId    OR register id.
-     * @param int                    $schemaId      OR schema id.
-     * @param int                    $pollId        Newly created Polls poll id.
-     * @param string                 $title         Poll title.
+     * @param string                 $objectUuid     Parent OR object uuid.
+     * @param int                    $registerId     OR register id.
+     * @param int                    $schemaId       OR schema id.
+     * @param int                    $pollId         Newly created Polls poll id.
+     * @param string                 $title          Poll title.
      * @param string                 $normalisedType Normalised poll type.
-     * @param array<int,string>      $options       Option labels.
-     * @param DateTimeInterface|null $deadline      Optional deadline.
-     * @param string                 $uid           Owner user id.
+     * @param array<int,string>      $options        Option labels.
+     * @param DateTimeInterface|null $deadline       Optional deadline.
+     * @param string                 $uid            Owner user id.
      *
      * @return PollLink The unsaved entity.
      *

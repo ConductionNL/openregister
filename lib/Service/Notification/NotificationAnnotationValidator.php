@@ -34,7 +34,10 @@ namespace OCA\OpenRegister\Service\Notification;
  * - `subject`: string template OR per-locale map
  *   ({nl: "...", en: "...", defaultLocale?: "nl"}; supports {{field}}
  *   interpolation; recipient locale via `core.lang` user preference)
- * - optional `message`: string
+ * - optional `message`: notification body — same shape as `subject`
+ *   (string template OR per-locale map, with {{field}} interpolation).
+ *   Title=`subject`, body=`message`. When absent, the body is auto-derived
+ *   ("Open in {AppName}.") if `actions` are declared, else left empty.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
@@ -45,7 +48,22 @@ final class NotificationAnnotationValidator
 
     private const VALID_RECIPIENT_KINDS = ['users', 'field', 'groups', 'relation', 'object-acl', 'expression'];
 
-    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk'];
+    private const VALID_CHANNELS = ['nc-notification', 'email', 'activity', 'webhook', 'talk', 'web-push'];
+
+    /**
+     * Valid action `target.kind` values (foundation contract / ADR-031 dialect).
+     *
+     * @var array<int, string>
+     */
+    private const VALID_ACTION_TARGET_KINDS = ['object-detail', 'route', 'url'];
+
+    /**
+     * Hard cap on declared action buttons — the Web Notification API renders
+     * at most two action buttons on the desktop OS popup.
+     *
+     * @var int
+     */
+    private const MAX_ACTIONS = 2;
 
     /**
      * Validate the `x-openregister-notifications` annotation.
@@ -59,6 +77,7 @@ final class NotificationAnnotationValidator
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
      */
     public function validate(array $schema): array
     {
@@ -132,7 +151,70 @@ final class NotificationAnnotationValidator
                         ),
                     ];
                 }
-            }
+
+                // Validate filter operator grammar (Phase 2 — save-time grammar validation).
+                // Scalar entries always pass; operator objects must declare a known operator,
+                // a present `value`, and an ISO-8601 DateInterval-parseable duration for
+                // withinNext / olderThan. See notification-engine-scheduled-conditions.
+                if (is_array($trigger) === true && isset($trigger['filter']) === true) {
+                    $filter = $trigger['filter'];
+                    if (is_array($filter) === false) {
+                        $errors[] = [
+                            'code'    => 'notification-scheduled-bad-filter',
+                            'ruleKey' => $name,
+                            'field'   => 'trigger.filter',
+                            'value'   => $filter,
+                            'message' => sprintf(
+                                'Notification "%s" trigger.filter must be an object/map.',
+                                $name
+                            ),
+                        ];
+                    } else {
+                        foreach ($filter as $fieldKey => $filterSpec) {
+                            $entryErrors = $this->validateScheduledFilterEntry(
+                                ruleKey: $name,
+                                field: (string) $fieldKey,
+                                spec: $filterSpec
+                            );
+                            foreach ($entryErrors as $entryError) {
+                                $errors[] = $entryError;
+                            }
+                        }//end foreach
+                    }//end if
+                }//end if
+
+                if (is_array($trigger) === true && isset($trigger['dedupeFields']) === true) {
+                    $dedupeFields = $trigger['dedupeFields'];
+                    if (is_array($dedupeFields) === false || $dedupeFields === []) {
+                        $errors[] = [
+                            'code'    => 'notification-scheduled-bad-dedupe-fields',
+                            'ruleKey' => $name,
+                            'field'   => 'trigger.dedupeFields',
+                            'value'   => $dedupeFields,
+                            'message' => sprintf(
+                                'Notification "%s" trigger.dedupeFields must be a non-empty array of strings.',
+                                $name
+                            ),
+                        ];
+                    } else {
+                        foreach ($dedupeFields as $idx => $field) {
+                            if (is_string($field) === false || $field === '') {
+                                $errors[] = [
+                                    'code'    => 'notification-scheduled-bad-dedupe-fields',
+                                    'ruleKey' => $name,
+                                    'field'   => sprintf('trigger.dedupeFields[%d]', (int) $idx),
+                                    'value'   => $field,
+                                    'message' => sprintf(
+                                        'Notification "%s" trigger.dedupeFields entries must be non-empty strings.',
+                                        $name
+                                    ),
+                                ];
+                                break;
+                            }
+                        }//end foreach
+                    }//end if
+                }//end if
+            }//end if
 
             if ($triggerType === 'threshold') {
                 $aggregation = '';
@@ -257,6 +339,35 @@ final class NotificationAnnotationValidator
                 }
             }
 
+            // Optional `originApp` (foundation contract / ADR-031): identifies
+            // the leaf app that owns the rule. Drives the notification
+            // icon/badge and the deeplink base. When present it MUST be a
+            // non-empty string; absence is valid (defaults to the
+            // register-owning app at dispatch).
+            if (array_key_exists('originApp', $spec) === true) {
+                $originApp = $spec['originApp'];
+                if (is_string($originApp) === false || $originApp === '') {
+                    $errors[] = [
+                        'code'    => 'notification-bad-origin-app',
+                        'message' => sprintf(
+                            'Notification "%s" originApp must be a non-empty string app id.',
+                            $name
+                        ),
+                    ];
+                }
+            }
+
+            // Optional `actions[]` (foundation contract / ADR-031): rich
+            // action buttons rendered in the OS notification. Hard cap of 2
+            // (Web Notification API desktop limit). Each action declares an
+            // i18n `label` map, an optional `primary` bool, and a `target`
+            // of kind object-detail | route | url.
+            if (array_key_exists('actions', $spec) === true) {
+                foreach ($this->validateActions(actions: $spec['actions'], name: $name) as $actionError) {
+                    $errors[] = $actionError;
+                }
+            }
+
             // `subject` accepts either a single template string OR a
             // per-locale map ({nl: "...", en: "..."} optionally prefixed
             // with `defaultLocale: <code>`). The dispatcher resolves
@@ -331,6 +442,19 @@ final class NotificationAnnotationValidator
                 }
             }//end if
 
+            // Optional `message` (foundation contract / ADR-031): the
+            // notification BODY, distinct from the title (`subject`). Same
+            // shape + locale-resolution + `{{prop}}` interpolation as
+            // `subject` — a single template string OR a per-locale map.
+            // Absence is valid (back-compat): rules with `actions` get an
+            // auto-derived "Open in {AppName}." body, rules without get an
+            // empty body. Malformed → notification-bad-message.
+            if (array_key_exists('message', $spec) === true) {
+                foreach ($this->validateMessage(message: $spec['message'], name: $name) as $messageError) {
+                    $errors[] = $messageError;
+                }
+            }
+
             // When the `webhook` channel is declared, the spec MUST include a `webhook.url` value.
             if (is_array($channels) === true && in_array('webhook', $channels, true) === true) {
                 $hook    = ($spec['webhook'] ?? null);
@@ -383,6 +507,13 @@ final class NotificationAnnotationValidator
                     $errors[] = $orgError;
                 }
             }
+
+            // Optional `critical` bypass flag and optional fixed-time
+            // `digest` schedule (notification-delivery-windows dialect
+            // additions). See "Users MUST be able to manage their
+            // notification preferences" / "Notifications MUST support
+            // batching and digest delivery" in the notificatie-engine spec.
+            $errors = array_merge($errors, $this->validateCriticalAndDigest(spec: $spec, name: $name));
 
             $recipients = ($spec['recipients'] ?? []);
             if (is_array($recipients) === false || count($recipients) === 0) {
@@ -474,6 +605,341 @@ final class NotificationAnnotationValidator
     }//end validate()
 
     /**
+     * Validate the optional `actions[]` array (foundation contract / ADR-031).
+     *
+     * Rules:
+     *  - `actions` MUST be an array; more than 2 entries → notification-too-many-actions.
+     *  - each action's `label` MUST be a per-locale map with at least one
+     *    non-empty locale value → otherwise notification-action-bad-label.
+     *  - each action's `target.kind` MUST be one of object-detail | route | url
+     *    → otherwise notification-action-bad-target.
+     *
+     * @param mixed  $actions Raw value of the `actions` key.
+     * @param string $name    Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/openregister-web-push-engine/specs/notificatie-engine/spec.md
+     */
+    private function validateActions(mixed $actions, string $name): array
+    {
+        $errors = [];
+
+        if (is_array($actions) === false) {
+            return [
+                [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf('Notification "%s" actions must be an array.', $name),
+                ],
+            ];
+        }
+
+        if (count($actions) > self::MAX_ACTIONS) {
+            $errors[] = [
+                'code'    => 'notification-too-many-actions',
+                'message' => sprintf(
+                    'Notification "%s" declares %d actions; the Web Notification API renders at most %d.',
+                    $name,
+                    count($actions),
+                    self::MAX_ACTIONS
+                ),
+            ];
+        }
+
+        foreach ($actions as $idx => $action) {
+            if (is_array($action) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf('Notification "%s" action[%s] must be an object.', $name, (string) $idx),
+                ];
+                continue;
+            }
+
+            // Label MUST be a per-locale map with at least one non-empty string value.
+            $label   = ($action['label'] ?? null);
+            $labelOk = false;
+            if (is_array($label) === true && count($label) > 0) {
+                foreach ($label as $localeValue) {
+                    if (is_string($localeValue) === true && $localeValue !== '') {
+                        $labelOk = true;
+                        break;
+                    }
+                }
+            }
+
+            if ($labelOk === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-label',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] label must be a per-locale map with at least one non-empty value.',
+                        $name,
+                        (string) $idx
+                    ),
+                ];
+            }
+
+            // `primary` (optional) MUST be a boolean when present.
+            if (array_key_exists('primary', $action) === true && is_bool($action['primary']) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] primary must be a boolean.',
+                        $name,
+                        (string) $idx
+                    ),
+                ];
+            }
+
+            // Target MUST be an object with a recognised kind.
+            $target     = ($action['target'] ?? null);
+            $targetKind = '';
+            if (is_array($target) === true) {
+                $targetKind = (string) ($target['kind'] ?? '');
+            }
+
+            if (in_array($targetKind, self::VALID_ACTION_TARGET_KINDS, true) === false) {
+                $errors[] = [
+                    'code'    => 'notification-action-bad-target',
+                    'message' => sprintf(
+                        'Notification "%s" action[%s] target.kind "%s" is not in [%s].',
+                        $name,
+                        (string) $idx,
+                        $targetKind,
+                        implode(', ', self::VALID_ACTION_TARGET_KINDS)
+                    ),
+                ];
+            }
+        }//end foreach
+
+        return $errors;
+    }//end validateActions()
+
+    /**
+     * Validate the optional `critical` bypass flag and the optional
+     * fixed-time `digest` schedule block.
+     *
+     * Rules:
+     *  - `critical`, when present, MUST be a boolean.
+     *  - `digest.schedule`, when the block is present, MUST be
+     *    `daily` | `weekly`.
+     *  - `digest.at` MUST be an `HH:MM` 24h time string.
+     *  - `digest.weekday` (0-6) is REQUIRED when `schedule: "weekly"` and
+     *    FORBIDDEN otherwise.
+     *  - `digest.timezone`, when present, MUST be a value `DateTimeZone`
+     *    accepts.
+     *  - A rule MUST NOT declare both a `digest` block and a rolling
+     *    `coalesce` window — the two "hold and batch" mechanisms are
+     *    mutually exclusive per rule (design.md "Digest scheduling is
+     *    additive to, not a replacement for, the rolling digest window").
+     *
+     * @param array<string, mixed> $spec The full notification spec block.
+     * @param string               $name Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
+     */
+    private function validateCriticalAndDigest(array $spec, string $name): array
+    {
+        $errors = [];
+
+        if (array_key_exists('critical', $spec) === true && is_bool($spec['critical']) === false) {
+            $errors[] = [
+                'code'    => 'notification-critical-not-boolean',
+                'message' => sprintf('Notification "%s" `critical` must be a boolean.', $name),
+            ];
+        }
+
+        if (array_key_exists('digest', $spec) === false) {
+            return $errors;
+        }
+
+        $digest = $spec['digest'];
+        if (is_array($digest) === false) {
+            $errors[] = [
+                'code'    => 'notification-digest-malformed',
+                'message' => sprintf('Notification "%s" `digest` must be an object.', $name),
+            ];
+            return $errors;
+        }
+
+        $schedule = ($digest['schedule'] ?? null);
+        if (in_array($schedule, ['daily', 'weekly'], true) === false) {
+            $errors[] = [
+                'code'    => 'notification-digest-bad-schedule',
+                'message' => sprintf(
+                    'Notification "%s" `digest.schedule` must be "daily" or "weekly".',
+                    $name
+                ),
+            ];
+        }
+
+        $at = ($digest['at'] ?? null);
+        if (is_string($at) === false || preg_match('/^([01]\d|2[0-3]):([0-5]\d)$/', $at) !== 1) {
+            $errors[] = [
+                'code'    => 'notification-digest-bad-time',
+                'message' => sprintf('Notification "%s" `digest.at` must be an "HH:MM" time string.', $name),
+            ];
+        }
+
+        $hasWeekday = array_key_exists('weekday', $digest);
+        if ($schedule === 'weekly') {
+            $weekday = ($digest['weekday'] ?? null);
+            if ($hasWeekday === false || is_int($weekday) === false || $weekday < 0 || $weekday > 6) {
+                $errors[] = [
+                    'code'    => 'notification-digest-weekly-missing-weekday',
+                    'message' => sprintf(
+                        'Notification "%s" `digest.weekday` (0-6) is required when `schedule` is "weekly".',
+                        $name
+                    ),
+                ];
+            }
+        } else if ($hasWeekday === true) {
+            $errors[] = [
+                'code'    => 'notification-digest-weekday-not-allowed',
+                'message' => sprintf(
+                    'Notification "%s" `digest.weekday` is only allowed when `schedule` is "weekly".',
+                    $name
+                ),
+            ];
+        }
+
+        $timezone = ($digest['timezone'] ?? null);
+        if ($timezone !== null) {
+            $timezoneValid = false;
+            if (is_string($timezone) === true && $timezone !== '') {
+                try {
+                    new \DateTimeZone($timezone);
+                    $timezoneValid = true;
+                } catch (\Throwable $e) {
+                    $timezoneValid = false;
+                }
+            }
+
+            if ($timezoneValid === false) {
+                $errors[] = [
+                    'code'    => 'notification-digest-bad-timezone',
+                    'message' => sprintf(
+                        'Notification "%s" `digest.timezone` must be a valid IANA timezone name.',
+                        $name
+                    ),
+                ];
+            }
+        }//end if
+
+        // Mutually exclusive with the rolling `coalesce` window — a rule
+        // picks one "hold and batch" mechanism, not both.
+        if (is_array($spec['coalesce'] ?? null) === true) {
+            $errors[] = [
+                'code'    => 'notification-digest-and-coalesce-mutually-exclusive',
+                'message' => sprintf(
+                    'Notification "%s" declares both a rolling `coalesce` window and a fixed-time '
+                    .'`digest` schedule; a rule may declare at most one batching mechanism.',
+                    $name
+                ),
+            ];
+        }
+
+        return $errors;
+
+    }//end validateCriticalAndDigest()
+
+    /**
+     * Validate the optional `message` field (notification body).
+     *
+     * Mirrors the `subject` shape contract exactly: either a single
+     * non-empty template string OR a per-locale map ({nl: "...", en: "..."}
+     * optionally prefixed with `defaultLocale: <code>`). Every malformed
+     * shape returns a single `notification-bad-message` error so leaf
+     * authors get one canonical error code for a broken body template.
+     *
+     * @param mixed  $message Raw value of the `message` key.
+     * @param string $name    Notification name (for diagnostics).
+     *
+     * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/changes/openregister-notification-body/specs/notificatie-engine/spec.md
+     */
+    private function validateMessage(mixed $message, string $name): array
+    {
+        $code = 'notification-bad-message';
+
+        if (is_string($message) === true) {
+            if ($message === '') {
+                return [
+                    [
+                        'code'    => $code,
+                        'message' => sprintf(
+                            'Notification "%s" message must be a non-empty string when present.',
+                            $name
+                        ),
+                    ],
+                ];
+            }
+
+            return [];
+        }
+
+        if (is_array($message) === false) {
+            return [
+                [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message must be a string or a per-locale map.',
+                        $name
+                    ),
+                ],
+            ];
+        }
+
+        $errors     = [];
+        $localeKeys = array_filter(
+            array_keys($message),
+            static fn ($key): bool => $key !== 'defaultLocale' && is_string($key) === true
+        );
+        if (count($localeKeys) === 0) {
+            $errors[] = [
+                'code'    => $code,
+                'message' => sprintf(
+                    'Notification "%s" message map must declare at least one locale (e.g. nl, en).',
+                    $name
+                ),
+            ];
+        }
+
+        foreach ($localeKeys as $localeKey) {
+            if (is_string($message[$localeKey]) === false || $message[$localeKey] === '') {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message for locale "%s" must be a non-empty string.',
+                        $name,
+                        $localeKey
+                    ),
+                ];
+            }
+        }
+
+        if (isset($message['defaultLocale']) === true) {
+            $defaultLocale     = $message['defaultLocale'];
+            $defaultLocaleBad  = is_string($defaultLocale) === false;
+            $defaultLocaleBad |= isset($message[$defaultLocale]) === false;
+            if ((bool) $defaultLocaleBad === true) {
+                $errors[] = [
+                    'code'    => $code,
+                    'message' => sprintf(
+                        'Notification "%s" message defaultLocale "%s" is not declared in the message map.',
+                        $name,
+                        (string) $defaultLocale
+                    ),
+                ];
+            }
+        }
+
+        return $errors;
+    }//end validateMessage()
+
+    /**
      * Validate the optional `organisation` rule-level gate.
      *
      * Accepts either a single non-empty string (one tenant) or an
@@ -536,6 +1002,107 @@ final class NotificationAnnotationValidator
                 $name
             ),
         ];
-
     }//end validateOrganisationGate()
+
+    /**
+     * Validate a single scheduled-trigger filter entry.
+     *
+     * Scalar entries always pass (legacy v1 byte-for-byte equality).
+     * Operator-object entries must declare:
+     *   - a recognised operator (equals | notEquals | withinNext | olderThan);
+     *   - a `value` key (even if null) — for equals/notEquals;
+     *   - an ISO-8601 DateInterval-parseable string `value` for withinNext / olderThan.
+     *
+     * @param string $ruleKey The notification rule key for diagnostics.
+     * @param string $field   The filter field name being inspected.
+     * @param mixed  $spec    The raw filter entry value (scalar or operator object).
+     *
+     * @return array<int, array{code: string, ruleKey: string, field: string, value: mixed, message: string}>
+     */
+    private function validateScheduledFilterEntry(string $ruleKey, string $field, $spec): array
+    {
+        // Scalar shortcut: always accepted (legacy v1 strict equality).
+        if (is_array($spec) === false || array_key_exists('operator', $spec) === false) {
+            return [];
+        }
+
+        $validOperators = ['equals', 'notEquals', 'withinNext', 'olderThan'];
+        $operator       = (string) ($spec['operator'] ?? '');
+
+        if (in_array($operator, $validOperators, true) === false) {
+            return [
+                [
+                    'code'    => 'notification-scheduled-bad-filter-operator',
+                    'ruleKey' => $ruleKey,
+                    'field'   => sprintf('trigger.filter.%s.operator', $field),
+                    'value'   => $operator,
+                    'message' => sprintf(
+                        'Notification "%s" trigger.filter.%s.operator must be one of [%s]; got "%s".',
+                        $ruleKey,
+                        $field,
+                        implode(', ', $validOperators),
+                        $operator
+                    ),
+                ],
+            ];
+        }
+
+        if (array_key_exists('value', $spec) === false) {
+            return [
+                [
+                    'code'    => 'notification-scheduled-bad-filter-missing-value',
+                    'ruleKey' => $ruleKey,
+                    'field'   => sprintf('trigger.filter.%s.value', $field),
+                    'value'   => null,
+                    'message' => sprintf(
+                        'Notification "%s" trigger.filter.%s requires a "value" key.',
+                        $ruleKey,
+                        $field
+                    ),
+                ],
+            ];
+        }
+
+        if ($operator === 'withinNext' || $operator === 'olderThan') {
+            $duration = $spec['value'];
+            if (is_string($duration) === false || $duration === '') {
+                return [
+                    [
+                        'code'    => 'notification-scheduled-bad-filter-duration',
+                        'ruleKey' => $ruleKey,
+                        'field'   => sprintf('trigger.filter.%s.value', $field),
+                        'value'   => $duration,
+                        'message' => sprintf(
+                            'Notification "%s" trigger.filter.%s.value must be an ISO-8601 DateInterval string for "%s".',
+                            $ruleKey,
+                            $field,
+                            $operator
+                        ),
+                    ],
+                ];
+            }
+
+            try {
+                new \DateInterval($duration);
+            } catch (\Exception $e) {
+                return [
+                    [
+                        'code'    => 'notification-scheduled-bad-filter-duration',
+                        'ruleKey' => $ruleKey,
+                        'field'   => sprintf('trigger.filter.%s.value', $field),
+                        'value'   => $duration,
+                        'message' => sprintf(
+                            'Notification "%s" trigger.filter.%s.value "%s" is not a valid ISO-8601 DateInterval for "%s".',
+                            $ruleKey,
+                            $field,
+                            $duration,
+                            $operator
+                        ),
+                    ],
+                ];
+            }//end try
+        }//end if
+
+        return [];
+    }//end validateScheduledFilterEntry()
 }//end class

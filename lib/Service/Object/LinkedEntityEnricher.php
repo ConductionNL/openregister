@@ -6,12 +6,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -67,7 +67,7 @@ class LinkedEntityEnricher
      * @param IUserManager     $userManager     User manager for resolving display names
      * @param LoggerInterface  $logger          Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -85,7 +85,7 @@ class LinkedEntityEnricher
      *
      * @return array The object data with enriched linked entities
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function enrich(array $objectData, array $extend): array
     {
@@ -114,7 +114,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched mail objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichMail(array $ids): array
     {
@@ -163,7 +163,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched contact objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichContacts(array $ids): array
     {
@@ -208,7 +208,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched note objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichNotes(array $ids): array
     {
@@ -246,7 +246,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched todo objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichTodos(array $ids): array
     {
@@ -301,7 +301,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched event objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichCalendar(array $ids): array
     {
@@ -356,7 +356,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Talk objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichTalk(array $ids): array
     {
@@ -397,7 +397,7 @@ class LinkedEntityEnricher
      *
      * @return array Array of enriched Deck objects
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function enrichDeck(array $ids): array
     {
@@ -450,7 +450,7 @@ class LinkedEntityEnricher
      *
      * @return array The fallback result
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function notFoundResult(string $id): array
     {
@@ -468,7 +468,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractVcardField(string $carddata, string $field): ?string
     {
@@ -487,7 +487,7 @@ class LinkedEntityEnricher
      *
      * @return string|null The field value or null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractIcalField(string $caldata, string $field): ?string
     {

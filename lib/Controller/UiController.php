@@ -43,7 +43,7 @@ use OCP\IRequest;
  * @psalm-type     TemplateName = 'index'
  * @psalm-suppress UnusedClass
  *
- * @SuppressWarnings(PHPMD.TooManyMethods) Every public method is a one-liner
+ * @SuppressWarnings(PHPMD.TooManyMethods)       Every public method is a one-liner
  *     SPA-mount route stub required by the NC AppFramework router: each history-
  *     mode deep-link path needs its own named action so OC\Route\Router does not
  *     drop duplicate route names. Splitting into multiple controllers would not
@@ -323,26 +323,6 @@ class UiController extends Controller
         return $this->makeSpaResponse();
     }//end tables()
 
-    /**
-     * Returns the chat page template.
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @phpstan-return TemplateResponse
-     *
-     * @psalm-return TemplateResponse<200|500, array<string, mixed>>
-     *
-     * @return TemplateResponse The SPA template response
-     *
-     * @spec exclude Trivial SPA-mount route stub: delegates to makeSpaResponse() for client-side routing.
-     *   SPA-mount contract owned by no-code-app-builder via retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-1.
-     */
-    public function chat(): TemplateResponse
-    {
-        return $this->makeSpaResponse();
-    }//end chat()
 
     /**
      * Returns the configurations page template.

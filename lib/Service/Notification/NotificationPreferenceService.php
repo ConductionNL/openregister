@@ -56,6 +56,11 @@ class NotificationPreferenceService
     private const KEY_PREFIX = 'notification_pref/';
 
     /**
+     * Maximum length of a Nextcloud `oc_preferences.configkey` value.
+     */
+    private const MAX_KEY_LENGTH = 64;
+
+    /**
      * Constructor.
      *
      * @param IConfig         $config       Nextcloud config for per-user values.
@@ -72,14 +77,33 @@ class NotificationPreferenceService
     /**
      * Build the user-config key for a `(schemaSlug, notificationKey)` pair.
      *
+     * Nextcloud's `oc_preferences.configkey` column is 64 chars. Most
+     * `(slug, key)` pairs fit comfortably, but long system-schema slugs
+     * (e.g. `openregister_configuration` + `configuration-changed` = 66 chars)
+     * overflow and make the underlying `getUserValue()` / `setUserValue()`
+     * throw "for key is too long (64)". When the natural key fits, it is
+     * returned unchanged (full backward compatibility for every stored
+     * preference); when it would overflow, it is deterministically compressed
+     * to a stable 64-char key so the same pair always maps to the same key.
+     *
      * @param string $schemaSlug      The owning schema's slug.
      * @param string $notificationKey The notification annotation key.
      *
-     * @return string The namespaced config key.
+     * @return string The namespaced config key (<= 64 chars).
      */
     public function configKey(string $schemaSlug, string $notificationKey): string
     {
-        return self::KEY_PREFIX.$schemaSlug.'/'.$notificationKey;
+        $key = self::KEY_PREFIX.$schemaSlug.'/'.$notificationKey;
+        if (strlen($key) <= self::MAX_KEY_LENGTH) {
+            return $key;
+        }
+
+        // Deterministic 64-char fallback: keep the readable prefix and append a
+        // stable hash of the full pair so distinct pairs never collide.
+        $hash     = substr(hash('sha256', $schemaSlug.'/'.$notificationKey), 0, 16);
+        $budget   = (self::MAX_KEY_LENGTH - strlen(self::KEY_PREFIX) - 1 - strlen($hash));
+        $readable = substr($schemaSlug.'/'.$notificationKey, 0, max($budget, 0));
+        return self::KEY_PREFIX.$readable.'~'.$hash;
     }//end configKey()
 
     /**
@@ -229,6 +253,13 @@ class NotificationPreferenceService
 
             $schemaSlug  = (string) ($schema->getSlug() ?? $schema->getId());
             $schemaTitle = (string) ($schema->getTitle() ?? $schemaSlug);
+            // Owning app id (e.g. "pipelinq"), set by the register/schema
+            // import (ImportHandler::setApplication()) when the schema was
+            // seeded from an app's configuration. Null for schemas with no
+            // known owning app (e.g. hand-authored/system schemas); the
+            // consuming settings UI groups those under an "other" bucket
+            // rather than dropping them.
+            $application = $schema->getApplication();
 
             foreach ($notifications as $key => $spec) {
                 if (is_array($spec) === false) {
@@ -245,6 +276,7 @@ class NotificationPreferenceService
                 $entries[] = [
                     'schema'       => $schemaSlug,
                     'schemaTitle'  => $schemaTitle,
+                    'application'  => $application,
                     'notification' => (string) $key,
                     'enabled'      => $effective['enabled'],
                     'channels'     => $effective['channels'],

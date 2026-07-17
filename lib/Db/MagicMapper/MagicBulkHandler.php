@@ -49,6 +49,7 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -89,16 +90,33 @@ class MagicBulkHandler
      * @param LoggerInterface    $logger             Logger for debugging and error reporting
      * @param IEventDispatcher   $eventDispatcher    Event dispatcher for business logic hooks
      * @param DateTimeNormalizer $dateTimeNormalizer Normaliser for user-supplied datetime input
+     * @param IConfig            $config             Nextcloud config for reading the table prefix
      */
     public function __construct(
         private readonly IDBConnection $db,
         private readonly LoggerInterface $logger,
         private readonly IEventDispatcher $eventDispatcher,
-        private readonly DateTimeNormalizer $dateTimeNormalizer
+        private readonly DateTimeNormalizer $dateTimeNormalizer,
+        private readonly IConfig $config
     ) {
         // Try to get max_allowed_packet from database configuration.
         $this->initializeMaxPacketSize();
     }//end __construct()
+
+    /**
+     * Build the full, prefixed table name for a bare magic table name.
+     *
+     * Uses the configured `dbtableprefix` rather than a hardcoded `oc_` so
+     * raw-SQL paths work on installs with a custom prefix (BUG-DB-3).
+     *
+     * @param string $tableName The bare table name (without prefix).
+     *
+     * @return string The full table name including the configured prefix.
+     */
+    private function getFullTableName(string $tableName): string
+    {
+        return ((string) $this->config->getSystemValue('dbtableprefix', 'oc_')).$tableName;
+    }//end getFullTableName()
 
     /**
      * Prepare objects for dynamic table structure
@@ -133,11 +151,21 @@ class MagicBulkHandler
 
             // Map metadata to prefixed columns with proper fallbacks.
             $uuid = $selfData['uuid'] ?? $selfData['id'] ?? $object['id'] ?? Uuid::v4()->toRfc4122();
-            $preparedObject['_uuid']         = $uuid;
-            $preparedObject['_register']     = $register->getId();
-            $preparedObject['_schema']       = $schema->getId();
-            $preparedObject['_owner']        = $selfData['owner'] ?? $object['owner'] ?? null;
-            $preparedObject['_organisation'] = $selfData['organisation'] ?? $object['organisation'] ?? null;
+            $preparedObject['_uuid']     = $uuid;
+            $preparedObject['_register'] = $register->getId();
+            $preparedObject['_schema']   = $schema->getId();
+
+            // SECURITY (wave-11 SB2 — defense-in-depth layer 2): _owner and _organisation
+            // MUST already have been stamped with authoritative values by SaveObjects::
+            // prepareSingleSchemaObject() (the first strip layer).  This second strip
+            // ensures that any future code path that calls prepareObjectsForDynamicTable()
+            // directly (e.g. ImportService) cannot slip client-supplied values through.
+            // $selfData['owner'] and $selfData['organisation'] were already overwritten with
+            // the session-user and active-organisation values before this point.
+            // We do NOT fall back to $object['owner'] / $object['organisation'] here because
+            // those keys come from raw client JSON and must not be trusted.
+            $preparedObject['_owner']        = $selfData['owner'] ?? null;
+            $preparedObject['_organisation'] = $selfData['organisation'] ?? null;
 
             // Format datetime fields to MySQL-compatible format (Y-m-d H:i:s).
             $createdValue = $selfData['created'] ?? $object['created'] ?? $now->format('Y-m-d H:i:s');
@@ -243,6 +271,17 @@ class MagicBulkHandler
      */
     private function getMaxAllowedPacketSize(): int
     {
+        // `SHOW VARIABLES` is a MySQL-ism. On PostgreSQL the statement is a
+        // syntax error — and although the exception is swallowed here, a
+        // failed statement inside an OPEN TRANSACTION aborts the whole
+        // transaction on postgres (SQLSTATE 25P02). This runs from the
+        // handler CONSTRUCTOR (lazily instantiated mid-save), so it would
+        // abort any caller-managed transaction wrapping a save (e.g. the
+        // ADR-051 handoff engine). Only probe on MySQL/MariaDB.
+        if ($this->db->getDatabaseProvider() !== \OCP\IDBConnection::PLATFORM_MYSQL) {
+            return 16777216;
+        }
+
         try {
             $stmt   = $this->db->executeQuery('SHOW VARIABLES LIKE \'max_allowed_packet\'');
             $result = $stmt->fetch();
@@ -362,15 +401,36 @@ class MagicBulkHandler
         $allResults = [];
 
         // Process each chunk.
+        // BUG-DB-5: wrap each chunk in a transaction so a mid-chunk failure
+        // (e.g. a constraint violation on one row) rolls back the whole chunk
+        // instead of leaving a partial, inconsistent set of rows persisted.
         foreach ($chunks as $chunkIndex => $chunk) {
-            $chunkResults = $this->executeUpsertChunk(
-                chunk: $chunk,
-                tableName: $tableName,
-                chunkNumber: ($chunkIndex + 1)
-            );
+            $this->db->beginTransaction();
+            try {
+                $chunkResults = $this->executeUpsertChunk(
+                    chunk: $chunk,
+                    tableName: $tableName,
+                    chunkNumber: ($chunkIndex + 1)
+                );
+
+                $this->db->commit();
+            } catch (\Throwable $e) {
+                $this->db->rollBack();
+                $this->logger->error(
+                    message: '[MagicBulkHandler] Rolled back bulk upsert chunk after failure',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'chunk' => ($chunkIndex + 1),
+                        'table' => $tableName,
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                throw $e;
+            }//end try
 
             $allResults = array_merge($allResults, $chunkResults);
-        }
+        }//end foreach
 
         // PERFORMANCE: Event dispatching disabled by default.
         // Dispatching events for 20k+ objects causes 10x slowdown (5000 obj/s -> 500 obj/s).
@@ -440,20 +500,30 @@ class MagicBulkHandler
         $seenUuids         = [];
         foreach ($filteredChunk as $objectData) {
             $uuid = $objectData['_uuid'] ?? null;
-            if ($uuid !== null) {
-                // Keep track of the position to allow overwriting.
-                if (isset($seenUuids[$uuid]) === true) {
-                    // Replace previous occurrence with this one (keep last).
-                    $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
-                    continue;
-                }
-
-                // Add new object.
-                $index = count($deduplicatedChunk);
-                $deduplicatedChunk[$index] = $objectData;
-                $seenUuids[$uuid]          = $index;
+            if ($uuid === null || $uuid === '') {
+                // BUG-DB-6: previously objects without a _uuid were silently
+                // dropped. Generate a UUID so the row is persisted instead of
+                // disappearing without trace.
+                $uuid = Uuid::v4()->toRfc4122();
+                $objectData['_uuid'] = $uuid;
+                $this->logger->debug(
+                    message: '[MagicBulkHandler] Generated missing _uuid for bulk object',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+                );
             }
-        }
+
+            // Keep track of the position to allow overwriting.
+            if (isset($seenUuids[$uuid]) === true) {
+                // Replace previous occurrence with this one (keep last).
+                $deduplicatedChunk[$seenUuids[$uuid]] = $objectData;
+                continue;
+            }
+
+            // Add new object.
+            $index = count($deduplicatedChunk);
+            $deduplicatedChunk[$index] = $objectData;
+            $seenUuids[$uuid]          = $index;
+        }//end foreach
 
         // Re-index array after deduplication.
         $filteredChunk = array_values($deduplicatedChunk);
@@ -477,18 +547,21 @@ class MagicBulkHandler
         $platform   = $this->db->getDatabasePlatform();
         $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
-        // Get full table name with hardcoded prefix.
-        $fullTableName = 'oc_'.$tableName;
+        // Get full table name with the configured database prefix.
+        $fullTableName = $this->getFullTableName(tableName: $tableName);
 
         // ACCURATE CLASSIFICATION: Query which UUIDs already exist BEFORE the upsert.
         // This allows us to correctly classify created vs updated regardless of timestamp values.
         // Important for CSV imports that preserve historical _created dates.
+        // The FULL pre-update rows are fetched (not just `_uuid`) so callers can
+        // record a real old-vs-new changeset in the audit trail for updates.
         $existingUuids = [];
+        $preUpdateRows = [];
         if (empty($uuids) === false) {
             $placeholders = implode(',', array_fill(0, count($uuids), '?'));
-            $existsSql    = "SELECT `_uuid` FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
+            $existsSql    = "SELECT * FROM `{$fullTableName}` WHERE `_uuid` IN ({$placeholders})";
             if ($isPostgres === true) {
-                $existsSql = "SELECT \"_uuid\" FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
+                $existsSql = "SELECT * FROM \"{$fullTableName}\" WHERE \"_uuid\" IN ({$placeholders})";
             }
 
             try {
@@ -497,6 +570,7 @@ class MagicBulkHandler
                 $existingRows = $existsStmt->fetchAll();
                 foreach ($existingRows as $row) {
                     $existingUuids[$row['_uuid']] = true;
+                    $preUpdateRows[$row['_uuid']] = $row;
                 }
 
                 $this->logger->debug(
@@ -534,12 +608,27 @@ class MagicBulkHandler
             foreach ($columns as $column) {
                 $paramName   = 'p'.$paramIndex;
                 $rowValues[] = ':'.$paramName;
-                $parameters[$paramName] = $objectData[$column] ?? null;
+
+                $value = $objectData[$column] ?? null;
+                // The execute() call binds every parameter as PARAM_STR, which
+                // turns PHP `false` into '' — PostgreSQL then rejects '' for
+                // boolean columns (e.g. a dedicated per-schema table's
+                // `pass_through`), 500ing the whole bulk save. Normalise
+                // booleans to 0/1, which both PostgreSQL and MySQL accept for
+                // boolean columns.
+                if (is_bool($value) === true) {
+                    $value = 0;
+                    if ($objectData[$column] === true) {
+                        $value = 1;
+                    }
+                }
+
+                $parameters[$paramName] = $value;
                 $paramIndex++;
-            }
+            }//end foreach
 
             $valuesClause[] = '('.implode(',', $rowValues).')';
-        }
+        }//end foreach
 
         // Build UPSERT SQL ($fullTableName already defined above for pre-upsert UUID check).
         // MySQL/MariaDB: INSERT...ON DUPLICATE KEY UPDATE.
@@ -653,6 +742,11 @@ class MagicBulkHandler
                         $obj['object_status'] = 'updated';
                         $unchangedCount--;
                         $updatedCount++;
+                        // Retain the pre-update row so the caller can write a
+                        // real old-vs-new changeset into the audit trail.
+                        if (isset($preUpdateRows[$objUuid]) === true) {
+                            $obj['_pre_update_row'] = $preUpdateRows[$objUuid];
+                        }
                     }
                 }
 
@@ -693,8 +787,8 @@ class MagicBulkHandler
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = $platform instanceof \Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 
-            // Get full table name with hardcoded prefix.
-            $fullTableName = 'oc_'.$tableName;
+            // Get full table name with the configured database prefix.
+            $fullTableName = $this->getFullTableName(tableName: $tableName);
 
             // MySQL/MariaDB: use SHOW COLUMNS.
             $sql = "SHOW COLUMNS FROM `$fullTableName`";

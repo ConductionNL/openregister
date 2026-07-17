@@ -51,7 +51,6 @@ use Symfony\Component\Uid\Uuid;
  * @method Source delete(Entity $entity)
  * @method Source find(int|string $id)
  * @method Source findEntity(IQueryBuilder $query)
- * @method Source[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
@@ -71,18 +70,18 @@ class SourceMapper extends QBMapper
     // Private OrganisationService $organisationService.
 
     /**
-     * User session for current user
+     * User session for current user (read by MultiTenancyTrait via isset guards)
      *
      * @var IUserSession
      */
-    private IUserSession $userSession;
+    protected IUserSession $userSession;
 
     /**
-     * Group manager for RBAC
+     * Group manager for RBAC (read by MultiTenancyTrait via isset guards)
      *
      * @var IGroupManager
      */
-    private IGroupManager $groupManager;
+    protected IGroupManager $groupManager;
 
     /**
      * Event dispatcher for dispatching source events
@@ -171,7 +170,7 @@ class SourceMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Source>
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,
@@ -216,6 +215,34 @@ class SourceMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findAll()
+
+    /**
+     * Find all sources that have scheduled sync enabled.
+     *
+     * Intended for the SyncDataJob background context which runs as the
+     * system actor across all organisations; therefore RBAC and the
+     * organisation filter are intentionally NOT applied here. Each
+     * returned source still carries its `organisation` field so the
+     * harvest pipeline can scope the objects it creates.
+     *
+     * @return Source[] Sources with sync_enabled = true
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
+     *
+     * @spec openspec/specs/data-sync-harvesting/spec.md
+     */
+    public function findBySyncEnabled(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_sources')
+            ->where(
+                $qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+            );
+
+        return $this->findEntities(query: $qb);
+    }//end findBySyncEnabled()
 
     /**
      * Insert a new source

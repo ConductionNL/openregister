@@ -47,8 +47,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<div class="groups-select-container">
 								<label class="groups-label">{{ t('openregister', 'Nextcloud Groups') }}</label>
 								<NcSelect
-						input-label="Selected Groups"
 									v-model="selectedGroups"
+									input-label="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
@@ -300,8 +300,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
-						input-label="Selected Special Rights Object Publish"
 																v-model="selectedSpecialRights.object_publish"
+																input-label="Selected Special Rights Object Publish"
 																:options="filteredAvailableGroups"
 																label="name"
 																track-by="id"
@@ -319,8 +319,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
-						input-label="Selected Special Rights Agent Use"
 																v-model="selectedSpecialRights.agent_use"
+																input-label="Selected Special Rights Agent Use"
 																:options="filteredAvailableGroups"
 																label="name"
 																track-by="id"
@@ -338,8 +338,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
-						input-label="Selected Special Rights Dashboard View"
 																v-model="selectedSpecialRights.dashboard_view"
+																input-label="Selected Special Rights Dashboard View"
 																:options="filteredAvailableGroups"
 																label="name"
 																track-by="id"
@@ -357,8 +357,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 														</td>
 														<td class="right-groups">
 															<NcSelect
-						input-label="Selected Special Rights Llm Use"
 																v-model="selectedSpecialRights.llm_use"
+																input-label="Selected Special Rights Llm Use"
 																:options="filteredAvailableGroups"
 																label="name"
 																track-by="id"
@@ -546,6 +546,8 @@ export default {
 		// Watch for changes in the store's organisationItem (e.g., when clicking edit on different organisations)
 		'organisationStore.organisationItem': {
 			/**
+			 * @param newVal
+			 * @param oldVal
 			 * @spec exclude Watcher re-initializing the form when the edited organisation changes; UI reactivity plumbing.
 			 */
 			handler(newVal, oldVal) {
@@ -576,17 +578,15 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
 			if (organisationStore.nextcloudGroups && organisationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = organisationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.info('Using cached Nextcloud groups from store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.info('Groups not cached, loading from API...')
 				this.loadingGroups = true
 				organisationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = organisationStore.nextcloudGroups
@@ -650,8 +650,6 @@ export default {
 
 							this.availableGroups = mergedGroups
 						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
 					}
 				} catch (error) {
 					console.error('Error searching Nextcloud groups:', error)

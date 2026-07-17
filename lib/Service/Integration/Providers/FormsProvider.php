@@ -142,7 +142,7 @@ class FormsProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-forms/tasks.md
+     * @spec openspec/specs/integration-forms/spec.md
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
      *   IntegrationProvider interface signature (IntegrationProvider::list) — this provider only

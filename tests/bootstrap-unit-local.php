@@ -40,6 +40,22 @@ if (is_dir($ocpStubBase . '/OCP') === true) {
     $loader->register(true);
 }
 
+// Internal (non-OCP) Nextcloud symbols referenced by OCP stub files at parse
+// time (e.g. OCP\Files\IRootFolder extends OC\Hooks\Emitter). The stub file
+// guards every definition with interface_exists/class_exists, so loading it
+// here is idempotent and order-independent — without it, any test that mocks
+// IRootFolder fails unless another suite happened to load the stub first.
+require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
+// Doriath custody-leaf contract stubs + test fixtures (credential-doriath-leaf).
+// PART 1 is class_exists-guarded (the real OCA\Doriath\* classes win whenever the
+// Doriath app is autoloadable), PART 2 declares the always-present
+// OCA\OpenRegister\Tests\Fixtures\Doriath\* recording fakes that the credential
+// Doriath-store unit tests inject through the production classes' protected seams.
+// Loading it here (never via composer autoload — see the file header) is what makes
+// DoriathCredentialStoreTest / CredentialStoreResolverTest resolve their fixtures.
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 // Minimal in-process Doctrine\DBAL\* stubs.
 // OCP\DB\QueryBuilder\IQueryBuilder references ParameterType::*, Types::*,
 // ArrayParameterType::*, and Connection::* class constants at parse time
@@ -77,6 +93,8 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
     eval(
         'namespace Doctrine\\DBAL\\Types {
             class Types {
+                const ARRAY = "array";
+                const ASCII_STRING = "ascii_string";
                 const BIGINT = "bigint";
                 const BINARY = "binary";
                 const BLOB = "blob";
@@ -93,12 +111,30 @@ if (class_exists('Doctrine\\DBAL\\Types\\Types', false) === false) {
                 const GUID = "guid";
                 const INTEGER = "integer";
                 const JSON = "json";
+                const OBJECT = "object";
                 const SIMPLE_ARRAY = "simple_array";
                 const SMALLINT = "smallint";
                 const STRING = "string";
                 const TEXT = "text";
                 const TIME_MUTABLE = "time";
                 const TIME_IMMUTABLE = "time_immutable";
+            }
+        }'
+    );
+}
+
+// OCP\DB\QueryBuilder\IExpressionBuilder uses constant references from Doctrine's ExpressionBuilder.
+// Without this stub, PHPUnit cannot create mocks of IExpressionBuilder in local tests.
+if (class_exists('Doctrine\\DBAL\\Query\\Expression\\ExpressionBuilder', false) === false) {
+    eval(
+        'namespace Doctrine\\DBAL\\Query\\Expression {
+            class ExpressionBuilder {
+                const EQ  = "=";
+                const NEQ = "<>";
+                const LT  = "<";
+                const LTE = "<=";
+                const GT  = ">";
+                const GTE = ">=";
             }
         }'
     );

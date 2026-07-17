@@ -248,7 +248,7 @@
 						<div class="warmup-select">
 							<label for="warmup-interval">Warmup Interval:</label>
 							<NcSelect
-						input-label="Warmup Interval"
+								input-label="Warmup Interval"
 								input-id="warmup-interval"
 								:value="selectedWarmupOption"
 								:options="warmupIntervalOptions"

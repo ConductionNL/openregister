@@ -99,6 +99,13 @@ class MagicOrganizationHandler
     ): void {
         $user = $this->userSession->getUser();
 
+        // CLI / no-session system context (occ commands, repair steps, cron
+        // jobs, background calculations, system listeners) is a trusted system
+        // operation and must see all org-owned rows. See isSystemContext().
+        if ($this->isSystemContext(user: $user) === true) {
+            return;
+        }
+
         // Check if user is admin - admins can see all objects including those with null organization.
         $isAdmin = false;
         if ($user !== null) {
@@ -180,6 +187,34 @@ class MagicOrganizationHandler
             ]
                 );
     }//end applyOrganizationFilter()
+
+    /**
+     * Determine whether the current call is a trusted system (CLI/no-session)
+     * context that must bypass org filtering.
+     *
+     * OCC commands, repair steps, cron jobs, background calculations and system
+     * listeners have no user session. Clamping them to `1 = 0` silently empties
+     * app list views and background calcs (e.g. larpingapp). This mirrors the
+     * established CLI bypass in MultiTenancyTrait::hasRbacPermission(). SaaS mode
+     * still enforces the org boundary for genuine multi-tenant deployments.
+     *
+     * @param \OCP\IUser|null $user The resolved session user (null in CLI).
+     *
+     * @return bool True when the org filter should be bypassed.
+     */
+    private function isSystemContext(?\OCP\IUser $user): bool
+    {
+        if ($user !== null || PHP_SAPI !== 'cli' || $this->isSaasModeEnabled() === true) {
+            return false;
+        }
+
+        $this->logger->debug(
+            message: '[MagicOrganizationHandler] CLI/system context — skipping org filter',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+        return true;
+    }//end isSystemContext()
 
     /**
      * Get the active organization UUID(s) for the current user

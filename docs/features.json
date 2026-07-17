@@ -1,272 +1,36 @@
-[
-  {
-    "slug": "activity-provider",
-    "title": "Activity Provider",
-    "summary": "Integrate OpenRegister with Nextcloud's Activity app so that all CRUD operations on Objects, Registers, and Schemas are visible in the standard Nextcloud activity stream, dashboard activity widget, and (optionally) email notifications. This gives users and administrators a clear, auditable timeline of who changed what and when, using the standard `OCP\\Activity` API (IManager, IProvider, IFilter, ActivitySettings).",
-    "docsUrl": "openspec/specs/activity-provider/spec.md"
-  },
-  {
-    "slug": "ai-mcp",
-    "title": "AI MCP — LLPhant Tool Bridge",
-    "summary": "OpenRegister exposes Model Context Protocol (MCP) tools to LLPhant-driven chat agents through two cooperating mechanisms: (1) an event-driven `ToolRegistry` that lets every installed Nextcloud app contribute LLPhant `ToolInterface` instances to the chat agent's tool-loop, and (2) an `McpProviderBridge` adapter that lifts `IMcpToolProvider` implementations (the per-app MCP plugin contract) into LLPhant function descriptors. The bridge handles the impedance mismatch between MCP's dot-namespaced tool ids and LLPhant/OpenAI/Ollama function-name constraints (no dots), and collapses JSON-Schema nullable types into the scalar strings LLPhant's `Parameter` accepts.",
-    "docsUrl": "openspec/specs/ai-mcp/spec.md"
-  },
-  {
-    "slug": "approval-workflow",
-    "title": "Approval Workflow",
-    "summary": "Approval Workflow provides multi-step, role-gated approval chains for OpenRegister objects. Administrators configure named chains with ordered steps, each bound to a Nextcloud group (the \"role\"). When an object enters a chain, one `ApprovalStep` record per chain step is created — step 1 starts as `pending`, all others as `waiting`. Authorised users approve or reject the pending step; on approval the next waiting step is automatically advanced to `pending`. Each decision is persisted to the workflow execution history.",
-    "docsUrl": "openspec/specs/approval-workflow/spec.md"
-  },
-  {
-    "slug": "archival-destruction-workflow",
-    "title": "Archival Destruction Workflow",
-    "summary": "Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.",
-    "docsUrl": "openspec/specs/archival-destruction-workflow/spec.md"
-  },
-  {
-    "slug": "auth-system",
-    "title": "Authentication and Authorization System",
-    "summary": "Define the authentication and authorization system for OpenRegister, supporting Nextcloud session auth, Basic Auth for API consumers, JWT bearer tokens for external systems, API key auth for MCP and service-to-service integration, and SSO integration via SAML/OIDC. The auth system MUST map all external identities to Nextcloud users via the Consumer entity and enforce consistent RBAC across every access method (REST, GraphQL, MCP, public endpoints), ensuring that a single identity model drives schema-level, property-level, and row-level security decisions.",
-    "docsUrl": "openspec/specs/auth-system/spec.md"
-  },
-  {
-    "slug": "avg-verwerkingsregister",
-    "title": "AVG Verwerkingsregister",
-    "summary": "Implement GDPR Article 30 processing activity registration integrated with OpenRegister's existing person and organisation entity system. Processing activities link to schemas that contain personal data, and data subject rights (access, rectification, erasure, portability) operate through the existing ObjectService CRUD operations, filtered by the person/organisation identifiers already tracked via the MultiTenancyTrait. The verwerkingsregister itself is modeled as an OpenRegister register and schema — not a separate system — leveraging the same RBAC, audit trail, and multi-tenancy infrastructure used by all other registers. PII detection builds on the existing EntityRecognitionHandler and GdprEntity infrastructure. Retention enforcement integrates with the existing ObjectRetentionHandler and archival metadata. The system MUST maintain a structured register of verwerkingsactiviteiten with mandatory fields (purpose limitation, legal basis, data categories, data subjects, retention periods, security measures, and processor information), enforce purpose-bound access control (doelbinding) on schemas containing personal data, and provide end-to-end workflows for data subject rights including inzageverzoeken (Art 15), rectificatie (Art 16), recht op vergetelheid (Art 17), and dataportabiliteit (Art 20). Additionally, the system MUST support Data Protection Impact Assessments (DPIA, Art 35), automated PII detection and anonymization, consent tracking for processing activities, and structured export of the complete Art 30 register for the Autoriteit Persoonsgegevens (AP).",
-    "docsUrl": "openspec/specs/avg-verwerkingsregister/spec.md"
-  },
-  {
-    "slug": "calendar-provider",
-    "title": "Calendar Provider",
-    "summary": "OpenRegister SHALL implement `OCP\\Calendar\\ICalendarProvider` to surface objects with date properties as read-only calendar events in the Nextcloud Calendar app. This enables users to see case deadlines, publication dates, hearing schedules, and other time-based data directly in their calendar without manual event creation.",
-    "docsUrl": "openspec/specs/calendar-provider/spec.md"
-  },
-  {
-    "slug": "computed-fields",
-    "title": "Computed Fields",
-    "summary": "Computed fields enable schema properties whose values are derived automatically from expressions evaluated against object data, cross-referenced objects, and aggregation functions. This capability eliminates redundant data entry, ensures consistency of derived values (full names, totals, expiry dates), and brings spreadsheet-like formula power to OpenRegister without requiring external workflow engines for simple calculations. Computed fields use Twig expressions evaluated server-side, leveraging the existing Twig infrastructure already integrated into OpenRegister for mapping and transformation.",
-    "docsUrl": "openspec/specs/computed-fields/spec.md"
-  },
-  {
-    "slug": "content-versioning",
-    "title": "Content Versioning",
-    "summary": "Content versioning provides a complete lifecycle for register objects, enabling users to track every change as a numbered version, create named draft versions for work-in-progress edits, compare any two versions with field-level diffs, and roll back to any previous state. This capability is essential for government compliance (WOO, Archiefwet), editorial workflows where changes require review before publication, and multi-user collaboration where concurrent edits must be managed safely.",
-    "docsUrl": "openspec/specs/content-versioning/spec.md"
-  },
-  {
-    "slug": "data-import-export",
-    "title": "Data Import and Export",
-    "summary": "Document and extend OpenRegister's existing import/export infrastructure. The core pipeline is already implemented: ImportService with ChunkProcessingHandler for bulk ingest, ExportService/ExportHandler for CSV/JSON/XML output, and Configuration/ImportHandler for register template loading. This spec validates the existing implementation and defines extensions for additional formats, progress tracking, and schema validation. The existing pipeline already handles CSV and Excel import via PhpSpreadsheet, CSV and Excel export with RBAC-aware header generation and relation name resolution, configuration import/export in OpenAPI 3.0.0 format, bulk operations via SaveObjects with BulkRelationHandler and BulkValidationHandler, deduplication efficiency reporting, multi-sheet Excel import, two-pass UUID-to-name resolution, and property-level RBAC enforcement on export columns. This spec extends that foundation with JSON/XML/ODS format support, interactive column mapping, progress tracking UI, downloadable error reports, import templates, streaming for large datasets, scheduled imports, and i18n for headers and templates.",
-    "docsUrl": "openspec/specs/data-import-export/spec.md"
-  },
-  {
-    "slug": "deep-link-registry",
-    "title": "Deep Link Registry",
-    "summary": "The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time. When Nextcloud's unified search returns objects belonging to a claimed combination, results link directly to the consuming app's detail view instead of OpenRegister's generic object view. This decouples object storage (OpenRegister) from object presentation (consuming apps), allowing each app to own its user experience while sharing a common data layer.",
-    "docsUrl": "openspec/specs/deep-link-registry/spec.md"
-  },
-  {
-    "slug": "deletion-audit-trail",
-    "title": "Deletion Audit Trail",
-    "summary": "Provide a comprehensive audit and lifecycle management system for all deletion operations in OpenRegister, encompassing soft delete (marking objects as deleted without physical removal), configurable retention before permanent purge, restore from soft delete, cascade delete tracking, and full GDPR-compliant audit trail entries. The spec ensures that every deletion -- whether user-initiated, cascade-triggered, or system-scheduled -- is recorded with sufficient context to reconstruct what happened, why, and by whom, satisfying Dutch government compliance requirements (BIO, AVG/GDPR Article 30, Archiefwet 1995, NEN-ISO 16175-1:2020).",
-    "docsUrl": "openspec/specs/deletion-audit-trail/spec.md"
-  },
-  {
-    "slug": "deprecate-published-metadata",
-    "title": "Deprecate Published/Depublished Object Metadata",
-    "summary": "Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls.",
-    "docsUrl": "openspec/specs/deprecate-published-metadata/spec.md"
-  },
-  {
-    "slug": "entity-management-modals",
-    "title": "Entity Management Modals",
-    "summary": "Describes the user-facing modal dialog components that mediate create / read / update / delete and bulk operations on first-class register entities (registers, schemas, objects, agents, applications, organisations, configurations, endpoints, sources, views, webhooks, soft-deleted records, audit-trail entries, files). Every register entity in the OpenRegister UI is mutated through a small family of modal Vue components (`Edit{Entity}.vue`, `Delete{Entity}.vue`, `View{Entity}.vue`, plus per-entity bulk variants) that share a consistent open / load / submit / close / error-handling lifecycle driven by the `navigationStore` dialog state and the corresponding entity store.",
-    "docsUrl": "openspec/specs/entity-management-modals/spec.md"
-  },
-  {
-    "slug": "event-driven-architecture",
-    "title": "Event-Driven Architecture",
-    "summary": "OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's `IEventDispatcher` (OCP\\EventDispatcher\\IEventDispatcher) that enables loose coupling between internal components and external systems. Every mutation across all entity types -- Objects, Registers, Schemas, Sources, Configurations, Views, Agents, Applications, Conversations, and Organisations -- dispatches a typed PHP event that can be consumed by any Nextcloud app, delivered to external systems via webhooks in CloudEvents v1.0 format, or pushed to real-time subscribers via GraphQL SSE. The architecture distinguishes between pre-mutation events (ObjectCreatingEvent, ObjectUpdatingEvent, ObjectDeletingEvent) that implement `StoppableEventInterface` to allow hooks to reject or modify operations, and post-mutation events (ObjectCreatedEvent, ObjectUpdatedEvent, ObjectDeletedEvent) that notify downstream systems after persistence is complete.",
-    "docsUrl": "openspec/specs/event-driven-architecture/spec.md"
-  },
-  {
-    "slug": "files-sidebar-tabs",
-    "title": "Filter Sidebar Tabs",
-    "summary": "Provide a consistent filter-sidebar UX across OpenRegister's main list views (Entities, Webhooks, Dashboard, Deleted). Each filter sidebar is a Vue single-file component that owns a small set of filter controls (search input, register/schema pickers, status pickers, date ranges) and communicates its state either through `update:*` events to a parent list view (Entities, Webhooks) or through the global Pinia register/schema/deleted stores plus the router query string (Dashboard, Deleted).",
-    "docsUrl": "openspec/specs/files-sidebar-tabs/spec.md"
-  },
-  {
-    "slug": "graphql-api",
-    "title": "GraphQL API",
-    "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).",
-    "docsUrl": "openspec/specs/graphql-api/spec.md"
-  },
-  {
-    "slug": "linked-entity-types",
-    "title": "Linked Entity Types",
-    "summary": "Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities. Provides schema-level `configuration.linkedTypes` declarations, Nc\\* property types for typed field-level references, lean `_` metadata columns on both magic and entity tables, a generic API for ad-hoc linking and reverse lookups, read-time enrichment via `_extend`, and sidebar injection based on linkedTypes.",
-    "docsUrl": "openspec/specs/linked-entity-types/spec.md"
-  },
-  {
-    "slug": "mail-sidebar",
-    "title": "Mail Sidebar",
-    "summary": "Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email. This enables case handlers to see at a glance which cases, applications, or records are associated with an email -- and to create new associations -- without leaving the Mail app. The integration builds on the `openregister_email_links` table and `EmailService` established by the nextcloud-entity-relations spec.",
-    "docsUrl": "openspec/specs/mail-sidebar/spec.md"
-  },
-  {
-    "slug": "mail-smart-picker",
-    "title": "Mail Smart Picker",
-    "summary": "Enable OpenRegister objects to be discovered, searched, and inserted as rich references via Nextcloud's Smart Picker in any app that supports the `@nextcloud/vue-richtext` component (Mail, Text, Talk, Collectives, etc.). When a user pastes or picks an OpenRegister object URL, it SHALL render as an inline rich preview card showing the object's title, schema, register, key properties, and a direct link. This integration uses the standard `OCP\\Collaboration\\Reference` API and the existing `ObjectsProvider` search provider.",
-    "docsUrl": "openspec/specs/mail-smart-picker/spec.md"
-  },
-  {
-    "slug": "mariadb-ci-matrix",
-    "title": "MariaDB Support & Dual-Database CI Matrix",
-    "summary": "OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost-efficient 2-line CI matrix that piggybacks the database difference onto the PHP version split, ensuring that database-specific code paths (JSONB vs JSON, GIN indexes vs B-tree, pg_trgm vs LIKE, PostgreSQL containment operators vs JSON_CONTAINS) are exercised in CI rather than only discovered in production. Blob storage (Normal mode) is removed — only MagicMapper (dedicated SQL tables per schema) is supported.",
-    "docsUrl": "openspec/specs/mariadb-ci-matrix/spec.md"
-  },
-  {
-    "slug": "mcp-discovery",
-    "title": "MCP Discovery",
-    "summary": "Provides AI agents and MCP-compatible clients with two complementary interfaces to the OpenRegister platform: a tiered REST-based discovery API for token-efficient API exploration, and a full MCP standard protocol endpoint implementing JSON-RPC 2.0 over Streamable HTTP for native tool and resource access. Together these interfaces allow any LLM or MCP client to discover capabilities, establish sessions, and perform CRUD operations on registers, schemas, and objects without prior knowledge of the API surface.",
-    "docsUrl": "openspec/specs/mcp-discovery/spec.md"
-  },
-  {
-    "slug": "mock-registers",
-    "title": "Mock Registers",
-    "summary": "Provide self-contained mock registers for the five Dutch base registries -- BRP (persons), KVK (businesses), BAG (addresses/buildings), DSO (environmental permits), and ORI (council information) -- so that Procest, Pipelinq, and other consuming apps can develop and demonstrate integrations without external API credentials, government certificates, or network access. Each register ships as a `*_register.json` file in `lib/Settings/` following the OpenAPI 3.0.0 + `x-openregister` extension pattern, with seed data in the `components.objects[]` array using the `@self` envelope format, imported via the `ConfigurationService -> ImportHandler` pipeline.",
-    "docsUrl": "openspec/specs/mock-registers/spec.md"
-  },
-  {
-    "slug": "oas-generation",
-    "title": "OAS Generation",
-    "summary": "OAS Generation provides on-demand OpenAPI Specification (OAS 3.x) documents derived from the live register and schema configuration. Callers can retrieve a combined specification covering all registers, or a scoped specification for a single register. The endpoint is publicly accessible without authentication — OAS is treated as self-describing public API documentation.",
-    "docsUrl": "openspec/specs/oas-generation/spec.md"
-  },
-  {
-    "slug": "object-interactions",
-    "title": "Object Interactions",
-    "summary": "OpenRegister objects require rich interaction capabilities — notes, tasks, file attachments, tags, and audit trails — that allow users to collaborate on and track the lifecycle of register data. Rather than building custom interaction systems, this spec defines a convenience API layer that wraps Nextcloud's native subsystems (CalDAV for tasks, ICommentsManager for notes, IRootFolder for files, Nextcloud tags) and links them to OpenRegister objects via standardized properties. Any consuming app (Procest, Pipelinq, OpenCatalogi, ZaakAfhandelApp) can use these unified sub-resource endpoints without knowledge of the underlying Nextcloud internals.",
-    "docsUrl": "openspec/specs/object-interactions/spec.md"
-  },
-  {
-    "slug": "openapi-generation",
-    "title": "OpenAPI Generation",
-    "summary": "Auto-generate OpenAPI 3.1.0 specifications from register and schema definitions stored in OpenRegister, producing complete API documentation that covers every CRUD endpoint, query parameter, authentication scheme, and response model. The generated spec MUST be downloadable in JSON and YAML formats, serveable via an interactive Swagger UI, and MUST regenerate automatically when schemas change so that documentation never drifts from the live API surface. The generation pipeline MUST also support NL API Design Rules compliance markers for Dutch government API interoperability.",
-    "docsUrl": "openspec/specs/openapi-generation/spec.md"
-  },
-  {
-    "slug": "platform-administration-modals",
-    "title": "Platform Administration Modals",
-    "summary": "Describes the administrator-facing modal dialogs that configure OpenRegister's platform-level infrastructure (SOLR search backend, LLM provider wiring, configuration sets, collection assignments, vectorization, faceting, file management) and that drive long-running operational tasks (cache clear, index warmup, mass validation, index inspection, SOLR setup). Unlike the entity-management modals — which mutate user data via per-entity stores — these modals read and write platform settings via `/api/settings/*` REST endpoints and dispatch background operational jobs.",
-    "docsUrl": "openspec/specs/platform-administration-modals/spec.md"
-  },
-  {
-    "slug": "production-observability",
-    "title": "Production Observability",
-    "summary": "Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.",
-    "docsUrl": "openspec/specs/production-observability/spec.md"
-  },
-  {
-    "slug": "profile-actions",
-    "title": "Profile Actions",
-    "summary": "Extend the OpenRegister user profile system with self-service account management actions. The current profile API (`/api/user/me`) supports reading and updating basic profile fields, but lacks password change, avatar management, personal data export (GDPR Article 20 data portability), notification preferences, personal activity history, API token management, and account deactivation requests. This spec defines REST endpoints and frontend UI for each action, all respecting Nextcloud backend capabilities and organisation-level policies. Every action is scoped to the authenticated user (no admin elevation required) and integrates with existing `UserService`, `SecurityService`, and `OrganisationService`.",
-    "docsUrl": "openspec/specs/profile-actions/spec.md"
-  },
-  {
-    "slug": "rapportage-bi-export",
-    "title": "Rapportage en BI Export",
-    "summary": "Provide a comprehensive reporting and business intelligence export layer for OpenRegister that enables government organisations to generate management reports, perform data aggregation queries, connect external BI tools, and satisfy Dutch public accountability requirements (WOO, jaarverslag, verantwoording). The system exposes a general-purpose aggregation API (count, sum, avg, min, max, count_distinct, group by) on top of the existing `MagicMapper` and `MagicStatisticsHandler` infrastructure, supports scheduled report generation via the `ReportRenderJob` daily TimedJob, produces exports in CSV, XLSX, ODS, HTML, and PDF formats via `ReportRenderService` (PhpSpreadsheet for spreadsheets, Dompdf for PDF), and provides GraphQL as the primary external-BI integration surface (Power BI, Tableau, Looker, Metabase all speak it via existing connectors). All reporting operations enforce RBAC via `PermissionHandler`, `MagicRbacHandler`, and `PropertyRbacHandler`, and respect multi-tenancy boundaries to guarantee data isolation between organisations.",
-    "docsUrl": "openspec/specs/rapportage-bi-export/spec.md"
-  },
-  {
-    "slug": "realtime-updates",
-    "title": "Realtime Updates",
-    "summary": "Provide live data synchronization to connected clients so that register object mutations (create, update, delete) are pushed immediately without manual page refresh. The system MUST offer Server-Sent Events (SSE) as the primary transport, with Nextcloud's notify_push integration as a complementary channel, and graceful fallback to polling. All realtime channels MUST be authorization-aware, meaning users only receive events for objects their RBAC permissions allow them to see, and MUST support topic-based subscriptions at the register, schema, and individual object level.",
-    "docsUrl": "openspec/specs/realtime-updates/spec.md"
-  },
-  {
-    "slug": "referential-integrity",
-    "title": "Referential Integrity",
-    "summary": "Enforce referential integrity between register objects connected via `$ref` schema properties so that modifications or deletions of referenced objects propagate correctly according to configurable integrity actions (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT, NO_ACTION). The system MUST maintain data consistency across schemas, detect circular reference chains, support cross-register references, and provide auditable, transactional enforcement that prevents orphaned references while respecting performance constraints on deep reference graphs.",
-    "docsUrl": "openspec/specs/referential-integrity/spec.md"
-  },
-  {
-    "slug": "register-i18n",
-    "title": "Register Internationalization",
-    "summary": "Implement multi-language content management for register objects so that translatable properties store per-language variants, APIs negotiate content language via Accept-Language headers, and the UI provides language-aware editing with completeness tracking. The system MUST support at minimum Dutch (NL, required) and English (EN, optional) to comply with Single Digital Gateway (SDG) Regulation (EU) 2018/1724 for cross-border EU service access, while the architecture MUST allow registers to configure any number of BCP 47 languages including RTL scripts. This spec covers data-level i18n for register object content -- it is distinct from the app UI string translations governed by `i18n-infrastructure`, `i18n-string-extraction`, `i18n-backend-messages`, and `i18n-dutch-translations` specs, which handle Nextcloud `IL10N` / `t()` / `$l->t()` for interface labels.",
-    "docsUrl": "openspec/specs/register-i18n/spec.md"
-  },
-  {
-    "slug": "retention-management",
-    "title": "Retention Management",
-    "summary": "Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.",
-    "docsUrl": "openspec/specs/retention-management/spec.md"
-  },
-  {
-    "slug": "row-field-level-security",
-    "title": "Row and Field Level Security",
-    "summary": "Implement dynamic per-record access rules based on field values (row-level security / RLS) and per-field visibility and editability rules based on user roles (field-level security / FLS). Beyond schema-level RBAC that controls access to entire object types, the system MUST support row-level security where access to individual objects depends on the object's own properties (e.g., department, classification level, owner), and field-level security where different users see different fields of the same object. Both security layers MUST be enforced consistently across REST, GraphQL, search, export, and MCP access methods, evaluated at the database query level where possible for performance, and composable with schema-level RBAC and multi-tenancy isolation.",
-    "docsUrl": "openspec/specs/row-field-level-security/spec.md"
-  },
-  {
-    "slug": "saved-search-views",
-    "title": "Saved Search Views",
-    "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.",
-    "docsUrl": "openspec/specs/saved-search-views/spec.md"
-  },
-  {
-    "slug": "schema-hooks",
-    "title": "Schema Hooks",
-    "summary": "Schema hooks enable per-schema configuration of workflow callbacks that fire on object lifecycle events, allowing external systems to validate, enrich, transform, or reject data before or after persistence. Hooks use CloudEvents 1.0 structured content mode for payloads, support synchronous (request-response) and asynchronous (fire-and-forget) delivery modes, and provide configurable failure behavior (reject, allow, flag, queue) so administrators can balance data integrity against availability. The hook system is engine-agnostic through the `WorkflowEngineInterface` abstraction, currently supporting n8n and Windmill adapters, and integrates deeply with Nextcloud's PSR-14 event dispatcher via `StoppableEventInterface` for pre-mutation rejection.",
-    "docsUrl": "openspec/specs/schema-hooks/spec.md"
-  },
-  {
-    "slug": "search-index",
-    "title": "Search Index",
-    "summary": "OpenRegister provides full-text search, faceted browsing, and bulk re-indexing over its object store via a pluggable search backend (Solr today, Elasticsearch in parallel, with the `SearchBackendInterface` keeping the contract backend-agnostic). The `search-index` capability covers everything from the high-level `IndexService` facade down through the Solr-specific primitives (`SolrCollectionManager`, `SolrDocumentIndexer`, `SolrQueryExecutor`, `SolrFacetProcessor`, `SolrHttpClient`), the schema/document builders (`SchemaHandler`, `DocumentBuilder`, `SchemaMapper`), the bulk-indexing driver (`BulkIndexer`), the configuration plumbing (`ConfigurationHandler`), and the tenant-collection setup orchestrator (`SetupHandler`).",
-    "docsUrl": "openspec/specs/search-index/spec.md"
-  },
-  {
-    "slug": "tmlo-metadata",
-    "title": "tmlo-metadata",
-    "summary": "Foundation capability for TMLO (Toepassingsprofiel Metadatastandaard Lokale Overheden) archival metadata on OpenRegister objects. Owns the cross-cutting contract that the sibling specs (`tmlo-metadata-schema`, `tmlo-auto-populate`, `tmlo-export`, `tmlo-query-api`) compose against:",
-    "docsUrl": "openspec/specs/tmlo-metadata/spec.md"
-  },
-  {
-    "slug": "urn-resource-addressing",
-    "title": "URN Resource Addressing",
-    "summary": "Implement bidirectional URN-URL mapping for system-independent resource identification, enabling Dutch government organisations to address register objects across multi-vendor environments without coupling to specific system URLs or database identifiers. Every register object MUST support a URN identifier following RFC 8141 syntax that can be resolved to an API URL and vice versa, ensuring stable addressing across system migrations, domain changes, and federated deployments. This spec covers URN format definition, resolution APIs, cross-instance federation, NL government identifier mapping, event integration, and human-readable aliases.",
-    "docsUrl": "openspec/specs/urn-resource-addressing/spec.md"
-  },
-  {
-    "slug": "webhook-payload-mapping",
-    "title": "Webhook Payload Mapping",
-    "summary": "Extend OpenRegister's existing CloudEvent-based event and webhook infrastructure with configurable payload mapping. The core webhook delivery (WebhookService, WebhookDeliveryJob, CloudEventFormatter) is already implemented. This spec focuses on the Mapping entity integration for payload transformation, advanced filtering, and delivery management. It documents the complete webhook lifecycle as already implemented: registration with URL/events/secret, payload format selection (standard, CloudEvents, Twig-mapped), delivery retry with exponential backoff, delivery logging, HMAC authentication, event filtering by register/schema/conditions, webhook management API, testing/dry-run, async delivery via background jobs, health monitoring through statistics, multi-tenant webhook isolation via organisation scoping, and request interception for pre-event webhooks. The Mapping entity reference allows any subscriber to receive events in whatever format they require (ZGW notifications, FHIR events, CloudEvents, VNG Notificaties API, custom formats) without any hardcoded format knowledge in OpenRegister.",
-    "docsUrl": "openspec/specs/webhook-payload-mapping/spec.md"
-  },
-  {
-    "slug": "workflow-engine-abstraction",
-    "title": "Workflow Engine Abstraction",
-    "summary": "Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines), enabling the system to deploy, execute, monitor, and manage workflows without coupling to any specific engine's API. This is the foundation layer that other specs (Schema Hooks, Workflow-in-Import, Workflow Integration) build upon: every hook execution, import-time workflow deployment, and event-driven automation flows through the `WorkflowEngineInterface` and `WorkflowEngineRegistry` defined here. By abstracting engine specifics behind adapters, OpenRegister can support multiple simultaneous engines, allow engine migration without data loss, and extend to new engines via a single interface implementation.",
-    "docsUrl": "openspec/specs/workflow-engine-abstraction/spec.md"
-  },
-  {
-    "slug": "workflow-in-import",
-    "title": "Workflow in Import",
-    "summary": "Extends the OpenRegister JSON configuration import pipeline to deploy workflow definitions to external engines (n8n, Windmill), wire them as schema hooks, track them for versioning and idempotent re-import, and include them in configuration exports -- all from a single import file. This specification bridges the `workflow-engine-abstraction` layer (engine adapters, `WorkflowEngineInterface`) with the `data-import-export` pipeline (`ImportHandler`, `ExportHandler`), enabling portable, self-contained register configurations that include both data structures and automation logic. It also ensures that workflows imported alongside schemas and objects participate in the `schema-hooks` lifecycle so that hooks are active before any objects in the same import are created.",
-    "docsUrl": "openspec/specs/workflow-in-import/spec.md"
-  },
-  {
-    "slug": "workflow-integration",
-    "title": "Workflow Integration",
-    "summary": "Integrate BPMN-style workflow automation with register operations via n8n (primary) and other pluggable workflow engines (Windmill, future). Register events (create, update, delete, status change) MUST trigger configurable workflows for process automation, enrichment, validation, escalation, approval chains, and scheduled tasks. The integration MUST support zero-coding workflow configuration for functional administrators and provide full observability into workflow executions via logging, status tracking, and audit trails.",
-    "docsUrl": "openspec/specs/workflow-integration/spec.md"
-  },
-  {
-    "slug": "zoeken-filteren",
-    "title": "Zoeken en Filteren",
-    "summary": "Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails. The system MUST transparently operate against PostgreSQL (with optional pg_trgm fuzzy matching), Apache Solr, or Elasticsearch as interchangeable backends, while exposing a single unified API surface through `ObjectService.searchObjectsPaginated()` and `SearchBackendInterface`.",
-    "docsUrl": "openspec/specs/zoeken-filteren/spec.md"
-  }
-]
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-12T13:34:59.662Z",
+  "features": [
+    {
+      "slug": "avg-verwerkingsregister",
+      "title": "AVG Verwerkingsregister",
+      "summary": "**Tender demand**: 58% of analyzed government tenders require AVG processing register capabilities. Cross-referencing with archivering-vernietiging (77%), audit-trail-immutable (56%), and auth-system (67%) shows that GDPR compliance is a prerequisite capability for nearly all Dutch government tender participation.",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/avg-verwerkingsregister/spec.md"
+    },
+    {
+      "slug": "deprecate-published-metadata",
+      "title": "Deprecate Published/Depublished Object Metadata",
+      "summary": "Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls.",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/deprecate-published-metadata/spec.md"
+    },
+    {
+      "slug": "graphql-api",
+      "title": "GraphQL API",
+      "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/graphql-api/spec.md"
+    },
+    {
+      "slug": "rapportage-bi-export",
+      "title": "Rapportage en BI Export",
+      "summary": "**Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView).",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/rapportage-bi-export/spec.md"
+    },
+    {
+      "slug": "saved-search-views",
+      "title": "Saved Search Views",
+      "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.",
+      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/saved-search-views/spec.md"
+    }
+  ]
+}

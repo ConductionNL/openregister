@@ -185,7 +185,9 @@ export default {
 			searchQuery: '',
 			activeTab: 'overview-tab',
 			searchTimeout: null,
-			isSidebarOpen: true,
+			// Dashboard opens with the sidebar collapsed; the user can open it
+			// manually via the standard NC toggle (which writes back here).
+			isSidebarOpen: false,
 		}
 	},
 	computed: {
@@ -339,6 +341,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
+			 * @param newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {

@@ -121,12 +121,14 @@ export default {
 
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude watcher syncing local cache-type from prop
 		 */
 		cacheType(newValue) {
 			this.localCacheType = newValue
 		},
 		/**
+		 * @param newValue
 		 * @spec exclude watcher emitting cache-type change
 		 */
 		localCacheType(newValue) {
@@ -136,7 +138,7 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-5
+		 * @spec openspec/specs/platform-administration-modals/spec.md
 		 */
 		confirmClear() {
 			this.$emit('confirm', this.localCacheType)

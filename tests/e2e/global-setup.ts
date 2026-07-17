@@ -22,6 +22,7 @@ import { chromium, request, type FullConfig } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
+import { seedMdm } from './mdm-seed'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -92,8 +93,42 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	await page.goto('/index.php/login')
 	await page.locator('input[name="user"]').fill(username)
 	await page.locator('input[name="password"]').fill(password)
-	await page.locator('button[type="submit"]').first().click()
-	// Wait for the global header that only renders on authenticated pages.
+	// Arm the post-login navigation wait BEFORE submitting the form.
+	//
+	// Previously the form was submitted first and `page.waitForURL(...)`
+	// was awaited afterwards. On a busy dev container the login POST +
+	// redirect to /apps/dashboard/ can fully complete (firing its `load`
+	// event) before `waitForURL` registers its listener; `waitForURL`'s
+	// default `waitUntil: 'load'` then blocks waiting for a *fresh* load
+	// event that never comes, and times out at 25s — even though the page
+	// is already authenticated on /apps/dashboard/ (the timeout log shows
+	// `navigated to ".../apps/dashboard/"`). This raced consistently under
+	// container load and failed the whole suite in globalSetup.
+	//
+	// Build the promise first (listener attached synchronously), then
+	// trigger the submit, then await. `waitUntil: 'commit'` resolves as
+	// soon as the navigation to the post-login URL is committed, which is
+	// robust to the redirect having already landed. If the navigation
+	// settled before the wait armed, fall back to the current URL.
+	const leftLogin = page.waitForURL(
+		(url) => !/\/login(\?|$|\/)/.test(url.toString()),
+		{ timeout: 25_000, waitUntil: 'commit' },
+	)
+	// Submit via the form rather than a themed-button .click(): on NC's
+	// themed login the styled submit button can swallow the click.
+	await page.locator('input[name="password"]').evaluate((el: HTMLInputElement) => {
+		el.form?.requestSubmit()
+	})
+	try {
+		await leftLogin
+	} catch (err) {
+		// The navigation may have already settled off /login before the
+		// wait armed — accept that rather than failing the whole suite.
+		if (/\/login(\?|$|\/)/.test(page.url())) {
+			throw err
+		}
+	}
+	// Then confirm an authenticated page rendered (header on a non-login page).
 	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
 	const currentUrl = page.url()
 	if (/\/login(\?|$|\/)/.test(currentUrl)) {
@@ -105,4 +140,33 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
+
+	// Self-seed the deep MDM fixture (duplicate pair + multi-source conflict +
+	// scored entities) so the mdm-frontend / mdm-merge-ui /
+	// mdm-survivorship-override suites RUN their full chains instead of
+	// skipping. Guarded: on a non-pipelinq instance seedMdm() no-ops and
+	// returns null, and any error is logged without failing the whole run
+	// (the specs keep their existing skip fallback).
+	try {
+		const apiContext = await request.newContext({
+			baseURL,
+			extraHTTPHeaders: {
+				Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
+			},
+		})
+		try {
+			const seed = await seedMdm(apiContext)
+			// eslint-disable-next-line no-console
+			console.log(
+				seed
+					? `[playwright globalSetup] MDM fixture seeded (register ${seed.register}, schema ${seed.masterEntitySchema}, dup pair ${seed.dupPair.join(' + ')}).`
+					: '[playwright globalSetup] pipelinq/masterEntity not found — MDM fixture skipped; MDM specs will self-skip.',
+			)
+		} finally {
+			await apiContext.dispose()
+		}
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.warn(`[playwright globalSetup] MDM seeding failed (continuing): ${(err as Error).message}`)
+	}
 }

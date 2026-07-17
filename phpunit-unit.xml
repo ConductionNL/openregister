@@ -36,6 +36,10 @@
     </coverage>
 
     <php>
+        <!-- The full unit suite (13k+ tests) peaks around ~260 MB; the bare
+             php:8.3-cli CI image defaults memory_limit to 128M and OOMs during
+             result formatting. Lift it here so the gate is deterministic. -->
+        <ini name="memory_limit" value="-1"/>
         <env name="PHPUNIT_RUN" value="1"/>
         <env name="NEXTCLOUD_CONFIG_DIR" value="/var/www/html/config"/>
     </php>

@@ -110,10 +110,11 @@ class SourceTest extends TestCase
 
     // --- getJsonFields ---
 
-    public function testGetJsonFieldsReturnsEmptyForSource(): void
+    public function testGetJsonFieldsReturnsAuthConfigForSource(): void
     {
-        // Source has no JSON fields
-        $this->assertSame([], $this->source->getJsonFields());
+        // Source now carries the encrypted sync credential blob as a JSON field
+        // (added by the data-sync-harvesting change). No other JSON fields exist.
+        $this->assertSame(['authConfig'], $this->source->getJsonFields());
     }
 
     // --- hydrate ---

@@ -111,7 +111,7 @@ class ConfigurationsController extends Controller
      *
      * @psalm-return JSONResponse<200, array{results: array<\OCA\OpenRegister\Db\Configuration>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function index(): JSONResponse
     {
@@ -158,7 +158,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<404,
      *     array{error: 'Configuration not found'}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -188,7 +188,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function create(): JSONResponse
     {
@@ -253,7 +253,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -309,7 +309,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function patch(int $id): JSONResponse
     {
@@ -331,7 +331,7 @@ class ConfigurationsController extends Controller
      *     array<never, never>>|JSONResponse<400, array{error: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function destroy(int $id): JSONResponse
     {

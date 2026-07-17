@@ -19,11 +19,11 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\Feedback;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IL10N;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
@@ -230,7 +231,7 @@ class ChatController extends Controller
      *     ragSettings: array{includeObjects: bool|mixed, includeFiles: bool|mixed,
      *     numSourcesFiles: int|mixed, numSourcesObjects: int|mixed}}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function extractMessageRequestParams(): array
     {
@@ -292,7 +293,7 @@ class ChatController extends Controller
      *
      * @throws Exception If conversation not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function loadExistingConversation(string $uuid): Conversation
     {
@@ -312,7 +313,7 @@ class ChatController extends Controller
      *
      * @throws Exception If agent not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function createNewConversation(string $agentUuid): Conversation
     {
@@ -367,7 +368,7 @@ class ChatController extends Controller
      *
      * @throws Exception If both parameters are empty or if entities not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid): Conversation
     {
@@ -394,7 +395,7 @@ class ChatController extends Controller
      *
      * @throws Exception If user does not have access (403)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function verifyConversationAccess(Conversation $conversation): void
     {
@@ -415,7 +416,7 @@ class ChatController extends Controller
      *
      * @return JSONResponse JSON response with AI response or error
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function sendMessage(): JSONResponse
     {
@@ -527,7 +528,7 @@ class ChatController extends Controller
      *     uuid: null|string}>, total?: int, conversationId?: int},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getHistory(): JSONResponse
     {
@@ -618,7 +619,7 @@ class ChatController extends Controller
      *     'Missing conversationId', message: string, conversationId?: int},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function clearHistory(): JSONResponse
     {
@@ -707,7 +708,7 @@ class ChatController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function sendFeedback(string $conversationUuid, int $messageId): JSONResponse
     {
@@ -834,9 +835,23 @@ class ChatController extends Controller
     /**
      * Get chat statistics
      *
+     * Statistics are scoped to the current session's active organisation so
+     * that one tenant never sees another tenant's agent/conversation/message
+     * counts. When there is no active organisation (e.g. a CLI/system
+     * context), no organisation filter is applied — the same "filter only
+     * if provided" convention used by ConversationMapper::countByUser() and
+     * ConversationMapper::findByUser() above.
+     *
+     * Messages have no organisation column of their own (see
+     * openregister_messages schema), so they are scoped indirectly via the
+     * conversation_id foreign key to the conversations already scoped to
+     * the active organisation.
+     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded in-body: scopes every count to the caller's active organisation (OrganisationService::getActiveOrganisation)
+     *   via an organisation = ? filter on agents and conversations; no caller-supplied object id.
      *
      * @return JSONResponse Chat statistics
      *
@@ -845,28 +860,88 @@ class ChatController extends Controller
      *     total_agents?: int, total_conversations?: int, total_messages?: int},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-5
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getChatStats(): JSONResponse
     {
         try {
-            // Get agent count.
+            // Resolve the active organisation once; every count below is
+            // scoped to it, mirroring the OrganisationService pattern used
+            // in createNewConversation() and sendFeedback() above.
+            $organisation     = $this->organisationService->getActiveOrganisation();
+            $organisationUuid = $organisation?->getUuid();
+
+            // No resolvable organisation means there is nothing this caller
+            // may count: return zeros rather than falling back to unscoped,
+            // instance-wide totals (multi-tenant leak,
+            // or-chat-engine-decommission REQ "Usage statistics are
+            // organisation-scoped, never instance-wide").
+            if ($organisationUuid === null) {
+                return new JSONResponse(
+                    data: [
+                        'total_agents'        => 0,
+                        'total_conversations' => 0,
+                        'total_messages'      => 0,
+                    ],
+                    statusCode: 200
+                );
+            }
+
+            // Get agent count, scoped to the active organisation.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
-                ->from('openregister_agents');
+                ->from('openregister_agents')
+                ->where(
+                    $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+                );
+
             $totalAgents = (int) $qb->executeQuery()->fetchOne();
 
-            // Get conversation count.
+            // Get conversation count, scoped to the active organisation.
             $qb = $this->db->getQueryBuilder();
             $qb->select($qb->func()->count('id', 'total'))
-                ->from('openregister_conversations');
+                ->from('openregister_conversations')
+                ->where(
+                    $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+                );
+
             $totalConversations = (int) $qb->executeQuery()->fetchOne();
 
-            // Get message count.
+            // Collect the ids of conversations scoped to the active
+            // organisation so messages (no organisation column of their
+            // own) can be scoped via their conversation_id foreign key.
             $qb = $this->db->getQueryBuilder();
-            $qb->select($qb->func()->count('id', 'total'))
-                ->from('openregister_messages');
-            $totalMessages = (int) $qb->executeQuery()->fetchOne();
+            $qb->select('id')
+                ->from('openregister_conversations')
+                ->where(
+                    $qb->expr()->eq('organisation', $qb->createNamedParameter($organisationUuid, IQueryBuilder::PARAM_STR))
+                );
+
+            $result          = $qb->executeQuery();
+            $conversationIds = [];
+            while (($row = $result->fetch()) !== false) {
+                $conversationIds[] = (int) $row['id'];
+            }
+
+            $result->closeCursor();
+
+            // Get message count, scoped to the conversation ids collected above.
+            // An empty id list means no conversations matched, so the message
+            // count is trivially 0 — skip the query rather than issuing an
+            // invalid empty IN (...) clause.
+            $totalMessages = 0;
+            if (empty($conversationIds) === false) {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select($qb->func()->count('id', 'total'))
+                    ->from('openregister_messages')
+                    ->where(
+                        $qb->expr()->in(
+                            'conversation_id',
+                            $qb->createNamedParameter($conversationIds, IQueryBuilder::PARAM_INT_ARRAY)
+                        )
+                    );
+                $totalMessages = (int) $qb->executeQuery()->fetchOne();
+            }
 
             return new JSONResponse(
                 data: [

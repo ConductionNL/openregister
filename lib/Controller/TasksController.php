@@ -17,7 +17,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -101,6 +101,8 @@ class TasksController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Session-scoped list: TaskService::getAllUserTasks resolves the calendar set from the IUserSession UID;
+     *   the assignee param filters within the caller's own tasks, not an identity claim.
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-misc/tasks.md#task-2
      */
@@ -140,7 +142,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function index(
         string $register,
@@ -181,7 +183,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function create(
         string $register,
@@ -236,7 +238,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function update(
         string $register,
@@ -298,7 +300,7 @@ class TasksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function destroy(
         string $register,

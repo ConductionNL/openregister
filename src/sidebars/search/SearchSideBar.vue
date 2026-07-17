@@ -564,7 +564,7 @@ export default {
 		},
 		/**
 		 * Map saved views into NcSelect options for the view picker.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} View options
 		 */
 		viewOptions() {
@@ -578,7 +578,7 @@ export default {
 		},
 		/**
 		 * Resolve the active saved view into NcSelect value shape.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {object|null} Active view option, or null
 		 */
 		selectedViewValue() {
@@ -592,7 +592,7 @@ export default {
 
 		/**
 		 * Filter the saved-view list by search query and sort favorites first.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} Filtered, favorite-sorted views
 		 */
 		filteredViews() {
@@ -709,6 +709,7 @@ export default {
 		// in tests/e2e/spec-coverage/{entity-management-modals, saved-search-views}.
 		'$root.registerStore.registerList': {
 			/**
+			 * @param newList
 			 * @spec exclude Vue watch handler plumbing; re-runs applyQueryParamsFromRoute when the register list finishes loading on /tables deep-links.
 			 */
 			handler(newList) {
@@ -724,6 +725,7 @@ export default {
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
 			/**
+			 * @param newSchema
 			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
 			 */
 			handler(newSchema) {
@@ -739,6 +741,8 @@ export default {
 		// Watch for selected schemas changes to auto-expand new schemas
 		selectedSchemas: {
 			/**
+			 * @param newSchemas
+			 * @param oldSchemas
 			 * @spec exclude Vue watch handler plumbing; auto-expands newly selected schema groups in the UI.
 			 */
 			handler(newSchemas, oldSchemas) {
@@ -759,6 +763,7 @@ export default {
 		// Watch for active view changes to sync the name input
 		'viewsStore.activeView': {
 			/**
+			 * @param newView
 			 * @spec exclude Vue watch handler plumbing; mirrors the active view's name into the editable name input.
 			 */
 			handler(newView) {
@@ -927,7 +932,19 @@ export default {
 				this.selectedSchemas = schemaIds.filter(id => schemaStore.schemaList.some(s => s.id === id))
 				return true
 			}
-			// Try apply now, or retry shortly if lists not yet loaded
+			// Try apply now, or retry shortly if lists not yet loaded.
+			//
+			// The register list (`GET /api/registers?_extend=schemas&stats`)
+			// takes 3–4.5s on a populated instance — longer than the former
+			// 10×200ms (2s) budget — so a `/tables?register=…&schema=…`
+			// deep-link gave up before the list arrived and the table stayed
+			// on "No objects found. Select registers and schemas…", never
+			// firing the search. The `$root.registerStore.registerList`
+			// watcher was meant to cover this but did not re-trigger the
+			// search reliably. Extend the retry window to 40×200ms (8s) so it
+			// comfortably outlasts the real list-load time. Verified via the
+			// e2e investigation in tests/e2e/spec-coverage/
+			// {entity-management-modals, saved-search-views}.
 			const tryApply = (attempt = 0) => {
 				const regOk = applyRegisters()
 				const schOk = applySchemas()
@@ -939,7 +956,7 @@ export default {
 					}
 					return
 				}
-				if (attempt < 10) {
+				if (attempt < 40) {
 					setTimeout(() => tryApply(attempt + 1), 200)
 				}
 			}
@@ -953,8 +970,6 @@ export default {
 		 */
 		handleRegisterChange(options) {
 			// Handle multi-select - options is an array of values
-			console.info('Register change - raw options:', options)
-
 			// NcSelect with reduce returns the reduced values directly
 			// For multi-select, it's an array of the reduced values (IDs)
 			if (!options || options.length === 0) {
@@ -966,8 +981,6 @@ export default {
 				// Fallback for single value
 				this.selectedRegisters = [options]
 			}
-
-			console.info('Selected registers after processing:', this.selectedRegisters)
 
 			// Clear schemas that are no longer valid for selected registers
 			const validSchemaIds = new Set()
@@ -1396,7 +1409,7 @@ export default {
 
 		/**
 		 * Activate a selected saved view by fetching it and applying its configuration.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object|null} option - Selected view option (or null to clear)
 		 * @return {Promise<void>}
 		 */
@@ -1419,7 +1432,7 @@ export default {
 
 		/**
 		 * Apply a saved view's stored query config to the live search state and re-run search.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The saved view (with query/configuration block)
 		 * @return {void}
 		 */
@@ -1466,7 +1479,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration as a new saved view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async saveView() {
@@ -1516,7 +1529,7 @@ export default {
 
 		/**
 		 * Reset and hide the save-view form without persisting.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		cancelSaveView() {
@@ -1529,7 +1542,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration onto the active saved view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async updateActiveView() {
@@ -1570,7 +1583,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for the currently active view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		openEditDialogForActiveView() {
@@ -1580,7 +1593,7 @@ export default {
 
 		/**
 		 * Stage the active view for deletion and open the confirm dialog.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		confirmDeleteActiveView() {
@@ -1591,7 +1604,7 @@ export default {
 
 		/**
 		 * Fetch and activate a saved view, apply its config, and switch to the search tab.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to load
 		 * @return {Promise<void>}
 		 */
@@ -1617,7 +1630,7 @@ export default {
 
 		/**
 		 * Stage a view for deletion and open the confirm dialog.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to delete
 		 * @return {void}
 		 */
@@ -1628,7 +1641,7 @@ export default {
 
 		/**
 		 * Whether the given view is the currently active view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
 		 */
@@ -1641,7 +1654,7 @@ export default {
 
 		/**
 		 * Whether the current user has favorited the given view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
 		 */
@@ -1656,7 +1669,7 @@ export default {
 
 		/**
 		 * Add or remove the current user from a view's favoredBy via PATCH, then refresh.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to favorite/unfavorite
 		 * @return {Promise<void>}
 		 */
@@ -1710,7 +1723,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for a given view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to edit
 		 * @return {void}
 		 */
@@ -1721,7 +1734,7 @@ export default {
 
 		/**
 		 * Close the view-edit dialog without saving.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		cancelEditView() {
@@ -1731,7 +1744,7 @@ export default {
 
 		/**
 		 * After a delete dialog closes, refresh the view list and clear the active view if deleted.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async handleDeleteClose() {

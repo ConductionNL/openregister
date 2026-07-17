@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -130,12 +130,17 @@ class McpToolsService
     }//end listTools()
 
     /**
-     * Execute an MCP tool by its namespaced id
+     * Execute an MCP tool by its namespaced id or short name
      *
-     * Routes the invocation to the provider whose app id prefix matches
-     * the given tool id. The first matching provider wins.
+     * Routes the invocation to the provider whose tool descriptor matches
+     * the given identifier (either descriptor `id` like "openregister.registers"
+     * or descriptor `name` like "registers"). The first matching provider wins.
+     * The resolved descriptor's namespaced `id` is forwarded to the provider's
+     * `invokeTool()` so providers always see the canonical form regardless of
+     * how the client addressed the tool.
      *
-     * @param string               $name      Namespaced tool id (e.g. "openregister.registers")
+     * @param string               $name      Tool identifier — descriptor `name` (e.g. "registers")
+     *                                        or namespaced `id` (e.g. "openregister.registers").
      * @param array<string, mixed> $arguments Tool arguments
      *
      * @return array<string, mixed> MCP tool result with content array
@@ -151,15 +156,20 @@ class McpToolsService
             context: ['tool' => $name, 'arguments' => $arguments]
         );
 
-        // Find a provider that owns this tool id.
-        $provider = $this->findProviderForTool(toolId: $name);
+        // Find a provider + descriptor that owns this tool id.
+        $match = $this->findProviderForTool(toolId: $name);
 
-        if ($provider === null) {
+        if ($match === null) {
             throw new InvalidArgumentException('Unknown tool: '.$name);
         }
 
+        // Forward the descriptor's namespaced id, not the raw client-supplied
+        // identifier — providers that multiplex on $toolId must see the
+        // canonical form even when the client addressed the tool by short name.
+        $providerToolId = (string) ($match['descriptor']['id'] ?? $name);
+
         try {
-            $result = $provider->invokeTool(toolId: $name, arguments: $arguments);
+            $result = $match['provider']->invokeTool(toolId: $providerToolId, arguments: $arguments);
 
             return [
                 'content' => [
@@ -193,12 +203,15 @@ class McpToolsService
     }//end callTool()
 
     /**
-     * Invoke a tool by namespaced id, returning a flat result array.
+     * Invoke a tool by namespaced id or short name, returning a flat result array.
      *
      * Used by ChatStreamController to invoke tools in the LLM pipeline
-     * and emit tool_result SSE events.
+     * and emit tool_result SSE events. Accepts both descriptor `id`
+     * ("openregister.registers") and descriptor `name` ("registers")
+     * forms; the resolved descriptor's namespaced id is forwarded to
+     * the owning provider.
      *
-     * @param string               $toolId    Namespaced tool id
+     * @param string               $toolId    Tool identifier — descriptor `name` or namespaced `id`.
      * @param array<string, mixed> $arguments Tool arguments
      *
      * @return array{result: array<string, mixed>, isError: bool} Result envelope
@@ -207,17 +220,19 @@ class McpToolsService
      */
     public function invokeTool(string $toolId, array $arguments): array
     {
-        $provider = $this->findProviderForTool(toolId: $toolId);
+        $match = $this->findProviderForTool(toolId: $toolId);
 
-        if ($provider === null) {
+        if ($match === null) {
             return [
                 'result'  => ['error' => 'Unknown tool: '.$toolId],
                 'isError' => true,
             ];
         }
 
+        $providerToolId = (string) ($match['descriptor']['id'] ?? $toolId);
+
         try {
-            $result = $provider->invokeTool(toolId: $toolId, arguments: $arguments);
+            $result = $match['provider']->invokeTool(toolId: $providerToolId, arguments: $arguments);
             return [
                 'result'  => $result,
                 'isError' => false,
@@ -238,33 +253,74 @@ class McpToolsService
     }//end invokeTool()
 
     /**
-     * Find the first provider that owns the given tool id.
+     * Find the first provider + descriptor that owns the given tool id.
      *
-     * A provider owns a tool id when the tool's id starts with
-     * `{provider->getAppId()}.` AND the provider lists that tool in getTools().
+     * Resolves against the descriptor's full namespaced `id`
+     * (e.g. "openregister.registers") OR its short MCP `name`
+     * (e.g. "registers"). The MCP protocol's tools/call uses
+     * the descriptor's `name`, so accepting both keeps spec-
+     * compliant clients and any chat-side caller that already
+     * uses the namespaced id working through the same path.
      *
-     * @param string $toolId Namespaced tool id
+     * Returns the descriptor alongside the provider so callers
+     * can forward the canonical namespaced id to `invokeTool()`
+     * regardless of how the client addressed the tool.
      *
-     * @return IMcpToolProvider|null The matching provider, or null if not found
+     * Collision warning: when a short-name lookup matches descriptors in
+     * more than one provider, only the first match is returned (first-wins)
+     * and a warning is logged once so the ambiguity surfaces in the
+     * application log. External providers should namespace any short name
+     * that could collide.
+     *
+     * @param string $toolId Tool identifier as sent by the client.
+     *
+     * @return array{provider: IMcpToolProvider, descriptor: array<string, mixed>}|null
+     *         The first matching provider + its descriptor, or null if not found.
      */
-    private function findProviderForTool(string $toolId): ?IMcpToolProvider
+    private function findProviderForTool(string $toolId): ?array
     {
+        $first      = null;
+        $collisions = 0;
+
         foreach ($this->providers as $provider) {
-            $appId = $provider->getAppId();
-
-            if (str_starts_with($toolId, $appId.'.') === false) {
-                continue;
-            }
-
-            // Confirm the provider actually lists this tool.
             foreach ($provider->getTools() as $descriptor) {
-                if (($descriptor['id'] ?? '') === $toolId) {
-                    return $provider;
+                $matchesId   = (($descriptor['id'] ?? '') === $toolId);
+                $matchesName = (($descriptor['name'] ?? '') === $toolId);
+
+                if ($matchesId === false && $matchesName === false) {
+                    continue;
                 }
-            }
+
+                if ($first === null) {
+                    $first = ['provider' => $provider, 'descriptor' => $descriptor];
+
+                    // An exact id-match is the canonical form — no ambiguity
+                    // is possible because listTools() already enforces the
+                    // namespace prefix uniqueness. Stop scanning for collisions.
+                    if ($matchesId === true) {
+                        return $first;
+                    }
+
+                    continue;
+                }
+
+                // Short-name collision across providers — log once below.
+                ++$collisions;
+            }//end foreach
+        }//end foreach
+
+        if ($collisions > 0 && $first !== null) {
+            $this->logger->warning(
+                message: '[MCP] Short-name tool collision — first provider wins; use namespaced id to disambiguate.',
+                context: [
+                    'tool'           => $toolId,
+                    'winningAppId'   => $first['provider']->getAppId(),
+                    'collisionCount' => $collisions,
+                ]
+            );
         }
 
-        return null;
+        return $first;
     }//end findProviderForTool()
 
     /**

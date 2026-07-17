@@ -25,7 +25,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/integration-shares/tasks.md
+ * @spec openspec/specs/integration-shares/spec.md
  */
 
 declare(strict_types=1);
@@ -80,7 +80,7 @@ class ShareLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -116,7 +116,7 @@ class ShareLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -192,7 +192,7 @@ class ShareLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function destroy(string $register, string $schema, string $id, string $shareId): JSONResponse
     {
@@ -224,7 +224,7 @@ class ShareLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function files(string $register, string $schema, string $id): JSONResponse
     {

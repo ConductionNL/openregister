@@ -8,14 +8,14 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+ * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObject;
@@ -72,7 +72,7 @@ class LinkedEntityPropertyHandler
      *
      * @param LoggerInterface $logger Logger for logging operations
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -92,7 +92,7 @@ class LinkedEntityPropertyHandler
      *
      * @return ObjectEntity The updated object entity
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
      */
     public function extractAndPopulate(ObjectEntity $object, Schema $schema, array $data): ObjectEntity
     {
@@ -137,7 +137,7 @@ class LinkedEntityPropertyHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractFromProperty(
         string $propertyName,
@@ -185,7 +185,7 @@ class LinkedEntityPropertyHandler
      *
      * @return string|null The extracted ID or null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractIdFromEnvelope(mixed $value): ?string
     {
@@ -215,7 +215,7 @@ class LinkedEntityPropertyHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-43
+     * @spec openspec/specs/linked-entity-types/spec.md#requirement-metadata-columns-on-entity-tables
      */
     private function mergeIntoMetadataColumn(ObjectEntity $object, string $ncType, array $newIds): void
     {

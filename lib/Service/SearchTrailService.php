@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
 
 namespace OCA\OpenRegister\Service;
@@ -171,7 +171,7 @@ class SearchTrailService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -219,7 +219,7 @@ class SearchTrailService
      *
      * @psalm-return array{results: array, total: int, page: float|int<1, max>, pages: int, limit: int<1, max>, offset: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function getSearchTrails(array $config=[]): array
     {
@@ -287,7 +287,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple statistics calculations and aggregations
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional statistics computations
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -368,7 +368,7 @@ class SearchTrailService
      *
      * @return array Popular search terms data
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -413,7 +413,7 @@ class SearchTrailService
      *
      * @return array Search activity data with insights
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -441,7 +441,7 @@ class SearchTrailService
      *
      * @return array Register/schema statistics data
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -490,7 +490,7 @@ class SearchTrailService
      *
      * @return array User agent statistics data
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-5
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -536,7 +536,7 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function cleanupSearchTrails(?DateTime $_before=null): array
     {
@@ -580,7 +580,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     private function processConfig(array $config): array
     {
@@ -892,7 +892,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     private function enrichTrailsWithNames(array $trails): array
     {

@@ -1,12 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Data Import and Export
 
 ## Purpose
 
-Document and extend OpenRegister's existing import/export infrastructure. The core pipeline is already implemented: ImportService with ChunkProcessingHandler for bulk ingest, ExportService/ExportHandler for CSV/JSON/XML output, and Configuration/ImportHandler for register template loading. This spec validates the existing implementation and defines extensions for additional formats, progress tracking, and schema validation. The existing pipeline already handles CSV and Excel import via PhpSpreadsheet, CSV and Excel export with RBAC-aware header generation and relation name resolution, configuration import/export in OpenAPI 3.0.0 format, bulk operations via SaveObjects with BulkRelationHandler and BulkValidationHandler, deduplication efficiency reporting, multi-sheet Excel import, two-pass UUID-to-name resolution, and property-level RBAC enforcement on export columns. This spec extends that foundation with JSON/XML/ODS format support, interactive column mapping, progress tracking UI, downloadable error reports, import templates, streaming for large datasets, scheduled imports, and i18n for headers and templates.
+Document and extend OpenRegister's existing import/export infrastructure. The core pipeline is already implemented: ImportService with SaveObjects' internal chunked processing for bulk ingest, ExportService/ExportHandler for CSV/JSON/XML output, and Configuration/ImportHandler for register template loading. This spec validates the existing implementation and defines extensions for additional formats, progress tracking, and schema validation. The existing pipeline already handles CSV and Excel import via PhpSpreadsheet, CSV and Excel export with RBAC-aware header generation and relation name resolution, configuration import/export in OpenAPI 3.0.0 format, bulk operations via SaveObjects with BulkRelationHandler and BulkValidationHandler, deduplication efficiency reporting, multi-sheet Excel import, two-pass UUID-to-name resolution, and property-level RBAC enforcement on export columns. This spec extends that foundation with JSON/XML/ODS format support, interactive column mapping, progress tracking UI, downloadable error reports, import templates, streaming for large datasets, scheduled imports, and i18n for headers and templates.
 
 **Source**: Gap identified in cross-platform analysis; Baserow implements CSV export (core) and JSON/Excel export (premium) with view-scoped filtering; NocoDB implements Airtable/CSV/Excel import with async job processing and bulk API operations. Both competitors gate advanced export formats behind paid tiers -- OpenRegister should offer all formats in the open-source core.
 
@@ -15,7 +15,7 @@ This spec primarily validates and extends an already-functional import/export sy
 
 - **CSV/Excel import (fully implemented)**: `ImportService` with `importFromCsv()` and `importFromExcel()` using PhpSpreadsheet, with ReactPHP optimization and configurable chunk sizes.
 - **CSV/Excel export (fully implemented)**: `ExportService` with `exportToCsv()` and `exportToExcel()`, RBAC-aware header generation via `PropertyRbacHandler`, relation name resolution via two-pass `resolveUuidNameMap()`, admin-only `@self.*` metadata columns, and multi-tenancy support.
-- **Bulk operations (fully implemented)**: `SaveObjects` with `ChunkProcessingHandler` (60-70% fewer DB calls, 2-3x faster), `BulkRelationHandler` for inverse relations, `BulkValidationHandler` for schema analysis caching.
+- **Bulk operations (fully implemented)**: `SaveObjects` with internal chunked processing (`processObjectsChunk()`, 60-70% fewer DB calls, 2-3x faster), `BulkRelationHandler` for inverse relations, `BulkValidationHandler` for schema analysis caching.
 - **Configuration portability (fully implemented)**: `Configuration/ImportHandler` and `Configuration/ExportHandler` for OpenAPI 3.0.0 format with slug-based references, workflow deployment, and idempotent re-import.
 - **Deduplication (fully implemented)**: Import summaries include `created`, `updated`, `unchanged`, `errors` counts with deduplication efficiency reporting.
 - **Multi-sheet Excel (fully implemented)**: `processMultiSchemaSpreadsheetAsync()` matches sheet titles to schema slugs.
@@ -64,7 +64,7 @@ Users MUST be able to upload files in CSV, XLSX, JSON, or XML format. The `Impor
 
 ### Requirement: The system MUST support bulk import via API @e2e exclude REST API bulk import — covered by Newman
 
-The bulk import API MUST accept an array of objects in a single request body for programmatic import without file upload. This endpoint SHALL leverage `SaveObjects` and `ChunkProcessingHandler` for high-performance batch processing with configurable chunk sizes.
+The bulk import API MUST accept an array of objects in a single request body for programmatic import without file upload. This endpoint SHALL leverage `SaveObjects` (internal chunked processing) for high-performance batch processing with configurable chunk sizes.
 
 #### Scenario: Bulk create objects via API
 - **GIVEN** schema `contactmomenten` in register `klantcontact`
@@ -574,6 +574,228 @@ register portability" requirement and are not redefined here.
 - **THEN** the response MUST list the configuration files in that repository
 - **AND** repositories or files the caller cannot access MUST NOT be returned
 
+### Requirement: Configurations MUST be publishable to and discoverable from remote GitHub, GitLab, and URL sources @e2e exclude backend remote discovery/publish (Git provider HTTP integration) — covered by Newman/PHPUnit
+
+`ConfigurationController` MUST support a remote configuration-package
+portability surface that complements the local OpenAPI 3.0.0 export/import:
+discovering OpenRegister configurations hosted on GitHub or GitLab, listing
+their branches, importing a configuration from a GitHub/GitLab repository or an
+arbitrary URL, and publishing a local configuration to a GitHub repository.
+Discovery MUST validate the `source` against `github`/`gitlab`. Import-from-source
+MUST construct a `Configuration` entity and run it through the standard import
+flow. Publishing MUST validate the configuration is publishable, prepare the
+OpenAPI payload, detect an existing file SHA for updates, and update the local
+configuration with the resulting GitHub source information.
+
+> NOTE: several of these methods were mislabeled in the upstream coverage scan as
+> "triaged DROP from chat-ai / actions / object-lifecycle / geo-metadata". That
+> triage is incorrect — they are configuration-package GitHub/GitLab publishing
+> and belong to this capability.
+
+#### Scenario: Discover configurations on GitHub
+- **GIVEN** a discover request with `source=github` and a `_search` term
+- **WHEN** `ConfigurationController::discover()` runs
+- **THEN** the GitHub handler's `searchConfigurations()` MUST be invoked and the results returned (HTTP 200)
+
+#### Scenario: Reject an invalid discovery source
+- **GIVEN** a discover request with `source` that is neither `github` nor `gitlab`
+- **WHEN** `discover()` validates the source
+- **THEN** the response MUST be HTTP 400 with `error: 'Invalid source. Must be "github" or "gitlab"'`
+
+#### Scenario: List repository branches
+- **GIVEN** a request supplying `owner` and `repo`
+- **WHEN** `getGitHubBranches()` (or `getGitLabBranches()`) runs
+- **THEN** the response MUST contain the branch list; a missing `owner` or `repo` MUST return HTTP 400
+
+#### Scenario: Import a configuration from a remote source
+- **GIVEN** an import-from-source request (GitHub, GitLab, or URL)
+- **WHEN** `importFromGitHub()` / `importFromGitLab()` / `importFromUrl()` runs
+- **THEN** a `Configuration` entity MUST be constructed from the fetched config and run through the standard import flow
+
+#### Scenario: Publish a local configuration to GitHub
+- **GIVEN** a publishable local configuration and valid GitHub publish parameters
+- **WHEN** `publishToGitHub()` runs
+- **THEN** the configuration MUST be exported, an existing file SHA detected for updates, the content published to the target repository, and the local configuration updated with the GitHub source info
+
+#### Scenario: Reject publishing with missing parameters
+- **GIVEN** a publish request missing required GitHub parameters
+- **WHEN** `extractGitHubPublishParams()` returns an error
+- **THEN** the response MUST be HTTP 400 with the error message
+
+### Requirement: The system MUST support bulk delete of objects scoped by register and schema @e2e exclude backend bulk-delete REST endpoint + id resolution — covered by Newman
+
+`BulkController` MUST expose mass-delete operations scoped by register and/or
+schema: `deleteSchema()` and `deleteSchemaObjects()` delete all objects for a
+register+schema combination, and `deleteRegister()` deletes all objects for a
+register. These endpoints MUST accept an optional `hardDelete` flag (soft delete
+by default), resolve slug/numeric identifiers to numeric IDs, and return a
+`{success, message, deleted_count, deleted_uuids, ...scope ids, hard_delete}`
+envelope. Invalid (non-numeric where required) identifiers MUST return HTTP 400;
+unresolvable register/schema MUST return HTTP 404; failures MUST return HTTP 500.
+
+#### Scenario: Bulk delete all objects for a register+schema
+- **GIVEN** a register and schema with objects and an optional `hardDelete` flag
+- **WHEN** `BulkController::deleteSchemaObjects()` runs
+- **THEN** the register/schema identifiers MUST be resolved to numeric IDs and `deleteObjectsBySchema()` invoked
+- **AND** the response MUST include `success: true`, `deleted_count`, `deleted_uuids`, `register_id`, `schema_id`, and `hard_delete`
+
+#### Scenario: Bulk delete rejects a non-numeric schema id where one is required
+- **GIVEN** a `deleteSchema()` request with a non-numeric `schema`
+- **WHEN** the controller validates the input
+- **THEN** the response MUST be HTTP 400 with `error: "Invalid schema ID. Must be numeric."`
+
+#### Scenario: Bulk delete all objects for a register
+- **GIVEN** a numeric register id
+- **WHEN** `deleteRegister()` runs
+- **THEN** `deleteObjectsByRegister()` MUST be invoked and the response MUST include `deleted_count`, `deleted_uuids`, and `register_id`
+
+#### Scenario: Unresolvable register/schema returns 404
+- **GIVEN** a `deleteSchemaObjects()` request whose register or schema cannot be resolved
+- **WHEN** `resolveRegisterSchemaIds()` throws
+- **THEN** the response MUST be HTTP 404 with the error message
+
+### Requirement: ConfigurationService MUST provide the public facade over the configuration import/export handlers @e2e exclude backend service facade (upload resolution, app import/export) — covered by PHPUnit
+
+`ConfigurationService` MUST expose the public entry points for register
+configuration portability, delegating to the dedicated handlers (which own the
+detailed import/export contract): `exportConfig()` → `Configuration/ExportHandler`,
+`getUploadedJson()` → `Configuration/UploadHandler`, `importFromFilePath()` /
+`importFromApp()` / `importFromJson()` → `Configuration/ImportHandler`,
+`fetchRemoteConfiguration()` → `Configuration/FetchHandler`,
+`previewConfigurationChanges()` / `importConfigurationWithSelection()` →
+`Configuration/PreviewHandler`. The facade MUST pass through the handler results
+unchanged and MUST be the single service consuming apps inject for
+configuration import/export.
+
+#### Scenario: App imports its bundled configuration through the facade
+- **GIVEN** a consuming app calls `ConfigurationService::importFromApp('opencatalogi', $data, $version)`
+- **WHEN** the facade runs
+- **THEN** it MUST delegate to `Configuration/ImportHandler::importFromApp()` with the same arguments
+- **AND** the returned summary MUST carry the handler's `registers`, `schemas`, `objects`, `endpoints`, `sources`, `mappings`, `jobs`, `synchronizations`, and `rules` keys unchanged
+
+#### Scenario: Export configuration through the facade
+- **GIVEN** a `Configuration` entity
+- **WHEN** `ConfigurationService::exportConfig($config, includeObjects: true)` is called
+- **THEN** the facade MUST delegate to `Configuration/ExportHandler::exportConfig()`, supplying the OpenConnector configuration service only when OpenConnector is installed (`hasOpenConnector()` true)
+- **AND** return the OpenAPI 3.0.0 export array unchanged
+
+#### Scenario: Upload resolution accepts file, URL, or inline JSON
+- **GIVEN** a request whose body carries one of an uploaded file, a `url`, or an inline `json` dump
+- **WHEN** `ConfigurationService::getUploadedJson($data, $uploadedFiles)` is called
+- **THEN** it MUST delegate to `Configuration/UploadHandler::getUploadedJson()` which resolves the payload in that precedence order
+- **AND** return either the parsed array or a `JSONResponse` error
+
+### Requirement: ConfigurationService MUST track and compare imported-configuration versions @e2e exclude backend version check/compare logic — covered by PHPUnit
+
+The system MUST support remote-version awareness for imported configurations.
+`checkRemoteVersion()` MUST fetch a remote-sourced configuration, extract its
+`version` (or `info.version`), and persist `remoteVersion` + `lastChecked` on the
+`Configuration` entity; it MUST be a no-op returning `null` for non-remote
+configurations or configurations without a source URL. `compareVersions()` MUST
+use `version_compare()` to report `hasUpdate` with a human-readable message.
+`getConfiguredAppVersion()` / `setConfiguredAppVersion()` MUST read/write the
+last-imported version per app in appconfig.
+
+#### Scenario: Remote version check persists the discovered version
+- **GIVEN** a `Configuration` that `isRemoteSource()` with a valid source URL serving `{"version": "1.4.0"}`
+- **WHEN** `checkRemoteVersion()` runs
+- **THEN** the configuration's `remoteVersion` MUST be set to `1.4.0` and `lastChecked` MUST be updated
+- **AND** the method MUST return `1.4.0`
+
+#### Scenario: Version check is a no-op for non-remote configurations
+- **GIVEN** a `Configuration` whose `isRemoteSource()` is false
+- **WHEN** `checkRemoteVersion()` runs
+- **THEN** the method MUST return `null` without performing an HTTP fetch
+
+#### Scenario: Version comparison reports an available update
+- **GIVEN** a configuration with `localVersion = 1.2.0` and `remoteVersion = 1.3.0`
+- **WHEN** `compareVersions()` runs
+- **THEN** the result MUST report `hasUpdate: true`
+- **AND** the message MUST read `Update available: 1.2.0 → 1.3.0`
+
+#### Scenario: Missing version information is reported, not assumed
+- **GIVEN** a configuration with a `localVersion` but no `remoteVersion`
+- **WHEN** `compareVersions()` runs
+- **THEN** the result MUST report `hasUpdate: false`
+- **AND** the message MUST indicate the remote version is unknown and prompt checking it first
+
+### Requirement: importFromApp auto-creates a Register for application-type configurations
+
+The `ImportHandler::importFromApp` flow SHALL, when the imported
+configuration root carries `x-openregister.type=application`, create
+or reconcile a Register entity using the document's
+`x-openregister.app` as `slug`, `info.title` as `title`, and
+`info.description` as `description`. Lookup MUST be idempotent per
+`(slug, organisationId)` so a re-import on the same slug and
+organisation updates the existing register rather than inserting a
+duplicate. Every schema created or matched during the same import call
+MUST have its numeric ID appended to the resulting Register's
+`schemas[]` field if not already present.
+
+For configurations that do NOT declare
+`x-openregister.type=application` (including legacy configurations
+that pre-date the marker, and `library`-type configurations), the
+pre-spec behaviour MUST be preserved: importFromApp creates only the
+Configuration + Schemas rows and the caller is responsible for any
+Register wiring.
+
+#### Scenario: Application import without an existing register
+- **WHEN** `importFromApp` runs against a configuration carrying
+  `x-openregister.type=application`, `x-openregister.app=openbuild`,
+  `info.title='OpenBuild'`, `info.description='Citizen developer surface'`,
+  and 3 schemas where no Register row exists for `(openbuild, currentOrg)`
+- **THEN** a new Register row is inserted with slug=`openbuild`,
+  title=`OpenBuild`, description=`Citizen developer surface`, and
+  `schemas` set to the 3 newly-created schema IDs
+
+#### Scenario: Application re-import on the same organisation
+- **WHEN** `importFromApp` runs against the same configuration in the
+  same organisation a second time
+- **THEN** the existing Register row identified by
+  `(slug=openbuild, organisationId=currentOrg)` is loaded, its
+  `schemas[]` field is reconciled to include any newly-imported schema
+  IDs without duplicating existing entries, and no second Register row
+  is inserted
+
+#### Scenario: Library or untyped import
+- **WHEN** `importFromApp` runs against a configuration whose root has
+  no `x-openregister.type` field, or where the field is set to
+  `library`
+- **THEN** no Register row is auto-created; the Configuration row and
+  Schemas are persisted as before
+
+### Requirement: Bulk data paths are memory-bounded
+
+Bulk data paths SHALL NOT load an unbounded amount of data into memory in a
+single pass — this covers schema property exploration, object export, object
+import, and file text extraction. Each SHALL either sample, page, chunk, or
+size-guard its input, and any cap applied SHALL be logged, never silent.
+
+#### Scenario: Schema exploration samples rather than full-scans
+
+- **WHEN** schema property exploration runs on a schema with a very large object
+  count
+- **THEN** it analyses a bounded sample
+- **AND** the result indicates it is a sample ("sampled N of M")
+
+#### Scenario: Export streams large result sets
+
+- **WHEN** an export is requested for a large object set
+- **THEN** results are fetched in bounded batches and streamed into the writer
+- **AND** if any cap is applied, the number of omitted rows is logged
+
+#### Scenario: Import processes in chunks
+
+- **WHEN** a large import payload is processed
+- **THEN** objects are persisted in bounded chunks (multiple save operations)
+- **AND** the whole payload is not buffered before a single save
+
+#### Scenario: Oversized file skips extraction
+
+- **WHEN** a file exceeds the configured extraction size ceiling
+- **THEN** its content is not loaded into memory
+- **AND** it is skipped with a logged, non-fatal outcome
+
 ## Current Implementation Status
 - **Implemented:**
   - `ImportService` (`lib/Service/ImportService.php`) with `importFromCsv()` and `importFromExcel()` methods for batch import with ReactPHP optimization
@@ -581,7 +803,7 @@ register portability" requirement and are not redefined here.
   - `Configuration/ImportHandler` (`lib/Service/Configuration/ImportHandler.php`) for importing OpenAPI 3.0.0 configuration data (registers, schemas, objects, workflows, mappings)
   - `Configuration/ExportHandler` (`lib/Service/Configuration/ExportHandler.php`) for exporting configurations to OpenAPI format with slug-based references
   - `Object/ExportHandler` (`lib/Service/Object/ExportHandler.php`) for coordinating export and import operations between controller and services
-  - `SaveObjects` (`lib/Service/Object/SaveObjects.php`) with `ChunkProcessingHandler` for bulk operations (60-70% fewer DB calls, 2-3x faster)
+  - `SaveObjects` (`lib/Service/Object/SaveObjects.php`) with internal chunked processing for bulk operations (60-70% fewer DB calls, 2-3x faster)
   - `BulkRelationHandler` (`lib/Service/Object/SaveObjects/BulkRelationHandler.php`) for handling inverse relations during bulk import
   - `BulkValidationHandler` (`lib/Service/Object/SaveObjects/BulkValidationHandler.php`) for schema analysis caching and bulk validation
   - `ObjectsController::export()` endpoint returning `DataDownloadResponse` with CSV or XLSX
@@ -642,7 +864,7 @@ register portability" requirement and are not redefined here.
 
 **Status**: Partially Implemented
 
-**Existing Implementation**: `ImportService` and `ExportService` provide CSV and Excel import/export at the service layer with comprehensive bulk optimization via `SaveObjects`, `ChunkProcessingHandler`, `BulkRelationHandler`, and `BulkValidationHandler`. Configuration import/export is handled by `Configuration/ImportHandler` and `Configuration/ExportHandler` using OpenAPI 3.0.0 format. Object-level export is available via `Object/ExportHandler`. The `ObjectsController` exposes `export()` and `import()` endpoints. RBAC is enforced via `PropertyRbacHandler` for column visibility and admin checks for metadata columns.
+**Existing Implementation**: `ImportService` and `ExportService` provide CSV and Excel import/export at the service layer with comprehensive bulk optimization via `SaveObjects` (internal chunked processing), `BulkRelationHandler`, and `BulkValidationHandler`. Configuration import/export is handled by `Configuration/ImportHandler` and `Configuration/ExportHandler` using OpenAPI 3.0.0 format. Object-level export is available via `Object/ExportHandler`. The `ObjectsController` exposes `export()` and `import()` endpoints. RBAC is enforced via `PropertyRbacHandler` for column visibility and admin checks for metadata columns.
 
 **Nextcloud Core Integration**: The import pipeline leverages `QueuedJob` (OCP\BackgroundJob\QueuedJob) for SOLR warmup scheduling after imports. Completion notifications should use `INotifier` (OCP\Notification\INotifier). File handling should integrate with Nextcloud Files (WebDAV) for import template storage, scheduled file imports, and export file delivery. The `IJobList` service is already injected into `ImportService` for background job management.
 

@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -74,8 +75,8 @@ class MailAppScriptListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-52
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function handle(Event $event): void
     {
@@ -111,7 +112,7 @@ class MailAppScriptListener implements IEventListener
         // Inject the sidebar script (only if compiled JS exists).
         $jsPath = __DIR__.'/../../js/openregister-mail-sidebar.js';
         if (file_exists($jsPath) === true) {
-            Util::addScript('openregister', 'openregister-mail-sidebar');
+            ScriptManifestLoader::addEntryScripts('openregister', 'mailSidebar', 'openregister-mail-sidebar');
             Util::addStyle('openregister', 'mail-sidebar');
         }
 
@@ -128,7 +129,7 @@ class MailAppScriptListener implements IEventListener
      *
      * @return bool True if the user has register access.
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-23/tasks.md#task-48
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-mail-app-script-injection-via-event-listener
      */
     private function userHasRegisterAccess(): bool
     {

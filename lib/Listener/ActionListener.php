@@ -19,14 +19,13 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
-use Exception;
 use OCA\OpenRegister\Db\ActionMapper;
 use OCA\OpenRegister\Service\ActionExecutor;
 use OCP\EventDispatcher\Event;
@@ -52,7 +51,7 @@ class ActionListener implements IEventListener
      * @param ActionExecutor  $actionExecutor Action executor for running actions
      * @param LoggerInterface $logger         Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private readonly ActionMapper $actionMapper,
@@ -68,7 +67,7 @@ class ActionListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -122,8 +121,12 @@ class ActionListener implements IEventListener
                 payload: $payload,
                 eventType: $eventType
             );
-        } catch (Exception $e) {
-            // Never let listener failures affect other listeners.
+        } catch (\Throwable $e) {
+            // Never let listener failures affect other listeners. Catch
+            // \Throwable (not just Exception) so a PHP Error raised inside a
+            // listener — e.g. a type mismatch on an event getter — cannot
+            // bubble up and turn an otherwise-successful object operation into
+            // a 500.
             $this->logger->error(
                 message: '[ActionListener] Error handling event',
                 context: [
@@ -141,7 +144,7 @@ class ActionListener implements IEventListener
      *
      * @return string Short class name (e.g., 'ObjectCreatingEvent')
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function getEventTypeName(Event $event): string
     {
@@ -161,7 +164,7 @@ class ActionListener implements IEventListener
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function extractPayload(Event $event): array
     {
@@ -187,36 +190,47 @@ class ActionListener implements IEventListener
             }
         }
 
-        // Register events.
+        // Register events. Some events (e.g. ObjectTransitionedEvent) expose
+        // getRegister() as a plain string id/uuid rather than a Register entity;
+        // guard the type so calling jsonSerialize() on a string never fatals
+        // (Error, not Exception, so the handle() try/catch would not absorb it).
         if (method_exists($event, 'getRegister') === true) {
             $register = $event->getRegister();
-            if ($register !== null) {
+            if (is_object($register) === true) {
                 $payload['register']     = $register->jsonSerialize();
                 $payload['registerUuid'] = $register->getUuid() ?? null;
+            } else if (is_string($register) === true && $register !== '') {
+                $payload['registerUuid'] = $register;
             }
         }
 
-        // Schema events.
+        // Schema events. As above, ObjectTransitionedEvent's getSchema() is a
+        // string id/uuid, not a Schema entity.
         if (method_exists($event, 'getSchema') === true) {
             $schema = $event->getSchema();
-            if ($schema !== null) {
+            if (is_object($schema) === true) {
                 $payload['schema']     = $schema->jsonSerialize();
                 $payload['schemaUuid'] = $schema->getUuid() ?? null;
+            } else if (is_string($schema) === true && $schema !== '') {
+                $payload['schemaUuid'] = $schema;
             }
         }
 
-        // Action events.
+        // Action events. ObjectTransitionedEvent's getAction() is the string
+        // transition name (e.g. 'park'), not an Action entity.
         if (method_exists($event, 'getAction') === true) {
             $action = $event->getAction();
-            if ($action !== null) {
+            if (is_object($action) === true) {
                 $payload['action'] = $action->jsonSerialize();
+            } else if (is_string($action) === true && $action !== '') {
+                $payload['action'] = $action;
             }
         }
 
         // Source events.
         if (method_exists($event, 'getSource') === true) {
             $source = $event->getSource();
-            if ($source !== null) {
+            if (is_object($source) === true) {
                 $payload['source'] = $source->jsonSerialize();
             }
         }
@@ -224,7 +238,7 @@ class ActionListener implements IEventListener
         // Configuration events.
         if (method_exists($event, 'getConfiguration') === true) {
             $configuration = $event->getConfiguration();
-            if ($configuration !== null) {
+            if (is_object($configuration) === true) {
                 $payload['configuration'] = $configuration->jsonSerialize();
             }
         }
@@ -240,7 +254,7 @@ class ActionListener implements IEventListener
      *
      * @return array Filtered actions that match their filter conditions
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function applyFilterConditions(array $actions, array $payload): array
     {
@@ -280,7 +294,7 @@ class ActionListener implements IEventListener
      *
      * @return mixed The value or null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-19
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function getNestedValue(array $data, string $key): mixed
     {

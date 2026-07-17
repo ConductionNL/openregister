@@ -3,9 +3,9 @@
  *
  * Supports both hash-based routing (legacy Mail) and path-based routing (Mail 5.x+).
  *
- * @package OpenRegister
+ * @package
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-2
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import { ref, onMounted, onBeforeUnmount } from 'vue'
@@ -75,7 +75,7 @@ export function parseMailUrl(url) {
  * pushState — neither hashchange nor popstate fires for pushState).
  *
  * @param {object} options Options.
- * @param {number} [options.debounceMs=300] Debounce delay in milliseconds.
+ * @param {number} [options.debounceMs] Debounce delay in milliseconds.
  * @param {Function} [options.onChange] Callback when accountId/messageId change.
  * @return {object} Reactive state with accountId, messageId, and isMessageView.
  */

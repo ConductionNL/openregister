@@ -17,7 +17,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+ * @spec openspec/specs/text-extraction/spec.md
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -91,7 +91,7 @@ class FileHandler implements TextExtractionHandlerInterface
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -162,7 +162,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -197,7 +197,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *     share_stime: int|null, storage_id: null|string, owner: null|string,
      *     accessUrl: null|string, downloadUrl: null|string, published: null|string}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -216,7 +216,7 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @return int Unix timestamp.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceTimestamp(int $sourceId): int
     {
@@ -252,7 +252,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
             // For other types, we'd need to use the extraction methods
             // From TextExtractionService (PDF, DOCX, etc.).
-            // This should be refactored to use IndexService if needed.
             $this->logger->warning(
                 message: '[FileHandler] Complex extraction not yet implemented',
                 context: [

@@ -179,6 +179,7 @@ export default {
 	},
 	watch: {
 		/**
+		 * @param newValue
 		 * @spec exclude UI watcher — reloads branches when the selected repository changes.
 		 */
 		selectedRepository(newValue) {
@@ -206,7 +207,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		closeModal() {
 			if (!this.loading) {
@@ -263,6 +264,8 @@ export default {
 			}
 		},
 		/**
+		 * @param owner
+		 * @param repo
 		 * @spec exclude Modal data-load plumbing — fetches branches for the selected repository.
 		 */
 		async loadBranches(owner, repo) {
@@ -302,6 +305,7 @@ export default {
 			}
 		},
 		/**
+		 * @param value
 		 * @spec exclude UI event handler — reloads branches when repository selection changes.
 		 */
 		onRepositoryChange(value) {

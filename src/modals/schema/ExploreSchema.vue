@@ -64,40 +64,40 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<!-- Analysis Results (inside the well) -->
 				<div v-else-if="explorationData" class="analysis-summary">
 					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.total_objects }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Objects Analyzed') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.analysis_summary?.new_properties_count || Object.keys(explorationData.discovered_properties || {}).length }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'New Properties') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.analysis_summary?.existing_properties_improvements || 0 }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Existing Improvements') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ selectedProperties.length }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Selected') }}
 							</div>
 						</div>
 					</div>
-					<div style="text-align: center; padding: 12px; background: #e9ecef; border-radius: 6px; border: 1px solid #ddd; color: #495057; font-size: 0.9rem;">
+					<div style="text-align: center; padding: 12px; background: var(--color-background-dark); border-radius: 6px; border: 1px solid var(--color-border); color: var(--color-main-text); font-size: 0.9rem;">
 						<strong>{{ t('openregister', 'Analysis completed:') }}</strong> {{ new Date(explorationData.analysis_date).toLocaleString() }}
 					</div>
 				</div>
@@ -143,16 +143,16 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
 						<NcSelect
-						input-label="Confidence Filter"
 							v-model="confidenceFilter"
+							input-label="Confidence Filter"
 							:options="confidenceFilterOptions" />
 					</div>
 
 					<div class="filter-section">
 						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
 						<NcSelect
-						input-label="Type Filter"
 							v-model="typeFilter"
+							input-label="Type Filter"
 							:options="typeFilterOptions" />
 					</div>
 				</div>
@@ -738,10 +738,8 @@ export default {
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('Loaded detailed schema stats for exploration:', stats)
 				}
-			} catch (error) {
-				console.warn('Could not fetch object count:', error)
+			} catch {
 				this.objectCount = 0
 				this.objectStats = null
 			}
@@ -817,6 +815,7 @@ export default {
 			}
 		},
 		/**
+		 * @param propertyName
 		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
 		 */
 		togglePropertySelection(propertyName) {
@@ -954,6 +953,7 @@ export default {
 			}
 		},
 		/**
+		 * @param value
 		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
 		 */
 		formatExample(value) {
@@ -972,6 +972,7 @@ export default {
 			return String(value)
 		},
 		/**
+		 * @param page
 		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
 		 */
 		onPageChanged(page) {
@@ -984,6 +985,7 @@ export default {
 			}
 		},
 		/**
+		 * @param pageSize
 		 * @spec exclude UI pagination handler — sets page size and resets to page one.
 		 */
 		onPageSizeChanged(pageSize) {
@@ -998,6 +1000,7 @@ export default {
 			this.resetDialog()
 		},
 		/**
+		 * @param issues
 		 * @spec exclude UI display helper — maps issue-type strings to display objects.
 		 */
 		getIssueDetails(issues) {
@@ -1010,6 +1013,7 @@ export default {
 			})
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a UI category.
 		 */
 		getIssueType(issueType) {
@@ -1030,6 +1034,7 @@ export default {
 			return typeMap[issueType] || 'general'
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue category to a translated label.
 		 */
 		getIssueLabel(issueType) {
@@ -1046,6 +1051,7 @@ export default {
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
 		/**
+		 * @param issueType
 		 * @spec exclude UI display helper — maps an issue type to a translated description.
 		 */
 		getIssueDescription(issueType) {
@@ -1115,8 +1121,8 @@ export default {
 		}
 
 		.stat-box {
-			background: white;
-			border: 2px solid #e1e5e9;
+			background: var(--color-main-background);
+			border: 2px solid var(--color-border);
 			border-radius: 8px;
 			padding: 1rem;
 			text-align: center;
@@ -1125,7 +1131,7 @@ export default {
 		}
 
 		.stat-box:hover {
-			border-color: #0066cc;
+			border-color: var(--color-primary-element);
 			box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
 			transform: translateY(-2px);
 		}
@@ -1133,14 +1139,14 @@ export default {
 		.stat-number {
 			font-size: 2rem;
 			font-weight: bold;
-			color: #0066cc;
+			color: var(--color-primary-element);
 			margin-bottom: 0.5rem;
 			display: block;
 		}
 
 		.stat-title {
 			font-size: 0.9rem;
-			color: #666;
+			color: var(--color-text-maxcontrast);
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
 			font-weight: 600;
@@ -1149,10 +1155,10 @@ export default {
 		.analysis-timestamp {
 			text-align: center;
 			padding: 0.75rem;
-			background: #f8f9fa;
+			background: var(--color-background-hover);
 			border-radius: 6px;
-			border: 1px solid #e1e5e9;
-			color: #495057;
+			border: 1px solid var(--color-border);
+			color: var(--color-main-text);
 			font-size: 0.9rem;
 		}
 	}

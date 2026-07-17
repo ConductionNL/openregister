@@ -28,6 +28,7 @@ namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Service\LanguageService;
 use Psr\Log\LoggerInterface;
 
@@ -51,7 +52,7 @@ class TranslationHandler
      * @param LanguageService $languageService The request-scoped language service
      * @param LoggerInterface $logger          Logger interface
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly LanguageService $languageService,
@@ -69,7 +70,7 @@ class TranslationHandler
      *
      * @return string[] Array of translatable property names
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getTranslatableProperties(Schema $schema): array
     {
@@ -103,7 +104,7 @@ class TranslationHandler
      *
      * @return array The object data with resolved translations
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function resolveTranslationsForRender(
         array $objectData,
@@ -194,18 +195,26 @@ class TranslationHandler
     /**
      * Normalize translatable properties in object data for saving.
      *
-     * For each translatable property:
-     * - If the value is already a language-keyed object, stores as-is
-     * - If the value is a simple (non-array) value, wraps it under the default language
-     * - Validates that the default language always has a value
+     * Resolution per property:
+     *  - Already a language-keyed object (e.g. `{nl: ..., en: ...}`):
+     *    keep as-is. When `X-Translation-Target-Language` is also set on
+     *    the request, throw `TranslationTargetConflictException` to
+     *    surface conflicting intent to the consumer.
+     *  - Scalar value AND `X-Translation-Target-Language: <bcp47>` on the
+     *    request: wrap under the target language.
+     *  - Scalar value AND no target header: wrap under the register
+     *    default (legacy behaviour preserved).
      *
-     * @param array         $objectData The incoming object data
-     * @param Schema        $schema     The schema for property definitions
-     * @param Register|null $register   The register for language configuration
+     * @param array         $objectData The incoming object data.
+     * @param Schema        $schema     The schema for property definitions.
+     * @param Register|null $register   The register for language configuration.
      *
-     * @return array The normalized object data with translations wrapped correctly
+     * @return array The normalized object data with translations wrapped correctly.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @throws TranslationTargetConflictException When a full language-keyed body is
+     *                                             paired with `X-Translation-Target-Language`.
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
      */
     public function normalizeTranslationsForSave(
         array $objectData,
@@ -223,6 +232,8 @@ class TranslationHandler
             $defaultLanguage = $register->getDefaultLanguage();
         }
 
+        $targetLanguage = $this->languageService->getTargetLanguage();
+
         foreach ($translatableProps as $propName) {
             if (isset($objectData[$propName]) === false) {
                 continue;
@@ -232,6 +243,14 @@ class TranslationHandler
 
             // If it's already a language-keyed object, validate and keep.
             if (is_array($value) === true && $this->isLanguageKeyedObject(value: $value) === true) {
+                if ($targetLanguage !== null && $targetLanguage !== '') {
+                    // Shape D — conflicting intent. Fail fast.
+                    throw new TranslationTargetConflictException(
+                        property: $propName,
+                        targetLanguage: $targetLanguage
+                    );
+                }
+
                 // Ensure default language has a value.
                 if (isset($value[$defaultLanguage]) === false || $value[$defaultLanguage] === null) {
                     $this->logger->warning(
@@ -247,11 +266,17 @@ class TranslationHandler
 
                 $objectData[$propName] = $value;
                 continue;
-            }
+            }//end if
 
-            // Simple value: wrap under the default language.
+            // Simple value path.
             if ($value !== null) {
-                $objectData[$propName] = [$defaultLanguage => $value];
+                if ($targetLanguage !== null && $targetLanguage !== '') {
+                    // Shape B — wrap under the target language.
+                    $objectData[$propName] = [$targetLanguage => $value];
+                } else {
+                    // Shape A — legacy: wrap under register default.
+                    $objectData[$propName] = [$defaultLanguage => $value];
+                }
             }
         }//end foreach
 
@@ -268,7 +293,7 @@ class TranslationHandler
      *
      * @return bool True if this looks like a language-keyed object
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isLanguageKeyedObject(array $value): bool
     {

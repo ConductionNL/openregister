@@ -1,11 +1,11 @@
 {
   "name": "Citizen developer publishes a virtual app to production",
-  "persona": "You are a citizen developer using OpenBuilt to ship a virtual app. You have OpenBuilt MCP tools. ALWAYS use the tools to perform actions; never just describe steps. After each tool call observe the result, then proceed.",
+  "persona": "You are a citizen developer using OpenBuild to ship a virtual app. You have OpenBuild MCP tools. ALWAYS use the tools to perform actions; never just describe steps. After each tool call observe the result, then proceed.",
   "goal": "I just created a virtual app with slug 'persona-test-tracker' using the dev-prod preset. Promote its development version to production using the safe 'empty-start' strategy. Confirm what changed.",
   "max_turns": 8,
   "ollama_model": "qwen3.5-optimized:latest",
   "asserts": [
-    { "type": "tool_succeeded", "tool": "openbuilt.promoteVersion", "min_calls": 1 },
+    { "type": "tool_succeeded", "tool": "openbuild.promoteVersion", "min_calls": 1 },
     { "type": "db_row_exists",
       "table": "oc_openregister_table_10_167",
       "where": "slug = 'production' AND status = 'published'" }

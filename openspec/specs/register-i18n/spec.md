@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 ---
 
 # Register Internationalization
@@ -9,9 +9,7 @@ status: implemented
 Implement multi-language content management for register objects so that translatable properties store per-language variants, APIs negotiate content language via Accept-Language headers, and the UI provides language-aware editing with completeness tracking. The system MUST support at minimum Dutch (NL, required) and English (EN, optional) to comply with Single Digital Gateway (SDG) Regulation (EU) 2018/1724 for cross-border EU service access, while the architecture MUST allow registers to configure any number of BCP 47 languages including RTL scripts. This spec covers data-level i18n for register object content -- it is distinct from the app UI string translations governed by `i18n-infrastructure`, `i18n-string-extraction`, `i18n-backend-messages`, and `i18n-dutch-translations` specs, which handle Nextcloud `IL10N` / `t()` / `$l->t()` for interface labels.
 
 **Source**: Gap identified in cross-platform analysis; four competitors implement field-level i18n. SDG compliance requires English availability for cross-border services. ADR-005 mandates NL+EN as minimum languages for all Conduction apps.
-
 ## Requirements
-
 ### Requirement: Schema properties MUST support a translatable flag
 
 Schema property definitions MUST accept a `translatable: true` attribute indicating the field supports multiple language versions. Properties without the flag (or with `translatable: false`) SHALL store a single value regardless of language context. The `translatable` attribute MUST be stored as part of the property definition in the schema's `properties` JSON and MUST be inspectable by `TranslationHandler::getTranslatableProperties()`.
@@ -523,6 +521,186 @@ Properties that use `$ref` to reference other objects SHALL NOT be translatable 
 - **THEN** the 2 translated categories SHALL show English names
 - **AND** the 1 untranslated category SHALL show the Dutch fallback name
 
+### Requirement: The translations sidecar MUST expose a REST surface for search, per-object retrieval, status promotion, and bulk machine-translation @e2e exclude backend REST sidecar surface — covered by Newman/PHPUnit
+
+`TranslationController` MUST provide the HTTP surface over the translation sidecar (the `register-i18n` storage layer covers the data model; this requirement covers the API).
+
+- `search` MUST accept optional `query` (full-text), `language`, `status`, `objectUuid`, and `limit` (clamped to 1..1000, default 100), delegate to `TranslationStatusService::search()`, and return `{results, count}`.
+- `showByObject` MUST return every translation slot for one object via `TranslationMapper::findByObject($uuid)`, plus a `completeness` block computed against the schema's translatable-property total when a `schema` ref (id/uuid/slug) is supplied and resolvable; the response MUST be `{translations, completeness}`. An unresolvable or absent schema MUST yield an empty `completeness` (non-fatal).
+- `setStatus` MUST promote / change the workflow status of one `(uuid, property, language)` slot via `TranslationStatusService::setStatus()`, returning HTTP 400 when `status` is missing or when the service throws `InvalidArgumentException`, otherwise the updated row.
+- `bulkTranslate` MUST require `from` and `to` language codes (HTTP 400 otherwise), load the object by uuid (HTTP 404 when not found), delegate to `BulkTranslationService::translateObject()` with the optional `properties` whitelist, and return `{uuid, from, to, translated, skipped}`.
+
+#### Scenario: Search clamps the limit
+- **GIVEN** a `search` request with `limit=99999`
+- **WHEN** the controller builds the query
+- **THEN** the effective limit MUST be clamped to 1000 before calling `TranslationStatusService::search()`
+- **AND** the response MUST be `{results, count}`
+
+#### Scenario: Per-object slots with completeness
+- **GIVEN** an object with translation slots and a resolvable `schema` ref
+- **WHEN** `showByObject` is called with that `schema`
+- **THEN** the response MUST include `translations` (serialized slots) and a non-empty `completeness` block
+- **AND** when `schema` is omitted or unresolvable, `completeness` MUST be empty and the call MUST still succeed
+
+#### Scenario: Status promotion validates input
+- **GIVEN** a `setStatus` request with no `status`
+- **THEN** the response MUST be HTTP 400 with `{error: "status is required"}`
+- **AND** an `InvalidArgumentException` from the service MUST also map to HTTP 400 with the exception message
+
+#### Scenario: Bulk translate requires from and to and an existing object
+- **GIVEN** a `bulkTranslate` request missing `from` or `to`
+- **THEN** the response MUST be HTTP 400 with `{error: "from and to are required"}`
+- **AND** a request for a non-existent object uuid MUST return HTTP 404 with `{error: "object not found", uuid}`
+- **AND** a valid request MUST return `{uuid, from, to, translated, skipped}`
+
+### Requirement: The system MUST project translatable content into the sidecar on object lifecycle events @e2e exclude backend lifecycle projection (create/update/transition/delete listeners) — covered by PHPUnit
+
+The system MUST keep the `openregister_translations` sidecar in sync with translatable object content by reacting to object lifecycle events. `TranslationProjectionListener` MUST subscribe to `ObjectCreatedEvent`, `ObjectUpdatedEvent`, `ObjectDeletedEvent`, and `ObjectTransitionedEvent`. On create, update, and transition it MUST project the object's translatable content into the sidecar via `TranslationProjectionService::project($object)`; on delete it MUST remove the object's sidecar rows via `TranslationProjectionService::purge($object)`.
+
+#### Scenario: Project on object creation
+- **GIVEN** an `ObjectCreatedEvent` carrying an `ObjectEntity`
+- **WHEN** `TranslationProjectionListener::handle()` processes it
+- **THEN** it MUST call `TranslationProjectionService::project($object)`
+
+#### Scenario: Re-project on update using the new object state
+- **GIVEN** an `ObjectUpdatedEvent`
+- **WHEN** `handle()` processes it
+- **THEN** it MUST read the new state via `getNewObject()`
+- **AND** call `TranslationProjectionService::project($object)`
+
+#### Scenario: Re-project on transition
+- **GIVEN** an `ObjectTransitionedEvent` carrying an `ObjectEntity`
+- **WHEN** `handle()` processes it
+- **THEN** it MUST call `TranslationProjectionService::project($object)`
+
+#### Scenario: Purge on deletion
+- **GIVEN** an `ObjectDeletedEvent` carrying an `ObjectEntity`
+- **WHEN** `handle()` processes it
+- **THEN** it MUST call `TranslationProjectionService::purge($object)` to remove the object's sidecar translation rows
+
+#### Scenario: Non-ObjectEntity payload is ignored
+- **GIVEN** a lifecycle event whose payload is not an `ObjectEntity`
+- **WHEN** `handle()` processes it
+- **THEN** neither `project()` nor `purge()` MUST be called (the `instanceof ObjectEntity` guard short-circuits)
+
+#### Notes
+- The projection sidecar (`openregister_translations`) and `TranslationProjectionService` are introduced by the in-flight `i18n-source-of-truth` / `i18n-api-language-negotiation` changes; this listener is the reactive write-side that those changes rely on.
+
+### Requirement: A translation sidecar MUST be projected from the authoritative object JSONB @e2e exclude backend sidecar projection from JSONB — covered by PHPUnit
+
+The authoritative store for translatable property values MUST remain the language-keyed JSONB on the object. The system MUST maintain a derived `openregister_translations` sidecar — one row per `(object uuid, property, language)` — kept in sync by `TranslationProjectionService`, optimized for per-language search, completeness queries, and workflow status tracking. The projection MUST NOT become a second source of truth.
+
+#### Scenario: Project translatable properties into the sidecar
+
+- **GIVEN** an object with a translatable property `omschrijving` holding `{"nl": "Paspoort", "en": "Passport"}`
+- **WHEN** `TranslationProjectionService::project()` runs (on object create or update)
+- **THEN** it MUST upsert one sidecar row per non-empty language value via `TranslationMapper::upsert()`
+- **AND** the upsert MUST pass `status: null` so the mapper preserves an existing status or defaults a new slot to `draft`
+- **AND** the translator MUST be set from the active session UID when available
+
+#### Scenario: Legacy single-language value is credited to the default language
+
+- **GIVEN** a translatable property whose value is a plain string (legacy, not language-keyed)
+- **WHEN** the projection runs
+- **THEN** the value MUST be projected under the register default language `nl`
+
+#### Scenario: Stale rows are removed when a value disappears
+
+- **GIVEN** an object that previously had an `en` translation now removed from its JSONB
+- **WHEN** the projection runs
+- **THEN** any sidecar row whose `(property, language)` no longer has a desired value MUST be deleted (best-effort)
+- **AND** when the schema declares no translatable properties, any pre-existing rows for properties no longer translatable MUST be deleted
+
+#### Scenario: Object with no uuid or unresolvable schema is skipped
+
+- **GIVEN** an object with a null/empty uuid, or whose schema reference cannot be resolved
+- **WHEN** the projection runs
+- **THEN** it MUST return without writing, and any thrown error MUST be caught and logged as a warning rather than propagated
+
+#### Scenario: Purge drops every translation row for an object
+
+- **GIVEN** an object being deleted
+- **WHEN** `TranslationProjectionService::purge()` is called
+- **THEN** it MUST delete all sidecar rows for the object uuid via `TranslationMapper::deleteByObject()`
+- **AND** a failure MUST be caught and logged as a warning, never blocking the deletion
+
+### Requirement: Translation workflow status and completeness MUST be queryable through the sidecar @e2e exclude backend sidecar status/completeness queries — covered by Newman/PHPUnit
+
+`TranslationStatusService` MUST expose the public API over the translation sidecar: promoting a slot's workflow status, computing per-object completeness, searching translation rows, and discovering objects that lack a given language.
+
+#### Scenario: Promote a translation slot's status
+
+- **GIVEN** an existing translation slot for `(object, property, language)`
+- **WHEN** `setStatus()` is called with a status in `Translation::ALL_STATUSES`
+- **THEN** the slot's status MUST be updated via `TranslationMapper::upsert()`, preserving the existing value and attributing the active session UID as translator
+
+#### Scenario: Invalid status or missing slot is rejected
+
+- **GIVEN** a `setStatus()` call with a status not in `Translation::ALL_STATUSES`, or for a `(object, property, language)` slot that does not yet exist
+- **WHEN** the method executes
+- **THEN** it MUST throw `InvalidArgumentException` with a message naming the invalid status or the missing slot — a value MUST be set before its status can be promoted
+
+#### Scenario: Per-object completeness ratio per language
+
+- **GIVEN** an object and its schema with N translatable properties
+- **WHEN** `completenessForObject()` is called
+- **THEN** it MUST return `[language => {translated, total, ratio}]` where `total` is N, `translated` is the count of filled slots for that language, and `ratio` is `translated / total` rounded to two decimals
+- **AND** when the schema has no translatable properties it MUST return an empty array
+
+#### Scenario: Search and missing-language discovery
+
+- **GIVEN** translation rows in the sidecar
+- **WHEN** `search()` is called with optional query, language, status, and object filters and a limit
+- **THEN** it MUST return the matching rows as `jsonSerialize()` arrays
+- **AND** `findObjectsMissingLanguage()` MUST return the subset of candidate uuids missing at least one translatable-property value in the requested language
+
+### Requirement: Machine translation MUST fill empty slots through a pluggable provider @e2e exclude backend pluggable MT provider strategy — covered by PHPUnit
+
+`BulkTranslationService` MUST translate an object's translatable properties from a source to a target language using a configured `TranslationProviderInterface`, filling only target-language slots that are currently empty. A default `IdentityTranslationProvider` MUST ship so the flow is testable without external API keys.
+
+#### Scenario: Translate only empty target slots
+
+- **GIVEN** an object with a source value in `fromLang` and no value in `toLang` for a translatable property
+- **WHEN** `translateObject()` runs
+- **THEN** it MUST call `provider->translate()`, record the result in the returned `translated` map, and immediately upsert the sidecar slot with status `Translation::STATUS_MACHINE_TRANSLATED` and translator `provider:{identifier}`
+- **AND** a property whose target slot is already non-empty MUST be skipped with reason `target-slot-already-filled`
+
+#### Scenario: No-op and skip conditions
+
+- **GIVEN** a `translateObject()` call where `fromLang === toLang`, the schema is unresolvable, or the schema has no translatable properties
+- **WHEN** the method executes
+- **THEN** it MUST return an empty `translated` map with a `_global` skip reason
+- **AND** a property with no usable source value MUST be skipped with reason `no-source-value`
+- **AND** a provider that throws or returns an empty string MUST be skipped (`provider-error: ...` / `provider-returned-empty`) without aborting the remaining properties
+
+#### Scenario: Provider strategy contract
+
+- **GIVEN** any `TranslationProviderInterface` implementation
+- **WHEN** `translate(text, fromLang, toLang)` is called
+- **THEN** it MUST return the translated string or `null` on a miss/error (callers MUST treat `null` as a skip, never persisting it)
+- **AND** `getIdentifier()` MUST return a stable slug used for `provider:{identifier}` status attribution
+- **AND** `IdentityTranslationProvider::translate()` MUST return the source text verbatim and `getIdentifier()` MUST return `identity`
+
+### Requirement: CSV import/export MUST round-trip translations via field-language columns @e2e exclude backend CSV flatten/unflatten round-trip — covered by PHPUnit
+
+`TranslationCsvCodec` MUST convert between the nested `{lang: value}` JSON shape and the flat `field_lang` column shape used by CSV/Excel, preserving language variants in both directions.
+
+#### Scenario: Flatten language-keyed values to columns
+
+- **GIVEN** an object row with a translatable property `title` holding `{"nl": "...", "en": "..."}`
+- **WHEN** `flattenForCsv()` runs
+- **THEN** it MUST emit one `title_nl` / `title_en` column per language present
+- **AND** a translatable property holding a plain legacy string MUST be emitted under `field_und` (BCP 47 undetermined) to avoid guessing the language
+- **AND** untranslatable properties MUST pass through unchanged, with non-scalar values JSON-encoded to keep one cell per column
+
+#### Scenario: Unflatten field-language columns back to nested shape
+
+- **GIVEN** a flat CSV row with columns `title_nl`, `title_en`, and unrelated columns
+- **WHEN** `unflattenFromCsv()` runs
+- **THEN** columns matching `<translatable-property>_<lang>` (where `<lang>` matches the language-code pattern) MUST be reassembled into `{property: {lang: value}}`
+- **AND** an empty cell MUST NOT create a slot (the projection treats it as untranslated)
+- **AND** unrecognized or untranslatable columns MUST pass through as-is
+
 ## Current Implementation Status
 
 **Partially implemented.** Core infrastructure for register-level i18n exists:
@@ -535,10 +713,21 @@ Properties that use `$ref` to reference other objects SHALL NOT be translatable 
 - `SaveObject` calls `TranslationHandler::normalizeTranslationsForSave()` during object persistence.
 - `Application` registers `LanguageService` as a singleton and `LanguageMiddleware` as middleware.
 
+**Capabilities shipped via companion changes** (`i18n-source-of-truth` + `i18n-api-language-negotiation`):
+
+- Schema-property `sourceLanguage` modifier + object-level `_translationMeta.<prop>.sourceLanguage` override (per `i18n-source-of-truth`).
+- `openregister_translations.source_language` column + back-fill migration + `occ openregister:translations:backfill-source-language` command (per `i18n-source-of-truth`).
+- Automatic `outdated` flip on source-value change via `TranslationStatusService::markDerivedTranslationsOutdated` wired into `SaveObject` (per `i18n-source-of-truth`).
+- Translation query filters `?sourceLanguage=`, `?isOutOfDate=true`, `?compareToSource=true` on `GET /api/translations/search` (per `i18n-source-of-truth`).
+- `?_translationMeta=true` opt-in `_meta.languageMeta` render envelope on object responses (per `i18n-source-of-truth`).
+- `X-Source-Language` response header on object content (per `i18n-source-of-truth`).
+- `?_lang=<bcp47>` + `?language=<bcp47>` query parameters with priority over `Accept-Language` (per `i18n-api-language-negotiation`).
+- Write-side `X-Translation-Target-Language` header for scalar-body PATCH/PUT/POST (per `i18n-api-language-negotiation`).
+- `TranslationTargetConflictException` → `400` on conflicting language-keyed body + target-language header (per `i18n-api-language-negotiation`).
+
 **Not yet implemented:**
 - UI language tabs and translation editor in the object edit form
-- Translation workflow statuses (draft, needs_review, approved, outdated)
-- Translation completeness tracking and dashboard
+- Translation completeness tracking dashboard
 - Bulk translation operations
 - Import/export with translation-aware column handling (CSV `_nl` / `_en` suffixes)
 - Language-specific search indexing and cross-language search

@@ -19,13 +19,13 @@
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author  Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/reference-existence-validation/tasks.md
+ * @spec openspec/specs/reference-existence-validation/spec.md
  */
 
 declare(strict_types=1);

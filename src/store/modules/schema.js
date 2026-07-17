@@ -1,5 +1,10 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
+// The OpenRegister schema API contract lives in nc-vue, shared with OpenBuild's
+// editor, so the two cannot drift on what a 409 means (breaking change / schema
+// still has objects). See @conduction/nextcloud-vue src/utils/schemaApi.js.
+// Aliased: this store's own actions are also called saveSchema/deleteSchema, and an
+// unaliased call inside them would read like recursion.
+import { saveSchema as apiSaveSchema, deleteSchema as apiDeleteSchema } from '@conduction/nextcloud-vue'
 import { Schema } from '../../entities/index.js'
 
 // Module-scoped single-flight for refreshSchemaList; same rationale as the
@@ -34,7 +39,6 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
 		/**
 		 * Set the active schema item.
@@ -44,7 +48,6 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		setSchemaItem(schemaItem) {
 			this.schemaItem = schemaItem && new Schema(schemaItem)
-			console.log('Active schema item set to ' + (schemaItem?.title || 'null'))
 		},
 		/**
 		 * Set the schema list, normalizing empty-properties arrays to objects
@@ -65,7 +68,6 @@ export const useSchemaStore = defineStore('schema', {
 					showProperties: typeof existing.showProperties === 'boolean' ? existing.showProperties : false,
 				}
 			})
-			console.log('Schema list set to ' + schemas.length + ' items')
 		},
 		/**
 		 * Set pagination details
@@ -75,7 +77,6 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		setPagination(page, limit = 14) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit }) // Logging the pagination
 		},
 		/**
 		 * Set query filters for schema list
@@ -84,7 +85,6 @@ export const useSchemaStore = defineStore('schema', {
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters) // Logging the filters
 		},
 		/**
 		 * Refresh the schema list from the API.
@@ -148,16 +148,12 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to GET /api/schemas/{id}/stats
 		 */
 		async getSchemaStats(id) {
-			console.log('getSchemaStats called with ID:', id)
 			const endpoint = `/index.php/apps/openregister/api/schemas/${id}/stats`
-			console.log('Making request to:', endpoint)
 			try {
 				const response = await fetch(endpoint, {
 					method: 'GET',
 				})
-				console.log('Response status:', response.status)
 				const data = await response.json()
-				console.log('Response data:', data)
 				return data
 			} catch (err) {
 				console.error('Error in getSchemaStats:', err)
@@ -167,82 +163,71 @@ export const useSchemaStore = defineStore('schema', {
 		/**
 		 * Delete a schema.
 		 *
+		 * Goes through nc-vue's shared schema API contract. When objects still use the
+		 * schema the server refuses, and that surfaces as `SchemaHasObjectsError`
+		 * carrying `.objectCount` — callers show it and re-invoke with
+		 * `deleteObjects: true` to cascade. It is never cascaded on the user's behalf:
+		 * that permanently deletes their data.
+		 *
 		 * @param {object} schemaItem - The schema to delete
+		 * @param {object} [options] - Options.
+		 * @param {boolean} [options.deleteObjects] - Also delete the objects (irreversible).
 		 * @return {Promise} Promise with response and data
+		 * @throws {Error} A `SchemaHasObjectsError` (from nc-vue) when objects remain and
+		 *   no cascade was asked for; it carries `.objectCount`.
 		 * @spec exclude API passthrough to DELETE /api/schemas/{id}
 		 */
-		async deleteSchema(schemaItem) {
+		async deleteSchema(schemaItem, options = {}) {
 			if (!schemaItem.id) {
 				throw new Error('No schema item to delete')
 			}
 
-			console.log('Deleting schema...')
+			// NOTE: deliberately NOT wrapped in a try/catch that rebuilds the error. The
+			// typed refusals ARE the contract — flattening them into `new Error(...)`
+			// would strip `.objectCount` and leave the caller unable to offer the
+			// cascade, which is exactly the dead end this refactor removes.
+			const responseData = await apiDeleteSchema(schemaItem.id, {
+				deleteObjects: options.deleteObjects === true,
+			})
 
-			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
+			await this.refreshSchemaList()
+			this.setSchemaItem(null)
 
-			try {
-				const response = await fetch(endpoint, {
-					method: 'DELETE',
-				})
-
-				if (!response.ok) {
-					throw new Error(`HTTP error! status: ${response.status}`)
-				}
-
-				const responseData = await response.json()
-
-				if (!responseData || typeof responseData !== 'object') {
-					throw new Error('Invalid response data')
-				}
-
-				await this.refreshSchemaList()
-				this.setSchemaItem(null)
-
-				return { response, data: responseData }
-			} catch (error) {
-				console.error('Error deleting schema:', error)
-				throw new Error(`Failed to delete schema: ${error.message}`)
-			}
+			return { response: { ok: true }, data: responseData }
 		},
 		/**
 		 * Create or save a schema from store.
 		 *
+		 * Goes through nc-vue's shared schema API contract rather than a hand-rolled
+		 * fetch, so this editor and OpenBuild's cannot drift on what the server's
+		 * refusals mean. The raw fetch here threw away the response body entirely
+		 * (`HTTP error! status: 409`), which is why a breaking change surfaced as an
+		 * unexplained failure and could not be saved from this app at all.
+		 *
+		 * A breaking change raises `SchemaBreakingChangeError` carrying the
+		 * `changes[]` the server objected to — callers show those and re-invoke with
+		 * `acknowledgeBreaking: true`. It is never acknowledged on the user's behalf.
+		 *
 		 * @param {object} schemaItem - The schema to save
+		 * @param {object} [options] - Options.
+		 * @param {boolean} [options.acknowledgeBreaking] - Accept a breaking change.
 		 * @return {Promise} Promise with response and data
+		 * @throws {Error} A `SchemaBreakingChangeError` (from nc-vue) when the change is
+		 *   breaking and unacknowledged; it carries `.changes`.
 		 * @spec exclude API passthrough to POST/PUT /api/schemas
 		 */
-		async saveSchema(schemaItem) {
+		async saveSchema(schemaItem, options = {}) {
 			if (!schemaItem) {
 				throw new Error('No schema item to save')
 			}
 
-			console.log('Saving schema...')
-
-			const isNewSchema = !schemaItem?.id
-			const endpoint = isNewSchema
-				? '/index.php/apps/openregister/api/schemas'
-				: `/index.php/apps/openregister/api/schemas/${schemaItem.id}`
-			const method = isNewSchema ? 'POST' : 'PUT'
-
 			// Clean the schema data before sending
 			const cleanedSchema = this.cleanSchemaForSave(schemaItem)
 
-			const response = await fetch(
-				endpoint,
-				{
-					method,
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(cleanedSchema),
-				},
-			)
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`)
-			}
-
-			const responseData = await response.json()
+			const responseData = await apiSaveSchema(cleanedSchema, {
+				id: schemaItem?.id,
+				acknowledgeBreaking: options.acknowledgeBreaking === true,
+			})
 
 			if (!responseData || typeof responseData !== 'object') {
 				throw new Error('Invalid response data')
@@ -253,7 +238,7 @@ export const useSchemaStore = defineStore('schema', {
 			this.setSchemaItem(data)
 			this.refreshSchemaList()
 
-			return { response, data }
+			return { response: { ok: true }, data }
 
 		},
 		/**
@@ -315,8 +300,6 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error('No schema item to upload')
 			}
 
-			console.log('Uploading schema...')
-
 			const isNewSchema = !this.schemaItem
 			const endpoint = isNewSchema
 				? '/index.php/apps/openregister/api/schemas/upload'
@@ -370,8 +353,6 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error('No schema item ID to download')
 			}
 
-			console.log('Downloading schema...')
-
 			const response = await fetch(
 				`/index.php/apps/openregister/api/schemas/${schema.id}/download`,
 				{
@@ -423,8 +404,6 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to GET /api/schemas/{id}/explore
 		 */
 		async exploreSchemaProperties(schemaId) {
-			console.log('Exploring schema properties for schema ID:', schemaId)
-
 			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/explore`
 
 			const response = await fetch(endpoint, {
@@ -444,7 +423,6 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error(data.error)
 			}
 
-			console.log('Schema exploration completed:', data)
 			return data
 		},
 
@@ -457,8 +435,6 @@ export const useSchemaStore = defineStore('schema', {
 		 * @spec exclude API passthrough to POST /api/schemas/{id}/update-from-exploration
 		 */
 		async updateSchemaFromExploration(schemaId, propertyUpdates) {
-			console.log('Updating schema from exploration for schema ID:', schemaId)
-
 			const endpoint = `/index.php/apps/openregister/api/schemas/${schemaId}/update-from-exploration`
 
 			const response = await fetch(endpoint, {
@@ -481,8 +457,6 @@ export const useSchemaStore = defineStore('schema', {
 				throw new Error(data.error)
 			}
 
-			console.log('Schema updated from exploration:', data)
-
 			// Refresh schema store data
 			await this.refreshSchemaList()
 
@@ -503,50 +477,33 @@ export const useSchemaStore = defineStore('schema', {
 				// First check if we already have stats for this schema
 				const existingSchema = this.schemas.find(s => String(s.id) === schemaIdStr)
 				if (existingSchema?.stats?.objects?.total !== undefined) {
-					console.log('Using cached stats for schema:', schemaId, existingSchema.stats.objects.total)
 					return existingSchema.stats.objects.total
 				}
-
-				console.log('Fetching object count for schema:', schemaId)
 
 				// Try using the objects API to count objects for this schema
 				try {
 					const countResponse = await fetch(`/index.php/apps/openregister/api/objects/count?schema=${schemaId}`)
 					if (countResponse.ok) {
 						const countData = await countResponse.json()
-						console.log('Count response data:', countData)
 						const count = countData.count || countData.total || 0
-						console.log('Extracted object count from objects API:', count)
 						return count
 					}
 				} catch (countError) {
-					console.warn('Objects count API failed, falling back to stats:', countError)
+					// Objects count API failed; fall back to the stats endpoint below.
 				}
 
 				// Fallback to stats endpoint
 				const statsResponse = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}/stats`)
-				console.log('Stats response status:', statsResponse.status)
 
 				if (statsResponse.ok) {
 					const stats = await statsResponse.json()
-					console.log('Stats response data:', stats)
 					// The stats endpoint returns objectCount and objects_count
 					const count = stats.objectCount || stats.objects_count || 0
-					console.log('Extracted object count:', count)
 					return count
 				} else {
-					console.warn('Stats API returned error:', statsResponse.status, statsResponse.statusText)
-					// Try to get response text for debugging
-					try {
-						const errorText = await statsResponse.text()
-						console.warn('Error response body:', errorText)
-					} catch (e) {
-						// Ignore error reading response
-					}
 					return 0
 				}
 			} catch (error) {
-				console.warn('Could not fetch object count:', error)
 				return 0
 			}
 		},

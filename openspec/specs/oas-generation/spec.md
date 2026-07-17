@@ -1,6 +1,6 @@
 ---
 retrofit: true
-status: implemented
+status: done
 ---
 # OAS Generation
 

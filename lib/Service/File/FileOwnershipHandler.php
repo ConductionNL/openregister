@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class FileOwnershipHandler
      * @psalm-return   IUser
      * @phpstan-return IUser
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getUser(): IUser
     {
@@ -163,11 +163,21 @@ class FileOwnershipHandler
      * @psalm-return   void
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function transferFileOwnershipIfNeeded(File $file, ?FileSharingHandler $fileSharingHandler=null): void
     {
         try {
+            // If the current user already has write rights on the file, leave ownership
+            // as-is. Files uploaded into the OpenRegister folder are already owned by the
+            // openregister system user (the folder's mount owner), and files linked from
+            // folders outside the OpenRegister folder must keep their original owner — in
+            // neither case do we re-own. Re-owning remains only as a fallback for when the
+            // session cannot otherwise write the file.
+            if ($file->isUpdateable() === true) {
+                return;
+            }
+
             // Get current user.
             $currentUser = $this->getCurrentUser();
             if ($currentUser === null) {
@@ -197,8 +207,9 @@ class FileOwnershipHandler
 
             $fileOwnerId = $fileOwner->getUID();
 
-            // Check if current user is the owner and is not OpenRegister.
-            if ($fileOwnerId === $currentUserId && $currentUserId !== $openRegisterUserId) {
+            // Re-own only when the current user owns the node. They are already known
+            // not to be the OpenRegister user (the equality case returned above).
+            if ($fileOwnerId === $currentUserId) {
                 $fileName = $file->getName();
                 $msg      = '[FileOwnershipHandler] Transferring file '.$fileName.' from '.$currentUserId;
                 $this->logger->info(
@@ -250,7 +261,7 @@ class FileOwnershipHandler
      * @psalm-return   void
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-009
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function transferFolderOwnershipIfNeeded(Node $folder, ?FileSharingHandler $fileSharingHandler=null): void
     {

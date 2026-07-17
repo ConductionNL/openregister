@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -29,6 +29,7 @@ use DateTime;
 use Exception;
 use OCA\DAV\CalDAV\CalDavBackend;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
+use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Sabre\VObject\Reader;
@@ -72,22 +73,32 @@ class TaskService
     private readonly LoggerInterface $logger;
 
     /**
+     * URL generator (webroot-aware deep links).
+     *
+     * @var IURLGenerator
+     */
+    private readonly IURLGenerator $urlGenerator;
+
+    /**
      * Constructor.
      *
      * @param CalDavBackend   $calDavBackend CalDAV backend for VTODO operations
      * @param IUserSession    $userSession   User session for current user context
      * @param LoggerInterface $logger        Logger for error reporting
+     * @param IURLGenerator   $urlGenerator  URL generator for deep links
      *
      * @return void
      */
     public function __construct(
         CalDavBackend $calDavBackend,
         IUserSession $userSession,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        IURLGenerator $urlGenerator
     ) {
         $this->calDavBackend = $calDavBackend;
         $this->userSession   = $userSession;
         $this->logger        = $logger;
+        $this->urlGenerator  = $urlGenerator;
     }//end __construct()
 
     /**
@@ -267,7 +278,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function getTasksForObject(string $objectUuid): array
     {
@@ -306,6 +317,15 @@ class TaskService
 
                 // Only include tasks that match our object UUID.
                 if ($taskArray !== null && $taskArray['objectUuid'] === $objectUuid) {
+                    // Deep-link to the specific task in the Tasks app (hash route).
+                    $deepLink = $this->buildTaskDeepLink(
+                        calendarUri: ($calendar['uri'] ?? null),
+                        taskUri: ($taskArray['id'] ?? null)
+                    );
+                    if ($deepLink !== null) {
+                        $taskArray['url'] = $deepLink;
+                    }
+
                     $tasks[] = $taskArray;
                 }
             } catch (Exception $e) {
@@ -313,11 +333,40 @@ class TaskService
                     'Failed to parse calendar object: '.$e->getMessage(),
                     ['uri' => $calendarObject['uri']]
                 );
-            }
+            }//end try
         }//end foreach
 
         return $tasks;
     }//end getTasksForObject()
+
+    /**
+     * Build a webroot-aware deep-link to a specific task in the Tasks app.
+     *
+     * The Tasks app uses hash routing:
+     * `/apps/tasks/#/calendars/{calendarUri}/tasks/{taskUri}`.
+     *
+     * Returns null (record gets no `url`) when either URI is missing, rather
+     * than emitting a broken link.
+     *
+     * @param string|null $calendarUri The CalDAV calendar URI owning the task.
+     * @param string|null $taskUri     The VTODO object URI (.ics).
+     *
+     * @return string|null The deep-link URL, or null when not resolvable.
+     */
+    private function buildTaskDeepLink(?string $calendarUri, ?string $taskUri): ?string
+    {
+        if ($calendarUri === null || $calendarUri === '' || $taskUri === null || $taskUri === '') {
+            return null;
+        }
+
+        try {
+            $base = $this->urlGenerator->linkToRoute('tasks.page.index');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return rtrim($base, '/').'/#/calendars/'.rawurlencode($calendarUri).'/tasks/'.rawurlencode($taskUri);
+    }//end buildTaskDeepLink()
 
     /**
      * Create a new CalDAV task linked to an OpenRegister object.
@@ -335,7 +384,7 @@ class TaskService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-annotate-openregister-2026-04-30/tasks.md#task-61
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function createTask(
         int $registerId,
@@ -379,6 +428,13 @@ class TaskService
         $lines[] = 'X-OPENREGISTER-REGISTER:'.$registerId;
         $lines[] = 'X-OPENREGISTER-SCHEMA:'.$schemaId;
         $lines[] = 'X-OPENREGISTER-OBJECT:'.$objectUuid;
+
+        // Non-core schema fields (e.g. assignee) are round-tripped as a single
+        // base64-encoded JSON blob so any field survives the VTODO projection
+        // (object-source-providers) without iCal escaping concerns.
+        if (empty($data['fields']) === false && is_array($data['fields']) === true) {
+            $lines[] = 'X-OPENREGISTER-DATA:'.base64_encode((string) json_encode($data['fields']));
+        }
 
         // RFC 9253 LINK property.
         $linkLabel = $this->escapeIcalText(text: $objectTitle);
@@ -453,6 +509,17 @@ class TaskService
             unset($vtodo->DUE);
         } else if (isset($data['due']) === true) {
             $vtodo->DUE = new DateTime($data['due']);
+        }
+
+        // Round-trip non-core schema fields (object-source-providers): replace the
+        // X-OPENREGISTER-DATA blob so a projected object's non-core fields (e.g.
+        // assignee, taskStatus) update faithfully. Linking props (REGISTER/SCHEMA/
+        // OBJECT) are left untouched above so the link + scoping survive the update.
+        if (isset($data['fields']) === true && is_array($data['fields']) === true) {
+            unset($vtodo->{'X-OPENREGISTER-DATA'});
+            if (empty($data['fields']) === false) {
+                $vtodo->add('X-OPENREGISTER-DATA', base64_encode((string) json_encode($data['fields'])));
+            }
         }
 
         // Update DTSTAMP.
@@ -562,6 +629,7 @@ class TaskService
             'objectUuid'  => $linkData['objectUuid'],
             'registerId'  => $linkData['registerId'],
             'schemaId'    => $linkData['schemaId'],
+            'fields'      => $linkData['fields'],
         ];
     }//end vtodoToArray()
 
@@ -570,13 +638,14 @@ class TaskService
      *
      * @param mixed $vtodo The VTODO component from the parsed iCalendar.
      *
-     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
+     * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null, fields: array<string, mixed>}
      */
     private function extractOpenRegisterProperties(mixed $vtodo): array
     {
         $objectUuid = null;
         $registerId = null;
         $schemaId   = null;
+        $fields     = [];
 
         if (isset($vtodo->{'X-OPENREGISTER-OBJECT'}) === true) {
             $objectUuid = (string) $vtodo->{'X-OPENREGISTER-OBJECT'};
@@ -590,10 +659,24 @@ class TaskService
             $schemaId = (int) (string) $vtodo->{'X-OPENREGISTER-SCHEMA'};
         }
 
+        // Non-core schema fields are round-tripped as a single base64-encoded
+        // JSON blob (X-OPENREGISTER-DATA) so any field survives the VTODO
+        // projection without iCal-escaping pitfalls. Decoded best-effort.
+        if (isset($vtodo->{'X-OPENREGISTER-DATA'}) === true) {
+            $raw = base64_decode((string) $vtodo->{'X-OPENREGISTER-DATA'}, true);
+            if ($raw !== false) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded) === true) {
+                    $fields = $decoded;
+                }
+            }
+        }
+
         return [
             'objectUuid' => $objectUuid,
             'registerId' => $registerId,
             'schemaId'   => $schemaId,
+            'fields'     => $fields,
         ];
     }//end extractOpenRegisterProperties()
 

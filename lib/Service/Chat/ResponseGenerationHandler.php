@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -63,7 +63,7 @@ use ReflectionClass;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) This class is a multi-provider LLM router that
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   This class is a multi-provider LLM router that
  *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
  *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
  *   Splitting into one class per provider would be the clean long-term solution; for now all
@@ -95,6 +95,15 @@ class ResponseGenerationHandler
     private LoggerInterface $logger;
 
     /**
+     * Token/latency usage from the last generateResponse() call, for per-run cost recording
+     * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
+     * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
+     *
+     * @var array<string, int|float>
+     */
+    public array $lastUsage = [];
+
+    /**
      * Constructor
      *
      * @param SettingsService       $settingsService Settings service for LLM config.
@@ -103,7 +112,7 @@ class ResponseGenerationHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         SettingsService $settingsService,
@@ -158,7 +167,7 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateResponse(
         string $userMessage,
@@ -324,9 +333,9 @@ class ResponseGenerationHandler
 
             // Inject the CnAiContext snapshot the widget sends with each
             // message. Without this the LLM has no idea which app the user
-            // is in — so on /apps/openbuilt/ it would call decidesk tools
+            // is in — so on /apps/openbuild/ it would call decidesk tools
             // (or default to OpenRegister-platform language) instead of
-            // routing to openbuilt.*. The snapshot is small and free-form
+            // routing to openbuild.*. The snapshot is small and free-form
             // (typically {app, slug, view, objectId}); we render it as a
             // bullet list so the model can quote individual fields.
             if (empty($cnAiContext) === false) {
@@ -360,7 +369,7 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
-            // Initialize $response (and $llmTime) BEFORE entering any
+            // Initialize $response (and $llmTime, $chat) BEFORE entering any
             // provider branch. The Ollama branch skips the OpenAIChat
             // initialisation block; without this default-empty seed the
             // logger access on `$response` below would tank with an
@@ -368,6 +377,9 @@ class ResponseGenerationHandler
             // not to assign — an easy regression vector when a new
             // provider is added. The Fireworks/Ollama branches below
             // overwrite this unconditionally for their own provider.
+            // $chat = null keeps the `instanceof OllamaChat` usage-capture
+            // check below well-defined on every provider path.
+            $chat         = null;
             $response     = '';
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
@@ -463,6 +475,15 @@ class ResponseGenerationHandler
                 ]
             );
 
+            // Expose the LLM token/latency usage for per-run cost recording (run-analytics).
+            // Only OllamaChat accumulates usage today; other providers leave it empty.
+            $this->lastUsage = [];
+            if ($chat instanceof OllamaChat) {
+                $this->lastUsage = $chat->lastUsage;
+            }
+
+            $this->lastUsage['llmSeconds'] = round($llmTime, 2);
+
             return $response;
         } catch (Exception $e) {
             $this->logger->error(
@@ -515,7 +536,7 @@ class ResponseGenerationHandler
      * @psalm-param  list<\LLPhant\Chat\FunctionInfo\FunctionInfo> $functionInfoObjects
      * @psalm-return list<\LLPhant\Chat\FunctionInfo\FunctionInfo>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array
     {
@@ -546,7 +567,7 @@ class ResponseGenerationHandler
      *
      * @return string The assistant's textual response.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
@@ -601,7 +622,7 @@ class ResponseGenerationHandler
      *
      * @return bool True when the instance has at least one FunctionInfo registered
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
     {
@@ -644,7 +665,7 @@ class ResponseGenerationHandler
      *
      * @throws MissingFeatureException When the provider's streaming surface throws.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function streamChat(
         OpenAIChat|OllamaChat $chat,
@@ -689,7 +710,7 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey,

@@ -4,14 +4,17 @@
  * OpenRegister AggregationThresholdListener
  *
  * Subscribes to object-write events and re-evaluates threshold-typed
- * notifications declared in `x-openregister-notifications`. When the
- * referenced aggregation value crosses the configured threshold (i.e.
- * transitions from below → above the operator condition), the listener
- * dispatches the notification through the existing dispatcher.
+ * notifications declared in `x-openregister-notifications` (evaluation logic
+ * lives in ThresholdEvaluationService; rising-edge dedup in the distributed
+ * cache).
  *
- * Transition tracking lives in the distributed cache so a notification
- * fires once on breach, not on every subsequent write while still over
- * the threshold.
+ * Actor-forwarded deferral (openregister#408): created/updated/transitioned
+ * evaluations run in AggregationThresholdJob under the captured actor, with
+ * entries deduped per (register, schema) so a bulk save of N objects of one
+ * schema triggers ONE evaluation. Delete events evaluate inline — a
+ * hard-deleted object cannot be re-fetched by the job, and delete-driven
+ * crossings (`lt`/`lte` rules) would be silently lost. The `listenerDeferral`
+ * kill switch restores full inline evaluation.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -27,13 +30,14 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-5
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\BackgroundJob\AggregationThresholdJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -41,68 +45,53 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
-use OCA\OpenRegister\Service\Aggregation\AggregationRunner;
-use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Aggregation\ThresholdEvaluationService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\ICache;
-use OCP\ICacheFactory;
-use Psr\Log\LoggerInterface;
 
 /**
  * Listener that evaluates threshold-typed notifications on object writes.
  *
  * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectTransitionedEvent>
+ *
+ * @spec openspec/changes/actor-forwarded-listener-jobs/tasks.md#task-2.3
  */
 class AggregationThresholdListener implements IEventListener
 {
 
-    private const STATE_ABOVE = 'above';
-    private const STATE_BELOW = 'below';
-
     /**
-     * Distributed cache holding the last threshold state per (schema, notification).
+     * Entries per enqueued evaluation job. Rarely reached thanks to the
+     * (register, schema) dedupe key.
      *
-     * @var ICache|null
+     * @var integer
      */
-    private ?ICache $stateCache = null;
+    private const CHUNK_SIZE = 100;
 
     /**
-     * Wire collaborators and prepare the state cache.
+     * Wire collaborators.
      *
-     * @param SchemaMapper                     $schemaMapper      Schema lookup mapper.
-     * @param AggregationRunner                $aggregationRunner Runner that computes aggregation values.
-     * @param AnnotationNotificationDispatcher $dispatcher        Notification dispatcher.
-     * @param LoggerInterface                  $logger            PSR logger for warnings.
-     * @param ICacheFactory                    $cacheFactory      Distributed-cache factory.
+     * @param SchemaMapper               $schemaMapper Schema lookup mapper.
+     * @param ThresholdEvaluationService $evaluator    Shared threshold evaluation logic.
+     * @param ListenerDeferralService    $deferral     Actor-forwarding deferral service.
      *
      * @return void
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
-        private readonly AggregationRunner $aggregationRunner,
-        private readonly AnnotationNotificationDispatcher $dispatcher,
-        private readonly LoggerInterface $logger,
-        ICacheFactory $cacheFactory
+        private readonly ThresholdEvaluationService $evaluator,
+        private readonly ListenerDeferralService $deferral
     ) {
-        try {
-            $this->stateCache = $cacheFactory->createDistributed('openregister_threshold_state');
-        } catch (\Throwable $e) {
-            $this->stateCache = null;
-        }
     }//end __construct()
 
     /**
-     * Re-evaluate every threshold notification declared on the schema.
+     * Defer (or evaluate inline) the schema's threshold notifications.
      *
      * @param Event $event Inbound dispatcher event.
      *
      * @return void
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-3
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -111,145 +100,37 @@ class AggregationThresholdListener implements IEventListener
             return;
         }
 
-        try {
-            $schema = $this->loadSchema(object: $object);
-        } catch (\Throwable $e) {
-            return;
-        }
-
+        $schema = $this->loadSchema(object: $object);
         if ($schema === null) {
             return;
         }
 
-        $config        = ($schema->getConfiguration() ?? []);
-        $notifications = ($config['x-openregister-notifications'] ?? null);
-        if (is_array($notifications) === false || count($notifications) === 0) {
+        if ($this->evaluator->hasThresholdNotifications($schema) === false) {
             return;
         }
 
-        foreach ($notifications as $name => $spec) {
-            if (is_array($spec) === false) {
-                continue;
-            }
-
-            $trigger = ($spec['trigger'] ?? null);
-            if (is_array($trigger) === false || (string) ($trigger['type'] ?? '') !== 'threshold') {
-                continue;
-            }
-
-            try {
-                $this->evaluate(schema: $schema, notificationName: (string) $name, trigger: $trigger, object: $object);
-            } catch (\Throwable $e) {
-                $this->logger->warning(
-                    sprintf(
-                        '[AggregationThresholdListener] evaluation of "%s" failed: %s',
-                        (string) $name,
-                        $e->getMessage()
-                    )
-                );
-            }
-        }//end foreach
-    }//end handle()
-
-    /**
-     * Evaluate one notification spec and dispatch on rising-edge crossings.
-     *
-     * @param Schema               $schema           Schema declaring the notification.
-     * @param string               $notificationName Notification key in the schema config.
-     * @param array<string, mixed> $trigger          Trigger configuration block.
-     * @param ObjectEntity         $object           Object that just changed.
-     *
-     * @return void
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     */
-    private function evaluate(Schema $schema, string $notificationName, array $trigger, ObjectEntity $object): void
-    {
-        $aggregationName = (string) ($trigger['aggregation'] ?? '');
-        $op        = (string) ($trigger['op'] ?? '');
-        $threshold = ($trigger['value'] ?? null);
-        if ($aggregationName === '' || $op === '' || $threshold === null) {
+        // Deletes evaluate inline: the entity is not re-fetchable once the
+        // delete lands, so a deferred job could never dispatch for
+        // delete-driven crossings. The kill switch also forces inline.
+        if ($event instanceof ObjectDeletedEvent || $this->deferral->isDeferralEnabled() === false) {
+            $this->evaluator->evaluateSchema(schema: $schema, object: $object);
             return;
         }
 
-        $registerSlug = (string) $object->getRegister();
-        $schemaSlug   = (string) $schema->getSlug();
-
-        // BypassRbac: threshold evaluation is a system reaction to a
-        // write event, not a user-driven request. The write itself
-        // already passed RBAC; the threshold listener's authoritative
-        // reason is "this object just changed", independent of the
-        // active session's `list` permission on the schema.
-        $result = $this->aggregationRunner->run(
-            registerRef: $registerSlug,
-            schemaRef: $schemaSlug,
-            name: $aggregationName,
-            bypassRbac: true
+        $registerRef = (string) $object->getRegister();
+        $schemaRef   = (string) $object->getSchema();
+        $this->deferral->defer(
+            jobClass: AggregationThresholdJob::class,
+            entry: [
+                'uuid'     => (string) $object->getUuid(),
+                'register' => $registerRef,
+                'schema'   => $schemaRef,
+                'version'  => $object->getVersion(),
+            ],
+            chunkSize: self::CHUNK_SIZE,
+            dedupeKey: $registerRef.'|'.$schemaRef
         );
-        $value  = ($result['value'] ?? null);
-        if (is_int($value) === false && is_float($value) === false) {
-            return;
-        }
-
-        $isAbove  = $this->compare(actual: $value, op: $op, expected: $threshold);
-        $newState = self::STATE_BELOW;
-        if ($isAbove === true) {
-            $newState = self::STATE_ABOVE;
-        }
-
-        $stateKey = sprintf('threshold:%d:%s', $schema->getId(), $notificationName);
-        $oldState = $this->stateCache?->get($stateKey);
-
-        if ($newState === self::STATE_ABOVE && $oldState !== self::STATE_ABOVE) {
-            $this->dispatcher->dispatch(
-                $object,
-                'threshold',
-                [
-                    'notificationName' => $notificationName,
-                    'aggregation'      => $aggregationName,
-                    'value'            => $value,
-                    'threshold'        => $threshold,
-                    'op'               => $op,
-                ]
-            );
-        }
-
-        try {
-            // 30 day TTL; long enough that a slow-moving threshold series
-            // still has continuity across maintenance restarts.
-            $this->stateCache?->set($stateKey, $newState, (60 * 60 * 24 * 30));
-        } catch (\Throwable $e) {
-            // Don't escalate.
-        }
-    }//end evaluate()
-
-    /**
-     * Compare two values with the configured operator.
-     *
-     * @param int|float $actual   Numeric value computed from the aggregation.
-     * @param string    $op       Comparison operator (gt|gte|lt|lte|eq|ne).
-     * @param mixed     $expected Threshold value, must be numeric.
-     *
-     * @return bool True when the comparison is satisfied, false otherwise.
-     */
-    private function compare($actual, string $op, $expected): bool
-    {
-        if (is_numeric($expected) === false) {
-            return false;
-        }
-
-        $rhs = (float) $expected;
-        $lhs = (float) $actual;
-        return match ($op) {
-            'gt'  => $lhs > $rhs,
-            'gte' => $lhs >= $rhs,
-            'lt'  => $lhs < $rhs,
-            'lte' => $lhs <= $rhs,
-            'eq'  => $lhs === $rhs,
-            'ne'  => $lhs !== $rhs,
-            default => false,
-        };
-    }//end compare()
+    }//end handle()
 
     /**
      * Resolve the underlying object for any of the supported event types.

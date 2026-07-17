@@ -20,6 +20,7 @@ export class Register implements TRegister {
 	public stats?: TRegister['stats']
 
 	/**
+	 * @param register
 	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
 	 */
 	constructor(register: TRegister) {

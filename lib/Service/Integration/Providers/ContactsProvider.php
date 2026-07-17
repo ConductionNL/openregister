@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-contacts/tasks.md
+ * @spec openspec/specs/integration-contacts/spec.md
  */
 
 declare(strict_types=1);
@@ -119,7 +119,7 @@ class ContactsProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -146,7 +146,7 @@ class ContactsProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -173,7 +173,7 @@ class ContactsProvider extends AbstractIntegrationProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-4
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

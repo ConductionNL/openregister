@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -82,6 +83,9 @@ class PermissionHandlerRoleHierarchyTest extends TestCase
                     }
                     );
 
+        $appConfig = $this->createMock(IAppConfig::class);
+        $appConfig->method('getValueBool')->willReturn(true);
+
         $this->handler = new PermissionHandler(
             $userSession,
             $userManager,
@@ -89,6 +93,7 @@ class PermissionHandlerRoleHierarchyTest extends TestCase
             $schemaMapper,
             $objectEntityMapper,
             $conditionMatcher,
+            $appConfig,
             $this->logger,
             $container
         );

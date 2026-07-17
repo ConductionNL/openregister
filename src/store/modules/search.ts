@@ -16,11 +16,9 @@ export const useSearchStore = defineStore('search', () => {
 
 	function setSearch(_search: string) {
 		search.value = _search
-		console.info('Active search set to ' + search.value)
 	}
 	function setSearchResults(_searchResults: string) {
 		searchResults.value = _searchResults
-		console.info('Active search set to ' + searchResults.value)
 	}
 	/* istanbul ignore next */ // ignore this for Jest until moved into a service
 	function getSearchResults() {
@@ -36,7 +34,6 @@ export const useSearchStore = defineStore('search', () => {
 						(data) => {
 							if (data?.code === 403 && data?.message) {
 								searchError.value = data.message
-								console.info(searchError.value)
 							} else {
 								searchError.value = '' // Clear any previous errors
 							}
@@ -89,9 +86,6 @@ export const useSearchStore = defineStore('search', () => {
 		console.group('search objects')
 
 		console.group('Fetching search results with params:')
-		Object.entries(searchQuery).forEach(([key, value]) => {
-			console.info(`${key}: ${value}`)
-		})
 		console.groupEnd()
 
 		searchObjectsLoading.value = true
@@ -102,14 +96,10 @@ export const useSearchStore = defineStore('search', () => {
 
 		fetch(endpoint, { method: 'GET' })
 			.then(async response => {
-				console.info('Search results fetched')
-
 				// Clear any previous errors
 				searchObjectsError.value = ''
 
 				const data = await response.json()
-
-				console.info(`${data.results.length} objects found`)
 
 				if (!response.ok && response.statusText) {
 					searchObjectsError.value = response.statusText

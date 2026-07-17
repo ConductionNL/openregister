@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\GraphQL\SchemaGenerator
- * @author   Conduction B.V. <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\GraphQL\SchemaGenerator
+ * @author    Conduction B.V. <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://OpenRegister.app
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://OpenRegister.app
  */
 
 namespace OCA\OpenRegister\Service\GraphQL\SchemaGenerator;
@@ -95,7 +95,7 @@ class CompositionHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function applyComposition(RegisterSchema $schema, array &$fields): void
     {
@@ -113,7 +113,7 @@ class CompositionHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function applyAllOf(RegisterSchema $schema, array &$fields): void
     {
@@ -155,7 +155,7 @@ class CompositionHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function applyOneOf(RegisterSchema $schema, array &$fields): void
     {
@@ -200,7 +200,7 @@ class CompositionHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function applyAnyOf(RegisterSchema $schema, array &$fields): void
     {
@@ -250,7 +250,7 @@ class CompositionHandler
      *
      * @return ObjectType[] The resolved object types
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function resolveCompositionRefs(array $refs): array
     {
@@ -284,7 +284,7 @@ class CompositionHandler
      *
      * @return array<string, array<string, mixed>> Shared field configs
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-7
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function extractSharedFields(array $types): array
     {

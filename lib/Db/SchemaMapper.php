@@ -50,9 +50,16 @@ use OCA\OpenRegister\Service\Aggregation\AggregationAnnotationValidator;
 use OCA\OpenRegister\Service\Aggregation\WidgetAnnotationValidator;
 use OCA\OpenRegister\Service\Archival\ArchivalAnnotationValidator;
 use OCA\OpenRegister\Service\Calculation\CalculationAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffAnnotationValidator;
+use OCA\OpenRegister\Service\Handoff\HandoffContractBindingValidator;
 use OCA\OpenRegister\Service\Lifecycle\LifecycleAnnotationValidator;
+use OCA\OpenRegister\Service\Mcp\McpAnnotationValidator;
+use OCA\OpenRegister\Service\Merge\MergeAnnotationValidator;
 use OCA\OpenRegister\Service\Notification\NotificationAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\DedupAnnotationValidator;
+use OCA\OpenRegister\Service\Quality\QualityAnnotationValidator;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
+use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
 
 /**
  * SchemaMapper handles database operations for Schema entities
@@ -75,8 +82,8 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @method Schema insert(Entity $entity)
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
- * @method Schema delete(Entity $entity)
- * @method Schema find(int|string $id)
+ * @method Schema delete(Entity $entity, bool $force=false)
+ * @method Schema find(int|string $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true)
  * @method Schema findEntity(IQueryBuilder $query)
  * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
@@ -97,6 +104,18 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 class SchemaMapper extends QBMapper
 {
     use MultiTenancyTrait;
+
+    /**
+     * Maximum number of expressions allowed in a single SQL IN() list.
+     *
+     * Nextcloud's QueryBuilder refuses to emit more than 1000 expressions in an
+     * IN() list because Oracle rejects them; exceeding it logs an error and
+     * emits an "Undefined array key 0" PHP warning. Batched id lookups must be
+     * chunked below this bound.
+     *
+     * @var integer
+     */
+    private const MAX_IN_LIST_SIZE = 1000;
 
     /**
      * Event dispatcher instance
@@ -215,7 +234,6 @@ class SchemaMapper extends QBMapper
      *
      * @param int|string $id            The id of the schema
      * @param array      $_extend       Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published     Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac         Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *                                  Set to false to bypass organization filter
@@ -231,7 +249,6 @@ class SchemaMapper extends QBMapper
     public function find(
         string | int $id,
         ?array $_extend=[],
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): Schema {
@@ -246,7 +263,8 @@ class SchemaMapper extends QBMapper
             $mtFlag = '1';
         }
 
-        $cacheKey = strtolower((string) $id).':'.$rbacFlag.':'.$mtFlag;
+        $cacheSuffix = ':'.$rbacFlag.':'.$mtFlag;
+        $cacheKey    = strtolower((string) $id).$cacheSuffix;
         if (isset($this->findCache[$cacheKey]) === true) {
             return $this->findCache[$cacheKey];
         }
@@ -275,18 +293,29 @@ class SchemaMapper extends QBMapper
         );
 
         if (is_numeric($id) === true) {
+            $idParam = $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT);
             $orConditions->add(
-                $qb->expr()->eq('id', $qb->createNamedParameter(value: (int) $id, type: IQueryBuilder::PARAM_INT))
+                $qb->expr()->eq('id', $idParam)
             );
         }
 
         $qb->where($orConditions);
 
-        // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured
+        // BUG-DB-10: when the identifier is numeric it is ambiguous (it could be a
+        // primary key id OR a numeric uuid/slug). Prefer the exact primary-key
+        // match by ordering an `id = ?` hit first, so a row whose slug happens to
+        // be "5" never shadows the row with id 5.
+        if (is_numeric($id) === true) {
+            $qb->addOrderBy(
+                $qb->createFunction(
+                    'CASE WHEN id = '.$idParam.' THEN 0 ELSE 1 END'
+                ),
+                'ASC'
+            );
+        }
+
+        // Apply organisation filter.
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
-        // Use $published parameter if provided, otherwise check config.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -315,22 +344,19 @@ class SchemaMapper extends QBMapper
         $schema = $this->resolveSchemaExtension(schema: $schema);
 
         // Cache by all possible identifiers to handle lookups by id, uuid, or slug.
-        $rbacChar = '0';
-        if ($_rbac === true) {
-            $rbacChar = '1';
-        }
-
-        $mtChar = '0';
-        if ($_multitenancy === true) {
-            $mtChar = '1';
-        }
-
-        $rbacSuffix = ':'.$rbacChar.':'.$mtChar;
+        // BUG-DB-10: reuse the exact same suffix (rbac + multitenancy + published)
+        // as the read-side key so cache writes and reads stay consistent.
         $this->findCache[$cacheKey] = $schema;
-        $this->findCache[(string) $schema->getId().$rbacSuffix]      = $schema;
-        $this->findCache[strtolower($schema->getUuid()).$rbacSuffix] = $schema;
+        $this->findCache[(string) $schema->getId().$cacheSuffix] = $schema;
+
+        // BUG-DB-10: guard against a null uuid before strtolower().
+        $schemaUuid = $schema->getUuid();
+        if ($schemaUuid !== null) {
+            $this->findCache[strtolower($schemaUuid).$cacheSuffix] = $schema;
+        }
+
         if ($schema->getSlug() !== null) {
-            $this->findCache[strtolower($schema->getSlug()).$rbacSuffix] = $schema;
+            $this->findCache[strtolower($schema->getSlug()).$cacheSuffix] = $schema;
         }
 
         return $schema;
@@ -363,10 +389,9 @@ class SchemaMapper extends QBMapper
     /**
      * Finds multiple schemas by id
      *
-     * @param array     $ids           The ids of the schemas
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param array $ids           The ids of the schemas
+     * @param bool  $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool  $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException If a schema does not exist
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple schemas are found
@@ -380,7 +405,7 @@ class SchemaMapper extends QBMapper
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Flags control security filtering behavior
      */
-    public function findMultiple(array $ids, ?bool $published=null, bool $_rbac=true, bool $_multitenancy=true): array
+    public function findMultiple(array $ids, bool $_rbac=true, bool $_multitenancy=true): array
     {
         $result = [];
         foreach ($ids as $id) {
@@ -388,7 +413,6 @@ class SchemaMapper extends QBMapper
                 $result[] = $this->find(
                     id: $id,
                     _extend: [],
-                    published: $published,
                     _rbac: $_rbac,
                     _multitenancy: $_multitenancy
                 );
@@ -418,20 +442,31 @@ class SchemaMapper extends QBMapper
             return [];
         }
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('*')
-            ->from('openregister_schemas')
-            ->where(
-                $qb->expr()->in('id', $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY))
-            );
-
-        $result  = $qb->executeQuery();
         $schemas = [];
 
-        while (($row = $result->fetch()) !== false) {
-            $schema = new Schema();
-            $schema = $schema->fromRow($row);
-            $schemas[$row['id']] = $schema;
+        // An IN() list is capped at MAX_IN_LIST_SIZE expressions: Nextcloud's
+        // QueryBuilder logs "More than 1000 expressions in a list are not allowed
+        // on Oracle" (and emits an "Undefined array key 0" PHP warning) once the
+        // list exceeds that. This instance already holds 1,233 schemas, so the
+        // registers-with-stats endpoint tripped it on every request. Chunk it.
+        foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('*')
+                ->from('openregister_schemas')
+                ->where(
+                    $qb->expr()->in('id', $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY))
+                );
+
+            $result = $qb->executeQuery();
+
+            while (($row = $result->fetch()) !== false) {
+                $schema = new Schema();
+                $schema = $schema->fromRow($row);
+
+                $schemas[$row['id']] = $schema;
+            }
+
+            $result->closeCursor();
         }
 
         return $schemas;
@@ -443,12 +478,11 @@ class SchemaMapper extends QBMapper
      * Searches for schemas matching the given slug with optional
      * multi-tenancy and RBAC filtering.
      *
-     * @param string    $slug          The slug to search for
-     * @param int       $limit         Maximum number of results (default: 10)
-     * @param int       $offset        Offset for pagination (default: 0)
-     * @param bool|null $published     Whether to enable published bypass (default: null = check config)
-     * @param bool      $_rbac         Whether to apply RBAC permission checks (default: true)
-     * @param bool      $_multitenancy Whether to apply multi-tenancy filtering (default: true)
+     * @param string $slug          The slug to search for
+     * @param int    $limit         Maximum number of results (default: 10)
+     * @param int    $offset        Offset for pagination (default: 0)
+     * @param bool   $_rbac         Whether to apply RBAC permission checks (default: true)
+     * @param bool   $_multitenancy Whether to apply multi-tenancy filtering (default: true)
      *
      * @return Schema[] Array of matching schemas
      *
@@ -460,7 +494,6 @@ class SchemaMapper extends QBMapper
         string $slug,
         int $limit=10,
         int $offset=0,
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -472,7 +505,7 @@ class SchemaMapper extends QBMapper
                 $qb->expr()->eq('slug', $qb->createNamedParameter($slug, IQueryBuilder::PARAM_STR))
             );
 
-        // Apply organisation filter with published entity bypass support.
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -505,7 +538,6 @@ class SchemaMapper extends QBMapper
      * @param array|null $searchConditions The search conditions to apply
      * @param array|null $searchParams     The search parameters to apply
      * @param array      $_extend          Optional array of extensions (e.g., ['@self.stats'])
-     * @param bool|null  $published        Whether to enable published bypass (default: null = check config)
      * @param bool       $_rbac            Whether to apply RBAC permission checks (default: true)
      * @param bool       $_multitenancy    Whether to apply multi-tenancy filtering (default: true)
      *
@@ -524,7 +556,6 @@ class SchemaMapper extends QBMapper
         ?array $searchConditions=[],
         ?array $searchParams=[],
         ?array $_extend=[],
-        ?bool $published=null,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -562,10 +593,7 @@ class SchemaMapper extends QBMapper
             }
         }
 
-        // Apply organisation filter with published entity bypass support
-        // Published schemas can bypass multi-tenancy restrictions if configured.
-        // ApplyOrganisationFilter handles $multiTenancyEnabled=false internally.
-        // Use $published parameter if provided, otherwise check config.
+        // Apply organisation filter.
         $this->applyOrganisationFilter(
             qb: $qb,
             columnName: 'organisation',
@@ -591,8 +619,8 @@ class SchemaMapper extends QBMapper
      */
     public function insert(Entity $entity): Entity
     {
-        // Verify RBAC permission to create
-        // $this->verifyRbacPermission('create', 'schema');
+        // Verify RBAC permission to create.
+        $this->verifyRbacPermission(action: 'create', entityType: 'schema');
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate(entity: $entity);
 
@@ -626,9 +654,16 @@ class SchemaMapper extends QBMapper
         $this->validateLifecycleAnnotation(schema: $schema);
         $this->validateAggregationsAnnotation(schema: $schema);
         $this->validateCalculationsAnnotation(schema: $schema);
+        $this->validateQualityAnnotation(schema: $schema);
+        $this->validateDedupAnnotation(schema: $schema);
+        $this->validateSurvivorshipAnnotation(schema: $schema);
+        $this->validateMergeAnnotation(schema: $schema);
         $this->validateNotificationsAnnotation(schema: $schema);
         $this->validateWidgetsAnnotation(schema: $schema);
         $this->validateArchivalAnnotation(schema: $schema);
+        $this->validateHandoffAnnotation(schema: $schema);
+        $this->validateHandoffContractBinding(schema: $schema);
+        $this->validateMcpAnnotation(schema: $schema);
         $this->logDroppedAnnotationKeys(schema: $schema);
     }//end cleanObject()
 
@@ -692,8 +727,18 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Lifecycle is ADVISORY metadata (a state-machine hint), not a storage
+        // requirement: a schema with a malformed or non-canonical lifecycle block
+        // still stores objects correctly. Rejecting the whole schema import over an
+        // advisory annotation breaks register imports for every app that ships a
+        // partial / different-dialect lifecycle block. Degrade to a non-fatal
+        // warning and import the schema (the lifecycle simply won't drive a status
+        // workflow) instead of throwing.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-lifecycle: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-lifecycle annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (no status workflow applied): '.implode(' ', $messages)
+        );
     }//end validateLifecycleAnnotation()
 
     /**
@@ -723,8 +768,15 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Aggregations are ADVISORY report-metadata, not a storage requirement.
+        // A malformed / empty / non-canonical aggregation block must not abort the
+        // whole schema import — the schema still stores objects, the aggregation
+        // simply won't be runnable. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-aggregations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-aggregations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (aggregation not registered): '.implode(' ', $messages)
+        );
     }//end validateAggregationsAnnotation()
 
     /**
@@ -747,6 +799,7 @@ class SchemaMapper extends QBMapper
         $shape = [
             'properties'                  => ($schema->getProperties() ?? []),
             'x-openregister-calculations' => $annotation,
+            'x-openregister-references'   => ($configuration['x-openregister-references'] ?? []),
         ];
 
         $errors = (new CalculationAnnotationValidator())->validate($shape);
@@ -754,9 +807,161 @@ class SchemaMapper extends QBMapper
             return;
         }
 
+        // Calculations are ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed / non-canonical calculation block (e.g. a type
+        // outside the canonical set, or a missing expression) must not abort the
+        // whole schema import — the schema still stores objects, the calculation
+        // simply won't be evaluated. Degrade to a non-fatal warning.
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-calculations: '.implode(' ', $messages));
+        $this->logger->warning(
+            'x-openregister-calculations annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (calculation not evaluated): '.implode(' ', $messages)
+        );
     }//end validateCalculationsAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-quality` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateQualityAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-quality'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'             => ($schema->getProperties() ?? []),
+            'x-openregister-quality' => $annotation,
+        ];
+
+        $errors = (new QualityAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Quality scoring is ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed quality block must not abort the whole schema
+        // import — the schema still stores objects, the score simply won't be
+        // materialised. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-quality annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (quality score not materialised): '.implode(' ', $messages)
+        );
+    }//end validateQualityAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-dedup` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateDedupAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-dedup'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'           => ($schema->getProperties() ?? []),
+            'x-openregister-dedup' => $annotation,
+        ];
+
+        $errors = (new DedupAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Dedup match rules are ADVISORY metadata consumed on demand by
+        // DuplicateDetectionService. A malformed block must not abort the schema
+        // import — duplicate detection simply falls back to caller-supplied rules.
+        // Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-dedup annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (declared match rules not used): '.implode(' ', $messages)
+        );
+    }//end validateDedupAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-survivorship` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateSurvivorshipAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-survivorship'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'                  => ($schema->getProperties() ?? []),
+            'x-openregister-survivorship' => $annotation,
+        ];
+
+        $errors = (new SurvivorshipAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Survivorship is ADVISORY derived-field metadata, not a storage
+        // requirement. A malformed survivorship block must not abort the whole
+        // schema import — the schema still stores objects, the golden record
+        // simply won't be materialised. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-survivorship annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (golden record not materialised): '.implode(' ', $messages)
+        );
+    }//end validateSurvivorshipAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-merge` annotation.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @return void
+     */
+    private function validateMergeAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-merge'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'           => ($schema->getProperties() ?? []),
+            'x-openregister-merge' => $annotation,
+        ];
+
+        $errors = (new MergeAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        // Merge config is ADVISORY steward-action metadata, not a storage
+        // requirement. A malformed merge block must not abort the whole schema
+        // import — the schema still stores objects, merges simply fall back to
+        // the documented defaults. Degrade to a non-fatal warning.
+        $messages = array_map(static fn(array $err) => $err['message'], $errors);
+        $this->logger->warning(
+            'x-openregister-merge annotation on schema "'.((string) ($schema->getSlug() ?? '')).'" is '
+            .'invalid and was ignored (merge falls back to defaults): '.implode(' ', $messages)
+        );
+    }//end validateMergeAnnotation()
 
     /**
      * Validate the optional `x-openregister-notifications` annotation.
@@ -786,7 +991,19 @@ class SchemaMapper extends QBMapper
         }
 
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
-        throw new Exception('x-openregister-notifications: '.implode(' ', $messages));
+
+        // A malformed OPTIONAL notification annotation must NOT block the schema
+        // itself — and, on config import, the entire register + every schema
+        // that references it (the import aborts and 0 objects land). The runtime
+        // dispatcher only fires notifications whose trigger matches a known
+        // event, so an invalid/legacy notification spec (e.g. the older
+        // `onCreate`/`onStatusChange` shape without a trigger.type) is simply
+        // inert. Log a warning so it can be cleaned up, but keep the schema
+        // valid and importable.
+        $this->logger->warning(
+            'Schema "'.$schema->getSlug().'" has invalid x-openregister-notifications (ignored at runtime, fix to enable): '.implode(' ', $messages),
+            ['schema' => $schema->getSlug()]
+        );
     }//end validateNotificationsAnnotation()
 
     /**
@@ -835,7 +1052,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-2
+     * @spec openspec/specs/archival-annotation-vocabulary/spec.md
      */
     private function validateArchivalAnnotation(Schema $schema): void
     {
@@ -855,6 +1072,130 @@ class SchemaMapper extends QBMapper
         $messages = array_map(static fn(array $err) => $err['message'], $errors);
         throw new Exception('x-openregister-archival: '.implode(' ', $messages));
     }//end validateArchivalAnnotation()
+
+    /**
+     * Validate the optional `x-openregister-handoff` annotation (ADR-051).
+     *
+     * The annotation is stored under `configuration['x-openregister-handoff']`.
+     * A malformed handoff declaration REJECTS the schema (contract: schema-save
+     * validation SHALL reject with the typed handoff-* error codes) — unlike
+     * advisory annotations, a broken handoff would otherwise surface as a
+     * runtime conversion failure on user action.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/semantic-object-handoff/spec.md
+     *   (Requirement: `x-openregister-handoff` declarative dialect)
+     */
+    private function validateHandoffAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-handoff'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'               => ($schema->getProperties() ?? []),
+            'x-openregister-handoff'   => $annotation,
+            'x-openregister-lifecycle' => ($configuration['x-openregister-lifecycle'] ?? null),
+        ];
+
+        $errors = (new HandoffAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('x-openregister-handoff: '.implode(' ', $messages));
+    }//end validateHandoffAnnotation()
+
+    /**
+     * Validate the optional `handoffContract` binding block (ADR-051,
+     * provider side). Stored at `configuration['handoffContract']`; when
+     * present, every mandatory contract field of each bound kind must map to
+     * an existing own property — otherwise the schema is rejected with
+     * `handoff-contract-incomplete` listing the missing fields. A schema that
+     * implements a kind with NO binding block passes untouched (it is simply
+     * not a handoff provider).
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the binding block is incomplete or malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/semantic-object-handoff/spec.md
+     *   (Scenario: Implementer omits a mandatory contract field)
+     */
+    private function validateHandoffContractBinding(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        if (array_key_exists('handoffContract', $configuration) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'      => ($schema->getProperties() ?? []),
+            'handoffContract' => $configuration['handoffContract'],
+            'implements'      => ($configuration['implements'] ?? null),
+            'jsonld'          => ($configuration['jsonld'] ?? null),
+            'x-schema-org'    => ($configuration['x-schema-org'] ?? null),
+        ];
+
+        $errors = (new HandoffContractBindingValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('handoffContract: '.implode(' ', $messages));
+    }//end validateHandoffContractBinding()
+
+    /**
+     * Validate the optional `x-openregister-mcp` annotation (ADR-063).
+     *
+     * The annotation is stored under `configuration['x-openregister-mcp']`.
+     * This change defines and validates the declaration only — no MCP tool
+     * is emitted and no serving surface is altered by this validator (that
+     * is the `or-mcp-derived-tool-provider` change). A malformed block
+     * fails the schema save loudly, consistent with every sibling
+     * `x-openregister-*` dialect validator.
+     *
+     * @param Schema $schema Schema to validate.
+     *
+     * @throws Exception When the annotation is malformed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
+     */
+    private function validateMcpAnnotation(Schema $schema): void
+    {
+        $configuration = ($schema->getConfiguration() ?? []);
+        $annotation    = ($configuration['x-openregister-mcp'] ?? null);
+        if (is_array($annotation) === false) {
+            return;
+        }
+
+        $shape = [
+            'properties'         => ($schema->getProperties() ?? []),
+            'x-openregister-mcp' => $annotation,
+        ];
+
+        $errors = (new McpAnnotationValidator())->validate($shape);
+        if (count($errors) === 0) {
+            return;
+        }
+
+        $messages = array_map(static fn(array $err) => $err['code'].': '.$err['message'], $errors);
+        throw new Exception('x-openregister-mcp: '.implode(' ', $messages));
+    }//end validateMcpAnnotation()
 
     /**
      * Clean $ref properties to ensure they are strings
@@ -1230,8 +1571,8 @@ class SchemaMapper extends QBMapper
      */
     public function update(Entity $entity): Entity
     {
-        // Verify RBAC permission to update
-        // $this->verifyRbacPermission('update', 'schema');
+        // Verify RBAC permission to update.
+        $this->verifyRbacPermission(action: 'update', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
@@ -1299,46 +1640,55 @@ class SchemaMapper extends QBMapper
     /**
      * Delete a schema
      *
+     * **DELETE SAFETY (runtime-schema-api)**: refuses to delete a schema that still
+     * holds objects, unless the caller explicitly asks to orphan them ($force).
+     *
+     * This guard is enforced HERE, at the mapper, rather than only in
+     * SchemasController::destroy(), because the mapper is the choke point every
+     * deletion caller shares — including the AI/LLM-invokable SchemasToolProvider
+     * and SchemaTool surfaces, which have no controller in front of them.
+     *
      * @param Entity $entity The schema entity to delete
+     * @param bool   $force  Bypass the object-count guard and deliberately orphan the
+     *                       objects. Only the `?force=true` disposition of
+     *                       `DELETE /api/schemas/{id}` may pass true. The cascade
+     *                       disposition needs no bypass: it deletes the rows first, so
+     *                       the guard naturally counts 0.
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     * @throws ValidationException If objects are still attached and $force is false
      * @throws \Exception If user doesn't have delete permission or access to this organisation
      *
      * @return Schema The deleted schema
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The force flag is the API-level disposition, mirrored from the endpoint.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
-    public function delete(Entity $entity): Schema
+    public function delete(Entity $entity, bool $force=false): Schema
     {
-        // Verify RBAC permission to delete
-        // $this->verifyRbacPermission('delete', 'schema');
+        // Verify RBAC permission to delete.
+        $this->verifyRbacPermission(action: 'delete', entityType: 'schema');
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
-        // Check for attached objects before deleting (using direct database query to avoid circular dependency).
         $schemaId = $entity->id;
         if (method_exists($entity, 'getId') === true) {
             $schemaId = $entity->getId();
         }
 
-        // Count objects that reference this schema (excluding soft-deleted objects).
-        $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->count('*'))
-            ->from('openregister_objects')
-            ->where(
-                $qb->expr()->eq('schema', $qb->createNamedParameter($schemaId, IQueryBuilder::PARAM_INT))
-            )
-            ->andWhere($qb->expr()->isNull('deleted'));
-
-        $result = $qb->executeQuery();
-        $count  = (int) $result->fetchOne();
-        $result->closeCursor();
-
-        if ($count > 0) {
-            throw new ValidationException(message: 'Cannot delete schema: objects are still attached.');
+        if ($force === false) {
+            $count = $this->countAttachedObjects(schemaId: (int) $schemaId);
+            if ($count > 0) {
+                throw new ValidationException(
+                    message: 'Cannot delete schema: '.$count.' objects are still attached.'
+                );
+            }
         }
 
-        // Proceed with deletion if no objects are attached.
+        // Proceed with deletion.
         $result = parent::delete(entity: $entity);
 
         // Dispatch deletion event.
@@ -1348,6 +1698,96 @@ class SchemaMapper extends QBMapper
 
         return $result;
     }//end delete()
+
+    /**
+     * Count the objects still attached to a schema.
+     *
+     * Objects live in the per-register/schema MAGIC tables
+     * (`openregister_table_{registerId}_{schemaId}`). The previous implementation of
+     * this guard counted rows in the retired `openregister_objects` blob table, which
+     * is always empty for magic-table objects — so it counted 0 and waved every
+     * deletion through.
+     *
+     * This is a direct DB query, not a call into MagicMapper/MagicStatisticsHandler,
+     * and that is deliberate: MagicStatisticsHandler injects SchemaMapper, so injecting
+     * it back here would be a genuine circular dependency. The table name is
+     * deterministic, so the count can be taken without the mapper.
+     *
+     * Soft-deleted rows are excluded, matching the object count the controller's guard
+     * reports to the caller.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return int The number of live objects attached to the schema.
+     *
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
+     */
+    private function countAttachedObjects(int $schemaId): int
+    {
+        $total = 0;
+
+        foreach ($this->getRegisterIdsWithSchema(schemaId: $schemaId) as $registerId) {
+            $tableName = MagicMapper::TABLE_PREFIX.$registerId.'_'.$schemaId;
+
+            if ($this->db->tableExists($tableName) === false) {
+                continue;
+            }
+
+            $qb = $this->db->getQueryBuilder();
+            $qb->select($qb->func()->count('*'))
+                ->from($tableName)
+                ->where($qb->expr()->isNull('_deleted'));
+
+            $result = $qb->executeQuery();
+            $total += (int) $result->fetchOne();
+            $result->closeCursor();
+        }
+
+        return $total;
+    }//end countAttachedObjects()
+
+    /**
+     * Find the ids of every register that references a schema.
+     *
+     * Direct query + decode in PHP, mirroring RegisterMapper::getAllRegisterIdsWithSchema():
+     * the `schemas` column is JSON on Postgres and text elsewhere, so there is no
+     * portable SQL predicate for "array contains N". Registers are O(10s) per install,
+     * so the cost is trivial. RegisterMapper itself cannot be injected here — it
+     * injects SchemaMapper.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return array<int, int> The register ids.
+     */
+    private function getRegisterIdsWithSchema(int $schemaId): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'schemas')
+            ->from('openregister_registers');
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        $needle      = (string) $schemaId;
+        $registerIds = [];
+
+        foreach ($rows as $row) {
+            $schemas = json_decode(($row['schemas'] ?? '[]'), true);
+            if (is_array($schemas) === false) {
+                continue;
+            }
+
+            foreach ($schemas as $candidate) {
+                if ((string) $candidate === $needle) {
+                    $registerIds[] = (int) $row['id'];
+                    break;
+                }
+            }
+        }
+
+        return $registerIds;
+    }//end getRegisterIdsWithSchema()
 
     /**
      * Get the number of registers associated with each schema
@@ -1837,6 +2277,18 @@ class SchemaMapper extends QBMapper
                 continue;
             }
 
+            // Skip inline constraint schemas. JSON Schema allows an allOf entry to be an
+            // inline schema object ({ "required": [...] }, { "properties": {...} }), not
+            // only a $ref to another schema. OpenRegister's composition model treats
+            // allOf/oneOf/anyOf as a list of schema IDENTIFIERS, so only string/int
+            // entries are references to load — an array entry is a constraint that stands
+            // on its own and must not be handed to loadSchema() (which would fatal on the
+            // array). This unblocked openconnector's register import, silently broken by
+            // lti_deployment's `oneOf: [{required, not}, ...]` XOR constraint.
+            if (is_string($parentRef) === false && is_int($parentRef) === false) {
+                continue;
+            }
+
             // Check for self-reference.
             if ($parentRef === $currentId || $parentRef === $schema->getId()
                 || $parentRef === $schema->getUuid() || $parentRef === $schema->getSlug()
@@ -2005,6 +2457,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($oneOf as $ref) {
+            // Skip inline constraint schemas — a oneOf entry may be an inline schema object
+            // ({ "required": [...], "not": {...} }) rather than a $ref to another schema.
+            // Only string/int entries are schema identifiers to load. See resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2017,7 +2476,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (oneOf schemas are not merged).
         return $schema;
@@ -2045,6 +2504,13 @@ class SchemaMapper extends QBMapper
         $currentId = $schema->getId() ?? $schema->getUuid() ?? 'unknown';
 
         foreach ($anyOf as $ref) {
+            // Skip inline constraint schemas — an anyOf entry may be an inline schema
+            // object rather than a $ref. Only string/int entries are identifiers. See
+            // resolveAllOf.
+            if (is_string($ref) === false && is_int($ref) === false) {
+                continue;
+            }
+
             if ($ref === $currentId || $ref === $schema->getId()
                 || $ref === $schema->getUuid() || $ref === $schema->getSlug()
             ) {
@@ -2057,7 +2523,7 @@ class SchemaMapper extends QBMapper
                     schema: $referencedSchema,
                     visited: $visited
                 );
-        }
+        }//end foreach
 
         // Return schema as-is (anyOf schemas are not merged).
         return $schema;
@@ -3195,4 +3661,75 @@ class SchemaMapper extends QBMapper
 
         return $extendedByMap;
     }//end findAllExtendedBy()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is false.
+     *
+     * Used by the unified search provider to exclude opted-out schemas from
+     * Nextcloud unified search inside the query (rather than post-filtering a
+     * result page, which would leak counts and break pagination). The lookup
+     * is intentionally RBAC/tenant-agnostic: it only answers "which schemas
+     * declared themselves non-searchable", the access filtering happens in the
+     * object search itself.
+     *
+     * @return int[] List of schema IDs with `searchable = false`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/specs/unified-search-provider/spec.md
+     */
+    public function findNonSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: false, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findNonSearchableIds()
+
+    /**
+     * Return the IDs of all schemas whose `searchable` flag is true (default).
+     *
+     * The unified search provider passes this allow-list as the `@self.schema`
+     * IN-filter so that only searchable schemas contribute results, applied
+     * inside the query.
+     *
+     * @return int[] List of schema IDs with `searchable = true`.
+     *
+     * @psalm-return   list<int>
+     * @phpstan-return array<int, int>
+     *
+     * @spec openspec/specs/unified-search-provider/spec.md
+     */
+    public function findSearchableIds(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_schemas')
+            ->where($qb->expr()->eq('searchable', $qb->createNamedParameter(value: true, type: IQueryBuilder::PARAM_BOOL)));
+
+        $ids    = [];
+        $result = $qb->executeQuery();
+        while (($row = $result->fetch()) !== false) {
+            if (isset($row['id']) === true) {
+                $ids[] = (int) $row['id'];
+            }
+        }
+
+        $result->closeCursor();
+
+        return $ids;
+    }//end findSearchableIds()
 }//end class

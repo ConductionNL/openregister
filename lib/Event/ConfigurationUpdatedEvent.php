@@ -28,6 +28,8 @@ use OCP\EventDispatcher\Event;
 
 /**
  * Event dispatched when a configuration is updated.
+ *
+ * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
  */
 class ConfigurationUpdatedEvent extends Event
 {
@@ -54,7 +56,7 @@ class ConfigurationUpdatedEvent extends Event
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-4
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(Configuration $newConfiguration, Configuration $oldConfiguration)
     {
@@ -62,4 +64,28 @@ class ConfigurationUpdatedEvent extends Event
         $this->newConfiguration = $newConfiguration;
         $this->oldConfiguration = $oldConfiguration;
     }//end __construct()
+
+    /**
+     * Get the updated configuration.
+     *
+     * @return Configuration The configuration after update.
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+     */
+    public function getNewConfiguration(): Configuration
+    {
+        return $this->newConfiguration;
+    }//end getNewConfiguration()
+
+    /**
+     * Get the original configuration.
+     *
+     * @return Configuration The configuration before update.
+     *
+     * @spec openspec/changes/openregister-system-notifications/tasks.md#task-3
+     */
+    public function getOldConfiguration(): Configuration
+    {
+        return $this->oldConfiguration;
+    }//end getOldConfiguration()
 }//end class

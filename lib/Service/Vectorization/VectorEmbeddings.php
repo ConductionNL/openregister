@@ -88,7 +88,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -154,7 +154,7 @@ class VectorEmbeddings
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex config validation logic
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbeddingWithCustomConfig(string $text, array $config): array
     {
@@ -233,7 +233,7 @@ class VectorEmbeddings
      *
      * @return array
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -303,14 +303,17 @@ class VectorEmbeddings
     /**
      * Generate embeddings for multiple texts in batch
      *
+     * Per-text failures are tolerated: the failing entry carries a null
+     * embedding and an error message instead of aborting the whole batch.
+     *
      * @param array<string> $texts    Array of texts to embed
      * @param string|null   $provider Embedding provider
      *
-     * @return array<int, array{embedding: array<float>, model: string, dimensions: int}> Array of embeddings
+     * @return array<int, array{embedding: array<float>|null, model: string, dimensions: int, error?: string}> Array of embeddings
      *
      * @throws \Exception If batch embedding generation fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateBatchEmbeddings(array $texts, ?string $provider=null): array
     {
@@ -392,7 +395,7 @@ class VectorEmbeddings
     // =============================================================================
 
     /**
-     * Store vector embedding
+     * Store vector embedding in the PostgreSQL database
      *
      * @param string      $entityType  Entity type ('object' or 'file')
      * @param string      $entityId    Entity UUID
@@ -408,7 +411,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If storage fails
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function storeVector(
         string $entityType,
@@ -421,8 +424,6 @@ class VectorEmbeddings
         ?string $chunkText=null,
         array $metadata=[]
     ): int {
-        $backend = $this->getVectorSearchBackend();
-
         return $this->storageHandler->storeVector(
             entityType: $entityType,
             entityId: $entityId,
@@ -432,8 +433,7 @@ class VectorEmbeddings
             chunkIndex: $chunkIndex,
             totalChunks: $totalChunks,
             chunkText: $chunkText,
-            metadata: $metadata,
-            backend: $backend
+            metadata: $metadata
         );
     }//end storeVector()
 
@@ -453,7 +453,7 @@ class VectorEmbeddings
      *
      * @throws \Exception If search fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function semanticSearch(
         string $query,
@@ -465,55 +465,47 @@ class VectorEmbeddings
         $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
         $queryEmbedding     = $queryEmbeddingData['embedding'];
 
-        // Delegate to search handler.
-        $backend = $this->getVectorSearchBackend();
-
         return $this->searchHandler->semanticSearch(
             queryEmbedding: $queryEmbedding,
             limit: $limit,
-            filters: $filters,
-            backend: $backend
+            filters: $filters
         );
     }//end semanticSearch()
 
     /**
-     * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
+     * Perform hybrid search combining keyword and semantic (vector) results
      *
-     * @param string      $query       Query text
-     * @param array       $solrFilters SOLR-specific filters
-     * @param int         $limit       Maximum results
-     * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
-     * @param string|null $provider    Embedding provider
+     * Caller supplies keyword search results; vector search runs against the database.
+     * Results are fused using Reciprocal Rank Fusion (RRF).
      *
-     * @return array
+     * @param string      $query          Query text
+     * @param array       $keywordResults Pre-fetched keyword search results to fuse with vector results
+     * @param int         $limit          Maximum results
+     * @param array       $weights        Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider       Embedding provider
+     *
+     * @return array Hybrid search results with combined scores and source breakdown
      *
      * @throws \Exception If hybrid search fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid3/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters=[],
+        array $keywordResults=[],
         int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        array $weights=['keyword' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
         // Generate query embedding.
         $queryEmbeddingData = $this->generateEmbedding(text: $query, provider: $provider);
         $queryEmbedding     = $queryEmbeddingData['embedding'];
 
-        // Get SOLR results (placeholder - implement when integrating with SOLR).
-        $solrResults = $solrFilters['solr_results'] ?? [];
-
-        // Delegate to search handler.
-        $backend = $this->getVectorSearchBackend();
-
         return $this->searchHandler->hybridSearch(
             queryEmbedding: $queryEmbedding,
-            solrResults: $solrResults,
+            keywordResults: $keywordResults,
             limit: $limit,
-            weights: $weights,
-            backend: $backend
+            weights: $weights
         );
     }//end hybridSearch()
 
@@ -522,21 +514,18 @@ class VectorEmbeddings
     // =============================================================================
 
     /**
-     * Get vector statistics
+     * Get vector statistics from the PostgreSQL database
      *
      * @return ((int|mixed)[]|int|string)[] Statistics about stored vectors
      *
      * @psalm-return array{total_vectors: int, by_type: array<int>,
-     *     by_model: array<int|mixed>, object_vectors?: int, file_vectors?: int,
-     *     source?: 'solr'|'solr_error'|'solr_unavailable'}
+     *     by_model: array<int|mixed>, object_vectors: int, file_vectors: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getVectorStats(): array
     {
-        $backend = $this->getVectorSearchBackend();
-
-        return $this->statsHandler->getStats($backend);
+        return $this->statsHandler->getStats();
     }//end getVectorStats()
 
     // =============================================================================
@@ -552,7 +541,7 @@ class VectorEmbeddings
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple database queries and conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Thorough model mismatch detection
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -666,7 +655,7 @@ class VectorEmbeddings
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function clearAllEmbeddings(): array
     {
@@ -721,27 +710,6 @@ class VectorEmbeddings
     // =============================================================================
 
     /**
-     * Get the configured vector search backend
-     *
-     * @return string Vector search backend ('php', 'database', or 'solr')
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
-     */
-    private function getVectorSearchBackend(): string
-    {
-        try {
-            $llmSettings = $this->settingsService->getLLMSettingsOnly();
-            return $llmSettings['vectorConfig']['backend'] ?? 'php';
-        } catch (Exception $e) {
-            $this->logger->warning(
-                message: '[VectorEmbeddings] Failed to get vector search backend, defaulting to PHP',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return 'php';
-        }
-    }//end getVectorSearchBackend()
-
-    /**
      * Get embedding configuration from settings
      *
      * @param string|null $provider Override provider (null = use default from settings)
@@ -751,7 +719,7 @@ class VectorEmbeddings
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Provider-specific configuration mapping
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function getEmbeddingConfig(?string $provider=null): array
     {

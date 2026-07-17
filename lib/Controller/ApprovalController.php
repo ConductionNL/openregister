@@ -17,10 +17,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -94,7 +94,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function index(): JSONResponse
     {
@@ -114,7 +114,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -132,7 +132,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      *
      * @NoAdminRequired
      */
@@ -161,7 +161,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      *
      * @NoAdminRequired
      */
@@ -191,7 +191,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      *
      * @NoAdminRequired
      */
@@ -221,7 +221,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-2
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function objects(int $id): JSONResponse
     {
@@ -263,8 +263,8 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-3
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function steps(): JSONResponse
     {
@@ -306,7 +306,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function approve(int $id): JSONResponse
     {
@@ -345,7 +345,7 @@ class ApprovalController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function reject(int $id): JSONResponse
     {

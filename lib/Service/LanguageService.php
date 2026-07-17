@@ -69,6 +69,33 @@ class LanguageService
     private bool $fallbackUsed = false;
 
     /**
+     * Source of the resolved preferred language, for introspection.
+     *
+     * One of `'query'`, `'header'`, or `'default'`. Used by the
+     * `X-Source-Language` response setter (i18n-source-of-truth) and
+     * external diagnostics tooling.
+     *
+     * @var string
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    private string $requestedLanguageSource = 'default';
+
+    /**
+     * Optional BCP-47 target language for write requests, read from the
+     * `X-Translation-Target-Language` header.
+     *
+     * When set, the TranslationHandler treats scalar request bodies as
+     * updates to that target language instead of wrapping under the
+     * register's default language.
+     *
+     * @var string|null
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    private ?string $targetLanguage = null;
+
+    /**
      * Set the preferred language.
      *
      * @param string $language The BCP 47 language code
@@ -157,6 +184,71 @@ class LanguageService
     {
         return $this->fallbackUsed;
     }//end isFallbackUsed()
+
+    /**
+     * Set the source of the resolved preferred language.
+     *
+     * @param string $source One of `'query'`, `'header'`, `'default'`.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    public function setRequestedLanguageSource(string $source): void
+    {
+        if (in_array($source, ['query', 'header', 'default'], true) === false) {
+            return;
+        }
+
+        $this->requestedLanguageSource = $source;
+    }//end setRequestedLanguageSource()
+
+    /**
+     * Get the source of the resolved preferred language.
+     *
+     * @return string One of `'query'`, `'header'`, `'default'`.
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-1
+     */
+    public function getRequestedLanguageSource(): string
+    {
+        return $this->requestedLanguageSource;
+    }//end getRequestedLanguageSource()
+
+    /**
+     * Set the write-side target language for the active request.
+     *
+     * Populated by `LanguageMiddleware::beforeController` when the
+     * `X-Translation-Target-Language` header is present on a
+     * POST/PUT/PATCH. Read by `TranslationHandler::normalizeTranslationsForSave`.
+     *
+     * @param string|null $language BCP-47 tag, or null to clear.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    public function setTargetLanguage(?string $language): void
+    {
+        if ($language === null || trim($language) === '') {
+            $this->targetLanguage = null;
+            return;
+        }
+
+        $this->targetLanguage = trim($language);
+    }//end setTargetLanguage()
+
+    /**
+     * Get the write-side target language for the active request.
+     *
+     * @return string|null BCP-47 tag, or null when not set.
+     *
+     * @spec openspec/changes/i18n-api-language-negotiation/tasks.md#phase-2
+     */
+    public function getTargetLanguage(): ?string
+    {
+        return $this->targetLanguage;
+    }//end getTargetLanguage()
 
     /**
      * Resolve the best matching language for a register.

@@ -46,8 +46,6 @@ import { navigationStore } from '../store/store.js'
 		<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
 		<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
 		<EditApplication v-if="navigationStore.modal === 'editApplication'" />
-		<EditAgent v-if="navigationStore.modal === 'editAgent'" />
-		<DeleteAgent />
 		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
 		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
 		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
@@ -96,8 +94,6 @@ import EditOrganisation from './organisation/EditOrganisation.vue'
 import DeleteOrganisation from './organisation/DeleteOrganisation.vue'
 import ManageOrganisationRoles from './organisation/ManageOrganisationRoles.vue'
 import EditApplication from './application/EditApplication.vue'
-import EditAgent from './agent/EditAgent.vue'
-import DeleteAgent from './agent/DeleteAgent.vue'
 import EditWebhook from './webhook/EditWebhook.vue'
 import ViewWebhookLog from './webhook/ViewWebhookLog.vue'
 import EditEndpoint from './endpoint/EditEndpoint.vue'
@@ -145,8 +141,6 @@ export default {
 		DeleteOrganisation,
 		ManageOrganisationRoles,
 		EditApplication,
-		EditAgent,
-		DeleteAgent,
 		EditWebhook,
 		ViewWebhookLog,
 		EditEndpoint,

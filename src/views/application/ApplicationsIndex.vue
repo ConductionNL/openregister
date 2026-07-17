@@ -332,7 +332,7 @@ export default {
 		/**
 		 * Toggle selection state for every application in the current list.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-1
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @param {boolean} checked - true selects all, false clears the selection
 		 * @return {void}
 		 */
@@ -344,6 +344,8 @@ export default {
 			}
 		},
 		/**
+		 * @param applicationId
+		 * @param checked
 		 * @spec exclude list-view single-row selection toggle plumbing
 		 */
 		toggleApplicationSelection(applicationId, checked) {
@@ -354,12 +356,14 @@ export default {
 			}
 		},
 		/**
+		 * @param page
 		 * @spec exclude list-view pagination page-change handler
 		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
 		/**
+		 * @param pageSize
 		 * @spec exclude list-view pagination page-size-change handler
 		 */
 		onPageSizeChanged(pageSize) {

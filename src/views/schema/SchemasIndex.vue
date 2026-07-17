@@ -10,7 +10,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 			:title="t('openregister', 'Schemas')"
 			:description="t('openregister', 'Manage your data schemas and their properties')"
 			:show-title="true"
-			:objects="schemaStore.schemaList"
+			:objects="paginatedSchemas"
 			:columns="tableColumns"
 			:pagination="paginationData"
 			:view-mode="schemaStore.viewMode"
@@ -119,7 +119,6 @@ import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
-import { showError, showSuccess } from '@nextcloud/dialogs'
 import RegisterSchemaCard from '../../components/cards/RegisterSchemaCard.vue'
 
 export default {
@@ -168,6 +167,18 @@ export default {
 			const total = schemaStore.schemaList.length
 			const pages = Math.ceil(total / limit)
 			return { page, pages, total, limit }
+		},
+		/**
+		 * The schemas for the current page. The full list is loaded client-side,
+		 * so CnIndexPage (prop mode) does not slice — we slice here so paging works.
+		 *
+		 * @spec exclude UI plumbing — derived per-page slice for display
+		 * @return {Array<object>}
+		 */
+		paginatedSchemas() {
+			const { page, limit } = this.paginationData
+			const start = (page - 1) * limit
+			return schemaStore.schemaList.slice(start, start + limit)
 		},
 		/**
 		 * Empty-content label shown when the schema list is empty or loading.
@@ -395,6 +406,6 @@ export default {
 /* Local configuration badge - orange */
 .managedBadge--local {
 	background: var(--color-warning);
-	color: var(--color-main-background);
+	color: var(--color-main-text);
 }
 </style>

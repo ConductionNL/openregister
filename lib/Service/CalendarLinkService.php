@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/integration-calendar/tasks.md
+ * @spec openspec/specs/integration-calendar/spec.md
  */
 
 declare(strict_types=1);
@@ -46,10 +46,10 @@ use Throwable;
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) CalDAV protocol requires handling multiple
  *   branching cases per operation (object types, URI resolution, legacy X-OR fallback) — the
  *   complexity is inherent to wrapping two distinct CalDAV data sources.
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) CalDAV link service must compose CalDavBackend,
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   CalDAV link service must compose CalDavBackend,
  *   CalendarEventService, CalendarLinkMapper, UserSession, and Logger — each serves a distinct
  *   concern and cannot be merged.
- * @SuppressWarnings(PHPMD.StaticAccess) Sabre\VObject\Reader::read() is a static factory with
+ * @SuppressWarnings(PHPMD.StaticAccess)             Sabre\VObject\Reader::read() is a static factory with
  *   no injectable alternative in the Sabre VObject library.
  */
 class CalendarLinkService
@@ -91,7 +91,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user is logged in or the event cannot be located.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkEvent(
         string $objectUuid,
@@ -151,7 +151,7 @@ class CalendarLinkService
      *
      * @throws Exception On creation failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkEvent(
         string $objectUuid,
@@ -194,7 +194,12 @@ class CalendarLinkService
         $link->setSummary((string) ($event['summary'] ?? ''));
         $link->setDtstart($this->parseEventDateTime(value: $event['dtstart'] ?? null));
         $link->setDtend($this->parseEventDateTime(value: $event['dtend'] ?? null));
-        $link->setLocation(isset($event['location']) === true ? (string) $event['location'] : null);
+        $location = null;
+        if (isset($event['location']) === true) {
+            $location = (string) $event['location'];
+        }
+
+        $link->setLocation($location);
         $link->setLinkedBy($user->getUID());
         $link->setLinkedAt(new DateTime());
         $link->setTaggedWithXor(true);
@@ -237,7 +242,7 @@ class CalendarLinkService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkEvent(string $objectUuid, string $eventUid): void
     {
@@ -314,7 +319,7 @@ class CalendarLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedEvents(string $objectUuid): array
     {
@@ -368,10 +373,10 @@ class CalendarLinkService
      *     mark the existing entry as 'both' via fallback dedupe.
      *   - Otherwise: insert a new 'xor-only' entry.
      *
-     * @param array<string,array<string,mixed>> &$merged      Dedupe map, modified in place.
-     * @param array<string,mixed>               $event        X-OR-* scan event row.
-     * @param string                            $eventUid     Pre-extracted UID.
-     * @param string                            $calendarUri  Resolved calendar URI (may be '').
+     * @param array<string,array<string,mixed>> $merged      Dedupe map, modified in place by reference.
+     * @param array<string,mixed>               $event       X-OR-* scan event row.
+     * @param string                            $eventUid    Pre-extracted UID.
+     * @param string                            $calendarUri Resolved calendar URI (may be '').
      *
      * @return void
      */
@@ -399,8 +404,8 @@ class CalendarLinkService
             }
         }
 
-        $payload                = $event;
-        $payload['source']      = 'xor-only';
+        $payload           = $event;
+        $payload['source'] = 'xor-only';
         $payload['calendarUri'] = $calendarUri;
         $merged[$key]           = $payload;
     }//end mergeXorEvent()
@@ -412,7 +417,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user is logged in.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailableCalendars(): array
     {
@@ -457,7 +462,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user, no calendar, or calendar URI is unknown.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getEventsForCalendar(string $calendarUri, ?int $limit=100, ?DateTimeInterface $after=null): array
     {
@@ -493,8 +498,16 @@ class CalendarLinkService
         usort(
                 $results,
                 static function (array $a, array $b): int {
-                    $timeA = ($a['dtstart'] !== null) ? strtotime((string) $a['dtstart']) : PHP_INT_MAX;
-                    $timeB = ($b['dtstart'] !== null) ? strtotime((string) $b['dtstart']) : PHP_INT_MAX;
+                    $timeA = PHP_INT_MAX;
+                    if ($a['dtstart'] !== null) {
+                        $timeA = strtotime((string) $a['dtstart']);
+                    }
+
+                    $timeB = PHP_INT_MAX;
+                    if ($b['dtstart'] !== null) {
+                        $timeB = strtotime((string) $b['dtstart']);
+                    }
+
                     return $timeA <=> $timeB;
                 }
                 );
@@ -535,10 +548,10 @@ class CalendarLinkService
      * Returns null when the object is not a parseable VEVENT, has no UID,
      * or falls before the cutoff timestamp.
      *
-     * @param int                     $calendarId  Numeric calendar id.
-     * @param string                  $calendarUri Calendar URI string.
-     * @param array<string,mixed>     $object      Lightweight object row from getCalendarObjects().
-     * @param int|null                $cutoff      Unix timestamp lower bound (null = no filter).
+     * @param int                 $calendarId  Numeric calendar id.
+     * @param string              $calendarUri Calendar URI string.
+     * @param array<string,mixed> $object      Lightweight object row from getCalendarObjects().
+     * @param int|null            $cutoff      Unix timestamp lower bound (null = no filter).
      *
      * @return array<string,mixed>|null Picker row, or null to skip this object.
      */
@@ -582,11 +595,11 @@ class CalendarLinkService
      * Returns null when the iCal has no VEVENT, no UID, or the event
      * is before the cutoff timestamp.
      *
-     * @param string         $calendarData Raw iCal data.
-     * @param string         $objectUri    CalDAV object URI.
-     * @param int            $calendarId   Numeric calendar id.
-     * @param string         $calendarUri  Calendar URI string.
-     * @param int|null       $cutoff       Unix timestamp lower bound (null = no filter).
+     * @param string   $calendarData Raw iCal data.
+     * @param string   $objectUri    CalDAV object URI.
+     * @param int      $calendarId   Numeric calendar id.
+     * @param string   $calendarUri  Calendar URI string.
+     * @param int|null $cutoff       Unix timestamp lower bound (null = no filter).
      *
      * @return array<string,mixed>|null Picker row, or null to skip.
      */
@@ -604,14 +617,24 @@ class CalendarLinkService
         }
 
         $uid   = (string) $vevent->UID;
-        $start = isset($vevent->DTSTART) === true ? $vevent->DTSTART->getDateTime() : null;
+        $start = null;
+        if (isset($vevent->DTSTART) === true) {
+            $start = $vevent->DTSTART->getDateTime();
+        }
 
         if ($cutoff !== null && $start !== null && $start->getTimestamp() < $cutoff) {
             return null;
         }
 
-        $dtend       = isset($vevent->DTEND) === true ? $vevent->DTEND->getDateTime()->format('c') : null;
-        $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+        $dtend = null;
+        if (isset($vevent->DTEND) === true) {
+            $dtend = $vevent->DTEND->getDateTime()->format('c');
+        }
+
+        $rowLocation = null;
+        if (isset($vevent->LOCATION) === true) {
+            $rowLocation = (string) $vevent->LOCATION;
+        }
 
         return [
             'uid'         => $uid,
@@ -706,14 +729,25 @@ class CalendarLinkService
                 return null;
             }
 
-            $dtstart     = isset($vevent->DTSTART) === true
-                ? DateTime::createFromInterface($vevent->DTSTART->getDateTime())
-                : null;
-            $dtend       = isset($vevent->DTEND) === true
-                ? DateTime::createFromInterface($vevent->DTEND->getDateTime())
-                : null;
-            $rowSummary  = isset($vevent->SUMMARY) === true  ? (string) $vevent->SUMMARY  : null;
-            $rowLocation = isset($vevent->LOCATION) === true ? (string) $vevent->LOCATION : null;
+            $dtstart = null;
+            if (isset($vevent->DTSTART) === true) {
+                $dtstart = DateTime::createFromInterface($vevent->DTSTART->getDateTime());
+            }
+
+            $dtend = null;
+            if (isset($vevent->DTEND) === true) {
+                $dtend = DateTime::createFromInterface($vevent->DTEND->getDateTime());
+            }
+
+            $rowSummary = null;
+            if (isset($vevent->SUMMARY) === true) {
+                $rowSummary = (string) $vevent->SUMMARY;
+            }
+
+            $rowLocation = null;
+            if (isset($vevent->LOCATION) === true) {
+                $rowLocation = (string) $vevent->LOCATION;
+            }
 
             return [
                 'calendarId' => $calendarId,
@@ -787,7 +821,7 @@ class CalendarLinkService
         }
 
         if (is_object($components) === true && method_exists($components, 'getValue') === true) {
-            return $this->componentListContainsVevent($components->getValue());
+            return $this->componentListContainsVevent(components: $components->getValue());
         }
 
         if (is_string($components) === true) {
@@ -795,7 +829,7 @@ class CalendarLinkService
         }
 
         if (is_iterable($components) === true) {
-            return $this->componentListContainsVevent($components);
+            return $this->componentListContainsVevent(components: $components);
         }
 
         return false;

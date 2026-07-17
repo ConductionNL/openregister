@@ -222,13 +222,29 @@ class LeafProvidersMetadataTest extends TestCase
             );
         }
 
+        // TimeProvider — (db, appManager, l10n, mapper, config).
+        if ($class === TimeProvider::class) {
+            $config = $this->createMock(\OCP\IConfig::class);
+            $config->method('getAppValue')->willReturnCallback(
+                static function (string $app, string $key, string $default = '') {
+                    return $default;
+                }
+            );
+            return new TimeProvider(
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+                linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                config: $config,
+            );
+        }
+
         // Providers shaped (db, appManager, l10n, <mapper>).
         $trailingMapper = [
             AnalyticsProvider::class   => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
             CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
             MapsProvider::class        => \OCA\OpenRegister\Db\MapLinkMapper::class,
             PhotosProvider::class      => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
-            TimeProvider::class        => \OCA\OpenRegister\Db\TimeTrackerLinkMapper::class,
             FormsProvider::class       => \OCA\OpenRegister\Db\FormLinkMapper::class,
         ];
         if (isset($trailingMapper[$class]) === true) {
@@ -631,10 +647,21 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testSharesProviderCreateThrowsNotImplemented(): void
     {
+        // Inject a mock container that returns null for every service lookup
+        // so that SharesProvider::lookup() cannot resolve CaseTokenService
+        // from the real NC container. Without the container override,
+        // \OCP\Server::get(CaseTokenService) succeeds in the docker environment
+        // but then throws InvalidArgumentException (no logged-in user) rather
+        // than falling through to parent::create() → NotImplementedException.
+        $mockContainer = $this->createMock(ContainerInterface::class);
+        $mockContainer->method('get')->willThrowException(new \RuntimeException('not found'));
+        $mockContainer->method('has')->willReturn(false);
+
         $provider = new SharesProvider(
             db: $this->createMock(IDBConnection::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
+            container: $mockContainer,
         );
 
         $this->expectException(NotImplementedException::class);

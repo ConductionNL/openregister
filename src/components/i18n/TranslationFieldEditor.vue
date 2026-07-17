@@ -116,6 +116,7 @@ export default {
 	},
 	methods: {
 		/**
+		 * @param lang
 		 * @spec exclude computed read of per-language value from v-model prop, UI plumbing
 		 */
 		getValue(lang) {
@@ -126,18 +127,22 @@ export default {
 			return this.statuses?.[lang] ?? null
 		},
 		/**
+		 * @param lang
 		 * @spec exclude computed text-direction (rtl/ltr) display helper, UI plumbing
 		 */
 		dirFor(lang) {
 			return isRtlLanguage(lang) ? 'rtl' : 'ltr'
 		},
 		/**
+		 * @param lang
 		 * @spec exclude computed placeholder display helper, UI plumbing
 		 */
 		placeholderFor(lang) {
 			return `Translation in ${lang.toUpperCase()}`
 		},
 		/**
+		 * @param lang
+		 * @param newValue
 		 * @spec exclude per-language input emitting v-model input; translatable-field contract owned by register-i18n capability
 		 */
 		onInput(lang, newValue) {

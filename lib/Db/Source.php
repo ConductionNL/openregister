@@ -52,6 +52,34 @@ use OCP\AppFramework\Db\Entity;
  * @method void setCreated(?DateTime $created)
  * @method array|null getConfiguration()
  * @method void setConfiguration(?array $configuration)
+ * @method bool|null getSyncEnabled()
+ * @method void setSyncEnabled(?bool $syncEnabled)
+ * @method string|null getSyncSchedule()
+ * @method void setSyncSchedule(?string $syncSchedule)
+ * @method int|null getSyncInterval()
+ * @method void setSyncInterval(?int $syncInterval)
+ * @method DateTime|null getLastSyncDate()
+ * @method void setLastSyncDate(?DateTime $lastSyncDate)
+ * @method string|null getLastSyncStatus()
+ * @method void setLastSyncStatus(?string $lastSyncStatus)
+ * @method string|null getLastSyncToken()
+ * @method void setLastSyncToken(?string $lastSyncToken)
+ * @method string|null getAuthType()
+ * @method void setAuthType(?string $authType)
+ * @method array|null getAuthConfig()
+ * @method void setAuthConfig(?array $authConfig)
+ * @method int|null getMappingId()
+ * @method void setMappingId(?int $mappingId)
+ * @method string|null getTargetRegister()
+ * @method void setTargetRegister(?string $targetRegister)
+ * @method string|null getTargetSchema()
+ * @method void setTargetSchema(?string $targetSchema)
+ * @method string|null getConflictStrategy()
+ * @method void setConflictStrategy(?string $conflictStrategy)
+ * @method string|null getDeleteStrategy()
+ * @method void setDeleteStrategy(?string $deleteStrategy)
+ * @method int|null getBatchSize()
+ * @method void setBatchSize(?int $batchSize)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  */
@@ -115,6 +143,104 @@ class Source extends Entity implements JsonSerializable
     private ?Configuration $managedByConfig = null;
 
     /**
+     * Whether scheduled/harvest sync is enabled for this source
+     *
+     * @var boolean|null Sync enabled flag
+     */
+    protected ?bool $syncEnabled = null;
+
+    /**
+     * Cron expression describing the sync schedule (informational; interval drives the timed job)
+     *
+     * @var string|null Cron schedule expression
+     */
+    protected ?string $syncSchedule = null;
+
+    /**
+     * Sync interval in hours used by the timed job to decide whether a source is due
+     *
+     * @var integer|null Sync interval in hours
+     */
+    protected ?int $syncInterval = null;
+
+    /**
+     * Timestamp of the last successful sync checkpoint
+     *
+     * @var DateTime|null Last sync date
+     */
+    protected ?DateTime $lastSyncDate = null;
+
+    /**
+     * Status of the last sync execution (success|partial|failed|running)
+     *
+     * @var string|null Last sync status
+     */
+    protected ?string $lastSyncStatus = null;
+
+    /**
+     * Incremental sync checkpoint token (e.g. OData delta token or cursor)
+     *
+     * @var string|null Last sync token
+     */
+    protected ?string $lastSyncToken = null;
+
+    /**
+     * Authentication type for the external source (none|apikey|basic|oauth2|certificate)
+     *
+     * @var string|null Authentication type
+     */
+    protected ?string $authType = null;
+
+    /**
+     * Encrypted authentication configuration (credentials stored at rest)
+     *
+     * @var array|null Authentication config
+     */
+    protected ?array $authConfig = null;
+
+    /**
+     * Reference to the Mapping entity used to transform source records
+     *
+     * @var integer|null Mapping entity id
+     */
+    protected ?int $mappingId = null;
+
+    /**
+     * Target register slug/id that synced objects are imported into
+     *
+     * @var string|null Target register
+     */
+    protected ?string $targetRegister = null;
+
+    /**
+     * Target schema slug/id that synced objects are validated against
+     *
+     * @var string|null Target schema
+     */
+    protected ?string $targetSchema = null;
+
+    /**
+     * Conflict resolution strategy (source-wins|local-wins|newest-wins|manual)
+     *
+     * @var string|null Conflict strategy
+     */
+    protected ?string $conflictStrategy = null;
+
+    /**
+     * Delete handling strategy (soft-delete|hard-delete|ignore)
+     *
+     * @var string|null Delete strategy
+     */
+    protected ?string $deleteStrategy = null;
+
+    /**
+     * Batch size used by the harvest pipeline when processing records
+     *
+     * @var integer|null Batch size
+     */
+    protected ?int $batchSize = null;
+
+    /**
      * Last update timestamp
      *
      * @var DateTime|null Last update timestamp
@@ -142,6 +268,20 @@ class Source extends Entity implements JsonSerializable
         $this->addType(fieldName: 'databaseUrl', type: 'string');
         $this->addType(fieldName: 'type', type: 'string');
         $this->addType(fieldName: 'organisation', type: 'string');
+        $this->addType(fieldName: 'syncEnabled', type: 'boolean');
+        $this->addType(fieldName: 'syncSchedule', type: 'string');
+        $this->addType(fieldName: 'syncInterval', type: 'integer');
+        $this->addType(fieldName: 'lastSyncDate', type: 'datetime');
+        $this->addType(fieldName: 'lastSyncStatus', type: 'string');
+        $this->addType(fieldName: 'lastSyncToken', type: 'string');
+        $this->addType(fieldName: 'authType', type: 'string');
+        $this->addType(fieldName: 'authConfig', type: 'json');
+        $this->addType(fieldName: 'mappingId', type: 'integer');
+        $this->addType(fieldName: 'targetRegister', type: 'string');
+        $this->addType(fieldName: 'targetSchema', type: 'string');
+        $this->addType(fieldName: 'conflictStrategy', type: 'string');
+        $this->addType(fieldName: 'deleteStrategy', type: 'string');
+        $this->addType(fieldName: 'batchSize', type: 'integer');
         $this->addType(fieldName: 'updated', type: 'datetime');
         $this->addType(fieldName: 'created', type: 'datetime');
     }//end __construct()
@@ -229,15 +369,7 @@ class Source extends Entity implements JsonSerializable
      *
      * Prepares the entity data for JSON serialization
      *
-     * @return ((int|null|string)[]|int|null|string)[]
-     *
-     * @psalm-return array{id: int, uuid: null|string, title: null|string,
-     *     version: null|string, description: null|string,
-     *     databaseUrl: null|string, type: null|string,
-     *     organisation: null|string, updated: null|string,
-     *     created: null|string,
-     *     managedByConfiguration: array{id: int, uuid: null|string,
-     *     title: null|string}|null}
+     * @return array<string, mixed> The serialized source data
      */
     public function jsonSerialize(): array
     {
@@ -251,6 +383,11 @@ class Source extends Entity implements JsonSerializable
             $created = $this->created->format('c');
         }
 
+        $lastSyncDate = null;
+        if ($this->lastSyncDate !== null) {
+            $lastSyncDate = $this->lastSyncDate->format('c');
+        }
+
         return [
             'id'                     => $this->id,
             'uuid'                   => $this->uuid,
@@ -260,6 +397,21 @@ class Source extends Entity implements JsonSerializable
             'databaseUrl'            => $this->databaseUrl,
             'type'                   => $this->type,
             'organisation'           => $this->organisation,
+            'syncEnabled'            => $this->syncEnabled,
+            'syncSchedule'           => $this->syncSchedule,
+            'syncInterval'           => $this->syncInterval,
+            'lastSyncDate'           => $lastSyncDate,
+            'lastSyncStatus'         => $this->lastSyncStatus,
+            'lastSyncToken'          => $this->lastSyncToken,
+            'authType'               => $this->authType,
+            // Never expose the encrypted credential blob; only signal whether one is configured.
+            'authConfigured'         => ($this->authConfig !== null && $this->authConfig !== []),
+            'mappingId'              => $this->mappingId,
+            'targetRegister'         => $this->targetRegister,
+            'targetSchema'           => $this->targetSchema,
+            'conflictStrategy'       => $this->conflictStrategy,
+            'deleteStrategy'         => $this->deleteStrategy,
+            'batchSize'              => $this->batchSize,
             'updated'                => $updated,
             'created'                => $created,
             'managedByConfiguration' => $this->getManagedByConfigurationData(),

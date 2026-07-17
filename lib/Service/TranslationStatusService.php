@@ -65,7 +65,7 @@ class TranslationStatusService
      *
      * @throws InvalidArgumentException When status is invalid or no slot exists.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-3
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function setStatus(string $objectUuid, string $property, string $language, string $status): Translation
     {
@@ -116,7 +116,7 @@ class TranslationStatusService
      *
      * @return array<string, array{translated: int, total: int, ratio: float}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-4
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function completenessForObject(string $objectUuid, Schema $schema): array
     {
@@ -142,26 +142,137 @@ class TranslationStatusService
     /**
      * Search translation rows.
      *
-     * @param string|null $query      Optional full-text query.
-     * @param string|null $language   Optional language filter.
-     * @param string|null $status     Optional status filter.
-     * @param string|null $objectUuid Optional object UUID filter.
-     * @param int         $limit      Maximum number of results.
+     * @param string|null $query          Optional full-text query.
+     * @param string|null $language       Optional language filter.
+     * @param string|null $status         Optional status filter.
+     * @param string|null $objectUuid     Optional object UUID filter.
+     * @param int         $limit          Maximum number of results.
+     * @param string|null $sourceLanguage Optional source-language filter.
+     * @param bool        $isOutOfDate    When true, restrict to status=outdated.
      *
      * @return array<string, mixed>[]
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-5
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
      */
     public function search(
         ?string $query=null,
         ?string $language=null,
         ?string $status=null,
         ?string $objectUuid=null,
-        int $limit=100
+        int $limit=100,
+        ?string $sourceLanguage=null,
+        bool $isOutOfDate=false
     ): array {
-        $rows = $this->translationMapper->search($query, $language, $status, $objectUuid, $limit);
+        $rows = $this->translationMapper->search(
+            query: $query,
+            language: $language,
+            status: $status,
+            objectUuid: $objectUuid,
+            limit: $limit,
+            sourceLanguage: $sourceLanguage,
+            isOutOfDate: $isOutOfDate
+        );
         return array_map(fn(Translation $t) => $t->jsonSerialize(), $rows);
     }//end search()
+
+    /**
+     * Search translation rows and attach the source-language value side-by-side.
+     *
+     * Used to power `GET /api/translations/search?compareToSource=true` so
+     * editorial tooling can render the source vs target value pair without
+     * a follow-up round trip.
+     *
+     * @param string|null $query          Optional full-text query.
+     * @param string|null $language       Optional language filter.
+     * @param string|null $status         Optional status filter.
+     * @param string|null $objectUuid     Optional object UUID filter.
+     * @param int         $limit          Maximum number of results.
+     * @param string|null $sourceLanguage Optional source-language filter.
+     * @param bool        $isOutOfDate    When true, restrict to status=outdated.
+     *
+     * @return array<string, mixed>[] Each row carries an extra `sourceValue` field.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    public function searchWithSourceValues(
+        ?string $query=null,
+        ?string $language=null,
+        ?string $status=null,
+        ?string $objectUuid=null,
+        int $limit=100,
+        ?string $sourceLanguage=null,
+        bool $isOutOfDate=false
+    ): array {
+        $rows = $this->translationMapper->search(
+            query: $query,
+            language: $language,
+            status: $status,
+            objectUuid: $objectUuid,
+            limit: $limit,
+            sourceLanguage: $sourceLanguage,
+            isOutOfDate: $isOutOfDate
+        );
+
+        // Resolve (uuid, property, sourceLanguage) -> sourceValue lookup once.
+        $cache = [];
+        $out   = [];
+        foreach ($rows as $row) {
+            $entry  = $row->jsonSerialize();
+            $uuid   = (string) $row->getObjectUuid();
+            $prop   = (string) $row->getProperty();
+            $source = (string) ($row->getSourceLanguage() ?? '');
+
+            $key = $uuid.'|'.$prop.'|'.$source;
+            if ($source === '') {
+                $entry['sourceValue'] = null;
+            } else if (isset($cache[$key]) === true) {
+                $entry['sourceValue'] = $cache[$key];
+            } else {
+                $sourceRow = $this->translationMapper->findOne($uuid, $prop, $source);
+                if ($sourceRow !== null) {
+                    $value = $sourceRow->getValue();
+                } else {
+                    $value = null;
+                }
+
+                $cache[$key]          = $value;
+                $entry['sourceValue'] = $value;
+            }
+
+            $out[] = $entry;
+        }//end foreach
+
+        return $out;
+    }//end searchWithSourceValues()
+
+    /**
+     * Mark every non-source-language Translation row for a property as `outdated`.
+     *
+     * When the source-language value for a translatable property changes,
+     * every derived translation becomes stale by definition; flipping the
+     * status surface immediately surfaces the staleness to translators +
+     * editorial tooling. Rows already in `outdated` (or `draft`) status are
+     * not re-flipped.
+     *
+     * @param string $objectUuid     UUID of the object whose translations to flip.
+     * @param string $property       Property whose derived translations to flip.
+     * @param string $sourceLanguage Resolved source language for the property.
+     *
+     * @return int Number of derived rows transitioned to `outdated`.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     */
+    public function markDerivedTranslationsOutdated(
+        string $objectUuid,
+        string $property,
+        string $sourceLanguage
+    ): int {
+        if ($objectUuid === '' || $property === '' || $sourceLanguage === '') {
+            return 0;
+        }
+
+        return $this->translationMapper->markDerivedOutdated($objectUuid, $property, $sourceLanguage);
+    }//end markDerivedTranslationsOutdated()
 
     /**
      * Find objects missing translation slots in a language.
@@ -175,7 +286,7 @@ class TranslationStatusService
      *
      * @return string[] Subset of `$candidateUuids` lacking the language.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-6
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function findObjectsMissingLanguage(string $language, Schema $schema, array $candidateUuids): array
     {

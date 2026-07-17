@@ -14,6 +14,7 @@ import {
 	lifecyclePlugin,
 	searchPlugin,
 	selectionPlugin,
+	liveUpdatesPlugin,
 } from '@conduction/nextcloud-vue'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
@@ -63,7 +64,7 @@ function openregisterObjectPlugin() {
 		actions: {
 			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
-			 * @param options
+			 * @param {object} [options] Fetch options: register, schema, limit, page, search
 			 *
 			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (fetchCollection); the data-fetch contract is owned by the shared library, not this app.
 			 */
@@ -126,6 +127,7 @@ function openregisterObjectPlugin() {
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
 			/**
+			 * @param {object} _schema Unused — kept for call-site compatibility
 			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
 			 */
 			initializeProperties(_schema) {
@@ -145,6 +147,14 @@ export const useObjectStore = createObjectStore('openregister-objects', {
 		lifecyclePlugin(),
 		searchPlugin(),
 		selectionPlugin(),
+		// Live updates (adopt-live-updates-ui): exposes subscribe(type, id?) /
+		// unsubscribe(handle) backed by @nextcloud/notify_push with polling
+		// fallback. Inert until the first subscribe() call — the object list
+		// (ObjectsList.vue) subscribes to the or-collection event for the
+		// current register+schema, the detail view (ObjectDetails.vue) to the
+		// or-object event for the open object. Events are refetch hints only:
+		// the plugin re-runs fetchCollection/fetchObject through this store.
+		liveUpdatesPlugin(),
 		openregisterObjectPlugin(),
 	],
 })

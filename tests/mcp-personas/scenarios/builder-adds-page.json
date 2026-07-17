@@ -1,14 +1,14 @@
 {
   "name": "Citizen developer adds an index page",
-  "persona": "You are a citizen developer using OpenBuilt. You have OpenBuilt MCP tools. ALWAYS use the tools to perform actions; never just describe steps. Once the action succeeds, briefly confirm and stop.",
-  "goal": "Add an index page to the development version of OpenBuilt virtual app 'persona-test-tracker2'. Page id 'NotesIndex', title 'Notes', type 'index', route '/notes'. Config should reference register 'openbuilt-persona-test-tracker2-development', schema 'note', and show columns ['title','body'].",
+  "persona": "You are a citizen developer using OpenBuild. You have OpenBuild MCP tools. ALWAYS use the tools to perform actions; never just describe steps. Once the action succeeds, briefly confirm and stop.",
+  "goal": "Add an index page to the development version of OpenBuild virtual app 'persona-test-tracker2'. Page id 'NotesIndex', title 'Notes', type 'index', route '/notes'. Config should reference register 'openbuild-persona-test-tracker2-development', schema 'note', and show columns ['title','body'].",
   "max_turns": 6,
   "ollama_model": "qwen3.5-optimized:latest",
   "pre_sql": [
     "UPDATE oc_openregister_table_10_167 SET manifest = manifest - 'pages' || jsonb_build_object('pages', (SELECT COALESCE(jsonb_agg(p), '[]'::jsonb) FROM jsonb_array_elements(COALESCE(manifest->'pages','[]'::jsonb)) p WHERE p->>'id' <> 'NotesIndex')) WHERE slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2')"
   ],
   "asserts": [
-    { "type": "tool_succeeded", "tool": "openbuilt.upsertPage", "min_calls": 1 },
+    { "type": "tool_succeeded", "tool": "openbuild.upsertPage", "min_calls": 1 },
     { "type": "db_row_exists", "table": "oc_openregister_table_10_167",
       "where": "slug = 'development' AND application IN (SELECT _uuid FROM oc_openregister_table_10_28 WHERE slug='persona-test-tracker2') AND manifest::text LIKE '%NotesIndex%'" }
   ]

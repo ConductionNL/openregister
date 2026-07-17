@@ -120,7 +120,9 @@ class RenderObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
     }
 
@@ -459,6 +461,181 @@ class RenderObjectTest extends TestCase
         );
 
         $this->assertInstanceOf(ObjectEntity::class, $result);
+    }
+
+    // =========================================================================
+    // renderEntity - writeOnly stripping is NOT rbac-gated (#389)
+    // Regression: these go through renderEntity's _rbac gate, NOT the handler
+    // helper directly (the direct-helper tests passed while the bug shipped).
+    // =========================================================================
+
+    /**
+     * Build a real Schema (id 1) with the given properties so hasWriteOnlyProperties()
+     * / hasPropertyAuthorization() are computed from real config, and wire the
+     * schema/register/file mocks renderEntity needs to reach the strip block.
+     *
+     * @param array $properties Schema property config.
+     *
+     * @return void
+     */
+    private function wireSchemaForStrip(array $properties): void
+    {
+        $schema = $this->createSchema(1);
+        $schema->setProperties($properties);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->registerMapper->method('find')->willReturn($this->createRegister(1));
+        $this->fileMapper->method('getFilesForObject')->willReturn([]);
+    }
+
+    public function testRenderEntityStripsWriteOnlyEvenWhenRbacFalse(): void
+    {
+        // #389: an admin HTTP read renders with _rbac=false; writeOnly MUST still strip.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        // writeOnly path must run even under _rbac=false; group-authz filter must NOT
+        // (schema declares no property authorization).
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $obj) {
+                unset($obj['apiSecret']);
+                return $obj;
+            });
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+        ]);
+
+        $result = $this->handler->renderEntity($entity, _rbac: false);
+
+        $obj = $result->getObject();
+        $this->assertArrayNotHasKey('apiSecret', $obj, 'writeOnly field must be stripped even when _rbac=false (admin)');
+        $this->assertArrayHasKey('name', $obj);
+    }
+
+    public function testRenderEntityRbacFalseRunsWriteOnlyButNotGroupAuthz(): void
+    {
+        // Proves the two mechanisms are separated: under _rbac=false, writeOnly still
+        // strips while group `authorization.read` stripping stays bypassed.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+            'salary'    => ['type' => 'number', 'authorization' => ['read' => ['hr']]],
+        ]);
+
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('stripWriteOnlyProperties')
+            ->willReturnArgument(1);
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->handler->renderEntity($entity, _rbac: false);
+    }
+
+    public function testRenderEntityRbacTrueRunsGroupAuthzFilter(): void
+    {
+        // Regression guard: the group-authz path (which also strips writeOnly) still
+        // runs for a normal _rbac=true read — unchanged behaviour.
+        $this->wireSchemaForStrip([
+            'name'   => ['type' => 'string'],
+            'salary' => ['type' => 'number', 'authorization' => ['read' => ['hr']]],
+        ]);
+
+        $this->propertyRbacHandler->expects($this->once())
+            ->method('filterReadableProperties')
+            ->willReturnArgument(1);
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id' => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name' => 'Test',
+        ]);
+
+        $this->handler->renderEntity($entity, _rbac: true);
+    }
+
+    public function testRenderEntityStripsWriteOnlyFromRelationsMirrorWhenRbacFalse(): void
+    {
+        // #420 (the mirror half of #389): OpenRegister mirrors a reference-shaped
+        // scalar property into the `relations` search index, surfaced as
+        // @self.relations. The body writeOnly strip is unconditional (#389), but the
+        // mirror strip used to live only on the _rbac=true path — so an admin
+        // (_rbac=false) read still leaked the value via @self.relations. The mirror
+        // must strip on the same unconditional boundary as the body.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+        ]);
+
+        // stripWriteOnlyProperties is now invoked for BOTH the object body and the
+        // relations mirror; strip the writeOnly key from whichever array it receives.
+        $this->propertyRbacHandler->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $arr) {
+                unset($arr['apiSecret']);
+                return $arr;
+            });
+        $this->propertyRbacHandler->expects($this->never())
+            ->method('filterReadableProperties');
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+        ]);
+        // The scalar was mirrored into the relations index under its bare property name.
+        $entity->setRelations(['apiSecret' => 'PLAINTEXT_SECRET']);
+
+        $result = $this->handler->renderEntity($entity, _rbac: false);
+
+        $this->assertArrayNotHasKey('apiSecret', $result->getObject(), 'body must strip writeOnly');
+        $this->assertArrayNotHasKey(
+            'apiSecret',
+            (array) $result->getRelations(),
+            '#420: writeOnly must also be stripped from the @self.relations mirror under _rbac=false'
+        );
+    }
+
+    public function testRenderEntityKeepsNonWriteOnlyRelationsMirror(): void
+    {
+        // No-regression guard for #420: a genuine, non-writeOnly relation must
+        // survive in the mirror — the strip removes ONLY writeOnly properties.
+        $this->wireSchemaForStrip([
+            'name'      => ['type' => 'string'],
+            'apiSecret' => ['type' => 'string', 'writeOnly' => true],
+            'linkedRef' => ['type' => 'string'],
+        ]);
+
+        $this->propertyRbacHandler->method('stripWriteOnlyProperties')
+            ->willReturnCallback(function (Schema $s, array $arr) {
+                unset($arr['apiSecret']);
+                return $arr;
+            });
+
+        $entity = $this->createBasicEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee', [
+            'id'        => 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            'name'      => 'Test',
+            'apiSecret' => 'PLAINTEXT_SECRET',
+            'linkedRef' => 'aaaaaaaa-bbbb-cccc-dddd-ffffffffffff',
+        ]);
+        $entity->setRelations([
+            'apiSecret' => 'PLAINTEXT_SECRET',
+            'linkedRef' => 'aaaaaaaa-bbbb-cccc-dddd-ffffffffffff',
+        ]);
+
+        $relations = (array) $this->handler->renderEntity($entity, _rbac: false)->getRelations();
+
+        $this->assertArrayNotHasKey('apiSecret', $relations, 'writeOnly stripped from mirror');
+        $this->assertArrayHasKey('linkedRef', $relations, 'genuine relation must survive the strip');
     }
 
     // =========================================================================
@@ -1568,7 +1745,9 @@ class RenderObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -1603,7 +1782,9 @@ class RenderObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -4603,7 +4784,9 @@ class RenderObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -4971,7 +5154,9 @@ class RenderObjectTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
 
         $ref = new ReflectionClass($handler);
@@ -6591,5 +6776,131 @@ class RenderObjectTest extends TestCase
         $this->assertSame(expected: [], actual: $resultNoFiles->getFiles());
         $this->assertSame(expected: [7, 8], actual: $resultWithFiles->getFiles());
     }//end testSetLightweightFileIdsCacheHitReturnsCachedValue()
+
+
+    /**
+     * Build a RenderObject wired with a REAL TranslationHandler +
+     * LanguageService (so the language chain is genuinely exercised) and a
+     * schema whose `title` property is translatable. The schema/register
+     * mappers resolve to that translatable schema and a Dutch-default
+     * register, matching the list cheap-path's per-row resolution.
+     *
+     * @param bool $translationsAll Whether the request opted into `?_translations=all`.
+     *
+     * @return RenderObject The handler under test.
+     */
+    private function buildHandlerWithRealTranslation(bool $translationsAll): RenderObject
+    {
+        $languageService = new \OCA\OpenRegister\Service\LanguageService();
+        if ($translationsAll === true) {
+            $languageService->setReturnAllTranslations(true);
+        }
+
+        $translationHandler = new \OCA\OpenRegister\Service\Object\TranslationHandler(
+            $languageService,
+            $this->createMock(LoggerInterface::class)
+        );
+
+        $schema = $this->createSchema(id: 42, slug: 'lead');
+        $schema->setProperties(
+            [
+                'title' => [
+                    'type'         => 'string',
+                    'translatable' => true,
+                ],
+            ]
+        );
+
+        $register = $this->createRegister(id: 7);
+        $register->setLanguages(['nl', 'en']);
+
+        $schemaMapper = $this->createMock(SchemaMapper::class);
+        $schemaMapper->method('find')->willReturn($schema);
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('find')->willReturn($register);
+
+        return new RenderObject(
+            $this->fileMapper,
+            $this->objectMapper,
+            $registerMapper,
+            $schemaMapper,
+            $this->systemTagManager,
+            $this->systemTagMapper,
+            $this->cacheHandler,
+            $this->objectCacheService,
+            $this->propertyRbacHandler,
+            $this->logger,
+            $this->fileService,
+            $this->createMock(\OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler::class),
+            $translationHandler,
+            $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
+            $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
+            $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $languageService
+        );
+    }//end buildHandlerWithRealTranslation()
+
+
+    /**
+     * Task 1: the list cheap-path MUST project a translatable field's raw
+     * language-keyed map down to the negotiated-language string, exactly
+     * like the single-object read path does — so list and detail responses
+     * agree.
+     *
+     * @return void
+     */
+    public function testResolveTranslationsForRowsProjectsTranslatableFieldToString(): void
+    {
+        $handler = $this->buildHandlerWithRealTranslation(translationsAll: false);
+
+        $entity = $this->createObjectEntity(
+            id: 1,
+            uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            objectData: ['title' => ['nl' => 'Nederlandse titel', 'en' => 'English title']]
+        );
+        $entity->setSchema(42);
+        $entity->setRegister(7);
+
+        $rows = [$entity];
+        $handler->resolveTranslationsForRows($rows);
+
+        $this->assertSame(
+            'Nederlandse titel',
+            $rows[0]->getObject()['title'],
+            'list cheap-path MUST project the translatable map to the negotiated (nl) string'
+        );
+    }//end testResolveTranslationsForRowsProjectsTranslatableFieldToString()
+
+
+    /**
+     * Task 1: with `?_translations=all` the list cheap-path MUST return the
+     * full language-keyed map unchanged (no projection).
+     *
+     * @return void
+     */
+    public function testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll(): void
+    {
+        $handler = $this->buildHandlerWithRealTranslation(translationsAll: true);
+
+        $map    = ['nl' => 'Nederlandse titel', 'en' => 'English title'];
+        $entity = $this->createObjectEntity(
+            id: 1,
+            uuid: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+            objectData: ['title' => $map]
+        );
+        $entity->setSchema(42);
+        $entity->setRegister(7);
+
+        $rows = [$entity];
+        $handler->resolveTranslationsForRows($rows);
+
+        $this->assertSame(
+            $map,
+            $rows[0]->getObject()['title'],
+            '?_translations=all MUST return the full language-keyed map unchanged'
+        );
+    }//end testResolveTranslationsForRowsKeepsRawMapWhenTranslationsAll()
 
 }

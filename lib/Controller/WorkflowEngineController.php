@@ -17,9 +17,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md
  */
 
 declare(strict_types=1);
@@ -89,10 +89,17 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function index(): JSONResponse
     {
+        // SEC-CTRL: admin-only — workflow engines are instance-wide integration
+        // config; the serialized metadata exposes internal baseUrl/healthStatus.
+        // Reads are gated like the create/update/delete siblings.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         $engines = $this->registry->getEngines();
 
         return new JSONResponse(
@@ -109,10 +116,16 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function show(int $id): JSONResponse
     {
+        // SEC-CTRL: admin-only — see index(); engine metadata exposes internal
+        // baseUrl/healthStatus of an instance-wide integration.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $engine = $this->registry->getEngine($id);
 
@@ -135,7 +148,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function create(
         string $name,
@@ -195,7 +208,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -222,7 +235,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -246,8 +259,8 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function health(int $id): JSONResponse
     {
@@ -267,7 +280,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function available(): JSONResponse
     {
@@ -285,7 +298,7 @@ class WorkflowEngineController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function testHook(int $id): JSONResponse
     {

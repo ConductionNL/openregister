@@ -19,8 +19,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -33,6 +33,8 @@ use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ChatService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -174,7 +176,7 @@ class ConversationController extends Controller
      *     userId: null|string, uuid: null|string}>,
      *     total?: int, limit?: int, offset?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function index(): JSONResponse
     {
@@ -279,7 +281,7 @@ class ConversationController extends Controller
      *     deletedAt?: null|string, created?: null|string, updated?: null|string,
      *     messageCount?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function show(string $uuid): JSONResponse
     {
@@ -364,7 +366,7 @@ class ConversationController extends Controller
      *     uuid: null|string}>, total?: int, limit?: int, offset?: int},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-3
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function messages(string $uuid): JSONResponse
     {
@@ -474,10 +476,10 @@ class ConversationController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
-     *
-     * @NoAdminRequired
+     * @spec openspec/specs/chat-ai/spec.md
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         try {
@@ -587,7 +589,7 @@ class ConversationController extends Controller
      *     deletedAt?: null|string, created?: null|string, updated?: null|string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function update(string $uuid): JSONResponse
     {
@@ -688,7 +690,7 @@ class ConversationController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function destroy(string $uuid): JSONResponse
     {
@@ -821,7 +823,7 @@ class ConversationController extends Controller
      *     deletedAt?: null|string, created?: null|string, updated?: null|string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function restore(string $uuid): JSONResponse
     {
@@ -905,7 +907,7 @@ class ConversationController extends Controller
      *     'Failed to permanently delete conversation', message: string,
      *     uuid?: string}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-2
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function destroyPermanent(string $uuid): JSONResponse
     {

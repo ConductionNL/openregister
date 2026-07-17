@@ -195,9 +195,20 @@ class BackfillCalendarLinksJob extends QueuedJob
             $link->setSchemaId((int) ($event['schemaId'] ?? 0));
             $link->setCalendarUri('');
 
-            $calendarId = isset($event['calendarId']) ? (int) $event['calendarId'] : null;
-            $summary    = isset($event['summary']) ? (string) $event['summary'] : null;
-            $location   = isset($event['location']) ? (string) $event['location'] : null;
+            $calendarId = null;
+            if (isset($event['calendarId']) === true) {
+                $calendarId = (int) $event['calendarId'];
+            }
+
+            $summary = null;
+            if (isset($event['summary']) === true) {
+                $summary = (string) $event['summary'];
+            }
+
+            $location = null;
+            if (isset($event['location']) === true) {
+                $location = (string) $event['location'];
+            }
 
             $link->setCalendarId($calendarId);
             $link->setEventUid($eventUid);

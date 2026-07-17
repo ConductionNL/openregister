@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -120,7 +120,7 @@ class FileLockHandler
      *
      * @throws Exception If the file is already locked by another user.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function lockFile(int $fileId, ?int $ttlMinutes=null): array
     {
@@ -156,7 +156,7 @@ class FileLockHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-2
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function unlockFile(int $fileId, bool $force=false): array
     {
@@ -214,7 +214,7 @@ class FileLockHandler
      *
      * @return array|null Lock metadata or null.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getLockInfo(int $fileId): ?array
     {
@@ -261,7 +261,7 @@ class FileLockHandler
      *
      * @throws Exception If the file is locked by another user.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function assertCanModify(int $fileId): void
     {

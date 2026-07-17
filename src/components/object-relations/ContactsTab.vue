@@ -168,6 +168,7 @@ export default {
 		objectId: {
 			immediate: true,
 			/**
+			 * @param newId
 			 * @spec exclude watcher refetching contacts on objectId change, UI plumbing
 			 */
 			handler(newId) {
@@ -188,7 +189,7 @@ export default {
 		 * path is handled inside the store and surfaces as
 		 * `store.contactsUnavailable`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-contacts-actions/tasks.md#task-5
+		 * @spec openspec/specs/contacts-actions/spec.md
 		 *
 		 * @return {Promise<void>}
 		 */
@@ -204,6 +205,7 @@ export default {
 		},
 
 		/**
+		 * @param contact
 		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
 		 */
 		async unlinkContact(contact) {

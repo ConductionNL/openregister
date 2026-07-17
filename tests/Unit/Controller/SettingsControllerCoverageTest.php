@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SettingsController;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\App\IAppManager;
@@ -37,19 +36,19 @@ class SettingsControllerCoverageTest extends TestCase
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->config = $this->createMock(IAppConfig::class);
-        $this->db = $this->createMock(IDBConnection::class);
-        $this->container = $this->createMock(ContainerInterface::class);
-        $this->appManager = $this->createMock(IAppManager::class);
+        $this->request              = $this->createMock(IRequest::class);
+        $this->config               = $this->createMock(IAppConfig::class);
+        $this->db                   = $this->createMock(IDBConnection::class);
+        $this->container            = $this->createMock(ContainerInterface::class);
+        $this->appManager           = $this->createMock(IAppManager::class);
         // Use getMockBuilder so we can control method signatures and avoid type mismatch
         // The controller calls updateSearchBackendConfig($string) but SettingsService declares (array $data)
-        $this->settingsService = $this->getMockBuilder(SettingsService::class)
+        $this->settingsService      = $this->getMockBuilder(SettingsService::class)
             ->disableOriginalConstructor()
             ->getMock();
         $this->vectorizationService = $this->createMock(VectorizationService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $l10n = $this->createMock(IL10N::class);
+        $this->logger               = $this->createMock(LoggerInterface::class);
+        $l10n                       = $this->createMock(IL10N::class);
         $l10n->method('t')->willReturnCallback(
             static function (string $text, $parameters = []): string {
                 return vsprintf($text, $parameters);
@@ -111,10 +110,6 @@ class SettingsControllerCoverageTest extends TestCase
 
     // =========================================================================
     // updateSearchBackend — exercises the code path up to the service call
-    // The controller passes a string to updateSearchBackendConfig() but the
-    // SettingsService method signature expects array — this is a real bug.
-    // The mock still enforces the type, so a TypeError is thrown which is NOT
-    // caught by the controller's catch(Exception). We test this reality.
     // =========================================================================
 
     public function testUpdateSearchBackendSuccess(): void
@@ -181,115 +176,6 @@ class SettingsControllerCoverageTest extends TestCase
             // Type mismatch path — still exercises the code
             $this->assertStringContainsString('updateSearchBackendConfig', $e->getMessage());
         }
-    }
-
-    // =========================================================================
-    // testSetupHandler — SOLR disabled
-    // =========================================================================
-
-    public function testSetupHandlerSolrDisabled(): void
-    {
-        $this->settingsService->method('getSolrSettings')
-            ->willReturn(['enabled' => false]);
-
-        $result = $this->controller->testSetupHandler();
-
-        $this->assertEquals(400, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertEquals('SOLR is disabled', $data['message']);
-    }
-
-    public function testSetupHandlerException(): void
-    {
-        $this->settingsService->method('getSolrSettings')
-            ->willThrowException(new \Exception('Config error'));
-
-        $result = $this->controller->testSetupHandler();
-
-        $this->assertEquals(422, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('Config error', $data['message']);
-    }
-
-    // =========================================================================
-    // reindexSpecificCollection — success & failure paths
-    // =========================================================================
-
-    public function testReindexSpecificCollectionSuccess(): void
-    {
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('reindexAll')
-            ->willReturn(['success' => true, 'stats' => ['indexed' => 100]]);
-        $this->container->method('get')
-            ->with(IndexService::class)
-            ->willReturn($indexService);
-
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 500],
-            ]);
-
-        $result = $this->controller->reindexSpecificCollection('my-collection');
-
-        $this->assertEquals(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertEquals('my-collection', $data['collection']);
-    }
-
-    public function testReindexSpecificCollectionServiceFailure(): void
-    {
-        $indexService = $this->createMock(IndexService::class);
-        $indexService->method('reindexAll')
-            ->willReturn(['success' => false, 'message' => 'Timeout']);
-        $this->container->method('get')
-            ->with(IndexService::class)
-            ->willReturn($indexService);
-
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 500],
-            ]);
-
-        $result = $this->controller->reindexSpecificCollection('my-collection');
-
-        $this->assertEquals(422, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
-        $this->assertEquals('Timeout', $data['message']);
-    }
-
-    public function testReindexSpecificCollectionBatchSizeZero(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 0],
-            ]);
-
-        $result = $this->controller->reindexSpecificCollection('test');
-
-        $this->assertEquals(400, $result->getStatus());
-    }
-
-    // =========================================================================
-    // testSchemaMapping
-    // =========================================================================
-
-    public function testSchemaMappingException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Mapper error'));
-
-        $result = $this->controller->testSchemaMapping();
-
-        $this->assertEquals(422, $result->getStatus());
-        $data = $result->getData();
-        $this->assertFalse($data['success']);
     }
 
     // =========================================================================

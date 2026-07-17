@@ -17,7 +17,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+ * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -82,7 +82,7 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function getObjectSettingsOnly(): array
     {
@@ -137,7 +137,7 @@ class ObjectRetentionHandler
      *     includeMetadata: mixed|true, includeRelations: mixed|true,
      *     maxNestingDepth: 10|mixed, batchSize: 25|mixed, autoRetry: mixed|true}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function updateObjectSettingsOnly(array $objectData): array
     {
@@ -177,7 +177,7 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: bool,
      *     searchTrailsEnabled: bool}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function getRetentionSettingsOnly(): array
     {
@@ -186,38 +186,41 @@ class ObjectRetentionHandler
 
             if (empty($retentionConfig) === true) {
                 return [
-                    'objectArchiveRetention' => 31536000000,
+                    'objectArchiveRetention'   => 31536000000,
                 // 1 year default
-                    'objectDeleteRetention'  => 63072000000,
+                    'objectDeleteRetention'    => 63072000000,
                 // 2 years default
-                    'searchTrailRetention'   => 2592000000,
+                    'searchTrailRetention'     => 2592000000,
                 // 1 month default
-                    'createLogRetention'     => 2592000000,
+                    'createLogRetention'       => 2592000000,
                 // 1 month default
-                    'readLogRetention'       => 86400000,
+                    'readLogRetention'         => 86400000,
                 // 24 hours default
-                    'updateLogRetention'     => 604800000,
+                    'updateLogRetention'       => 604800000,
                 // 1 week default
-                    'deleteLogRetention'     => 2592000000,
+                    'deleteLogRetention'       => 2592000000,
                 // 1 month default
-                    'auditTrailsEnabled'     => true,
+                    'auditTrailsEnabled'       => true,
                 // Audit trails enabled by default.
-                    'searchTrailsEnabled'    => true,
+                    'searchTrailsEnabled'      => true,
                 // Search trails enabled by default.
+                    'searchTrailRecordingMode' => '_search',
+                // Which searches to record: all | _search | none. Default: text searches only.
                 ];
             }//end if
 
             $retentionData = json_decode($retentionConfig, true);
             return [
-                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
-                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
-                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
-                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
-                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
-                'auditTrailsEnabled'     => $this->convertToBoolean(value: $retentionData['auditTrailsEnabled'] ?? true),
-                'searchTrailsEnabled'    => $this->convertToBoolean(value: $retentionData['searchTrailsEnabled'] ?? true),
+                'objectArchiveRetention'   => $retentionData['objectArchiveRetention'] ?? 31536000000,
+                'objectDeleteRetention'    => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                'searchTrailRetention'     => $retentionData['searchTrailRetention'] ?? 2592000000,
+                'createLogRetention'       => $retentionData['createLogRetention'] ?? 2592000000,
+                'readLogRetention'         => $retentionData['readLogRetention'] ?? 86400000,
+                'updateLogRetention'       => $retentionData['updateLogRetention'] ?? 604800000,
+                'deleteLogRetention'       => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'auditTrailsEnabled'       => $this->convertToBoolean(value: $retentionData['auditTrailsEnabled'] ?? true),
+                'searchTrailsEnabled'      => $this->convertToBoolean(value: $retentionData['searchTrailsEnabled'] ?? true),
+                'searchTrailRecordingMode' => $this->normaliseRecordingMode(value: $retentionData['searchTrailRecordingMode'] ?? '_search'),
             ];
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve Retention settings: '.$e->getMessage());
@@ -241,21 +244,22 @@ class ObjectRetentionHandler
      *     deleteLogRetention: 2592000000|mixed, auditTrailsEnabled: mixed|true,
      *     searchTrailsEnabled: mixed|true}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function updateRetentionSettingsOnly(array $retentionData): array
     {
         try {
             $retentionConfig = [
-                'objectArchiveRetention' => $retentionData['objectArchiveRetention'] ?? 31536000000,
-                'objectDeleteRetention'  => $retentionData['objectDeleteRetention'] ?? 63072000000,
-                'searchTrailRetention'   => $retentionData['searchTrailRetention'] ?? 2592000000,
-                'createLogRetention'     => $retentionData['createLogRetention'] ?? 2592000000,
-                'readLogRetention'       => $retentionData['readLogRetention'] ?? 86400000,
-                'updateLogRetention'     => $retentionData['updateLogRetention'] ?? 604800000,
-                'deleteLogRetention'     => $retentionData['deleteLogRetention'] ?? 2592000000,
-                'auditTrailsEnabled'     => $retentionData['auditTrailsEnabled'] ?? true,
-                'searchTrailsEnabled'    => $retentionData['searchTrailsEnabled'] ?? true,
+                'objectArchiveRetention'   => $retentionData['objectArchiveRetention'] ?? 31536000000,
+                'objectDeleteRetention'    => $retentionData['objectDeleteRetention'] ?? 63072000000,
+                'searchTrailRetention'     => $retentionData['searchTrailRetention'] ?? 2592000000,
+                'createLogRetention'       => $retentionData['createLogRetention'] ?? 2592000000,
+                'readLogRetention'         => $retentionData['readLogRetention'] ?? 86400000,
+                'updateLogRetention'       => $retentionData['updateLogRetention'] ?? 604800000,
+                'deleteLogRetention'       => $retentionData['deleteLogRetention'] ?? 2592000000,
+                'auditTrailsEnabled'       => $retentionData['auditTrailsEnabled'] ?? true,
+                'searchTrailsEnabled'      => $retentionData['searchTrailsEnabled'] ?? true,
+                'searchTrailRecordingMode' => $this->normaliseRecordingMode(value: $retentionData['searchTrailRecordingMode'] ?? '_search'),
             ];
 
             $this->appConfig->setValueString($this->appName, 'retention', json_encode($retentionConfig));
@@ -272,7 +276,7 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings retrieval fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function getArchivalSettingsOnly(): array
     {
@@ -309,7 +313,7 @@ class ObjectRetentionHandler
      *
      * @throws \RuntimeException If archival settings update fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     public function updateArchivalSettingsOnly(array $archivalData): array
     {
@@ -338,7 +342,7 @@ class ObjectRetentionHandler
      *
      * @return array Default archival configuration
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+     * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
      */
     private function getArchivalDefaults(): array
     {
@@ -364,7 +368,7 @@ class ObjectRetentionHandler
      *
      * @psalm-return array{appName: 'Open Register', appVersion: '0.2.3'}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function getVersionInfoOnly(): array
     {
@@ -385,7 +389,7 @@ class ObjectRetentionHandler
      *
      * @return bool The boolean representation
      *
-     * @spec openspec/changes/retrofit-2026-05-24-retention-management/tasks.md#task-3
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function convertToBoolean($value): bool
     {
@@ -403,4 +407,30 @@ class ObjectRetentionHandler
 
         return (bool) $value;
     }//end convertToBoolean()
+
+    /**
+     * Normalise the search-trail recording mode to an allowed value.
+     *
+     * Accepts only 'all', '_search', or 'none'; any other input falls back
+     * to the safe default '_search' (record text searches only).
+     *
+     * @param mixed $value The raw recording-mode value.
+     *
+     * @return string One of 'all', '_search', 'none'.
+     *
+     * @spec openspec/specs/search-trail-recording/spec.md
+     */
+    private function normaliseRecordingMode($value): string
+    {
+        $mode = '';
+        if (is_string($value) === true) {
+            $mode = strtolower($value);
+        }
+
+        if (in_array($mode, ['all', '_search', 'none'], true) === true) {
+            return $mode;
+        }
+
+        return '_search';
+    }//end normaliseRecordingMode()
 }//end class

@@ -165,7 +165,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeMappings() {
 			this.mappingsLoading = true
@@ -279,6 +279,7 @@ export default {
 			this.object = JSON.stringify(JSON.parse(this.object), null, 2)
 		},
 		/**
+		 * @param json
 		 * @spec exclude client-side JSON validation helper
 		 */
 		validateJson(json) {

@@ -55,7 +55,6 @@ describe('SearchTrail Store', () => {
 	describe('Actions', () => {
 		describe('setSearchTrailItem', () => {
 			it('should set search trail item correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const searchTrailData = {
 					id: 1,
 					searchTerm: 'test search',
@@ -66,22 +65,16 @@ describe('SearchTrail Store', () => {
 				}
 				store.setSearchTrailItem(searchTrailData)
 				expect(store.searchTrailItem).toEqual(searchTrailData)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail item set to:', searchTrailData)
-				consoleSpy.mockRestore()
 			})
 
 			it('should handle null search trail item', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				store.setSearchTrailItem(null)
 				expect(store.searchTrailItem).toBe(null)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail item set to:', null)
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailList', () => {
 			it('should set search trail list correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const searchTrails = [
 					{
 						id: 1,
@@ -103,22 +96,16 @@ describe('SearchTrail Store', () => {
 				store.setSearchTrailList(searchTrails)
 				expect(store.searchTrailList).toHaveLength(2)
 				expect(store.searchTrailList[0]).toEqual(searchTrails[0])
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail list set to:', 2, 'items')
-				consoleSpy.mockRestore()
 			})
 
 			it('should handle empty search trail list', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				store.setSearchTrailList([])
 				expect(store.searchTrailList).toEqual([])
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail list set to:', 0, 'items')
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailPagination', () => {
 			it('should set pagination correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const pagination = {
 					total: 100,
 					page: 2,
@@ -128,8 +115,6 @@ describe('SearchTrail Store', () => {
 				}
 				store.setSearchTrailPagination(pagination)
 				expect(store.searchTrailPagination).toEqual(pagination)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail pagination set to:', pagination)
-				consoleSpy.mockRestore()
 			})
 		})
 
@@ -161,7 +146,6 @@ describe('SearchTrail Store', () => {
 
 		describe('setPopularTerms', () => {
 			it('should set popular terms correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const terms = [
 					{ term: 'user', count: 100 },
 					{ term: 'order', count: 80 },
@@ -169,19 +153,14 @@ describe('SearchTrail Store', () => {
 				]
 				store.setPopularTerms(terms)
 				expect(store.popularTerms).toEqual(terms)
-				expect(consoleSpy).toHaveBeenCalledWith('Popular terms set to:', 3, 'items')
-				consoleSpy.mockRestore()
 			})
 		})
 
 		describe('setSearchTrailFilters', () => {
 			it('should set filters correctly', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				const filters = { searchTerm: 'test', success: true }
 				store.setSearchTrailFilters(filters)
 				expect(store.searchTrailFilters).toEqual(filters)
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail filters set to:', filters)
-				consoleSpy.mockRestore()
 			})
 		})
 
@@ -490,7 +469,6 @@ describe('SearchTrail Store', () => {
 
 		describe('clearSearchTrailStore', () => {
 			it('should clear all store data', () => {
-				const consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
 				// Set some data first
 				store.searchTrailList = [{ id: 1 }]
 				store.searchTrailItem = { id: 1 }
@@ -517,8 +495,6 @@ describe('SearchTrail Store', () => {
 						complex: 0,
 					},
 				})
-				expect(consoleSpy).toHaveBeenCalledWith('Search trail store cleared')
-				consoleSpy.mockRestore()
 			})
 		})
 	})

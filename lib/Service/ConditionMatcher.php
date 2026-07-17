@@ -22,7 +22,7 @@
  *
  * @since 2.0.0 Extracted from PropertyRbacHandler
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -137,7 +137,7 @@ class ConditionMatcher
      *
      * @return array Filtered match conditions
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function filterOrganisationMatchForCreate(array $match): array
     {
@@ -168,7 +168,7 @@ class ConditionMatcher
      *
      * @return bool True if the condition is satisfied
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     private function singleConditionMatches(array $object, string $property, mixed $value): bool
     {
@@ -453,7 +453,7 @@ class ConditionMatcher
      *
      * @return string|null The active organisation UUID or null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     private function getActiveOrganisationUuid(): ?string
     {

@@ -36,13 +36,23 @@ class EndpointsControllerTest extends TestCase
         $this->endpointService = $this->createMock(EndpointService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // Write endpoints are admin-gated; simulate an authenticated admin.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new EndpointsController(
             'openregister',
             $this->request,
             $this->endpointMapper,
             $this->endpointLogMapper,
             $this->endpointService,
-            $this->logger
+            $this->logger,
+            $userSession,
+            $groupManager
         );
     }
 

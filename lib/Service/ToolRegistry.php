@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -103,7 +103,7 @@ class ToolRegistry
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      * @param LoggerInterface  $logger          Logger
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         IEventDispatcher $eventDispatcher,
@@ -120,7 +120,7 @@ class ToolRegistry
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function loadTools(): void
     {
@@ -165,18 +165,20 @@ class ToolRegistry
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-2
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        // Validate ID format (should be app_name.tool_name). MCP tool
-        // ids commonly use camelCase on the right side (e.g.
-        // `openbuilt.createApp`, `decidesk.listRecentMeetings`) so the
-        // right-hand side accepts both cases. The left-hand side stays
+        // Validate ID format (should be app_name.tool_name, or
+        // app_name.schema.verb for ADR-063 chain-2 schema-derived tools —
+        // e.g. `pipelinq.lead.search`). MCP tool ids commonly use camelCase
+        // on the right side (e.g. `openbuild.createApp`,
+        // `decidesk.listRecentMeetings`) so every segment after the first
+        // accepts both cases. The left-hand (app id) segment stays
         // lowercase since it maps to a Nextcloud app id.
-        if (preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $id) === 0) {
+        if (preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $id) === 0) {
             throw new InvalidArgumentException(
-                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
+                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name' (dot-separated segments)"
             );
         }
 
@@ -218,7 +220,7 @@ class ToolRegistry
      *
      * @return ToolInterface|null Tool instance or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTool(string $id): ?ToolInterface
     {
@@ -236,8 +238,8 @@ class ToolRegistry
      *
      * @return array Array of tool IDs and their metadata
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
+     * @spec openspec/specs/ai-mcp/spec.md
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getAllTools(): array
     {
@@ -260,7 +262,7 @@ class ToolRegistry
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTools(array $ids): array
     {

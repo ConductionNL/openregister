@@ -27,9 +27,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conduction.nl>
+ * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -297,9 +297,14 @@ class DsarService
             'dryRun'       => $dryRun,
             'matchedCount' => count($entries),
             'erased'       => [],
+            // BUG-SVC-2: objects whose erasure failed are collected here so the
+            // caller can report a partial failure instead of a false "complete".
+            'failed'       => [],
         ];
 
         if ($dryRun === true || $entries === []) {
+            $summary['complete']    = true;
+            $summary['failedCount'] = 0;
             return $summary;
         }
 
@@ -315,6 +320,16 @@ class DsarService
         foreach ($entries as $entry) {
             $object = $this->loadObjectByEntry(entry: $entry);
             if ($object === null) {
+                // BUG-SVC-2: a matched object we cannot load was NOT erased —
+                // record it as a failure rather than silently skipping it.
+                $summary['failed'][] = [
+                    'object' => $entry,
+                    'error'  => 'Object could not be loaded for erasure',
+                ];
+                $this->logger->warning(
+                    message: '[DSAR] Matched object could not be loaded during vergetelheid',
+                    context: ['object' => $entry]
+                );
                 continue;
             }
 
@@ -331,12 +346,21 @@ class DsarService
                     'schema'   => $object->getSchema(),
                 ];
             } catch (\Throwable $e) {
+                $summary['failed'][] = [
+                    'object' => $entry,
+                    'error'  => $e->getMessage(),
+                ];
                 $this->logger->warning(
                     message: '[DSAR] Soft-delete failed during vergetelheid',
                     context: ['object' => $entry, 'error' => $e->getMessage()]
                 );
             }
         }//end foreach
+
+        // BUG-SVC-2: surface partial completion so callers don't treat a run
+        // with failures as a fully-successful erasure.
+        $summary['complete']    = ($summary['failed'] === []);
+        $summary['failedCount'] = count($summary['failed']);
 
         return $summary;
 

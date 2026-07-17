@@ -9,9 +9,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <info@conduction.nl>
+ * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -33,7 +33,9 @@ use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 
 /**
  * Service for handling authentication against external services.
@@ -91,11 +93,57 @@ class AuthenticationService
      *
      * @param ArrayLoader $loader The Twig array loader
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function __construct(ArrayLoader $loader)
     {
         $this->twig = new Environment($loader);
+
+        // SSTI hardening (SEC-SVC-4): the JWT payload template is user-authored
+        // source configuration, so it MUST be compiled inside a Twig sandbox.
+        // Only the tags/filters/functions needed to build a JWT claim set are
+        // allowlisted; method/property access on objects is denied entirely.
+        $policy = new SecurityPolicy(
+            allowedTags: [
+                'if',
+                'for',
+                'set',
+                'apply',
+            ],
+            allowedFilters: [
+                'date',
+                'date_modify',
+                'upper',
+                'lower',
+                'trim',
+                'length',
+                'default',
+                'number_format',
+                'round',
+                'abs',
+                'split',
+                'join',
+                'slice',
+                'first',
+                'last',
+                'replace',
+                'format',
+                'merge',
+                'keys',
+                'escape',
+                'raw',
+                'json_encode',
+            ],
+            allowedMethods: [],
+            allowedProperties: [],
+            allowedFunctions: [
+                'max',
+                'min',
+                'range',
+                'date',
+            ]
+        );
+        $this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
     }//end __construct()
 
@@ -108,7 +156,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function createClientCredentialConfig(array $configuration): array
     {
@@ -164,7 +212,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function createPasswordConfig(array $configuration): array
     {
@@ -207,7 +255,7 @@ class AuthenticationService
      * @throws BadRequestException If configuration is incomplete.
      * @throws \GuzzleHttp\Exception\GuzzleException If the token endpoint fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchOAuthTokens(array $configuration): string
     {
@@ -251,7 +299,7 @@ class AuthenticationService
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchDecosToken(array $configuration): string
     {
@@ -281,7 +329,7 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getRSJWK(array $configuration): JWK
     {
@@ -306,7 +354,7 @@ class AuthenticationService
      *
      * @return JWK The JWK key.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getHSJWK(array $configuration): JWK
     {
@@ -330,11 +378,36 @@ class AuthenticationService
      * @throws \Twig\Error\SyntaxError  If the template has syntax errors.
      * @throws \Twig\Error\RuntimeError If the template rendering fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getJWTPayload(array $configuration): array
     {
-        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($configuration);
+        // SEC-SVC-4: never expose secret material to the payload template
+        // context. Strip credential-bearing keys so a crafted payload template
+        // cannot echo adjacent secrets into the rendered claim set.
+        $secretKeys = [
+            'secret',
+            'clientSecret',
+            'client_secret',
+            'password',
+            'privateKey',
+            'private_key',
+            'apiKey',
+            'api_key',
+            'token',
+            'accessToken',
+            'access_token',
+            'refreshToken',
+            'refresh_token',
+            'authorization',
+        ];
+
+        $context = $configuration;
+        foreach ($secretKeys as $secretKey) {
+            unset($context[$secretKey]);
+        }
+
+        $renderedPayload = $this->twig->createTemplate($configuration['payload'])->render($context);
 
         return json_decode(json: $renderedPayload, associative: true);
 
@@ -349,7 +422,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If the algorithm is not supported.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function getJWK(array $configuration): JWK
     {
@@ -375,7 +448,7 @@ class AuthenticationService
      *
      * @return string The compact-serialized JWT string.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     private function generateJWT(array $payload, JWK $jwk, string $algorithm, ?string $x5t=null): string
     {
@@ -421,7 +494,7 @@ class AuthenticationService
      *
      * @throws BadRequestException If required parameters are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-27
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function fetchJWTToken(array $configuration): string
     {

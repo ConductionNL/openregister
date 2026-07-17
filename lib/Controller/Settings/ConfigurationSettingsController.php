@@ -24,7 +24,6 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,14 +47,12 @@ class ConfigurationSettingsController extends Controller
      * @param string          $appName         The app name.
      * @param IRequest        $request         The request.
      * @param SettingsService $settingsService Settings service.
-     * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      */
     public function __construct(
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
-        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
@@ -68,7 +65,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with RBAC settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getRbacSettings(): JSONResponse
     {
@@ -87,7 +84,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated RBAC settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function updateRbacSettings(): JSONResponse
     {
@@ -107,7 +104,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with organisation settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function getOrganisationSettings(): JSONResponse
     {
@@ -126,7 +123,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated organisation settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function updateOrganisationSettings(): JSONResponse
     {
@@ -146,7 +143,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with multitenancy settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function getMultitenancySettings(): JSONResponse
     {
@@ -165,7 +162,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated multitenancy settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function updateMultitenancySettings(): JSONResponse
     {
@@ -185,7 +182,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -215,7 +212,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -253,7 +250,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with patched object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function patchObjectSettings(): JSONResponse
     {
@@ -267,7 +264,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with retention settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function getRetentionSettings(): JSONResponse
     {
@@ -286,7 +283,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated retention settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function updateRetentionSettings(): JSONResponse
     {
@@ -306,7 +303,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with archival settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function getArchivalSettings(): JSONResponse
     {
@@ -325,7 +322,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated archival settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function updateArchivalSettings(): JSONResponse
     {
@@ -337,85 +334,4 @@ class ConfigurationSettingsController extends Controller
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
         }
     }//end updateArchivalSettings()
-
-    /**
-     * Get object collection field status
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with object collection fields
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
-     */
-    public function getObjectCollectionFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->indexService;
-            $status            = $solrSchemaService->getObjectCollectionFieldStatus();
-
-            return new JSONResponse(
-                data: [
-                    'success'    => true,
-                    'collection' => 'objects',
-                    'status'     => $status,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to get object collection field status: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }
-    }//end getObjectCollectionFields()
-
-    /**
-     * Create missing fields in object collection
-     *
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response with creation result
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-17
-     */
-    public function createMissingObjectFields(): JSONResponse
-    {
-        try {
-            $solrSchemaService = $this->indexService;
-
-            // Switch to object collection.
-            $objectCollection = $this->settingsService->getSolrSettingsOnly()['objectCollection'] ?? null;
-            if ($objectCollection === null || $objectCollection === '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'Object collection not configured',
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Create missing fields.
-            $result = $solrSchemaService->mirrorSchemas(force: true);
-
-            return new JSONResponse(
-                data: [
-                    'success'    => true,
-                    'collection' => 'objects',
-                    'message'    => 'Missing object fields created successfully',
-                    'result'     => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Failed to create missing object fields: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end createMissingObjectFields()
 }//end class

@@ -11,8 +11,14 @@ use OCA\OpenRegister\Service\RiskLevelService;
 use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\VectorizationService;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\Files\Node;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -25,6 +31,10 @@ class FileExtractionControllerTest extends TestCase
     private ChunkMapper&MockObject $chunkMapper;
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private RiskLevelService&MockObject $riskLevelService;
+    private IRootFolder&MockObject $rootFolder;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
+    private Folder&MockObject $userFolder;
 
     protected function setUp(): void
     {
@@ -36,15 +46,40 @@ class FileExtractionControllerTest extends TestCase
         $this->chunkMapper = $this->createMock(ChunkMapper::class);
         $this->entityRelationMapper = $this->createMock(EntityRelationMapper::class);
         $this->riskLevelService = $this->createMock(RiskLevelService::class);
+        $this->rootFolder = $this->createMock(IRootFolder::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->userFolder = $this->createMock(Folder::class);
 
-        $this->controller = new FileExtractionController(
+        // Default: an authenticated admin whose user folder resolves any file
+        // ID, so per-file (hasFileAccess) and admin-only (isCurrentUserAdmin)
+        // guards pass and the existing happy-path tests exercise the payloads.
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($admin);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+        $this->rootFolder->method('getUserFolder')->willReturn($this->userFolder);
+        $this->userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+
+        $this->controller = $this->makeController($this->userSession, $this->groupManager, $this->rootFolder);
+    }
+
+    private function makeController(
+        IUserSession $session,
+        IGroupManager $groupManager,
+        IRootFolder $rootFolder
+    ): FileExtractionController {
+        return new FileExtractionController(
             'openregister',
             $this->request,
             $this->textExtractor,
             $this->vectorizationService,
             $this->chunkMapper,
             $this->entityRelationMapper,
-            $this->riskLevelService
+            $this->riskLevelService,
+            $rootFolder,
+            $session,
+            $groupManager
         );
     }
 
@@ -1169,5 +1204,66 @@ class FileExtractionControllerTest extends TestCase
         $result = $this->controller->vectorizeBatch();
 
         $this->assertEquals(200, $result->getStatus());
+    }
+
+    // ─── IDOR / admin guards ────────────────────────────────────────
+
+    public function testExtractRejectsFileTheCallerCannotAccess(): void
+    {
+        // User folder resolves no node for this id → no access.
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([]);
+        $rootFolder = $this->createMock(IRootFolder::class);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn($user);
+        $controller = $this->makeController($session, $this->groupManager, $rootFolder);
+
+        // The IDOR fix: the extraction service is never invoked for a file the
+        // caller cannot access.
+        $this->textExtractor->expects($this->never())->method('extractFile');
+
+        $result = $controller->extract(999);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testExtractRejectsAnonymous(): void
+    {
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn(null);
+        $controller = $this->makeController($session, $this->groupManager, $this->rootFolder);
+
+        $this->textExtractor->expects($this->never())->method('extractFile');
+
+        $result = $controller->extract(1);
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testMaintenanceEndpointsRejectNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn($bob);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+        $controller = $this->makeController($session, $groupManager, $this->rootFolder);
+
+        $this->request->method('getParams')->willReturn([]);
+        // No instance-wide extraction/vectorization runs for a non-admin.
+        $this->textExtractor->expects($this->never())->method('discoverUntrackedFiles');
+        $this->textExtractor->expects($this->never())->method('extractPendingFiles');
+        $this->textExtractor->expects($this->never())->method('retryFailedExtractions');
+        $this->vectorizationService->expects($this->never())->method('vectorizeBatch');
+
+        $this->assertEquals(403, $controller->discover()->getStatus());
+        $this->assertEquals(403, $controller->extractAll()->getStatus());
+        $this->assertEquals(403, $controller->retryFailed()->getStatus());
+        $this->assertEquals(403, $controller->cleanup()->getStatus());
+        $this->assertEquals(403, $controller->vectorizeBatch()->getStatus());
     }
 }

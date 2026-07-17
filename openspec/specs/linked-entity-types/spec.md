@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 retrofit_extensions:
   - REQ-001
 ---
@@ -325,6 +325,8 @@ Controllers MUST accept entity reference strings instead of numeric link IDs for
 - **THEN** `"3/42"` MUST be removed from `_deck`
 
 ### REQ-001: The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations
+
+The system SHALL run a non-destructive repair step that warns when schema `linkedTypes` reference unregistered integrations.
 
 > Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
 

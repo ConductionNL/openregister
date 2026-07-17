@@ -21,9 +21,7 @@ This spec integrates with and extends multiple existing OpenRegister subsystems:
 - **RBAC (fully implemented)**: `PermissionHandler`, `PropertyRbacHandler`, and `MagicRbacHandler` already control who can access which data. Purpose-binding extends this with "why" in addition to "who".
 - **Anonymization (partially implemented)**: `FileTextController::anonymizeDocument()` and DocuDesk anonymization pipeline provide PII replacement patterns that can be leveraged for erasure-by-anonymization.
 - **What this spec adds**: Verwerkingsactiviteiten register schema, purpose-bound access control middleware, DataSubjectSearchService for cross-schema BSN search, data subject rights workflows (inzage/rectificatie/vergetelheid/portabiliteit), DPIA tracking, consent management, verwerker registration, and Art 30 register export.
-
 ## Requirements
-
 ### Requirement: The system MUST maintain a verwerkingsactiviteiten register as an OpenRegister schema
 A central register of all processing activities (verwerkingsactiviteiten) MUST be maintained as a dedicated OpenRegister register and schema, conforming to GDPR Article 30(1) for controllers and Article 30(2) for processors. Each processing activity record MUST contain all fields mandated by the Autoriteit Persoonsgegevens model verwerkingsregister and the VNG model verwerkingsregister for gemeenten.
 
@@ -497,6 +495,172 @@ All privacy-specific operations (data subject requests, consent changes, DPIA ac
 - **THEN** privacy audit trail entries MUST be retained for at least the accountability period (typically the statute of limitations for AP enforcement, 5 years under UAVG)
 - **AND** privacy audit trail entries MUST NOT be automatically deleted with general audit trail cleanup
 
+### Requirement: The system MUST surface schemas with detected PII but no processing-activity annotation
+
+The system MUST provide a compliance check that lists every `(register, schema)` pair where personal-data entities have been recorded in the GDPR entity store but neither the schema nor its enclosing register carries the `x-openregister-processing-activity` annotation key in its `configuration` column. Each row returned MUST be operator-actionable: annotate the schema or register with a processing-activity reference, remove the personal data, or document a rationale for the gap.
+
+`AvgComplianceService::findUnannotatedSchemasWithPii()` aggregates `oc_openregister_entities` joined against `oc_openregister_entity_relations` by `(register_id, schema_id)`, counts the distinct PII rows per pair, then filters out any pair where the schema OR the register carries a non-empty string value under the `x-openregister-processing-activity` key in its configuration. The check is also exposed via `AvgComplianceService::runAllChecks()` for a compliance-dashboard envelope.
+
+#### Scenario: Schema and register both lack the annotation, PII present
+- **GIVEN** schema `inwoners` and its enclosing register `brp` exist
+- **AND** 12 `GdprEntity` rows are linked via `entity_relations` to objects in `(brp, inwoners)`
+- **AND** neither `inwoners.configuration['x-openregister-processing-activity']` nor `brp.configuration['x-openregister-processing-activity']` is set to a non-empty string
+- **WHEN** `findUnannotatedSchemasWithPii()` is called
+- **THEN** the result MUST contain one envelope for `(brp, inwoners)` with `piiCount: 12`, `registerHasAnnotation: false`, `schemaHasAnnotation: false`, and `schemaTitle` populated from `SchemaMapper::find()` (or empty string on lookup failure)
+
+#### Scenario: Schema carries the annotation
+- **GIVEN** PII is detected for `(brp, inwoners)`
+- **AND** `inwoners.configuration['x-openregister-processing-activity']` equals `"verwerkings-act-uuid-abc"`
+- **WHEN** the check runs
+- **THEN** the `(brp, inwoners)` pair MUST be omitted from the result
+
+#### Scenario: Register carries the annotation (schema inherits)
+- **GIVEN** PII is detected for `(brp, inwoners)`
+- **AND** `inwoners.configuration` has no annotation key but `brp.configuration['x-openregister-processing-activity']` equals `"verwerkings-act-uuid-xyz"`
+- **WHEN** the check runs
+- **THEN** the `(brp, inwoners)` pair MUST be omitted (register-level annotation satisfies the check for all schemas in that register)
+
+#### Scenario: Legacy entity_relations row without register_id or schema_id
+- **GIVEN** an `entity_relations` row predates the disambiguation migration and has empty `register_id` or empty `schema_id`
+- **WHEN** the aggregation result is iterated
+- **THEN** the row MUST be skipped (it cannot be attributed to a `(register, schema)` pair) and MUST NOT contribute to the issues list
+
+#### Scenario: Aggregation query failure degrades gracefully
+- **GIVEN** the underlying database join throws (e.g., schema migration mid-flight)
+- **WHEN** `findUnannotatedSchemasWithPii()` is called
+- **THEN** the method MUST log a warning with message `[AVG compliance] Failed to aggregate PII by schema` and the exception message in context
+- **AND** the method MUST return an empty array (the dashboard treats this as "no issues this run")
+
+#### Scenario: Register or schema lookup failure during annotation check
+- **GIVEN** a `(register_id, schema_id)` pair appears in the aggregation result
+- **AND** `RegisterMapper::find()` throws `DoesNotExistException` or any other Throwable for that `register_id`
+- **WHEN** `registerHasAnnotation()` evaluates the register
+- **THEN** the method MUST treat the register as not annotated (return `false`) rather than propagating the exception
+- **AND** the same fallback MUST apply to `schemaHasAnnotation()` when `SchemaMapper::find()` throws
+- **AND** `resolveSchemaTitle()` MUST return an empty string on any lookup failure (best-effort title resolution)
+
+#### Notes
+- Both annotation checks call the mapper with `_rbac: false, _multitenancy: false` — the compliance scan deliberately bypasses tenant filtering so an organisation-scoped privacy officer sees gaps across all registers visible to the scan. The caller is responsible for restricting visibility of the result to authorised users.
+- The annotation key is exposed as the public constant `AvgComplianceService::ANNOTATION_KEY` so other services may reuse the same key when writing the annotation. The value is expected to be a non-empty string (e.g., a verwerkingsactiviteit UUID); empty strings or non-string values do NOT satisfy the check.
+
+### Requirement: The system MUST expose the data-subject rights as an admin-gated DSAR HTTP surface
+
+`DsarController` MUST provide the shipped HTTP slice of the AVG data-subject rights as a thin wrapper over `DsarService` and `AvgComplianceService`. Every endpoint MUST require membership of the Nextcloud `admin` group, returning HTTP 403 before doing any work otherwise, because DSAR operations span the whole register surface and bypass per-schema RBAC.
+
+- `inzage` (Art 15) MUST accept `subject` (required), optional `type`, and optional `mode` (`exact` default or `ilike`), delegate to `DsarService::findObjectsForSubject()`, and return `{subject, type, count, results}`. A missing `subject` MUST return HTTP 422.
+- `portabiliteit` (Art 20) MUST use the same lookup but reduce the envelope to the machine-readable export shape `{subject, generated, count, objects}` (object payloads only, no match annotations).
+- `vergetelheid` (Art 17) MUST accept `subject` (required), optional `type`, and a `dryRun` boolean; when `dryRun` is true it MUST return the matches without erasing. It MUST delegate to `DsarService::eraseObjectsForSubject()` and return the service summary.
+- `rectificatie` (Art 16) MUST require `objectId` (non-zero int) and a non-empty `changes` object, returning HTTP 422 when either is missing, HTTP 404 when the object is not found / the update fails, and delegate to `DsarService::rectifyObjectForSubject()`.
+- `compliance` MUST return `AvgComplianceService::runAllChecks()`.
+
+#### Scenario: DSAR endpoints are admin-gated
+- **GIVEN** a non-admin authenticated user
+- **WHEN** they call any of `inzage`, `portabiliteit`, `vergetelheid`, `rectificatie`, or `compliance`
+- **THEN** the response MUST be HTTP 403 with `{error}` and no DSAR work MUST be performed
+
+#### Scenario: Inzage requires a subject
+- **GIVEN** an admin calls `inzage` with no `subject`
+- **THEN** the response MUST be HTTP 422 with `{error: "`subject` query parameter is required"}`
+- **AND** a valid call MUST return `{subject, type, count, results}` from `DsarService::findObjectsForSubject()`
+
+#### Scenario: Erasure supports dry-run
+- **GIVEN** an admin calls `vergetelheid` with `dryRun=true` for a subject with matches
+- **WHEN** the request is processed
+- **THEN** the matches MUST be returned without any object being erased
+
+#### Scenario: Rectification validates input
+- **GIVEN** an admin calls `rectificatie` with `objectId=0` or empty `changes`
+- **THEN** the response MUST be HTTP 422
+- **AND** a valid call against a non-existent object MUST return HTTP 404 with `{error, objectId}`
+
+### Requirement: The system MUST provide a detected-PII entity registry API
+
+`GdprEntitiesController` MUST expose a read + delete API over the `openregister_entities` / `openregister_entity_relations` tables holding PII detected by the entity-recognition pipeline. `index` MUST support `limit`/`offset` pagination and `search` (iLike on value), `type`, and `category` filters, returning `{success, data, count, limit, offset}` where each entity carries its `relationCount`. `show` MUST return the entity plus its relations, or HTTP 404 when absent. `getTypes` and `getCategories` MUST return the distinct sorted type / category values. `getStats` MUST return `{totalEntities, totalRelations, byType, byCategory}`. `destroy` MUST delete a single entity by id, returning HTTP 404 when absent. All operational failures MUST be logged and surfaced as HTTP 500 with `{success: false, message}`.
+
+#### Scenario: List detected entities with filters and pagination
+- **GIVEN** detected entities of multiple types exist
+- **WHEN** `index` is called with `type=BSN&limit=25&offset=0`
+- **THEN** the response MUST be `{success: true, data, count, limit: 25, offset: 0}`
+- **AND** `count` MUST be the total matching the filters (not the page size)
+- **AND** each entity MUST include its `relationCount`
+
+#### Scenario: Entity statistics
+- **WHEN** `getStats` is called
+- **THEN** the response data MUST include `totalEntities`, `totalRelations`, `byType`, and `byCategory`
+
+#### Scenario: Delete a detected entity
+- **GIVEN** an entity with a given id exists
+- **WHEN** `destroy` is called for that id
+- **THEN** the entity MUST be deleted and the response MUST be `{success: true}`
+- **AND** a non-existent id MUST return HTTP 404
+
+### Requirement: The system MUST locate and erase a data subject's objects across PII-indexed entities
+
+`DsarService` MUST find every object that references a data subject by matching
+the subject value against the `GdprEntity` index (`openregister_entities`) joined
+to `openregister_entity_relations`, deduplicating by object uuid (preferred) or
+legacy int id, and returning an inzage envelope of `{object, gdprEntities}` per
+matched object (Art 15). It MUST support an erase flow (Art 17 vergetelheid) that
+soft-deletes each matched object — recording `deletedBy`, `deletedAt`, a
+`reason` of `avg-vergetelheid`, and the subject — with a `dryRun` mode that
+returns the match set without erasing. The subject value MUST be escaped for SQL
+`LIKE` wildcards before matching, so an admin cannot pass `%` or `_` to match (and
+in the erase path, delete) every PII row.
+
+#### Scenario: Find returns one envelope per matched object
+- **GIVEN** a subject email `jan@example.nl` referenced by GdprEntity rows on two objects
+- **WHEN** `findObjectsForSubject('jan@example.nl')` is called
+- **THEN** the result MUST contain two envelopes, each with the object's `jsonSerialize()` payload and the matching `gdprEntities`
+- **AND** entity hits for the same object MUST be grouped into a single envelope
+
+#### Scenario: LIKE wildcards in the subject are escaped
+- **GIVEN** an admin calls the erase flow with subject `%@%`
+- **WHEN** `eraseObjectsForSubject('%@%')` matches entities
+- **THEN** the `%` characters MUST be escaped before the `LIKE` comparison so they match literally, not as wildcards
+- **AND** the call MUST NOT erase every PII-referencing object
+
+#### Scenario: Dry-run erase returns matches without writing
+- **GIVEN** three objects reference a subject
+- **WHEN** `eraseObjectsForSubject($subject, dryRun: true)` is called
+- **THEN** the summary MUST report `matchedCount: 3` and an empty `erased` list
+- **AND** no object MUST be soft-deleted
+
+#### Scenario: Erase soft-deletes with vergetelheid metadata
+- **GIVEN** an object referencing the subject and a non-dry-run erase
+- **WHEN** `eraseObjectsForSubject($subject)` runs
+- **THEN** each erased object MUST have its `deleted` metadata set with `reason: avg-vergetelheid` and the subject recorded
+- **AND** the erased entry MUST report the object's uuid, register, and schema
+
+### Requirement: DSAR write operations MUST attribute the audit trail to the configured processing activity
+
+`DsarService` MUST tag every DSAR write (erasure and rectificatie) with the
+operator-configured DSAR processing-activity uuid by calling
+`ObjectEntity::setProcessingActivityId()` before persisting, so the existing
+audit-trail hook records the legal basis. The activity reference MUST be read
+from app-config key `dsar_processing_activity`, falling back to the
+`dsar` activity code, and resolved through
+`VerwerkingsactiviteitMapper::resolveReference()`; when neither resolves the
+write MUST still proceed, falling back to the schema/register annotation.
+`rectifyObjectForSubject()` MUST merge the requested field changes into the
+object payload and persist them under this attribution (Art 16 rectificatie).
+
+#### Scenario: Rectification merges changes and attributes the activity
+- **GIVEN** the app-config key resolves to a DSAR verwerkingsactiviteit uuid
+- **WHEN** `rectifyObjectForSubject($objectId, ['adres' => 'Nieuwstraat 1'])` is called
+- **THEN** the object payload MUST be merged with the new `adres` value (other fields preserved)
+- **AND** `setProcessingActivityId()` MUST be called with the resolved DSAR activity uuid before `update()`
+
+#### Scenario: Unresolved activity does not block the write
+- **GIVEN** no `dsar_processing_activity` is configured and no `dsar`-coded activity exists
+- **WHEN** a DSAR erase or rectification runs
+- **THEN** `getDsarProcessingActivityUuid()` MUST return `null`
+- **AND** the write MUST still proceed (audit falls back to the schema/register annotation)
+
+#### Scenario: A missing object yields a null result, not an error
+- **GIVEN** an object id that does not exist
+- **WHEN** `rectifyObjectForSubject($missingId, $changes)` is called
+- **THEN** the method MUST return `null` rather than throwing
+
 ## Current Implementation Status
 - **Partial foundations:**
   - `GdprEntity` (`lib/Db/GdprEntity.php`) exists with fields: uuid, type, value, category, belongsToEntityId, metadata, owner, organisation, detectedAt, updatedAt — represents detected personal data entities with categories `pii` and `sensitive_pii`
@@ -511,6 +675,7 @@ All privacy-specific operations (data subject requests, consent changes, DPIA ac
   - `FileTextController::anonymizeDocument()` creates anonymized copies with PII replaced by placeholders
   - DocuDesk `consent-management` spec provides GDPR consent tracking for publication (WOO context)
   - DocuDesk `anonymization` spec provides a full anonymization pipeline with PII detection and replacement
+  - **Per-access READ logging (2026-06-14, processing-activity-register delta):** `ProcessingLogEntry` + append-only `ProcessingLogMapper` (`oc_openregister_processing_log`); `ProcessingLogService` records a fail-soft, buffered, batched log entry for every read of an object whose schema (or register) opts in via the `x-openregister-processing` annotation (`logReads: true`), attributing it to the resolved processing activity (per-operation `read`/`export` overrides, schema→register inheritance, new-dialect + legacy-string back-compat) or to the seeded flagged fallback activity `niet-geclassificeerde-verwerking` when attribution does not resolve (never dropped, never activity-less); hooked into `ObjectService::find()`. `ProcessingLogController` exposes the access-guarded read-only inquiry (`GET /api/avg/verwerkingen`) and per-subject inzage extract (`GET /api/avg/verwerkingen/betrokkene`): admin-default + privacy-officer (FG) delegation, organisation-scoped (no cross-tenant IDOR), confidential entries FG-gated, range-bounded (422), fails closed; append-only by surface (no update/delete route). `AvgComplianceService.runAllChecks()` surfaces the unclassified-processing (fallback) count. This implements the read-side of OR-PA-3/4/5, the append-only-by-surface part of OR-PA-6, the per-subject extract of OR-PA-7, and the access model of OR-PA-8. (Writes remain on the hash-chained audit trail, already stamped with `processingActivityId`.)
 - **NOT implemented:**
   - Verwerkingsactiviteiten register — no entity/schema for defining processing activities with Art 30 mandatory fields
   - Purpose-bound access control (doelbinding) — no `PurposeBindingMiddleware` or mechanism to require/validate processing purpose before data access

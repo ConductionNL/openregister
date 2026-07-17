@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
  */
 
 declare(strict_types=1);
@@ -57,7 +57,10 @@ use Throwable;
  *
  * @package OCA\OpenRegister\Middleware
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Middleware must reference NC framework types (Middleware, Controller, Response, JSONResponse, Http, IRequest, IUserSession, IControllerMethodReflector) plus SecurityService, LoggerInterface, ReflectionClass, and Throwable — every type is required by the framework contract or the rate-limiting logic.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Middleware must reference NC framework types
+ * (Middleware, Controller, Response, JSONResponse, Http, IRequest, IUserSession,
+ * IControllerMethodReflector) plus SecurityService, LoggerInterface, ReflectionClass, and
+ * Throwable — every type is required by the framework contract or the rate-limiting logic.
  */
 class RateLimitMiddleware extends Middleware
 {
@@ -92,10 +95,13 @@ class RateLimitMiddleware extends Middleware
      *
      * @throws AuthRateLimitExceededException When the identity+IP is locked out
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::beforeController() requires the ($controller, $methodName) signature; $controller is forwarded to isPublicPage() but $methodName is also needed there — PHPMD misclassifies the forwarded params as unused.
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address in network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::beforeController() requires the
+     * ($controller, $methodName) signature; $controller is forwarded to isPublicPage() but $methodName is
+     * also needed there — PHPMD misclassifies the forwarded params as unused.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address in
+     * network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function beforeController(Controller $controller, string $methodName): void
     {
@@ -138,10 +144,13 @@ class RateLimitMiddleware extends Middleware
      *
      * @return Response The unmodified response
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterController() mandates ($controller, $methodName, $response) — $controller and $methodName are not used in this method's body (only $response and the session are needed), but the framework dispatch requires all three.
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterController() mandates
+     * ($controller, $methodName, $response) — $controller and $methodName are not used in this method's
+     * body (only $response and the session are needed), but the framework dispatch requires all three.
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
+     * renaming disagrees with SecurityService's own parameter naming.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function afterController(Controller $controller, string $methodName, Response $response): Response
     {
@@ -184,10 +193,13 @@ class RateLimitMiddleware extends Middleware
      *
      * @throws \Exception The original exception is re-thrown for all non-lockout cases
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterException() requires ($controller, $methodName, $exception) — $controller is forwarded to isPublicPage() but PHPMD flags it; $methodName is also required by isPublicPage().
-     * @SuppressWarnings(PHPMD.ShortVariable) $ip is the established abbreviation for IP address; renaming disagrees with SecurityService's own parameter naming.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) NC Middleware::afterException() requires
+     * ($controller, $methodName, $exception) — $controller is forwarded to isPublicPage() but PHPMD
+     * flags it; $methodName is also required by isPublicPage().
+     * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
+     * renaming disagrees with SecurityService's own parameter naming.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function afterException(Controller $controller, string $methodName, \Exception $exception): ?Response
     {
@@ -237,7 +249,9 @@ class RateLimitMiddleware extends Middleware
      *
      * @return bool True when the endpoint is public (skip rate-limiting)
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() requires both the controller instance and method name; PHPMD misclassifies $controller as unused because it is consumed via the interface method, not directly in the body.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) IControllerMethodReflector::reflect() requires both
+     * the controller instance and method name; PHPMD misclassifies $controller as unused because it is
+     * consumed via the interface method, not directly in the body.
      */
     private function isPublicPage(Controller $controller, string $methodName): bool
     {

@@ -19,13 +19,11 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
  */
 
 namespace OCA\OpenRegister\Service\Settings;
 
-use Exception;
-use RuntimeException;
 use InvalidArgumentException;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -33,8 +31,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Handler for search backend settings operations.
  *
- * This handler is responsible for managing which search backend is active
- * (Solr, Elasticsearch, etc.) and providing configuration for the active backend.
+ * This handler reports the active search backend. Since the external Solr and
+ * Elasticsearch backends were removed, the built-in database (Magic-Tables)
+ * search is the sole backend.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
@@ -93,80 +92,66 @@ class SearchBackendHandler
     /**
      * Get search backend configuration.
      *
-     * Returns which search backend is currently active (solr, elasticsearch, etc).
+     * The external Solr/Elasticsearch backends were removed; the built-in
+     * database (Magic-Tables) search is the only backend.
      *
      * @return array Backend configuration with 'active' key.
      *
      * @throws \RuntimeException If backend configuration retrieval fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
      */
     public function getSearchBackendConfig(): array
     {
-        try {
-            $backendConfig = $this->appConfig->getValueString($this->appName, 'search_backend', '');
-
-            if (empty($backendConfig) === true) {
-                return [
-                    'active'    => 'solr',
-                // Default to Solr for backward compatibility.
-                    'available' => ['solr', 'elasticsearch'],
-                ];
-            }
-
-            return json_decode($backendConfig, true);
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to retrieve search backend configuration: '.$e->getMessage());
-        }
+        return [
+            'active'    => 'database',
+            'available' => ['database'],
+        ];
     }//end getSearchBackendConfig()
 
     /**
      * Update search backend configuration.
      *
-     * Sets which search backend should be active.
+     * Retained for API compatibility. The database backend is the only option,
+     * so any backend other than 'database' is rejected.
      *
-     * @param string $backend Backend name ('solr', 'elasticsearch', etc).
+     * @param string $backend Backend name (only 'database' is valid).
      *
      * @return (int|string[])[] Updated backend configuration.
      *
-     * @throws \RuntimeException If backend configuration update fails.
+     * @throws \InvalidArgumentException If a non-database backend is requested.
      *
-     * @psalm-return array{active: 'elasticsearch'|'solr', available: list{'solr', 'elasticsearch'}, updated: int<1, max>}
+     * @psalm-return array{active: 'database', available: list{'database'}, updated: int<1, max>}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
      */
     public function updateSearchBackendConfig(string $backend): array
     {
-        try {
-            $availableBackends = ['solr', 'elasticsearch'];
+        $availableBackends = ['database'];
 
-            if (in_array($backend, $availableBackends, true) === false) {
-                throw new InvalidArgumentException(
-                    "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
-                );
-            }
-
-            $backendConfig = [
-                'active'    => $backend,
-                'available' => $availableBackends,
-                'updated'   => time(),
-            ];
-
-            $this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
-
-            $this->logger->info(
-                message: '[SearchBackendHandler] Search backend changed to: '.$backend,
-                context: [
-                    'file'    => __FILE__,
-                    'line'    => __LINE__,
-                    'app'     => 'openregister',
-                    'backend' => $backend,
-                ]
+        if (in_array($backend, $availableBackends, true) === false) {
+            throw new InvalidArgumentException(
+                "Invalid backend '$backend'. Must be one of: ".implode(', ', $availableBackends)
             );
+        }
 
-            return $backendConfig;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update search backend configuration: '.$e->getMessage());
-        }//end try
+        $backendConfig = [
+            'active'    => 'database',
+            'available' => $availableBackends,
+            'updated'   => time(),
+        ];
+
+        $this->appConfig->setValueString($this->appName, 'search_backend', json_encode($backendConfig));
+
+        $this->logger->info(
+            message: '[SearchBackendHandler] Search backend set to: database',
+            context: [
+                'file' => __FILE__,
+                'line' => __LINE__,
+                'app'  => 'openregister',
+            ]
+        );
+
+        return $backendConfig;
     }//end updateSearchBackendConfig()
 }//end class

@@ -8,12 +8,12 @@
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -110,7 +110,7 @@ class UpdateFileHandler
      *
      * @throws Exception When the FileMapper is not wired (legacy fixtures).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function updateFileMetadata(
         int $fileId,
@@ -185,7 +185,7 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function updateFile(
         string|int $filePath,
@@ -445,8 +445,14 @@ class UpdateFileHandler
                 // Security: Block executable files.
                 $this->fileValidHandler->blockExecutableFile(fileName: $file->getName(), fileContent: $content);
 
-                // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+                // Assert the session can reach the file (owned or shared).
                 $this->fileValidHandler->checkOwnership($file);
+
+                // Writing additionally requires write permission. NC enforces this
+                // natively on putContent(), but we fail fast with a clear message.
+                if ($file->isUpdateable() === false) {
+                    throw new NotPermittedException("File {$file->getName()} is not writable by the current session");
+                }
 
                 $file->putContent(data: $content);
                 $this->logger->info(

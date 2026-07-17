@@ -104,8 +104,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<div class="selection-section">
 				<h4>Target Register</h4>
 				<NcSelect
-						input-label="Target Register"
 					v-model="targetRegister"
+					input-label="Target Register"
 					:options="availableRegisters"
 					label="title"
 					track-by="id"
@@ -117,8 +117,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			<div v-if="targetRegister" class="selection-section">
 				<h4>Target Schema</h4>
 				<NcSelect
-						input-label="Target Schema"
 					v-model="targetSchema"
+					input-label="Target Schema"
 					:options="availableSchemas"
 					label="title"
 					track-by="id"
@@ -165,8 +165,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						</div>
 						<div class="target-property">
 							<NcSelect
-						input-label="Ui Mappings[Source Property Name]"
 								v-model="uiMappings[sourceProperty.name]"
+								input-label="Ui Mappings[Source Property Name]"
 								:options="targetPropertyOptions"
 								label="label"
 								track-by="value"
@@ -411,7 +411,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeMigration() {
 			// Get selected objects from the store or navigation context
@@ -470,6 +470,7 @@ export default {
 			await this.loadSchemaProperties()
 		},
 		/**
+		 * @param objectId
 		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
 		 */
 		removeObject(objectId) {
@@ -523,6 +524,7 @@ export default {
 			}
 		},
 		/**
+		 * @param schema
 		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
 		 */
 		extractSchemaProperties(schema) {
@@ -619,6 +621,7 @@ export default {
 			navigationStore.setModal(false)
 		},
 		/**
+		 * @param _sourceProperty
 		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
 		 */
 		updateMappingFromUI(_sourceProperty) {

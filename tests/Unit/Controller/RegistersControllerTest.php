@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Configuration\GitHubHandler;
 use OCA\OpenRegister\Service\ConfigurationService;
 use OCA\OpenRegister\Service\ExportService;
 use OCA\OpenRegister\Service\ImportService;
+use OCA\OpenRegister\Service\MigrationPackService;
 use OCA\OpenRegister\Service\OasService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Registers\RegisterCacheHandler;
@@ -125,7 +126,9 @@ class RegistersControllerTest extends TestCase
             $this->oasService,
             $this->container,
             $this->groupManager,
-            $this->createMock(RegisterCacheHandler::class)
+            $this->createMock(RegisterCacheHandler::class),
+            new \OCA\OpenRegister\Service\Serializer\RegisterSerializer($this->schemaMapper, $this->logger),
+            $this->createMock(MigrationPackService::class)
         );
     }
 
@@ -172,11 +175,11 @@ class RegistersControllerTest extends TestCase
 
     public function testShowAnonymousUnpublishedRegisterReturns401(): void
     {
-        // Anonymous (no user) + unpublished register → 401 (read-visibility guard).
+        // Anonymous (no user) + register without public read → 401 (RBAC visibility guard).
+        // Use a real Register entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $register = $this->createMock(Register::class);
-        $register->method('getPublished')->willReturn(null);
-        $register->method('getDepublished')->willReturn(null);
+        $register = $this->createRealRegister(1, 'Private');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
@@ -188,12 +191,11 @@ class RegistersControllerTest extends TestCase
 
     public function testShowAnonymousPublishedRegisterReturns200(): void
     {
-        // Anonymous + published register → 200.
+        // Anonymous + register with public read authorization → 200.
+        // Use a real Register entity so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $register = $this->createMock(Register::class);
-        $register->method('getPublished')->willReturn(new \DateTime());
-        $register->method('getDepublished')->willReturn(null);
-        $register->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Test']);
+        $register = $this->createRealRegister(1, 'Public');
+        $register->setAuthorization(['read' => ['public']]);
 
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')->willReturn($register);
@@ -205,17 +207,14 @@ class RegistersControllerTest extends TestCase
 
     public function testIndexAnonymousFiltersUnpublishedRegisters(): void
     {
-        // Anonymous list returns only published registers.
+        // Anonymous list returns only registers whose authorization grants public read.
+        // Use real Register entities so getAuthorization() (a __call magic) works without mocking.
         $this->currentUser = null;
-        $published = $this->createMock(Register::class);
-        $published->method('getPublished')->willReturn(new \DateTime());
-        $published->method('getDepublished')->willReturn(null);
-        $published->method('jsonSerialize')->willReturn(['id' => 1, 'title' => 'Published']);
+        $published = $this->createRealRegister(1, 'Published');
+        $published->setAuthorization(['read' => ['public']]);
 
-        $unpublished = $this->createMock(Register::class);
-        $unpublished->method('getPublished')->willReturn(null);
-        $unpublished->method('getDepublished')->willReturn(null);
-        $unpublished->method('jsonSerialize')->willReturn(['id' => 2, 'title' => 'Unpublished']);
+        $unpublished = $this->createRealRegister(2, 'Unpublished');
+        // No authorization set → getAuthorization() returns null → isPublicReadable = false.
 
         $this->request->method('getParams')->willReturn([]);
         $this->registerService->method('findAll')->willReturn([$published, $unpublished]);
@@ -651,49 +650,10 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(400, $result->getStatus());
     }
 
-    public function testPublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->publish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testPublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Publish error'));
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
-
-    public function testDepublishReturns404WhenNotFound(): void
-    {
-        $this->registerMapper->method('find')
-            ->willThrowException(new DoesNotExistException('Not found'));
-
-        $result = $this->controller->depublish(999);
-
-        $this->assertSame(404, $result->getStatus());
-    }
-
-    public function testDepublishReturns400OnException(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')
-            ->willThrowException(new Exception('Depublish error'));
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(400, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() endpoint tests removed — the
+    // RegistersController publish/depublish endpoints were retired for
+    // security (commit 29b1de3af, H1). publishToGitHub() (tested below)
+    // is a separate, still-supported method.
 
     public function testPatchThrowsWhenNotFound(): void
     {
@@ -743,53 +703,8 @@ class RegistersControllerTest extends TestCase
         $this->assertStringContainsString('schema', $result->getData()['error']);
     }
 
-    // ── Publish/depublish success tests ────────────────────────────────
-
-    public function testPublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishSuccess(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testPublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->publish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    public function testDepublishWithCustomDate(): void
-    {
-        $register = $this->createRealRegister(1, 'Test');
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->registerMapper->method('update')->willReturn($register);
-        $this->request->method('getParam')->willReturn('2025-06-15');
-
-        $result = $this->controller->depublish(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
+    // NOTE: publish()/depublish() success tests removed — endpoints retired
+    // for security (commit 29b1de3af, H1).
 
     // ── PublishToGitHub success test ───────────────────────────────────
 
@@ -1016,8 +931,13 @@ class RegistersControllerTest extends TestCase
 
         $this->assertSame(200, $result->getStatus());
         $data = $result->getData();
-        // Only the existing schema should be present
-        $this->assertCount(1, $data['results'][0]['schemas']);
+        // RegisterSerializer::expandSchemas() now RETAINS an orphan schema ID
+        // at its original position when the schema cannot be resolved (rather
+        // than dropping it), so typed JSON clients still see the reference.
+        // Expect both entries: the expanded object (10) and the orphan ID (999).
+        $this->assertCount(2, $data['results'][0]['schemas']);
+        $this->assertSame(['id' => 10, 'title' => 'Schema A'], $data['results'][0]['schemas'][0]);
+        $this->assertSame(999, $data['results'][0]['schemas'][1]);
     }
 
     public function testIndexWithSelfStatsExtend(): void
@@ -1272,6 +1192,77 @@ class RegistersControllerTest extends TestCase
         $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
     }
 
+    public function testExportPdfWithSchemaSuccess(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+
+        $schema = $this->createRealSchema(5, 'Test Schema');
+        $schema->setSlug('test-schema');
+
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, '5'],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->exportService->method('exportToPdf')->willReturn("%PDF-1.7\n...fake pdf bytes...");
+        $this->currentUser = null;
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+        $this->assertSame('application/pdf', $result->getHeaders()['Content-Type'] ?? null);
+        $this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
+    }
+
+    public function testExportPdfMissingSchemaReturns400(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, null],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertStringContainsString('schema', $result->getData()['error']);
+    }
+
+    public function testExportPdfTooLargeReturns400(): void
+    {
+        $register = $this->createRealRegister(1, 'Test');
+        $register->setSlug('test-register');
+
+        $schema = $this->createRealSchema(5, 'Test Schema');
+        $schema->setSlug('test-schema');
+
+        $this->request->method('getParam')->willReturnMap([
+            ['format', 'configuration', 'pdf'],
+            ['includeObjects', false, false],
+            ['schema', null, '5'],
+        ]);
+        $this->registerService->method('find')->willReturn($register);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->exportService->method('exportToPdf')->willThrowException(
+            new \OCA\OpenRegister\Exception\ExportTooLargeException(6000, 5000)
+        );
+        $this->currentUser = null;
+
+        $result = $this->controller->export(1);
+
+        $this->assertInstanceOf(JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('export_too_large', $result->getData()['error']);
+        $this->assertSame(6000, $result->getData()['rowCount']);
+        $this->assertSame(5000, $result->getData()['maxRows']);
+    }
+
     // ── Import extended tests ────────────────────────────────────────
 
     public function testImportExcelSuccess(): void
@@ -1300,7 +1291,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1362,7 +1354,8 @@ class RegistersControllerTest extends TestCase
             'updated' => [],
             'errors' => [],
         ]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1395,7 +1388,8 @@ class RegistersControllerTest extends TestCase
         $this->importService->expects($this->once())
             ->method('importFromExcel')
             ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
-        $this->currentUser = null;
+        // import() is admin-gated (checkRegisterManagePermission); keep the
+        // default authenticated admin from setUp() rather than nulling it.
 
         $result = $this->controller->import(1);
 
@@ -1922,6 +1916,54 @@ class RegistersControllerTest extends TestCase
         // json_encode returns false for INF, triggering the exception catch
         $this->assertInstanceOf(JSONResponse::class, $result);
         $this->assertSame(400, $result->getStatus());
+    }
+
+    /**
+     * registerObjectStats() sums the per-schema counts, reporting a LIVE total.
+     *
+     * `total` must exclude soft-deleted rows (the per-schema UNION's `total` includes
+     * them, `deleted` is the subset), so a register with two schemas — one with 5 objects
+     * / 1 deleted, one with 3 / 0 deleted — reports total 7 (=(5-1)+(3-0)) and deleted 1.
+     * ObjectEntityMapper::getStatistics() must NOT be called when per-schema counts exist.
+     *
+     * @return void
+     */
+    public function testRegisterObjectStatsSumsLiveCountsFromSchemaStats(): void
+    {
+        $this->objectMapper->expects($this->never())->method('getStatistics');
+
+        $schemaStats = [
+            10 => ['total' => 5, 'deleted' => 1, 'invalid' => 0, 'locked' => 0, 'size' => 100],
+            20 => ['total' => 3, 'deleted' => 0, 'invalid' => 0, 'locked' => 0, 'size' => 50],
+        ];
+
+        $method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, 7, $schemaStats);
+
+        $this->assertSame(7, $result['total']);
+        $this->assertSame(1, $result['deleted']);
+        $this->assertSame(150, $result['size']);
+    }
+
+    /**
+     * With no per-schema counts (the '@self.stats'-without-'schemas' caller),
+     * registerObjectStats() falls back to the mapper rather than reporting zero.
+     *
+     * @return void
+     */
+    public function testRegisterObjectStatsFallsBackToMapperWithoutSchemaStats(): void
+    {
+        $this->objectMapper->expects($this->once())
+            ->method('getStatistics')
+            ->with(registerId: 7, schemaId: null)
+            ->willReturn(['total' => 42, 'size' => 0, 'invalid' => 0, 'deleted' => 0, 'locked' => 0]);
+
+        $method = new \ReflectionMethod(RegistersController::class, 'registerObjectStats');
+        $method->setAccessible(true);
+        $result = $method->invoke($this->controller, 7, null);
+
+        $this->assertSame(42, $result['total']);
     }
 
 }

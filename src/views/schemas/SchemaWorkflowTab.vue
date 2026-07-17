@@ -88,6 +88,7 @@ export default {
 	},
 	methods: {
 		/**
+		 * @param index
 		 * @spec exclude tab-view hook-form open plumbing for editing
 		 */
 		editHook(index) {
@@ -95,6 +96,7 @@ export default {
 			this.showHookForm = true
 		},
 		/**
+		 * @param index
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the entry removed
 		 */
 		deleteHook(index) {
@@ -103,6 +105,7 @@ export default {
 			this.$emit('update:hooks', hooks)
 		},
 		/**
+		 * @param hookData
 		 * @spec exclude tab-view hook-list mutation; emits an update:hooks event with the saved entry
 		 */
 		saveHook(hookData) {
@@ -118,6 +121,7 @@ export default {
 			this.editingHookIndex = null
 		},
 		/**
+		 * @param hook
 		 * @spec exclude tab-view test-dialog open plumbing for a hook
 		 */
 		openTestDialog(hook) {

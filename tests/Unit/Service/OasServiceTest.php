@@ -313,10 +313,12 @@ class OasServiceTest extends TestCase
 
         $oas = $this->service->createOas();
 
-        $this->assertCount(2, $oas['tags']);
+        // Two schema tags + the JSON-LD context-endpoint tag (json-ld-output).
+        $this->assertCount(3, $oas['tags']);
         $tagNames = array_column($oas['tags'], 'name');
         $this->assertContains('Alpha', $tagNames);
         $this->assertContains('Beta', $tagNames);
+        $this->assertContains('JSON-LD', $tagNames);
     }
 
     public function testCreateOasMultipleRegistersWithPrefixes(): void
@@ -334,7 +336,8 @@ class OasServiceTest extends TestCase
         $this->assertArrayHasKey('paths', $oas);
         // Multiple registers should produce operation ID prefixes
         $this->assertArrayHasKey('tags', $oas);
-        $this->assertCount(2, $oas['tags']);
+        // Two schema tags + the JSON-LD context-endpoint tag (json-ld-output).
+        $this->assertCount(3, $oas['tags']);
     }
 
     public function testCreateOasSchemaWithArrayProperties(): void
@@ -2098,9 +2101,11 @@ class OasServiceTest extends TestCase
 
         $oas = $this->service->createOas();
 
-        $this->assertCount(10, $oas['tags']);
-        // Should have 10 collection paths + 10 item paths = 20 paths
-        $this->assertCount(20, $oas['paths']);
+        // 10 schema tags + the JSON-LD context-endpoint tag (json-ld-output).
+        $this->assertCount(11, $oas['tags']);
+        // 10 collection paths + 10 item paths + 1 register-context + 10 schema-context
+        // paths = 31 (json-ld-output adds the dereferenceable @context endpoints).
+        $this->assertCount(31, $oas['paths']);
     }
 
     public function testCreateOasSchemaWithAllPropertyTypes(): void

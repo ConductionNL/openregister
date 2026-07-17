@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\LockedException;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -54,6 +55,8 @@ use Psr\Log\LoggerInterface;
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class LockHandler
 {
@@ -66,6 +69,7 @@ class LockHandler
      * @param IUserSession     $userSession      User session for authorization checks
      * @param IGroupManager    $groupManager     Group manager for admin checks
      * @param SchemaMapper     $schemaMapper     Schema mapper for resolving manage rules
+     * @param IAppConfig       $appConfig        App config store for advisory (pre-creation) locks
      */
     public function __construct(
         private readonly MagicMapper $magicMapper,
@@ -73,9 +77,118 @@ class LockHandler
         private readonly LoggerInterface $logger,
         private readonly IUserSession $userSession,
         private readonly IGroupManager $groupManager,
-        private readonly SchemaMapper $schemaMapper
+        private readonly SchemaMapper $schemaMapper,
+        private readonly IAppConfig $appConfig
     ) {
     }//end __construct()
+
+    /**
+     * Advisory-lock app-config key prefix.
+     *
+     * @var string
+     */
+    private const ADVISORY_LOCK_PREFIX = 'advisory_lock_';
+
+    /**
+     * Default advisory lock duration in seconds when none supplied.
+     *
+     * @var int
+     */
+    private const ADVISORY_LOCK_DEFAULT_DURATION = 3600;
+
+    /**
+     * Build the app-config key used to store an advisory (pre-creation) lock.
+     *
+     * @param string $identifier The arbitrary advisory-lock identifier.
+     *
+     * @return string The namespaced app-config key.
+     */
+    private function advisoryLockKey(string $identifier): string
+    {
+        return self::ADVISORY_LOCK_PREFIX.md5($identifier);
+    }//end advisoryLockKey()
+
+    /**
+     * Acquire an advisory (pre-creation) lock for an arbitrary identifier that
+     * does not (yet) resolve to a stored object.
+     *
+     * Supports create-then-store flows (e.g. the openbuild wizard locking
+     * `createApp:<slug>` before the object exists). The lock is stored in
+     * app-config with an expiry timestamp. A still-valid lock raises
+     * LockedException; an expired lock is silently overwritten.
+     *
+     * @param string      $identifier The arbitrary advisory-lock identifier.
+     * @param string|null $process    Optional process tag (who holds the lock).
+     * @param int|null    $duration   Lock duration in seconds.
+     *
+     * @return array{uuid: string, locked: array<string, mixed>} Advisory lock result.
+     *
+     * @throws LockedException If a non-expired advisory lock already exists.
+     */
+    private function acquireAdvisoryLock(string $identifier, ?string $process=null, ?int $duration=null): array
+    {
+        $duration = ($duration ?? self::ADVISORY_LOCK_DEFAULT_DURATION);
+        $key      = $this->advisoryLockKey(identifier: $identifier);
+        $now      = new DateTime();
+
+        $existingRaw = $this->appConfig->getValueString('openregister', $key, '');
+        if ($existingRaw !== '') {
+            $existing = json_decode($existingRaw, true);
+            if (is_array($existing) === true && isset($existing['expiration']) === true) {
+                $expiration = new DateTime($existing['expiration']);
+                if ($expiration > $now) {
+                    throw new LockedException(message: "Advisory lock '{$identifier}' is already held");
+                }
+            }
+        }
+
+        $expiration = (clone $now)->modify("+{$duration} seconds");
+        $lock       = [
+            'user'       => $this->userSession->getUser()?->getUID(),
+            'process'    => $process,
+            'created'    => $now->format(DateTime::ATOM),
+            'duration'   => $duration,
+            'expiration' => $expiration->format(DateTime::ATOM),
+            'advisory'   => true,
+        ];
+
+        $this->appConfig->setValueString('openregister', $key, json_encode($lock));
+
+        $this->logger->info(
+            message: '[LockHandler] Advisory (pre-creation) lock acquired',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'identifier' => $identifier,
+                'process'    => $process,
+            ]
+        );
+
+        return ['uuid' => $identifier, 'locked' => $lock];
+    }//end acquireAdvisoryLock()
+
+    /**
+     * Release an advisory (pre-creation) lock if one exists for the identifier.
+     *
+     * @param string $identifier The arbitrary advisory-lock identifier.
+     *
+     * @return bool True if an advisory lock was found and removed.
+     */
+    private function releaseAdvisoryLock(string $identifier): bool
+    {
+        $key = $this->advisoryLockKey(identifier: $identifier);
+        if ($this->appConfig->getValueString('openregister', $key, '') === '') {
+            return false;
+        }
+
+        $this->appConfig->deleteKey('openregister', $key);
+        $this->logger->info(
+            message: '[LockHandler] Advisory (pre-creation) lock released',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier]
+        );
+
+        return true;
+    }//end releaseAdvisoryLock()
 
     /**
      * Find an object and get its register/schema context.
@@ -234,15 +347,18 @@ class LockHandler
      * @param string      $identifier Object ID or UUID
      * @param string|null $process    Process ID (for tracking who locked it)
      * @param int|null    $duration   Lock duration in seconds
+     * @param bool        $advisory   When true, skip the object lookup and take the
+     *                                appConfig-backed advisory lock directly (used by
+     *                                pre-creation guards where no object exists yet)
      *
      * @return array Lock result with locked details and uuid.
      *
      * @throws LockedException If object is already locked.
      * @throws \Exception      If lock operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+     * @spec openspec/specs/object-interactions/spec.md
      */
-    public function lock(string $identifier, ?string $process=null, ?int $duration=null): array
+    public function lock(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
     {
         $this->logger->debug(
             message: '[LockHandler] Locking object',
@@ -252,12 +368,36 @@ class LockHandler
                 'identifier' => $identifier,
                 'process'    => $process,
                 'duration'   => $duration,
+                'advisory'   => $advisory,
             ]
         );
 
+        // Advisory (pre-creation) fast-path: the caller knows the identifier is a
+        // synthetic key that does NOT resolve to a stored object (e.g. openbuild's
+        // `createApp:<slug>` guard). Go straight to the appConfig-backed advisory
+        // lock and skip findObjectWithContext, whose findAcrossAllMagicTables scan
+        // would otherwise query every magic table just to conclude "not found".
+        if ($advisory === true) {
+            return $this->acquireAdvisoryLock(identifier: $identifier, process: $process, duration: $duration);
+        }
+
         try {
             // Find the object and its register/schema context.
-            $context      = $this->findObjectWithContext(identifier: $identifier);
+            try {
+                $context = $this->findObjectWithContext(identifier: $identifier);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Pre-creation / advisory lock: the identifier does not resolve
+                // to a stored object (e.g. the openbuild wizard locks
+                // `createApp:<slug>` before the object exists). Fall back to an
+                // advisory lock keyed by the arbitrary string so create-then-store
+                // flows work instead of failing with a 404/422.
+                return $this->acquireAdvisoryLock(
+                    identifier: $identifier,
+                    process: $process,
+                    duration: $duration
+                );
+            }
+
             $objectBefore = $context['object'];
 
             // Use MagicMapper for lock operation.
@@ -318,19 +458,28 @@ class LockHandler
      * Removes the lock from an object, allowing other processes to modify it.
      *
      * @param string $identifier Object ID or UUID
+     * @param bool   $advisory   When true, release the appConfig-backed advisory lock
+     *                           directly and skip the object lookup / all-tables scan
      *
      * @return true True if unlocked successfully
      *
      * @throws \Exception If unlock operation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+     * @spec openspec/specs/object-interactions/spec.md
      */
-    public function unlock(string $identifier): bool
+    public function unlock(string $identifier, bool $advisory=false): bool
     {
         $this->logger->debug(
             message: '[LockHandler] Unlocking object',
-            context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier]
+            context: ['file' => __FILE__, 'line' => __LINE__, 'identifier' => $identifier, 'advisory' => $advisory]
         );
+
+        // Advisory (pre-creation) fast-path — mirror of lock(): release the
+        // appConfig-backed advisory lock directly and skip the all-tables scan.
+        if ($advisory === true) {
+            $this->releaseAdvisoryLock(identifier: $identifier);
+            return true;
+        }
 
         try {
             // Find the object and its register/schema context.
@@ -343,8 +492,27 @@ class LockHandler
             // releasing their own lock; the explicit `callerMayUnlock`
             // gate replaces the wave-3 C14 "any authenticated user can
             // unlock anything" behavior.
-            $context      = $this->findObjectWithContext(identifier: $identifier, _rbacBypass: true);
+            try {
+                $context = $this->findObjectWithContext(identifier: $identifier, _rbacBypass: true);
+            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                // Pre-creation / advisory lock release: identifier never
+                // resolved to a stored object. Clear any advisory lock held
+                // under this arbitrary key (no-op if none present).
+                $this->releaseAdvisoryLock(identifier: $identifier);
+                return true;
+            }
+
             $objectBefore = $context['object'];
+
+            // No-op when the object isn't actually locked. Releasing a lock that
+            // does not exist must not require unlock permission: an empty or expired
+            // `_locked` means there is nothing to authorize. This keeps unlock
+            // idempotent and prevents spurious "permission to unlock" failures on
+            // flows that defensively unlock after a successful write (e.g. the
+            // object update endpoint's post-save unlock). See openregister#195.
+            if ($objectBefore->isLocked() === false) {
+                return true;
+            }
 
             if ($this->callerMayUnlock(object: $objectBefore) === false) {
                 $this->logger->warning(
@@ -399,7 +567,7 @@ class LockHandler
      *
      * @return bool True if locked, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function isLocked(string $identifier): bool
     {
@@ -437,7 +605,7 @@ class LockHandler
      *
      * @return array|null Lock info array or null if not locked.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getLockInfo(string $identifier): array|null
     {

@@ -84,17 +84,21 @@ class Wave12PermissionHandlerDefaultClosedTest extends TestCase
             ->with('openregister', PermissionHandler::CONFIG_ENFORCE_DEFAULT_CLOSED, false)
             ->willReturn($enforceDefaultClosed);
 
+        // Named arguments: wave-12 injected IAppConfig as an OPTIONAL trailing arg,
+        // but on this lineage IAppConfig is already a REQUIRED constructor
+        // dependency sitting at position 7 (before $logger). The positional list
+        // wave-12 shipped would bind $logger into $appConfig here.
         return new PermissionHandler(
-            $this->userSession,
-            $this->userManager,
-            $this->groupManager,
-            $this->schemaMapper,
-            $this->objectEntityMapper,
-            $this->conditionMatcher,
-            $this->logger,
-            $this->container,
-            null,
-            $this->appConfig
+            userSession: $this->userSession,
+            userManager: $this->userManager,
+            groupManager: $this->groupManager,
+            schemaMapper: $this->schemaMapper,
+            objectEntityMapper: $this->objectEntityMapper,
+            conditionMatcher: $this->conditionMatcher,
+            appConfig: $this->appConfig,
+            logger: $this->logger,
+            container: $this->container,
+            eventDispatcher: null
         );
     }//end newHandler()
 

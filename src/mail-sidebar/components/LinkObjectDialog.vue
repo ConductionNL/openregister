@@ -22,7 +22,7 @@
 					class="or-mail-link-dialog__search"
 					:placeholder="t('openregister', 'Search by title or UUID...')"
 					:aria-label="t('openregister', 'Search by title or UUID...')"
-					@input="onSearchInput" />
+					@input="onSearchInput">
 				<div v-if="searching" class="or-mail-loading">
 					<span class="icon-loading-small" />
 				</div>
@@ -70,7 +70,7 @@
 /**
  * Link-object search dialog — drives the three-tab sidebar's Link tab.
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
@@ -98,7 +98,8 @@ export default {
 	},
 	watch: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @param val
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		visible(val) {
 			if (val) {
@@ -115,7 +116,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		onSearchInput() {
 			if (this.debounceTimer) {
@@ -129,7 +130,7 @@ export default {
 			this.debounceTimer = setTimeout(() => this.doSearch(), 300)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async doSearch() {
 			this.searching = true
@@ -154,7 +155,8 @@ export default {
 			return this.linkedObjectUuids.includes(result.uuid)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @param result
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		selectResult(result) {
 			if (this.isAlreadyLinked(result)) {
@@ -163,7 +165,8 @@ export default {
 			this.selectedResult = result
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @param result
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		resultAriaLabel(result) {
 			const title = result.title || result.uuid
@@ -173,7 +176,7 @@ export default {
 			return title
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		confirmLink() {
 			if (this.selectedResult) {
@@ -182,13 +185,13 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		close() {
 			this.$emit('close')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		reset() {
 			this.query = ''

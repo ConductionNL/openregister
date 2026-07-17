@@ -10,7 +10,6 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -26,7 +25,6 @@ class DeletedControllerTest extends TestCase
     private MagicMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
-    private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
     private PermissionHandler&MockObject $permissionHandler;
@@ -39,7 +37,6 @@ class DeletedControllerTest extends TestCase
         $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
         $this->permissionHandler = $this->createMock(PermissionHandler::class);
@@ -50,7 +47,6 @@ class DeletedControllerTest extends TestCase
             $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
-            $this->objectService,
             $this->userSession,
             $this->groupManager,
             $this->permissionHandler
@@ -73,10 +69,11 @@ class DeletedControllerTest extends TestCase
         $this->request->method('getParams')->willReturn([]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
+        // index() now scans every magic table for soft-deleted rows directly
+        // (the register/schema-less searchObjectsPaginated path always returned
+        // empty — BUG-1).
+        $this->objectMapper->method('findDeletedAcrossAllMagicTables')->willReturn([]);
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(0);
 
         $result = $this->controller->index();
 
@@ -90,7 +87,7 @@ class DeletedControllerTest extends TestCase
     {
         $this->request->method('getParams')->willReturn([]);
         $this->userSession->method('getUser')->willReturn(null);
-        $this->objectService->method('searchObjectsPaginated')
+        $this->objectMapper->method('findDeletedAcrossAllMagicTables')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->index();
@@ -100,8 +97,11 @@ class DeletedControllerTest extends TestCase
 
     public function testStatisticsSuccess(): void
     {
+        // totalDeleted now comes from the cross-table count (BUG-1 fix);
+        // deletedToday/deletedThisWeek still use countAll.
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(100);
         $this->objectMapper->method('countAll')
-            ->willReturnOnConsecutiveCalls(100, 5, 20);
+            ->willReturnOnConsecutiveCalls(5, 20);
 
         $result = $this->controller->statistics();
 
@@ -114,7 +114,7 @@ class DeletedControllerTest extends TestCase
 
     public function testStatisticsException(): void
     {
-        $this->objectMapper->method('countAll')
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->statistics();
@@ -124,11 +124,26 @@ class DeletedControllerTest extends TestCase
 
     public function testTopDeleters(): void
     {
+        // topDeleters exposes cross-user deletion analytics → admin-only.
+        $this->stubAdminUser();
+
         $result = $this->controller->topDeleters();
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertIsArray($data);
+    }
+
+    public function testTopDeletersRejectsNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $this->userSession->method('getUser')->willReturn($bob);
+        $this->groupManager->method('isAdmin')->with('bob')->willReturn(false);
+
+        $result = $this->controller->topDeleters();
+
+        $this->assertEquals(403, $result->getStatus());
     }
 
     public function testRestoreObjectNotDeleted(): void
@@ -259,19 +274,12 @@ class DeletedControllerTest extends TestCase
         $object->setDeleted(['deleted' => '2024-01-01']);
         $this->objectMapper->method('find')->willReturn($object);
 
-        // Mock the query builder chain
-        $qb = $this->createMock(\OCP\DB\QueryBuilder\IQueryBuilder::class);
-        $qb->method('update')->willReturnSelf();
-        $qb->method('set')->willReturnSelf();
-        $qb->method('where')->willReturnSelf();
-        $qb->method('createNamedParameter')->willReturn('?');
-
-        $expr = $this->createMock(\OCP\DB\QueryBuilder\IExpressionBuilder::class);
-        $expr->method('eq')->willReturn('uuid = ?');
-        $qb->method('expr')->willReturn($expr);
-        $qb->method('executeStatement')->willReturn(1);
-
-        $this->objectMapper->method('getQueryBuilder')->willReturn($qb);
+        // restore() now delegates to the magic-table-aware restoreObject()
+        // (the old direct UPDATE openregister_objects matched zero rows — BUG-2).
+        $this->objectMapper->expects($this->once())
+            ->method('restoreObject')
+            ->with($this->equalTo('uuid-123'))
+            ->willReturn($object);
 
         $result = $this->controller->restore('uuid-123');
 
@@ -285,24 +293,24 @@ class DeletedControllerTest extends TestCase
         $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')->willReturn([$deletedObject]);
-        $this->objectMapper->method('update')->willReturn($deletedObject);
+        // Bulk restore now resolves across all magic tables by UUID and
+        // delegates each restore to the magic-table-aware restoreObject().
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$deletedObject]);
+        $this->objectMapper->method('restoreObject')->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+        $this->assertEquals(1, $data['restored']);
     }
 
     public function testRestoreMultipleException(): void
@@ -313,7 +321,7 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->restoreMultiple();
@@ -326,17 +334,14 @@ class DeletedControllerTest extends TestCase
         $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')->willReturn([$deletedObject]);
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')->willReturn([$deletedObject]);
         $this->objectMapper->method('delete')->willReturn($deletedObject);
 
         $result = $this->controller->destroyMultiple();
@@ -344,6 +349,7 @@ class DeletedControllerTest extends TestCase
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
         $this->assertTrue($data['success']);
+        $this->assertEquals(1, $data['deleted']);
     }
 
     public function testDestroyMultipleException(): void
@@ -354,7 +360,7 @@ class DeletedControllerTest extends TestCase
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willThrowException(new \Exception('Error'));
 
         $result = $this->controller->destroyMultiple();
@@ -370,10 +376,8 @@ class DeletedControllerTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
+        $this->objectMapper->method('findDeletedAcrossAllMagicTables')->willReturn([]);
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(0);
 
         $result = $this->controller->index();
 
@@ -384,6 +388,7 @@ class DeletedControllerTest extends TestCase
     {
         // topDeleters returns a hardcoded empty array, so no exception is possible
         // This test confirms the endpoint works consistently
+        $this->stubAdminUser();
         $result = $this->controller->topDeleters();
 
         $this->assertEquals(200, $result->getStatus());

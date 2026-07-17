@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 retrofit_extensions:
   - REQ-009
   - REQ-010
@@ -13,10 +13,7 @@ retrofit_extensions:
 @e2e exclude backend workflow/archival — covered by PHPUnit
 
 Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen. This capability builds on the archivering-vernietiging spec and integrates with the immutable audit trail and deletion audit trail for legally required evidence trails.
-
 ## Requirements
-
-
 
 ### REQ-001: DestructionCheckJob and Destruction List Generation
 
@@ -274,76 +271,98 @@ The `DestructionCheckJob` MUST scan for objects whose `archiefactiedatum` falls 
 - **WHEN** the `DestructionCheckJob` runs
 - **THEN** the notification subject MUST be "Object requires e-Depot transfer" rather than "Object approaching destruction date"
 
-### REQ-010: ArchivalService::setRetentionMetadata Validates and Merges Object Retention
+### REQ-010: (REMOVED 2026-07-14) ArchivalService::setRetentionMetadata
 
-The `ArchivalService::setRetentionMetadata()` write-path MUST validate caller-supplied retention metadata against the `VALID_NOMINATIONS` and `VALID_STATUSES` enums, normalise `archiefactiedatum` to ISO-8601, default missing keys, and merge with the object's existing retention payload rather than replacing it. The method MUST return the mutated `ObjectEntity` without persisting it (the caller is responsible for the save).
+**Removed** with the `ArchivalService` class in `revive-or-dead-capabilities` (openregister#393).
 
-#### Scenario: Missing archiefnominatie defaults to nog_niet_bepaald
-- **GIVEN** an `ObjectEntity` with no existing `retention` field
-- **WHEN** `setRetentionMetadata($object, [])` is called
-- **THEN** the resulting `retention.archiefnominatie` MUST equal `nog_niet_bepaald`
-- **AND** `retention.archiefstatus` MUST equal `nog_te_archiveren`
+This requirement was a *retrofit* — reverse-engineered from observed code — and it
+documented a method that **never ran**: `ArchivalService` had zero references anywhere
+in `lib/` (no DI registration, controller, route, or job), so no API or job ever invoked
+`setRetentionMetadata()`. The spec claimed a retention-metadata validation write-path that
+the product did not actually perform.
 
-#### Scenario: Invalid archiefnominatie is rejected
-- **GIVEN** `retention.archiefnominatie` is set to `"weggooien"` (not in `VALID_NOMINATIONS = ['vernietigen', 'bewaren', 'nog_niet_bepaald']`)
-- **WHEN** `setRetentionMetadata()` is called
-- **THEN** the method MUST throw `InvalidArgumentException` whose message contains the invalid value and the allowed set
-- **AND** the object's existing retention MUST NOT be modified
+Rather than keep a requirement whose implementation nothing calls, the class and the
+requirement are removed together. **No live equivalent exists**: OpenRegister currently
+does not validate `archiefnominatie` / `archiefstatus` / `archiefactiedatum` on the object
+write path. If that validation is wanted, it must be wired for real (e.g. a listener on
+`ObjectCreatingEvent` / `ObjectUpdatingEvent`) — tracked as a follow-up on openregister#393.
 
-#### Scenario: Invalid archiefstatus is rejected
-- **GIVEN** `retention.archiefstatus` is set to `"klaar"` (not in `VALID_STATUSES = ['nog_te_archiveren', 'gearchiveerd', 'vernietigd', 'overgebracht']`)
-- **WHEN** `setRetentionMetadata()` is called
-- **THEN** the method MUST throw `InvalidArgumentException` whose message contains the invalid value and the allowed set
+### REQ-011: Rejected/excluded objects have their archiefactiedatum extended
 
-#### Scenario: archiefactiedatum accepts Y-m-d and ISO 8601, normalises to ISO 8601
-- **GIVEN** `retention.archiefactiedatum` is `"2030-12-31"`
-- **WHEN** `setRetentionMetadata()` is called
-- **THEN** the stored `retention.archiefactiedatum` MUST be the ISO 8601 (`DateTime::format('c')`) representation of `2030-12-31T00:00:00`
-- **AND** an input already in ISO 8601 (`DateTime::ATOM`) format MUST round-trip unchanged
+When a destruction-list rejection or partial-approval exclusion requires extending an
+object's retention, the system MUST recompute `retention.archiefactiedatum` and persist it,
+so an object removed from a destruction list is not immediately re-selected by the next
+`DestructionCheckJob` run. Failures MUST be caught and logged rather than propagating, so
+one bad object does not abort a batch rejection of N objects.
 
-#### Scenario: archiefactiedatum with unparseable format is rejected
-- **GIVEN** `retention.archiefactiedatum` is `"31-12-2030"` (neither `Y-m-d` nor ISO 8601 atomic)
-- **WHEN** `setRetentionMetadata()` is called
-- **THEN** the method MUST throw `InvalidArgumentException` whose message contains `"Invalid archiefactiedatum format"`
+**Implementation (updated 2026-07-14):** this capability is provided by the live retention
+path — `RetentionService::extendArchiefactiedatum()` (invoked by `RetentionController` on
+reject and on partial-approval exclusion) and `DestructionService::extendArchiefactiedatum()`
+(invoked by `rejectList()` / `handlePartialApproval()`). It was previously attributed to
+`ArchivalService::extendRetentionForObject()`, which was dead code in an orphaned class and
+was removed in `revive-or-dead-capabilities`; the behaviour itself is unchanged.
 
-#### Scenario: Existing retention fields outside the input payload are preserved
-- **GIVEN** an `ObjectEntity` with existing `retention = { archiefnominatie: "bewaren", legalHold: { active: true, reason: "WOO" } }`
-- **WHEN** `setRetentionMetadata($object, ['archiefactiedatum' => '2030-01-01'])` is called
-- **THEN** the resulting retention MUST still contain `legalHold.active = true` and `legalHold.reason = "WOO"`
-- **AND** `archiefnominatie` MUST remain `"bewaren"` (preserved from existing — the input only sets `archiefactiedatum`)
-- **AND** `archiefactiedatum` MUST be the ISO 8601 string for `2030-01-01`
+#### Scenario: A rejected object's archiefactiedatum is extended
+- **GIVEN** a destruction list containing object `zaak-111`
+- **WHEN** an archivist rejects the list
+- **THEN** `zaak-111`'s `retention.archiefactiedatum` MUST be extended by the configured extension period
+- **AND** the object MUST NOT appear on the next destruction list generated for the same date
 
-### REQ-011: extendRetentionForObject Recomputes archiefactiedatum from Classificatie's SelectionList
+#### Scenario: An object excluded during partial approval is extended
+- **GIVEN** a destruction list containing `zaak-111` and `zaak-222`
+- **WHEN** an archivist approves the list but excludes `zaak-222` with a reason
+- **THEN** `zaak-222`'s `retention.archiefactiedatum` MUST be extended
+- **AND** the recorded exclusion reason MUST be retained on the list
 
-When a destruction-list rejection requires extending an object's retention, `ArchivalService::extendRetentionForObject()` MUST look up the object's `retention.classificatie`, resolve the matching `SelectionList` entry via `SelectionListMapper::findByCategory()`, take its `retentionYears`, and add that many years to the current `retention.archiefactiedatum` (or to `now()` if no current date is set). The mutated retention MUST be persisted via a direct UPDATE on `openregister_objects.retention`. Failures MUST be caught and surface as a `logger->warning()` rather than propagating to the caller (so a single bad object does not abort a multi-object rejection batch).
+#### Scenario: A failure to extend one object does not abort the batch
+- **GIVEN** a destruction list of N objects being rejected
+- **AND** extending one of them raises an exception
+- **THEN** the exception MUST be caught and logged as a warning
+- **AND** the remaining N-1 objects MUST still be processed
 
-#### Scenario: Object with classificatie B1 extends by selection-list retentionYears
-- **GIVEN** an object with `retention = { classificatie: "B1", archiefactiedatum: "2026-01-01T00:00:00+00:00" }`
-- **AND** `SelectionListMapper::findByCategory("B1")` returns an entry with `retentionYears = 5`
-- **WHEN** `extendRetentionForObject($uuid)` is called
-- **THEN** the row's `retention.archiefactiedatum` in `openregister_objects` MUST be updated to the ISO 8601 string for `2031-01-01T00:00:00+00:00`
+### Requirement: Archival approve route executes destruction
 
-#### Scenario: Object with no current archiefactiedatum extends from today
-- **GIVEN** an object with `retention = { classificatie: "B1" }` (no `archiefactiedatum`)
-- **AND** `SelectionListMapper::findByCategory("B1")` returns `retentionYears = 5`
-- **WHEN** `extendRetentionForObject($uuid)` is called on `2026-05-24`
-- **THEN** the row's `retention.archiefactiedatum` MUST be set to the ISO 8601 string for `2031-05-24` (today + 5 years)
+Approving a destruction list through `POST /api/archival/destruction-lists/{id}/approve`
+MUST persist the approval, MUST queue `DestructionExecutionJob` with the argument key that
+job actually reads (`destructionListUuid`), and MUST record the approving archivist under
+the canonical `userId` key so the resulting *verklaring van vernietiging* names them.
 
-#### Scenario: Object without classificatie is silently skipped
-- **GIVEN** an object with `retention = { archiefnominatie: "vernietigen" }` (no `classificatie`)
-- **WHEN** `extendRetentionForObject($uuid)` is called
-- **THEN** the retention row MUST NOT be modified
-- **AND** no exception MUST propagate to the caller
+Before `revive-or-dead-capabilities` (openregister#393) the route satisfied none of these:
+the approval was returned to the caller but never written back; the job was queued under a
+key it does not read, so it returned early on every run and destroyed nothing; and approvals
+were recorded as `approvedBy` while the certificate generator projects
+`array_column($approvals, 'userId')` — which would have produced a certificate with an empty
+approver list even once the job ran.
 
-#### Scenario: Object UUID not in database is silently skipped
-- **GIVEN** no row in `openregister_objects` matches `$uuid`
-- **WHEN** `extendRetentionForObject($uuid)` is called
-- **THEN** the method MUST return without raising
-- **AND** no UPDATE statement MUST be executed
+#### Scenario: Approval queues an execution job the job can act on
+- **GIVEN** a destruction list with uuid `list-uuid-42` in status `in_review`
+- **WHEN** an archivist approves it
+- **THEN** `DestructionExecutionJob` MUST be queued with `['destructionListUuid' => 'list-uuid-42']`
+- **AND** the list MUST be persisted with status `approved`
 
-#### Scenario: Mapper exceptions are logged, not propagated
-- **GIVEN** `SelectionListMapper::findByCategory()` throws a `\Exception`
-- **WHEN** `extendRetentionForObject($uuid)` is called
-- **THEN** the exception MUST be caught
-- **AND** a `LoggerInterface::warning()` entry MUST be emitted containing the UUID and the exception message
-- **AND** the method MUST return normally so a batch rejection of N objects continues processing the remaining N-1
+#### Scenario: The destruction certificate names the approving archivist
+- **GIVEN** archivist `archivaris-1` approved a list of 3 objects
+- **WHEN** the execution job destroys them and generates the certificate
+- **THEN** the certificate's `approvedBy` MUST be `['archivaris-1']` — never empty
+- **AND** `totalDestroyed` MUST be `3`
+- **AND** `groupedBySchema` MUST count the destroyed objects per schema + selectielijst classificatie
+- **AND** `selectielijstBron` MUST carry the selectielijst source references
+- **AND** `complianceStatement` MUST cite the Archiefwet 1995
+
+### Requirement: Archival and destruction-scheduling configuration API
+The system SHALL expose an admin-gated API for reading and writing archival settings —
+destruction scheduling, selectielijst configuration, and related dials.
+`ConfigurationSettingsController` provides `getArchivalSettings` (delegating to
+`SettingsService::getArchivalSettingsOnly()`) and `updateArchivalSettings` (delegating to
+`SettingsService::updateArchivalSettingsOnly()`). Both return HTTP 500 with an `error`
+field on service failure.
+
+#### Scenario: Read archival settings
+- **WHEN** `getArchivalSettings` is called
+- **THEN** it MUST return the archival/destruction configuration from `SettingsService::getArchivalSettingsOnly()`
+
+#### Scenario: Update archival settings
+- **GIVEN** an admin posts updated destruction-scheduling values
+- **WHEN** `updateArchivalSettings` runs
+- **THEN** it MUST persist them via `SettingsService::updateArchivalSettingsOnly()` and return the result
+

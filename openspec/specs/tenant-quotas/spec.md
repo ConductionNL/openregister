@@ -1,4 +1,5 @@
 ---
+status: done
 retrofit_extensions:
   - REQ-001
 ---
@@ -88,6 +89,8 @@ APCu-based counters MUST be flushed to the `openregister_tenant_usage` database 
 - **AND** a composite index MUST exist on (`organisation_uuid`, `period`)
 
 ### REQ-001: The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses
+
+The middleware SHALL convert tenant status and quota exceptions raised during the request lifecycle into deterministic JSON error responses.
 
 > Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
 

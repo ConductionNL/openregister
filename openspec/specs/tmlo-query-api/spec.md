@@ -1,3 +1,7 @@
+---
+status: done
+---
+
 # tmlo-query-api Specification
 
 ## Purpose

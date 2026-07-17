@@ -55,8 +55,8 @@
 
 				<NcEmptyContent
 					v-else-if="!templatesList.length"
-					:name="t('openregister', 'No templates found')"
-					:description="t('openregister', 'No templates have been created yet')">
+					:name="t('openregister', 'Templates are coming soon')"
+					:description="t('openregister', 'The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.')">
 					<template #icon>
 						<FileOutline :size="64" />
 					</template>
@@ -210,7 +210,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -300,7 +300,6 @@ export default {
 		 */
 		viewTemplate(_template) {
 			// TODO: Navigate to template details page when available
-			// console.log('View template:', template)
 		},
 
 		/**

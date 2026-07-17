@@ -208,7 +208,9 @@ class TalkLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @SuppressWarnings(PHPMD.LongVariable) $refreshedLastMessageData is the only name that clearly distinguishes the refreshed message payload from $link->getLastMessageData(); a shorter alias would lose that semantic clarity in the stale-cache refresh path.
+     * @SuppressWarnings(PHPMD.LongVariable) $refreshedLastMessageData is the only name that clearly
+     * distinguishes the refreshed message payload from $link->getLastMessageData(); a shorter alias
+     * would lose that semantic clarity in the stale-cache refresh path.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
@@ -280,9 +282,17 @@ class TalkLinkService
      * @throws Exception On missing user, Talk unavailable, invalid
      *                   type, or create failure.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) createAndLinkRoom() guards user auth, room type validity, Talk availability, createRoom success, token extraction, description (best-effort), and participant invite (best-effort); each is a sequential guard required for the create+link contract.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Each of the best-effort optional paths (description, participant invite, display-name fallback) contributes to NPath independently; all are correct-by-contract Try/catch degradations.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) createAndLinkRoom() creates the room, optionally sets description and invites the owner, extracts the token, builds cached metadata, and persists the link row in one transactional sequence; splitting would scatter the atomic create+link operation.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  createAndLinkRoom() guards user auth, room type
+     * validity, Talk availability, createRoom success, token extraction, description (best-effort),
+     * and participant invite (best-effort); each is a sequential guard required for the create+link
+     * contract.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Each of the best-effort optional paths (description,
+     * participant invite, display-name fallback) contributes to NPath independently; all are
+     * correct-by-contract Try/catch degradations.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) createAndLinkRoom() creates the room, optionally
+     * sets description and invites the owner, extracts the token, builds cached metadata, and persists
+     * the link row in one transactional sequence; splitting would scatter the atomic create+link
+     * operation.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
@@ -414,9 +424,17 @@ class TalkLinkService
      *
      * @return array<int,array{token:string,name:string,type:?int,participantCount:?int}>
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) getAvailableRoomsForUser() iterates rooms and per-room wraps every Talk Entity::__call getter (token, name, displayName, type, participantCount) in try/catch; each is a cross-version compatibility guard required because Talk's Room entity API changed between releases.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Per-room: empty-token skip + search filter + changelog/note-to-self type exclude + displayName override + participantCount resolve each independently expand NPath; all are valid filtering/degradation paths.
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getAvailableRoomsForUser() must wrap every Talk getter individually in try/catch because Talk's Room entity uses Entity::__call magic and accessor availability varies across Talk releases; extracting helpers for each getter would scatter the version-compatibility logic.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  getAvailableRoomsForUser() iterates rooms and
+     * per-room wraps every Talk Entity::__call getter (token, name, displayName, type, participantCount)
+     * in try/catch; each is a cross-version compatibility guard required because Talk's Room entity API
+     * changed between releases.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Per-room: empty-token skip + search filter +
+     * changelog/note-to-self type exclude + displayName override + participantCount resolve each
+     * independently expand NPath; all are valid filtering/degradation paths.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getAvailableRoomsForUser() must wrap every Talk
+     * getter individually in try/catch because Talk's Room entity uses Entity::__call magic and accessor
+     * availability varies across Talk releases; extracting helpers for each getter would scatter the
+     * version-compatibility logic.
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-2
      */
@@ -674,8 +692,13 @@ class TalkLinkService
      *
      * @return array{roomId:?int,roomName:?string,roomType:?int,subtitle:?string,participantCount:?int,lastMessage:?array,lastActivity:?DateTime}
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractRoomFields() wraps every Talk Room getter (id, name, displayName, type, participantCount, lastActivity, lastMessage) in individual try/catch blocks; each is a required cross-version guard because Talk's Room entity uses Entity::__call magic and accessor availability varies.
-     * @SuppressWarnings(PHPMD.NPathComplexity) Each optional accessor (displayName, participantService, lastActivity, lastMessage) contributes independent true/false paths; all are required degradation guards for older Talk releases.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) extractRoomFields() wraps every Talk Room getter
+     * (id, name, displayName, type, participantCount, lastActivity, lastMessage) in individual
+     * try/catch blocks; each is a required cross-version guard because Talk's Room entity uses
+     * Entity::__call magic and accessor availability varies.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Each optional accessor (displayName, participantService,
+     * lastActivity, lastMessage) contributes independent true/false paths; all are required degradation
+     * guards for older Talk releases.
      */
     private function extractRoomFields(object $room, string $userUid): array
     {
@@ -815,8 +838,11 @@ class TalkLinkService
      *
      * @return array{actor:array{type:string,id:string},text:string,timestamp:?int}|null
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) buildLastMessage() handles four lastMessage shapes returned by different Talk releases (IComment, Message entity, plain object, or null); each shape requires distinct accessor paths that cannot be merged.
-     * @SuppressWarnings(PHPMD.NPathComplexity) The four lastMessage shapes × actor-type detection × actor-id extraction produce many paths; all are required for cross-version Talk compatibility.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) buildLastMessage() handles four lastMessage shapes
+     * returned by different Talk releases (IComment, Message entity, plain object, or null); each shape
+     * requires distinct accessor paths that cannot be merged.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      The four lastMessage shapes × actor-type detection ×
+     * actor-id extraction produce many paths; all are required for cross-version Talk compatibility.
      */
     private function buildLastMessage(object $room): ?array
     {

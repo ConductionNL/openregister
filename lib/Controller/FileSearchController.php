@@ -16,16 +16,15 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-87
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-full-text-search-across-object-properties
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Service\VectorizationService;
-use OCA\OpenRegister\Service\SettingsService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -48,157 +47,21 @@ class FileSearchController extends Controller
     /**
      * Constructor
      *
-     * @param string               $appName         App name
-     * @param IRequest             $request         Request object
-     * @param IndexService         $indexService    Index service
-     * @param VectorizationService $vectorService   Vectorization service
-     * @param SettingsService      $settingsService Settings service
-     * @param LoggerInterface      $logger          Logger
+     * @param string               $appName       App name
+     * @param IRequest             $request       Request object
+     * @param VectorizationService $vectorService Vectorization service
+     * @param ChunkMapper          $chunkMapper   Chunk mapper (ranked keyword arm)
+     * @param LoggerInterface      $logger        Logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly IndexService $indexService,
         private readonly VectorizationService $vectorService,
-        private readonly SettingsService $settingsService,
+        private readonly ChunkMapper $chunkMapper,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
-
-    /**
-     * Keyword search in file contents (SOLR full-text search)
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse Search results
-     *
-     * @suppressWarnings(PHPMD.ExcessiveMethodLength)
-     * @suppressWarnings(PHPMD.CyclomaticComplexity)
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-87
-     */
-    public function keywordSearch(): JSONResponse
-    {
-        try {
-            $query     = $this->request->getParam('query', '');
-            $limit     = (int) $this->request->getParam('limit', 10);
-            $offset    = (int) $this->request->getParam('offset', 0);
-            $fileTypes = $this->request->getParam('file_types', []);
-
-            if (empty($query) === true) {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'Query parameter is required',
-                    ],
-                    statusCode: 400
-                );
-            }
-
-            // Get file collection.
-            $settings       = $this->settingsService->getSettings();
-            $fileCollection = $settings['solr']['fileCollection'] ?? null;
-            if ($fileCollection === null || $fileCollection === '') {
-                return new JSONResponse(
-                    data: [
-                        'success' => false,
-                        'message' => 'File collection not configured',
-                    ],
-                    statusCode: 422
-                );
-            }
-
-            // Build SOLR query.
-            $solrQuery = [
-                'q'     => "text_content:($query)",
-                'rows'  => $limit,
-                'start' => $offset,
-                'fl'    => 'file_id,file_name,file_path,mime_type,chunk_index,chunk_text,score',
-                'sort'  => 'score desc',
-            ];
-
-            // Add file type filter if specified.
-            if (empty($fileTypes) === false) {
-                $typeFilter      = implode(' OR ', array_map(fn(string $t): string => "mime_type:\"$t\"", $fileTypes));
-                $solrQuery['fq'] = $typeFilter;
-            }
-
-            // Execute search.
-            $queryUrl   = $this->indexService->getEndpointUrl().'/'.$fileCollection.'/select';
-            $solrConfig = $this->settingsService->getSettings()['solr'] ?? [];
-
-            $requestOptions = [
-                'query'   => $solrQuery,
-                'timeout' => $solrConfig['timeout'] ?? 30,
-            ];
-
-            // Add authentication.
-            if (empty($solrConfig['username']) === false && empty($solrConfig['password']) === false) {
-                $requestOptions['auth'] = [$solrConfig['username'], $solrConfig['password']];
-            }
-
-            //
-            // @var \OCP\Http\Client\IClientService $clientService
-            $clientService = \OC::$server->get(\OCP\Http\Client\IClientService::class);
-            $httpClient    = $clientService->newClient();
-            $response      = $httpClient->get(uri: $queryUrl, options: $requestOptions);
-            $result        = json_decode($response->getBody()->getContents(), true);
-
-            $results  = $result['response']['docs'] ?? [];
-            $numFound = $result['response']['numFound'] ?? 0;
-
-            // Group results by file_id.
-            $groupedResults = [];
-            foreach ($results as $doc) {
-                $fileId = $doc['file_id'];
-                if (isset($groupedResults[$fileId]) === false) {
-                    $groupedResults[$fileId] = [
-                        'file_id'   => $fileId,
-                        'file_name' => $doc['file_name'] ?? '',
-                        'file_path' => $doc['file_path'] ?? '',
-                        'mime_type' => $doc['mime_type'] ?? '',
-                        'score'     => $doc['score'] ?? 0,
-                        'chunks'    => [],
-                    ];
-                }
-
-                $groupedResults[$fileId]['chunks'][] = [
-                    'chunk_index' => $doc['chunk_index'] ?? 0,
-                    'text'        => $doc['chunk_text'] ?? '',
-                    'score'       => $doc['score'] ?? 0,
-                ];
-            }
-
-            return new JSONResponse(
-                data: [
-                    'success'     => true,
-                    'query'       => $query,
-                    'total'       => $numFound,
-                    'results'     => array_values($groupedResults),
-                    'search_type' => 'keyword',
-                ]
-            );
-        } catch (\Exception $e) {
-            $this->logger->error(
-                message: '[FileSearchController] Keyword search failed',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'message' => 'Search failed: '.$e->getMessage(),
-                ],
-                statusCode: 500
-            );
-        }//end try
-    }//end keywordSearch()
 
     /**
      * Semantic search in file contents (vector similarity search)
@@ -206,6 +69,8 @@ class FileSearchController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No caller-supplied id: free-text semantic search over the file vector index;
+     *   takes a query string, not an object or file id.
      *
      * @return JSONResponse JSON response with search results or error
      *
@@ -215,7 +80,7 @@ class FileSearchController extends Controller
      *     search_type?: 'semantic'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/hybrid-document-search/tasks.md#4.1
      */
     public function semanticSearch(): JSONResponse
     {
@@ -233,11 +98,13 @@ class FileSearchController extends Controller
                 );
             }
 
-            // Use existing semanticSearch method from VectorizationService.
+            // File-only scope: `entity_type` (snake_case) is the key
+            // VectorSearchHandler::fetchVectors() actually reads — the former
+            // `entityType` key was silently ignored (or#277).
             $results = $this->vectorService->semanticSearch(
                 query: $query,
                 limit: $limit,
-                filters: ['entityType' => 'file']
+                filters: ['entity_type' => 'file']
             );
 
             return new JSONResponse(
@@ -270,7 +137,13 @@ class FileSearchController extends Controller
     }//end semanticSearch()
 
     /**
-     * Hybrid search - Combines keyword (SOLR) and semantic (vector) search
+     * Hybrid search - fuses ranked keyword (tsvector/ts_rank) and semantic (vector) results
+     *
+     * The keyword arm is real (ChunkMapper::searchByKeyword() over file chunks,
+     * empty on non-PostgreSQL platforms) and is fused with the vector arm via
+     * Reciprocal Rank Fusion. The response is flat `{results, total, ...}`:
+     * `results` is the fused result list and `total` its count — not the nested
+     * service response with a wrong outer-key count (or#277).
      *
      * @NoAdminRequired
      *
@@ -278,7 +151,7 @@ class FileSearchController extends Controller
      *
      * @return JSONResponse JSON response with hybrid search results or error
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
+     * @spec openspec/changes/hybrid-document-search/tasks.md#4.2
      */
     public function hybridSearch(): JSONResponse
     {
@@ -298,25 +171,34 @@ class FileSearchController extends Controller
                 );
             }
 
-            // Use existing hybridSearch method from VectorizationService.
-            $results = $this->vectorService->hybridSearch(
+            // Real keyword arm: ranked ts_rank results over file chunks,
+            // fetched with the same candidate-pool size as the vector leg.
+            $keywordResults = $this->chunkMapper->searchByKeyword(
                 query: $query,
-                solrFilters: ['entityType' => 'file'],
+                limit: $limit * 2,
+                filters: ['source_type' => 'file']
+            );
+
+            $serviceResponse = $this->vectorService->hybridSearch(
+                query: $query,
+                keywordResults: $keywordResults,
                 limit: $limit,
-                weights: ['solr' => $keywordWeight, 'vector' => $semanticWeight]
+                weights: ['keyword' => $keywordWeight, 'vector' => $semanticWeight]
             );
 
             return new JSONResponse(
                 data: [
-                    'success'     => true,
-                    'query'       => $query,
-                    'total'       => count($results),
-                    'results'     => $results,
-                    'search_type' => 'hybrid',
-                    'weights'     => [
-                        'keyword'  => $keywordWeight,
-                        'semantic' => $semanticWeight,
+                    'success'          => true,
+                    'query'            => $query,
+                    'results'          => $serviceResponse['results'] ?? [],
+                    'total'            => $serviceResponse['total'] ?? count($serviceResponse['results'] ?? []),
+                    'search_time_ms'   => $serviceResponse['search_time_ms'] ?? null,
+                    'source_breakdown' => $serviceResponse['source_breakdown'] ?? [],
+                    'weights'          => $serviceResponse['weights'] ?? [
+                        'keyword' => $keywordWeight,
+                        'vector'  => $semanticWeight,
                     ],
+                    'search_type'      => 'hybrid',
                 ]
             );
         } catch (\Exception $e) {

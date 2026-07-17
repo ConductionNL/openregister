@@ -34,7 +34,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-time-tracker/tasks.md
+ * @spec openspec/specs/integration-time-tracker/spec.md
  */
 
 declare(strict_types=1);
@@ -47,6 +47,7 @@ use OCA\OpenRegister\Db\TimeTrackerLink;
 use OCA\OpenRegister\Db\TimeTrackerLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
+use OCP\IConfig;
 use OCP\IDBConnection;
 use OCP\IL10N;
 use Throwable;
@@ -55,7 +56,25 @@ class TimeProvider extends AbstractIntegrationProvider
 {
     use MarkerLookupTrait;
 
-    private const REQUIRED_APP = 'timemanager';
+    /**
+     * Default backing NC time-tracking app id.
+     *
+     * The admin can override this via the `time-tracker.backend` app
+     * config key (per integration-time-tracker AD-1) to point the
+     * provider at a different time-tracking app that exposes a
+     * compatible adapter.
+     *
+     * @var string
+     */
+    private const DEFAULT_BACKEND = 'timemanager';
+
+    /**
+     * Config key (under app `openregister`) carrying the admin's
+     * chosen backing time-tracking app id. Default is `timemanager`.
+     *
+     * @var string
+     */
+    public const BACKEND_CONFIG_KEY = 'time-tracker.backend';
 
     private const MARKER_PREFIX = '[or:';
 
@@ -66,6 +85,7 @@ class TimeProvider extends AbstractIntegrationProvider
      * @param IAppManager           $appManager NC app manager.
      * @param IL10N                 $l10n       Localisation.
      * @param TimeTrackerLinkMapper $linkMapper Time-tracker-link mapper (Tier-2 link table).
+     * @param IConfig               $config     NC config (reads the time-tracker.backend admin override).
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $db is a well-known PHP idiom for a database connection parameter.
      */
@@ -74,8 +94,30 @@ class TimeProvider extends AbstractIntegrationProvider
         private IAppManager $appManager,
         private IL10N $l10n,
         private TimeTrackerLinkMapper $linkMapper,
+        private IConfig $config,
     ) {
     }//end __construct()
+
+    /**
+     * Resolve the configured backing time-tracking app id.
+     *
+     * Reads the admin override from app-config (`time-tracker.backend`,
+     * default `timemanager`) every call — admin changes propagate
+     * without restarting the service.
+     *
+     * @return string
+     *
+     * @spec openspec/specs/integration-time-tracker/spec.md
+     */
+    private function backendAppId(): string
+    {
+        $value = $this->config->getAppValue('openregister', self::BACKEND_CONFIG_KEY, self::DEFAULT_BACKEND);
+        if (is_string($value) === false || $value === '') {
+            return self::DEFAULT_BACKEND;
+        }
+
+        return $value;
+    }//end backendAppId()
 
     public function getId(): string
     {
@@ -99,7 +141,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
     public function getRequiredApp(): ?string
     {
-        return self::REQUIRED_APP;
+        return $this->backendAppId();
     }//end getRequiredApp()
 
     public function getStorageStrategy(): string
@@ -109,7 +151,7 @@ class TimeProvider extends AbstractIntegrationProvider
 
     public function isEnabled(): bool
     {
-        return $this->appManager->isInstalled(self::REQUIRED_APP);
+        return $this->appManager->isInstalled($this->backendAppId());
     }//end isEnabled()
 
     /**
@@ -128,9 +170,10 @@ class TimeProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
-     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the IntegrationProvider interface contract; this implementation routes by $objectId only.
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
+     * IntegrationProvider interface contract; this implementation routes by $objectId only.
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -298,8 +341,9 @@ class TimeProvider extends AbstractIntegrationProvider
     public function health(): array
     {
         $available = $this->isEnabled();
+        $backend   = $this->backendAppId();
         $status    = 'unavailable';
-        $message   = 'NC TimeManager app is not installed';
+        $message   = sprintf('Backing time-tracking app (%s) is not installed', $backend);
         if ($available === true) {
             $status  = 'ok';
             $message = null;

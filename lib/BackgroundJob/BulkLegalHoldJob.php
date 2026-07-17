@@ -43,7 +43,7 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @param ITimeFactory $time Time factory
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function __construct(ITimeFactory $time)
     {
@@ -59,7 +59,7 @@ class BulkLegalHoldJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     protected function run($argument): void
     {

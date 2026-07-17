@@ -52,6 +52,9 @@ class EmbeddingGeneratorHandler
         'text-embedding-ada-002' => 1536,
         'text-embedding-3-small' => 1536,
         'text-embedding-3-large' => 3072,
+        'nomic-embed-text'       => 768,
+        'mxbai-embed-large'      => 1024,
+        'all-minilm'             => 384,
         'ollama-default'         => 384,
     ];
 
@@ -83,7 +86,7 @@ class EmbeddingGeneratorHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple provider configurations require separate conditions
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getGenerator(array $config): EmbeddingGeneratorInterface
     {
@@ -132,9 +135,9 @@ class EmbeddingGeneratorHandler
      *
      * @return int Default dimensions
      *
-     * @psalm-return 384|1536|3072
+     * @psalm-return 384|768|1024|1536|3072
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getDefaultDimensions(string $model): int
     {
@@ -153,7 +156,7 @@ class EmbeddingGeneratorHandler
      *
      * @throws \Exception If model is not supported
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createOpenAIGenerator(
         string $model,
@@ -192,7 +195,7 @@ class EmbeddingGeneratorHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Anonymous class requires complete implementation
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createFireworksGenerator(string $model, array $config): object
     {
@@ -246,7 +249,7 @@ class EmbeddingGeneratorHandler
              *
              * @throws \Exception If API call fails
              *
-             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedText(string $text): array
             {
@@ -265,6 +268,11 @@ class EmbeddingGeneratorHandler
                 $ch = curl_init($url);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                // Bound the request: without timeouts a hung/slow embedding
+                // provider blocks the whole batch (and cron) until PHP's
+                // max_execution_time kills it (optimize-vectorization-pipeline).
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
                 curl_setopt(
                     $ch,
                     CURLOPT_HTTPHEADER,
@@ -317,7 +325,7 @@ class EmbeddingGeneratorHandler
              *
              * @psalm-return 768|1024
              *
-             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function getEmbeddingLength(): int
             {
@@ -338,7 +346,7 @@ class EmbeddingGeneratorHandler
              *
              * @return \LLPhant\Embeddings\Document Embedded document
              *
-             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
@@ -353,7 +361,7 @@ class EmbeddingGeneratorHandler
              *
              * @return array<int,\LLPhant\Embeddings\Document> Embedded documents
              *
-             * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedDocuments(array $documents): array
             {
@@ -374,7 +382,7 @@ class EmbeddingGeneratorHandler
      *
      * @return OllamaEmbeddingGenerator Generator instance
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-1
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createOllamaGenerator(string $model, array $config): OllamaEmbeddingGenerator
     {

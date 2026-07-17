@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 ---
 
 # OpenRegister app-manifest capability
@@ -24,7 +24,7 @@ designed it.
 
 ## Requirements
 
-### Requirement: REQ-OR-MAN-001 Manifest file exists at canonical location
+### Requirement: REQ-OR-MAN-001 Manifest file exists at canonical location @e2e exclude build-time static-file assertion (manifest exists/loadable, schema referenced not duplicated) — covered by manifest validator (tests/validate-manifest.js)
 
 OpenRegister SHALL ship a `src/manifest.json` validated against the v2 schema
 published by `@conduction/nextcloud-vue` per ADR-024 §1-2. The file SHALL set
@@ -48,7 +48,7 @@ fork or duplicate the schema.
 
 ---
 
-### Requirement: REQ-OR-MAN-002 Manifest declares zero Conduction-app dependencies
+### Requirement: REQ-OR-MAN-002 Manifest declares zero Conduction-app dependencies @e2e exclude build-time static manifest/loader assertion (empty deps, loader skips dep check) — covered by manifest validator + Jest loader unit
 
 The manifest's `dependencies` field SHALL be an empty array `[]`. OpenRegister
 is the platform foundation; it has no upstream Conduction-app dependencies.
@@ -87,6 +87,8 @@ not feasible.
 
 #### Scenario: Page count matches the manifest validator
 
+@e2e exclude build-time validator assertion (page count == menu destinations, unique ids) — covered by tests/validate-manifest.js
+
 - **WHEN** the build runs `check:manifest`
 - **THEN** `manifest.pages[].length` equals the number of declared menu
   destinations (currently 31) and every `id` is unique
@@ -99,6 +101,8 @@ not feasible.
   kind-tagged `registry` prop's `kind:"page"` entries (ADR-036)
 
 #### Scenario: Titles are i18n keys
+
+@e2e exclude build-time static assertion (page titles are i18n keys) — covered by manifest validator + l10n unit
 
 - **WHEN** an entry's `title` is read
 - **THEN** the value is a translation key resolved via the app's `t()`
@@ -125,6 +129,8 @@ key), `icon`, `route`, `order`, and `section`.
 - **THEN** the visible order in `CnAppNav` matches the manifest order exactly
 
 #### Scenario: Menu labels are i18n keys
+
+@e2e exclude build-time static assertion (menu labels are i18n keys) — covered by manifest validator + l10n unit
 
 - **WHEN** a menu entry's `label` is read
 - **THEN** the value resolves via the app's `t()` function
@@ -191,7 +197,7 @@ each route, the renderer matches `$route.name === page.id` and resolves
 
 ---
 
-### Requirement: REQ-OR-MAN-007 Build gate validates the manifest
+### Requirement: REQ-OR-MAN-007 Build gate validates the manifest @e2e exclude build-time CI gate assertion (validator pass/fail, composite-check wiring) — covered by tests/validate-manifest.js + CI
 
 The OR `package.json` SHALL declare a `check:manifest` script that runs
 `tests/validate-manifest.js` against `src/manifest.json`. The script SHALL be
@@ -217,7 +223,7 @@ and SHALL fail the job on schema errors.
 
 ---
 
-### Requirement: REQ-OR-MAN-008 Manifest version reflects the adoption tier
+### Requirement: REQ-OR-MAN-008 Manifest version reflects the adoption tier @e2e exclude build-time static version assertion (tier-4 == 1.0.0, validator enforces field) — covered by manifest validator
 
 The manifest's top-level `version` SHALL be a semver string declaring the
 adoption tier. Tier-4 / full-shell adoption SHALL be expressed as `"1.0.0"`
@@ -237,7 +243,7 @@ proposal is superseded by the shell-swap shipping the full shell at once).
 
 ---
 
-### Requirement: REQ-OR-MAN-009 Backend `/api/manifest` endpoint is deferred
+### Requirement: REQ-OR-MAN-009 Backend `/api/manifest` endpoint is deferred @e2e exclude API-contract assertion (endpoint returns 404, loader falls back to bundled manifest) — covered by Newman
 
 OpenRegister SHALL NOT implement `GET /index.php/apps/openregister/api/
 manifest`. `useAppManifest`'s silent fallback on 404 makes absence
@@ -254,7 +260,7 @@ when needed.
 
 ---
 
-### Requirement: REQ-OR-MAN-010 Tier-4 shell is adopted
+### Requirement: REQ-OR-MAN-010 Tier-4 shell is adopted @e2e exclude build-time source-inspection assertion (App.vue is CnAppRoot wrapper, legacy router file removed) — covered by static code inspection + Jest. Runtime shell mount is covered by manifest-shell.spec.ts (REQ-OR-MAN-005)
 
 OR `App.vue` SHALL be the `CnAppRoot` wrapper described in REQ-OR-MAN-005,
 NOT a bespoke `NcContent` + `NcAppNavigation` mount. The legacy `src/router/
@@ -289,11 +295,15 @@ deprecated `customComponents` prop SHALL NOT be passed to `CnAppRoot`.
 
 #### Scenario: Registry uses kind:"page" wrapping
 
+@e2e exclude build-time source-inspection assertion (registry entries use kind:"page" via page() helper) — covered by static code inspection + Jest
+
 - **WHEN** a reviewer inspects `src/registry.js`
 - **THEN** each entry is `{ kind: "page", component: <imported component> }`,
   produced via the `page()` helper
 
 #### Scenario: No customComponents prop
+
+@e2e exclude build-time source-inspection assertion (no customComponents prop passed to CnAppRoot) — covered by static code inspection. Runtime no-deprecation-warning is covered by manifest-shell.spec.ts
 
 - **WHEN** a reviewer inspects `src/App.vue` / `src/main.js`
 - **THEN** neither file passes `customComponents` to `CnAppRoot`; only

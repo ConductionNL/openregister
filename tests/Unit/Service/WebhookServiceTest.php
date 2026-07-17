@@ -39,7 +39,9 @@ use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\MappingService;
 use OCA\OpenRegister\Service\WebhookService;
 use OCA\OpenRegister\Service\Webhook\CloudEventFormatter;
+use OCA\OpenRegister\BackgroundJob\WebhookDeliveryJob;
 use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\BackgroundJob\IJobList;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -89,6 +91,11 @@ class WebhookServiceTest extends TestCase
     private MappingMapper $mappingMapper;
 
     /**
+     * @var IJobList&MockObject
+     */
+    private IJobList $jobList;
+
+    /**
      * Mock logger.
      *
      * @var LoggerInterface&MockObject
@@ -114,13 +121,15 @@ class WebhookServiceTest extends TestCase
         $this->mappingService   = $this->createMock(MappingService::class);
         $this->mappingMapper    = $this->createMock(MappingMapper::class);
         $this->logger           = $this->createMock(LoggerInterface::class);
+        $this->jobList          = $this->createMock(IJobList::class);
 
         $this->service = new WebhookService(
             webhookMapper: $this->webhookMapper,
             logger: $this->logger,
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
-            mappingMapper: $this->mappingMapper
+            mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList
         );
 
         $this->reflection = new \ReflectionClass($this->service);
@@ -384,6 +393,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -585,6 +595,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -645,6 +656,41 @@ class WebhookServiceTest extends TestCase
         $this->webhookLogMapper->expects($this->never())->method('insert');
 
         $this->service->dispatchEvent($event, 'SomeEvent', ['test' => 'data']);
+    }
+
+    public function testDispatchEventEnqueuesDeliveryJobPerWebhookAndDoesNotDeliverSynchronously(): void
+    {
+        $event = $this->createMock(\OCP\EventDispatcher\Event::class);
+
+        // Webhook is an NC Entity (uses __call magic getters/setters), which
+        // createMock() cannot stub — use real instances with an id set.
+        $webhook1 = $this->createTestWebhook(id: 1);
+        $webhook2 = $this->createTestWebhook(id: 2);
+
+        $this->webhookMapper->method('findForEvent')->willReturn([$webhook1, $webhook2]);
+
+        // The write must NOT block on delivery: no synchronous HTTP log insert.
+        $this->webhookLogMapper->expects($this->never())->method('insert');
+
+        // Instead, one delivery job is enqueued per matching webhook.
+        $enqueued = [];
+        $this->jobList->expects($this->exactly(2))
+            ->method('add')
+            ->willReturnCallback(function (string $job, array $arg) use (&$enqueued) {
+                $enqueued[] = [$job, $arg];
+            });
+
+        $this->service->dispatchEvent(
+            $event,
+            'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
+            ['test' => 'data']
+        );
+
+        $this->assertCount(2, $enqueued);
+        $this->assertSame(WebhookDeliveryJob::class, $enqueued[0][0]);
+        $this->assertSame(1, $enqueued[0][1]['webhook_id']);
+        $this->assertSame('OCA\\OpenRegister\\Event\\ObjectCreatedEvent', $enqueued[0][1]['event_name']);
+        $this->assertSame(2, $enqueued[1][1]['webhook_id']);
     }
 
     // ─── deliverWebhook tests ────────────────────────────────────────
@@ -1585,39 +1631,10 @@ class WebhookServiceTest extends TestCase
     }//end testFindWebhooksForInterceptionFiltersByEventType()
 
     // ─── dispatchEvent with matching webhooks ───────────────────────
-
-    /**
-     * Test dispatchEvent delivers to matching webhooks.
-     *
-     * @return void
-     */
-    public function testDispatchEventDeliversToMatchingWebhooks(): void
-    {
-        $event = $this->createMock(\OCP\EventDispatcher\Event::class);
-
-        $webhook = $this->createTestWebhook(enabled: true);
-        $webhook->setMethod('POST');
-
-        $this->webhookMapper->method('findForEvent')->willReturn([$webhook]);
-
-        // Inject mock client for successful delivery.
-        $mockResponse = new GuzzleResponse(200, [], '{"ok":true}');
-        $mockClient   = $this->createMock(GuzzleClient::class);
-        $mockClient->method('request')->willReturn($mockResponse);
-        $this->injectMockClient($mockClient);
-
-        $this->webhookMapper->expects($this->once())
-            ->method('updateStatistics');
-
-        $this->webhookLogMapper->expects($this->once())
-            ->method('insert');
-
-        $this->service->dispatchEvent(
-            $event,
-            'OCA\\OpenRegister\\Event\\ObjectCreatedEvent',
-            ['objectType' => 'object']
-        );
-    }//end testDispatchEventDeliversToMatchingWebhooks()
+    // Note: synchronous delivery from dispatchEvent was removed in
+    // async-webhook-delivery — dispatchEvent now enqueues a WebhookDeliveryJob
+    // per matching webhook (see testDispatchEventEnqueuesDeliveryJobPerWebhook...).
+    // updateStatistics / log insert happen in the job, not synchronously here.
 
     /**
      * Test dispatchEvent logs debug when no webhooks found.
@@ -1680,6 +1697,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -1706,6 +1724,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         // Inject mock client for delivery.
         $mockResponse = new GuzzleResponse(200, [], '{"ok":true}');
@@ -1738,6 +1758,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         // Inject mock client that throws.
         $mockClient = $this->createMock(GuzzleClient::class);
@@ -1771,6 +1793,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         $mockResponse = new GuzzleResponse(200, [], '{}');
         $mockClient   = $this->createMock(GuzzleClient::class);
@@ -2206,6 +2230,7 @@ class WebhookServiceTest extends TestCase
             webhookLogMapper: $this->webhookLogMapper,
             mappingService: $this->mappingService,
             mappingMapper: $this->mappingMapper,
+            jobList: $this->jobList,
             cloudEventFormatter: $cloudEventFormatter
         );
 
@@ -2214,6 +2239,8 @@ class WebhookServiceTest extends TestCase
         $webhook->setMethod('POST');
 
         $this->webhookMapper->method('findEnabled')->willReturn([$webhook]);
+        // Tenant-agnostic fast-path scan must also see the webhook.
+        $this->webhookMapper->method('findEnabledForInterceptionScan')->willReturn([$webhook]);
 
         $request = $this->createMock(\OCP\IRequest::class);
         $request->method('getParams')->willReturn(['key' => 'value']);
@@ -2510,6 +2537,101 @@ class WebhookServiceTest extends TestCase
         );
         $this->addToAssertionCount(1);
     }//end testAssertSafeWebhookUriAllowsPublicIpv6()
+
+    // ─── Per-hook allowPrivateTargets opt-in (SSRF bypass) ──────────────
+    //
+    // configuration.allowPrivateTargets lets an admin deliberately opt a single
+    // webhook out of the IP-range checks for local testing (e.g.
+    // http://localhost:8000). The scheme check stays enforced; the default
+    // (flag absent / false) keeps full blocking.
+
+    /**
+     * Provider: private/loopback URLs that are normally blocked.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function privateWebhookUrls(): array
+    {
+        return [
+            'loopback IPv4 with port'   => ['http://127.0.0.1:8000/webhook'],
+            'localhost hostname'        => ['http://localhost:8000/webhook'],
+            'RFC-1918 10/8'             => ['https://10.0.0.5/webhook'],
+            'RFC-1918 192.168/16'       => ['http://192.168.1.1/webhook'],
+            'IPv6 loopback ::1'         => ['http://[::1]:8000/webhook'],
+            'IPv6 unique-local fd00::1' => ['http://[fd00::1]/webhook'],
+        ];
+    }//end privateWebhookUrls()
+
+    /**
+     * With allowPrivate=true the guard permits private/loopback targets.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider privateWebhookUrls
+     */
+    public function testAssertSafeWebhookUriAllowsPrivateWhenOptedIn(string $url): void
+    {
+        // No exception expected when the per-hook flag is set.
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => $url, 'allowPrivate' => true]
+        );
+        $this->addToAssertionCount(1);
+    }//end testAssertSafeWebhookUriAllowsPrivateWhenOptedIn()
+
+    /**
+     * Regression: with allowPrivate=false (the default) private targets stay blocked.
+     *
+     * @param string $url URL to validate.
+     *
+     * @dataProvider privateWebhookUrls
+     */
+    public function testAssertSafeWebhookUriBlocksPrivateWhenFlagFalse(string $url): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => $url, 'allowPrivate' => false]
+        );
+    }//end testAssertSafeWebhookUriBlocksPrivateWhenFlagFalse()
+
+    /**
+     * The scheme check stays enforced even when allowPrivate is set: a
+     * non-http(s) scheme is still rejected.
+     */
+    public function testAssertSafeWebhookUriStillRejectsNonHttpSchemeWhenOptedIn(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'file:///etc/passwd', 'allowPrivate' => true]
+        );
+    }//end testAssertSafeWebhookUriStillRejectsNonHttpSchemeWhenOptedIn()
+
+    /**
+     * A redirect to a private target is permitted when the hook opted in.
+     *
+     * The per-request on_redirect callback set in sendRequest() delegates to
+     * assertSafeWebhookUri(uri, allowPrivate), so this exercises that exact
+     * delegation: allowPrivate=true ⇒ a private Location is accepted, while the
+     * default client path (allowPrivate=false) still rejects it.
+     */
+    public function testRedirectToPrivateTargetHonoursPerHookFlag(): void
+    {
+        // allowPrivate=true: the redirect target is accepted.
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'http://192.168.1.50:8000/callback', 'allowPrivate' => true]
+        );
+        $this->addToAssertionCount(1);
+
+        // allowPrivate=false: the same redirect target is rejected.
+        $this->expectException(\RuntimeException::class);
+        $this->invokePrivateMethod(
+            'assertSafeWebhookUri',
+            ['uri' => 'http://192.168.1.50:8000/callback', 'allowPrivate' => false]
+        );
+    }//end testRedirectToPrivateTargetHonoursPerHookFlag()
 
     /**
      * blockedIpv6Reason must return 'loopback' for the ::1 address.

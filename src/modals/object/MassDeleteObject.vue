@@ -121,7 +121,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeSelection() {
 			// Get selected objects from the store or navigation context
@@ -131,6 +131,7 @@ export default {
 			}
 		},
 		/**
+		 * @param objectId
 		 * @spec exclude form-state helper to deselect an object from the list
 		 */
 		removeObject(objectId) {

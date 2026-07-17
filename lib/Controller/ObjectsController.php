@@ -20,12 +20,12 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 declare(strict_types=1);
@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\CustomValidationException;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
+use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
@@ -54,6 +56,7 @@ use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\AnonRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -85,9 +88,12 @@ use OCP\AppFramework\Http\DataDownloadResponse;
  * @suppressWarnings(PHPMD.ExcessiveMethodLength)    Complex file upload handling with multiple formats
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.NPathComplexity)
+ *
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 class ObjectsController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
     /**
      * Export service for handling data exports
@@ -106,23 +112,29 @@ class ObjectsController extends Controller
     /**
      * Constructor for the ObjectsController
      *
-     * @param string                                          $appName          The name of the app
-     * @param IRequest                                        $request          The request object
-     * @param IAppConfig                                      $config           The app configuration object
-     * @param IAppManager                                     $appManager       The app manager
-     * @param ContainerInterface                              $container        The DI container
-     * @param RegisterMapper                                  $registerMapper   The register mapper
-     * @param SchemaMapper                                    $schemaMapper     The schema mapper
-     * @param AuditTrailMapper                                $auditTrailMapper The audit trail mapper
-     * @param ObjectService                                   $objectService    The object service
-     * @param IUserSession                                    $userSession      The user session
-     * @param IGroupManager                                   $groupManager     The group manager
-     * @param ExportService                                   $exportService    The export service
-     * @param ImportService                                   $importService    The import service
-     * @param WebhookService                                  $webhookService   The webhook service (optional)
-     * @param LoggerInterface                                 $logger           The logger (optional)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser  $geoFilterParser  Optional geo wire-format adapter (null-safe)
-     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier Optional geo post-filter (null-safe)
+     * @param string                                                     $appName              The name of the app
+     * @param IRequest                                                   $request              The request object
+     * @param IAppConfig                                                 $config               The app configuration object
+     * @param IAppManager                                                $appManager           The app manager
+     * @param ContainerInterface                                         $container            The DI container
+     * @param RegisterMapper                                             $registerMapper       The register mapper
+     * @param SchemaMapper                                               $schemaMapper         The schema mapper
+     * @param AuditTrailMapper                                           $auditTrailMapper     The audit trail mapper
+     * @param ObjectService                                              $objectService        The object service
+     * @param IUserSession                                               $userSession          The user session
+     * @param IGroupManager                                              $groupManager         The group manager
+     * @param ExportService                                              $exportService        The export service
+     * @param ImportService                                              $importService        The import service
+     * @param WebhookService                                             $webhookService       The webhook service (optional)
+     * @param LoggerInterface                                            $logger               The logger (optional)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterParser             $geoFilterParser      Optional geo wire-format adapter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier            $geoFilterApplier     Optional geo post-filter (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer         $jsonLdSerializer     Optional JSON-LD serializer (null-safe)
+     * @param ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService     $jsonLdContextService Optional JSON-LD context service (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder    Optional GeoJSON/WFS feature builder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\Geo\PdokGeocoder                $pdokGeocoder         Optional PDOK geocoder (null-safe)
+     * @param ?\OCA\OpenRegister\Service\DeepLinkRegistryService         $deepLinkRegistry     Relation resourceUrl resolver (null-safe)
+     * @param ?\OCP\IURLGenerator                                        $relationUrlGenerator Relation fallback URL generator (null-safe)
      *
      * @return void
      *
@@ -145,7 +157,13 @@ class ObjectsController extends Controller
         private readonly ?WebhookService $webhookService=null,
         private readonly ?LoggerInterface $logger=null,
         private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterParser $geoFilterParser=null,
-        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFilterApplier $geoFilterApplier=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdSerializer $jsonLdSerializer=null,
+        private readonly ?\OCA\OpenRegister\Service\JsonLd\JsonLdContextService $jsonLdContextService=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\GeoFeatureCollectionBuilder $geoFeatureBuilder=null,
+        private readonly ?\OCA\OpenRegister\Service\Geo\PdokGeocoder $pdokGeocoder=null,
+        private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null,
+        private readonly ?\OCP\IURLGenerator $relationUrlGenerator=null
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->exportService = $exportService;
@@ -173,6 +191,89 @@ class ObjectsController extends Controller
         $userGroups = $this->groupManager->getUserGroupIds($user);
         return in_array('admin', $userGroups);
     }//end isCurrentUserAdmin()
+
+    /**
+     * Whether the current request asks for JSON-LD output via content negotiation.
+     *
+     * Null-safe: when the JSON-LD services are not wired (e.g. minimal DI in a
+     * test harness) this always returns false and the default JSON path is kept.
+     *
+     * @return bool True when JSON-LD output is requested and available.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function wantsJsonLd(): bool
+    {
+        if ($this->jsonLdSerializer === null) {
+            return false;
+        }
+
+        return $this->jsonLdSerializer->wantsJsonLd(request: $this->request);
+    }//end wantsJsonLd()
+
+    /**
+     * Decorate an already-rendered single-object array as a JSON-LD JSONResponse.
+     *
+     * The serializer wraps the rendered array only — it introduces no second
+     * data path, so RBAC / multitenancy / field-level security / the published
+     * predicate all remain applied exactly as for the plain-JSON response.
+     *
+     * @param array                              $renderedObject The rendered object array.
+     * @param \OCA\OpenRegister\Db\Register|null $register       The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema         The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdObjectResponse(array $renderedObject, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serialize(
+            renderedObject: $renderedObject,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
+    }//end jsonLdObjectResponse()
+
+    /**
+     * Decorate a paginated collection result as a JSON-LD `@graph` JSONResponse.
+     *
+     * @param array                              $result   The paginated result array.
+     * @param \OCA\OpenRegister\Db\Register|null $register The resolved register entity.
+     * @param \OCA\OpenRegister\Db\Schema|null   $schema   The resolved schema entity.
+     *
+     * @return JSONResponse The JSON-LD response (Content-Type/Vary set).
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function jsonLdCollectionResponse(array $result, $register, $schema): JSONResponse
+    {
+        $document = $this->jsonLdSerializer->serializeCollection(
+            paginatedResult: $result,
+            schema: $schema,
+            register: $register
+        );
+
+        return $this->withJsonLdHeaders(response: new JSONResponse(data: $document));
+    }//end jsonLdCollectionResponse()
+
+    /**
+     * Add the JSON-LD content negotiation headers to a response.
+     *
+     * @param JSONResponse $response The response to decorate.
+     *
+     * @return JSONResponse The decorated response.
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function withJsonLdHeaders(JSONResponse $response): JSONResponse
+    {
+        $response->addHeader('Content-Type', 'application/ld+json');
+        $response->addHeader('Vary', 'Accept');
+        return $response;
+    }//end withJsonLdHeaders()
 
     /**
      * Normalize form data values by decoding JSON strings.
@@ -217,6 +318,52 @@ class ObjectsController extends Controller
 
         return $data;
     }//end normalizeFormDataValues()
+
+    /**
+     * Strip server-managed @self fields from client-supplied object data.
+     *
+     * The top-level filter in create/update/patch/postPatch already passes `@self`
+     * through unchanged because certain integrations legitimately set `@self.slug`
+     * or `@self.relations`. However, several `@self` sub-fields MUST NOT be accepted
+     * from client input because they are either server-authoritative (owner, organisation)
+     * or carry security-sensitive semantics (authorization, groups).
+     *
+     * The service layer (SaveObject::setSelfMetadata + applyOwnerAttribution) enforces
+     * the same rules; this controller-level strip is an additional defense-in-depth
+     * boundary that catches injections before they even reach the service (wave-11 WF2).
+     *
+     * Allowed @self keys for client input (non-exhaustive; extend as features are added):
+     *   slug, name, description, summary, image, relations, tmlo (update path only)
+     *
+     * Rejected at this layer (server-managed or security-sensitive):
+     *   owner, organisation, authorization, groups, application, folder
+     *
+     * @param array $data The raw request data (may contain a '@self' key)
+     *
+     * @return array The data with dangerous @self sub-keys stripped
+     */
+    private function sanitiseSelfMetadata(array $data): array
+    {
+        if (isset($data['@self']) === false || is_array($data['@self']) === false) {
+            return $data;
+        }
+
+        // Fields that clients must never supply — they are set server-side.
+        $serverManagedKeys = [
+            'owner',
+            'organisation',
+            'authorization',
+            'groups',
+            'application',
+            'folder',
+        ];
+
+        foreach ($serverManagedKeys as $key) {
+            unset($data['@self'][$key]);
+        }
+
+        return $data;
+    }//end sanitiseSelfMetadata()
 
     /**
      * Extract all uploaded files from the current request.
@@ -701,46 +848,53 @@ class ObjectsController extends Controller
     private function crossTableSearch(array $registers, array $schemas, ObjectService $objectService): JSONResponse
     {
         $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-        $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-        $schemaMapper   = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
+        $registerMapper = $this->registerMapper;
+        $schemaMapper   = $this->schemaMapper;
 
-        // Build register+schema pairs.
+        // PERF-14: resolve each register and schema exactly once up front instead of
+        // re-running find() for every register×schema combination in the inner loop.
+        $registerEntities = [];
+        foreach (array_unique($registers) as $registerId) {
+            try {
+                $registerEntities[(string) $registerId] = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid register in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $registerId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        $schemaEntities = [];
+        foreach (array_unique($schemas) as $schemaId) {
+            try {
+                $schemaEntities[(string) $schemaId] = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ObjectsController] Invalid schema in cross-table search',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'schema' => $schemaId, 'error' => $e->getMessage()]
+                );
+            }
+        }
+
+        // Build register+schema pairs from the pre-resolved entities.
         $pairs = [];
-        foreach ($registers as $registerId) {
-            foreach ($schemas as $schemaId) {
-                try {
-                    // Resolve register and schema entities.
-                    $registerEntity = $registerMapper->find(id: $registerId, _multitenancy: false, _rbac: false);
-                    $schemaEntity   = $schemaMapper->find(id: $schemaId, _multitenancy: false, _rbac: false);
-
-                    // Check if magic mapping is enabled for this combination.
-                    // Uses Register::isMagicMappingEnabledForSchema() which supports both
-                    // new format {"schemas": {"slug": {"magicMapping": true}}} and
-                    // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
-                    if ($registerEntity->isMagicMappingEnabledForSchema(
-                        schemaId: $schemaEntity->getId(),
-                        schemaSlug: $schemaEntity->getSlug()
-                    ) === true
-                    ) {
-                        $pairs[] = [
-                            'register' => $registerEntity,
-                            'schema'   => $schemaEntity,
-                        ];
-                    }
-                } catch (\Exception $e) {
-                    // Skip invalid register/schema combinations.
-                    $this->logger->warning(
-                        message: '[ObjectsController] Invalid register/schema in cross-table search',
-                        context: [
-                            'file'     => __FILE__,
-                            'line'     => __LINE__,
-                            'register' => $registerId,
-                            'schema'   => $schemaId,
-                            'error'    => $e->getMessage(),
-                        ]
-                    );
-                    continue;
-                }//end try
+        foreach ($registerEntities as $registerEntity) {
+            foreach ($schemaEntities as $schemaEntity) {
+                // Check if magic mapping is enabled for this combination.
+                // Uses Register::isMagicMappingEnabledForSchema() which supports both
+                // new format {"schemas": {"slug": {"magicMapping": true}}} and
+                // legacy format {"enableMagicMapping": true, "magicMappingSchemas": [...]}.
+                if ($registerEntity->isMagicMappingEnabledForSchema(
+                    schemaId: $schemaEntity->getId(),
+                    schemaSlug: $schemaEntity->getSlug()
+                ) === true
+                ) {
+                    $pairs[] = [
+                        'register' => $registerEntity,
+                        'schema'   => $schemaEntity,
+                    ];
+                }
             }//end foreach
         }//end foreach
 
@@ -759,6 +913,18 @@ class ObjectsController extends Controller
         // Cross-table search handles multiple register+schema pairs internally.
         $query = $objectService->buildSearchQuery(requestParams: $this->request->getParams());
 
+        // SEC-CTRL-1: This path does NOT read rbac/multi from the request, so the
+        // request-controlled bypass does not apply here. Derive the posture from
+        // admin status for completeness and forward it on the query.
+        // TODO(SEC-CTRL-1): MagicMapper::searchAcrossMultipleTables() and its
+        // union/sequential builders currently apply NO RBAC or multitenancy filter
+        // (they ignore these query flags). Enforcing per-pair RBAC/tenant scoping
+        // lives in lib/Db/MagicMapper.php (out of this controller's scope) and must
+        // be wired there before cross-table search is exposed to non-admins.
+        $isAdmin        = $this->isCurrentUserAdmin();
+        $query['_rbac'] = ($isAdmin === false);
+        $query['_multitenancy'] = ($isAdmin === false);
+
         // Remove all register/schema context from query to prevent filtering.
         unset(
             $query['_register'],
@@ -772,6 +938,17 @@ class ObjectsController extends Controller
 
         // Perform cross-table search.
         $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
+
+        // Redact write-only secrets before serialising (openregister#380, ocon#147): this
+        // direct-magic-mapper path bypasses renderEntity, so without this the read returns
+        // write-only fields in cleartext. redactWriteOnlyFromRows resolves each row's schema
+        // individually, so the cross-schema result set is handled correctly.
+        //
+        // `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
+        // NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
+        // and an admin is not exempt from the writeOnly render boundary (#389).
+        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
         // Serialize results.
         $serializedResults = [];
@@ -793,14 +970,38 @@ class ObjectsController extends Controller
         }
 
         // Calculate pagination.
-        $limit  = $query['_limit'] ?? 20;
-        $offset = $query['_offset'] ?? 0;
-        $total  = count($serializedResults);
-        $pages  = 1;
-        $page   = 1;
+        $limit  = (int) ($query['_limit'] ?? 20);
+        $offset = (int) ($query['_offset'] ?? 0);
+
+        // PERF-6: the per-table merge can return up to limit×tableCount rows. Slice
+        // down to the requested page window so the response honours _limit/_offset
+        // instead of returning every fetched row.
+        // NOTE: an exact cross-table total still requires a per-table COUNT(*) in SQL
+        // (MagicMapper, out of this controller's scope); $fetchedCount is the best
+        // available bound here. TODO(PERF-6): sum per-table COUNT(*) in MagicMapper.
+        $fetchedCount = count($serializedResults);
         if ($limit > 0) {
-            $pages = (int) ceil($total / $limit);
-            $page  = (int) floor($offset / $limit) + 1;
+            $serializedResults = array_slice($serializedResults, $offset, $limit);
+        } else if ($offset > 0) {
+            $serializedResults = array_slice($serializedResults, $offset);
+        }
+
+        // PERF-10: allow callers to skip the (here, in-PHP) total when not needed.
+        $wantTotal = filter_var($params['_count'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        if ($wantTotal === true) {
+            $total = $fetchedCount;
+        } else {
+            $total = null;
+        }
+
+        $pages = 1;
+        $page  = 1;
+        if ($limit > 0) {
+            if ($total !== null) {
+                $pages = (int) ceil($total / $limit);
+            }
+
+            $page = (int) floor($offset / $limit) + 1;
         }
 
         return new JSONResponse(
@@ -853,29 +1054,14 @@ class ObjectsController extends Controller
         $resolvedRegisterId = $objectService->getRegister();
         $resolvedSchemaId   = $objectService->getSchema();
 
-        // STEP 3: Fetch entities for magic mapper support.
-        $registerEntity = null;
-        $schemaEntity   = null;
-
-        try {
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $registerEntity = $registerMapper->find(id: $resolvedRegisterId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
-        try {
-            $schemaMapper = \OC::$server->get(\OCA\OpenRegister\Db\SchemaMapper::class);
-            $schemaEntity = $schemaMapper->find(id: $resolvedSchemaId, _multitenancy: false);
-        } catch (\Exception $e) {
-            // Log but don't fail - entities are optional.
-        }
-
+        // STEP 3: Reuse the entities already resolved by setRegister()/setSchema()
+        // above — re-fetching them via the mappers would resolve the same
+        // register and schema twice per request.
         return [
             'register'       => $resolvedRegisterId,
             'schema'         => $resolvedSchemaId,
-            'registerEntity' => $registerEntity,
-            'schemaEntity'   => $schemaEntity,
+            'registerEntity' => $objectService->getCurrentRegisterEntity(),
+            'schemaEntity'   => $objectService->getCurrentSchemaEntity(),
         ];
     }//end resolveRegisterSchemaIds()
 
@@ -918,7 +1104,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multi-schema search + pagination + filtering requires branching
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -971,11 +1157,16 @@ class ObjectsController extends Controller
 
         // Extract filtering parameters from request.
         $params = $this->request->getParams();
-        $rbac   = filter_var($params['rbac'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        // Check both _multi and multi params (URL uses _multi, but we also support multi).
-        $multiExplicitlySet = isset($params['_multi']) || isset($params['multi']);
-        $multi   = filter_var($params['_multi'] ?? $params['multi'] ?? true, FILTER_VALIDATE_BOOLEAN);
-        $deleted = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        // SEC-CTRL-1: RBAC and multitenancy posture MUST be derived from the
+        // caller's admin status, never from request parameters. This endpoint is
+        // reachable anonymously (@PublicPage); honouring ?rbac=false&_multi=false
+        // would let any caller list every object across all organisations/ACLs.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = ($isAdmin === false);
+        $multi   = ($isAdmin === false);
+        // No longer request-controlled: never treat _multi as explicitly set by the client.
+        $multiExplicitlySet = false;
+        $deleted            = filter_var($params['deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         // Check if magic mapping is enabled for this register+schema.
         $registerEntity = $resolved['registerEntity'] ?? null;
@@ -990,7 +1181,10 @@ class ObjectsController extends Controller
                 schemaSlug: $schemaEntity->getSlug()
             );
 
-            if ($isMagicMapped === true) {
+            // A schema served from an external object-source (x-openregister-object-source)
+            // must never read the magic table — fall through to searchObjectsPaginated,
+            // which delegates to the registered provider (object-source-providers).
+            if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
                 // Use MagicMapper for magic-mapped schemas.
                 $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
 
@@ -1046,12 +1240,24 @@ class ObjectsController extends Controller
                         _multitenancy: $multi
                     );
                 } else {
-                    // Convert ObjectEntity array to JSON-serializable format (no complex rendering).
+                    // Convert ObjectEntity array to JSON-serializable format (no complex
+                    // rendering). This fast path bypasses renderEntity — where write-only
+                    // secrets are stripped (openregister#380, ocon#147) — so without the
+                    // redaction call below it returns every write-only field in cleartext.
+                    // This is the exact path the OpenConnector Source leak used: a plain
+                    // list read (no _extend) hit this branch. Redact the raw entities with
+                    // the same read-strip renderEntity applies, then serialize.
+                    // `$rbac` is `($isAdmin === false)` and gates ONLY the property
+                    // `authorization.read` strip — writeOnly strips unconditionally, admin
+                    // included (#389/#460).
+                    $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                    $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
+
                     $serializedResults = [];
                     foreach ($results as $entity) {
                         $serializedResults[] = $entity->jsonSerialize();
                     }
-                }
+                }//end if
 
                 // Calculate pagination - need a separate count query since search applies limit/offset.
                 $limit  = (int) ($query['_limit'] ?? 20);
@@ -1065,20 +1271,40 @@ class ObjectsController extends Controller
                     $offset = (int) ($offset ?? 0);
                 }
 
-                // Build count query (same filters, no pagination).
-                $countQuery = $query;
-                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+                // PERF-10: allow callers to skip the extra COUNT(*) query when they
+                // don't need the grand total (e.g. infinite scroll). _count=false /
+                // _noTotal=true returns total:null and skips the count round-trip.
+                if (($params['_noTotal'] ?? false) === true) {
+                    $countDefault = false;
+                } else {
+                    $countDefault = true;
+                }
 
-                // Get actual total count.
-                $total = $magicMapper->countObjectsInRegisterSchemaTable(
-                    query: $countQuery,
-                    register: $registerEntity,
-                    schema: $schemaEntity
+                $wantTotal = filter_var(
+                    $params['_count'] ?? $countDefault,
+                    FILTER_VALIDATE_BOOLEAN
                 );
+
+                $total = null;
+                if ($wantTotal === true) {
+                    // Build count query (same filters, no pagination).
+                    $countQuery = $query;
+                    unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+
+                    // Get actual total count.
+                    $total = $magicMapper->countObjectsInRegisterSchemaTable(
+                        query: $countQuery,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
+                }
 
                 $pages = 1;
                 if ($limit > 0) {
-                    $pages = (int) ceil($total / $limit);
+                    if ($total !== null) {
+                        $pages = (int) ceil($total / $limit);
+                    }
+
                     // Calculate page from offset if not explicitly provided.
                     if ($page === null) {
                         $page = (int) floor($offset / $limit) + 1;
@@ -1093,9 +1319,9 @@ class ObjectsController extends Controller
                 $activeOrganisation = null;
                 try {
                     $organisationService = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
-                    $activeOrg           = $organisationService->getActiveOrganisation();
+                    $activeOrg           = $organisationService?->getActiveOrganisation();
                     $activeOrganisation  = $activeOrg?->getUuid();
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     // Silently ignore if organisation service is not available.
                 }
 
@@ -1199,16 +1425,19 @@ class ObjectsController extends Controller
                 // path so geo filtering works for both register layouts.
                 $responseData = $this->applyGeoQueryFilters(params: $params, result: $responseData);
 
-                // Return in expected format.
-                $response = new JSONResponse(data: $responseData);
-
-                // Enable gzip compression for large payloads.
-                if (count($responseData['results'] ?? []) > 10) {
-                    $response->addHeader('Content-Encoding', 'gzip');
-                    $response->addHeader('Vary', 'Accept-Encoding');
+                // Content negotiation: JSON-LD @graph for magic-mapped results
+                // (json-ld-output).
+                if ($this->wantsJsonLd() === true && $registerEntity !== null && $schemaEntity !== null) {
+                    return $this->jsonLdCollectionResponse(
+                        result: $responseData,
+                        register: $registerEntity,
+                        schema: $schemaEntity
+                    );
                 }
 
-                return $response;
+                // Return in expected format. Response compression is negotiated
+                // at the webserver level; the controller never sets encoding headers.
+                return new JSONResponse(data: $responseData);
             }//end if
         }//end if
 
@@ -1220,12 +1449,20 @@ class ObjectsController extends Controller
         );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated(
-            query: $query,
-            _rbac: $rbac,
-            _multitenancy: $multi,
-            deleted: $deleted
-        );
+        try {
+            $result = $objectService->searchObjectsPaginated(
+                query: $query,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                deleted: $deleted
+            );
+        } catch (NotAuthorizedException $exception) {
+            // RBAC denied the schema-level list read (raised by the
+            // object-source parity check before the provider is consulted).
+            // Mirror show(): 404, not 403/500, so denial reveals nothing
+            // about the schema's contents.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        }
 
         // Strip empty values from results unless _empty=true is set.
         $includeEmpty = filter_var(
@@ -1258,17 +1495,257 @@ class ObjectsController extends Controller
         // PostGIS push-down is tracked in `geo-spatial-queries`.
         $result = $this->applyGeoQueryFilters(params: $params, result: $result);
 
-        // **SUB-SECOND OPTIMIZATION**: Enable response compression for large payloads.
-        $response = new JSONResponse(data: $result);
-
-        // Enable gzip compression for responses > 1KB.
-        if (($result['results'] ?? null) !== null && (count($result['results']) > 10) === true) {
-            $response->addHeader('Content-Encoding', 'gzip');
-            $response->addHeader('Vary', 'Accept-Encoding');
+        // Content negotiation: emit a JSON-LD @graph when requested. Wraps the
+        // already-rendered/RBAC-filtered result — no second data path
+        // (json-ld-output).
+        if ($this->wantsJsonLd() === true
+            && ($resolved['registerEntity'] ?? null) !== null
+            && ($resolved['schemaEntity'] ?? null) !== null
+        ) {
+            return $this->jsonLdCollectionResponse(
+                result: $result,
+                register: $resolved['registerEntity'],
+                schema: $resolved['schemaEntity']
+            );
         }
 
-        return $response;
+        // Response compression is negotiated at the webserver level; the
+        // controller never sets encoding headers.
+        return new JSONResponse(data: $result);
     }//end index()
+
+    /**
+     * Batched object-count endpoint — POST /api/objects/counts.
+     *
+     * Accepts a JSON body of the shape
+     * `{ "counts": [ { "register": <id|slug>, "schema": <id|slug>, "filter": <object?> } ] }`
+     * and returns `{ "results": [ { "register": ..., "schema": ..., "count": <int|null> } ] }`
+     * with exactly one result per input entry, in the same order as the
+     * request array. Identical `(register, schema, filter)` triples are
+     * deduped server-side so the aggregate runs once per distinct triple;
+     * every input entry still receives a result (duplicates share the count).
+     * An empty or missing `counts` array returns `{ results: [] }`.
+     *
+     * SECURITY — authorization parity with collection reads: each count is
+     * produced through the SAME RBAC + multitenancy scoping the collection
+     * list read (`index()` / `GET /api/objects/{register}/{schema}?_limit=1`)
+     * applies. The RBAC/multitenancy posture is derived from the caller's
+     * admin status (mirrors `index()` lines 1160-1162), never from request
+     * parameters, and threaded into the identical count paths `index()` uses
+     * (see `countPairScoped()`). A caller therefore cannot obtain a count for
+     * objects they are not permitted to list. A pair that cannot be resolved
+     * (unknown or withheld) yields `count: null` without disclosing whether it
+     * does not exist or is access-restricted.
+     *
+     * The route carries `@NoAdminRequired` and is deliberately NOT a public
+     * page: any authenticated user may call it; an unauthenticated request is
+     * rejected by the security middleware exactly like a non-public read.
+     *
+     * @param ObjectService $objectService The object service (DI).
+     *
+     * @return JSONResponse `{ results: [ { register, schema, count } ] }`
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @psalm-return JSONResponse<200|400, array<string, mixed>, array<never, never>>
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public function counts(ObjectService $objectService): JSONResponse
+    {
+        $params  = $this->request->getParams();
+        $entries = ($params['counts'] ?? null);
+
+        // Missing counts key → empty success (spec: empty or missing → { results: [] }).
+        if ($entries === null) {
+            return new JSONResponse(data: ['results' => []]);
+        }
+
+        // A present-but-non-array counts value is a malformed request.
+        if (is_array($entries) === false) {
+            return new JSONResponse(
+                data: ['error' => 'counts must be an array of { register, schema, filter? } entries'],
+                statusCode: 400
+            );
+        }
+
+        // Empty array → empty success.
+        if ($entries === []) {
+            return new JSONResponse(data: ['results' => []]);
+        }
+
+        // Derive the RBAC + multitenancy posture from the caller's admin
+        // status — identical to the collection read (index() lines 1160-1162).
+        // Never honour request-supplied rbac/multi flags on a data endpoint.
+        $isAdmin = $this->isCurrentUserAdmin();
+        $rbac    = ($isAdmin === false);
+        $multi   = ($isAdmin === false);
+
+        // Validate every entry up-front so a malformed batch is rejected
+        // wholesale rather than silently skipping entries.
+        foreach ($entries as $index => $entry) {
+            if (is_array($entry) === false
+                || isset($entry['register']) === false
+                || isset($entry['schema']) === false
+                || is_scalar($entry['register']) === false
+                || is_scalar($entry['schema']) === false
+                || (isset($entry['filter']) === true && is_array($entry['filter']) === false)
+            ) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'Malformed counts entry at index '.$index
+                            .': register and schema are required scalars and filter must be an object',
+                    ],
+                    statusCode: 400
+                );
+            }
+        }
+
+        // Dedupe identical (register, schema, filter) triples: run one
+        // aggregate per distinct triple, but return one result per input
+        // entry in request order (duplicates share the deduped count).
+        $cache   = [];
+        $results = [];
+        foreach ($entries as $entry) {
+            $register = (string) $entry['register'];
+            $schema   = (string) $entry['schema'];
+            $filter   = ($entry['filter'] ?? []);
+
+            $cacheKey = $register.'|'.$schema.'|'.json_encode($filter);
+            if (array_key_exists($cacheKey, $cache) === false) {
+                $cache[$cacheKey] = $this->countPairScoped(
+                    register: $register,
+                    schema: $schema,
+                    filter: $filter,
+                    rbac: $rbac,
+                    multi: $multi,
+                    objectService: $objectService
+                );
+            }
+
+            $results[] = [
+                'register' => $entry['register'],
+                'schema'   => $entry['schema'],
+                'count'    => $cache[$cacheKey],
+            ];
+        }//end foreach
+
+        return new JSONResponse(data: ['results' => $results]);
+    }//end counts()
+
+    /**
+     * Produce a single (register, schema, filter) object count with the exact
+     * RBAC + multitenancy scoping the collection read applies.
+     *
+     * This mirrors `index()`'s count logic so a batched count can never leak a
+     * total the equivalent list read would not surface. It resolves the pair,
+     * then routes through the same two count paths `index()` uses:
+     * - magic-mapped schema → `MagicMapper::countObjectsInRegisterSchemaTable()`
+     *   with `_rbac` / `_multitenancy` threaded into the query
+     *   (mirrors index() lines 1194-1198 + 1279-1283);
+     * - database-backed schema → `ObjectService::searchObjectsPaginated()`
+     *   total, produced by the same RBAC/multitenancy-scoped query
+     *   (mirrors index() lines 1443-1448), read at `?_limit=1` like the
+     *   reference collection read.
+     *
+     * Returns null when the pair cannot be resolved, so a restricted or
+     * unknown pair is withheld without disclosing which.
+     *
+     * @param string        $register      Register id or slug.
+     * @param string        $schema        Schema id or slug.
+     * @param array         $filter        Object-property filters for this entry.
+     * @param bool          $rbac          Whether to apply RBAC (parity with the list read).
+     * @param bool          $multi         Whether to apply multitenancy (parity with the list read).
+     * @param ObjectService $objectService The object service (DI).
+     *
+     * @return int|null The scoped count, or null when the pair is withheld.
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    private function countPairScoped(
+        string $register,
+        string $schema,
+        array $filter,
+        bool $rbac,
+        bool $multi,
+        ObjectService $objectService
+    ): ?int {
+        try {
+            // Resolve slugs/ids to numeric ids + entities (same as index()).
+            $resolved = $this->resolveRegisterSchemaIds(
+                register: $register,
+                schema: $schema,
+                objectService: $objectService
+            );
+        } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
+            // Withhold: never disclose whether the pair is missing or restricted.
+            return null;
+        }
+
+        $registerEntity = ($resolved['registerEntity'] ?? null);
+        $schemaEntity   = ($resolved['schemaEntity'] ?? null);
+
+        // Build the search query from the per-entry filter using the same
+        // builder index() uses, scoped to the resolved numeric ids.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $filter,
+            register: $resolved['register'],
+            schema: $resolved['schema']
+        );
+
+        // Magic-mapped parity: count via the magic table with RBAC /
+        // multitenancy threaded into the query (index() lines 1194-1198, 1279-1283).
+        if ($registerEntity !== null && $schemaEntity !== null) {
+            $isMagicMapped = $registerEntity->isMagicMappingEnabledForSchema(
+                schemaId: $schemaEntity->getId(),
+                schemaSlug: $schemaEntity->getSlug()
+            );
+
+            if ($isMagicMapped === true && $schemaEntity->getObjectSource() === null) {
+                $magicMapper = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+
+                $countQuery = $query;
+                unset($countQuery['_limit'], $countQuery['_offset'], $countQuery['_page']);
+                $countQuery['_rbac']         = $rbac;
+                $countQuery['_multitenancy'] = $multi;
+                $countQuery['_multitenancy_explicit'] = false;
+
+                return (int) $magicMapper->countObjectsInRegisterSchemaTable(
+                    query: $countQuery,
+                    register: $registerEntity,
+                    schema: $schemaEntity
+                );
+            }
+        }//end if
+
+        // Database-backed parity: read the paginated total at _limit=1, which
+        // is produced by the same RBAC/multitenancy-scoped query the
+        // collection read runs (index() lines 1443-1448).
+        $query['_limit'] = 1;
+        unset($query['_offset'], $query['_page']);
+
+        try {
+            $result = $objectService->searchObjectsPaginated(
+                query: $query,
+                _rbac: $rbac,
+                _multitenancy: $multi,
+                deleted: false
+            );
+        } catch (NotAuthorizedException $exception) {
+            // Schema-level read denied (object-source parity check):
+            // the count is simply unavailable to this caller.
+            return null;
+        }
+
+        $total = ($result['total'] ?? null);
+        if ($total === null) {
+            return null;
+        }
+
+        return (int) $total;
+    }//end countPairScoped()
 
     /**
      * Geo-search endpoint — POST /api/objects/{register}/{schema}/geo-search.
@@ -1296,7 +1773,7 @@ class ObjectsController extends Controller
      * @NoCSRFRequired
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function geoSearch(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -1333,6 +1810,225 @@ class ObjectsController extends Controller
     }//end geoSearch()
 
     /**
+     * Export a register/schema's objects as a GeoJSON FeatureCollection.
+     *
+     * Reuses the standard listing path (`index()`), so the result is
+     * already scoped to the objects the caller may read — this endpoint
+     * adds no new data access and therefore no IDOR surface (the listing
+     * applies per-object RBAC). Objects without a geometry are omitted.
+     *
+     * Supports `?_fields=title,status` to restrict Feature properties
+     * (geometry is always retained), `?geo.property=` to pick the geo
+     * property, and the standard geo filter params (REQ-GEO-008).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A GeoJSON FeatureCollection (application/geo+json).
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function geoJson(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params  = $this->request->getParams();
+        $rows    = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+        $fields  = $this->parseFieldsParam(params: $params);
+        $geoProp = ($params['geo.property'] ?? null);
+
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
+        $collection = $this->geoFeatureBuilder->buildFeatureCollection(
+            rows: $rows,
+            geoProperty: $geoPropertyValue,
+            fields: $fields,
+            includeArea: true
+        );
+
+        // Body is a valid GeoJSON FeatureCollection. The default
+        // application/json content type is kept (NC's Content-Type
+        // override requires the full container); the @self envelope is
+        // omitted so the body is consumable directly by GIS clients.
+        return new JSONResponse(data: $collection);
+
+    }//end geoJson()
+
+    /**
+     * WFS GetFeature-compatible endpoint (REQ-GEO-008).
+     *
+     * Returns a GeoJSON FeatureCollection compatible with WFS 2.0
+     * `outputFormat=application/json`. Supports `count`/`maxFeatures`
+     * caps. Reuses the RBAC-scoped listing path (no new IDOR surface).
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return JSONResponse A WFS-compatible GeoJSON FeatureCollection.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Read access is enforced by the delegated index()
+     *   listing (per-object RBAC via scopedGeoRows()); this method only
+     *   reshapes the already-scoped rows and accesses no object by id.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    public function wfs(string $register, string $schema, ObjectService $objectService): JSONResponse
+    {
+        if ($this->geoFeatureBuilder === null) {
+            return new JSONResponse(data: ['error' => 'Geo feature builder not configured'], statusCode: 501);
+        }
+
+        $params = $this->request->getParams();
+        $rows   = $this->scopedGeoRows(register: $register, schema: $schema, objectService: $objectService);
+
+        $maxFeatures = null;
+        $rawMax      = ($params['count'] ?? ($params['maxFeatures'] ?? null));
+        if ($rawMax !== null && is_numeric($rawMax) === true) {
+            $maxFeatures = (int) $rawMax;
+        }
+
+        $geoProp = ($params['geo.property'] ?? null);
+
+        if ($geoProp !== null) {
+            $geoPropertyValue = (string) $geoProp;
+        } else {
+            $geoPropertyValue = null;
+        }
+
+        $response = $this->geoFeatureBuilder->buildWfsResponse(
+            rows: $rows,
+            geoProperty: $geoPropertyValue,
+            maxFeatures: $maxFeatures
+        );
+
+        return new JSONResponse(data: $response);
+
+    }//end wfs()
+
+    /**
+     * Forward / reverse geocoding via PDOK Locatieserver (REQ-GEO-005).
+     *
+     * `?q=<address>` performs forward geocoding; `?lon=&lat=` performs
+     * reverse geocoding. Degrades gracefully: when OpenConnector / PDOK
+     * is unavailable an empty suggestion list is returned with a flag,
+     * never an error (geocoding is non-blocking, REQ-GEO-005).
+     *
+     * @return JSONResponse Geocoding suggestions and availability flag.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @no-admin-idor-exempt Stateless PDOK address-lookup proxy: accesses no
+     *   OpenRegister object and takes no object id, so there is no IDOR
+     *   surface. Authenticated-user access is enforced by NoAdminRequired.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-005
+     */
+    public function geocode(): JSONResponse
+    {
+        if ($this->pdokGeocoder === null) {
+            return new JSONResponse(data: ['available' => false, 'suggestions' => []]);
+        }
+
+        $params    = $this->request->getParams();
+        $available = $this->pdokGeocoder->isAvailable();
+
+        $query = ($params['q'] ?? null);
+        if ($query !== null && trim((string) $query) !== '') {
+            $bagOnly     = filter_var(($params['bagOnly'] ?? false), FILTER_VALIDATE_BOOLEAN);
+            $suggestions = $this->pdokGeocoder->geocodeFree(
+                query: (string) $query,
+                maxItems: 5,
+                bagOnly: $bagOnly
+            );
+            return new JSONResponse(data: ['available' => $available, 'suggestions' => $suggestions]);
+        }
+
+        $lon = ($params['lon'] ?? null);
+        $lat = ($params['lat'] ?? null);
+        if (is_numeric($lon) === true && is_numeric($lat) === true) {
+            $address = $this->pdokGeocoder->reverseGeocode(longitude: (float) $lon, latitude: (float) $lat);
+            return new JSONResponse(data: ['available' => $available, 'address' => $address]);
+        }
+
+        return new JSONResponse(
+            data: ['error' => 'geocode requires either ?q=<address> or ?lon=&lat='],
+            statusCode: 422
+        );
+
+    }//end geocode()
+
+    /**
+     * Fetch the RBAC-scoped listing rows for a register/schema.
+     *
+     * Delegates to the standard `index()` listing — which enforces
+     * per-object read access — then returns just the `results`. Geo
+     * endpoints build on this so they can never widen access.
+     *
+     * @param string        $register      Register slug or id.
+     * @param string        $schema        Schema slug or id.
+     * @param ObjectService $objectService Object service via DI.
+     *
+     * @return array The RBAC-scoped result rows.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function scopedGeoRows(string $register, string $schema, ObjectService $objectService): array
+    {
+        $listing = $this->index(register: $register, schema: $schema, objectService: $objectService);
+        $payload = (array) $listing->getData();
+        $rows    = ($payload['results'] ?? []);
+        if (is_array($rows) === true) {
+            return $rows;
+        }
+
+        return [];
+
+    }//end scopedGeoRows()
+
+    /**
+     * Parse a `?_fields=a,b,c` allow-list into an array (null = all).
+     *
+     * @param array $params The request params.
+     *
+     * @return string[]|null
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     */
+    private function parseFieldsParam(array $params): ?array
+    {
+        $raw = ($params['_fields'] ?? null);
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+
+        if (is_array($raw) === true) {
+            return array_values(array_map('strval', $raw));
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', (string) $raw)), fn($v) => $v !== ''));
+
+    }//end parseFieldsParam()
+
+    /**
      * Apply geo query-param filters to a listing result.
      *
      * Reads `geo.bbox` / `geo.near` / `geo.radius` / `geo.property` from
@@ -1349,7 +2045,7 @@ class ObjectsController extends Controller
      *
      * @return array The result, possibly with `results` filtered down.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function applyGeoQueryFilters(array $params, array $result): array
     {
@@ -1414,7 +2110,7 @@ class ObjectsController extends Controller
      *
      * @return array The same params with `geo.*` keys hoisted from `geo`.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     private function flattenGeoParams(array $params): array
     {
@@ -1474,7 +2170,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Cross-table search + multi-schema routing requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-1
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function objects(ObjectService $objectService): JSONResponse
     {
@@ -1510,7 +2206,14 @@ class ObjectsController extends Controller
             );
         }
 
-        // Single register+schema: check if magic mapping is enabled.
+        // Single register+schema: resolve slugs/IDs to numeric IDs (same
+        // resolution semantics as the path-style index() route) and check
+        // whether magic mapping is enabled. The resolved numeric IDs are
+        // captured in $resolvedRegisterId/$resolvedSchemaId so the fallback
+        // buildSearchQuery() call below can filter correctly instead of
+        // silently matching zero rows against an unresolved slug string.
+        $resolvedRegisterId = null;
+        $resolvedSchemaId   = null;
         if ($registerParam !== null && $schemaParam !== null) {
             try {
                 $resolved = $this->resolveRegisterSchemaIds(
@@ -1518,6 +2221,9 @@ class ObjectsController extends Controller
                     schema: $schemaParam,
                     objectService: $objectService
                 );
+
+                $resolvedRegisterId = $resolved['register'];
+                $resolvedSchemaId   = $resolved['schema'];
 
                 // Check if magic mapping is enabled for this register+schema.
                 $registerEntity = $resolved['registerEntity'] ?? null;
@@ -1552,6 +2258,13 @@ class ObjectsController extends Controller
                             register: $registerEntity,
                             schema: $schemaEntity
                         );
+
+                        // Redact write-only secrets before serialising (openregister#380,
+                        // ocon#147) — this direct-magic-mapper path bypasses renderEntity.
+                        // `_rbac` (false for an admin) gates only the property
+                        // `authorization.read` strip; writeOnly strips unconditionally (#460).
+                        $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
+                        $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
                         // Convert ObjectEntity array to JSON-serializable format.
                         $serializedResults = [];
@@ -1605,10 +2318,27 @@ class ObjectsController extends Controller
         }//end if
 
         // Build search query and execute via normal route (magic tables or SOLR).
-        $query = $objectService->buildSearchQuery($this->request->getParams());
+        // Pass the already-resolved numeric register/schema IDs (when a
+        // register/schema query parameter was supplied) so the query filters
+        // on '@self.register' / '@self.schema' the same way the path-style
+        // index() route does. Without this, buildSearchQuery() falls back to
+        // treating the raw 'register'/'schema' query-string values (slugs)
+        // as the metadata filter, which never matches the numeric register
+        // ID column and silently returns zero results.
+        $query = $objectService->buildSearchQuery(
+            requestParams: $this->request->getParams(),
+            register: $resolvedRegisterId,
+            schema: $resolvedSchemaId
+        );
 
         // **INTELLIGENT SOURCE SELECTION**: ObjectService automatically chooses optimal source.
-        $result = $objectService->searchObjectsPaginated($query);
+        try {
+            $result = $objectService->searchObjectsPaginated($query);
+        } catch (NotAuthorizedException $exception) {
+            // Schema-level list read denied (object-source parity check).
+            // Mirror show(): 404 so denial reveals nothing.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        }
 
         // Strip empty values from results unless _empty=true is set.
         $includeEmpty = filter_var(
@@ -1660,7 +2390,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Object retrieval with slug resolution + access checks requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-2
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function show(
         string $id,
@@ -1709,7 +2439,12 @@ class ObjectsController extends Controller
         // If admin, disable RBAC.
         $multi = $isAdmin === false;
         // If admin, disable multitenancy.
-        // Find and validate the object.
+        // Find and validate the object. Rendering is deferred to the single
+        // renderEntity() call below (`_render: false`): find() previously
+        // rendered the entity with the same $extend and the controller then
+        // rendered it AGAIN, repeating file hydration, writeOnly redaction and
+        // the expensive inverse-property resolution on every single read.
+        // Permission checks and read logging inside find() still run.
         try {
             $objectEntity = $this->objectService->find(
                 id: $id,
@@ -1718,7 +2453,8 @@ class ObjectsController extends Controller
                 register: $register,
                 schema: $schema,
                 _rbac: $rbac,
-                _multitenancy: $multi
+                _multitenancy: $multi,
+                _render: false
             );
             if ($objectEntity === null) {
                 $errorMsg = "Object with id {$id} not found";
@@ -1726,6 +2462,9 @@ class ObjectsController extends Controller
             }
 
             // Render the object with requested extensions, filters, fields, and unset parameters.
+            // This is the ONLY render on the show() response path: writeOnly
+            // redaction and read-authorization stripping (openregister#385/#386)
+            // are applied here, exactly once, inside renderEntity().
             $renderedObject = $this->objectService->renderEntity(
                 entity: $objectEntity,
                 _extend: $extend,
@@ -1801,8 +2540,29 @@ class ObjectsController extends Controller
                 $renderedData = $this->stripEmptyValues(data: $renderedData);
             }
 
+            // Content negotiation: emit JSON-LD when requested. The serializer
+            // wraps the already-rendered array — no second data path — so all
+            // access control above remains applied (json-ld-output).
+            if ($this->wantsJsonLd() === true
+                && $resolved['registerEntity'] !== null
+                && $resolved['schemaEntity'] !== null
+            ) {
+                return $this->jsonLdObjectResponse(
+                    renderedObject: $renderedData,
+                    register: $resolved['registerEntity'],
+                    schema: $resolved['schemaEntity']
+                );
+            }
+
             return new JSONResponse(data: $renderedData);
         } catch (DoesNotExistException $exception) {
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
+        } catch (NotAuthorizedException $exception) {
+            // RBAC denied the read. Return 404 (not 500, and not 403) so an
+            // unauthorized caller cannot distinguish "exists but forbidden"
+            // from "does not exist" — avoids leaking object existence while
+            // still denying access. Previously this exception escaped the
+            // handler and surfaced as an HTTP 500.
             return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         }//end try
     }//end show()
@@ -1825,36 +2585,21 @@ class ObjectsController extends Controller
      *
      * @PublicPage
      *
-     * @psalm-return JSONResponse<201|401|403|404,
-     *     array{'@self'?: array{name: mixed|null|string,...}|mixed,
-     *     message?: mixed|string, error?: mixed|string,...},
-     *     array<never, never>>|JSONResponse<400, string, array<never, never>>
+     * @psalm-return JSONResponse
      *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
      *
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
+    #[AnonRateLimit(limit: 30, period: 60)]
     public function create(
         string $register,
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
-        // Wave-3 C13: short-circuit anonymous writes BEFORE the webhook
-        // intercept fires. The endpoint is @PublicPage so unauthenticated
-        // reads can pass through the access guard, but writes from an
-        // anonymous caller must never trigger pre-event webhooks
-        // (which can cause side effects in receiving systems —
-        // file ingest, n8n flows, audit logs — before any RBAC check runs).
-        if ($this->userSession->getUser() === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required to create objects'],
-                statusCode: 401
-            );
-        }
-
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -1904,6 +2649,10 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
 
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields so they
+        // cannot be injected via the single-object create path.
+        $object = $this->sanitiseSelfMetadata(data: $object);
+
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
@@ -1951,8 +2700,18 @@ class ObjectsController extends Controller
                 ],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception to avoid being absorbed as a 403 with
+            // a non-structured body. See the `self-folder-access-control` capability spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
 
@@ -1978,6 +2737,8 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @psalm-suppress TypeDoesNotContainType
      * @psalm-suppress NoValue
      *
@@ -1985,7 +2746,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Object update requires many validation and processing steps
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-62
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function update(
         string $register,
@@ -2017,6 +2778,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $object = $this->normalizeFormDataValues(data: $object);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $object = $this->sanitiseSelfMetadata(data: $object);
 
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2082,7 +2846,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $exception);
         } catch (NotFoundExceptionInterface | ContainerExceptionInterface $e) {
             // If there's an issue getting the user ID, continue without the lock check.
         }//end try
@@ -2109,8 +2874,12 @@ class ObjectsController extends Controller
             // Unlock the object after saving.
             try {
                 $this->objectService->unlockObject($objectEntity->getUuid());
-            } catch (Exception $e) {
+            } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
+                // NOTE: must be the global \Exception — the unqualified `Exception`
+                // resolves to OCP\DB\Exception here (see `use` block) and would NOT
+                // catch the \Exception thrown by LockHandler::unlock(), which then
+                // surfaced as a spurious 403. See openregister#195.
             }
 
             // Return the successfully saved object directly.
@@ -2126,8 +2895,17 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
         }//end try
     }//end update()
@@ -2150,10 +2928,12 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @PublicPage
+     *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-3
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function patch(
         string $register,
@@ -2183,13 +2963,16 @@ class ObjectsController extends Controller
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
 
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
+
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = $isAdmin === false;
         $multi   = $isAdmin === false;
 
         // Log RBAC/multitenancy settings for debugging.
-        $this->logger->info(
+        $this->logger->debug(
                 message: '[ObjectsController] PATCH: RBAC/Multitenancy settings',
                 context: [
                     'file'    => __FILE__,
@@ -2239,6 +3022,29 @@ class ObjectsController extends Controller
                 return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
             }//end try
 
+            // Optimistic concurrency (fix-object-patch-lost-update): PATCH is a
+            // read-merge-write, so two concurrent PATCHes can silently clobber each
+            // other's untouched fields. A caller that read the object may pass the
+            // `updated` value it saw as `_expectedUpdated` (If-Match semantics); if
+            // the stored object changed since, the caller is working from stale data
+            // and the write is rejected with 409 instead of overwriting the newer
+            // version. Opt-in: callers that omit `_expectedUpdated` behave as before.
+            // Read from the raw request: the patchData filter strips `_`-prefixed keys.
+            $expectedUpdated = $this->request->getParam('_expectedUpdated');
+            if ($expectedUpdated !== null) {
+                $currentUpdated = $existingObject->getUpdated()?->format(\DateTimeInterface::ATOM);
+                if ((string) $currentUpdated !== (string) $expectedUpdated) {
+                    return new JSONResponse(
+                        data: [
+                            'error'           => 'Conflict: the object was modified since it was read. Re-read and retry.',
+                            'expectedUpdated' => (string) $expectedUpdated,
+                            'currentUpdated'  => (string) $currentUpdated,
+                        ],
+                        statusCode: 409
+                    );
+                }
+            }
+
             // Get the existing object data and merge with patch data.
             $existingData = $existingObject->getObject();
             $mergedData   = array_merge($existingData ?? [], $patchData);
@@ -2252,7 +3058,7 @@ class ObjectsController extends Controller
                 uuid: $id
             );
 
-            $this->logger->info(
+            $this->logger->debug(
                     message: '[ObjectsController] PATCH: saveObject succeeded',
                     context: [
                         'file'   => __FILE__,
@@ -2277,7 +3083,7 @@ class ObjectsController extends Controller
                         );
             }
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ObjectsController] PATCH: Starting to prepare response',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -2304,6 +3110,9 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception. See `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             $this->logger->error(
@@ -2315,7 +3124,8 @@ class ObjectsController extends Controller
                         'trace'     => $exception->getTraceAsString(),
                     ]
                     );
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end patch()
 
@@ -2333,13 +3143,13 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse A JSON response containing the updated object
      *
-     * @PublicPage
-     *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-13
+     * @PublicPage
+     *
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function postPatch(
         string $register,
@@ -2347,18 +3157,6 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
-        // Wave-3 C13: short-circuit anonymous writes early. postPatch is
-        // @PublicPage to let multipart file-upload PATCH-semantics work for
-        // logged-in users, but it must never accept writes from an
-        // unauthenticated caller — consistent with create() above and with
-        // OR's read-public / write-authenticated split.
-        if ($this->userSession->getUser() === null) {
-            return new JSONResponse(
-                data: ['error' => 'Authentication required to update objects'],
-                statusCode: 401
-            );
-        }
-
         try {
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
         } catch (RegisterNotFoundException | SchemaNotFoundException $e) {
@@ -2377,6 +3175,9 @@ class ObjectsController extends Controller
 
         // Normalize multipart/form-data: decode JSON-encoded strings back into arrays/objects.
         $patchData = $this->normalizeFormDataValues(data: $patchData);
+
+        // Defense-in-depth (wave-11 WF2): strip server-managed @self fields.
+        $patchData = $this->sanitiseSelfMetadata(data: $patchData);
 
         // Extract uploaded files — works because this is a POST request.
         $uploadedFiles = $this->extractAllUploadedFiles();
@@ -2441,8 +3242,15 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (FolderAccessDeniedException $exception) {
+            // MUST be caught before generic \Exception so a @self.folder
+            // denial on the post-patch path returns 403 with the structured
+            // body (no folder-id oracle) — same contract as create/update/patch.
+            // See the `self-folder-access-control` spec.
+            return $this->folderAccessDeniedResponse(exception: $exception);
         } catch (\Exception $exception) {
-            return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $exception);
         }//end try
     }//end postPatch()
 
@@ -2462,8 +3270,9 @@ class ObjectsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2502,9 +3311,40 @@ class ObjectsController extends Controller
                 data: ['error' => $exception->getMessage(), 'errors' => $exception->getErrors()],
                 statusCode: 422
             );
+        } catch (DoesNotExistException $exception) {
+            // Absent objects (native or external) are a uniform 404.
+            return new JSONResponse(data: ['error' => 'Not Found'], statusCode: 404);
         } catch (\Exception $exception) {
             // Handle all exceptions (including RBAC permission errors and object not found).
+            // Sanitized external-write failures carry their own 4xx status
+            // (dbal-virtual-registers-crud) — never flatten them to 403.
+            if ($exception instanceof \OCA\OpenRegister\Service\ObjectSource\DbalWriteException === true) {
+                return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: $exception->getStatusCode());
+            }
+
             return new JSONResponse(data: ['error' => $exception->getMessage()], statusCode: 403);
+        } catch (\Throwable $throwable) {
+            // Safety net for fatal errors (\Error/\TypeError) that do NOT extend
+            // \Exception and would otherwise escape as an HTML 500 fatal-error page
+            // to API clients. Log the full trace and return a clean JSON 500 so the
+            // contract is always machine-readable. \Throwable MUST be caught last so
+            // the specific catches above keep their dedicated status codes.
+            $this->logger?->error(
+                message: '[ObjectsController] Unexpected fatal error while deleting object',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'register'  => $register,
+                    'schema'    => $schema,
+                    'id'        => $id,
+                    'exception' => $throwable->getMessage(),
+                    'trace'     => $throwable->getTraceAsString(),
+                ]
+            );
+            return new JSONResponse(
+                data: ['error' => 'An unexpected error occurred while deleting the object'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+            );
         }//end try
     }//end destroy()
 
@@ -2523,7 +3363,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function canDelete(
         string $id,
@@ -2581,7 +3421,7 @@ class ObjectsController extends Controller
      *     offset: int<0, max>, next?: string, prev?: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function contracts(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2625,6 +3465,9 @@ class ObjectsController extends Controller
         // Use ObjectService delegation to handler.
         $result = $objectService->getObjectContracts(objectId: $id, filters: $filters);
 
+        // Stamp resourceUrls (deep-links) before paginating.
+        $result = $this->stampObjectUrls(result: $result);
+
         // Return empty paginated response.
         return new JSONResponse(
             data: $this->paginate(
@@ -2636,6 +3479,94 @@ class ObjectsController extends Controller
             )
         );
     }//end contracts()
+
+    /**
+     * Stamp a canonical `url` (resourceUrl) onto each related-object record.
+     *
+     * This reuses the SAME resolver the unified-search provider uses
+     * ({@see \OCA\OpenRegister\Service\DeepLinkRegistryService::resolveUrl()}),
+     * so there is a single source of truth for "how is an object opened in the
+     * UI". Consuming apps register per-(register, schema) URL templates via the
+     * DeepLinkRegistrationEvent; when no registration exists we fall back to
+     * OpenRegister's own object route (mirroring `lib/Search/ObjectsProvider.php`).
+     *
+     * Resolution is defensive: a failure (or missing dependency) omits the `url`
+     * for that record without altering or dropping the record itself.
+     *
+     * @param array $result The relation envelope ({results, total, ...}).
+     *
+     * @return array The same envelope with `url` stamped on each resolvable record.
+     */
+    private function stampObjectUrls(array $result): array
+    {
+        if ($this->deepLinkRegistry === null
+            || isset($result['results']) === false
+            || is_array($result['results']) === false
+        ) {
+            return $result;
+        }
+
+        foreach ($result['results'] as $index => $record) {
+            // Normalise entities to their serialized array form.
+            if (is_object($record) === true && method_exists($record, 'jsonSerialize') === true) {
+                $record = $record->jsonSerialize();
+            }
+
+            if (is_array($record) === false) {
+                continue;
+            }
+
+            $self       = ($record['@self'] ?? []);
+            $uuid       = ($self['id'] ?? ($record['id'] ?? null));
+            $registerId = ($self['register'] ?? null);
+            $schemaId   = ($self['schema'] ?? null);
+
+            if ($uuid === null || is_numeric($registerId) === false || is_numeric($schemaId) === false) {
+                $result['results'][$index] = $record;
+                continue;
+            }
+
+            try {
+                $flat = array_merge(
+                    $record,
+                    [
+                        'uuid'     => $uuid,
+                        'id'       => $uuid,
+                        'register' => $registerId,
+                        'schema'   => $schemaId,
+                    ]
+                );
+
+                $url = $this->deepLinkRegistry->resolveUrl(
+                    registerId: (int) $registerId,
+                    schemaId: (int) $schemaId,
+                    objectData: $flat
+                );
+
+                if ($url === null && $this->relationUrlGenerator !== null) {
+                    $url = $this->relationUrlGenerator->linkToRoute(
+                        'openregister.objects.show',
+                        [
+                            'register' => $registerId,
+                            'schema'   => $schemaId,
+                            'id'       => $uuid,
+                        ]
+                    );
+                }
+
+                if ($url !== null) {
+                    $record['url'] = $url;
+                }
+            } catch (\Throwable $e) {
+                // Defensive: never let URL resolution break the relation response.
+                $this->logger?->debug('Relation URL resolution failed: '.$e->getMessage());
+            }//end try
+
+            $result['results'][$index] = $record;
+        }//end foreach
+
+        return $result;
+    }//end stampObjectUrls()
 
     /**
      * Retrieves all objects that this object references
@@ -2659,7 +3590,7 @@ class ObjectsController extends Controller
      *     limit: 30|mixed, offset: 0|mixed},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function uses(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2682,8 +3613,8 @@ class ObjectsController extends Controller
             _multitenancy: true
         );
 
-        // Return the result directly from ObjectService.
-        return new JSONResponse(data: $result);
+        // Stamp resourceUrls (deep-links) and return the result from ObjectService.
+        return new JSONResponse(data: $this->stampObjectUrls(result: $result));
     }//end uses()
 
     /**
@@ -2708,7 +3639,7 @@ class ObjectsController extends Controller
      *     offset: 0|mixed, message?: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-6
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function used(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2731,8 +3662,8 @@ class ObjectsController extends Controller
             _multitenancy: true
         );
 
-        // Return the result directly from ObjectService.
-        return new JSONResponse(data: $result);
+        // Stamp resourceUrls (deep-links) and return the result from ObjectService.
+        return new JSONResponse(data: $this->stampObjectUrls(result: $result));
     }//end used()
 
     /**
@@ -2761,7 +3692,7 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Audit log retrieval with pagination + access checks requires branching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-7
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function logs(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
@@ -2866,7 +3797,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function lock(string $register, string $schema, string $id): JSONResponse
     {
@@ -2894,7 +3825,8 @@ class ObjectsController extends Controller
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
         } catch (\Throwable $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $e);
         }//end try
     }//end lock()
 
@@ -2911,7 +3843,7 @@ class ObjectsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-4
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function unlock(string $register, string $schema, string $id): JSONResponse
     {
@@ -2959,22 +3891,24 @@ class ObjectsController extends Controller
      * @param string        $schema        The schema slug or identifier
      * @param ObjectService $objectService The object service
      *
-     * @return DataDownloadResponse The exported file as a download response
+     * @return DataDownloadResponse|JSONResponse The exported file as a download response, or a
+     *     400 JSON error when a `format=pdf` request exceeds {@see \OCA\OpenRegister\Service\ExportService::MAX_PDF_EXPORT_ROWS}.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
      * @psalm-return DataDownloadResponse<200,
-     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv',
-     *     array<never, never>>
+     *     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'|'text/csv'|'application/pdf',
+     *     array<never, never>>|JSONResponse
      *
      * @psalm-suppress NoValue
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     * @spec openspec/specs/export-pdf-format/spec.md
      */
-    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse
+    public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse
     {
         // Set the register and schema context.
         $objectService->setRegister(register: $register);
@@ -3015,6 +3949,47 @@ class ObjectsController extends Controller
             );
         }
 
+        if ($type === 'json') {
+            $content = $this->exportService->exportToJson(
+                register: $registerEntity,
+                schema: $schemaEntity,
+                filters: $filters
+            );
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.json",
+                contentType: 'application/json'
+            );
+        }
+
+        if ($type === 'pdf') {
+            try {
+                $content = $this->exportService->exportToPdf(
+                    register: $registerEntity,
+                    schema: $schemaEntity,
+                    filters: $filters,
+                    currentUser: $this->userSession->getUser()
+                );
+            } catch (ExportTooLargeException $e) {
+                return new JSONResponse(
+                    data: [
+                        'error'    => 'export_too_large',
+                        'message'  => $e->getMessage(),
+                        'rowCount' => $e->getRowCount(),
+                        'maxRows'  => $e->getMaxRows(),
+                    ],
+                    statusCode: ExportTooLargeException::HTTP_STATUS
+                );
+            }
+
+            return new DataDownloadResponse(
+                data: $content,
+                filename: "{$filenameBase}.pdf",
+                contentType: 'application/pdf'
+            );
+        }//end if
+
         // Default to Excel.
         $spreadsheet = $this->exportService->exportToExcel(
             register: $registerEntity,
@@ -3037,100 +4012,6 @@ class ObjectsController extends Controller
     }//end export()
 
     /**
-     * Import objects into a register
-     *
-     * @param int $register The ID of the register to import into
-     *
-     * @return JSONResponse JSON response with import result or error.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @psalm-suppress NoValue
-     *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-20
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-11
-     */
-    public function import(int $register): JSONResponse
-    {
-        try {
-            // Get the uploaded file.
-            $uploadedFile = $this->request->getUploadedFile('file');
-            if ($uploadedFile === null) {
-                return new JSONResponse(data: ['error' => 'No file uploaded'], statusCode: 400);
-            }
-
-            // Find the register.
-            $registerEntity = $this->registerMapper->find($register);
-
-            // Get optional schema for CSV (can be null, Excel auto-resolves per sheet).
-            $schemaId = $this->request->getParam(key: 'schema');
-            $schema   = null;
-            if ($schemaId !== null && $schemaId !== '') {
-                $schema = $this->schemaMapper->find($schemaId);
-            }
-
-            // Get optional parameters with sensible defaults.
-            $validation = filter_var($this->request->getParam(key: 'validation', default: false), FILTER_VALIDATE_BOOLEAN);
-            $events     = filter_var($this->request->getParam(key: 'events', default: false), FILTER_VALIDATE_BOOLEAN);
-            $rbac       = filter_var($this->request->getParam(key: 'rbac', default: true), FILTER_VALIDATE_BOOLEAN);
-            $multi      = filter_var($this->request->getParam(key: 'multi', default: true), FILTER_VALIDATE_BOOLEAN);
-            $publish    = filter_var($this->request->getParam(key: 'publish', default: false), FILTER_VALIDATE_BOOLEAN);
-            $enrich     = filter_var($this->request->getParam(key: 'enrich', default: true), FILTER_VALIDATE_BOOLEAN);
-
-            // Determine the import type from the uploaded file extension.
-            $filename  = ($uploadedFile['name'] ?? '');
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-
-            // Route to the real ImportService. CSV requires a specific schema;
-            // Excel auto-resolves schemas per sheet.
-            if ($extension === 'csv') {
-                if ($schema === null) {
-                    return new JSONResponse(
-                        data: ['error' => 'Schema parameter is required for CSV imports.'],
-                        statusCode: 400
-                    );
-                }
-
-                $result = $this->importService->importFromCsv(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            } else {
-                $result = $this->importService->importFromExcel(
-                    filePath: $uploadedFile['tmp_name'],
-                    register: $registerEntity,
-                    schema: $schema,
-                    validation: $validation,
-                    events: $events,
-                    _rbac: $rbac,
-                    _multitenancy: $multi,
-                    publish: $publish,
-                    currentUser: $this->userSession->getUser(),
-                    enrich: $enrich
-                );
-            }//end if
-
-            return new JSONResponse(
-                data: [
-                    'message' => 'Import successful',
-                    'summary' => $result,
-                ]
-            );
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }//end try
-    }//end import()
-
-    /**
      * Merge two objects
      *
      * This method merges object A into object B within the same register and schema.
@@ -3147,7 +4028,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with merge result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-5
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function merge(
         string $id,
@@ -3185,7 +4066,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to merge objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3206,7 +4087,7 @@ class ObjectsController extends Controller
      *
      * @return JSONResponse JSON response with migration result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-12
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function migrate(ObjectService $objectService): JSONResponse
     {
@@ -3255,7 +4136,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to migrate objects: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3282,7 +4163,7 @@ class ObjectsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-10
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function downloadFiles(
         string $id,
@@ -3360,7 +4241,7 @@ class ObjectsController extends Controller
         } catch (\Exception $exception) {
             return new JSONResponse(
                 data: [
-                    'error' => 'Failed to create ZIP file: '.$exception->getMessage(),
+                    'error' => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3380,7 +4261,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, data?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function vectorizeBatch(): JSONResponse
     {
@@ -3405,7 +4286,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3425,7 +4306,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, stats?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getObjectVectorizationStats(): JSONResponse
     {
@@ -3449,7 +4330,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3469,7 +4350,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array{success: bool, error?: string, count?: mixed}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-9
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function getObjectVectorizationCount(): JSONResponse
     {
@@ -3493,7 +4374,7 @@ class ObjectsController extends Controller
             return new JSONResponse(
                 data: [
                     'success' => false,
-                    'error'   => $e->getMessage(),
+                    'error'   => 'Internal server error',
                 ],
                 statusCode: 500
             );
@@ -3513,7 +4394,7 @@ class ObjectsController extends Controller
      *
      * @psalm-return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function validate(): JSONResponse
     {
@@ -3719,34 +4600,6 @@ class ObjectsController extends Controller
     }//end isUuid()
 
     /**
-     * Clear all blob storage objects (deprecated)
-     *
-     * The blob objects table has been retired. All objects now live in per-schema
-     * magic tables. This endpoint is kept for backwards compatibility but is a no-op.
-     *
-     * @NoAdminRequired
-     * @NoCSRFRequired
-     *
-     * @return JSONResponse JSON response indicating the operation is no longer applicable
-     *
-     * @psalm-return JSONResponse
-     *
-     * @deprecated Blob storage has been retired; this endpoint is a no-op.
-     *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-8
-     */
-    public function clearBlob(): JSONResponse
-    {
-        return new JSONResponse(
-            data: [
-                'success' => true,
-                'deleted' => 0,
-                'message' => 'Blob storage has been retired. All objects now use magic tables.',
-            ]
-        );
-    }//end clearBlob()
-
-    /**
      * Recursively strips empty values (null, empty string, empty array) from an array.
      *
      * Used to reduce API response payload by omitting properties that have no value.
@@ -3807,4 +4660,50 @@ class ObjectsController extends Controller
 
         return $result;
     }//end stripEmptyValues()
+
+    /**
+     * Build the structured HTTP 403 response for a folder-access denial.
+     *
+     * Per the `self-folder-access-control` capability spec, every save
+     * endpoint that propagates `FolderAccessDeniedException` MUST return
+     * status 403 with body `{ "error": "folder_access_denied" }`.
+     *
+     * The body does NOT echo the attempted folder ID. Doing so would add
+     * an enumeration oracle: a caller probing `@self.folder` with sequential
+     * integers could distinguish "folder exists but I can't read it" (403)
+     * from "folder does not exist" (auto-create / no-op) just by observing
+     * the response shape. Returning a uniform 403 with no folder context
+     * forces the attacker to rely on the status code alone — which is already
+     * a documented privacy property of the spec — and removes the body-level
+     * confirmation. The caller already knows which folder ID they sent.
+     *
+     * The exception's `getAttemptedFolderId()` still carries the ID for
+     * server-side logging and the audit trail.
+     *
+     * Centralised here so the three save endpoints (create / update / postPatch)
+     * stay in sync without copy-pasting the response shape.
+     *
+     * @param FolderAccessDeniedException $exception The denial exception carrying the attempted folder ID.
+     *
+     * @return JSONResponse HTTP 403 with the structured body.
+     */
+    private function folderAccessDeniedResponse(FolderAccessDeniedException $exception): JSONResponse
+    {
+        // Side-effect: ensure the attempted ID is recorded server-side
+        // (visible in the audit trail via logFolderAccessDenied + the
+        // exception message) even though we do NOT echo it back to the
+        // caller. `$exception` is referenced only to make the audit
+        // intent clear; the structured body is intentionally minimal.
+        $this->logger?->info(
+            '[ObjectsController] Folder access denied — returning 403',
+            [
+                'attemptedFolderId' => $exception->getAttemptedFolderId(),
+            ]
+        );
+
+        return new JSONResponse(
+            data: ['error' => 'folder_access_denied'],
+            statusCode: FolderAccessDeniedException::HTTP_STATUS
+        );
+    }//end folderAccessDeniedResponse()
 }//end class

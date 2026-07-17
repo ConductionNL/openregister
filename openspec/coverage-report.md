@@ -329,7 +329,7 @@ _(Full list of 56 NEEDS-REVIEW entries is in `coverage-report.json` under `bucke
 
 ### cluster: `notificatie-engine` (88 methods)
 
-- `lib/BackgroundJob/BatchNotificationJob.php` — `run()`
+- `lib/BackgroundJob/NotificationQueueFlushJob.php` — `run()`, `processGroup()`, `resolveDigestSpec()`
 - `lib/BackgroundJob/ScheduledNotificationJob.php` — `isDue()`, `markFired()`, `matchesFilter()`, `__construct()`, `run()`, `processSchema()`, `stateKey()`, `fire()`
 - `lib/Controller/NotificationHistoryController.php` — `extractFilters()`, `resolveLimit()`, `resolveOffset()`
 - `lib/Controller/NotificationSubscriptionsController.php` — `index()`, `create()`, `destroy()`, `resolveUserId()`, `coerceNullableInt()`
@@ -791,7 +791,7 @@ _(none — every live REQ has at least one keyword match in git history; this ca
 - `lib/AppInfo/Application.php`
 - `lib/BackgroundJob/ActionRetryJob.php`
 - `lib/BackgroundJob/ActionScheduleJob.php`
-- `lib/BackgroundJob/BatchNotificationJob.php`
+- `lib/BackgroundJob/NotificationQueueFlushJob.php`
 - `lib/BackgroundJob/BlobMigrationJob.php`
 - `lib/BackgroundJob/BulkLegalHoldJob.php`
 - `lib/BackgroundJob/CacheWarmupJob.php`

@@ -26,9 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
-use OCP\Util;
 
 /**
  * FilesSidebarListener
@@ -58,7 +58,7 @@ class FilesSidebarListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handle(Event $event): void
     {
@@ -70,7 +70,7 @@ class FilesSidebarListener implements IEventListener
 
         $jsPath = __DIR__.'/../../js/openregister-filesSidebar.js';
         if (file_exists($jsPath) === true) {
-            Util::addScript('openregister', 'openregister-filesSidebar');
+            ScriptManifestLoader::addEntryScripts('openregister', 'filesSidebar', 'openregister-filesSidebar');
         }
     }//end handle()
 }//end class

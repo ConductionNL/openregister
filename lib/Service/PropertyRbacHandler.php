@@ -137,10 +137,20 @@ class PropertyRbacHandler
      *
      * @spec openspec/specs/row-field-level-security/spec.md#fls-strips-restricted-fields (strips unreadable
      *       property-authorized fields from outgoing data; admin + no-property-auth short-circuit)
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     *       (writeOnly stripping runs before the admin bypass — admin is NOT exempt from writeOnly)
      */
     public function filterReadableProperties(Schema $schema, array $object): array
     {
-        // If user is admin, return object as-is.
+        // Write-only stripping applies to EVERYONE, including admin: a write-only
+        // property (secret/token) is never returned on read. This runs BEFORE the
+        // admin short-circuit below precisely because admin is not exempt. It is a
+        // fail-safe projection: the property may have been selected by the caller
+        // (e.g. ?fields=apiToken) yet is still removed here because stripping is
+        // applied after selection in the render path.
+        $object = $this->stripWriteOnlyProperties(schema: $schema, object: $object);
+
+        // If user is admin, return object as-is (writeOnly already stripped above).
         if ($this->isAdmin() === true) {
             return $object;
         }
@@ -173,6 +183,368 @@ class PropertyRbacHandler
 
         return $object;
     }//end filterReadableProperties()
+
+    /**
+     * Strip write-only properties from outgoing object data.
+     *
+     * A property declared `writeOnly: true` (standard JSON Schema / OpenAPI
+     * keyword) is a write-only secret: it may be written but is NEVER returned
+     * on read, for ANY caller including admin. This is the correct semantic for
+     * secrets and tokens and is the platform-level answer to openregister#380
+     * (ADR-063 MCP tools have no field projection of their own, so stripping in
+     * OpenRegister's read path makes them inherit the redaction automatically).
+     *
+     * Fail-safe: only opted-in properties are removed; a schema with no
+     * writeOnly property returns the object untouched (backward compatible).
+     * The render path applies this AFTER caller-supplied field/extend selection,
+     * so a caller cannot re-surface a stripped property by naming it.
+     *
+     * @param Schema $schema Schema containing property definitions
+     * @param array  $object Object data to filter
+     *
+     * @return array Object data with write-only properties removed
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     *       (strips writeOnly properties for every reader; short-circuits when the schema has none)
+     */
+    public function stripWriteOnlyProperties(Schema $schema, array $object): array
+    {
+        $hasProperties = $schema->hasWriteOnlyProperties();
+        $paths         = $schema->getWriteOnlyPaths();
+
+        if ($hasProperties === false && empty($paths) === true) {
+            return $object;
+        }
+
+        if ($hasProperties === true) {
+            foreach ($schema->getWriteOnlyProperties() as $propertyName) {
+                if (array_key_exists($propertyName, $object) === true) {
+                    unset($object[$propertyName]);
+                    $this->logger->debug(
+                        message: '[PropertyRbacHandler] Stripped write-only property',
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $propertyName]
+                    );
+                }
+            }
+        }
+
+        foreach ($paths as $path) {
+            $object = $this->stripWriteOnlyPath(path: $path, object: $object);
+        }
+
+        return $object;
+    }//end stripWriteOnlyProperties()
+
+    /**
+     * Remove one declared write-only dot-path from an outgoing array.
+     *
+     * This handles BOTH shapes OpenRegister renders a write-only value in,
+     * because the same declaration has to cover both and every caller of
+     * stripWriteOnlyProperties() passes one or the other:
+     *
+     * 1. The object BODY, where `configuration.authentication.client_secret`
+     *    is a nested structure to descend into and unset.
+     * 2. The `relations` search-index MIRROR, where SaveObject::scanForRelations()
+     *    flattens nested values into LITERAL dot-path keys — the mirror map is
+     *    already keyed `configuration.authentication.client_secret`. jsonSerialize()
+     *    surfaces that map as `@self.relations`, so a nested secret leaks there
+     *    even after the body strip, exactly as top-level writeOnly did in #429.
+     *
+     * Both operations are applied unconditionally and are mutually inert: a body
+     * has no literal dotted key (dots are not used in property names), and a flat
+     * mirror map has nothing to descend. That keeps this method total over every
+     * input the render path hands it, rather than relying on the caller to know
+     * which shape it holds.
+     *
+     * A declared path removes the value at that location AND its whole sub-tree —
+     * declaring `configuration.authentication` strips every key beneath it, and in
+     * the mirror that means every flattened key prefixed `configuration.authentication.`
+     * (this is what covers `configuration.authentication.keys.<apiKey>`, whose leaf
+     * segments are attacker-supplied and therefore cannot be enumerated in advance).
+     *
+     * @param string $path   The declared dot-path.
+     * @param array  $object The object body or relations mirror.
+     *
+     * @return array The array with the path removed.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    private function stripWriteOnlyPath(string $path, array $object): array
+    {
+        // Shape 2: the flattened relations mirror. Remove an exact dot-path key
+        // and every key beneath it.
+        $prefix = $path.'.';
+        foreach (array_keys($object) as $key) {
+            $key = (string) $key;
+            if ($key === $path || str_starts_with($key, $prefix) === true) {
+                unset($object[$key]);
+                $this->logger->debug(
+                    message: '[PropertyRbacHandler] Stripped write-only path from relations mirror',
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $key]
+                );
+            }
+        }
+
+        // Shape 1: the nested object body. Walk the path by reference and unset
+        // the final segment. Bail out the moment the path stops resolving —
+        // a declared path that is absent from this object is normal (the value
+        // was never set) and must not create keys on the way down.
+        $segments = explode('.', $path);
+        $leaf     = array_pop($segments);
+        $cursor   = &$object;
+
+        foreach ($segments as $segment) {
+            if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+                unset($cursor);
+                return $object;
+            }
+
+            $cursor = &$cursor[$segment];
+        }
+
+        if (is_array($cursor) === true && array_key_exists($leaf, $cursor) === true) {
+            unset($cursor[$leaf]);
+            $this->logger->debug(
+                message: '[PropertyRbacHandler] Stripped write-only path',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
+            );
+        }
+
+        unset($cursor);
+
+        return $object;
+    }//end stripWriteOnlyPath()
+
+    /**
+     * Collect the declared write-only locations that an incoming update payload OMITS.
+     *
+     * This is the detection half of the save-side preserve rule (openregister#463) —
+     * the exact mirror of stripWriteOnlyProperties(). The strip removes a declared
+     * location from everything going OUT; this reports which declared locations are
+     * missing from what came IN, so the caller can carry the stored value forward
+     * instead of destroying it.
+     *
+     * Why the rule has to exist at all: `writeOnly`'s own semantic ("a client may SEND
+     * this, the server never returns it") tacitly assumes the client re-sends the value.
+     * A client that was never given the value cannot. The natural round-trip — GET the
+     * object, edit one field, PUT it back — therefore re-sends a body with the secret
+     * missing, and PUT semantics (SaveObject::fillMissingSchemaPropertiesWithNull())
+     * nulls every schema property the payload omits. The read boundary was airtight and
+     * the write boundary silently deleted. That is not theoretical: nc-vue's generic
+     * CnFormDialog builds its submit body by spreading the loaded form data and has no
+     * writeOnly awareness at all, so editing ANY field of an OpenConnector Source wiped
+     * its credentials (openconnector#245).
+     *
+     * A top-level `writeOnly: true` property is treated as a single-segment dot-path, so
+     * both declaration surfaces collapse into one uniform rule and cannot drift apart.
+     *
+     * ── absent vs explicit null ──────────────────────────────────────────────────────
+     * ONLY an absent location is preserved. A location present with an explicit `null`
+     * is left exactly as the client sent it and therefore CLEARS the stored secret.
+     * The distinction is deliberate and load-bearing: if absent and explicit-null were
+     * treated alike, preserving the first would make clearing a secret IMPOSSIBLE — the
+     * value could be set and rotated but never removed, which is its own security defect
+     * (a decommissioned credential you cannot delete). Absent is the ACCIDENTAL case (the
+     * client never saw the value); explicit null is an act a client can only perform on
+     * purpose. This also keeps PUT consistent with PATCH, where ObjectsController already
+     * merges the payload over the stored object — so an omitted key is backfilled from
+     * storage and an explicit null overwrites it. Both verbs therefore agree: omit to
+     * keep, send null to clear.
+     *
+     * This MUST be called on the RAW incoming payload, BEFORE SaveObject::setDefaultValues()
+     * runs. That method applies a property's `default` when the key is absent OR null,
+     * which would materialize an omitted key and mask the omission from this check — a
+     * write-only property carrying a `default` would then silently overwrite the stored
+     * secret with its default on every update.
+     *
+     * @param Schema $schema   Schema whose write-only declarations apply.
+     * @param array  $incoming The raw incoming update payload.
+     *
+     * @return array<int, string> Declared dot-paths absent from the payload (possibly empty).
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
+     */
+    public function collectOmittedWriteOnlyPaths(Schema $schema, array $incoming): array
+    {
+        // A top-level writeOnly property is just a one-segment path.
+        $declared = array_merge($schema->getWriteOnlyProperties(), $schema->getWriteOnlyPaths());
+
+        if (empty($declared) === true) {
+            return [];
+        }
+
+        $omitted = [];
+        foreach ($declared as $path) {
+            if ($this->pathExists(path: $path, object: $incoming) === false) {
+                $omitted[] = $path;
+            }
+        }
+
+        return $omitted;
+    }//end collectOmittedWriteOnlyPaths()
+
+    /**
+     * Carry stored write-only values forward onto an update payload that omitted them.
+     *
+     * The application half of the save-side preserve rule (openregister#463). Restores
+     * ONLY the declared locations reported absent by collectOmittedWriteOnlyPaths(), read
+     * from the stored object, leaving every other incoming value untouched.
+     *
+     * Restoring the LEAF and never its parent is the whole point of the nested case. The
+     * canonical shape is a Source's `configuration`, an untyped object holding both a
+     * secret (`configuration.authentication.client_secret`) and ordinary operator-editable
+     * settings (`configuration.endpoint`). Carrying the stored `configuration` wholesale
+     * would revert the operator's edits — a data-loss bug traded for a data-loss bug. The
+     * path walk below therefore descends INTO the incoming sub-tree and writes just the
+     * one missing leaf, so a sibling edit in the same object lands normally.
+     *
+     * $stored MUST be the RAW stored object, taken from ObjectEntity::getObject() or a
+     * `_render: false` read. A rendered read is useless here by construction: the render
+     * boundary strips write-only values unconditionally, so a rendered $stored has nothing
+     * to preserve and this method would silently no-op. `_rbac: false` is NOT sufficient —
+     * the writeOnly strip is schema-gated and deliberately ignores `_rbac` (openregister#389,
+     * #460), so an `_rbac: false` read still comes back stripped.
+     *
+     * $stored values are written through VERBATIM. For a property also flagged
+     * `x-openregister-encrypted` the stored value is ciphertext, so this must run AFTER
+     * FieldEncryptionHandler::encryptProperties() — restoring ciphertext before encryption
+     * would double-encrypt it and corrupt the secret beyond recovery.
+     *
+     * @param array              $prepared     The prepared update payload, mutated copy returned.
+     * @param array              $stored       The RAW stored object (never a rendered one).
+     * @param array<int, string> $omittedPaths Declared paths absent from the incoming payload.
+     *
+     * @return array The payload with omitted write-only values carried forward.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
+     */
+    public function restoreWriteOnlyValues(array $prepared, array $stored, array $omittedPaths): array
+    {
+        if (empty($omittedPaths) === true) {
+            return $prepared;
+        }
+
+        foreach ($omittedPaths as $path) {
+            // Nothing stored at this location: the value was never set. Restoring
+            // would invent a key that never existed, so leave the payload alone and
+            // let normal PUT semantics apply.
+            if ($this->pathExists(path: $path, object: $stored) === false) {
+                continue;
+            }
+
+            $prepared = $this->restoreWriteOnlyPath(
+                path: $path,
+                prepared: $prepared,
+                value: $this->readPath(path: $path, object: $stored)
+            );
+        }
+
+        return $prepared;
+    }//end restoreWriteOnlyValues()
+
+    /**
+     * Whether a dot-path resolves to an existing key in an array.
+     *
+     * Uses array_key_exists rather than isset at every segment, because a location
+     * present with an explicit null MUST report true — that is precisely the "client
+     * deliberately cleared the secret" signal that isset() would silently misreport as
+     * absent, re-preserving the value the operator just asked to delete.
+     *
+     * @param string $path   The dot-path to probe.
+     * @param array  $object The array to probe.
+     *
+     * @return bool True when the path resolves to an existing key.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
+     */
+    private function pathExists(string $path, array $object): bool
+    {
+        $cursor = $object;
+
+        foreach (explode('.', $path) as $segment) {
+            if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
+                return false;
+            }
+
+            $cursor = $cursor[$segment];
+        }
+
+        return true;
+    }//end pathExists()
+
+    /**
+     * Read the value at a dot-path. Callers MUST have confirmed pathExists() first.
+     *
+     * @param string $path   The dot-path to read.
+     * @param array  $object The array to read from.
+     *
+     * @return mixed The value at that location (may legitimately be null).
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
+     */
+    private function readPath(string $path, array $object): mixed
+    {
+        $cursor = $object;
+
+        foreach (explode('.', $path) as $segment) {
+            $cursor = $cursor[$segment];
+        }
+
+        return $cursor;
+    }//end readPath()
+
+    /**
+     * Write one stored write-only value back into the payload at its declared path.
+     *
+     * The mirror of stripWriteOnlyPath()'s body walk, inverted: that one descends and
+     * unsets, this one descends and sets. It differs in exactly one deliberate respect —
+     * where the strip BAILS on a missing intermediate segment (never create keys on the
+     * way out), this one CREATES it. A payload that dropped the whole `authentication`
+     * block still has to get its secret back, and the parent has to exist to hold it.
+     *
+     * Bails only when an intermediate segment exists but holds a NON-array: the client
+     * replaced that sub-tree with a scalar, so there is nowhere to put the leaf. Forcing
+     * it would silently discard the value the client actually sent.
+     *
+     * @param string $path     The declared dot-path.
+     * @param array  $prepared The payload to restore into.
+     * @param mixed  $value    The stored value to write, verbatim.
+     *
+     * @return array The payload with the value restored.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-an-omitted-writeonly-value-must-be-preserved-on-save
+     */
+    private function restoreWriteOnlyPath(string $path, array $prepared, mixed $value): array
+    {
+        $segments = explode('.', $path);
+        $leaf     = array_pop($segments);
+        $cursor   = &$prepared;
+
+        foreach ($segments as $segment) {
+            if (array_key_exists($segment, $cursor) === false || $cursor[$segment] === null) {
+                $cursor[$segment] = [];
+            }
+
+            if (is_array($cursor[$segment]) === false) {
+                // The client sent a scalar where this path expects a sub-tree.
+                unset($cursor);
+                return $prepared;
+            }
+
+            $cursor = &$cursor[$segment];
+        }
+
+        $cursor[$leaf] = $value;
+        unset($cursor);
+
+        // Deliberately never logs the value — only that a restore happened.
+        $this->logger->debug(
+            message: '[PropertyRbacHandler] Preserved omitted write-only value on save',
+            context: ['file' => __FILE__, 'line' => __LINE__, 'path' => $path]
+        );
+
+        return $prepared;
+    }//end restoreWriteOnlyPath()
 
     /**
      * Validate writable properties on incoming data

@@ -47,12 +47,16 @@ use OCA\OpenRegister\Service\Object\SaveObject\FilePropertyHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\LinkedEntityPropertyHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\Object\SaveObject\MetadataHydrationHandler;
+use OCA\OpenRegister\Service\FieldEncryptionHandler;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
 use OCA\OpenRegister\Service\TmloService;
+use OCA\OpenRegister\Service\TranslationProjectionService;
+use OCA\OpenRegister\Service\TranslationStatusService;
 use OCA\OpenRegister\Service\Schemas\SchemaCacheHandler;
 use OCA\OpenRegister\Service\Schemas\FacetCacheHandler;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
@@ -63,6 +67,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -256,32 +261,38 @@ class SaveObject
     /**
      * Constructor for SaveObject handler.
      *
-     * @param MagicMapper                 $objectEntityMapper   Object entity mapper
-     * @param MagicMapper                 $unifiedObjectMapper  Unified object mapper for object operations
-     * @param MetadataHydrationHandler    $metaHydrationHandler Handler for metadata extraction
-     * @param FilePropertyHandler         $filePropertyHandler  Handler for file property operations
-     * @param LinkedEntityPropertyHandler $linkedEntityHandler  Linked entity property handler
-     * @param IUserSession                $userSession          User session service
-     * @param AuditTrailMapper            $auditTrailMapper     Audit trail mapper for logging changes
-     * @param SchemaMapper                $schemaMapper         Schema mapper for schema operations
-     * @param RegisterMapper              $registerMapper       Register mapper for register operations
-     * @param IURLGenerator               $urlGenerator         URL generator service
-     * @param OrganisationService         $organisationService  Service for organisation operations
-     * @param CacheHandler                $cacheHandler         Object cache service for entity and query caching
-     * @param SettingsService             $settingsService      Settings service for accessing trail settings
-     * @param PropertyRbacHandler         $propertyRbacHandler  Property-level RBAC handler
-     * @param ComputedFieldHandler        $computedFieldHandler Handler for computed field evaluation
-     * @param TranslationHandler          $translationHandler   Handler for translation operations
-     * @param LoggerInterface             $logger               Logger interface for logging operations
-     * @param TmloService                 $tmloService          TMLO archival metadata service
-     * @param ArrayLoader                 $arrayLoader          Twig array loader for template rendering
-     * @param IGroupManager|null          $groupManager         Group manager for admin-bypass detection
-     * @param IAppConfig|null             $appConfig            App-config reader for the admin-bypass toggle
-     * @param IEventDispatcher|null       $eventDispatcher      Event dispatcher for reference validation events
+     * @param MagicMapper                                                      $objectEntityMapper           Object entity mapper
+     * @param MagicMapper                                                      $unifiedObjectMapper          Unified object mapper
+     * @param MetadataHydrationHandler                                         $metaHydrationHandler         Handler for metadata extraction
+     * @param FilePropertyHandler                                              $filePropertyHandler          Handler for file property operations
+     * @param LinkedEntityPropertyHandler                                      $linkedEntityHandler          Linked entity property handler
+     * @param IUserSession                                                     $userSession                  User session service
+     * @param AuditTrailMapper                                                 $auditTrailMapper             Audit trail mapper for logging changes
+     * @param SchemaMapper                                                     $schemaMapper                 Schema mapper for schema operations
+     * @param RegisterMapper                                                   $registerMapper               Register mapper for register operations
+     * @param IURLGenerator                                                    $urlGenerator                 URL generator service
+     * @param OrganisationService                                              $organisationService          Service for organisation operations
+     * @param CacheHandler                                                     $cacheHandler                 Object entity and query cache
+     * @param SettingsService                                                  $settingsService              Settings service for trail settings
+     * @param PropertyRbacHandler                                              $propertyRbacHandler          Property-level RBAC handler
+     * @param ComputedFieldHandler                                             $computedFieldHandler         Handler for computed field evaluation
+     * @param TranslationHandler                                               $translationHandler           Handler for translation operations
+     * @param TranslationProjectionService                                     $translationProjectionService Translation projection service
+     * @param TranslationStatusService                                         $translationStatusService     Translation status service
+     * @param LoggerInterface                                                  $logger                       Logger interface for logging operations
+     * @param TmloService                                                      $tmloService                  TMLO archival metadata service
+     * @param \OCA\OpenRegister\Service\File\FolderManagementHandler           $folderManagementHandler      Folder access-control gateway
+     * @param ArrayLoader                                                      $arrayLoader                  Twig array loader for template rendering
+     * @param IGroupManager|null                                               $groupManager                 Group manager for admin-bypass detection
+     * @param IAppConfig|null                                                  $appConfig                    App-config reader (admin bypass)
+     * @param IEventDispatcher|null                                            $eventDispatcher              Event dispatcher (reference events)
+     * @param \OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry|null $objectSourceRegistry         Writable object-source provider registry
+     * @param FieldEncryptionHandler|null                                      $fieldEncryptionHandler       Field-level encryption handler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -300,12 +311,17 @@ class SaveObject
         private readonly PropertyRbacHandler $propertyRbacHandler,
         private readonly ComputedFieldHandler $computedFieldHandler,
         private readonly TranslationHandler $translationHandler,
+        private readonly TranslationProjectionService $translationProjectionService,
+        private readonly TranslationStatusService $translationStatusService,
         private readonly LoggerInterface $logger,
         private readonly TmloService $tmloService,
+        private readonly \OCA\OpenRegister\Service\File\FolderManagementHandler $folderManagementHandler,
         ArrayLoader $arrayLoader,
         private readonly ?IGroupManager $groupManager=null,
         private readonly ?IAppConfig $appConfig=null,
         private readonly ?IEventDispatcher $eventDispatcher=null,
+        private readonly ?\OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry $objectSourceRegistry=null,
+        private readonly ?FieldEncryptionHandler $fieldEncryptionHandler=null,
     ) {
         $this->twig = new Environment($arrayLoader);
     }//end __construct()
@@ -318,7 +334,7 @@ class SaveObject
      *
      * @return array<string, array> Sub-objects indexed by UUID
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function getCreatedSubObjects(): array
     {
@@ -333,7 +349,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function clearCreatedSubObjects(): void
     {
@@ -352,7 +368,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function clearAllCaches(): void
     {
@@ -371,7 +387,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If schema not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getCachedSchema(int|string $schemaId): Schema
     {
@@ -392,7 +408,7 @@ class SaveObject
      *
      * @throws DoesNotExistException If register not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getCachedRegister(int|string $registerId): Register
     {
@@ -415,7 +431,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function trackCreatedSubObject(string $uuid, array $objectData): void
     {
@@ -439,7 +455,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveSchemaReference(string $reference): string|null
     {
@@ -509,7 +525,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // SchemaMapper->find() supports id, uuid, and slug via orX().
-            $schema = $this->schemaMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $schema = $this->schemaMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($schema !== null) {
                 $schemaId = (string) $schema->getId();
                 $this->schemaCache[$schemaId]           = $schema;
@@ -532,7 +548,7 @@ class SaveObject
      *
      * @return string The reference string without query parameters
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -560,7 +576,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies require branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveRegisterReference(string $reference): string|null
     {
@@ -601,7 +617,7 @@ class SaveObject
         // Try direct slug match as last resort.
         try {
             // RegisterMapper->find() supports id, uuid, and slug via orX().
-            $register = $this->registerMapper->find(id: $slug, published: null, _rbac: false, _multitenancy: false);
+            $register = $this->registerMapper->find(id: $slug, _rbac: false, _multitenancy: false);
             if ($register !== null) {
                 return (string) $register->getId();
             }
@@ -630,7 +646,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple detection paths for different value types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive relation scanning requires extended logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -754,7 +770,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference pattern checks required
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isReference(string $value): bool
     {
@@ -821,7 +837,7 @@ class SaveObject
      *
      * @return ObjectEntity The updated object entity
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -849,7 +865,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Inverse relation handling requires per-type branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function updateInverseRelations(ObjectEntity $savedEntity, Register $register, Schema $schema): void
     {
@@ -930,7 +946,6 @@ class SaveObject
                 try {
                     $targetSchema = $this->schemaMapper->find(
                         id: $targetSchemaSlug,
-                        published: null,
                         _rbac: false,
                         _multitenancy: false
                     );
@@ -1047,7 +1062,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field types and formats require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive metadata hydration logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function hydrateObjectMetadata(ObjectEntity $entity, Schema $schema): void
     {
@@ -1166,7 +1181,7 @@ class SaveObject
      *
      * @return mixed The value at the path or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getValueFromPath(array $data, string $path)
     {
@@ -1208,7 +1223,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property types and behaviors require branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive default value handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function setDefaultValues(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1362,7 +1377,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Default value resolution requires template + type branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function applyAlwaysDefaults(Schema $schema, array $data): array
     {
@@ -1409,6 +1424,113 @@ class SaveObject
     }//end applyAlwaysDefaults()
 
     /**
+     * Auto-seed the lifecycle field from the parent on the CREATE path.
+     *
+     * When the schema declares an object-form `x-openregister-lifecycle.initial`
+     * (`{ from, field }`) and the lifecycle field is absent/null/empty, this
+     * resolves the parent reference from `data[initial.from]`, loads the parent
+     * through the standard read path (RBAC + multitenancy apply), and sets the
+     * lifecycle field to the parent's `initial.field` value. It runs BEFORE
+     * schema validation so a `required` lifecycle `$ref` field passes on a
+     * seeded create. Called from ObjectService only on the create path — never
+     * on update.
+     *
+     * Rules (design: `initial` object-form + auto-seed on create):
+     * - Empty-field-only: an explicitly provided value is NEVER overwritten.
+     * - Fail-soft no-op (debug log) when the parent ref is empty, the parent
+     *   cannot be loaded, or the parent's `initial.field` value is empty.
+     * - The legacy literal-string `initial` form is NOT auto-seeded (no static
+     *   behaviour change).
+     * - Dispatches no `ObjectTransitionedEvent` — this is initialisation.
+     *
+     * @param Schema $schema The schema whose annotation drives the seed.
+     * @param array  $data   The incoming object data (create payload).
+     *
+     * @return array The data, with the lifecycle field seeded when applicable.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Each guard is a distinct fail-soft no-op branch required by the spec.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function seedLifecycleFieldOnCreate(Schema $schema, array $data): array
+    {
+        $config     = ($schema->getConfiguration() ?? []);
+        $annotation = ($config['x-openregister-lifecycle'] ?? null);
+        if (is_array($annotation) === false) {
+            return $data;
+        }
+
+        // Auto-seed is driven exclusively by the object-form `initial`.
+        $initial = ($annotation['initial'] ?? null);
+        if (is_array($initial) === false) {
+            return $data;
+        }
+
+        $fromKey    = (string) ($initial['from'] ?? '');
+        $parentPath = (string) ($initial['field'] ?? '');
+        $field      = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
+        if ($fromKey === '' || $parentPath === '' || $field === '') {
+            return $data;
+        }
+
+        // Empty-field-only: never overwrite a client-supplied value.
+        $currentValue = ($data[$field] ?? null);
+        if ($currentValue !== null && $currentValue !== '') {
+            return $data;
+        }
+
+        // Resolve the parent reference off the create payload.
+        $parentRef = (string) ($data[$fromKey] ?? '');
+        if ($parentRef === '') {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent reference is empty',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'field' => $field,
+                    'from'  => $fromKey,
+                ]
+            );
+            return $data;
+        }
+
+        // Load the parent through the standard read path (RBAC + multitenancy).
+        try {
+            $parent = $this->unifiedObjectMapper->find(identifier: $parentRef);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent could not be loaded: '.$e->getMessage(),
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'field'     => $field,
+                    'parentRef' => $parentRef,
+                ]
+            );
+            return $data;
+        }
+
+        $parentData = ($parent->getObject() ?? []);
+        $seedValue  = ($parentData[$parentPath] ?? null);
+        if ($seedValue === null || $seedValue === '') {
+            $this->logger->debug(
+                message: '[SaveObject] Lifecycle seed no-op: parent initial value is empty',
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'field'      => $field,
+                    'parentPath' => $parentPath,
+                ]
+            );
+            return $data;
+        }
+
+        $data[$field] = $seedValue;
+
+        return $data;
+    }//end seedLifecycleFieldOnCreate()
+
+    /**
      * Apply property default values to a data array (for use in bulk save paths).
      *
      * This is the public counterpart to setDefaultValues() that can work without
@@ -1420,7 +1542,7 @@ class SaveObject
      *
      * @return array The data with defaults applied.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function applyPropertyDefaults(Schema $schema, array $data): array
     {
@@ -1476,7 +1598,7 @@ class SaveObject
      *
      * @return bool True if the default should be applied.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function shouldApplyDefault(string $behavior, array $data, string $key): bool
     {
@@ -1510,7 +1632,7 @@ class SaveObject
      *
      * @return mixed The resolved value, or null if resolution failed.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveDefaultTemplateValue($defaultValue, array $context, array $schemaProperties)
     {
@@ -1558,7 +1680,7 @@ class SaveObject
      *
      * @return null|string The generated slug or null if no slug could be generated
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function generateSlug(array $data, Schema $schema): string|null
     {
@@ -1596,7 +1718,7 @@ class SaveObject
      *
      * @return string The generated slug
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function createSlug(string $text): string
     {
@@ -1643,7 +1765,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple cascading paths and configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive cascading for objects and arrays
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -1699,8 +1821,8 @@ class SaveObject
                     || (($property['items']['inversedBy'] ?? null) !== null);
                 $objHandling   = $property['objectConfiguration']['handling'] ?? null;
                 $itemsHandling = $property['items']['objectConfiguration']['handling'] ?? null;
-                $hasCascade    = $objHandling === 'cascade' || $objHandling === 'related-object'
-                    || $itemsHandling === 'cascade' || $itemsHandling === 'related-object';
+                $hasCascade    = $objHandling === 'cascade' || ObjectHandling::relates($objHandling) === true
+                    || $itemsHandling === 'cascade' || ObjectHandling::relates($itemsHandling) === true;
 
                 return $property['type'] === 'array' && $hasRef && ($hasInversedBy || $hasCascade);
             }
@@ -1772,7 +1894,7 @@ class SaveObject
             // Determine handling type for orphan cleanup.
             $objHandling     = $definition['objectConfiguration']['handling'] ?? null;
             $itemsHandling   = $definition['items']['objectConfiguration']['handling'] ?? null;
-            $isRelatedObject = $objHandling === 'related-object' || $itemsHandling === 'related-object';
+            $isRelatedObject = ObjectHandling::relates($objHandling) === true || ObjectHandling::relates($itemsHandling) === true;
             $isCascade       = $objHandling === 'cascade' || $itemsHandling === 'cascade';
 
             // Capture old UUIDs from the existing object for orphan detection.
@@ -1953,7 +2075,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex array object cascading logic
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation and processing paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -2084,7 +2206,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex single object cascading with relation handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple configuration and validation paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cascadeSingleObject(ObjectEntity $objectEntity, array $definition, array $object): ?string
     {
@@ -2200,7 +2322,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function deleteOrphanedRelatedObjects(
         array $orphanedUuids,
@@ -2278,7 +2400,7 @@ class SaveObject
      *
      * @return array The data with all schema properties present (missing ones set to null).
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function fillMissingSchemaPropertiesWithNull(array $data, int|string $schemaId): array
     {
@@ -2322,7 +2444,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple property and item level configurations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive write-back handling for all relation types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleInverseRelationsWriteBack(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -2536,7 +2658,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex sanitization logic for multiple property types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple property types and required states
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function sanitizeEmptyStringsForObjectProperties(array $data, Schema $schema): array
     {
@@ -2636,6 +2758,7 @@ class SaveObject
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false).
      * @param bool                     $_validation   Whether to validate the object (default: true).
      * @param array|null               $uploadedFiles Uploaded files array (optional).
+     * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
      *
      * @return ObjectEntity The saved object entity.
      *
@@ -2644,7 +2767,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function saveObject(
         Register | int | string | null $register,
@@ -2657,7 +2780,8 @@ class SaveObject
         bool $persist=true,
         bool $silent=false,
         bool $_validation=true,
-        ?array $uploadedFiles=null
+        ?array $uploadedFiles=null,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Extract UUID and @self metadata from data.
         [$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2671,6 +2795,29 @@ class SaveObject
             schema: $schema,
             register: $register
         );
+
+        // Read-only projection guard: a schema served from an external source
+        // (x-openregister-object-source) is read-only — the external system stays
+        // authoritative and OpenRegister must never become a second write path.
+        $objectSource = $schema->getObjectSource();
+        if ($persist === true && $objectSource !== null) {
+            // Opt-in write-through (dbal-virtual-registers-crud): delegate to a
+            // WritableObjectSourceProvider when the schema annotation carries
+            // `readOnly: false` — the provider re-verifies its backing source's
+            // writable flag live and fails closed. Everything else keeps the
+            // v1 read-only rejection. RBAC (create/update) and schema
+            // validation already ran upstream in ObjectService before this
+            // dispatch, so the external system is only reached for an
+            // authorized, valid write.
+            return $this->delegateObjectSourceWrite(
+                register: $register,
+                schema: $schema,
+                objectSource: $objectSource,
+                data: $data,
+                uuid: $uuid,
+                silent: $silent
+            );
+        }
 
         // Normalize translatable properties (wrap simple values under default language).
         $data = $this->translationHandler->normalizeTranslationsForSave(
@@ -2782,7 +2929,8 @@ class SaveObject
                         selfData: $selfData,
                         folderId: $folderId,
                         persist: $persist,
-                        silent: $silent
+                        silent: $silent,
+                        currentUser: $currentUser
                     );
                 } finally {
                     $this->popSaveCallFrame(key: $frameKey);
@@ -2827,7 +2975,8 @@ class SaveObject
                 folderId: $folderId,
                 persist: $persist,
                 silent: $silent,
-                _multitenancy: $_multitenancy
+                _multitenancy: $_multitenancy,
+                currentUser: $currentUser
             );
         } finally {
             $this->popSaveCallFrame(key: $frameKey);
@@ -2843,7 +2992,7 @@ class SaveObject
      *
      * @return array{0: string|null, 1: array, 2: array} [uuid, selfData, cleanedData]
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function extractUuidAndSelfData(
         array $data,
@@ -2893,7 +3042,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple type resolution paths for schema and register
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveSchemaAndRegister(
         Schema | int | string $schema,
@@ -2963,7 +3112,7 @@ class SaveObject
      *
      * @throws Exception If object is locked by another user.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function findAndValidateExistingObject(
         string $uuid,
@@ -3018,10 +3167,11 @@ class SaveObject
      * @param int|null     $folderId       Folder ID
      * @param bool         $persist        Whether to persist changes
      * @param bool         $silent         Whether to skip audit trail
+     * @param IUser|null   $currentUser    Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
      *
      * @return ObjectEntity Updated object
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleObjectUpdate(
         ObjectEntity $existingObject,
@@ -3031,7 +3181,8 @@ class SaveObject
         array $selfData,
         ?int $folderId,
         bool $persist,
-        bool $silent
+        bool $silent,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Check archival immutability: destroyed and transferred objects cannot be modified.
         $retention    = $existingObject->getRetention() ?? [];
@@ -3062,7 +3213,8 @@ class SaveObject
             schema: $schema,
             data: $data,
             selfData: $selfData,
-            folderId: $folderId
+            folderId: $folderId,
+            currentUser: $currentUser
         );
 
         // If not persisting, return the prepared object.
@@ -3096,6 +3248,7 @@ class SaveObject
      * @param bool        $persist       Whether to persist changes
      * @param bool        $silent        Whether to skip audit trail
      * @param bool        $_multitenancy Whether to apply multitenancy
+     * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
      *
      * @return ObjectEntity Created object
      *
@@ -3103,7 +3256,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible object creation
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function handleObjectCreation(
         int $registerId,
@@ -3116,7 +3269,8 @@ class SaveObject
         ?int $folderId,
         bool $persist,
         bool $silent,
-        bool $_multitenancy
+        bool $_multitenancy,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Create a new object entity.
         $objectEntity = new ObjectEntity();
@@ -3140,7 +3294,8 @@ class SaveObject
             schema: $schema,
             data: $data,
             selfData: $selfData,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            currentUser: $currentUser
         );
 
         // Apply archival metadata from schema archive configuration.
@@ -3208,7 +3363,7 @@ class SaveObject
      *
      * @throws Exception If file processing fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function processFilePropertiesWithRollback(
         ObjectEntity $savedEntity,
@@ -3332,7 +3487,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function clearImageMetadataIfFileProperty(
         ObjectEntity $savedEntity,
@@ -3364,6 +3519,7 @@ class SaveObject
      * @param array        $data          The object data.
      * @param array        $selfData      The @self metadata.
      * @param bool         $_multitenancy Whether to apply multitenancy filtering.
+     * @param IUser|null   $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
      *
      * @return ObjectEntity The prepared object entity.
      *
@@ -3373,17 +3529,18 @@ class SaveObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple optional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive preparation requires extended logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectForCreation(
         ObjectEntity $objectEntity,
         Schema $schema,
         array $data,
         array $selfData,
-        bool $_multitenancy
+        bool $_multitenancy,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data);
+        $this->setSelfMetadata(objectEntity: $objectEntity, selfData: $selfData, data: $data, currentUser: $currentUser);
 
         // Set UUID if provided, otherwise generate a new one.
         if ($objectEntity->getUuid() === null) {
@@ -3425,7 +3582,7 @@ class SaveObject
         $this->linkedEntityHandler->extractAndPopulate($objectEntity, $schema, $preparedData);
 
         // Populate TMLO archival metadata defaults if register has TMLO enabled.
-        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema, selfData: $selfData);
+        $this->populateTmloDefaults(objectEntity: $objectEntity, schema: $schema);
 
         // Set owner from the active user session, or fall back to the system
         // identifier when no session is active. See applyOwnerAttribution()
@@ -3433,11 +3590,11 @@ class SaveObject
         $this->applyOwnerAttribution(objectEntity: $objectEntity);
 
         // Set organisation from active organisation if not already set.
-        // Always respect user's active organisation regardless of multitenancy settings.
-        // BUT: Don't override if organisation was explicitly set via @self metadata (e.g., for organization activation).
-        if (($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '')
-            && isset($selfData['organisation']) === false
-        ) {
+        // setSelfMetadata() (called above) only accepted a client-supplied @self.organisation
+        // value when the caller was admin or a verified member of that organisation (SB1 fix).
+        // If setOrganisation() was NOT called there (non-member caller, or no @self.organisation
+        // provided at all), stamp the caller's active organisation here as the authoritative value.
+        if ($objectEntity->getOrganisation() === null || $objectEntity->getOrganisation() === '') {
             $organisationUuid = $this->organisationService->getOrganisationForNewEntity();
             $objectEntity->setOrganisation($organisationUuid);
         }
@@ -3503,22 +3660,24 @@ class SaveObject
      * @param array        $data           The updated object data.
      * @param array        $selfData       The @self metadata.
      * @param int|null     $folderId       The folder ID to set on the object.
+     * @param IUser|null   $currentUser    Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata).
      *
      * @return ObjectEntity The prepared object entity.
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectForUpdate(
         ObjectEntity $existingObject,
         Schema $schema,
         array $data,
         array $selfData,
-        ?int $folderId
+        ?int $folderId,
+        ?IUser $currentUser=null
     ): ObjectEntity {
         // Set @self metadata properties.
-        $this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data);
+        $this->setSelfMetadata(objectEntity: $existingObject, selfData: $selfData, data: $data, currentUser: $currentUser);
 
         // Set folder ID if provided.
         if ($folderId !== null) {
@@ -3533,6 +3692,16 @@ class SaveObject
         // "skip validation when reference unchanged" check honest.
         $oldData = $existingObject->getObject();
 
+        // Detect which declared write-only locations this payload OMITS, so the stored
+        // values can be carried forward below instead of being nulled (openregister#463).
+        // This runs on the RAW $data on purpose: prepareObjectData's setDefaultValues()
+        // applies a property's `default` when the key is absent, which would materialize
+        // an omitted key and hide the omission from this check.
+        $omittedWriteOnly = $this->propertyRbacHandler->collectOmittedWriteOnlyPaths(
+            schema: $schema,
+            incoming: $data
+        );
+
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
@@ -3544,6 +3713,35 @@ class SaveObject
             register: $existingObject->getRegister(),
             oldData: $oldData
         );
+
+        // Carry omitted write-only values forward from the stored object (openregister#463).
+        // The read boundary strips writeOnly from every response, so a client doing the
+        // natural GET/edit/PUT round-trip re-sends a body without the secret it was never
+        // shown; the PUT-semantic null-fill immediately below would then destroy it. This
+        // is the save-side half of the writeOnly contract, symmetric with the read-side
+        // strip in PropertyRbacHandler::stripWriteOnlyProperties().
+        //
+        // Ordering is load-bearing in both directions. It must run AFTER prepareObjectData
+        // because that is where FieldEncryptionHandler::encryptProperties() runs: $oldData
+        // holds the stored value, which for an encrypted property is ciphertext, and
+        // restoring it any earlier would double-encrypt it. It must run BEFORE the null-fill
+        // because that fill materializes every absent property as null, after which an
+        // omitted secret is indistinguishable from one the client explicitly cleared.
+        //
+        // $oldData is the raw ObjectEntity::getObject() snapshot taken above — never a
+        // rendered read, which by construction would already have the secret stripped.
+        //
+        // Short-circuited on the common case exactly as the read path is (RenderObject
+        // gates its strip on schemaHasWriteOnlyRule()): the overwhelming majority of
+        // schemas declare no write-only location, and for those this whole rule must be
+        // provably inert rather than merely harmless.
+        if (empty($omittedWriteOnly) === false) {
+            $preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
+                prepared: $preparedData,
+                stored: $oldData,
+                omittedPaths: $omittedWriteOnly
+            );
+        }
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
@@ -3588,16 +3786,21 @@ class SaveObject
      * @param ObjectEntity $objectEntity The object entity to set metadata on.
      * @param array        $selfData     The @self metadata.
      * @param array        $data         The object data (for generated values like slug).
+     * @param IUser|null   $currentUser  Explicit acting user for the `@self.folder` access check; falls back to the session user when null.
      *
      * @return void
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction from multiple sources
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional metadata fields with validation
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
-    private function setSelfMetadata(ObjectEntity $objectEntity, array $selfData, array $data=[]): void
-    {
+    private function setSelfMetadata(
+        ObjectEntity $objectEntity,
+        array $selfData,
+        array $data=[],
+        ?IUser $currentUser=null
+    ): void {
         // Extract and set slug property if present (check both @self and data).
         $slug = $selfData['slug'] ?? $data['slug'] ?? null;
         if (empty($slug) === false) {
@@ -3614,23 +3817,93 @@ class SaveObject
         // - For background / system contexts (no IUserSession user) applyOwnerAttribution
         // only fills in owner when it is empty, so a client-supplied value would
         // persist — that is the actual attack vector closed by this change.
-        // Wave-12 Fix 3 / Wave-11 SB1: organisation can only be set from @self by
-        // admin callers. Non-admin callers (including anonymous) silently fall
-        // through to prepareObjectForCreation's getOrganisationForNewEntity()
-        // stamp, which uses the session user's active organisation. This closes
-        // the cross-tenant data-injection vector flagged in
-        // `/tmp/wave11-openregister-report.md` SB1.
+        // SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
+        // @self when the caller is an admin or has verified membership in that organisation.
+        // Blindly applying a client-supplied organisation UUID allows any authenticated
+        // user to plant data inside another tenant's view (cross-tenant data injection).
+        //
+        // Wave-12 closed SB1 with an admin-ONLY gate; this lineage later widened the
+        // allow-list to admins OR verified members of the requested organisation. That
+        // widening does not reopen SB1: hasAccessToOrganisation() verifies the caller
+        // actually belongs to the target organisation, so a caller can still never plant
+        // data in a tenant they are not a member of — which is the vector SB1 describes.
+        // The admin arm delegates to wave-12's callerIsAdmin() helper, which is the same
+        // session-user + IGroupManager check this lineage had inlined, additionally
+        // hardened against IGroupManager throwing.
         if (array_key_exists('organisation', $selfData) === true
             && empty($selfData['organisation']) === false
-            && $this->callerIsAdmin() === true
         ) {
-            $objectEntity->setOrganisation($selfData['organisation']);
+            // Only allow admin, or callers who actually belong to the requested organisation.
+            if ($this->callerIsAdmin() === true
+                || $this->organisationService->hasAccessToOrganisation($selfData['organisation']) === true
+            ) {
+                $objectEntity->setOrganisation($selfData['organisation']);
+            }
+
+            // Non-member callers silently fall through; prepareObjectForCreation() will
+            // stamp the caller's active organisation via getOrganisationForNewEntity().
         }
 
-        // Set TMLO metadata from @self if provided.
-        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
-            $objectEntity->setTmlo($selfData['tmlo']);
+        // Propagate @self.folder so the access-control check governs the bind
+        // (numeric → access-checked, empty/legacy → auto-create). Without
+        // propagation a user-supplied @self.folder is silently dropped —
+        // defeating the whole `self-folder-access-control` capability.
+        if (array_key_exists('folder', $selfData) === true && empty($selfData['folder']) === false) {
+            $folderValue = (string) $selfData['folder'];
+
+            // For folder values that are a bare positive integer node id (the
+            // format produced by explicit `@self.folder` writes), require that
+            // the acting user can read the target folder — otherwise reject the
+            // bind with `FolderAccessDeniedException`. We gate on `ctype_digit`
+            // rather than `is_numeric` so floats / scientific-notation / signed
+            // strings (e.g. "42.5", "4e2", "+42") don't slip through and then
+            // get `(int)`-truncated to a *different* node than was validated.
+            // Legacy non-numeric values fall through to the auto-create path.
+            if (ctype_digit($folderValue) === true) {
+                // Pass `$currentUser` through so the access check uses the
+                // SAME user identity that the downstream
+                // `createObjectFolderById` check uses on the lazy-init path.
+                // When `$currentUser` is null (HTTP path), both checks fall
+                // back to `IUserSession::getUser()` and agree by default.
+                // When `$currentUser` is non-null (DI / event listener path),
+                // both checks use it explicitly — no chance of one site
+                // passing while another denies because of session vs explicit
+                // user disagreement.
+                $this->folderManagementHandler->assertFolderIsAccessible(
+                    folderId: $folderValue,
+                    currentUser: $currentUser,
+                    objectEntity: $objectEntity
+                );
+
+                // Normalise to the canonical integer string so the persisted
+                // value matches the node that was validated (no "42.5" vs "42"
+                // drift in audit / analytics / equality checks).
+                $folderValue = (string) (int) $folderValue;
+            }//end if
+
+            $objectEntity->setFolder($folderValue);
+        }//end if
+
+        // Propagate @self.geo — the object's geographical metadata (a GeoJSON-ish
+        // array rendered/edited by map widgets, e.g. CnObjectGeoWidget). Unlike
+        // organisation/tmlo this is plain descriptive data driving no security or
+        // lifecycle decisions, so it is client-writable. An explicit null clears it.
+        if (array_key_exists('geo', $selfData) === true) {
+            $geoValue = $selfData['geo'];
+            if ($geoValue === null || is_array($geoValue) === true) {
+                $objectEntity->setGeo($geoValue);
+            }
         }
+
+        // SECURITY (wave-11 WF1): TMLO fields (@self.tmlo) must NOT be accepted verbatim
+        // from client input on CREATE.  The destruction pipeline keys off archiefstatus;
+        // a client-submitted {"archiefstatus":"vernietigd"} would mark an object as
+        // destruction-eligible bypassing the validated state machine.  populateTmloDefaults()
+        // (called after this method) will apply the correct system defaults including
+        // resetting archiefstatus to 'actief' for new objects, overriding any client value.
+        // On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix.
+        // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
+        // (No setTmlo() call — the field is intentionally omitted).
     }//end setSelfMetadata()
 
     /**
@@ -3661,15 +3934,18 @@ class SaveObject
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.
      *
+     * Client-supplied @self.tmlo is intentionally NOT accepted here (wave-11 WF1 fix).
+     * All TMLO fields on CREATE are system-managed defaults applied by TmloService.
+     * On UPDATE, validateTmloOnUpdate() enforces the allowed transition matrix instead.
+     *
      * @param ObjectEntity $objectEntity The object entity being created
      * @param Schema       $schema       The schema for TMLO defaults
-     * @param array        $selfData     The @self metadata from the request
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
-    private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema, array $selfData): void
+    private function populateTmloDefaults(ObjectEntity $objectEntity, Schema $schema): void
     {
         $registerId = $objectEntity->getRegister();
         if ($registerId === null) {
@@ -3686,12 +3962,14 @@ class SaveObject
             return;
         }
 
-        // If TMLO data was explicitly provided via @self, use it as the starting point.
-        if (array_key_exists('tmlo', $selfData) === true && is_array($selfData['tmlo']) === true) {
-            $objectEntity->setTmlo($selfData['tmlo']);
-        }
-
-        // Validate field values before populating.
+        // SECURITY (wave-11 WF1): Do NOT seed TMLO from client-supplied @self.tmlo on CREATE.
+        // The destruction pipeline keys off archiefstatus; a client-submitted
+        // {"archiefstatus":"vernietigd"} would bypass the validated state machine and
+        // mark the object destruction-eligible immediately.  On CREATE, all TMLO fields
+        // are system-managed defaults set by tmloService->populateDefaults() below.
+        // On UPDATE, the separate validateTmloOnUpdate() path enforces the transition matrix.
+        // Validate field values before populating (entity may have leftover TMLO from a prior
+        // update path; ensure they are valid before stamping defaults).
         $currentTmlo = $objectEntity->getTmlo();
         if (is_array($currentTmlo) === true && empty($currentTmlo) === false) {
             $errors = $this->tmloService->validateFieldValues($currentTmlo);
@@ -3713,7 +3991,7 @@ class SaveObject
      *
      * @throws Exception If TMLO validation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateTmloOnUpdate(ObjectEntity $existingObject, array $selfData): void
     {
@@ -3765,7 +4043,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple property type checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateReferences(
         Schema $schema,
@@ -3920,7 +4198,7 @@ class SaveObject
      * @return string|null Returns `'error'` for strict mode, `'warn'` for
      *                     warn-only, `null` when validation is disabled.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function resolveReferenceStrictness(array $property): ?string
     {
@@ -4079,7 +4357,7 @@ class SaveObject
      *
      * @throws ValidationException If the referenced object does not exist (HTTP 422).
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateReferenceExists(
         string $propertyName,
@@ -4276,7 +4554,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function clearReferenceValidationCache(): void
     {
@@ -4324,7 +4602,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-14
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function saveObjectsStreaming(
         Register | int | string | null $register,
@@ -4441,7 +4719,7 @@ class SaveObject
      *
      * @return string|null The stack frame key, or null when nothing was pushed.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function pushSaveCallFrame(string $schemaSlug, string $uuid, ?string $register): ?string
     {
@@ -4479,7 +4757,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function popSaveCallFrame(?string $key): void
     {
@@ -4531,7 +4809,7 @@ class SaveObject
      * @return array<int, array{schemaSlug:string,uuid:string,register:string|null}>|null
      *         Cycle path when detected, null otherwise.
      *
-     * @spec openspec/changes/reference-existence-validation/tasks.md
+     * @spec openspec/specs/reference-existence-validation/spec.md
      */
     private function detectCircularReference(string $uuid): ?array
     {
@@ -4695,7 +4973,7 @@ class SaveObject
      *
      * @throws Exception If there is an error during preparation.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function prepareObjectData(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -4735,6 +5013,18 @@ class SaveObject
             );
         }
 
+        // Encrypt properties flagged `x-openregister-encrypted: true` (field-level-
+        // object-encryption). This is the LAST step before the entity is persisted —
+        // every transform above (cascading, defaults, computed fields) needs the
+        // plaintext value to operate correctly, and nothing after this point needs
+        // it: relation scanning treats an opaque ciphertext string like any other
+        // non-reference scalar, and the mapper insert/update writes exactly what it
+        // is given. Schema validation already ran on plaintext upstream in
+        // ObjectService::saveObject(), before this handler is ever invoked.
+        if ($this->fieldEncryptionHandler !== null) {
+            $data = $this->fieldEncryptionHandler->encryptProperties(data: $data, schema: $schema);
+        }
+
         return $data;
     }//end prepareObjectData()
 
@@ -4757,7 +5047,7 @@ class SaveObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function preCacheParentName(ObjectEntity $objectEntity, Schema $schema, array $data): void
     {
@@ -4821,7 +5111,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive update with file handling
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Silent flag needed for audit trail control
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function updateObject(
         Register | int | string $register,
@@ -4911,6 +5201,24 @@ class SaveObject
             oldEntity: $oldObject
         );
 
+        // I18n-source-of-truth: when a translatable property's source-language
+        // value changes, flip every derived translation row to `outdated` so
+        // editorial tooling surfaces the staleness immediately. Conservative —
+        // only triggers when the source value itself changed; per-language
+        // edits on non-source languages do NOT flip status.
+        try {
+            $this->flagOutdatedDerivedTranslations(
+                schema: $schema,
+                register: $register,
+                oldObject: $oldObject,
+                newObject: $updatedEntity
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[SaveObject] failed to flag outdated translations: '.$e->getMessage()
+            );
+        }
+
         $this->logger->info(
             message: '[SaveObject] Object updated successfully',
             context: [
@@ -4928,7 +5236,11 @@ class SaveObject
         }
 
         // Handle file properties - process them and replace content with file IDs.
-        $filePropsProcessed = false;
+        // BUG-OBJ-8: collect the names of the properties the file handler rewrote so
+        // we can overlay ONLY those file-id replacements onto the merged/prepared body
+        // below, instead of clobbering the whole object with the raw partial $data.
+        $filePropsProcessed      = false;
+        $processedFileProperties = [];
         foreach ($data as $propertyName => $value) {
             $isFileProperty = $this->filePropertyHandler->isFileProperty(
                 value: $value,
@@ -4942,13 +5254,27 @@ class SaveObject
                     propertyName: $propertyName,
                     schema: $schema
                 );
-                $filePropsProcessed = true;
+                $filePropsProcessed        = true;
+                $processedFileProperties[] = $propertyName;
             }
         }
 
         // Update the object with the modified data (file IDs instead of content).
         if ($filePropsProcessed === true) {
-            $updatedEntity->setObject($data);
+            // BUG-OBJ-8: build the post-file body from the MERGED/prepared object that
+            // was just persisted (which contains computed fields, defaults, cascaded
+            // sub-objects, null-fills, and previously-stored fields not present in this
+            // request), then overlay only the file-id replacements computed by the file
+            // handler. Using the raw partial $data here would drop every field absent
+            // from the request — data loss that depends on payload shape.
+            $mergedObject = $updatedEntity->getObject() ?? [];
+            foreach ($processedFileProperties as $fileProperty) {
+                if (array_key_exists($fileProperty, $data) === true) {
+                    $mergedObject[$fileProperty] = $data[$fileProperty];
+                }
+            }
+
+            $updatedEntity->setObject($mergedObject);
 
             // Clear image metadata if objectImageField points to a file property.
             // This ensures the image URL is extracted from the file object during rendering.
@@ -4982,6 +5308,113 @@ class SaveObject
     }//end updateObject()
 
     /**
+     * Compare old vs new object values for translatable properties and flip
+     * derived-language translation rows to `outdated` when the resolved
+     * source-language value changes.
+     *
+     * Conservative trigger: only fires when the source-language value
+     * itself changed. Edits to other-language values do not flip status.
+     *
+     * @param Schema       $schema    The schema for the object.
+     * @param Register     $register  The owning register (for default language fallback).
+     * @param ObjectEntity $oldObject The pre-persist state.
+     * @param ObjectEntity $newObject The post-persist state.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/i18n-source-of-truth/spec.md
+     */
+    private function flagOutdatedDerivedTranslations(
+        Schema $schema,
+        Register $register,
+        ObjectEntity $oldObject,
+        ObjectEntity $newObject
+    ): void {
+        $uuid = $newObject->getUuid();
+        if ($uuid === null || $uuid === '') {
+            return;
+        }
+
+        $translatableProps = $this->translationHandler->getTranslatableProperties($schema);
+        if (count($translatableProps) === 0) {
+            return;
+        }
+
+        $oldData = (array) ($oldObject->getObject() ?? []);
+        $newData = (array) ($newObject->getObject() ?? []);
+
+        $registerDefault = $register->getDefaultLanguage();
+        foreach ($translatableProps as $property) {
+            $sourceLanguage = $this->translationProjectionService->resolveSourceLanguage(
+                schema: $schema,
+                object: $newObject,
+                property: $property,
+                registerDefault: $registerDefault
+            );
+
+            $oldSource = $this->extractLanguageValue(
+                value: $oldData[$property] ?? null,
+                language: $sourceLanguage
+            );
+            $newSource = $this->extractLanguageValue(
+                value: $newData[$property] ?? null,
+                language: $sourceLanguage
+            );
+
+            if ($oldSource === null || $newSource === null) {
+                continue;
+            }
+
+            if ($oldSource === $newSource) {
+                continue;
+            }
+
+            $this->translationStatusService->markDerivedTranslationsOutdated(
+                objectUuid: (string) $uuid,
+                property: (string) $property,
+                sourceLanguage: $sourceLanguage
+            );
+        }//end foreach
+    }//end flagOutdatedDerivedTranslations()
+
+    /**
+     * Extract the value for a given language out of a translatable property
+     * payload. Accepts both language-keyed objects (`{nl: "x"}`) and scalar
+     * values (interpreted as the source language).
+     *
+     * @param mixed  $value    The raw property value from the object body.
+     * @param string $language The language tag to extract for.
+     *
+     * @return string|null The string value, or null when not present.
+     *
+     * @spec openspec/specs/i18n-source-of-truth/spec.md
+     */
+    private function extractLanguageValue(mixed $value, string $language): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value) === true) {
+            // Scalar bodies are treated as the source-language value.
+            return $value;
+        }
+
+        if (is_array($value) === true && isset($value[$language]) === true) {
+            $entry = $value[$language];
+            if (is_string($entry) === true) {
+                return $entry;
+            }
+
+            if (is_scalar($entry) === true) {
+                return (string) $entry;
+            }
+        }
+
+        return null;
+    }//end extractLanguageValue()
+
+    /**
      * Check if an object is effectively empty (contains only empty values)
      *
      * This method checks if an object contains only empty strings, empty arrays,
@@ -4992,7 +5425,7 @@ class SaveObject
      *
      * @return bool True if the object is effectively empty, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isEffectivelyEmptyObject(array $object): bool
     {
@@ -5027,7 +5460,7 @@ class SaveObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple value type checks required
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isValueNotEmpty($value): bool
     {
@@ -5072,7 +5505,7 @@ class SaveObject
      *
      * @return bool True if audit trails are enabled, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isAuditTrailsEnabled(): bool
     {
@@ -5088,4 +5521,98 @@ class SaveObject
             return true;
         }
     }//end isAuditTrailsEnabled()
+
+    /**
+     * Delegate a persisting save on an object-source schema to its writable provider.
+     *
+     * The v1 read-only rejection is preserved for every case that is not an
+     * explicit, currently-valid opt-in: annotation `readOnly` missing or not
+     * `false`, provider missing or not writable, register unresolvable. The
+     * provider itself re-verifies the backing source's writable flag at write
+     * time (fail closed), so a stale annotation can never authorize a write.
+     *
+     * @param Register|null        $register     The resolved register.
+     * @param Schema               $schema       The sourced schema.
+     * @param array<string, mixed> $objectSource The `x-openregister-object-source` annotation.
+     * @param array<string, mixed> $data         The validated object data.
+     * @param string|null          $uuid         The object id for updates, null for creates.
+     * @param bool                 $silent       Whether to skip audit trail creation.
+     *
+     * @return ObjectEntity The written virtual object as returned by the provider.
+     *
+     * @throws \RuntimeException When the schema is not writable (v1 rejection).
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function delegateObjectSourceWrite(
+        ?Register $register,
+        Schema $schema,
+        array $objectSource,
+        array $data,
+        ?string $uuid,
+        bool $silent
+    ): ObjectEntity {
+        $provider = null;
+        if ($this->objectSourceRegistry !== null) {
+            $provider = $this->objectSourceRegistry->get((string) $objectSource['provider']);
+        }
+
+        $writableOptIn = (($objectSource['readOnly'] ?? true) === false);
+        $writable      = ($provider instanceof \OCA\OpenRegister\Service\ObjectSource\WritableObjectSourceProvider);
+
+        if ($writableOptIn === false || $writable === false || $register instanceof Register === false) {
+            throw new \RuntimeException(
+                sprintf(
+                    'Schema "%s" is a read-only projection of object-source provider "%s"; writes are not allowed.',
+                    (string) $schema->getSlug(),
+                    $objectSource['provider']
+                )
+            );
+        }
+
+        $config = ($objectSource['config'] ?? []);
+
+        if ($uuid === null || $uuid === '') {
+            $entity = $provider->insert(register: $register, schema: $schema, data: $data, config: $config);
+            $this->recordObjectSourceAudit(old: null, new: $entity, action: 'create', silent: $silent);
+            return $entity;
+        }
+
+        $old    = $provider->find(register: $register, schema: $schema, id: $uuid, config: $config);
+        $entity = $provider->update(register: $register, schema: $schema, id: $uuid, data: $data, config: $config);
+        $this->recordObjectSourceAudit(old: $old, new: $entity, action: 'update', silent: $silent);
+
+        return $entity;
+    }//end delegateObjectSourceWrite()
+
+    /**
+     * Record an audit-trail row for an external write (best effort, design D6).
+     *
+     * An audit failure must never mask a successful external write; it degrades
+     * to a structured secret-free warning.
+     *
+     * @param ObjectEntity|null $old    The pre-write entity (null on create).
+     * @param ObjectEntity      $new    The post-write entity.
+     * @param string            $action The action (`create`|`update`).
+     * @param bool              $silent Whether audit creation is suppressed.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function recordObjectSourceAudit(?ObjectEntity $old, ObjectEntity $new, string $action, bool $silent): void
+    {
+        if ($silent === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->createAuditTrail(old: $old, new: $new, action: $action);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[SaveObject] audit trail for external '.$action.' on uuid '.((string) $new->getUuid()).' could not be recorded: '.$e->getMessage(),
+                ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+    }//end recordObjectSourceAudit()
 }//end class

@@ -26,7 +26,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-63
+ * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -38,10 +38,12 @@ use GuzzleHttp\Exception\GuzzleException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\ObjectHandling;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Formats\BsnFormat;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
+use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
@@ -83,6 +85,36 @@ class ValidateObject
      * @var string
      */
     public const VALIDATION_ERROR_MESSAGE = 'Invalid object';
+
+    /**
+     * Request-scoped memoized validator instance.
+     *
+     * Building an Opis Validator and registering the custom formats and the
+     * http protocol resolver on every validateObject() call is pure overhead:
+     * the configuration is identical for every validation in a request. The
+     * shared instance also lets the Opis schema loader reuse `$ref` documents
+     * it already resolved (each of which costs a SchemaMapper::find round
+     * trip through resolveSchema()) instead of re-resolving them per call.
+     *
+     * @var Validator|null
+     */
+    private ?Validator $validator = null;
+
+    /**
+     * Request-scoped cache of fully prepared validation schemas.
+     *
+     * Keyed by `{schemaId}:{schemaVersion}` (mirroring SchemaMapper's
+     * findCache pattern — a version bump produces a new key, so stale
+     * entries are never served). Each entry holds the schema object after
+     * the complete per-schema preparation pipeline (reference/circular-ref
+     * transformation, metadata cleaning, computed-property stripping from
+     * `required`, null-type widening) plus the derived computed-property
+     * and required-field lists, so validating N objects against the same
+     * schema runs the pipeline once instead of N times.
+     *
+     * @var array<string, array{schemaObject: object, computed: list<string>, required: array}>
+     */
+    private array $preparedSchemaCache = [];
 
     /**
      * Walk the schema's property definitions (raw `$schema->getProperties()`
@@ -208,7 +240,7 @@ class ValidateObject
      * @param IURLGenerator   $urlGenerator URL generator.
      * @param LoggerInterface $logger       Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function __construct(
         private IAppConfig $config,
@@ -235,7 +267,7 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema reference resolution requires multiple type checks
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag needed for backward compatibility
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function preprocessSchemaReferences(
         object $schemaObject,
@@ -296,7 +328,7 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex reference resolution with multiple format handlers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple reference types and nested schema scenarios
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function resolveSchemaProperty(object $propertySchema, array $visited=[]): object
     {
@@ -403,7 +435,7 @@ class ValidateObject
      *
      * @return object The transformed schema object
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformOpenRegisterObjectConfigurations(object $schemaObject): object
     {
@@ -432,7 +464,7 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple OpenRegister configuration scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Various property transformation paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformPropertyForOpenRegister(object $propertySchema): void
     {
@@ -506,10 +538,24 @@ class ValidateObject
                 $itemsSchema->pattern     = $uuidPat;
                 $itemsSchema->description = 'UUID reference to a related object (inversedBy - should be empty)';
                 unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
+            } else if (($itemsSchema->{'$ref'} ?? null) !== null) {
+                // Array items that $ref another schema are relation references
+                // stored as UUID strings (e.g. assignment.briefingMaterialIds,
+                // item-bank.itemIds declared as items {"$ref":"<slug>","format":
+                // "uuid"}). OpenRegister uses the $ref only for relation tracking;
+                // Opis JSON Schema would otherwise try to resolve the bare slug as
+                // a URI and fail with "Unresolved reference: schema:///<slug>#".
+                // Treat the items as opaque UUID strings for validation — this
+                // mirrors how single string $ref props (below) and array
+                // self-references (transformSchemaForValidation Step 1) are handled.
+                $itemsSchema->type        = 'string';
+                $itemsSchema->pattern     = $uuidPat;
+                $itemsSchema->description = 'UUID reference to a related object';
+                unset($itemsSchema->properties, $itemsSchema->required, $itemsSchema->{'$ref'});
             } else if (isset($itemsSchema->type) === true && $itemsSchema->type === 'object') {
                 $this->transformObjectPropertyForOpenRegister(objectSchema: $itemsSchema);
-            }
-        }
+            }//end if
+        }//end if
 
         // Handle direct object properties.
         if (($propertySchema->type ?? null) !== null && $propertySchema->type === 'object') {
@@ -550,7 +596,7 @@ class ValidateObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformObjectPropertyForOpenRegister(object $objectSchema): void
     {
@@ -563,6 +609,7 @@ class ValidateObject
         }
 
         switch ($handling) {
+            case 'related-schema':
             case 'related-object':
                 // For related objects, expect UUID strings instead of full objects.
                 $this->transformToUuidProperty(objectSchema: $objectSchema);
@@ -586,7 +633,7 @@ class ValidateObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformToUuidProperty(object $objectSchema): void
     {
@@ -659,7 +706,7 @@ class ValidateObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformToNestedObjectProperty(object $objectSchema): void
     {
@@ -713,7 +760,7 @@ class ValidateObject
      *
      * @return string|null The handling value or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function extractObjectConfigurationHandling(object $propertySchema): ?string
     {
@@ -766,7 +813,7 @@ class ValidateObject
      *
      * @return string|null The handling value or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function extractHandlingFromOneOfItems($oneOf): ?string
     {
@@ -798,7 +845,7 @@ class ValidateObject
      *
      * @return mixed The value or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getMixedValue($data, string $key)
     {
@@ -831,8 +878,9 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex schema transformation with multiple scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive schema transformation logic
+     * @SuppressWarnings(PHPMD.StaticAccess)          ObjectHandling::relates is a stateless enum-style helper
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformSchemaForValidation(object $schemaObject, array $object, string $currentSchemaSlug): array
     {
@@ -861,7 +909,7 @@ class ValidateObject
                 // UUID pattern for related object references.
                 $uuidPat = '^([a-z]+-)?([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[0-9a-f]{32}|[0-9]+)$';
 
-                if ($config !== null && $handling === 'related-object') {
+                if ($config !== null && ObjectHandling::relates($handling) === true) {
                     // Handle inversedBy relationships for single objects.
                     if (($propertySchema->inversedBy ?? null) !== null) {
                         // For inversedBy properties, allow objects, UUIDs, or null
@@ -975,7 +1023,7 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cleanSchemaForValidation(object $schemaObject, bool $_isArrayItems=false): object
     {
@@ -1039,7 +1087,7 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed to handle array items differently
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function cleanPropertyForValidation($propertySchema, bool $isArrayItems=false)
     {
@@ -1119,7 +1167,7 @@ class ValidateObject
      *
      * @return object The property schema with constraints moved to items level
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function fixMisplacedArrayConstraints(object $propertySchema): object
     {
@@ -1185,7 +1233,7 @@ class ValidateObject
      *
      * @return object The transformed property schema with valid JSON Schema types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformCustomTypeToJsonSchemaType(object $propertySchema): object
     {
@@ -1245,7 +1293,7 @@ class ValidateObject
      *
      * @return object The transformed items schema
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function transformArrayItemsForValidation(object $itemsSchema): object
     {
@@ -1263,6 +1311,20 @@ class ValidateObject
             $handling = $config['handling'];
         } else if (is_object($config) === true && isset($config->handling) === true) {
             $handling = $config->handling;
+        }
+
+        // Relation markers are the only signal that these items describe a reference to
+        // another object rather than an inline value object: explicit objectConfiguration
+        // handling, or a $ref pointing at another schema.
+        $hasRelationMarkers = ($config !== null && $handling !== null) || (($itemsSchema->{'$ref'} ?? null) !== null);
+
+        // Inline value-object arrays (e.g. [{register, label}]) declare their own properties
+        // and carry no relation markers at all. They are not references to other objects, so
+        // they must be left untouched - replacing their properties with a bare {id} stub while
+        // an authored `additionalProperties: false` survives the clean would reject every one
+        // of the schema's own sub-properties. See or#290.
+        if ($hasRelationMarkers === false && isset($itemsSchema->properties) === true) {
+            return $itemsSchema;
         }
 
         // Determine whether to use UUID strings or simple object structure.
@@ -1336,7 +1398,7 @@ class ValidateObject
      *
      * @return bool True if this is a self-reference
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function isSelfReference(object $propertySchema, string $schemaSlug): bool
     {
@@ -1371,7 +1433,7 @@ class ValidateObject
      *
      * @return Schema|null The found schema or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function findSchemaBySlug(string $slug): ?Schema
     {
@@ -1418,8 +1480,8 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple validation scenarios and schema types
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complete validation logic requires extensive handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-63
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
+     * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      */
     public function validateObject(
         array $object,
@@ -1428,78 +1490,67 @@ class ValidateObject
         int $_depth=0
     ): ValidationResult {
 
+        // Resolve a schema id to its entity once so downstream steps (unique-field
+        // validation, prepared-schema caching) always work with the entity.
+        // SchemaMapper::find() memoizes lookups in its own findCache.
+        if ($schema !== null && ($schema instanceof Schema) === false) {
+            $schema = $this->schemaMapper->find($schema);
+        }
+
         // Use == because === will never be true when comparing stdClass-instances.
         // Phpcs:ignore Squiz.Operators.ComparisonOperatorUsage.NotAllowed
-        if ($schemaObject == new stdClass()) {
-            if ($schema instanceof Schema) {
-                $schemaObject = $schema->getSchemaObject($this->urlGenerator);
-            } else if ($schema !== null) {
-                // Handle int or string schema ID.
-                $schemaObject = $this->schemaMapper->find($schema)->getSchemaObject($this->urlGenerator);
-            }
-        }//end if
+        $useDefaultSchema = ($schemaObject == new stdClass());
+        if ($useDefaultSchema === true && $schema instanceof Schema) {
+            $schemaObject = $schema->getSchemaObject($this->urlGenerator);
+        }
 
-        $this->validateUniqueFields(object: $object, schema: $schema);
+        if ($schema instanceof Schema) {
+            $this->validateUniqueFields(object: $object, schema: $schema);
+        }
 
         // Validate extended field types (color, recurrence) against the original,
         // un-transformed schema so the declared `type`/`format` annotations are intact.
         $this->validateExtendedFieldTypes(object: $object, schemaObject: $schemaObject);
 
-        // Get the current schema slug for circular reference detection.
-        $currentSchemaSlug = '';
-        if ($schema instanceof Schema) {
-            $currentSchemaSlug = $schema->getSlug();
+        // Run the per-schema preparation pipeline (transform, clean, computed strip,
+        // null-type widening) — memoized per schemaId:version so bulk validation of
+        // N objects against one schema prepares it once instead of N times. A custom
+        // caller-supplied $schemaObject bypasses the cache (no stable cache key).
+        $cacheKey = null;
+        $prepared = null;
+        if ($useDefaultSchema === true && $schema instanceof Schema) {
+            $cacheKey = ((string) $schema->getId()).':'.((string) $schema->getVersion());
+            $prepared = ($this->preparedSchemaCache[$cacheKey] ?? null);
         }
 
-        // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
-        [$schemaObject, $object] = $this->transformSchemaForValidation(
-            schemaObject: $schemaObject,
-            object: $object,
-            currentSchemaSlug: $currentSchemaSlug
-        );
-
-        // Clean the schema by removing all Nextcloud-specific metadata properties.
-        $schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
-
-        // Log the final schema object before validation.
-        // If schemaObject reuired is empty unset it.
-        if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
-            unset($schemaObject->required);
+        if ($prepared === null) {
+            $prepared = $this->prepareSchemaForValidation(schemaObject: $schemaObject, schema: $schema);
+            if ($cacheKey !== null) {
+                $this->preparedSchemaCache[$cacheKey] = $prepared;
+            }
         }
+
+        $schemaObject = $prepared['schemaObject'];
 
         // If there are no properties, we don't need to validate.
         // Skip validation ONLY if properties are NOT set OR if properties are empty.
         if (isset($schemaObject->properties) === false || empty($schemaObject->properties) === true) {
             // Validate against an empty schema object to get a valid ValidationResult.
-            $validator = new Validator();
-            return $validator->validate(json_decode(json_encode($object)), new stdClass());
+            return $this->getValidator()->validate(json_decode(json_encode($object)), new stdClass());
         }
 
         // @todo This should be done earlier.
         unset($object['extend'], $object['filters']);
 
-        // Remove computed properties from input data and required fields.
+        // Remove computed properties from input data.
         // Computed fields are system-generated and should not be validated against user input.
-        // @var object{properties?: object, required?: array<string>} $schemaObject.
-        if (($schemaObject->properties ?? null) !== null) {
-            foreach ($schemaObject->properties as $propName => $propSchema) {
-                if (($propSchema->computed ?? null) !== null) {
-                    unset($object[$propName]);
-                    // Also remove from required array — computed fields can't be required from user input.
-                    if (is_array($schemaObject->required) === true) {
-                        $reqKey = array_search($propName, $schemaObject->required, true);
-                        if ($reqKey !== false) {
-                            unset($schemaObject->required[$reqKey]);
-                            $schemaObject->required = array_values($schemaObject->required);
-                        }
-                    }
-                }
-            }
+        foreach ($prepared['computed'] as $computedProperty) {
+            unset($object[$computedProperty]);
         }
 
         // Remove only truly empty values that have no validation significance.
         // Keep empty strings for required fields so they can fail validation with proper error messages.
-        $requiredFields = $schemaObject->required ?? [];
+        $requiredFields = $prepared['required'];
         $object         = array_filter(
             $object,
             function ($value, $key) use ($requiredFields, $schemaObject) {
@@ -1551,6 +1602,77 @@ class ValidateObject
             ARRAY_FILTER_USE_BOTH
         );
 
+        return $this->getValidator()->validate(json_decode(json_encode($object)), $schemaObject);
+    }//end validateObject()
+
+    /**
+     * Run the complete per-schema preparation pipeline for validation.
+     *
+     * Applies, in order: circular-reference/OpenRegister-config transformation,
+     * Nextcloud metadata cleaning, empty-`required` removal, computed-property
+     * stripping from `required`, and null-type widening for non-required
+     * fields. The output depends only on the schema (never on the object being
+     * validated), which is what makes it cacheable per schemaId:version.
+     *
+     * @param object      $schemaObject The raw schema object to prepare
+     * @param Schema|null $schema       The schema entity (for slug-based circular reference detection)
+     *
+     * @return array{schemaObject: object, computed: list<string>, required: array} The prepared
+     *         schema object plus the derived computed-property and required-field lists
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential schema mutations with per-property branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)
+     */
+    private function prepareSchemaForValidation(object $schemaObject, ?Schema $schema): array
+    {
+        // Get the current schema slug for circular reference detection.
+        $currentSchemaSlug = '';
+        if ($schema instanceof Schema) {
+            $currentSchemaSlug = $schema->getSlug();
+        }
+
+        // Transform schema for validation (handles circular references, OpenRegister configs, and schema resolution).
+        [$schemaObject] = $this->transformSchemaForValidation(
+            schemaObject: $schemaObject,
+            object: [],
+            currentSchemaSlug: $currentSchemaSlug
+        );
+
+        // Collect computed property names BEFORE cleaning — the cleaning step
+        // strips the per-property `computed` marker, which previously made
+        // computed-property removal unreachable (the old code inspected the
+        // already-cleaned schema and never found a `computed` key).
+        $computedProperties = [];
+        if (($schemaObject->properties ?? null) !== null) {
+            foreach ($schemaObject->properties as $propName => $propSchema) {
+                if (is_object($propSchema) === true && ($propSchema->computed ?? null) !== null) {
+                    $computedProperties[] = $propName;
+                }
+            }
+        }
+
+        // Clean the schema by removing all Nextcloud-specific metadata properties.
+        $schemaObject = $this->cleanSchemaForValidation(schemaObject: $schemaObject);
+
+        // If schemaObject required is empty unset it.
+        if (($schemaObject->required ?? null) !== null && empty($schemaObject->required) === true) {
+            unset($schemaObject->required);
+        }
+
+        // Strip computed properties from the required list — computed fields
+        // are system-generated and can't be required from user input.
+        foreach ($computedProperties as $propName) {
+            if (is_array($schemaObject->required ?? null) === true) {
+                $reqKey = array_search($propName, $schemaObject->required, true);
+                if ($reqKey !== false) {
+                    unset($schemaObject->required[$reqKey]);
+                    $schemaObject->required = array_values($schemaObject->required);
+                }
+            }
+        }
+
+        $requiredFields = ($schemaObject->required ?? []);
+
         /*
          * Modify schema to allow null values for non-required fields.
          * This ensures that null values are valid for optional fields.
@@ -1591,6 +1713,30 @@ class ValidateObject
             }//end if
         }//end if
 
+        return [
+            'schemaObject' => $schemaObject,
+            'computed'     => $computedProperties,
+            'required'     => $requiredFields,
+        ];
+    }//end prepareSchemaForValidation()
+
+    /**
+     * Get the request-scoped memoized validator.
+     *
+     * Builds the Opis Validator once per service instance: max-error limit,
+     * custom format validators (bsn, semver, ISO 8601 date-time) and the
+     * http protocol resolver are registered a single time instead of on
+     * every validateObject() call. The shared loader also caches resolved
+     * `$ref` schema documents across calls.
+     *
+     * @return Validator The configured validator instance
+     */
+    private function getValidator(): Validator
+    {
+        if ($this->validator !== null) {
+            return $this->validator;
+        }
+
         $validator = new Validator();
         $validator->setMaxErrors(100);
 
@@ -1598,10 +1744,17 @@ class ValidateObject
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
 
+        // Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
+        // opis built-in date-time format whose regex mandates seconds. Storage still
+        // normalises to a DATETIME column and reads emit RFC 3339.
+        $this->registerCustomFormat(validator: $validator, type: 'string', format: 'date-time', resolver: new Iso8601DateTimeFormat());
+
         $validator->loader()->resolver()->registerProtocol('http', [$this, 'resolveSchema']);
 
-        return $validator->validate(json_decode(json_encode($object)), $schemaObject);
-    }//end validateObject()
+        $this->validator = $validator;
+
+        return $validator;
+    }//end getValidator()
 
     /**
      * Register a custom format validator with named parameters support
@@ -1616,7 +1769,7 @@ class ValidateObject
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function registerCustomFormat(Validator $validator, string $type, string $format, object $resolver): void
     {
@@ -1637,7 +1790,7 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uri::fromParts is standard GuzzleHttp\Psr7 pattern
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function resolveSchema(Uri $uri): string
     {
@@ -1688,7 +1841,7 @@ class ValidateObject
      *
      * @return string The reference string without query parameters
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -1710,7 +1863,7 @@ class ValidateObject
      *
      * @return string A meaningful error message.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function generateErrorMessage(ValidationResult $result): string
     {
@@ -1734,7 +1887,7 @@ class ValidateObject
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Many validation error types require specific formatting
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive error formatting for all validation types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function formatValidationError(\Opis\JsonSchema\Errors\ValidationError $error): string
     {
@@ -1898,7 +2051,7 @@ class ValidateObject
      *
      * @return string The type name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function getValueType($value): string
     {
@@ -1940,7 +2093,7 @@ class ValidateObject
      *
      * @return JSONResponse JSON error response with validation errors and 400 status code.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     public function handleValidationException(ValidationException | CustomValidationException $exception): JSONResponse
     {
@@ -1991,7 +2144,7 @@ class ValidateObject
      * @return void
      * @throws CustomValidationException
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */
     private function validateUniqueFields(array $object, Schema $schema): void
     {
@@ -2021,7 +2174,6 @@ class ValidateObject
                 $fieldNames = implode(', ', $uniqueFields);
             }
 
-            $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
             if (is_array($uniqueFields) === true) {
                 $fieldValues = implode(
                     ', ',
@@ -2032,11 +2184,14 @@ class ValidateObject
                         $uniqueFields
                     )
                 );
+                $errorName   = (string) (array_shift($uniqueFields) ?? 'uniqueField');
             }
 
-            $errorName = (string) $uniqueFields;
-            if (is_array($uniqueFields) === true) {
-                $errorName = (string) (array_shift($uniqueFields) ?? 'uniqueField');
+            if (is_array($uniqueFields) === false) {
+                // Scalar field name only — guarding the concat here avoids an
+                // "Array to string conversion" when $uniqueFields is an array.
+                $fieldValues = $uniqueFields.'='.($object[$uniqueFields] ?? 'null');
+                $errorName   = (string) $uniqueFields;
             }
 
             $errMsg  = "The identifying fields ({$fieldNames}) are not unique. ";
@@ -2071,8 +2226,8 @@ class ValidateObject
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Per-type dispatch over schema properties
      *
-     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-003
-     * @spec openspec/specs/extended-field-types/spec.md#REQ-EFT-005
+     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
+     * @spec openspec/changes/add-openregister-discovered-capabilities/specs/extended-field-types/spec.md
      */
     private function validateExtendedFieldTypes(array $object, object $schemaObject): void
     {

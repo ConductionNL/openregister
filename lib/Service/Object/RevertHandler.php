@@ -81,11 +81,11 @@ class RevertHandler
     /**
      * RevertHandler constructor.
      *
-     * @param AuditTrailMapper  $auditTrailMapper  Audit trail mapper.
-     * @param ContainerInterface $container         DI container.
-     * @param IEventDispatcher  $eventDispatcher   Event dispatcher.
-     * @param MagicMapper       $objectEntityMapper Object entity mapper.
-     * @param PermissionHandler $permissionHandler  Permission handler for RBAC.
+     * @param AuditTrailMapper   $auditTrailMapper   Audit trail mapper.
+     * @param ContainerInterface $container          DI container.
+     * @param IEventDispatcher   $eventDispatcher    Event dispatcher.
+     * @param MagicMapper        $objectEntityMapper Object entity mapper.
+     * @param PermissionHandler  $permissionHandler  Permission handler for RBAC.
      */
     public function __construct(
         AuditTrailMapper $auditTrailMapper,
@@ -119,7 +119,7 @@ class RevertHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-12
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function revert(
         string $register,
@@ -147,7 +147,8 @@ class RevertHandler
             schema: $schemaEntity,
             action: 'update',
             object: $object
-        ) === false) {
+        ) === false
+        ) {
             throw new NotAuthorizedException(
                 message: 'You do not have permission to revert this object'
             );
