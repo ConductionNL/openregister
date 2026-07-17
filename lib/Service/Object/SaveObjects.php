@@ -1111,6 +1111,13 @@ class SaveObjects
             $currentUserId = $currentUser->getUID();
         }
 
+        // Resolve which rows target an object that ALREADY EXISTS. Bulk save is
+        // an upsert, so a row's action is only knowable against the database:
+        // a client-supplied uuid does NOT imply an update (it may be a create
+        // with a chosen id), and its absence does not imply a create.
+        // Resolved once per chunk (one batched query), not per row.
+        $existingUuids = $this->resolveExistingUuids(transformedObjects: $transformedObjects);
+
         foreach ($transformedObjects as $objData) {
             $schemaId = $objData['schema'] ?? null;
             $schema   = null;
@@ -1130,11 +1137,41 @@ class SaveObjects
                 continue;
             }
 
-            // RBAC: enforce create permission per object (BUG-OBJ-1).
+            // Derive the row's real action. A row that targets an existing
+            // object is an UPDATE and must be authorized as one; authorizing
+            // every row as 'create' let a caller with create-but-not-update
+            // rights rewrite existing rows through the bulk path.
+            $rowUuid   = ($objData['uuid'] ?? null);
+            $isUpdate  = ($rowUuid !== null && isset($existingUuids[$rowUuid]) === true);
+            $rowAction = 'create';
+            if ($isUpdate === true) {
+                $rowAction = 'update';
+            }
+
+            // Append-only schemas reject UPDATE; INSERT is still allowed.
+            // The single-object path enforces this in ObjectService::saveObject;
+            // the bulk pipeline is a separate path and did not, so a bulk POST
+            // carrying an existing uuid silently rewrote an append-only row.
+            if ($isUpdate === true && $schema->isAppendOnly() === true) {
+                $schemaSlug          = ($schema->getSlug() ?? (string) $schema->getId());
+                $result['invalid'][] = [
+                    'object' => $objData,
+                    'error'  => sprintf(
+                        'Schema "%s" is append-only; updating an existing object is not allowed.',
+                        $schemaSlug
+                    ),
+                    'type'   => 'AppendOnlyException',
+                ];
+                $result['statistics']['invalid']++;
+                $result['statistics']['errors']++;
+                continue;
+            }
+
+            // RBAC: enforce per-object permission for the row's real action (BUG-OBJ-1).
             if ($_rbac === true && $this->permissionHandler !== null) {
                 $hasPermission = $this->permissionHandler->hasPermission(
                     schema: $schema,
-                    action: 'create',
+                    action: $rowAction,
                     userId: $currentUserId,
                     objectOwner: ($objData['owner'] ?? null),
                     _rbac: true
@@ -1143,14 +1180,17 @@ class SaveObjects
                 if ($hasPermission === false) {
                     $result['invalid'][] = [
                         'object' => $objData,
-                        'error'  => 'You do not have permission to create objects in this schema',
+                        'error'  => sprintf(
+                            'You do not have permission to %s objects in this schema',
+                            $rowAction
+                        ),
                         'type'   => 'PermissionDeniedException',
                     ];
                     $result['statistics']['invalid']++;
                     $result['statistics']['errors']++;
                     continue;
                 }
-            }
+            }//end if
 
             // Validation: validate the business data against the schema (BUG-OBJ-1).
             if ($_validation === true && $this->validateHandler !== null) {
@@ -1177,6 +1217,70 @@ class SaveObjects
 
         return $allowedObjects;
     }//end enforceChunkGuards()
+
+    /**
+     * Resolve which of a chunk's rows target an already-existing object.
+     *
+     * Bulk save is an upsert: the row's real action (create vs update) is only
+     * knowable against the database. A client-supplied uuid does NOT imply an
+     * update — it may be a create with a caller-chosen id — so uuid presence is
+     * not a usable proxy.
+     *
+     * Cost: rows without a uuid are certainly creates and are never queried.
+     * The remainder resolve in ONE batched lookup per chunk (further split at
+     * 500 to stay well inside the query planner's IN()-expression cap), so this
+     * adds a bounded constant to the chunk, not a per-row round trip.
+     *
+     * A lookup failure resolves to "no rows exist", which classifies every row
+     * as a create. That is the safe direction for both consumers: it can only
+     * make the RBAC check demand `create` where `update` might have sufficed,
+     * and the append-only guard's job is to reject updates. It is logged rather
+     * than swallowed.
+     *
+     * @param array $transformedObjects The chunk's rows.
+     *
+     * @return array<string, true> Set of uuids that already exist, keyed for O(1) lookup.
+     *
+     * @spec openspec/specs/objects-crud/spec.md#requirement-the-bulk-write-path-enforces-the-same-invariants-as-the-single-object-path
+     */
+    private function resolveExistingUuids(array $transformedObjects): array
+    {
+        $candidates = [];
+        foreach ($transformedObjects as $objData) {
+            $uuid = ($objData['uuid'] ?? null);
+            if (is_string($uuid) === true && $uuid !== '') {
+                $candidates[$uuid] = true;
+            }
+        }
+
+        if ($candidates === []) {
+            return [];
+        }
+
+        $existing = [];
+        foreach (array_chunk(array_keys($candidates), 500) as $batch) {
+            try {
+                foreach ($this->objectEntityMapper->findMultiple(ids: $batch) as $entity) {
+                    $uuid = $entity->getUuid();
+                    if ($uuid !== null) {
+                        $existing[$uuid] = true;
+                    }
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[SaveObjects] Could not resolve existing uuids for a chunk; '
+                        .'rows in this batch are classified as creates',
+                    context: [
+                        'batchSize' => count($batch),
+                        'error'     => $e->getMessage(),
+                    ]
+                );
+            }
+        }//end foreach
+
+        return $existing;
+
+    }//end resolveExistingUuids()
 
     /**
      * Dispatch lifecycle events and write audit trail for persisted objects (BUG-OBJ-1).

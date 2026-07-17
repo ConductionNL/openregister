@@ -278,8 +278,80 @@ class ConditionMatcher
             return (new DateTime())->format('Y-m-d H:i:s');
         }
 
-        return $value;
+        // Not a bare token. It may be a dotted token ($user.uid, …);
+        // resolveDotted() returns any non-token string unchanged.
+        // MUST stay aligned with MagicRbacHandler::resolveDotted().
+        return $this->resolveDotted(token: $value);
     }//end resolveDynamicValue()
+
+    /**
+     * Resolve a dotted dynamic token to a scalar.
+     *
+     * Supported: `$user.uid`, `$user.email`, `$user.displayName`,
+     * `$organisation.uuid` (parity with the bare `$organisation` token).
+     *
+     * An UNKNOWN token resolves to null, which the matcher treats as a deny
+     * (see the null guard in matchesCondition). This is the point of the
+     * method: before it existed, `$user.unknownThing` fell through as the
+     * literal string `'$user.unknownThing'` and was compared against the
+     * object's stored value — a rule that silently never matched, with no
+     * diagnostic. Failing loudly to null is both safer and debuggable.
+     *
+     * `$user.groups` is deliberately NOT supported here. It resolves to an
+     * array, which the SQL-path twin cannot express as a scalar equality
+     * without an IN predicate; supporting it on this path alone would make
+     * list and find endpoints disagree — the exact drift this class's
+     * resolveDynamicValue() docblock forbids. Tracked separately.
+     *
+     * A string that is not a dotted token is returned unchanged, so this method
+     * doubles as resolveDynamicValue()'s literal fallthrough.
+     *
+     * @param string $token The candidate token, including any leading `$`.
+     *
+     * @return string|null The resolved scalar, the unchanged literal, or null
+     *                     when the token is a known prefix but an unknown field (deny).
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-dynamic-condition-tokens-resolve-by-dot-syntax-on-both-evaluators
+     */
+    private function resolveDotted(string $token): ?string
+    {
+        if (str_starts_with($token, '$user.') === false
+            && str_starts_with($token, '$organisation.') === false
+        ) {
+            // Not a dotted token — a plain literal.
+            return $token;
+        }
+
+        $user = $this->userSession->getUser();
+
+        switch ($token) {
+            case '$user.uid':
+                return $user?->getUID();
+
+            case '$user.email':
+                return $user?->getEMailAddress();
+
+            case '$user.displayName':
+                return $user?->getDisplayName();
+
+            case '$organisation.uuid':
+                return $this->getActiveOrganisationUuid();
+
+            default:
+                $this->logger->warning(
+                    message: '[ConditionMatcher] Unknown dynamic token in an authorization condition; '
+                        .'resolving to null (deny). Supported: $user.uid, $user.email, '
+                        .'$user.displayName, $organisation.uuid.',
+                    context: [
+                        'token' => $token,
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                    ]
+                );
+                return null;
+        }//end switch
+
+    }//end resolveDotted()
 
     /**
      * Get the current user's active organisation UUID

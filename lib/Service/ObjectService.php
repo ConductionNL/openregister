@@ -374,11 +374,10 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design;
+     *                                       SystemOperationContext::run is the canonical scoped-elevation API
      *
      * @spec openspec/specs/rbac-scopes/spec.md
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      */
     public function runAsSystem(callable $operation)
     {
@@ -1227,6 +1226,11 @@ class ObjectService
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired(object: $object);
 
+        // Enforce JSON-Schema `readOnly: true` on UPDATE. Skipped on CREATE
+        // (no prior value to violate). Runs after hard validation so a payload
+        // that is invalid on its own merits fails on that first.
+        $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
+
         // Ensure folder exists for the object.
         $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
 
@@ -1488,6 +1492,85 @@ class ObjectService
             }
         }
     }//end validateObjectIfRequired()
+
+    /**
+     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     *
+     * No-op on CREATE (`$uuid === null`). On UPDATE it loads the previously-stored
+     * business data and delegates the per-property comparison to
+     * {@see ValidateObject::validateReadOnlyConstraints()}, throwing when any
+     * `readOnly` property was mutated.
+     *
+     * Enforced independently of `hardValidation`: `readOnly` is a schema
+     * invariant about mutation, not a payload-shape assertion, so a register
+     * that runs soft validation still may not rewrite an immutable field.
+     *
+     * `_rbac: false` on the load is intentional and safe: this is an invariant
+     * check, not an authorization decision, and it only ever reads the row the
+     * caller is already addressing. The write downstream still runs the full
+     * RBAC pipeline. The load can only make the check STRICTER, never grant.
+     *
+     * @param array       $object Incoming object payload (top-level keys = property names).
+     * @param string|null $uuid   Object UUID; null indicates CREATE (no enforcement).
+     *
+     * @return void
+     *
+     * @throws ValidationException When one or more readOnly properties were mutated.
+     *
+     * @spec openspec/specs/objects-crud/spec.md#requirement-json-schema-readonly-is-enforced-on-the-update-write-path
+     */
+    private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
+    {
+        if ($uuid === null || $this->currentSchema === null) {
+            return;
+        }
+
+        // Load the existing record. A row that cannot be loaded is not an
+        // UPDATE of an existing object, so no readOnly constraint can apply.
+        // Logged rather than swallowed: a silent catch here would be
+        // indistinguishable from enforcement that never ran.
+        try {
+            $existing = $this->objectMapper->find($uuid, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[ObjectService] readOnly enforcement skipped; no existing object to compare against',
+                context: [
+                    'uuid'      => $uuid,
+                    'exception' => $e->getMessage(),
+                ]
+            );
+            return;
+        }
+
+        $existingData = $existing->getObject();
+        if (is_array($existingData) === false) {
+            return;
+        }
+
+        $violations = $this->validateHandler->validateReadOnlyConstraints(
+            incomingObject: $object,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+
+        if ($violations === []) {
+            return;
+        }
+
+        $names = array_column($violations, 'property');
+        $noun  = 'properties';
+        if (count($names) === 1) {
+            $noun = 'property';
+        }
+
+        throw new ValidationException(
+            message: sprintf(
+                'Cannot modify readOnly %s: %s',
+                $noun,
+                implode(', ', $names)
+            )
+        );
+    }//end enforceReadOnlyOnUpdate()
 
     /**
      * Normalize date values in object data before validation.
@@ -2590,11 +2673,10 @@ class ObjectService
      *
      * @return array<string, mixed> The query with provider-contract keys added.
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by
+     *                                          design and requires one guard per provider key
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-mapping requires one guard per provider key
      */
     private function normaliseObjectSourceQuery(array $query): array
     {

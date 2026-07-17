@@ -73,6 +73,7 @@ use Psr\Container\ContainerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   RBAC needs IUserSession, IUserManager, IGroupManager, ConditionMatcher, Register/Schema mappers
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     All RBAC logic is centralised per ADR-011; splitting would re-scatter the security policy
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Same rationale as ExcessiveClassLength: RBAC is centralised here per ADR-011. This class sits at the threshold and each new policy pushes it over; it is a decomposition candidate, tracked separately — not a licence to keep growing it
  */
 class PermissionHandler
 {
@@ -157,6 +158,38 @@ class PermissionHandler
         'update',
         'delete',
     ];
+
+    /**
+     * Write actions governed by the `rbac.enforce_default_closed` flag.
+     *
+     * The authenticated-caller analogue of ANONYMOUS_FAIL_CLOSED_WRITE_ACTIONS.
+     * #1955 closed the implicit default-open write hole for ANONYMOUS callers
+     * only, and deliberately left the broader authenticated case open as "a
+     * separate policy decision". This constant is that decision, made opt-in:
+     * when the flag is on, these actions are denied on schemas that declare no
+     * authorization block at all.
+     *
+     * Reads are intentionally absent. `@PublicPage` is the OR-wide read model
+     * and read default-open is out of scope here.
+     *
+     * @var string[]
+     */
+    private const DEFAULT_CLOSED_WRITE_ACTIONS = [
+        'create',
+        'update',
+        'delete',
+    ];
+
+    /**
+     * Schema+action pairs that have already emitted a default-open deprecation
+     * warning in this request.
+     *
+     * Keyed `{schemaIdentifier}:{action}` so a bulk write of 10k rows logs once
+     * per schema per action, not 10k times.
+     *
+     * @var array<string, true>
+     */
+    private array $deprecationWarnedActions = [];
 
     /**
      * PermissionHandler constructor.
@@ -328,6 +361,16 @@ class PermissionHandler
                 // Object supplied but has no stable identity — caching is unsafe.
                 return null;
             }
+
+            // SECURITY: same hazard as the match-rule drop above. An object
+            // carrying its own `_authorization` has a verdict that depends on
+            // mutable per-object state, but the cache key is keyed on the
+            // (stable) UUID — so a pre-mutation verdict would be served to a
+            // post-mutation re-check. Re-evaluate instead of caching.
+            $objectAuth = $object->getAuthorization();
+            if (is_array($objectAuth) === true && $objectAuth !== []) {
+                return null;
+            }
         }
 
         return sprintf(
@@ -423,7 +466,11 @@ class PermissionHandler
         // method's `empty($authorization)` treatment read as "no rules configured"
         // and granted every action to every caller (CWE-863).
         try {
-            $authorization = $this->resolveAuthorization(schema: $schema);
+            // Pass the object so its per-object `_authorization` overrides the
+            // schema baseline. This call site is the ONLY live consumer of that
+            // column: without the argument here, per-object authorization is
+            // stored, serialized, and enforced by nothing.
+            $authorization = $this->resolveAuthorization(schema: $schema, object: $object, action: $action);
         } catch (AuthorizationUnresolvableException $e) {
             $this->logger->error(
                 message: '[PermissionHandler] Authorization unresolvable; denying action (fail-closed)',
@@ -493,6 +540,23 @@ class PermissionHandler
         // Check if user is admin (admin group always has all permissions).
         if (in_array('admin', $userGroups) === true) {
             return true;
+        }
+
+        // Default-closed writes for authenticated non-admin callers, opt-in.
+        //
+        // Placed here (not in hasGroupPermission) so the admin bypass above and
+        // the owner bypass below keep precedence, and so the Schema is in scope
+        // for the warn-once key. Mirrors the #1955 anonymous branch at the top
+        // of this method — this is the authenticated half of the same policy.
+        if ($this->applyDefaultClosedPolicy(
+                schema: $schema,
+                authorization: $authorization,
+                action: $action,
+                userId: $userId,
+                objectOwner: $objectOwner
+            ) === false
+        ) {
+            return false;
         }
 
         // 'authenticated' pseudo-group: any logged-in user qualifies,
@@ -1066,6 +1130,12 @@ class PermissionHandler
         }
 
         // If no authorization is set, everyone has all permissions.
+        //
+        // NOTE: the `rbac.enforce_default_closed` opt-in that can turn this
+        // default-OPEN into a deny for authenticated non-admin, non-owner
+        // WRITES is applied upstream in evaluatePermission(), where the Schema
+        // is in scope for the warn-once key. It is placed there, not here,
+        // because the admin and owner bypasses above must keep precedence.
         if (empty($authorization) === true) {
             return true;
         }
@@ -1499,7 +1569,16 @@ class PermissionHandler
      * If not, fall back to the parent register's authorization block.
      * Role references in the authorization are expanded to action-level permissions.
      *
-     * @param Schema $schema The schema to resolve authorization for.
+     * When an ObjectEntity is supplied, its own non-empty `_authorization`
+     * overrides the schema/register baseline action-by-action. See
+     * {@see self::mergeObjectAuthorization()} for the merge's scope and limits.
+     *
+     * @param Schema            $schema The schema to resolve authorization for.
+     * @param ObjectEntity|null $object Optional object whose per-object overrides are merged.
+     * @param string|null       $action The action under evaluation. Required for a per-object
+     *                                  merge: an override may only be applied to the action it
+     *                                  names (see mergeObjectAuthorization). Schema-scoped
+     *                                  callers pass null and get no object merge.
      *
      * @return array|null The effective authorization array, or null if none configured.
      *
@@ -1510,29 +1589,130 @@ class PermissionHandler
      * @throws AuthorizationUnresolvableException When the register cascade cannot be resolved. Callers MUST deny.
      *
      * @spec openspec/specs/authorization-rbac/spec.md#requirement-authorization-resolution-fails-closed
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-per-object-authorization-overrides-the-schema-baseline-for-write-actions
      */
-    public function resolveAuthorization(Schema $schema): ?array
+    public function resolveAuthorization(Schema $schema, ?ObjectEntity $object=null, ?string $action=null): ?array
     {
+        $baseline      = null;
         $authorization = $schema->getAuthorization();
 
-        // If schema has its own authorization, expand roles and return.
+        // If schema has its own authorization, expand roles and use it.
         if (empty($authorization) === false) {
-            return $this->expandRoles(authorization: $authorization, schema: $schema);
+            $baseline = $this->expandRoles(authorization: $authorization, schema: $schema);
+        } else {
+            // Fall back to register authorization. Note getRegisterForSchema()
+            // and getRegisterAuthorization() THROW when the cascade cannot be
+            // evaluated; that exception must propagate to the caller's deny.
+            // Do not catch it here.
+            $register = $this->getRegisterForSchema(schema: $schema);
+            if ($register !== null) {
+                $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
+                if (empty($registerAuth) === false) {
+                    $baseline = $this->expandRoles(authorization: $registerAuth, schema: $schema);
+                }
+            }
         }
 
-        // Fall back to register authorization.
-        $register = $this->getRegisterForSchema(schema: $schema);
-        if ($register === null) {
-            return null;
-        }
-
-        $registerAuth = $this->getRegisterAuthorization(registerId: $register->getId());
-        if (empty($registerAuth) === false) {
-            return $this->expandRoles(authorization: $registerAuth, schema: $schema);
-        }
-
-        return null;
+        return $this->mergeObjectAuthorization(
+            baseline: $baseline,
+            object: $object,
+            schema: $schema,
+            action: $action
+        );
     }//end resolveAuthorization()
+
+    /**
+     * Merge an object's per-object `_authorization` over the schema baseline.
+     *
+     * Applies ONLY the override naming `$action`, and only onto that action's
+     * slot. An empty per-object block changes nothing (the BC default).
+     *
+     * WHY ACTION-SCOPED, not a whole-block merge
+     * ------------------------------------------
+     * The authorization array cannot express "open" for an action: an action is
+     * open precisely by being ABSENT from a block that is itself absent. Once a
+     * block is non-empty, hasGroupPermission() denies every action not listed in
+     * it. So folding an object's `{"update": [...]}` into an otherwise-absent
+     * baseline would produce `{"update": [...]}` — which silently DENIES create
+     * and delete as a side effect of sealing update. Merging only the action
+     * under evaluation keeps every other action on exactly the verdict it had.
+     *
+     * SCOPE — write actions only, deliberately.
+     * -----------------------------------------
+     * Only `create`/`update`/`delete` overrides are honoured. A per-object
+     * `read`/`list` override is IGNORED and logged.
+     *
+     * This is not an oversight. Read authorization is also enforced at the SQL
+     * layer by MagicRbacHandler, which builds its WHERE clause from the SCHEMA's
+     * rules before any row exists — it structurally cannot consult a per-object
+     * column. Honouring a per-object `read` seal here would enforce it on `find`
+     * while `list` returned the row anyway: a leak dressed as a control. Until
+     * the SQL path can express it, the honest behaviour is to refuse the
+     * override rather than half-apply it.
+     *
+     * @param array|null        $baseline The schema/register-resolved baseline (null = none configured).
+     * @param ObjectEntity|null $object   The object whose overrides apply, when supplied.
+     * @param Schema            $schema   The schema, for diagnostics.
+     * @param string|null       $action   The action under evaluation; null disables the merge.
+     *
+     * @return array|null The effective authorization after per-object overrides.
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-per-object-authorization-overrides-the-schema-baseline-for-write-actions
+     */
+    private function mergeObjectAuthorization(
+        ?array $baseline,
+        ?ObjectEntity $object,
+        Schema $schema,
+        ?string $action
+    ): ?array {
+        if ($object === null || $action === null) {
+            return $baseline;
+        }
+
+        $objectAuth = $object->getAuthorization();
+        if (is_array($objectAuth) === false || $objectAuth === []) {
+            return $baseline;
+        }
+
+        $ignored = array_diff(array_keys($objectAuth), self::DEFAULT_CLOSED_WRITE_ACTIONS);
+        if ($ignored !== []) {
+            $this->logger->warning(
+                message: '[PermissionHandler] Ignoring per-object authorization override for non-write '
+                    .'action(s); per-object overrides apply to create/update/delete only, because the '
+                    .'SQL list path cannot honour a per-object read seal.',
+                context: [
+                    'schema'  => $schema->getSlug(),
+                    'object'  => $object->getUuid(),
+                    'ignored' => array_values($ignored),
+                    'file'    => __FILE__,
+                    'line'    => __LINE__,
+                ]
+            );
+        }
+
+        // Only a write action may be overridden per object.
+        if (in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === false) {
+            return $baseline;
+        }
+
+        if (array_key_exists($action, $objectAuth) === false) {
+            return $baseline;
+        }
+
+        $override = $objectAuth[$action];
+        if (empty($override) === true) {
+            return $baseline;
+        }
+
+        $effective          = ($baseline ?? []);
+        $effective[$action] = ($this->expandRoles(
+            authorization: [$action => $override],
+            schema: $schema
+        )[$action] ?? $override);
+
+        return $effective;
+
+    }//end mergeObjectAuthorization()
 
     /**
      * Resolve whether authenticated users inherit `public` group rights for a schema.
@@ -1625,6 +1805,138 @@ class PermissionHandler
             return true;
         }
     }//end inheritFromPublicTenantDefault()
+
+    /**
+     * Apply the opt-in default-closed write policy for authenticated callers.
+     *
+     * Governs ONLY the case where a schema declares no authorization block at
+     * all. A schema with a non-empty block is already fail-closed per-action
+     * upstream in hasGroupPermission(), and is not touched here.
+     *
+     * Callers MUST have already applied the admin bypass. The owner bypass is
+     * applied here so an object's owner keeps write access to their own object
+     * under the flag — mirroring hasGroupPermission()'s ordering.
+     *
+     * When the flag is OFF (the BC default) this method returns true (open) and
+     * emits a one-time deprecation warning per schema per action, so operators
+     * get actionable signal before any future default flip.
+     *
+     * @param Schema      $schema        The schema being written to.
+     * @param array|null  $authorization The resolved authorization block (only an empty one is governed).
+     * @param string      $action        The CRUD action being attempted.
+     * @param string|null $userId        The authenticated caller.
+     * @param string|null $objectOwner   The target object's owner, when known.
+     *
+     * @return bool False to DENY the action; true to leave the decision to the normal chain.
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-schemas-with-no-authorization-block-can-be-default-closed-for-writes
+     */
+    private function applyDefaultClosedPolicy(
+        Schema $schema,
+        ?array $authorization,
+        string $action,
+        ?string $userId,
+        ?string $objectOwner
+    ): bool {
+        // Only the "no authorization declared at all" case is governed.
+        if (empty($authorization) === false) {
+            return true;
+        }
+
+        // Reads stay default-open regardless of the flag.
+        if (in_array(needle: $action, haystack: self::DEFAULT_CLOSED_WRITE_ACTIONS, strict: true) === false) {
+            return true;
+        }
+
+        // The object's owner keeps write access to their own object.
+        if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
+            return true;
+        }
+
+        if ($this->enforceDefaultClosed() === true) {
+            $this->logger->info(
+                message: '[PermissionHandler] Denying write on a schema with no authorization block (rbac.enforce_default_closed)',
+                context: [
+                    'schema' => $schema->getSlug(),
+                    'action' => $action,
+                    'user'   => $userId,
+                ]
+            );
+            return false;
+        }
+
+        $this->warnDefaultOpenWrite(schema: $schema, action: $action);
+        return true;
+
+    }//end applyDefaultClosedPolicy()
+
+    /**
+     * Emit a one-time deprecation warning for a default-open write.
+     *
+     * Warns once per schema per action per request: a bulk write of 10k rows
+     * must not produce 10k log lines.
+     *
+     * @param Schema $schema The schema with no authorization block.
+     * @param string $action The write action that was allowed by default.
+     *
+     * @return void
+     */
+    private function warnDefaultOpenWrite(Schema $schema, string $action): void
+    {
+        $key = ($schema->getSlug() ?? (string) $schema->getUuid()).':'.$action;
+        if (isset($this->deprecationWarnedActions[$key]) === true) {
+            return;
+        }
+
+        $this->deprecationWarnedActions[$key] = true;
+
+        $this->logger->warning(
+            message: '[PermissionHandler] DEPRECATED: schema declares no authorization block; '
+                .'write allowed by the default-open fallback. Declare an authorization block. '
+                .'Enable `rbac.enforce_default_closed` to deny these writes now.',
+            context: [
+                'schema' => $schema->getSlug(),
+                'action' => $action,
+                'file'   => __FILE__,
+                'line'   => __LINE__,
+            ]
+        );
+
+    }//end warnDefaultOpenWrite()
+
+    /**
+     * Read the `rbac.enforce_default_closed` instance flag.
+     *
+     * Defaults to FALSE (default-open writes preserved) — this is a BC-safe
+     * opt-in, not a behaviour change on upgrade.
+     *
+     * On an unreachable IAppConfig this returns false (the BC default) rather
+     * than denying. That is deliberate and is NOT a fail-open regression of the
+     * fail-closed resolver contract: this flag governs a policy CHOICE about
+     * absent rules, not the resolution of rules that exist. An unreadable flag
+     * means "the operator has not opted in", which is exactly false.
+     *
+     * @return bool True when the instance has opted into default-closed writes.
+     *
+     * @spec openspec/specs/authorization-rbac/spec.md#requirement-schemas-with-no-authorization-block-can-be-default-closed-for-writes
+     */
+    private function enforceDefaultClosed(): bool
+    {
+        try {
+            return $this->appConfig->getValueBool(
+                app: 'openregister',
+                key: 'rbac.enforce_default_closed',
+                default: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                message: '[PermissionHandler] IAppConfig unreachable resolving enforce_default_closed; assuming false (BC default)',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return false;
+        }
+
+    }//end enforceDefaultClosed()
 
     /**
      * Resolve the register-level inheritFromPublic value, conservatively.

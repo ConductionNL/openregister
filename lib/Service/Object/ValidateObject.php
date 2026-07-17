@@ -117,6 +117,121 @@ class ValidateObject
     private array $preparedSchemaCache = [];
 
     /**
+     * Collect every top-level property whose definition declares `readOnly: true`.
+     *
+     * Operates on the raw `$schema->getProperties()` shape (associative array,
+     * key = property name). Nested `readOnly` inside object/array sub-schemas is
+     * deliberately NOT collected: top-level enforcement is the contract this
+     * change ships, and nested cases would silently widen it.
+     *
+     * Note `computed` properties are NOT included: `Schema::getSchemaObject()`
+     * synthesises `readOnly: true` onto computed properties at render time, but
+     * the raw properties array this method reads carries `computed`, not
+     * `readOnly`. Computed properties are engine-stamped and already immutable
+     * to clients by a separate mechanism.
+     *
+     * @param array $properties Raw schema properties (associative array; key = property name).
+     *
+     * @return array<int, string> Property names whose schema sets `readOnly: true`.
+     *
+     * @spec openspec/specs/objects-crud/spec.md#requirement-json-schema-readonly-is-enforced-on-the-update-write-path
+     */
+    private function collectReadOnlyPropertyNames(array $properties): array
+    {
+        $readOnly = [];
+        foreach ($properties as $name => $definition) {
+            if (is_array($definition) === false) {
+                continue;
+            }
+
+            if (($definition['readOnly'] ?? false) === true) {
+                $readOnly[] = (string) $name;
+            }
+        }
+
+        return $readOnly;
+
+    }//end collectReadOnlyPropertyNames()
+
+    /**
+     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     *
+     * For each top-level property declared `readOnly: true` on the schema:
+     *  - incoming payload omits the property                     → OK;
+     *  - incoming value is identical to the stored value         → OK (no-op write);
+     *  - incoming value differs from the stored value            → violation.
+     *
+     * CREATE is intentionally NOT covered: there is no prior value to violate,
+     * and the canonical use of `readOnly` is "server-stamped on create,
+     * immutable afterwards".
+     *
+     * This is a schema invariant, not a permission check: it binds admins too.
+     * That is the deliberate difference from `PropertyRbacHandler`, which keys
+     * off a property's `authorization` block and early-returns for admins.
+     *
+     * @param array  $incomingObject The candidate object data (top-level keys = property names).
+     * @param array  $existingObject The previously-stored object data. Pass `[]` to opt out
+     *                               (CREATE / no existing record).
+     * @param Schema $schema         The schema whose `readOnly` declarations drive enforcement.
+     *
+     * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
+     *         Violations; empty when the update is compliant. Callers MUST reject
+     *         a non-empty list — returning violations is not itself enforcement.
+     *
+     * @spec openspec/specs/objects-crud/spec.md#requirement-json-schema-readonly-is-enforced-on-the-update-write-path
+     */
+    public function validateReadOnlyConstraints(
+        array $incomingObject,
+        array $existingObject,
+        Schema $schema
+    ): array {
+        // No existing object → CREATE path, readOnly is not enforced.
+        if ($existingObject === []) {
+            return [];
+        }
+
+        $properties = $schema->getProperties();
+        if (is_array($properties) === false || $properties === []) {
+            return [];
+        }
+
+        $readOnlyNames = $this->collectReadOnlyPropertyNames(properties: $properties);
+        if ($readOnlyNames === []) {
+            return [];
+        }
+
+        $violations = [];
+        foreach ($readOnlyNames as $name) {
+            // Omitted from the payload → not a mutation → OK.
+            if (array_key_exists($name, $incomingObject) === false) {
+                continue;
+            }
+
+            $attempted = $incomingObject[$name];
+            $stored    = ($existingObject[$name] ?? null);
+
+            // Strict comparison so type coercion cannot mask a mutation:
+            // 42 (int) vs "42" (string) IS a mutation.
+            if ($attempted === $stored) {
+                continue;
+            }
+
+            $violations[] = [
+                'property'  => $name,
+                'attempted' => $attempted,
+                'stored'    => $stored,
+                'message'   => sprintf(
+                    "Property '%s' is declared readOnly and cannot be modified after creation.",
+                    $name
+                ),
+            ];
+        }//end foreach
+
+        return $violations;
+
+    }//end validateReadOnlyConstraints()
+
+    /**
      * Constructor for ValidateObject
      *
      * @param IAppConfig      $config       Configuration service.
