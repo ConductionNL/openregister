@@ -3730,11 +3730,18 @@ class SaveObject
         //
         // $oldData is the raw ObjectEntity::getObject() snapshot taken above — never a
         // rendered read, which by construction would already have the secret stripped.
-        $preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
-            prepared: $preparedData,
-            stored: $oldData,
-            omittedPaths: $omittedWriteOnly
-        );
+        //
+        // Short-circuited on the common case exactly as the read path is (RenderObject
+        // gates its strip on schemaHasWriteOnlyRule()): the overwhelming majority of
+        // schemas declare no write-only location, and for those this whole rule must be
+        // provably inert rather than merely harmless.
+        if (empty($omittedWriteOnly) === false) {
+            $preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
+                prepared: $preparedData,
+                stored: $oldData,
+                omittedPaths: $omittedWriteOnly
+            );
+        }
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
