@@ -374,11 +374,9 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
+     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      *
      * @spec openspec/specs/rbac-scopes/spec.md
-     *
-     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
      */
     public function runAsSystem(callable $operation)
     {
@@ -2687,11 +2685,9 @@ class ObjectService
      *
      * @return array<string, mixed> The query with provider-contract keys added.
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design, one guard per provider key
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-mapping requires one guard per provider key
      */
     private function normaliseObjectSourceQuery(array $query): array
     {
