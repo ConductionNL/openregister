@@ -2400,7 +2400,12 @@ class ObjectService
      *                                   discovery (true/false) - _extend: Properties to
      *                                   extend - _fields: Fields to include - _filter/_unset:
      *                                   Fields to exclude - _queries: Specific fields for
-     *                                   legacy facets
+     *                                   legacy facets - _content_search: opt-in bool
+     *                                   (default false) to widen `_search` matches to
+     *                                   attached-file/object chunk body text via
+     *                                   `ChunkMapper::searchByKeyword()`; absent/false is
+     *                                   byte-identical to pre-change behaviour (see
+     *                                   openspec/changes/expose-content-search-in-object-service)
      * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool        $deleted       Whether to include deleted objects (default: false)

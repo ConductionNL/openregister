@@ -69,19 +69,21 @@ class QueryHandler
     /**
      * Constructor for QueryHandler.
      *
-     * @param MagicMapper                    $objectMapper       Unified mapper for objects.
-     * @param GetObject                      $getHandler         Get handler.
-     * @param RenderObject                   $renderHandler      Render handler.
-     * @param SearchQueryHandler             $searchQueryHandler Search handler.
-     * @param FacetHandler                   $facetHandler       Facet handler.
-     * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
-     * @param IAppContainer                  $container          App container.
-     * @param LoggerInterface                $logger             Logger.
-     * @param IRequest                       $request            Request object.
+     * @param MagicMapper                    $objectMapper         Unified mapper for objects.
+     * @param GetObject                      $getHandler           Get handler.
+     * @param RenderObject                   $renderHandler        Render handler.
+     * @param SearchQueryHandler             $searchQueryHandler   Search handler.
+     * @param FacetHandler                   $facetHandler         Facet handler.
+     * @param PerformanceOptimizationHandler $performanceHandler   Performance handler.
+     * @param ContentSearchHandler           $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
+     * @param IAppContainer                  $container            App container.
+     * @param LoggerInterface                $logger               Logger.
+     * @param IRequest                       $request              Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
      * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-2
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -90,6 +92,7 @@ class QueryHandler
         private readonly SearchQueryHandler $searchQueryHandler,
         private readonly FacetHandler $facetHandler,
         private readonly PerformanceOptimizationHandler $performanceHandler,
+        private readonly ContentSearchHandler $contentSearchHandler,
         private readonly IAppContainer $container,
         private readonly LoggerInterface $logger,
         private readonly IRequest $request
@@ -405,6 +408,27 @@ class QueryHandler
         if (isset($searchResult['metrics']) === true) {
             $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
             $metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
+        }
+
+        // Opt-in `_content_search` fan-out (ZKN-CONTENT-001): widen the metadata-match
+        // result set with objects whose attached-file (or object) chunk body text
+        // matches `_search`. Absent or false is byte-identical to pre-change behaviour —
+        // no additional query is issued against openregister_chunks. Runs BEFORE the
+        // render/extend pipeline below so appended rows get the same `_extend`/`_fields`
+        // treatment as metadata-match rows (ZKN-CONTENT-003).
+        if (($query['_content_search'] ?? false) === true) {
+            $contentSearchStart = microtime(true);
+            $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
+                query: $query,
+                results: $results,
+                total: $total,
+                limit: $limit,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+            $results            = $augmented['results'];
+            $total = $augmented['total'];
+            $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
         }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
