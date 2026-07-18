@@ -47,6 +47,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\LanguageService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
+use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\Search\PlaceholderResolver;
 use OCP\IDBConnection;
@@ -84,18 +85,21 @@ class AggregationRunner
     /**
      * Constructor.
      *
-     * @param MagicMapper          $magicMapper         Magic-table mapper used for the PHP fallback path.
-     * @param RegisterMapper       $registerMapper      Register loader.
-     * @param SchemaMapper         $schemaMapper        Schema loader.
-     * @param PlaceholderResolver  $placeholders        Resolves dynamic placeholders inside filters.
-     * @param IDBConnection        $db                  Database connection for the Postgres-native fast path.
-     * @param AggregationCache     $cache               60s aggregation result cache.
-     * @param PermissionHandler    $permissionHandler   RBAC verdict on the schema's `list` action.
-     * @param IUserSession         $userSession         Active session, for the RBAC + cache-key user scope.
-     * @param OrganisationService  $organisationService Active-organisation lookup for the cache key.
-     * @param TranslationHandler   $translationHandler  Resolves translatable group keys to the negotiated language.
-     * @param LanguageService      $languageService     Request-scoped language negotiation (Accept-Language / _lang).
-     * @param LoggerInterface|null $logger              Optional logger for diagnostics.
+     * @param MagicMapper                   $magicMapper         Magic-table mapper used for the PHP fallback path.
+     * @param RegisterMapper                $registerMapper      Register loader.
+     * @param SchemaMapper                  $schemaMapper        Schema loader.
+     * @param PlaceholderResolver           $placeholders        Resolves dynamic placeholders inside filters.
+     * @param IDBConnection                 $db                  Database connection for the Postgres-native fast path.
+     * @param AggregationCache              $cache               60s aggregation result cache.
+     * @param PermissionHandler             $permissionHandler   RBAC verdict on the schema's `list` action.
+     * @param IUserSession                  $userSession         Active session, for the RBAC + cache-key user scope.
+     * @param OrganisationService           $organisationService Active-organisation lookup for the cache key.
+     * @param TranslationHandler            $translationHandler  Resolves translatable group keys to the negotiated language.
+     * @param LanguageService               $languageService     Request-scoped language negotiation (Accept-Language / _lang).
+     * @param LoggerInterface|null          $logger              Optional logger for diagnostics.
+     * @param DbalObjectSourceProvider|null $dbalSourceProvider  Provider that computes aggregations live against an
+     *                                                           external DBAL virtual register; null disables the
+     *                                                           DBAL path.
      *
      * @return void
      *
@@ -115,7 +119,8 @@ class AggregationRunner
         private readonly OrganisationService $organisationService,
         private readonly TranslationHandler $translationHandler,
         private readonly LanguageService $languageService,
-        private readonly ?LoggerInterface $logger=null
+        private readonly ?LoggerInterface $logger=null,
+        private readonly ?DbalObjectSourceProvider $dbalSourceProvider=null
     ) {
     }//end __construct()
 
@@ -520,6 +525,37 @@ class AggregationRunner
             );
         }
 
+        // External (DBAL virtual) register: the object rows live in an
+        // external database, not the magic table, so the native + PHP paths
+        // below would aggregate an empty magic table and return 0. Delegate
+        // to the DBAL object-source provider, which computes the metric live
+        // in the external DB with the same table/column resolution the reads
+        // use. Returns null when the schema is not DBAL-sourced (→ fall
+        // through to the magic-table paths) or the query shape is unsupported.
+        $dbal = $this->tryDbalAggregation(
+            register: $register,
+            schema: $schema,
+            query: $resolvedQuery
+        );
+        if ($dbal !== null) {
+            $envelope = [
+                'backend' => 'dbal-source',
+                'cached'  => false,
+            ] + $dbal;
+            $this->cache->setAdhoc(
+                registerSlug: (string) $register->getSlug(),
+                schemaSlug: (string) $schema->getSlug(),
+                query: $resolvedQuery,
+                result: $envelope
+            );
+            return $this->projectTranslatableGroupKeys(
+                envelope: $envelope,
+                schema: $schema,
+                register: $register,
+                groupBy: $query->groupBy
+            );
+        }
+
         // Try the Postgres / MySQL / SQLite native fast path. The runner
         // detects the database platform and emits the matching native
         // bucketing expression (date_trunc / DATE_FORMAT / strftime).
@@ -583,6 +619,71 @@ class AggregationRunner
         );
 
     }//end runAdhoc()
+
+    /**
+     * Delegate an ad-hoc aggregation to the DBAL object-source provider when
+     * the schema is backed by an external database (`x-openregister-object-source`
+     * provider `dbal-source`). Returns the `{value}` / `{groups}` fragment, or
+     * null when the schema is not DBAL-sourced, the provider is unavailable, or
+     * the provider cannot serve the query shape (→ caller falls through to the
+     * magic-table native / PHP paths).
+     *
+     * A provider-side failure (unreachable DB / query error) is swallowed to
+     * null here rather than propagated: the aggregation endpoints should
+     * degrade to an empty widget, never 500 the dashboard.
+     *
+     * @param Register         $register The register the schema belongs to.
+     * @param Schema           $schema   The schema being aggregated.
+     * @param AggregationQuery $query    The placeholder-resolved query.
+     *
+     * @return array<string, mixed>|null The result fragment, or null to fall through.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     */
+    private function tryDbalAggregation(
+        Register $register,
+        Schema $schema,
+        AggregationQuery $query
+    ): ?array {
+        if ($this->dbalSourceProvider === null) {
+            return null;
+        }
+
+        $configuration = $schema->getConfiguration();
+        if (is_array($configuration) === false) {
+            return null;
+        }
+
+        $objectSource = ($configuration['x-openregister-object-source'] ?? null);
+        if (is_array($objectSource) === false
+            || (string) ($objectSource['provider'] ?? '') !== 'dbal-source'
+        ) {
+            return null;
+        }
+
+        $config = ($objectSource['config'] ?? []);
+        if (is_array($config) === false) {
+            return null;
+        }
+
+        try {
+            return $this->dbalSourceProvider->aggregate(
+                register: $register,
+                schema: $schema,
+                metric: $query->metric,
+                field: $query->field,
+                filter: $query->filter,
+                groupBy: $query->groupBy,
+                dateBucket: $query->dateBucket,
+                config: $config
+            );
+        } catch (\Throwable $e) {
+            $this->logger?->warning(
+                '[AggregationRunner] DBAL aggregation failed for schema "'.((string) $schema->getSlug()).'": '.$e->getMessage()
+            );
+            return null;
+        }
+    }//end tryDbalAggregation()
 
     /**
      * Project translatable group keys in a grouped-aggregation envelope to
