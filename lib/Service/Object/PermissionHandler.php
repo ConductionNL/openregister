@@ -552,6 +552,37 @@ class PermissionHandler
             return true;
         }
 
+        // Custom action verbs (anything outside the canonical 5) are
+        // routed through a listener-driven dispatch so consuming apps
+        // can contribute verdicts for verbs they own (e.g. ZGW
+        // `besluit_nemen`). Listeners vote via
+        // `CustomScopeEvaluatingEvent::allow() / deny()`; the first
+        // verdict wins. When no listener votes, fall through to the
+        // standard rule chain — most schemas won't have rules for
+        // custom verbs, so this typically denies.
+        //
+        // This dispatch MUST precede the 'authenticated' pseudo-group grant
+        // below. That grant is default-open for a schema with no authorization
+        // block, so evaluating it first short-circuits `return true` before any
+        // listener is consulted — silently killing the veto for exactly the
+        // unconfigured-schema case (a schema that declares no rules for its
+        // custom verb) the mechanism exists to serve. Admin bypass still
+        // precedes this: admins remain un-vetoable, matching the canonical
+        // actions' admin short-circuit above.
+        $isCanonical = in_array(needle: $action, haystack: self::CANONICAL_ACTIONS, strict: true);
+        if ($isCanonical === false && $this->eventDispatcher !== null) {
+            $verdict = $this->dispatchCustomScopeEvaluation(
+                schema: $schema,
+                action: $action,
+                userId: $userId,
+                userGroups: $userGroups,
+                object: $object
+            );
+            if ($verdict !== null) {
+                return $verdict;
+            }
+        }
+
         // 'authenticated' pseudo-group: any logged-in user qualifies,
         // independent of real group membership (so a user with NO groups still
         // matches). Evaluated here — symmetric with the SQL-layer
@@ -569,28 +600,6 @@ class PermissionHandler
             ) === true
         ) {
             return true;
-        }
-
-        // Custom action verbs (anything outside the canonical 5) are
-        // routed through a listener-driven dispatch so consuming apps
-        // can contribute verdicts for verbs they own (e.g. ZGW
-        // `besluit_nemen`). Listeners vote via
-        // `CustomScopeEvaluatingEvent::allow() / deny()`; the first
-        // verdict wins. When no listener votes, fall through to the
-        // standard rule chain — most schemas won't have rules for
-        // custom verbs, so this typically denies.
-        $isCanonical = in_array(needle: $action, haystack: self::CANONICAL_ACTIONS, strict: true);
-        if ($isCanonical === false && $this->eventDispatcher !== null) {
-            $verdict = $this->dispatchCustomScopeEvaluation(
-                schema: $schema,
-                action: $action,
-                userId: $userId,
-                userGroups: $userGroups,
-                object: $object
-            );
-            if ($verdict !== null) {
-                return $verdict;
-            }
         }
 
         // User-level override (delegation) check — evaluated independently of
