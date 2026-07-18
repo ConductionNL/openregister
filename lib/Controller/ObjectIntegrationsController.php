@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
@@ -70,6 +71,7 @@ class ObjectIntegrationsController extends Controller
      * @param IntegrationRegistry $registry      Integration registry.
      * @param LoggerInterface     $logger        Logger.
      * @param ObjectService       $objectService OpenRegister object service (RBAC boundary).
+     * @param SchemaMapper        $schemaMapper  Schema loader (external-source detection).
      *
      * @return void
      */
@@ -79,9 +81,40 @@ class ObjectIntegrationsController extends Controller
         private IntegrationRegistry $registry,
         private LoggerInterface $logger,
         private ObjectService $objectService,
+        private SchemaMapper $schemaMapper,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Whether the currently-resolved schema is backed by an external object
+     * source (a DBAL virtual register), as opposed to an OpenRegister magic
+     * table.
+     *
+     * External-register objects live in an external database and carry no
+     * OR-native integration links; the integration providers resolve linked
+     * entities through the magic table, which does not exist for an external
+     * register (relation "oc_openregister_table_.." does not exist → 500). The
+     * index endpoint short-circuits to an empty result for such schemas so the
+     * detail page's integration tabs render cleanly instead of erroring.
+     *
+     * @param string $register Register slug or numeric id.
+     * @param string $schema   Schema slug or numeric id.
+     *
+     * @return bool True when the resolved schema declares an object source.
+     */
+    private function isObjectSourcedSchema(string $register, string $schema): bool
+    {
+        try {
+            $this->objectService->setRegister($register);
+            $this->objectService->setSchema($schema);
+            $resolved = $this->schemaMapper->find($this->objectService->getSchema());
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $resolved->getObjectSource() !== null;
+    }//end isObjectSourcedSchema()
 
     /**
      * Guard access to the target OpenRegister object before any integration
@@ -146,6 +179,17 @@ class ObjectIntegrationsController extends Controller
     #[NoAdminRequired]
     public function index(string $register, string $schema, string $id, string $integrationId): JSONResponse
     {
+        // External (DBAL virtual) register objects have no OR-native integration
+        // links; both the object load (setObject → MagicMapper) and the providers
+        // resolve through a magic table that does not exist for an external
+        // register (→ 500). Detect this BEFORE guardObjectAccess (whose setObject
+        // would throw) and return an empty result so the detail page's integration
+        // tabs render cleanly. The result is a constant empty set, so skipping the
+        // per-object RBAC guard leaks nothing.
+        if ($this->isObjectSourcedSchema(register: $register, schema: $schema) === true) {
+            return new JSONResponse(PaginatedResult::fromMixed([])->toArray());
+        }
+
         $denial = $this->guardObjectAccess(register: $register, schema: $schema, id: $id);
         if ($denial !== null) {
             return $denial;

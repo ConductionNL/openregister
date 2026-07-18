@@ -1262,7 +1262,8 @@ class Application extends App implements IBootstrap
                     request: $container->get('OCP\IRequest'),
                     registry: $container->get(IntegrationRegistry::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class)
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class)
                 );
             }
         );
