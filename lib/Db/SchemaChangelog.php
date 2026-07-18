@@ -131,6 +131,58 @@ class SchemaChangelog extends Entity implements JsonSerializable
     }//end __construct()
 
     /**
+     * The field names registered with the 'json' type.
+     *
+     * @return array<int, string> The json-typed field names.
+     */
+    public function getJsonFields(): array
+    {
+        return array_keys(
+            array_filter(
+                $this->getFieldTypes(),
+                static function ($field) {
+                    return $field === 'json';
+                }
+            )
+        );
+    }//end getJsonFields()
+
+    /**
+     * Hydrate the entity from an array.
+     *
+     * Without this, SchemaChangelogMapper::createFromArray()'s `$entry->hydrate()`
+     * call hit Entity::__call and threw "hydrate does not exist", so every schema
+     * changelog write failed silently (swallowed by the caller's try/catch) and
+     * the schema-change audit trail was never recorded.
+     *
+     * @param array<string, mixed> $object The source data.
+     *
+     * @return static This entity, hydrated.
+     *
+     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     */
+    public function hydrate(array $object): static
+    {
+        $jsonFields = $this->getJsonFields();
+
+        foreach ($object as $key => $value) {
+            if (in_array($key, $jsonFields, true) === true && $value === []) {
+                $value = null;
+            }
+
+            $method = 'set'.ucfirst($key);
+
+            try {
+                $this->$method($value);
+            } catch (\Exception $exception) {
+                // Silently ignore invalid properties.
+            }
+        }
+
+        return $this;
+    }//end hydrate()
+
+    /**
      * JSON serialisation.
      *
      * @return array<string, mixed> The serialised changelog entry.

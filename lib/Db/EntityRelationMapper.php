@@ -49,6 +49,17 @@ use Psr\Log\LoggerInterface;
 class EntityRelationMapper extends QBMapper
 {
     /**
+     * Maximum number of expressions allowed in a single SQL IN() list.
+     *
+     * Nextcloud's QueryBuilder refuses more than 1000 expressions in an IN()
+     * list (Oracle limit); exceeding it logs an error and emits an "Undefined
+     * array key 0" PHP warning. Batched id lookups must chunk below this bound.
+     *
+     * @var integer
+     */
+    private const MAX_IN_LIST_SIZE = 1000;
+
+    /**
      * Constructor.
      *
      * @param IDBConnection    $db               Database connection.
@@ -320,19 +331,25 @@ class EntityRelationMapper extends QBMapper
 
         $ids = array_values(array_unique(array_map('intval', $fileIds)));
 
-        $qb = $this->db->getQueryBuilder();
-        $qb->select('entity_id', 'file_id', 'position_start')
-            ->from($this->getTableName())
-            ->where(
-                $qb->expr()->in(
-                    'file_id',
-                    $qb->createNamedParameter($ids, IQueryBuilder::PARAM_INT_ARRAY)
-                )
-            );
+        // Chunk below the 1000-expression IN() ceiling (Oracle limit enforced by
+        // Nextcloud's QueryBuilder): a dossier can legitimately hold more than
+        // 1000 files.
+        $rows = [];
+        foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('entity_id', 'file_id', 'position_start')
+                ->from($this->getTableName())
+                ->where(
+                    $qb->expr()->in(
+                        'file_id',
+                        $qb->createNamedParameter($chunk, IQueryBuilder::PARAM_INT_ARRAY)
+                    )
+                );
 
-        $result = $qb->executeQuery();
-        $rows   = $result->fetchAll();
-        $result->closeCursor();
+            $result = $qb->executeQuery();
+            $rows   = array_merge($rows, $result->fetchAll());
+            $result->closeCursor();
+        }
 
         $records = [];
         foreach ($rows as $row) {

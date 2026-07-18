@@ -30,7 +30,9 @@ namespace OCA\OpenRegister\AppInfo;
 use OCA\OpenRegister\Service\Translation\IdentityTranslationProvider;
 use OCA\OpenRegister\Service\Translation\TranslationProviderInterface;
 use OCA\OpenRegister\Db\SearchTrailMapper;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Db\MappingMapper;
@@ -237,10 +239,14 @@ use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Controller\IntegrationsController;
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
+use OCA\OpenRegister\Mcp\IMcpScannableServices;
+use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
 use OCA\OpenRegister\Repair\LogDanglingLinkedTypes;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\AuditTrailProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\FilesProvider;
@@ -2646,6 +2652,30 @@ class Application extends App implements IBootstrap
                     providers: $providers
                 );
 
+                // Schema-derived providers (ADR-063 chain 2/3) MUST be
+                // appended LAST — McpToolsService is first-wins on tool
+                // name, so ordering after every hand-written per-app
+                // provider makes hand-written tools win automatically on a
+                // collision (REQ-DERIVED-003).
+                $this->collectSchemaDerivedMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
+                // Attributed providers (ADR-063 chain 3/3) MUST be collected
+                // LAST, after both hand-written and schema-derived providers,
+                // so their collision checks see the FULL existing id set:
+                // an attributed id colliding with a hand-written id is
+                // self-suppressed (hand-written wins, same as derived); an
+                // attributed id colliding with a DERIVED id is a discovery-time
+                // error (REQ-ATTR-002) — see collectAttributeMcpProviders().
+                $this->collectAttributeMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
                 return new McpToolsService(
                     providers: $providers,
                     logger: $logger
@@ -2653,6 +2683,400 @@ class Application extends App implements IBootstrap
             }
         );
     }//end registerMcpToolProviders()
+
+    /**
+     * Derive one SchemaDerivedToolProvider per owning app that has at least
+     * one schema with a validated `x-openregister-mcp.enabled:true` block,
+     * and append it to $providers AFTER every hand-written provider already
+     * collected (built-ins + collectPerAppMcpProviders()).
+     *
+     * Fail-soft: enumeration or resolution failures are logged and leave
+     * $providers untouched — a broken derivation must never break MCP tool
+     * discovery for the rest of the instance.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-001 — SchemaDerivedToolProvider emits declarative CRUD tools)
+     */
+    private function collectSchemaDerivedMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $schemaMapper   = $container->get(SchemaMapper::class);
+            $registerMapper = $container->get(RegisterMapper::class);
+
+            // Catalog enumeration, not data access: every enabled schema
+            // MUST be considered regardless of the resolving request's org
+            // context, or the derived tool catalog would silently vary by
+            // caller — unlike SchemasToolProvider's user-facing `list`
+            // action, RBAC/multitenancy is deliberately bypassed here.
+            $schemas = $schemaMapper->findAll(_rbac: false, _multitenancy: false);
+
+            $schemasByApp = $this->groupOptedInSchemasByApp(
+                schemas: $schemas,
+                registerMapper: $registerMapper,
+                logger: $logger
+            );
+
+            foreach ($schemasByApp as $appId => $schemaEntries) {
+                $suppressedIds = $this->collectExistingToolIds(providers: $providers, appId: $appId);
+
+                $providers[] = new SchemaDerivedToolProvider(
+                    appId: $appId,
+                    schemaEntries: $schemaEntries,
+                    suppressedIds: $suppressedIds,
+                    objectService: $container->get(ObjectService::class),
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    logger: $logger
+                );
+            }
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Schema-derived provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectSchemaDerivedMcpProviders()
+
+    /**
+     * Group every schema with a validated `x-openregister-mcp.enabled:true`
+     * block by its owning app id, each paired with its owning register.
+     *
+     * Owning app id resolution mirrors {@see \OCA\OpenRegister\Service\SemanticTypeResolver::owningAppId()}:
+     * the schema's own `application` field, else the owning register's
+     * `application`. A schema that resolves to no owning app is skipped —
+     * the ABI requires a concrete `getAppId()` per provider instance.
+     *
+     * @param array<int, Schema>       $schemas        Every schema on the instance.
+     * @param RegisterMapper           $registerMapper Register mapper (owning-app + owning-register resolution).
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return array<string, list<array{schema: Schema, register: Register|null}>> Opted-in schemas grouped by owning app id.
+     */
+    private function groupOptedInSchemasByApp(
+        array $schemas,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): array {
+        $schemasByApp = [];
+
+        foreach ($schemas as $schema) {
+            $configuration = ($schema->getConfiguration() ?? []);
+            $annotation    = ($configuration['x-openregister-mcp'] ?? null);
+            if (is_array($annotation) === false || ($annotation['enabled'] ?? false) !== true) {
+                continue;
+            }
+
+            $register  = $this->resolveSchemaRegister(schema: $schema, registerMapper: $registerMapper, logger: $logger);
+            $owningApp = $this->resolveOwningAppId(schema: $schema, register: $register);
+            if ($owningApp === null) {
+                $logger->debug(
+                    '[McpToolsService] Opted-in schema has no resolvable owning app — skipped',
+                    ['schemaId' => $schema->getId()]
+                );
+                continue;
+            }
+
+            $schemasByApp[$owningApp][] = ['schema' => $schema, 'register' => $register];
+        }//end foreach
+
+        return $schemasByApp;
+    }//end groupOptedInSchemasByApp()
+
+    /**
+     * Resolve a schema's owning register (the first register whose
+     * `schemas` id-list contains it), or null when the schema is orphaned.
+     *
+     * @param Schema                   $schema         The schema.
+     * @param RegisterMapper           $registerMapper Register mapper.
+     * @param \Psr\Log\LoggerInterface $logger         PSR logger.
+     *
+     * @return Register|null The owning register, or null when none is found.
+     */
+    private function resolveSchemaRegister(
+        Schema $schema,
+        RegisterMapper $registerMapper,
+        \Psr\Log\LoggerInterface $logger
+    ): ?Register {
+        try {
+            $registerId = $registerMapper->getFirstRegisterWithSchema(schemaId: (int) $schema->getId());
+            if ($registerId === null) {
+                return null;
+            }
+
+            return $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[McpToolsService] Owning-register resolution failed for schema '.$schema->getId().': '.$e->getMessage()
+            );
+            return null;
+        }
+    }//end resolveSchemaRegister()
+
+    /**
+     * Resolve the owning app id: the schema's own `application` field
+     * (present and reliable on real fleet schemas), else the owning
+     * register's `application`. Null when neither names an app.
+     *
+     * @param Schema        $schema   The candidate schema.
+     * @param Register|null $register The schema's owning register, when resolvable.
+     *
+     * @return string|null The owning app id, or null when undeclared.
+     */
+    private function resolveOwningAppId(Schema $schema, ?Register $register): ?string
+    {
+        $appId = $schema->getApplication();
+        if (is_string($appId) === true && $appId !== '') {
+            return $appId;
+        }
+
+        if ($register !== null) {
+            $registerApp = $register->getApplication();
+            if (is_string($registerApp) === true && $registerApp !== '') {
+                return $registerApp;
+            }
+        }
+
+        return null;
+    }//end resolveOwningAppId()
+
+    /**
+     * Collect every tool id already exposed, on the providers list built so
+     * far, by a provider for the given app id — the derived provider's
+     * self-suppression set (REQ-DERIVED-003).
+     *
+     * @param array<IMcpToolProvider> $providers Providers collected so far.
+     * @param string                  $appId     The owning app id.
+     *
+     * @return list<string> Tool ids already claimed for this app.
+     */
+    private function collectExistingToolIds(array $providers, string $appId): array
+    {
+        $ids = [];
+
+        foreach ($providers as $provider) {
+            if ($provider->getAppId() !== $appId) {
+                continue;
+            }
+
+            foreach ($provider->getTools() as $descriptor) {
+                if (isset($descriptor['id']) === true) {
+                    $ids[] = (string) $descriptor['id'];
+                }
+            }
+        }
+
+        return $ids;
+    }//end collectExistingToolIds()
+
+    /**
+     * Derive one AttributeToolProvider per app that declares at least one
+     * `#[McpTool]`-attributed method on its own scannable service classes
+     * (ADR-063 chain 3/3), and append it to $providers.
+     *
+     * MUST run LAST (after collectPerAppMcpProviders() and
+     * collectSchemaDerivedMcpProviders()) so its collision check sees every
+     * hand-written AND derived id already claimed for that app:
+     * - An attributed id colliding with a hand-written id is self-suppressed
+     *   (silent — hand-written wins, same precedence as the derived provider).
+     * - An attributed id colliding with a schema-DERIVED id is a
+     *   developer-facing discovery-time error: the ambiguous attributed tool
+     *   is rejected (logged, skipped) rather than silently resolved
+     *   (REQ-ATTR-002).
+     *
+     * Discovery scope (which classes get reflected) is the provisional
+     * resolution of design.md's DEFERRED_QUESTION: an app opts in by
+     * registering an {@see IMcpScannableServices} implementation under the
+     * alias key `OCA\OpenRegister\Mcp\IMcpScannableServices::<appId>` —
+     * mirrors the existing per-app `IMcpToolProvider::<appId>` convention
+     * used by collectPerAppMcpProviders(). Apps that register nothing under
+     * that key are simply not scanned (opt-in, not enumerate-everything).
+     *
+     * Fail-soft: enumeration, reflection, or resolution failures are logged
+     * and leave $providers untouched for the affected app — a broken scan
+     * must never break MCP tool discovery for the rest of the instance.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-ATTR-002 — Reflection scanner registers attributed tools in the same catalog)
+     */
+    private function collectAttributeMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $appManager = $container->get('OCP\App\IAppManager');
+            $scanner    = new AttributeToolScanner();
+
+            foreach ($appManager->getInstalledApps() as $appId) {
+                $classNames = $this->resolveScannableServiceClasses(
+                    container: $container,
+                    logger: $logger,
+                    appId: $appId
+                );
+
+                if ($classNames === []) {
+                    continue;
+                }
+
+                $descriptors = $scanner->scanClasses(appId: $appId, classNames: $classNames, logger: $logger);
+                if ($descriptors === []) {
+                    continue;
+                }
+
+                $entries = $this->resolveAttributeEntries(
+                    container: $container,
+                    logger: $logger,
+                    appId: $appId,
+                    descriptors: $descriptors,
+                    providers: $providers
+                );
+
+                if ($entries === []) {
+                    continue;
+                }
+
+                $providers[] = new AttributeToolProvider(
+                    appId: $appId,
+                    entries: $entries,
+                    auditTrailMapper: $container->get(AuditTrailMapper::class),
+                    logger: $logger
+                );
+            }//end foreach
+        } catch (\Throwable $e) {
+            $logger->warning(
+                '[McpToolsService] Attributed-tool provider enumeration failed: '.$e->getMessage()
+            );
+        }//end try
+    }//end collectAttributeMcpProviders()
+
+    /**
+     * Resolve one app's declared scannable service classes via the
+     * `IMcpScannableServices::<appId>` container alias, or an empty list
+     * when the app has not opted in / the alias fails to resolve.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param string                   $appId     The candidate app id.
+     *
+     * @return list<string> Candidate scannable service FQCNs (possibly empty).
+     */
+    private function resolveScannableServiceClasses(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId
+    ): array {
+        $key = 'OCA\\OpenRegister\\Mcp\\IMcpScannableServices::'.$appId;
+
+        try {
+            if ($container->has($key) === false) {
+                return [];
+            }
+
+            $declaration = $container->get($key);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[McpToolsService] Scannable-services alias resolve failed',
+                ['appId' => $appId, 'error' => $e->getMessage()]
+            );
+            return [];
+        }
+
+        if (($declaration instanceof IMcpScannableServices) === false) {
+            return [];
+        }
+
+        return $declaration->getScannableServiceClasses();
+    }//end resolveScannableServiceClasses()
+
+    /**
+     * Resolve every scanned descriptor for one app to an invocable entry
+     * (attaching the owning app's own DI-resolved service instance —
+     * ADR-041), applying the collision policy documented on
+     * {@see collectAttributeMcpProviders()}.
+     *
+     * @param ContainerInterface               $container   The DI container.
+     * @param \Psr\Log\LoggerInterface         $logger      PSR logger.
+     * @param string                           $appId       The owning app id.
+     * @param array<int, array<string, mixed>> $descriptors Scanned descriptors (see AttributeToolScanner).
+     * @param array<IMcpToolProvider>          $providers   Providers collected so far (for collision checks).
+     *
+     * @return list<array<string, mixed>> Invocable entries (descriptor + resolved `instance`).
+     */
+    private function resolveAttributeEntries(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        string $appId,
+        array $descriptors,
+        array $providers
+    ): array {
+        $derivedIds = [];
+        $otherIds   = [];
+
+        foreach ($providers as $provider) {
+            if ($provider->getAppId() !== $appId) {
+                continue;
+            }
+
+            $ids = array_column($provider->getTools(), 'id');
+            if ($provider instanceof SchemaDerivedToolProvider) {
+                $derivedIds = array_merge($derivedIds, $ids);
+                continue;
+            }
+
+            $otherIds = array_merge($otherIds, $ids);
+        }
+
+        $entries = [];
+
+        foreach ($descriptors as $descriptor) {
+            $id = (string) $descriptor['id'];
+
+            if (in_array($id, $derivedIds, true) === true) {
+                $logger->error(
+                    '[McpToolsService] Attributed tool id collides with a schema-derived tool id — rejected',
+                    ['appId' => $appId, 'toolId' => $id]
+                );
+                continue;
+            }
+
+            if (in_array($id, $otherIds, true) === true) {
+                // Hand-written-wins precedence — silent self-suppression,
+                // same as SchemaDerivedToolProvider's REQ-DERIVED-003.
+                continue;
+            }
+
+            try {
+                $descriptor['instance'] = $container->get($descriptor['class']);
+            } catch (\Throwable $e) {
+                $logger->warning(
+                    '[McpToolsService] Could not resolve attributed tool service instance',
+                    [
+                        'appId' => $appId,
+                        'class' => $descriptor['class'],
+                        'error' => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }
+
+            $entries[] = $descriptor;
+        }//end foreach
+
+        return $entries;
+    }//end resolveAttributeEntries()
 
     /**
      * Iterate over all installed apps and append any discovered
@@ -2764,6 +3188,8 @@ class Application extends App implements IBootstrap
      * @param string                   $key       The candidate lookup key.
      *
      * @return IMcpToolProvider|null The resolved provider or null.
+     *
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
     private function tryResolveMcpProviderCandidate(
         ContainerInterface $container,
@@ -2777,7 +3203,10 @@ class Application extends App implements IBootstrap
                 // non-existent class would throw NotFoundExceptionInterface for every
                 // installed app (noisy).
                 if (class_exists($key) === false) {
-                    $logger->warning(
+                    // Expected for every installed app that ships no MCP tool
+                    // provider — debug, not warning, or each MCP request logs
+                    // one line per enabled app.
+                    $logger->debug(
                         '[McpToolsService] Class does not exist',
                         ['appId' => $appId, 'fqcn' => $key]
                     );
@@ -2787,7 +3216,7 @@ class Application extends App implements IBootstrap
 
             $appProvider = $container->get($key);
             if ($appProvider instanceof IMcpToolProvider) {
-                $logger->warning(
+                $logger->info(
                     '[McpToolsService] Discovered per-app tool provider',
                     ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
                 );
@@ -2798,6 +3227,13 @@ class Application extends App implements IBootstrap
             $logger->warning(
                 '[McpToolsService] Resolved but not IMcpToolProvider',
                 ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
+            );
+        } catch (\Psr\Container\NotFoundExceptionInterface $e) {
+            // Alias key not registered — the expected case for apps without an
+            // MCP provider; debug to keep per-request logs quiet.
+            $logger->debug(
+                '[McpToolsService] Resolve failed',
+                ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
             );
         } catch (\Throwable $e) {
             $logger->warning(

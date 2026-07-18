@@ -55,6 +55,7 @@ use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\DB\Exception as DBException;
 use OCP\IUserSession;
 use OCA\OpenRegister\Exception\DatabaseConstraintException;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\AuthorizationAuditService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
@@ -333,23 +334,39 @@ class RegistersController extends Controller
             && in_array('@self.stats', $extend, true) === true
         ) {
             $statsByRegisterId = [];
+
+            // Resolve every schema across every register in ONE query. This used to call
+            // schemaMapper->find() per schema id inside the loop below — on an instance
+            // with 76 registers and 1,231 schemas that is 1,231 round trips to render one
+            // list. Orphan ids simply do not come back from the bulk read, which is the
+            // same "skip it" outcome the old DoesNotExistException catch produced.
+            $allSchemaIds = [];
+            foreach ($registers as $register) {
+                foreach (($register->getSchemas() ?? []) as $schemaId) {
+                    $allSchemaIds[] = (int) $schemaId;
+                }
+            }
+
+            $schemasById = $this->schemaMapper->findMultipleOptimized(ids: array_values(array_unique($allSchemaIds)));
+
             foreach ($registers as $register) {
                 $expandedSchemas = [];
                 foreach (($register->getSchemas() ?? []) as $schemaId) {
-                    try {
-                        $expandedSchemas[] = $this->schemaMapper->find(id: $schemaId, _multitenancy: false);
-                    } catch (DoesNotExistException $e) {
-                        // Orphan IDs cannot contribute to stats; skip.
+                    $schema = ($schemasById[(int) $schemaId] ?? null);
+                    if ($schema === null) {
+                        // Orphan ID — cannot contribute to stats.
                         continue;
                     }
+
+                    $expandedSchemas[] = $schema;
                 }
 
                 $statsByRegisterId[(int) $register->getId()] = $this->registerService->getSchemaObjectCounts(
                     registerId: (int) $register->getId(),
                     schemas: $expandedSchemas
                 );
-            }
-        }
+            }//end foreach
+        }//end if
 
         $registersArr = $this->registerSerializer->serializeMany($registers, $extend, $statsByRegisterId);
 
@@ -361,17 +378,92 @@ class RegistersController extends Controller
         if (in_array('@self.stats', $extend, true) === true) {
             foreach ($registersArr as &$register) {
                 $register['stats'] = [
-                    'objects' => $this->objectEntityMapper->getStatistics(registerId: $register['id'], schemaId: null),
+                    // A register's object stats are the sum of its schemas' object stats,
+                    // which we ALREADY computed above in one UNION per register
+                    // ($statsByRegisterId). ObjectEntityMapper::getStatistics() recomputes
+                    // the same numbers the slow way — for every register it walks the full
+                    // register/schema-pair list and issues a per-table count. On a dev
+                    // instance (76 registers, 1,231 schemas) that per-register recount was
+                    // ~4.7s of a ~7s request. Reuse the counts in hand; only the
+                    // '@self.stats'-without-'schemas' caller (no per-schema counts) falls
+                    // back to the mapper.
+                    'objects' => $this->registerObjectStats(
+                        registerId: (int) $register['id'],
+                        schemaStats: ($statsByRegisterId[(int) $register['id']] ?? null)
+                    ),
                     'logs'    => $this->auditTrailMapper->getStatistics(registerId: $register['id'], schemaId: null),
                     'files'   => [ 'total' => 0, 'size' => 0 ],
                 ];
             }
 
             unset($register);
-        }
+        }//end if
 
         return new JSONResponse(data: ['results' => $registersArr]);
     }//end index()
+
+    /**
+     * Register-level object statistics, reused from the per-schema counts when we have them.
+     *
+     * A register's object stats are the sum of its schemas' object stats. When the caller
+     * asked for `schemas` + `@self.stats`, index() already computed those per-schema
+     * counts in one UNION per register — so sum them here rather than call
+     * ObjectEntityMapper::getStatistics(), which recomputes the same numbers by walking
+     * the whole register/schema-pair list and counting each table again (~4.7s of a ~7s
+     * request on a 76-register / 1,231-schema instance).
+     *
+     * `total` is the LIVE object count (soft-deleted rows excluded), matching what
+     * `total` has always meant on this endpoint; `deleted` carries the soft-deleted
+     * count the per-schema UNION also returns. Summing the per-schema counts scopes the
+     * total to the register's currently-linked schemas, which is exactly the set whose
+     * per-schema breakdown is shown alongside it.
+     *
+     * When `$schemaStats` is null (the `@self.stats`-without-`schemas` caller has no
+     * per-schema counts), fall back to the mapper so the numbers are still produced.
+     *
+     * @param int                                 $registerId  The register id.
+     * @param array<int, array<string, int>>|null $schemaStats Per-schema stats already
+     *                                                         computed for this register
+     *                                                         (schemaId => count row), or null.
+     *
+     * @return array<string, int> The register-level object stats.
+     *
+     * @spec exclude performance: sums already-computed per-schema counts in lieu of a full recount
+     */
+    private function registerObjectStats(int $registerId, ?array $schemaStats): array
+    {
+        if ($schemaStats === null) {
+            return $this->objectEntityMapper->getStatistics(registerId: $registerId, schemaId: null);
+        }
+
+        $total   = 0;
+        $deleted = 0;
+        $invalid = 0;
+        $locked  = 0;
+        $size    = 0;
+
+        foreach ($schemaStats as $stat) {
+            $schemaTotal   = (int) ($stat['total'] ?? 0);
+            $schemaDeleted = (int) ($stat['deleted'] ?? 0);
+
+            // The UNION's `total` counts every row; the live total excludes the
+            // soft-deleted subset, so `total` here means the same "live objects" that
+            // getStatistics() reports.
+            $total   += max(0, ($schemaTotal - $schemaDeleted));
+            $deleted += $schemaDeleted;
+            $invalid += (int) ($stat['invalid'] ?? 0);
+            $locked  += (int) ($stat['locked'] ?? 0);
+            $size    += (int) ($stat['size'] ?? 0);
+        }
+
+        return [
+            'total'   => $total,
+            'size'    => $size,
+            'invalid' => $invalid,
+            'deleted' => $deleted,
+            'locked'  => $locked,
+        ];
+    }//end registerObjectStats()
 
     /**
      * Retrieves a single register by ID
@@ -871,13 +963,17 @@ class RegistersController extends Controller
      *
      * @param int $id The ID of the register to export
      *
-     * @return DataDownloadResponse|JSONResponse
+     * @return DataDownloadResponse|JSONResponse Download for `excel`/`csv`/`pdf`/`configuration` formats,
+     *     or a 400 JSON error for a missing schema (`csv`/`pdf`) or an over-cap `pdf` row count.
      *
      * @NoAdminRequired
      *
      * @NoCSRFRequired
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple format branches
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-10
+     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
      */
     public function export(int $id): JSONResponse|DataDownloadResponse
     {
@@ -929,6 +1025,44 @@ class RegistersController extends Controller
                         (new DateTime())->format('Y-m-d_His')
                     );
                     return new DataDownloadResponse($csv, $filename, 'text/csv');
+                case 'pdf':
+                    // PDF exports require a specific schema, same as CSV — a coherent
+                    // single table needs one column set.
+                    $schemaId = $this->request->getParam('schema');
+
+                    if ($schemaId === null || $schemaId === '') {
+                        $errMsg = 'PDF export requires a specific schema to be selected';
+                        return new JSONResponse(data: ['error' => $errMsg], statusCode: 400);
+                    }
+
+                    $schema = $this->schemaMapper->find($schemaId);
+
+                    try {
+                        $pdf = $this->exportService->exportToPdf(
+                            register: $register,
+                            schema: $schema,
+                            filters: [],
+                            currentUser: $this->userSession->getUser()
+                        );
+                    } catch (ExportTooLargeException $e) {
+                        return new JSONResponse(
+                            data: [
+                                'error'    => 'export_too_large',
+                                'message'  => $e->getMessage(),
+                                'rowCount' => $e->getRowCount(),
+                                'maxRows'  => $e->getMaxRows(),
+                            ],
+                            statusCode: ExportTooLargeException::HTTP_STATUS
+                        );
+                    }
+
+                    $filename = sprintf(
+                        '%s_%s_%s.pdf',
+                        $register->getSlug() ?? 'register',
+                        $schema->getSlug() ?? 'schema',
+                        (new DateTime())->format('Y-m-d_His')
+                    );
+                    return new DataDownloadResponse($pdf, $filename, 'application/pdf');
                 case 'configuration':
                 default:
                     $exportData  = $this->configurationService->exportConfig(

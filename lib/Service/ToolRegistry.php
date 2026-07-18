@@ -169,14 +169,16 @@ class ToolRegistry
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        // Validate ID format (should be app_name.tool_name). MCP tool
-        // ids commonly use camelCase on the right side (e.g.
-        // `openbuild.createApp`, `decidesk.listRecentMeetings`) so the
-        // right-hand side accepts both cases. The left-hand side stays
+        // Validate ID format (should be app_name.tool_name, or
+        // app_name.schema.verb for ADR-063 chain-2 schema-derived tools —
+        // e.g. `pipelinq.lead.search`). MCP tool ids commonly use camelCase
+        // on the right side (e.g. `openbuild.createApp`,
+        // `decidesk.listRecentMeetings`) so every segment after the first
+        // accepts both cases. The left-hand (app id) segment stays
         // lowercase since it maps to a Nextcloud app id.
-        if (preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $id) === 0) {
+        if (preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $id) === 0) {
             throw new InvalidArgumentException(
-                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
+                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name' (dot-separated segments)"
             );
         }
 

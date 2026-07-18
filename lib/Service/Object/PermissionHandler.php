@@ -41,6 +41,7 @@ use OCA\OpenRegister\Event\CustomScopeEvaluatedEvent;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use OCP\IUserManager;
@@ -197,8 +198,11 @@ class PermissionHandler
      *   denied (fail-closed)
      * - Otherwise, check if user's groups match the required groups for the action
      *
-     * TODO: Implement property-level RBAC checks
-     * Properties can have their own authorization arrays that provide fine-grained access control.
+     * Property-level RBAC (fine-grained per-property authorization arrays, plus
+     * `writeOnly` secret stripping) is implemented in
+     * {@see \OCA\OpenRegister\Service\PropertyRbacHandler} and applied on the
+     * read path by {@see \OCA\OpenRegister\Service\Object\RenderObject::renderEntity()}.
+     * This handler owns object/schema-level RBAC only.
      *
      * @param Schema            $schema      The schema to check permissions for.
      * @param string            $action      The CRUD action (create, read, update, delete).
@@ -227,6 +231,15 @@ class PermissionHandler
     ): bool {
         // If RBAC is disabled, always return true (bypass all permission checks).
         if ($_rbac === false) {
+            return true;
+        }
+
+        // Explicitly-scoped system operations (config imports at app boot,
+        // repair steps, webcron jobs run via ObjectService::runAsSystem())
+        // are trusted the same way CLI cron already is: these run without a
+        // user session, and the anonymous fail-closed policy (#1955) would
+        // otherwise deny the app maintaining its own objects on every boot.
+        if (SystemOperationContext::isActive() === true) {
             return true;
         }
 
@@ -816,8 +829,9 @@ class PermissionHandler
                 if ($objectSchema !== null) {
                     try {
                         $schema = $this->schemaMapper->find($objectSchema);
-                        // TODO: Add property-level RBAC check for 'create' action here.
-                        // Check individual property permissions before allowing property values to be set.
+                        // Property-level RBAC (per-property authorization + writeOnly
+                        // stripping) is enforced on the read path by PropertyRbacHandler
+                        // via RenderObject; this loop only decides object-level visibility.
                         if ($this->hasPermission(
                                 schema: $schema,
                                 action: 'create',
@@ -896,8 +910,9 @@ class PermissionHandler
                     try {
                         $schema = $this->schemaMapper->find($objectSchema);
 
-                        // TODO: Add property-level RBAC check for 'delete' action here
-                        // Check if user has permission to delete objects with specific property values.
+                        // Property-level RBAC (per-property authorization + writeOnly
+                        // stripping) lives in PropertyRbacHandler on the read path; this
+                        // loop only decides object-level visibility.
                         if ($this->hasPermission(
                                 schema: $schema,
                                 action: 'delete',

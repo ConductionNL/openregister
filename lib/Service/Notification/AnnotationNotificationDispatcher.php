@@ -34,12 +34,15 @@ use OCA\OpenRegister\Db\DuplicateDispatchException;
 use OCA\OpenRegister\Db\NotificationDispatchLogMapper;
 use OCA\OpenRegister\Db\NotificationHistoryMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\QueuedNotification;
+use OCA\OpenRegister\Db\QueuedNotificationMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\BackgroundJob\WebPushDispatchJob;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\Activity\IManager as IActivityManager;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\IJobList;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
@@ -109,6 +112,10 @@ class AnnotationNotificationDispatcher
      * @param \OCA\OpenRegister\Service\ObjectService|null             $objectService       Object resolver for relation-target deeplinks (RBAC).
      * @param \OCA\OpenRegister\Service\DeepLinkRegistryService|null   $deepLinkRegistry    Canonical per-app deeplink resolver.
      * @param IAppManager|null                                         $appManager          Resolves originApp display name (auto body).
+     * @param NotificationDeliveryWindowService|null                   $deliveryWindowService Override-only quiet-hours resolver + evaluator.
+     * @param QueuedNotificationMapper|null                            $queuedNotificationMapper Durable queue mapper (quiet-hours + digest schedule).
+     * @param DigestScheduleEvaluator|null                             $digestScheduleEvaluator  Live evaluator for the `digest` fixed-time schedule.
+     * @param ITimeFactory|null                                        $timeFactory          Time source for the delivery-window/digest gate (testable "now").
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) DI-injected dependencies.
      */
@@ -134,7 +141,11 @@ class AnnotationNotificationDispatcher
         private readonly ?RegisterMapper $registerMapper=null,
         private readonly ?\OCA\OpenRegister\Service\ObjectService $objectService=null,
         private readonly ?\OCA\OpenRegister\Service\DeepLinkRegistryService $deepLinkRegistry=null,
-        private readonly ?IAppManager $appManager=null
+        private readonly ?IAppManager $appManager=null,
+        private readonly ?NotificationDeliveryWindowService $deliveryWindowService=null,
+        private readonly ?QueuedNotificationMapper $queuedNotificationMapper=null,
+        private readonly ?DigestScheduleEvaluator $digestScheduleEvaluator=null,
+        private readonly ?ITimeFactory $timeFactory=null
     ) {
     }//end __construct()
 
@@ -505,6 +516,40 @@ class AnnotationNotificationDispatcher
                     }
                 }//end if
 
+                // Delivery-window (quiet-hours) / digest-schedule gate.
+                // Evaluated only for the per-recipient channels
+                // (nc-notification, email, activity) — webhook/talk are
+                // broadcast and already fired above, unaffected. A
+                // `critical: true` rule skips this gate entirely and
+                // dispatches immediately (still subject to the preference
+                // gate above). When the gate suppresses, the event is
+                // QUEUED (never dropped) as a durable QueuedNotification
+                // row and flushed later by NotificationQueueFlushJob.
+                $queueableChannels = array_values(
+                    array_intersect($effectiveChannels, ['nc-notification', 'email', 'activity'])
+                );
+                if (count($queueableChannels) > 0
+                    && $this->deliveryWindowOrDigestSuppresses(
+                        spec: $spec,
+                        uid: $uid,
+                        ruleId: $ruleId,
+                        schemaId: (int) $schema->getId(),
+                        queueableChannels: $queueableChannels,
+                        channels: $channels,
+                        object: $object,
+                        subjectKey: $subjectKey,
+                        name: (string) $name,
+                        subject: $recipientSubject,
+                        message: $recipientMessage,
+                        context: $context,
+                        originApp: $originApp,
+                        actions: $resolvedActions,
+                        locale: $recipientLocale
+                    ) === true
+                ) {
+                    continue;
+                }
+
                 if (in_array('nc-notification', $effectiveChannels, true) === true) {
                     $this->emitNotification(
                         uid: $uid,
@@ -567,6 +612,321 @@ class AnnotationNotificationDispatcher
         }//end foreach
 
     }//end dispatchWithSchema()
+
+    /**
+     * Resolve "now" for the delivery-window / digest-schedule gate. Uses
+     * the injected `ITimeFactory` when present (tests inject a controllable
+     * clock), else the real wall clock.
+     *
+     * @return DateTimeImmutable
+     */
+    private function currentTime(): DateTimeImmutable
+    {
+        if ($this->timeFactory !== null) {
+            return DateTimeImmutable::createFromInterface($this->timeFactory->getDateTime());
+        }
+
+        return new DateTimeImmutable('now');
+
+    }//end currentTime()
+
+    /**
+     * Evaluate the delivery-window (quiet-hours) / digest-schedule gate for
+     * one recipient and, when it suppresses, persist a `QueuedNotification`
+     * row (never drop the event) and record notification history with the
+     * matching `queued-*` status.
+     *
+     * A `critical: true` rule bypasses this gate entirely — the caller
+     * checks this before invoking the method (see `deliveryWindowService`
+     * usage in `dispatchWithSchema()`), so this method itself does not
+     * need to special-case `critical` beyond the check below (defence in
+     * depth: a caller invoking this directly still gets the bypass).
+     *
+     * @param array<string, mixed> $spec              The full notification spec block.
+     * @param string                $uid               Recipient user UID.
+     * @param string                $ruleId            The rule id.
+     * @param int                   $schemaId           Owning schema id.
+     * @param array<int, string>    $queueableChannels  Per-recipient channels eligible for queueing
+     *                                                   (effectiveChannels ∩ {nc-notification, email, activity}).
+     * @param array<int, string>    $channels           The rule's full declared channel list (for history audit).
+     * @param ObjectEntity          $object             The triggering object.
+     * @param string                $subjectKey         Canonical INotification subject key.
+     * @param string                $name               Notification annotation key.
+     * @param string                $subject            Pre-rendered, per-recipient subject.
+     * @param string                $message            Pre-rendered, per-recipient message body.
+     * @param array<string, mixed>  $context             Trigger context (action, from, to).
+     * @param string                $originApp          Resolved origin app id.
+     * @param array<int, mixed>     $actions            Resolved action buttons.
+     * @param string|null           $locale             Recipient locale.
+     *
+     * @return bool True when the event was queued (caller must skip immediate dispatch).
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the call-site context in dispatchWithSchema().
+     *
+     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     */
+    private function deliveryWindowOrDigestSuppresses(
+        array $spec,
+        string $uid,
+        string $ruleId,
+        int $schemaId,
+        array $queueableChannels,
+        array $channels,
+        ObjectEntity $object,
+        string $subjectKey,
+        string $name,
+        string $subject,
+        string $message,
+        array $context,
+        string $originApp,
+        array $actions,
+        ?string $locale
+    ): bool {
+        if (($spec['critical'] ?? false) === true) {
+            return false;
+        }
+
+        $now = $this->currentTime();
+
+        $windowActive = false;
+        if ($this->deliveryWindowService !== null) {
+            $window = $this->deliveryWindowService->getForUser(userId: $uid);
+            if ($window !== null) {
+                $windowActive = $this->deliveryWindowService->isInsideWindow(window: $window, now: $now);
+            }
+        }
+
+        $digestSpec      = ($spec['digest'] ?? null);
+        $digestDeclared  = is_array($digestSpec) === true
+            && $this->digestScheduleEvaluator !== null
+            && $this->digestScheduleEvaluator->isValidDigestSpec($digestSpec) === true;
+
+        if ($windowActive === false && $digestDeclared === false) {
+            // No window and no digest schedule — dispatch immediately,
+            // exactly as before this change (backward compatibility).
+            return false;
+        }
+
+        $reason = QueuedNotification::REASON_QUIET_HOURS;
+        if ($windowActive === true && $digestDeclared === true) {
+            $reason = QueuedNotification::REASON_BOTH;
+        } else if ($digestDeclared === true) {
+            $reason = QueuedNotification::REASON_DIGEST_SCHEDULE;
+        }
+
+        $status = ($reason === QueuedNotification::REASON_DIGEST_SCHEDULE) ? 'queued-digest' : 'queued-quiet-hours';
+
+        if ($this->queuedNotificationMapper !== null) {
+            $payload = [
+                'subject'        => $subject,
+                'message'        => $message,
+                'channels'       => $queueableChannels,
+                'subjectKey'     => $subjectKey,
+                'name'           => $name,
+                'originApp'      => $originApp,
+                'actions'        => $actions,
+                'locale'         => $locale,
+                'action'         => (string) ($context['action'] ?? ''),
+                'objectUuid'     => (string) ($object->getUuid() ?? ''),
+                'objectRegister' => $object->getRegister(),
+                'objectSchema'   => $object->getSchema(),
+                'objectName'     => $object->getName(),
+            ];
+
+            $entity = new QueuedNotification();
+            $entity->setSchemaId($schemaId);
+            $entity->setRuleKey($ruleId);
+            $entity->setRecipient($uid);
+            $entity->setReason($reason);
+            $entity->setObjectUuid((string) ($object->getUuid() ?? ''));
+            $entity->setPayload((string) json_encode($payload));
+            $entity->setDueAtHint(DateTime::createFromImmutable($now));
+            $entity->setCreatedAt(DateTime::createFromImmutable($now));
+
+            try {
+                $this->queuedNotificationMapper->insert(entity: $entity);
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    sprintf('[AnnotationNotificationDispatcher] failed to queue rule="%s" recipient="%s": %s', $ruleId, $uid, $e->getMessage())
+                );
+            }
+        }//end if
+
+        $this->recordHistoryAcrossChannels(
+            ruleId: $ruleId,
+            recipient: $uid,
+            channels: $channels,
+            broadcastChannels: ['webhook', 'talk'],
+            status: $status,
+            object: $object,
+            subject: $subject,
+            locale: $locale
+        );
+
+        return true;
+
+    }//end deliveryWindowOrDigestSuppresses()
+
+    /**
+     * Flush a group of `QueuedNotification` rows sharing the same
+     * `(rule_key, recipient)` pair, called by `NotificationQueueFlushJob`
+     * once it has determined the group's holding condition has cleared.
+     *
+     * Reuses the existing channel fan-out unchanged (`emitNotification`,
+     * `emitEmail`, `emitActivity`). A single row flushes as its own
+     * pre-resolved subject/message; multiple rows are merged into one
+     * summary message so the recipient gets one notification instead of N.
+     * Notification history is updated to `dispatched` on success.
+     *
+     * @param array<int, QueuedNotification> $queuedRows Rows sharing one (rule_key, recipient) pair.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+     */
+    public function dispatchQueued(array $queuedRows): void
+    {
+        if (count($queuedRows) === 0) {
+            return;
+        }
+
+        $first     = $queuedRows[0];
+        $payload   = $first->getDecodedPayload();
+        $ruleId    = (string) $first->getRuleKey();
+        $recipient = (string) $first->getRecipient();
+
+        [$subject, $message] = $this->buildQueuedSummary(rows: $queuedRows);
+
+        $channels = (array) ($payload['channels'] ?? []);
+
+        $object = new ObjectEntity();
+        $object->setUuid((string) ($payload['objectUuid'] ?? ''));
+        if (isset($payload['objectRegister']) === true && $payload['objectRegister'] !== null) {
+            $object->setRegister((string) $payload['objectRegister']);
+        }
+
+        if (isset($payload['objectSchema']) === true && $payload['objectSchema'] !== null) {
+            $object->setSchema((string) $payload['objectSchema']);
+        }
+
+        if (isset($payload['objectName']) === true && $payload['objectName'] !== null) {
+            $object->setName((string) $payload['objectName']);
+        }
+
+        $locale = (($payload['locale'] ?? null) !== null) ? (string) $payload['locale'] : null;
+
+        if (in_array('nc-notification', $channels, true) === true) {
+            $this->emitNotification(
+                uid: $recipient,
+                object: $object,
+                subjectKey: (string) ($payload['subjectKey'] ?? $this->canonicalSubject(trigger: 'updated')),
+                name: (string) ($payload['name'] ?? $ruleId),
+                subject: $subject,
+                message: $message,
+                context: [],
+                originApp: (string) ($payload['originApp'] ?? 'openregister'),
+                actions: (array) ($payload['actions'] ?? [])
+            );
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'nc-notification',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+        if (in_array('email', $channels, true) === true) {
+            $this->emitEmail(uid: $recipient, subject: $subject, body: $message !== '' ? $message : $subject);
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'email',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+        if (in_array('activity', $channels, true) === true) {
+            $this->emitActivity(
+                uid: $recipient,
+                objectId: (string) ($payload['objectUuid'] ?? ''),
+                name: (string) ($payload['name'] ?? $ruleId),
+                subject: $subject
+            );
+            $this->recordHistory(
+                ruleId: $ruleId,
+                channel: 'activity',
+                recipient: $recipient,
+                status: 'dispatched',
+                object: $object,
+                subject: $subject,
+                locale: $locale
+            );
+        }
+
+    }//end dispatchQueued()
+
+    /**
+     * Build the flushed subject/message for a group of queued rows. A
+     * single row flushes verbatim; multiple rows are merged into a
+     * digest-style summary (breakdown by the stored `action`, e.g.
+     * "3 nieuw, 2 gewijzigd" — reusing the rolling-digest breakdown
+     * pattern already documented for the coalescer).
+     *
+     * @param array<int, QueuedNotification> $rows Rows sharing one (rule_key, recipient) pair.
+     *
+     * @return array{0: string, 1: string} [subject, message]
+     */
+    private function buildQueuedSummary(array $rows): array
+    {
+        if (count($rows) === 1) {
+            $payload = $rows[0]->getDecodedPayload();
+            return [(string) ($payload['subject'] ?? ''), (string) ($payload['message'] ?? '')];
+        }
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $payload = $row->getDecodedPayload();
+            $action  = (string) ($payload['action'] ?? '');
+            if ($action === '') {
+                $action = 'other';
+            }
+
+            $counts[$action] = (($counts[$action] ?? 0) + 1);
+        }
+
+        $labels = [
+            'created' => 'nieuw',
+            'updated' => 'gewijzigd',
+        ];
+
+        $parts = [];
+        foreach ($counts as $action => $count) {
+            $parts[] = sprintf('%d %s', $count, ($labels[$action] ?? $action));
+        }
+
+        $breakdown = implode(', ', $parts);
+        $subject   = sprintf('%d meldingen (%s)', count($rows), $breakdown);
+
+        $titles = [];
+        foreach (array_slice($rows, 0, 10) as $row) {
+            $payload  = $row->getDecodedPayload();
+            $titles[] = (string) ($payload['subject'] ?? '');
+        }
+
+        $message = implode('; ', array_filter($titles));
+        if (count($rows) > 10) {
+            $message .= sprintf(' ... en %d meer', (count($rows) - 10));
+        }
+
+        return [$subject, $message];
+
+    }//end buildQueuedSummary()
 
     /**
      * Helper to dispatch a broadcast-style channel (webhook / talk).

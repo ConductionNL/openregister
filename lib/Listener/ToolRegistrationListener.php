@@ -244,10 +244,12 @@ class ToolRegistrationListener implements IEventListener
     {
         foreach ($provider->getTools() as $descriptor) {
             $mcpId = (string) ($descriptor['id'] ?? '');
-            if ($mcpId === '' || preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $mcpId) === 0) {
-                // Tool id is non-conforming (camelCase or missing dot).
-                // Skip — the LLM-visible id MUST match the ToolRegistry regex,
-                // and the agent's tools array stores MCP ids verbatim.
+            if ($mcpId === '' || preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $mcpId) === 0) {
+                // Tool id is non-conforming (camelCase or missing dot). Skip
+                // — the LLM-visible id MUST match the ToolRegistry regex
+                // (app_name.tool_name, or app_name.schema.verb for ADR-063
+                // chain-2 schema-derived tools), and the agent's tools array
+                // stores MCP ids verbatim.
                 continue;
             }
 

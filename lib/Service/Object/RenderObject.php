@@ -51,6 +51,7 @@ use OCA\OpenRegister\Service\Object\SaveObject\ComputedFieldHandler;
 use OCA\OpenRegister\Service\Object\LinkedEntityEnricher;
 use OCA\OpenRegister\Service\Object\TranslationHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
+use OCA\OpenRegister\Service\SystemOperationContext;
 use OCA\OpenRegister\Service\Archival\RetentionEvaluator;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
 use OCA\OpenRegister\Service\UrnService;
@@ -319,6 +320,49 @@ class RenderObject
             return null;
         }
     }//end getSchema()
+
+    /**
+     * The names of a schema's write-only properties.
+     *
+     * `writeOnly: true` is JSON Schema's marker for a value a client may send but the
+     * server must never return — a password, an API key, a TOTP seed. renderEntity()
+     * strips these at the API boundary (openregister#380, ocon#147); the engine's internal
+     * `getObject()` is unaffected, so the value is still available to code that legitimately
+     * needs it (a synchronisation, the credential engine).
+     *
+     * Resolved through the same cached `getSchema()` used elsewhere in the renderer, so it
+     * adds no query on the hot path once the schema is cached. Returns an empty array when
+     * the schema cannot be resolved or declares no write-only property — i.e. the default
+     * for every existing schema, which is why this changes no behaviour until a schema opts
+     * in.
+     *
+     * @param int|string|null $schemaId The object's schema id/uuid/slug.
+     *
+     * @return array<int, string> The write-only property names.
+     */
+    private function getWriteOnlyProperties(int | string | null $schemaId): array
+    {
+        if ($schemaId === null || $schemaId === '') {
+            return [];
+        }
+
+        $schema = $this->getSchema(id: $schemaId);
+        if ($schema === null) {
+            return [];
+        }
+
+        $writeOnly = [];
+        foreach (($schema->getProperties() ?? []) as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? false) === true
+                && is_string($propertyName) === true
+            ) {
+                $writeOnly[] = $propertyName;
+            }
+        }
+
+        return $writeOnly;
+    }//end getWriteOnlyProperties()
 
     /**
      * Enrich `recurrence`-typed properties with their upcoming occurrences.
@@ -650,6 +694,99 @@ class RenderObject
 
         unset($row);
     }//end resolveTranslationsForRows()
+
+    /**
+     * Redact write-only properties from cheap-path list rows (openregister#380, ocon#147).
+     *
+     * The list cheap-path (no _extend/_fields/_filter/_unset) does NOT run rows through
+     * renderEntity() — for performance — so the write-only redaction enforced there never
+     * runs. That is exactly the path the OpenConnector leak used: `GET .../objects/{reg}/
+     * {schema}` is a LIST, so it took the cheap-path and returned every Source's apikey in
+     * cleartext even after the single-object read was redacted. This method closes that gap
+     * with the same rule, mirroring resolveTranslationsForRows()'s per-row schema
+     * resolution and object-vs-array handling.
+     *
+     * Gated on `$_rbac`: a system-context read (`_rbac: false`) is trusted internal code
+     * (the sync/credential engine) and gets the full row; only a user-facing read
+     * (`_rbac: true`) is redacted. Strips the object body AND the `@self.relations` search
+     * index copy.
+     *
+     * @param array $rows  Result rows by reference, mutated in place.
+     * @param bool  $_rbac Whether this is a user-facing read (true) or system context (false).
+     *
+     * @return void
+     */
+    public function redactWriteOnlyFromRows(array &$rows, bool $_rbac=true): void
+    {
+        // Same bypass as renderEntity's read-strip (feat #380): a system-context read
+        // (`_rbac: false`) or a config-boot / repair render (SystemOperationContext) must
+        // see the full row — the sync and credential engines batch-read sources and need
+        // the secret. Only a normal authenticated read is stripped.
+        if ($_rbac === false || SystemOperationContext::isActive() === true || empty($rows) === true) {
+            return;
+        }
+
+        foreach ($rows as &$row) {
+            if ($row instanceof ObjectEntity === true) {
+                $schema = $this->getSchema(id: $row->getSchema());
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $object = $row->getObject();
+                if (is_array($object) === true) {
+                    $row->setObject($this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $object));
+                }
+
+                // The body strip above leaves the `relations` search index untouched; it is
+                // a separate scalar mirror that jsonSerialize surfaces as @self.relations,
+                // so a write-only secret leaks there unless stripped too.
+                $relations = $row->getRelations();
+                if (is_array($relations) === true) {
+                    $row->setRelations($this->propertyRbacHandler->stripWriteOnlyProperties(schema: $schema, object: $relations));
+                }
+
+                continue;
+            }//end if
+
+            if (is_array($row) === true) {
+                $schemaId = $row['@self']['schema'] ?? null;
+                if (is_int($schemaId) === false && is_string($schemaId) === false) {
+                    continue;
+                }
+
+                $schema = $this->getSchema(id: $schemaId);
+                if ($this->schemaNeedsReadStrip(schema: $schema) === false) {
+                    continue;
+                }
+
+                $row = $this->propertyRbacHandler->filterReadableProperties(schema: $schema, object: $row);
+                if (isset($row['@self']['relations']) === true && is_array($row['@self']['relations']) === true) {
+                    $row['@self']['relations'] = $this->propertyRbacHandler->stripWriteOnlyProperties(
+                        schema: $schema,
+                        object: $row['@self']['relations']
+                    );
+                }
+            }//end if
+        }//end foreach
+
+        unset($row);
+    }//end redactWriteOnlyFromRows()
+
+    /**
+     * Whether a schema has any read-strip rule (property-level read authorization or a
+     * write-only property). Mirrors the guard in renderEntity's read-strip block, so the
+     * cheap-path and the single-object path agree on when to strip.
+     *
+     * @param Schema|null $schema The row's schema.
+     *
+     * @return bool
+     */
+    private function schemaNeedsReadStrip(?Schema $schema): bool
+    {
+        return $schema !== null
+            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true);
+    }//end schemaNeedsReadStrip()
 
     /**
      * Extract the UUID from a list-row of unknown shape (ObjectEntity or array).
@@ -1507,6 +1644,64 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
+        // Redact write-only properties (openregister#380, ocon#147).
+        //
+        // This runs AFTER every caller-controlled manipulation above (`fields`, `filter`,
+        // `unset`) precisely so that none of them can widen it: a caller cannot ask for a
+        // write-only field back the way it can with `fields`. It is server-side and
+        // schema-driven, which is the whole point — the lesson from the OpenConnector leak
+        // (ocon#147) was that controller-side redaction is bypassed the moment a second
+        // read path exists, and renderEntity() is the one path every API read renders through.
+        //
+        // `writeOnly` is JSON Schema's own word for "may be sent by the client, never
+        // returned by the server" — the exact semantic for a secret (a source's apikey, a
+        // portal account's mfaSecret). A property is affected only once its schema marks it
+        // `writeOnly: true`, so no existing schema changes behaviour until it opts in.
+        //
+        // Gated on `$_rbac`: a caller passing `_rbac: false` is trusted internal code
+        // reading in system context — the synchronisation engine, the credential engine,
+        // configuration import/export. That path MUST get the full object, or every
+        // integration that needs the secret breaks (it was reading through find(), which
+        // always renders). A real user-facing API read runs with `_rbac: true` (the
+        // default), and only that path is redacted. `_rbac: false` is already OR's marker
+        // for "access control is bypassed here"; reusing it keeps one trust boundary, not two.
+        if ($_rbac === true && is_array($objectData) === true && empty($objectData) === false) {
+            $writeOnly = $this->getWriteOnlyProperties(schemaId: $entity->getSchema());
+            if (empty($writeOnly) === false) {
+                $redacted = false;
+                foreach ($writeOnly as $property) {
+                    if (array_key_exists($property, $objectData) === true) {
+                        unset($objectData[$property]);
+                        $redacted = true;
+                    }
+                }
+
+                if ($redacted === true) {
+                    $entity->setObject($objectData);
+                }
+
+                // The object body is not the only copy. OpenRegister mirrors every scalar
+                // property into the `relations` search index, which `jsonSerialize()`
+                // surfaces as `@self.relations` — so a write-only secret leaks there even
+                // after the body is redacted (this is the "written to more than one place"
+                // half of ocon#147). Strip it from the index copy too.
+                $relations = $entity->getRelations();
+                if (is_array($relations) === true && empty($relations) === false) {
+                    $relationsRedacted = false;
+                    foreach ($writeOnly as $property) {
+                        if (array_key_exists($property, $relations) === true) {
+                            unset($relations[$property]);
+                            $relationsRedacted = true;
+                        }
+                    }
+
+                    if ($relationsRedacted === true) {
+                        $entity->setRelations($relations);
+                    }
+                }//end if
+            }//end if
+        }//end if
+
         // Handle inversed properties ONLY if we're extending an inverse property.
         // This is a performance optimization: inverse lookups are expensive (search all magic tables),
         // so we only do them when explicitly requested via _extend.
@@ -1633,10 +1828,25 @@ class RenderObject
             $entity->setObject($objectData);
         }
 
-        // Apply property-level RBAC filtering.
-        // This filters out properties that the current user is not authorized to read.
-        $schema = $readSchema ?? $this->getSchema(id: $entity->getSchema());
-        if ($schema !== null && $schema->hasPropertyAuthorization() === true) {
+        // Apply property-level read stripping (writeOnly secrets + property
+        // `authorization.read`). This removes properties the caller must not see.
+        //
+        // Fail-safe ordering: this runs AFTER caller-supplied `fields`/`unset`
+        // selection above, so a caller can never re-surface a stripped property
+        // by naming it (e.g. ?fields=apiToken).
+        //
+        // Bypass for trusted internal reads — mirrors PermissionHandler::hasPermission().
+        // $_rbac === false is an explicit internal/service render that must see the
+        // full object (including writeOnly secrets it operates on), and
+        // SystemOperationContext::isActive() covers config boot / repair steps.
+        // A normal authenticated session always renders with $_rbac = true (the
+        // default), so end-user responses are always stripped.
+        $stripForRead = ($_rbac !== false) && (SystemOperationContext::isActive() === false);
+        $schema       = $readSchema ?? $this->getSchema(id: $entity->getSchema());
+        if ($stripForRead === true
+            && $schema !== null
+            && ($schema->hasPropertyAuthorization() === true || $schema->hasWriteOnlyProperties() === true)
+        ) {
             // Ensure @self metadata is available for property-level RBAC checks.
             // Property authorization can reference @self.organisation or _organisation,
             // which needs to be accessible during filtering (before jsonSerialize adds @self).
