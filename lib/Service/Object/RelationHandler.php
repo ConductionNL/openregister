@@ -22,6 +22,7 @@ use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -70,7 +71,8 @@ class RelationHandler
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
         private readonly MagicRbacHandler $rbacHandler,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly RegisterMapper $registerMapper
     ) {
     }//end __construct()
 
@@ -586,7 +588,7 @@ class RelationHandler
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
-                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $registerMapper = $this->registerMapper;
                     $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
                     $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
@@ -659,8 +661,8 @@ class RelationHandler
             }
 
             // Get all register+schema pairs that have magic mapping enabled.
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $registerMapper = $this->registerMapper;
+            $magicMapper    = $this->objectEntityMapper;
             $registers      = $registerMapper->findAll();
 
             $registerSchemaPairs = [];
@@ -877,7 +879,7 @@ class RelationHandler
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
-                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $registerMapper = $this->registerMapper;
                     $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
                     $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
@@ -898,8 +900,8 @@ class RelationHandler
 
             // Search across all magic tables for objects that reference this UUID in their _relations.
             $results        = [];
-            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+            $magicMapper    = $this->objectEntityMapper;
+            $registerMapper = $this->registerMapper;
             $magicTables    = $magicMapper->getExistingRegisterSchemaTables();
             $limit          = $query['_limit'] ?? 30;
             $offset         = $query['_offset'] ?? 0;
