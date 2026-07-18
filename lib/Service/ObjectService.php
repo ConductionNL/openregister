@@ -1528,8 +1528,21 @@ class ObjectService
         // RBAC reject, multitenancy filter) means we're not in a true UPDATE
         // and the engine's normal CREATE path will run — no readOnly check
         // applies.
+        //
+        // Pass the already-resolved register/schema so find() takes the scoped
+        // register/schema-table path directly. Omitting them leaves find() to
+        // rely on the request's URL scope; under a stale scope it falls back to
+        // the deliberate cross-table search (see the resolution-cache note above,
+        // openregister#1520). We are on the save path with both already resolved,
+        // so there is no reason to risk that fallback here.
         try {
-            $existing = $this->objectMapper->find($uuid, _rbac: false, _multitenancy: false);
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
         } catch (\Throwable $e) {
             return;
         }
