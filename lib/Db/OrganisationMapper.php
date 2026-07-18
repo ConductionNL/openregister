@@ -69,6 +69,23 @@ use Symfony\Component\Uid\Uuid;
 class OrganisationMapper extends QBMapper
 {
     /**
+     * Request-scoped memo of the active-organisation UUID per user id.
+     *
+     * `getActiveOrganisationUuidForUser()` is called on the hot tenant-filter path
+     * (`MultiTenancyTrait::getActiveOrganisationUuid()` runs for every mapper query),
+     * which bypasses `OrganisationService`'s session cache. A single object write fans
+     * out to ~1,000 tenant-filtered operations, each issuing an identical
+     * `SELECT configvalue FROM preferences` — ~29% of the queries for one create. This
+     * mapper is a per-request DI singleton, so this instance cache is request-scoped:
+     * one read per user per request instead of hundreds. `array_key_exists` (not
+     * `isset`) distinguishes a cached `null` (no active org) from "not yet looked up",
+     * and {@see setActiveOrganisationForUser()} keeps it coherent with in-request writes.
+     *
+     * @var array<string, string|null>
+     */
+    private array $activeOrgUuidCache = [];
+
+    /**
      * OrganisationMapper constructor
      *
      * @param IDBConnection    $db              Database connection
@@ -892,6 +909,16 @@ class OrganisationMapper extends QBMapper
      */
     public function getActiveOrganisationUuidForUser(string $userId): ?string
     {
+        // Request-scoped memo: this runs on the hot tenant-filter path (once per mapper
+        // query), so an object write would otherwise re-issue this identical preference
+        // read hundreds of times. array_key_exists (not isset) so a cached null — the user
+        // has no active organisation — is honoured as a hit and does not re-query.
+        if (array_key_exists($userId, $this->activeOrgUuidCache) === true) {
+            return $this->activeOrgUuidCache[$userId];
+        }
+
+        $activeOrganisationUuid = null;
+
         $qb = $this->db->getQueryBuilder();
 
         // Query the preferences table for active organisation.
@@ -907,16 +934,21 @@ class OrganisationMapper extends QBMapper
             $result->closeCursor();
 
             if ($row !== false && isset($row['configvalue']) === true) {
-                return $row['configvalue'];
+                $activeOrganisationUuid = $row['configvalue'];
             }
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[OrganisationMapper] Failed to get active organisation for user: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId]
             );
+
+            // Do NOT cache a transient DB failure — leave it uncached so a later call retries.
+            return null;
         }
 
-        return null;
+        $this->activeOrgUuidCache[$userId] = $activeOrganisationUuid;
+
+        return $activeOrganisationUuid;
     }//end getActiveOrganisationUuidForUser()
 
     /**
@@ -1021,6 +1053,9 @@ class OrganisationMapper extends QBMapper
                 ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
                 ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
             $qb->executeStatement();
+
+            // Keep the request-scoped memo coherent with this in-request write.
+            $this->activeOrgUuidCache[$userId] = $organisationUuid;
             return;
         }
 
@@ -1036,6 +1071,9 @@ class OrganisationMapper extends QBMapper
                 ]
             );
         $qb->executeStatement();
+
+        // Keep the request-scoped memo coherent with this in-request write.
+        $this->activeOrgUuidCache[$userId] = $organisationUuid;
     }//end setActiveOrganisationForUser()
 
     /**
