@@ -34,6 +34,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Translates DBAL column types into JSON-Schema property fragments.
+ *
+ * @spec openspec/specs/dbal-virtual-registers/spec.md
  */
 class SqlTypeMapper
 {
@@ -62,8 +64,8 @@ class SqlTypeMapper
         Types::DATETIMETZ_MUTABLE   => ['string', 'date-time'],
         Types::DATETIMETZ_IMMUTABLE => ['string', 'date-time'],
         Types::JSON                 => ['object', null],
-        Types::BINARY               => ['string', 'binary'],
-        Types::BLOB                 => ['string', 'binary'],
+        Types::BINARY               => ['string', null],
+        Types::BLOB                 => ['string', null],
         Types::SIMPLE_ARRAY         => ['array', null],
         Types::ARRAY                => ['array', null],
     ];
