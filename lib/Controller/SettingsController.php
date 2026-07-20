@@ -893,8 +893,18 @@ class SettingsController extends Controller
                 ->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
                 ->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
 
+            // NC's IResult does not expose Doctrine's fetchAllAssociative() on
+            // every supported server (absent on NC 32) — iterate fetch() instead
+            // (see RegisterMapper::getAllRegisterIdsWithSchema / MarkerLookupTrait).
             $stmt = $qb->executeQuery();
-            $rows = $stmt->fetchAllAssociative();
+            $rows = [];
+            $row  = $stmt->fetch();
+            while ($row !== false) {
+                $rows[] = $row;
+                $row    = $stmt->fetch();
+            }
+
+            $stmt->closeCursor();
 
             $results['direct_database_query'] = [
                 'count'         => count($rows),
