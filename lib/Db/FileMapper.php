@@ -706,15 +706,30 @@ class FileMapper extends QBMapper
      * found" and skip silently rather than error — this mirrors the same convention
      * `getFilesForObject()` already relies on for its own fallback path.
      *
+     * SECURITY BOUNDARY: this join is intentionally NOT scoped by storage / tenant /
+     * owner — `filecache.fileid` is globally unique across all storages and any
+     * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
+     * multitenancy safety net lives ONE layer up in
+     * {@see ContentSearchHandler::resolveOwningObject()}, which passes the UUID to
+     * `MagicMapper::find($uuid, _rbac: true, _multitenancy: true)`; a UUID that
+     * belongs to a table the current user cannot see throws `DoesNotExistException`
+     * there and is caught silently. Do NOT reuse this method in contexts that
+     * bypass that follow-up `MagicMapper::find()` call, or a low-privileged user
+     * could probe cross-tenant chunk-content by guessing monotonic fileids.
+     * Defence-in-depth (join in `oc_storages` and filter to accessible storages
+     * up-front) is a follow-up if we ever call this from a hotter path.
+     *
      * @param int $fileId The Nextcloud filecache fileid to resolve.
      *
      * @return string|null The owning object's UUID, or null when it cannot be resolved.
      *
-     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
      */
     public function findOwningObjectUuid(int $fileId): ?string
     {
         $qb = $this->db->getQueryBuilder();
+        // SECURITY: unscoped filecache join — see docblock. Safety comes from
+        // the MagicMapper::find() call in the sole caller (ContentSearchHandler).
         $qb->select('parentNode.name')
             ->from('filecache', 'file')
             ->innerJoin('file', 'filecache', 'parentNode', $qb->expr()->eq('file.parent', 'parentNode.fileid'))

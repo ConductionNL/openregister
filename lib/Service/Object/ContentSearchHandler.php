@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
+ * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
  */
 
 declare(strict_types=1);
@@ -50,7 +50,7 @@ use Psr\Log\LoggerInterface;
  * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
+ * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
  */
 class ContentSearchHandler
 {
@@ -58,8 +58,16 @@ class ContentSearchHandler
      * Candidate pool size fetched from the chunk store per call. Opt-in only path
      * (design.md Risk: "Extra query cost on _content_search=true") — bounded so a
      * single call cannot force an unbounded chunk-table scan.
+     *
+     * Cost note: the constant bounds BOTH the chunk-fetch SQL AND the per-hit
+     * resolve loop below. Each hit costs up to two additional round-trips
+     * (`FileMapper::findOwningObjectUuid()` for file-source chunks, then
+     * `MagicMapper::find($uuid)` for both source branches). Worst case = 2 × N
+     * sequential DB calls. Kept at 50 pending the batch-resolve refactor
+     * discussed on the PR — bulk `findOwningObjectUuidsByFileIds()` /
+     * `findMany($uuids)` variants would let us raise this safely.
      */
-    private const CHUNK_CANDIDATE_LIMIT = 100;
+    private const CHUNK_CANDIDATE_LIMIT = 50;
 
     /**
      * Constructor for ContentSearchHandler.
@@ -69,7 +77,7 @@ class ContentSearchHandler
      * @param MagicMapper     $objectMapper Unified object mapper, used to resolve chunk hits to ObjectEntity rows.
      * @param LoggerInterface $logger       Logger for DEBUG-level unresolvable-chunk diagnostics.
      *
-     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
      */
     public function __construct(
         private readonly ChunkMapper $chunkMapper,
@@ -109,8 +117,7 @@ class ContentSearchHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)      Same early-exit guards multiply paths
      *   without adding real decision complexity.
      *
-     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
-     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-4
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
      */
     public function augmentWithChunkMatches(
         array $query,
@@ -151,6 +158,21 @@ class ContentSearchHandler
             }
         }
 
+        // Stable total across pages: use the distinct-chunk-owner set (grouped
+        // by entity_type+entity_id) as the chunk-arm upper bound BEFORE the
+        // room-clamped resolve loop. Without this, `$total` drifts across
+        // pages (page 1 appends 0 → reports metaTotal; page 3 appends N →
+        // reports metaTotal+N). Accepts over-counting by the metadata/chunk
+        // overlap size and by unresolvable/out-of-scope chunks — the last
+        // page may render short but pagination math stays consistent for the
+        // client. See review discussion on pagination drift concern.
+        $distinctChunkOwners = [];
+        foreach ($chunkHits as $hit) {
+            $key = ($hit['entity_type'] ?? 'file') . ':' . ($hit['entity_id'] ?? '');
+            $distinctChunkOwners[$key] = true;
+        }
+        $chunkOwnerUpperBound = count($distinctChunkOwners);
+
         $scope    = $this->resolveScope(query: $query);
         $appended = [];
         $room     = PHP_INT_MAX;
@@ -178,13 +200,9 @@ class ContentSearchHandler
             $appended[] = $object;
         }//end foreach
 
-        if (empty($appended) === true) {
-            return ['results' => $results, 'total' => $total];
-        }
-
         return [
             'results' => array_merge($results, $appended),
-            'total'   => $total + count($appended),
+            'total'   => $total + $chunkOwnerUpperBound,
         ];
     }//end augmentWithChunkMatches()
 

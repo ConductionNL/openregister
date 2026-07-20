@@ -14,7 +14,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-6
+ * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
  */
 
 declare(strict_types=1);
@@ -210,7 +210,10 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertSame([], $result['results']);
-        $this->assertSame(3, $result['total']);
+        // Total is metaTotal + distinct-chunk-owners upper bound (1 chunk hit
+        // even though it turned out to be unresolvable). See "stable total
+        // across pages" fix — over-count is intentional and accepted.
+        $this->assertSame(4, $result['total']);
     }//end testFileChunkWithUnresolvableOwningObjectIsSkippedSilently()
 
     public function testResolveExceptionIsCaughtLoggedAndSkipped(): void
@@ -232,7 +235,9 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertSame([], $result['results']);
-        $this->assertSame(0, $result['total']);
+        // Total is upper-bound: chunk-owner set included the doomed id
+        // before the resolve threw. See "stable total across pages" fix.
+        $this->assertSame(1, $result['total']);
     }//end testResolveExceptionIsCaughtLoggedAndSkipped()
 
     // =========================================================================
@@ -262,7 +267,10 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $result['results']);
-        $this->assertSame(1, $result['total']);
+        // Total is upper-bound: chunk-owner set had 1 hit even though it
+        // deduped against the metadata arm. Over-count is intentional per
+        // "stable total across pages" fix — pagination stays consistent.
+        $this->assertSame(2, $result['total']);
     }//end testObjectAlreadyMatchedByMetadataArmIsNotDuplicated()
 
     // =========================================================================
@@ -286,7 +294,9 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertSame([], $result['results']);
-        $this->assertSame(0, $result['total']);
+        // Total is upper-bound: the out-of-scope chunk is counted before the
+        // scope filter runs. Over-count accepted per "stable total" fix.
+        $this->assertSame(1, $result['total']);
     }//end testObjectOutsideRequestedRegisterIsSkipped()
 
     public function testObjectOutsideRequestedSchemasIsSkipped(): void
@@ -306,7 +316,9 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertSame([], $result['results']);
-        $this->assertSame(0, $result['total']);
+        // Total is upper-bound: the out-of-scope chunk is counted before the
+        // scope filter runs. Over-count accepted per "stable total" fix.
+        $this->assertSame(1, $result['total']);
     }//end testObjectOutsideRequestedSchemasIsSkipped()
 
     public function testUnscopedQueryMatchesAnyRegisterOrSchema(): void
@@ -352,7 +364,11 @@ class ContentSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $result['results']);
-        $this->assertSame(1, $result['total']);
+        // Total is upper-bound = metaTotal + distinct chunk-owner count
+        // (1 chunk hit, room=0 so nothing appended). This is the whole point
+        // of the "stable total" fix: page 2 of the same query would then
+        // append this chunk, and the total stays 2 across both pages.
+        $this->assertSame(2, $result['total']);
     }//end testAppendedRowsAreClampedToRemainingRoomOnThePage()
 
     // =========================================================================
@@ -373,4 +389,52 @@ class ContentSearchHandlerTest extends TestCase
             limit: 20
         );
     }//end testAlwaysRequestsUnrankedFallbackFromChunkMapper()
+
+    // =========================================================================
+    // Pagination-total stability (review discussion on drift)
+    // =========================================================================
+
+    /**
+     * Total reported on a page where room=0 (metadata fills the page) is the
+     * SAME as the total reported on a later page where room>0 (metadata
+     * drained, chunk-only rows appended). Without the stable-total fix, the
+     * two would disagree — page 1 = metaTotal, page 3 = metaTotal + appended.
+     *
+     * Both arms use the same chunk-hit set (mock returns the same list); the
+     * caller changes `results`/`limit` to simulate page-1-full vs page-3-open.
+     */
+    public function testTotalIsStableAcrossPagesForSameQuery(): void
+    {
+        $chunkHits = [
+            ['entity_type' => 'object', 'entity_id' => '101', 'score' => 0.9, 'chunk_text' => 'a', 'chunk_index' => 0, 'metadata' => []],
+            ['entity_type' => 'object', 'entity_id' => '102', 'score' => 0.8, 'chunk_text' => 'b', 'chunk_index' => 0, 'metadata' => []],
+            ['entity_type' => 'object', 'entity_id' => '103', 'score' => 0.7, 'chunk_text' => 'c', 'chunk_index' => 0, 'metadata' => []],
+        ];
+        $this->chunkMapper->method('searchByKeyword')->willReturn($chunkHits);
+        $this->objectMapper->method('find')->willReturnCallback(
+            fn(int $id): ObjectEntity => $this->makeObject($id)
+        );
+
+        // Page 1: metadata filled (10 rows, limit=10) → room=0, no chunks
+        // appended, but total still includes the chunk-owner upper bound.
+        $metaPage = array_map(fn(int $id): ObjectEntity => $this->makeObject($id), range(1, 10));
+        $pageOne  = $this->handler->augmentWithChunkMatches(
+            query: ['_search' => 'q'],
+            results: $metaPage,
+            total: 50,
+            limit: 10
+        );
+        $this->assertCount(10, $pageOne['results']);
+        $this->assertSame(53, $pageOne['total']);
+
+        // Page 3 (offset=40, limit=10): metadata returned 10 rows, chunks fill
+        // remaining rows on this page — total stays 53, unchanged.
+        $pageThree = $this->handler->augmentWithChunkMatches(
+            query: ['_search' => 'q'],
+            results: array_slice($metaPage, 0, 5),
+            total: 50,
+            limit: 10
+        );
+        $this->assertSame(53, $pageThree['total']);
+    }//end testTotalIsStableAcrossPagesForSameQuery()
 }//end class

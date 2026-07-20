@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-3
+ * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
  */
 
 declare(strict_types=1);

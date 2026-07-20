@@ -22,6 +22,14 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
+// Breadcrumb: the Doctrine-DBAL / NC-internal / OCP-fallback / Doriath stubs
+// used to be loaded here, before the NC bootstrap. They now live BELOW the
+// real-NC bootstrap block (see lines 132+); each stub is `class_exists()` /
+// `interface_exists()` guarded and safely no-ops when the live NC already
+// supplies the real class. Moving the loads down avoids the "Cannot declare
+// class OC, because the name is already in use" race that could fire when a
+// live NC beat the stubs to declaring `OC`.
+
 /**
  * Resolve the Nextcloud installation root.
  *

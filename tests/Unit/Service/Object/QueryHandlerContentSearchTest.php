@@ -16,7 +16,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/expose-content-search-in-object-service/tasks.md#task-2
+ * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
  */
 
 declare(strict_types=1);
@@ -139,4 +139,63 @@ class QueryHandlerContentSearchTest extends TestCase
         $this->assertCount(2, $result['results']);
         $this->assertSame(2, $result['total']);
     }//end testContentSearchHandlerIsInvokedAndItsResultReplacesResultsAndTotalWhenFlagTrue()
+
+    /**
+     * Regression: HTTP query params arrive as strings; the flag gate must coerce
+     * so `?_content_search=true` fires the handler. Prior to the fix at
+     * QueryHandler.php:419 (`filter_var(..., FILTER_VALIDATE_BOOLEAN)`) the
+     * check was strict-identity against `true` and every string form was
+     * silently ignored — the whole `_content_search` wire was dead from HTTP.
+     *
+     * @dataProvider provideTruthyStringForms
+     */
+    public function testContentSearchHandlerIsInvokedForTruthyStringForms(mixed $flag): void
+    {
+        $this->contentSearchHandler->expects($this->once())
+            ->method('augmentWithChunkMatches')
+            ->willReturn(['results' => $this->metadataMatchResults, 'total' => 1]);
+
+        $this->handler->searchObjectsPaginatedDatabase(
+            query: ['_search' => 'q', '_content_search' => $flag],
+            _rbac: false,
+            _multitenancy: false
+        );
+    }//end testContentSearchHandlerIsInvokedForTruthyStringForms()
+
+    /**
+     * Regression: falsy string forms must NOT fire the handler.
+     *
+     * @dataProvider provideFalsyStringForms
+     */
+    public function testContentSearchHandlerIsNotInvokedForFalsyStringForms(mixed $flag): void
+    {
+        $this->contentSearchHandler->expects($this->never())->method('augmentWithChunkMatches');
+
+        $this->handler->searchObjectsPaginatedDatabase(
+            query: ['_search' => 'q', '_content_search' => $flag],
+            _rbac: false,
+            _multitenancy: false
+        );
+    }//end testContentSearchHandlerIsNotInvokedForFalsyStringForms()
+
+    public static function provideTruthyStringForms(): array
+    {
+        return [
+            'string "true"' => ['true'],
+            'string "1"'    => ['1'],
+            'int 1'         => [1],
+            'bool true'     => [true],
+        ];
+    }//end provideTruthyStringForms()
+
+    public static function provideFalsyStringForms(): array
+    {
+        return [
+            'string "false"' => ['false'],
+            'string "0"'     => ['0'],
+            'int 0'          => [0],
+            'bool false'     => [false],
+            'empty string'   => [''],
+        ];
+    }//end provideFalsyStringForms()
 }//end class
