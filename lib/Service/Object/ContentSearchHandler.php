@@ -66,6 +66,17 @@ class ContentSearchHandler
      * sequential DB calls. Kept at 50 pending the batch-resolve refactor
      * discussed on the PR — bulk `findOwningObjectUuidsByFileIds()` /
      * `findMany($uuids)` variants would let us raise this safely.
+     *
+     * Perf note: the earlier "cheap pre-dedupe on 'object' hits" branch was
+     * intentionally removed when dedup switched to UUID keying (see the
+     * `$seenUuids` block in `augmentWithChunkMatches()` for why — metadata-
+     * arm rows come from `searchObjectsInRegisterSchemaTable` which does not
+     * populate `Entity::$id`). Every 'object' chunk hit therefore now pays
+     * one `MagicMapper::find()` call before dedup even when it fully
+     * overlaps the metadata arm. The clean restore path is to extend
+     * `ChunkMapper::searchByKeyword()` to return the owning-object UUID for
+     * 'object' chunks so the pre-check keys on UUID directly; folds into
+     * the same deferred batch-resolve refactor above.
      */
     private const CHUNK_CANDIDATE_LIMIT = 50;
 
@@ -162,15 +173,26 @@ class ContentSearchHandler
         // by entity_type+entity_id) as the chunk-arm upper bound BEFORE the
         // room-clamped resolve loop. Without this, `$total` drifts across
         // pages (page 1 appends 0 → reports metaTotal; page 3 appends N →
-        // reports metaTotal+N). Accepts over-counting by the metadata/chunk
-        // overlap size and by unresolvable/out-of-scope chunks — the last
-        // page may render short but pagination math stays consistent for the
-        // client. See review discussion on pagination drift concern.
+        // reports metaTotal+N).
+        //
+        // ACCEPTED OVER-COUNT — the upper bound is a THEORETICAL maximum:
+        // scope/register/schema mismatch, tenant/RBAC filtering, and unresolved
+        // file→object joins can each reduce the actually-appended count to zero
+        // without changing `$total`. In a multi-register corpus where the
+        // scope filters out most chunks, the client's `pages = ceil(total/limit)`
+        // will point at pages that render empty. This is the accepted
+        // trade-off for pagination stability across pages of the same query;
+        // the alternative (recompute `$total` per page from the actually-
+        // appended count) reintroduces the drift the fix is meant to close.
+        // Pre-filtering `$chunkHits` by scope + a batch `MagicMapper::findMany`
+        // would tighten the bound but requires the bulk mapper methods
+        // deferred with the batch-resolve refactor.
         $distinctChunkOwners = [];
         foreach ($chunkHits as $hit) {
-            $key = ($hit['entity_type'] ?? 'file') . ':' . ($hit['entity_id'] ?? '');
+            $key = ($hit['entity_type'] ?? 'file').':'.($hit['entity_id'] ?? '');
             $distinctChunkOwners[$key] = true;
         }
+
         $chunkOwnerUpperBound = count($distinctChunkOwners);
 
         $scope    = $this->resolveScope(query: $query);
@@ -211,9 +233,10 @@ class ContentSearchHandler
      * returning the object to append or null when the hit should be skipped.
      *
      * Skip reasons (all silent, per D3): already present via the metadata-match arm
-     * (cheap pre-check on 'object' hits, or post-resolve check on 'file' hits — the
-     * owning object id is only known after the file->uuid->object join), unresolvable
-     * owning object, or the object falls outside the caller's register/schema scope.
+     * (post-resolve dedup on UUID for both source types — chunk `entity_id` is a
+     * numeric id, not a UUID, so the owning UUID is only known after resolve),
+     * unresolvable owning object, or the object falls outside the caller's
+     * register/schema scope.
      *
      * @param array $hit           One row from {@see ChunkMapper::searchByKeyword()}.
      * @param array $seenUuids     Object UUIDs already present in the result set, keyed by uuid.

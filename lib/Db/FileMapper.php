@@ -711,13 +711,20 @@ class FileMapper extends QBMapper
      * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
      * multitenancy safety net lives ONE layer up in
      * {@see ContentSearchHandler::resolveOwningObject()}, which passes the UUID to
-     * `MagicMapper::find($uuid, _rbac: true, _multitenancy: true)`; a UUID that
-     * belongs to a table the current user cannot see throws `DoesNotExistException`
-     * there and is caught silently. Do NOT reuse this method in contexts that
-     * bypass that follow-up `MagicMapper::find()` call, or a low-privileged user
-     * could probe cross-tenant chunk-content by guessing monotonic fileids.
-     * Defence-in-depth (join in `oc_storages` and filter to accessible storages
-     * up-front) is a follow-up if we ever call this from a hotter path.
+     * `MagicMapper::find($uuid, _rbac: $callerRbac, _multitenancy: $callerMultitenancy)`.
+     * Those flags are propagated from the outer caller (see
+     * `QueryHandler::searchObjectsPaginatedDatabase`) and default to `true` on the
+     * ContentSearchHandler entry point. **When the outer caller opts out of either
+     * flag** (system contexts, batch jobs, some test paths using
+     * `searchObjectsPaginatedDatabase(_rbac: false, _multitenancy: false)`) **this
+     * method's join becomes an unbounded read across tenants and the caller must
+     * supply its own scope guard** — the built-in safety net collapses. Do NOT
+     * reuse this method in contexts that bypass the follow-up `MagicMapper::find()`
+     * call OR that call it with the RBAC/multitenancy flags disabled, or a
+     * low-privileged user could probe cross-tenant chunk-content by guessing
+     * monotonic fileids. Defence-in-depth (join in `oc_storages` and filter to
+     * accessible storages up-front) is a follow-up if we ever call this from a
+     * hotter path or expose it to callers that opt out of RBAC.
      *
      * @param int $fileId The Nextcloud filecache fileid to resolve.
      *
