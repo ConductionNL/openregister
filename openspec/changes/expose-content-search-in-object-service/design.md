@@ -1,5 +1,7 @@
 # Design: expose-content-search-in-object-service
 
+status: pr-created
+
 ## Context
 
 `ObjectService::searchObjectsPaginated()` is OpenRegister's canonical multi-schema search entry-point — every consumer that wants "objects matching X" goes through it. It delegates to `QueryHandler` → `MagicMapper` → `SearchBackendInterface` and today only matches on metadata + string schema-properties (`_search` param translates to `ILIKE`/`tsvector` over indexed columns; details in `zoeken-filteren` spec).
@@ -58,3 +60,15 @@ Pure code addition. No database migration, no config change, no data transformat
 
 - **Final flag name** — `_content_search` in this proposal is a working name. If bikeshed lands on `_include_content` / `_content` / etc., the OpenCatalogi consumer will translate its `_content=true` query param to whatever wire OR agrees on. Working name is locked in the spec deltas here; changing it later means a follow-up PR that updates the spec + the OC-side consumer.
 - **Dedup ordering** — the current design puts metadata-match rows first and chunk-only rows after. If downstream consumers want relevance-interleaved, a follow-up can add a `_content_search_merge=relevance` option — out of scope here.
+
+## Implementation Notes (added during build, #472)
+
+The builder branched off `main` initially (entrypoint error); the feature branch was reset onto `origin/development` before implementation started, since `main` and `development` have diverged substantially on this repo and `ChunkMapper::searchByKeyword()` only exists on `development` (shipped by the already-merged `hybrid-document-search` change, as this design assumed).
+
+Two assumptions in this design no longer match the current `development` codebase; both are adapted below rather than blocking the build:
+
+1. **"Existing file→object join"** (D2/task 3) — no callable method for resolving a Nextcloud `filecache.fileid` back to its owning `ObjectEntity` existed. Added `FileMapper::findOwningObjectUuid(int $fileId): ?string`, the inverse of `FileMapper::getFilesForObject()`'s own fallback path (an object's attached-file folder is named by the object's UUID in `oc_filecache`). Best-effort per D3: an object with a custom `folder` property pointing at a differently-named node will not resolve via this path and is silently skipped, same as any other unresolvable chunk.
+
+2. **`SearchBackendInterface`** (task 5) — this interface (and its Solr/Elasticsearch implementations) no longer exists on `development`; `QueryHandler` documents "database is the only search backend" after the external index tier was removed. The actual current per-backend seam is `ChunkMapper::searchByKeyword()`'s existing PostgreSQL-vs-other-platform branch. Extended it with an opt-in `bool $allowUnrankedFallback` parameter (default `false`, so the pre-existing `hybrid-document-search` RRF caller in `FileSearchController::hybridSearch()` keeps its documented empty-on-non-Postgres behaviour) that runs an unranked `LIKE` scan on `text_content` when true — satisfying the MariaDB-fallback requirement (ZKN-CONTENT-001 scenario 3) at the seam that actually exists today.
+
+The wire itself lives in a new `ContentSearchHandler` (lib/Service/Object/), invoked from `QueryHandler::searchObjectsPaginatedDatabase()` right after the metadata-match query and before the render/`_extend` pipeline, per D2/D3/D4.

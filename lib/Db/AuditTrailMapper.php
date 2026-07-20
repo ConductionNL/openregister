@@ -562,8 +562,8 @@ class AuditTrailMapper extends QBMapper
      * rather than losing the audit records.
      *
      * @param array $entries   Mixed list: ['old' => ?ObjectEntity, 'new' => ?ObjectEntity, 'action' => string,
-     *                          'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
-     *                          pre-built AuditTrail entities (each must carry a uuid) persisted as-is
+     *                         'cascadeContext' => ?array] entries built through {@see buildAuditTrail()}, and/or
+     *                         pre-built AuditTrail entities (each must carry a uuid) persisted as-is
      * @param int   $chunkSize Number of rows per multi-row INSERT statement
      *
      * @return AuditTrail[] The persisted audit trail entities (ids populated)
@@ -604,7 +604,7 @@ class AuditTrailMapper extends QBMapper
                 action: ($entry['action'] ?? 'update'),
                 cascadeContext: ($entry['cascadeContext'] ?? null)
             );
-        }
+        }//end foreach
 
         foreach (array_chunk($auditTrails, max(1, $chunkSize)) as $chunk) {
             $this->insertAuditTrailChunk(chunk: $chunk);

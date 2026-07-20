@@ -21,6 +21,19 @@ Triggered via the `_search` query parameter:
 GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast
 ```
 
+### Widening to attached-file body text (`_content_search`)
+
+`_search` alone only matches object metadata and string schema-properties. Adding the opt-in `_content_search=true` flag additionally matches on the extracted body text of an object's attached files (and object-level text chunks), via the chunk store already populated by the text-extraction pipeline:
+
+```
+GET /api/objects/meldingen-register/meldingen?_search=geluidsoverlast&_content_search=true
+```
+
+- Default `false` (or omitted) — byte-identical to plain `_search` behaviour; no extra query is issued.
+- An object matching on both metadata and attached-file text appears exactly once in the response.
+- The response envelope never leaks chunk-shaped fields (`chunk_id`, `text_content`, `score`, etc.) — every row is a normal object row.
+- On PostgreSQL, chunk matches are `ts_rank`-scored. On backends without a `tsvector` index (e.g. MariaDB), chunk matches are found via an unranked substring scan — the match set is the same, but ordering may differ.
+
 ## Field-Level Filtering
 
 Any schema property can be used as a filter parameter with comparison operators:
