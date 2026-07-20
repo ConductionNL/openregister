@@ -416,7 +416,7 @@ class QueryHandler
         // no additional query is issued against openregister_chunks. Runs BEFORE the
         // render/extend pipeline below so appended rows get the same `_extend`/`_fields`
         // treatment as metadata-match rows (ZKN-CONTENT-003).
-        if (($query['_content_search'] ?? false) === true) {
+        if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
             $contentSearchStart = microtime(true);
             $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
                 query: $query,

@@ -63,12 +63,16 @@ class ContentSearchHandlerTest extends TestCase
     }//end setUp()
 
     /**
-     * Build an ObjectEntity test double with id/register/schema set.
+     * Build an ObjectEntity test double with id/uuid/register/schema set.
+     *
+     * UUID is derived from the numeric id ("obj-uuid-<id>") so tests can dedup
+     * on UUID (production code keys dedup on getUuid() — see ContentSearchHandler).
      */
     private function makeObject(int $id, string $register='1', string $schema='1'): ObjectEntity
     {
         $object = new ObjectEntity();
         $object->setId($id);
+        $object->setUuid('obj-uuid-' . $id);
         $object->setRegister($register);
         $object->setSchema($schema);
 
@@ -244,7 +248,11 @@ class ContentSearchHandlerTest extends TestCase
                 ['entity_type' => 'object', 'entity_id' => '42', 'score' => 0.8, 'chunk_text' => 'x', 'chunk_index' => 0, 'metadata' => []],
             ]
         );
-        $this->objectMapper->expects($this->never())->method('find');
+        // The chunk resolves to the same object that the metadata arm already
+        // returned. objectMapper->find() is called once (dedup happens after
+        // resolve — seenUuids is keyed by getUuid() which is not derivable from
+        // the numeric chunk source_id without loading the object).
+        $this->objectMapper->method('find')->willReturn($existing);
 
         $result = $this->handler->augmentWithChunkMatches(
             query: ['_search' => 'quarterly report'],

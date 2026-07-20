@@ -140,10 +140,14 @@ class ContentSearchHandler
             return ['results' => $results, 'total' => $total];
         }
 
-        $seenIds = [];
+        // Dedup key is UUID, not getId(): searchObjectsInRegisterSchemaTable
+        // hydrates ObjectEntity without populating Entity::$id (the underlying
+        // column is `_id`, not `id`), so getId() returns null on metadata-arm
+        // rows. UUID is populated and stable across both arms.
+        $seenUuids = [];
         foreach ($results as $object) {
-            if ($object instanceof ObjectEntity) {
-                $seenIds[$object->getId()] = true;
+            if ($object instanceof ObjectEntity && $object->getUuid() !== null) {
+                $seenUuids[$object->getUuid()] = true;
             }
         }
 
@@ -161,7 +165,7 @@ class ContentSearchHandler
 
             $object = $this->resolveAndDedupeHit(
                 hit: $hit,
-                seenIds: $seenIds,
+                seenUuids: $seenUuids,
                 scope: $scope,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
@@ -170,7 +174,7 @@ class ContentSearchHandler
                 continue;
             }
 
-            $seenIds[$object->getId()] = true;
+            $seenUuids[$object->getUuid()] = true;
             $appended[] = $object;
         }//end foreach
 
@@ -194,7 +198,7 @@ class ContentSearchHandler
      * owning object, or the object falls outside the caller's register/schema scope.
      *
      * @param array $hit           One row from {@see ChunkMapper::searchByKeyword()}.
-     * @param array $seenIds       Object ids already present in the result set, keyed by id.
+     * @param array $seenUuids     Object UUIDs already present in the result set, keyed by uuid.
      * @param array $scope         The caller's register/schema scope (see {@see resolveScope()}).
      * @param bool  $_rbac         Whether to apply RBAC checks.
      * @param bool  $_multitenancy Whether to apply multitenancy filtering.
@@ -204,19 +208,10 @@ class ContentSearchHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags mirror the
      *   established QueryHandler/MagicMapper API pattern.
      */
-    private function resolveAndDedupeHit(array $hit, array $seenIds, array $scope, bool $_rbac, bool $_multitenancy): ?ObjectEntity
+    private function resolveAndDedupeHit(array $hit, array $seenUuids, array $scope, bool $_rbac, bool $_multitenancy): ?ObjectEntity
     {
-        // Cheap pre-dedupe: an 'object' chunk's entity_id IS the object id, so a hit
-        // already present via the metadata-match arm can skip the resolve call entirely.
-        if (($hit['entity_type'] ?? 'file') === 'object'
-            && is_numeric($hit['entity_id'] ?? null) === true
-            && isset($seenIds[(int) $hit['entity_id']]) === true
-        ) {
-            return null;
-        }
-
         $object = $this->resolveOwningObject(hit: $hit, _rbac: $_rbac, _multitenancy: $_multitenancy);
-        if ($object === null || isset($seenIds[$object->getId()]) === true) {
+        if ($object === null || $object->getUuid() === null || isset($seenUuids[$object->getUuid()]) === true) {
             return null;
         }
 
