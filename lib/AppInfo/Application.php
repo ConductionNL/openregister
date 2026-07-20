@@ -3090,7 +3090,11 @@ class Application extends App implements IBootstrap
             return null;
         }
 
-        return ($appContainer instanceof ContainerInterface) ? $appContainer : null;
+        if ($appContainer instanceof ContainerInterface) {
+            return $appContainer;
+        }
+
+        return null;
 
     }//end getRegisteredAppContainer()
 
