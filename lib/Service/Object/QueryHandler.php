@@ -434,9 +434,10 @@ class QueryHandler
         // string `"true"` on the wire; strict `=== true` would silently ignore it.
         // Handler is optional (nullable in the constructor) so any older
         // wiring/tests that instantiate QueryHandler without it keep working.
-        if ($this->contentSearchHandler !== null
-            && filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
-        ) {
+        $contentSearchRequested = (
+            filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
+        );
+        if ($this->contentSearchHandler !== null && $contentSearchRequested === true) {
             $contentSearchStart = microtime(true);
             $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
                 query: $query,
@@ -449,6 +450,14 @@ class QueryHandler
             $results = $augmented['results'];
             $total   = $augmented['total'];
             $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
+        } else if ($this->contentSearchHandler === null && $contentSearchRequested === true) {
+            // Fail-open: DI-nullable ContentSearchHandler is a safety net for older
+            // wiring/tests, but silent activation-failure on a real request is hard
+            // to diagnose. Warn so operators can see the mis-wire in the log.
+            $this->logger->warning(
+                '[QueryHandler] _content_search=true requested but ContentSearchHandler '
+                .'is not wired — augmentation skipped, metadata-only results returned.'
+            );
         }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).

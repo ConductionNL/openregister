@@ -256,8 +256,13 @@ class Version1Date20260706100000 extends SimpleMigrationStep
         $mainTable = $prefix.'openregister_vectors';
 
         try {
+            // Scope the existence probe to the current schema — an unscoped
+            // information_schema.tables query would match a same-named table
+            // in another schema on a shared cluster and falsely skip the
+            // CREATE + HNSW index creation.
             $result = $this->connection->executeQuery(
-                'SELECT 1 FROM information_schema.tables WHERE table_name = :tbl',
+                'SELECT 1 FROM information_schema.tables '
+                .'WHERE table_name = :tbl AND table_schema = current_schema()',
                 ['tbl' => $sidecar]
             );
 
@@ -299,8 +304,9 @@ class Version1Date20260706100000 extends SimpleMigrationStep
         $indexName = 'idx_or_vec_ann_hnsw';
 
         try {
+            // Scope the probe to the current schema; pg_indexes is cluster-wide.
             $result = $this->connection->executeQuery(
-                'SELECT 1 FROM pg_indexes WHERE indexname = :idx',
+                'SELECT 1 FROM pg_indexes WHERE indexname = :idx AND schemaname = current_schema()',
                 ['idx' => $indexName]
             );
 
