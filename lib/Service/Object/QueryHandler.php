@@ -19,6 +19,7 @@ namespace OCA\OpenRegister\Service\Object;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -82,7 +83,8 @@ class QueryHandler
         private readonly PerformanceOptimizationHandler $performanceHandler,
         private readonly IAppContainer $container,
         private readonly LoggerInterface $logger,
-        private readonly IRequest $request
+        private readonly IRequest $request,
+        private readonly ?ContentSearchHandler $contentSearchHandler=null
     ) {
     }//end __construct()
 
@@ -421,6 +423,32 @@ class QueryHandler
         if (isset($searchResult['metrics']) === true) {
             $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
             $metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
+        }
+
+        // Opt-in `_content_search` fan-out (ZKN-CONTENT-001, WOO-517 / PR #473):
+        // widen the metadata-match result set with objects whose attached-file (or
+        // object) chunk body text matches `_search`. Absent or false keeps the
+        // pre-WOO-517 behaviour byte-identical — no additional query is issued
+        // against `openregister_chunks`. HTTP-string coercion via
+        // `filter_var(FILTER_VALIDATE_BOOLEAN)` because the flag arrives as
+        // string `"true"` on the wire; strict `=== true` would silently ignore it.
+        // Handler is optional (nullable in the constructor) so any older
+        // wiring/tests that instantiate QueryHandler without it keep working.
+        if ($this->contentSearchHandler !== null
+            && filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
+        ) {
+            $contentSearchStart = microtime(true);
+            $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
+                query: $query,
+                results: $results,
+                total: $total,
+                limit: $limit,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+            $results = $augmented['results'];
+            $total   = $augmented['total'];
+            $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
         }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).

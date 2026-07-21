@@ -21,6 +21,8 @@ use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\QBMapper;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Class ChunkMapper
@@ -39,13 +41,25 @@ use OCP\IDBConnection;
 class ChunkMapper extends QBMapper
 {
     /**
+     * Logger instance for warn-level diagnostics on search-path failures.
+     *
+     * @var LoggerInterface
+     */
+    private readonly LoggerInterface $logger;
+
+    /**
      * Constructor.
      *
-     * @param IDBConnection $db Database connection.
+     * @param IDBConnection        $db     Database connection.
+     * @param LoggerInterface|null $logger Optional logger; falls back to NullLogger when
+     *                                     absent so callers that still use the pre-WOO-517
+     *                                     one-arg constructor (unit-test mocks, unusual
+     *                                     manual wiring) keep working without changes.
      */
-    public function __construct(IDBConnection $db)
+    public function __construct(IDBConnection $db, ?LoggerInterface $logger=null)
     {
         parent::__construct(db: $db, tableName: 'openregister_chunks', entityClass: Chunk::class);
+        $this->logger = $logger ?? new NullLogger();
     }//end __construct()
 
     /**
@@ -420,4 +434,168 @@ class ChunkMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findUnindexed()
+
+    /**
+     * Keyword-search over chunk text_content. PostgreSQL: uses the tsvector GIN
+     * index (`to_tsvector('simple', text_content)`) shipped by the
+     * hybrid-document-search migration and returns rows ordered by `ts_rank`.
+     * On non-PostgreSQL platforms, returns empty unless `$allowUnrankedFallback`
+     * is true — in which case delegates to {@see searchByKeywordUnranked()} for
+     * a portable ILIKE scan without ranking.
+     *
+     * Returns rows with generic-shaped keys so the caller can treat file- and
+     * object-source chunks uniformly.
+     *
+     * @param string $query                 The keyword phrase to search for.
+     * @param int    $limit                 Max rows to return (clamped to >= 1).
+     * @param array  $filters               Optional filters (`source_type`).
+     * @param bool   $allowUnrankedFallback When true, non-PostgreSQL platforms run an
+     *                                      unranked ILIKE scan instead of returning
+     *                                      empty. Defaults to false to preserve the
+     *                                      pre-WOO-517 empty-on-non-Postgres behaviour
+     *                                      for existing callers.
+     *
+     * @return array<int, array{entity_type: string, entity_id: string, score: float,
+     *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+     *
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+     */
+    public function searchByKeyword(string $query, int $limit, array $filters=[], bool $allowUnrankedFallback=false): array
+    {
+        $platform = $this->db->getDatabasePlatform();
+
+        if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+            if ($allowUnrankedFallback === true) {
+                return $this->searchByKeywordUnranked(query: $query, limit: $limit, filters: $filters);
+            }
+
+            $this->logger->warning(
+                message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
+                    .'with the tsvector keyword-search index',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'platform' => get_class($platform),
+                ]
+            );
+            return [];
+        }
+
+        $tsVector = "to_tsvector('simple', text_content)";
+        $where    = [$tsVector." @@ plainto_tsquery('simple', :query)"];
+        $params   = ['query' => $query];
+
+        if (($filters['source_type'] ?? null) !== null) {
+            $where[] = 'source_type = :sourceType';
+            $params['sourceType'] = $filters['source_type'];
+        }
+
+        $sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
+            .'ts_rank('.$tsVector.", plainto_tsquery('simple', :query)) AS score "
+            .'FROM *PREFIX*openregister_chunks '
+            .'WHERE '.implode(' AND ', $where).' '
+            .'ORDER BY score DESC '
+            .'LIMIT '.max(1, $limit);
+
+        try {
+            $result = $this->db->executeQuery($sql, $params);
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[ChunkMapper] Keyword search query failed; returning empty result',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'entity_type' => (string) ($row['source_type'] ?? 'file'),
+                'entity_id'   => (string) $row['source_id'],
+                'score'       => (float) $row['score'],
+                'chunk_text'  => $row['text_content'],
+                'chunk_index' => (int) $row['chunk_index'],
+                'metadata'    => [],
+            ];
+        }
+
+        return $results;
+    }//end searchByKeyword()
+
+    /**
+     * Portable ILIKE-based keyword search over chunk text_content. Used as the
+     * MariaDB/MySQL fallback from {@see searchByKeyword()} when the caller opts
+     * in via `allowUnrankedFallback=true`. Returns the same row shape but with
+     * `score = 0.0` (no ranking available).
+     *
+     * @param string $query   The keyword phrase to search for.
+     * @param int    $limit   Max rows to return (clamped to >= 1).
+     * @param array  $filters Optional filters (`source_type`).
+     *
+     * @return array<int, array{entity_type: string, entity_id: string, score: float,
+     *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+     *
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+     */
+    private function searchByKeywordUnranked(string $query, int $limit, array $filters=[]): array
+    {
+        $qb            = $this->db->getQueryBuilder();
+        $searchPattern = '%'.$this->db->escapeLikeParameter($query).'%';
+
+        $qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->iLike(
+                    'text_content',
+                    $qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->orderBy('id', 'ASC')
+            ->setMaxResults(max(1, $limit));
+
+        if (($filters['source_type'] ?? null) !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq(
+                    'source_type',
+                    $qb->createNamedParameter($filters['source_type'], IQueryBuilder::PARAM_STR)
+                )
+            );
+        }
+
+        try {
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[ChunkMapper] Unranked keyword search query failed; returning empty result',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'entity_type' => (string) ($row['source_type'] ?? 'file'),
+                'entity_id'   => (string) $row['source_id'],
+                'score'       => 0.0,
+                'chunk_text'  => $row['text_content'],
+                'chunk_index' => (int) $row['chunk_index'],
+                'metadata'    => [],
+            ];
+        }
+
+        return $results;
+    }//end searchByKeywordUnranked()
 }//end class
