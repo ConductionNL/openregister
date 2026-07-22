@@ -527,6 +527,15 @@ class ValidateObject
         $isArrayType = ($propertySchema->type ?? null) !== null
             && $propertySchema->type === 'array';
         $hasItems    = ($propertySchema->items ?? null) !== null;
+        // `items` may decode as an associative array rather than a stdClass depending on the
+        // schema source; normalise it to an object so the $ref-strip below runs. Without this,
+        // an array-items $ref (e.g. `installedOn.items {"$ref":"Agent"}`) is left intact and
+        // Opis JSON Schema fails with "Unresolved reference: schema:///Agent#" — unlike a scalar
+        // string $ref, which is stripped by a separate branch that needs no object cast.
+        if ($isArrayType === true && $hasItems === true && is_array($propertySchema->items) === true) {
+            $propertySchema->items = (object) $propertySchema->items;
+        }
+
         if ($isArrayType === true && $hasItems === true && is_object($propertySchema->items) === true) {
             $itemsSchema = $propertySchema->items;
 
