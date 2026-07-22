@@ -151,7 +151,22 @@ class LifecycleValidationListener implements IEventListener
         }
 
         $transitions = ($annotation['transitions'] ?? []);
-        $matched     = $this->findTransitionByTarget(
+
+        // Initial-only lifecycle: a schema may declare `x-openregister-lifecycle`
+        // solely to derive the START state (e.g. procest's `case` schema —
+        // `{ field: status, initial: { from: caseType, field: initialStatus } }`)
+        // while OWNING transition validation itself (procest routes every status
+        // change through its workflow-template state engine). With no declared
+        // `transitions` there is nothing for OR to enforce, so validating here
+        // fail-closes EVERY status change (findTransitionByTarget([]) === null →
+        // reject), silently breaking those apps' status advancement. Treat an
+        // empty/absent transition set as "app-managed" and skip enforcement; the
+        // initial state is still pinned by LifecycleInitialStateListener.
+        if (empty($transitions) === true) {
+            return;
+        }
+
+        $matched = $this->findTransitionByTarget(
             transitions: $transitions,
             oldValue: (string) $oldValue,
             newValue: $newValue
