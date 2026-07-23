@@ -77,6 +77,15 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
     private const DEFAULT_LIMIT = 200;
 
     /**
+     * Alias for the derived table wrapping a query-backed schema's definition
+     * (`FROM (<query>) <alias>`). Distinctive to avoid colliding with any table
+     * alias that appears inside the query definition itself.
+     *
+     * @var string
+     */
+    private const DERIVED_ALIAS = 'or_src';
+
+    /**
      * Constructor.
      *
      * @param SourceMapper          $sourceMapper      Loads the backing database source.
@@ -168,7 +177,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         }
 
         try {
-            $qb = $this->baseSelect(connection: $connection, table: $this->table(config: $config), columns: $columns);
+            $qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
             $this->applyIdPredicate(qb: $qb, connection: $connection, idColumns: $idColumns, id: $id);
             $qb->setMaxResults(1);
 
@@ -222,7 +231,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         }
 
         try {
-            $qb = $this->baseSelect(connection: $connection, table: $this->table(config: $config), columns: $columns);
+            $qb = $this->baseSelect(connection: $connection, config: $config, columns: $columns);
             $this->applyFilters(qb: $qb, connection: $connection, query: $query, columns: $columns, config: $config);
             $this->applySort(qb: $qb, connection: $connection, query: $query, columns: $columns);
 
@@ -283,7 +292,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
 
         try {
             $qb = $connection->createQueryBuilder();
-            $qb->select('COUNT(*)')->from($this->quote(connection: $connection, identifier: $this->table(config: $config)));
+            $qb->select('COUNT(*)')->from($this->fromExpression(connection: $connection, config: $config));
             $this->applyFilters(qb: $qb, connection: $connection, query: $query, columns: $columns, config: $config);
 
             $total = $qb->executeQuery()->fetchOne();
@@ -371,7 +380,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         }
 
         $aggExpr = $this->aggregateExpression(connection: $connection, metric: $metric, field: $field);
-        $table   = $this->quote(connection: $connection, identifier: $this->table(config: $config));
+        $table   = $this->fromExpression(connection: $connection, config: $config);
 
         try {
             // Date-bucket series (chart widgets).
@@ -793,17 +802,20 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
     }//end driverMissing()
 
     /**
-     * Build a `SELECT <cols> FROM <table>` query with quoted identifiers.
+     * Build a `SELECT <cols> FROM <source>` query with quoted identifiers.
      *
-     * @param Connection         $connection The DBAL connection.
-     * @param string             $table      The backing table name.
-     * @param array<int, string> $columns    The scalar columns to select.
+     * The FROM source is a quoted base table, or a `(<query>) src` derived table
+     * for a query-backed schema (see {@see fromExpression()}).
+     *
+     * @param Connection           $connection The DBAL connection.
+     * @param array<string, mixed> $config     The object-source config block.
+     * @param array<int, string>   $columns    The scalar columns to select.
      *
      * @return QueryBuilder The query builder.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
      */
-    private function baseSelect(Connection $connection, string $table, array $columns): QueryBuilder
+    private function baseSelect(Connection $connection, array $config, array $columns): QueryBuilder
     {
         $qb = $connection->createQueryBuilder();
 
@@ -816,7 +828,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
             $selects = ['*'];
         }
 
-        $qb->select(...$selects)->from($this->quote(connection: $connection, identifier: $table));
+        $qb->select(...$selects)->from($this->fromExpression(connection: $connection, config: $config));
 
         return $qb;
     }//end baseSelect()
@@ -1055,6 +1067,49 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
     {
         return (string) ($config['table'] ?? '');
     }//end table()
+
+    /**
+     * Whether the schema is backed by a query definition (a virtual "view of
+     * tables" authored in OpenRegister config) rather than a single base table.
+     *
+     * When `config.query` holds a non-empty SELECT, the provider reads from it
+     * as a derived table — `FROM (<query>) src` — so a join/projection over the
+     * source's tables is exposed as a flat, read-only schema. Filters, sort,
+     * pagination and aggregation push down onto the derived table exactly as for
+     * a base table.
+     *
+     * @param array<string, mixed> $config The object-source config block.
+     *
+     * @return bool True when a query definition is present.
+     */
+    private function isQueryBacked(array $config): bool
+    {
+        $query = ($config['query'] ?? null);
+        return (is_string($query) === true && trim($query) !== '');
+    }//end isQueryBacked()
+
+    /**
+     * The FROM expression for a read query: a quoted base-table identifier, or a
+     * `(<query>) src` derived table when the schema is query-backed.
+     *
+     * The query definition is emitted verbatim as a sub-select (DBAL's
+     * QueryBuilder::from() does not quote a raw expression), so it MUST be
+     * trusted config authored by an administrator — never request input. It is
+     * read-only: writes are rejected in {@see writeContext()}.
+     *
+     * @param Connection           $connection The DBAL connection.
+     * @param array<string, mixed> $config     The object-source config block.
+     *
+     * @return string The FROM expression (quoted table, or aliased sub-select).
+     */
+    private function fromExpression(Connection $connection, array $config): string
+    {
+        if ($this->isQueryBacked(config: $config) === true) {
+            return '('.trim((string) $config['query']).') '.self::DERIVED_ALIAS;
+        }
+
+        return $this->quote(connection: $connection, identifier: $this->table(config: $config));
+    }//end fromExpression()
 
     /**
      * The scalar (non-relation) columns of a schema — the query allowlist.
@@ -1309,7 +1364,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
             $this->getId()
         );
 
-        if (($config['isView'] ?? false) === true) {
+        if (($config['isView'] ?? false) === true || $this->isQueryBacked(config: $config) === true) {
             throw new \RuntimeException($readOnlyError);
         }
 

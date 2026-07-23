@@ -114,6 +114,34 @@ class SearchQueryHandler
     }//end __construct()
 
     /**
+     * Whether the target schema is served by an external object-source (DBAL
+     * virtual register), whose columns are flat snake_case and must not be run
+     * through the dot-un-mangling in {@see buildSearchQuery()}.
+     *
+     * Resolves the schema id/slug via the mapper (request-cached). A
+     * multi-schema (array) or absent schema, or any resolution failure, yields
+     * false so the legacy magic-table behaviour is preserved.
+     *
+     * @param int|string|array|null $schema The schema id/slug (single value only).
+     *
+     * @return bool True when the schema declares an x-openregister-object-source.
+     */
+    private function schemaHasObjectSource(int | string | array | null $schema): bool
+    {
+        if ($schema === null || is_array($schema) === true) {
+            return false;
+        }
+
+        try {
+            $entity = $this->schemaMapper->find(id: $schema);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return ($entity->getObjectSource() !== null);
+    }//end schemaHasObjectSource()
+
+    /**
      * Build search query from request parameters
      *
      * Converts HTTP request parameters into a structured query array for searchObjectsPaginated.
@@ -142,6 +170,17 @@ class SearchQueryHandler
         int | string | array | null $schema=null,
         ?array $ids=null
     ): array {
+        // A schema served from an external object-source (DBAL virtual register)
+        // has FLAT, snake_case columns — `product_line`, `app_slug`,
+        // `competitor_id`. The dot-un-mangling in STEP 1 (which rebuilds
+        // `@self.register` from PHP's mangled `@self_register`) would wrongly
+        // split those column names into nested arrays
+        // (`product_line` → ['product' => ['line' => …]]), silently dropping the
+        // filter. Detect object-source schemas so their snake_case object-field
+        // keys stay literal; `@self.*` metadata keys still un-mangle. Magic-table
+        // schemas are unaffected.
+        $isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
         // @self.register → @self_register.
@@ -156,7 +195,11 @@ class SearchQueryHandler
             }
 
             // Check if key contains underscores (indicating PHP mangled dots).
-            if (str_contains($key, '_') === true) {
+            // For object-source schemas, only un-mangle `@…` metadata keys and
+            // keep snake_case object-field keys (real DBAL columns) literal.
+            if (str_contains($key, '_') === true
+                && ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
+            ) {
                 // Split by underscore to reconstruct nested structure.
                 $parts = explode('_', $key);
 
