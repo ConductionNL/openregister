@@ -113,7 +113,6 @@ class SearchQueryHandler
     ) {
     }//end __construct()
 
-
     /**
      * Whether the target schema is served by an external object-source (DBAL
      * virtual register), whose columns are flat snake_case and must not be run
