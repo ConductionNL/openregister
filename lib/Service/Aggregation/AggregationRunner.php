@@ -498,7 +498,8 @@ class AggregationRunner
             field: $query->field,
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
-            dateBucket: $query->dateBucket
+            dateBucket: $query->dateBucket,
+            metrics: $query->metrics
         );
 
         // Read-through cache. Identical query + filter + RBAC scope →
@@ -568,7 +569,8 @@ class AggregationRunner
             field: $query->field,
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
-            dateBucket: $query->dateBucket
+            dateBucket: $query->dateBucket,
+            metrics: $query->getMetrics()
         );
 
         if ($native !== null) {
@@ -603,7 +605,8 @@ class AggregationRunner
             field: $query->field,
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
-            dateBucket: $query->dateBucket
+            dateBucket: $query->dateBucket,
+            metrics: $query->getMetrics()
         );
         $this->cache->setAdhoc(
             registerSlug: (string) $register->getSlug(),
@@ -646,6 +649,13 @@ class AggregationRunner
         AggregationQuery $query
     ): ?array {
         if ($this->dbalSourceProvider === null) {
+            return null;
+        }
+
+        // Multi-metric requests aren't supported by the DBAL provider's
+        // single-metric aggregate() signature. Fall through to the
+        // magic-table native / PHP paths below, which do support it.
+        if ($query->isMultiMetric() === true) {
             return null;
         }
 
@@ -883,17 +893,28 @@ class AggregationRunner
      * Marked `backend: "php-fallback"` in the response so callers know
      * the query did not hit a native engine.
      *
-     * @param Register                  $register   Register.
-     * @param Schema                    $schema     Schema.
-     * @param string                    $metric     One of count/sum/avg/min/max.
-     * @param string|null               $field      Metric field (null for count).
-     * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
-     * @param array<string, mixed>|null $groupBy    Optional categorical groupBy spec.
-     * @param array<string, mixed>|null $dateBucket Optional time-bucket spec.
+     * @param Register                                               $register   Register.
+     * @param Schema                                                 $schema     Schema.
+     * @param string                                                 $metric     One of count/sum/avg/min/max.
+     * @param string|null                                            $field      Metric field (null for count).
+     * @param array<string, mixed>                                   $filter     Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null                              $groupBy    Optional categorical groupBy spec.
+     * @param array<string, mixed>|null                              $dateBucket Optional time-bucket spec.
+     * @param array<int, array{metric: string, field: ?string}>|null $metrics    Optional multi-metric list
+     *                                                                           (REQ-AGG-102);
+     *                                                                           null/one-element behaves
+     *                                                                           exactly as the legacy
+     *                                                                           single `$metric`/`$field`
+     *                                                                           pair. Not combined with
+     *                                                                           `$dateBucket` (rejected
+     *                                                                           upstream by
+     *                                                                           AggregationQuery::create()).
      *
      * @return array<string, mixed> Either `{value, backend, cached}` or
      *                              `{groups, backend, cached}` mirroring the
-     *                              Postgres native-path shape.
+     *                              Postgres native-path shape. Multi-metric
+     *                              requests carry `values` instead of
+     *                              `value`/per-group `value`.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *   The branching mirrors the Postgres SQL path: dateBucket vs.
@@ -901,6 +922,7 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
     private function bucketInPhp(
         Register $register,
@@ -909,7 +931,8 @@ class AggregationRunner
         ?string $field,
         array $filter,
         ?array $groupBy,
-        ?array $dateBucket
+        ?array $dateBucket,
+        ?array $metrics=null
     ): array {
         $objects = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
@@ -973,17 +996,27 @@ class AggregationRunner
             ];
         }//end if
 
-        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        $groupFields   = $this->resolveGroupFields(groupBy: $groupBy);
+        $isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
         if (count($groupFields) > 0) {
             $groups = $this->computeGrouped(
                 rows: $rows,
                 metric: $metric,
                 field: $field,
-                groupFields: $groupFields
+                groupFields: $groupFields,
+                metrics: $metrics
             );
 
             return [
                 'groups'  => $groups,
+                'backend' => 'php-fallback',
+                'cached'  => false,
+            ];
+        }
+
+        if ($isMultiMetric === true) {
+            return [
+                'values'  => $this->computeMetrics(rows: $rows, metrics: $metrics),
                 'backend' => 'php-fallback',
                 'cached'  => false,
             ];
@@ -1093,6 +1126,33 @@ class AggregationRunner
     }//end computeMetric()
 
     /**
+     * Compute every metric in a multi-metric request over the same row set.
+     *
+     * Companion to {@see computeMetric()} for REQ-AGG-102 — each entry's
+     * result is keyed by {@see AggregationQuery::metricResponseKey()} (e.g.
+     * `count`, `sum_price`) into a single `values` map so a caller can read
+     * `count` and `sum_price` from one grouped row / one ungrouped envelope.
+     *
+     * @param array<int, array<string, mixed>>                  $rows    Already-filtered rows.
+     * @param array<int, array{metric: string, field: ?string}> $metrics Requested metric entries.
+     *
+     * @return array<string, int|float|null> Metric results keyed by response key.
+     *
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     */
+    private function computeMetrics(array $rows, array $metrics): array
+    {
+        $values = [];
+        foreach ($metrics as $entry) {
+            $key          = AggregationQuery::metricResponseKey(metric: $entry['metric'], field: $entry['field']);
+            $values[$key] = $this->computeMetric(rows: $rows, metric: $entry['metric'], field: $entry['field']);
+        }
+
+        return $values;
+
+    }//end computeMetrics()
+
+    /**
      * Resolve a raw groupBy spec to an ordered list of non-empty group field
      * names, honouring every accepted shape (single `{field}`, multi
      * `{fields:[...]}`, plain list `[...]`).
@@ -1136,20 +1196,31 @@ class AggregationRunner
      * a consumer can pivot the result into a cross-tab. The bucket order is
      * the first-seen order of each distinct tuple.
      *
-     * @param array<int, array<string, mixed>> $rows        Already-filtered rows.
-     * @param string                           $metric      One of count/sum/avg/min/max/count_distinct.
-     * @param mixed                            $field       Field to aggregate over.
-     * @param array<int, string>               $groupFields Ordered field(s) used as the bucket key.
+     * @param array<int, array<string, mixed>>                       $rows        Already-filtered rows.
+     * @param string                                                 $metric      One of count/sum/avg/min/max/count_distinct.
+     * @param mixed                                                  $field       Field to aggregate over.
+     * @param array<int, string>                                     $groupFields Ordered field(s) used as the bucket key.
+     * @param array<int, array{metric: string, field: ?string}>|null $metrics     Optional multi-metric list
+     *                                                                            (REQ-AGG-102). When it
+     *                                                                            carries more than one
+     *                                                                            entry, each group row
+     *                                                                            carries a `values` map
+     *                                                                            instead of a single scalar
+     *                                                                            `value` —
+     *                                                                            `$metric`/`$field` are
+     *                                                                            then ignored.
      *
-     * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value: int|float|null}>
+     * @return array<int, array{key?: mixed, keys?: array<string, mixed>, value?: int|float|null, values?: array<string, int|float|null>}>
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      * @spec openspec/specs/aggregation-api/spec.md
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
-    private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields): array
+    private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields, ?array $metrics=null): array
     {
-        $isMulti = (count($groupFields) > 1);
-        $buckets = [];
+        $isMulti       = (count($groupFields) > 1);
+        $isMultiMetric = (is_array($metrics) === true && count($metrics) > 1);
+        $buckets       = [];
         foreach ($rows as $row) {
             $tuple = [];
             foreach ($groupFields as $groupField) {
@@ -1168,21 +1239,32 @@ class AggregationRunner
 
         $out = [];
         foreach ($buckets as $bucket) {
-            $value = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
+            $valueOrValues = null;
+            if ($isMultiMetric === true) {
+                $valueOrValues = $this->computeMetrics(rows: $bucket['rows'], metrics: $metrics);
+            } else {
+                $valueOrValues = $this->computeMetric(rows: $bucket['rows'], metric: $metric, field: $field);
+            }
+
+            $valueKey = 'value';
+            if ($isMultiMetric === true) {
+                $valueKey = 'values';
+            }
+
             if ($isMulti === true) {
                 $out[] = [
-                    'keys'  => $bucket['tuple'],
-                    'value' => $value,
+                    'keys'    => $bucket['tuple'],
+                    $valueKey => $valueOrValues,
                 ];
                 continue;
             }
 
             // Single-field: unwrap the tuple to the legacy `{key, value}` shape.
             $out[] = [
-                'key'   => reset($bucket['tuple']),
-                'value' => $value,
+                'key'     => reset($bucket['tuple']),
+                $valueKey => $valueOrValues,
             ];
-        }
+        }//end foreach
 
         return $out;
     }//end computeGrouped()
@@ -1255,10 +1337,24 @@ class AggregationRunner
     /**
      * Apply operator-style filters (gte/lte/gt/lt/in/ne) in PHP.
      *
+     * REQ-AGG-106 / bug #2027: a bare array criterion (a plain list, not an
+     * operator map such as `{in: [...]}`) is treated as an implicit `in`
+     * (any-of) match rather than being silently ignored — previously
+     * `is_array($criterion) === true` routed a bare list into the operator
+     * loop below, where its numeric keys (`0`, `1`, …) matched no known
+     * operator and `checkOp()`'s `default => true` let every row through
+     * unfiltered. Scalar equality and every wrapped operator additionally
+     * honour a multi-value (array) ROW value (e.g. a `tags` property stored
+     * as a JSON array) via {@see valueMatchesAnyOf()}'s any-overlap test,
+     * instead of the whole-array identity compare that never matched.
+     *
      * @param array<int, array<string, mixed>> $rows   Rows to filter.
-     * @param array<string, mixed>             $filter Filter map (scalar = eq, array = operator map).
+     * @param array<string, mixed>             $filter Filter map (scalar = eq, plain list = implicit `in`,
+     *                                                 assoc array = operator map).
      *
      * @return array<int, array<string, mixed>> Filtered rows.
+     *
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
     private function applyFilter(array $rows, array $filter): array
     {
@@ -1267,19 +1363,24 @@ class AggregationRunner
             $keep = true;
             foreach ($filter as $field => $criterion) {
                 $value = $row[$field] ?? null;
+
+                // Bare array criterion (a plain, non-associative list) is an
+                // implicit `in` — any-of match against the candidate list.
+                if (is_array($criterion) === true && array_is_list($criterion) === true) {
+                    if ($this->valueMatchesAnyOf(rowValue: $value, candidates: $criterion) === false) {
+                        $keep = false;
+                        break;
+                    }
+
+                    continue;
+                }
+
                 if (is_array($criterion) === false) {
-                    // BUG-SVC-9: magic-table column values come back as strings,
-                    // while the criterion may be int/bool/float. A strict !==
-                    // then drops rows the Postgres path would keep (e.g. "1" vs
-                    // 1). Compare as strings when both sides are scalar so the
-                    // PHP fallback matches the native equality semantics; keep
-                    // strict comparison for non-scalars (null/array/object).
-                    if (is_scalar($value) === true && is_scalar($criterion) === true) {
-                        if ((string) $value !== (string) $criterion) {
-                            $keep = false;
-                            break;
-                        }
-                    } else if ($value !== $criterion) {
+                    // Scalar equality. valueMatchesAnyOf() folds in the
+                    // BUG-SVC-9 string-cast coercion (magic-table columns
+                    // come back as strings while the criterion may be
+                    // int/bool/float) AND the multi-value row-overlap test.
+                    if ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$criterion]) === false) {
                         $keep = false;
                         break;
                     }
@@ -1306,6 +1407,15 @@ class AggregationRunner
     /**
      * Apply a single operator check.
      *
+     * `eq`/`ne`/`in`/`notIn` all route through {@see valueMatchesAnyOf()} —
+     * REQ-AGG-106 / bug #2027 — so a multi-value (array) row value (a
+     * property stored as a JSON array) is tested via any-overlap against
+     * the operand rather than a whole-array identity compare that never
+     * matched, AND a scalar row value gets the same BUG-SVC-9 string-cast
+     * coercion `eq` already had (magic-table columns come back as strings).
+     * `gt`/`gte`/`lt`/`lte` are unaffected — range comparisons over a
+     * multi-value row aren't part of this fix's scope.
+     *
      * @param mixed  $value   The value extracted from the row.
      * @param string $op      Operator name ('eq','ne','gt','gte','lt','lte','in','notIn').
      * @param mixed  $opValue The operand value to compare against.
@@ -1313,23 +1423,97 @@ class AggregationRunner
      * @return bool True when the value satisfies the operator.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
     private function checkOp(mixed $value, string $op, mixed $opValue): bool
     {
+        if ($op === 'eq') {
+            return $this->valueMatchesAnyOf(rowValue: $value, candidates: [$opValue]);
+        }
+
+        if ($op === 'ne') {
+            return ($this->valueMatchesAnyOf(rowValue: $value, candidates: [$opValue]) === false);
+        }
+
+        if ($op === 'in') {
+            return (is_array($opValue) === true
+                && $this->valueMatchesAnyOf(rowValue: $value, candidates: $opValue) === true);
+        }
+
+        if ($op === 'notIn') {
+            return (is_array($opValue) === false
+                || $this->valueMatchesAnyOf(rowValue: $value, candidates: $opValue) === false);
+        }
+
         $cmp = $this->normaliseForCompare(v: $value);
         $rhs = $this->normaliseForCompare(v: $opValue);
         return match ($op) {
-            'eq'    => $cmp === $rhs,
-            'ne'    => $cmp !== $rhs,
             'gt'    => $cmp !== null && $rhs !== null && $cmp > $rhs,
             'gte'   => $cmp !== null && $rhs !== null && $cmp >= $rhs,
             'lt'    => $cmp !== null && $rhs !== null && $cmp < $rhs,
             'lte'   => $cmp !== null && $rhs !== null && $cmp <= $rhs,
-            'in'    => is_array($opValue) === true && in_array($value, $opValue, true),
-            'notIn' => is_array($opValue) === false || in_array($value, $opValue, true) === false,
             default => true,
         };
     }//end checkOp()
+
+    /**
+     * Test whether a row value matches any of the given candidates.
+     *
+     * Handles both shapes uniformly (REQ-AGG-106 / bug #2027):
+     *  - a scalar row value matches when it loosely (string-cast) equals
+     *    ANY candidate — e.g. magic-table `"1"` against candidate `1`;
+     *  - a multi-value (array) row value — a property stored as a JSON
+     *    array — matches when ANY of its members loosely equals ANY
+     *    candidate (any-overlap), instead of comparing the whole array as
+     *    a single opaque value (which never matches a scalar candidate).
+     *
+     * @param mixed                    $rowValue   The value extracted from the row (scalar, array, or null).
+     * @param array<int|string, mixed> $candidates One or more candidate values to match against.
+     *
+     * @return bool True when the row value overlaps any candidate.
+     *
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     */
+    private function valueMatchesAnyOf(mixed $rowValue, array $candidates): bool
+    {
+        $haystack = $rowValue;
+        if (is_array($haystack) === false) {
+            $haystack = [$haystack];
+        }
+
+        foreach ($haystack as $item) {
+            foreach ($candidates as $candidate) {
+                if ($this->scalarLooseEquals(a: $item, b: $candidate) === true) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+    }//end valueMatchesAnyOf()
+
+    /**
+     * Loose scalar equality: string-cast comparison when both sides are
+     * scalar (BUG-SVC-9 — magic-table columns come back as strings while
+     * the criterion may be int/bool/float), strict identity otherwise
+     * (null / array / object members are never coerced).
+     *
+     * @param mixed $a First value.
+     * @param mixed $b Second value.
+     *
+     * @return bool True when the two values are considered equal.
+     */
+    private function scalarLooseEquals(mixed $a, mixed $b): bool
+    {
+        if (is_scalar($a) === true && is_scalar($b) === true) {
+            return ((string) $a === (string) $b);
+        }
+
+        return ($a === $b);
+
+    }//end scalarLooseEquals()
 
     /**
      * Coerce date-like scalars to integer timestamps for ordered comparisons.
@@ -1372,20 +1556,35 @@ class AggregationRunner
      * Returns the result fragment ('value' or 'groups') on success, null
      * to signal the caller should fall back to PHP-side aggregation.
      *
-     * @param Register                  $register   Register the schema belongs to.
-     * @param Schema                    $schema     Schema being aggregated.
-     * @param string                    $metric     Metric name (count/sum/avg/min/max).
-     * @param string|null               $field      Field to aggregate over (ignored for count).
-     * @param array<string, mixed>      $filter     Already placeholder-resolved filter map.
-     * @param array<string, mixed>|null $groupBy    Optional group spec: single-field ({field: ...}),
-     *                                              multi-field ({fields: [...]}), or a plain list ([...]).
-     * @param array<string, mixed>|null $dateBucket Optional time-bucket spec ({field, start, end, gap}).
-     *                                              When supplied, the query becomes a `date_trunc`-bucketed
-     *                                              series with explicit `WHERE field >= start AND field < end`
-     *                                              bounds. Mutually exclusive with $groupBy (validated by
-     *                                              AggregationQuery::create() upstream).
+     * @param Register                                               $register   Register the schema belongs to.
+     * @param Schema                                                 $schema     Schema being aggregated.
+     * @param string                                                 $metric     Metric name (count/sum/avg/min/max).
+     * @param string|null                                            $field      Field to aggregate over (ignored for count).
+     * @param array<string, mixed>                                   $filter     Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null                              $groupBy    Optional group spec: single-field ({field: ...}),
+     *                                                                           multi-field ({fields: [...]}), or a plain list
+     *                                                                           ([...]).
+     * @param array<string, mixed>|null                              $dateBucket Optional time-bucket spec ({field, start, end, gap}).
+     *                                                                           When supplied, the query becomes a
+     *                                                                           `date_trunc`-bucketed series with explicit `WHERE
+     *                                                                           field >= start AND field < end` bounds. Mutually
+     *                                                                           exclusive with $groupBy (validated by
+     *                                                                           AggregationQuery::create() upstream).
+     * @param array<int, array{metric: string, field: ?string}>|null $metrics    Optional multi-metric list
+     *                                                                           (REQ-AGG-102). When it
+     *                                                                           carries more than one
+     *                                                                           entry, this method
+     *                                                                           dispatches to {@see
+     *                                                                           tryNativeMultiMetric()}
+     *                                                                           instead of running the
+     *                                                                           single-metric path below;
+     *                                                                           `$metric`/`$field` are
+     *                                                                           then ignored.
      *
-     * @return array{value: int|float|null}|array{groups: array<int, array{key: mixed, value: int|float|null}>}|null
+     * @return array{value: int|float|null}
+     *         |array{values: array<string, int|float|null>}
+     *         |array{groups: array<int, array{key: mixed, value: int|float|null}>}
+     *         |null
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -1397,6 +1596,7 @@ class AggregationRunner
      *   the mutual-exclusion read at the call site.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
     private function tryNativeAggregation(
         Register $register,
@@ -1405,8 +1605,19 @@ class AggregationRunner
         ?string $field,
         array $filter,
         ?array $groupBy,
-        ?array $dateBucket=null
+        ?array $dateBucket=null,
+        ?array $metrics=null
     ): ?array {
+        if (is_array($metrics) === true && count($metrics) > 1) {
+            return $this->tryNativeMultiMetric(
+                register: $register,
+                schema: $schema,
+                filter: $filter,
+                groupBy: $groupBy,
+                metrics: $metrics
+            );
+        }
+
         $platformName = $this->detectDatabasePlatform();
 
         // Ordered list of categorical group fields (single-field, multi-field
@@ -1444,18 +1655,36 @@ class AggregationRunner
 
         // Validate filter shapes are translatable. Supported:
         // {field: scalar}              → field = ?
+        // {field: [...]}               → implicit `in` (any-of), REQ-AGG-106 / #2027
         // {field: {in: [...]}}         → field IN (?, ?, ?)
         // {field: {notIn: [...]}}      → field NOT IN (?, ?, ?)
         // {field: {gt|gte|lt|lte: x}}  → field > / >= / < / <= ?
         // {field: {ne: x}}             → field <> ?
         // Reject anything else.
         foreach ($filter as $value) {
-            if (is_array($value) === true) {
+            if (is_array($value) === true && array_is_list($value) === false) {
                 foreach (array_keys($value) as $op) {
                     if (in_array((string) $op, ['in', 'notIn', 'gt', 'gte', 'lt', 'lte', 'ne'], true) === false) {
                         return null;
                     }
                 }
+            }
+        }
+
+        // REQ-AGG-106 / #2027: a multi-value (array-type) schema property
+        // can't be correctly filtered with a simple `= ?` / `IN (...)`
+        // predicate — the magic-table column holds the WHOLE JSON array, so
+        // equality/IN would compare serialised array text, not test
+        // membership. Defer to the PHP fallback (which DOES implement
+        // any-overlap via valueMatchesAnyOf()) for genuinely correct
+        // semantics on these fields, rather than emit SQL that looks
+        // plausible but silently mismatches — the same documented-fallback
+        // posture already used for cross-dialect time-bucket gaps.
+        $properties = ($schema->getProperties() ?? []);
+        foreach (array_keys($filter) as $filterField) {
+            $propertyType = ($properties[(string) $filterField]['type'] ?? null);
+            if ($propertyType === 'array') {
+                return null;
             }
         }
 
@@ -1493,6 +1722,27 @@ class AggregationRunner
 
         foreach ($filter as $f => $v) {
             $col = $this->sanitizeColumnName(name: (string) $f);
+
+            // Bare array value — implicit `in` (any-of), REQ-AGG-106 / #2027.
+            // A plain list (non-associative) is distinguished from an
+            // operator map (`{in: [...]}`) by array_is_list(); the operator
+            // map is handled by the loop below.
+            if (is_array($v) === true && array_is_list($v) === true) {
+                if (count($v) === 0) {
+                    // An implicit `in` over an empty list never matches.
+                    $whereParts[] = '1 = 0';
+                    continue;
+                }
+
+                $placeholders = implode(', ', array_fill(0, count($v), '?'));
+                $whereParts[] = $quote.$col.$quote.' IN ('.$placeholders.')';
+                foreach ($v as $item) {
+                    $bindings[] = $this->bindValue(value: $item);
+                }
+
+                continue;
+            }
+
             if (is_array($v) === false) {
                 $whereParts[] = $quote.$col.$quote.' = ?';
                 $bindings[]   = $this->bindValue(value: $v);
@@ -1726,6 +1976,110 @@ class AggregationRunner
             return null;
         }//end try
     }//end tryNativeAggregation()
+
+    /**
+     * Multi-metric native dispatch (REQ-AGG-102).
+     *
+     * Runs the single-metric native path in {@see tryNativeAggregation()}
+     * once per requested `{metric, field}` entry — reusing its dialect
+     * branching and filter translation verbatim, with zero new SQL surface
+     * — and merges the per-metric results into one `values` map (ungrouped)
+     * or one `values` map per group (categorical groupBy). Trades one SQL
+     * round-trip per metric for reusing the already-proven single-metric
+     * query builder; acceptable for ad-hoc dashboard widgets, which are not
+     * a hot loop.
+     *
+     * Any single metric bailing to null (e.g. an ungrouped ask on a
+     * non-Postgres engine) bails the WHOLE multi-metric attempt to the PHP
+     * fallback, so the response is never a partial native/partial-PHP mix.
+     * Not used for the time-bucket (`dateBucket`) path — mutually exclusive
+     * with multi-metric, rejected upstream by AggregationQuery::create().
+     *
+     * @param Register                                          $register Register the schema belongs to.
+     * @param Schema                                            $schema   Schema being aggregated.
+     * @param array<string, mixed>                              $filter   Already placeholder-resolved filter map.
+     * @param array<string, mixed>|null                         $groupBy  Optional group spec (see {@see tryNativeAggregation()}).
+     * @param array<int, array{metric: string, field: ?string}> $metrics  Requested metric entries (>1).
+     *
+     * @return array{values: array<string, int|float|null>}
+     *         |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>}
+     *         |null
+     *
+     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     */
+    private function tryNativeMultiMetric(
+        Register $register,
+        Schema $schema,
+        array $filter,
+        ?array $groupBy,
+        array $metrics
+    ): ?array {
+        $groupFields = $this->resolveGroupFields(groupBy: $groupBy);
+        $isMulti     = (count($groupFields) > 1);
+
+        $ungroupedValues = [];
+        $orderedKeys     = [];
+        $mergedByKey     = [];
+
+        foreach ($metrics as $entry) {
+            $single = $this->tryNativeAggregation(
+                register: $register,
+                schema: $schema,
+                metric: $entry['metric'],
+                field: $entry['field'],
+                filter: $filter,
+                groupBy: $groupBy,
+                dateBucket: null
+            );
+
+            if ($single === null) {
+                // One metric couldn't run natively — bail the whole
+                // multi-metric attempt so the caller falls through to a
+                // single, consistent PHP-fallback computation.
+                return null;
+            }
+
+            $responseKey = AggregationQuery::metricResponseKey(metric: $entry['metric'], field: $entry['field']);
+
+            if (count($groupFields) === 0) {
+                $ungroupedValues[$responseKey] = ($single['value'] ?? null);
+                continue;
+            }
+
+            foreach (($single['groups'] ?? []) as $group) {
+                $keyData = ($group['key'] ?? null);
+                if ($isMulti === true) {
+                    $keyData = ($group['keys'] ?? []);
+                }
+
+                $tupleKey = (string) json_encode($keyData);
+                if (isset($mergedByKey[$tupleKey]) === false) {
+                    $mergedByKey[$tupleKey] = ['keyData' => $keyData, 'values' => []];
+                    $orderedKeys[]          = $tupleKey;
+                }
+
+                $mergedByKey[$tupleKey]['values'][$responseKey] = ($group['value'] ?? null);
+            }
+        }//end foreach
+
+        if (count($groupFields) === 0) {
+            return ['values' => $ungroupedValues];
+        }
+
+        $groups = [];
+        foreach ($orderedKeys as $tupleKey) {
+            $entry = $mergedByKey[$tupleKey];
+            if ($isMulti === true) {
+                $groups[] = ['keys' => $entry['keyData'], 'values' => $entry['values']];
+                continue;
+            }
+
+            $groups[] = ['key' => $entry['keyData'], 'values' => $entry['values']];
+        }
+
+        return ['groups' => $groups];
+
+    }//end tryNativeMultiMetric()
 
     /**
      * Coerce a Postgres date_trunc bucket label to a stable
