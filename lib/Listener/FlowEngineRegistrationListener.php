@@ -72,6 +72,11 @@ class FlowEngineRegistrationListener implements IEventListener
 
         if ($event instanceof RegisterOperationsEvent) {
             $event->registerOperation($this->container->get(RunFlowOperation::class));
+            // Load the operator's frontend settings component on the Flow admin
+            // page so the flow-name value is enterable. Mirrors how core apps
+            // (bookmarks/analytics) ship their *-flow.js operator UI. Harmless
+            // off the settings page — addScript only queues for a page render.
+            \OCP\Util::addScript('openregister', 'openregister-flow-operator');
             return;
         }
     }//end handle()
