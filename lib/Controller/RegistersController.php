@@ -1374,13 +1374,20 @@ class RegistersController extends Controller
             // the target register (default-SECURE: admin-only when no manage
             // rule exists). Closes the bypass of the wave-1 #1949 admin-only
             // create/update gate.
+            //
+            // When the register does not exist yet, defer the 404 (rather than
+            // returning immediately): a JSON upload may be a register-bundle
+            // that can auto-create it (register-import-auto-create,
+            // REQ-IMP-AC-01) — but only for an admin, mirroring the existing
+            // admin-only register-creation gate (there is no manage-authorization
+            // block to consult on an entity that doesn't exist yet).
             try {
                 $registerForAuth = $this->registerMapper->find($id);
             } catch (DoesNotExistException $e) {
-                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+                $registerForAuth = null;
             }
 
-            if ($this->checkRegisterManagePermission(register: $registerForAuth) === false) {
+            if ($registerForAuth !== null && $this->checkRegisterManagePermission(register: $registerForAuth) === false) {
                 return new JSONResponse(
                     data: ['error' => 'User does not have permission to manage this register'],
                     statusCode: 403
@@ -1415,14 +1422,36 @@ class RegistersController extends Controller
                     $peek = json_decode($peekRaw, true);
                     if (is_array($peek) === true
                         && (array_is_list($peek) === true
-                        || (isset($peek['results']) === true && is_array($peek['results']) === true))
+                        || (isset($peek['results']) === true && is_array($peek['results']) === true)
+                        || (isset($peek['components']['registers']) === true
+                        && is_array($peek['components']['registers']) === true))
                     ) {
+                        // The third condition is a register-bundle envelope
+                        // (register-import-auto-create, REQ-IMP-AC-01) — routed
+                        // to the object importer (ImportService::importFromJson),
+                        // which detects the bundle shape and auto-creates the
+                        // register + schemas, rather than the configuration path
+                        // (ImportHandler::importFromJson), which requires a
+                        // persisted Configuration entity this controller does not
+                        // create.
                         $type = 'json';
                     }
                 } else {
                     $type = 'configuration';
                 }//end if
             }//end if
+
+            // Missing register: only a JSON upload can auto-create it from a
+            // register bundle (REQ-IMP-AC-01); every other import type still
+            // requires a pre-existing register. Creating a new register
+            // requires admin — mirroring the existing admin-only creation gate,
+            // since there is no manage-authorization block to consult on an
+            // entity that doesn't exist yet.
+            if ($registerForAuth === null
+                && ($type !== 'json' || $this->isCurrentUserAdmin() === false)
+            ) {
+                return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+            }
 
             // Get import options for all types - support both boolean and string values.
             $includeObjects = $this->parseBooleanParam(paramName: 'includeObjects', default: false);
@@ -1460,8 +1489,11 @@ class RegistersController extends Controller
                     'registerId'     => $id,
                 ]
             );
-            // Find the register.
-            $register = $this->registerService->find($id);
+            // Find the register. Already resolved above via $registerForAuth;
+            // null only reaches here for an admin's register-bundle JSON
+            // import, where ImportService::importFromJson resolves/creates it
+            // from the bundle itself (REQ-IMP-AC-01).
+            $register = $registerForAuth;
             // Handle different import types.
             switch ($type) {
                 case 'excel':
@@ -1532,22 +1564,35 @@ class RegistersController extends Controller
                     // Object import (inverse of ExportService::exportToJson). The
                     // schema may be passed explicitly; otherwise it is derived
                     // from the exported objects' @self.schema so a plain file
-                    // upload round-trips without extra parameters.
+                    // upload round-trips without extra parameters. A
+                    // register-bundle payload (register-import-auto-create,
+                    // REQ-IMP-AC-01) carries its own schema(s) and needs
+                    // neither — ImportService::importFromJson resolves it from
+                    // the bundle.
+                    $peek     = json_decode((string) file_get_contents($uploadedFile['tmp_name']), true);
+                    $isBundle = is_array($peek) === true
+                        && array_is_list($peek) === false
+                        && isset($peek['components']['registers']) === true
+                        && is_array($peek['components']['registers']) === true
+                        && count($peek['components']['registers']) > 0;
+
                     $schemaId = $this->request->getParam('schema');
-                    if ($schemaId === null || $schemaId === '') {
-                        $peek     = json_decode((string) file_get_contents($uploadedFile['tmp_name']), true);
+                    if (($schemaId === null || $schemaId === '') && $isBundle === false) {
                         $list     = ($peek['results'] ?? $peek);
                         $schemaId = ($list[0]['@self']['schema'] ?? null);
                     }
 
-                    if ($schemaId === null || $schemaId === '') {
+                    if (($schemaId === null || $schemaId === '') && $isBundle === false) {
                         return new JSONResponse(
                             data: ['error' => 'Could not determine schema for JSON import; pass a schema parameter.'],
                             statusCode: 400
                         );
                     }
 
-                    $schema = $this->schemaMapper->find($schemaId);
+                    $schema = null;
+                    if ($schemaId !== null && $schemaId !== '') {
+                        $schema = $this->schemaMapper->find($schemaId);
+                    }
 
                     // SEC-CTRL-6: derive RBAC from admin status; keep tenant-scoped.
                     $rbac    = ($this->isCurrentUserAdmin() === false);
@@ -1564,7 +1609,8 @@ class RegistersController extends Controller
                         currentUser: $this->userSession->getUser(),
                         enrich: $enrich,
                         pack: $pack,
-                        dryRun: $dryRun
+                        dryRun: $dryRun,
+                        registerSlug: (string) $id
                     );
                     break;
                 case 'configuration':

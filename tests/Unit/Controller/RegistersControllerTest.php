@@ -1458,6 +1458,120 @@ class RegistersControllerTest extends TestCase
         $this->assertSame(200, $result->getStatus());
     }
 
+    // ── Import: register-bundle auto-create (register-import-auto-create, #1487) ──
+
+    /**
+     * REQ-IMP-AC-01: an admin uploading a register-bundle JSON for a
+     * register that does not exist is let through (register: null) to
+     * ImportService::importFromJson(), which resolves/creates it from the
+     * bundle — the pre-existing immediate 404 no longer fires for this case.
+     */
+    public function testImportMissingRegisterJsonBundleAdminPassesThrough(): void
+    {
+        $bundlePath = tempnam(sys_get_temp_dir(), 'bundle_test_').'.json';
+        file_put_contents($bundlePath, json_encode([
+            'components' => [
+                'registers' => ['products' => ['slug' => 'products', 'title' => 'Products']],
+                'schemas' => ['product' => ['slug' => 'product', 'title' => 'Product']],
+            ],
+        ]));
+
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'bundle.json',
+            'tmp_name' => $bundlePath,
+            'size' => 512,
+        ]);
+        $this->request->method('getParam')->willReturnMap([
+            ['type', null, null],
+            ['includeObjects', false, false],
+            ['validation', false, false],
+            ['events', false, false],
+            ['publish', false, false],
+            ['enrich', true, true],
+            ['rbac', true, true],
+            ['multi', true, true],
+            ['schema', null, null],
+        ]);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+        // Default currentUser (set up in setUp()) is an admin.
+        $this->importService->expects($this->once())
+            ->method('importFromJson')
+            ->with(
+                $this->anything(),
+                $this->callback(fn($register) => $register === null)
+            )
+            ->willReturn(['created' => [], 'updated' => [], 'errors' => []]);
+
+        $result = $this->controller->import('products');
+
+        $this->assertSame(200, $result->getStatus());
+        unlink($bundlePath);
+    }
+
+    /**
+     * A non-admin uploading the same register-bundle JSON for a missing
+     * register still gets the existing 404 — auto-create requires admin
+     * (mirrors the existing admin-only register-creation gate).
+     */
+    public function testImportMissingRegisterJsonBundleNonAdminReturns404(): void
+    {
+        $bundlePath = tempnam(sys_get_temp_dir(), 'bundle_test_').'.json';
+        file_put_contents($bundlePath, json_encode([
+            'components' => [
+                'registers' => ['products' => ['slug' => 'products', 'title' => 'Products']],
+                'schemas' => ['product' => ['slug' => 'product', 'title' => 'Product']],
+            ],
+        ]));
+
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'bundle.json',
+            'tmp_name' => $bundlePath,
+            'size' => 512,
+        ]);
+        $this->request->method('getParam')->willReturnMap([
+            ['type', null, null],
+        ]);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+        // Simulate an anonymous/non-admin caller.
+        $this->currentUser = null;
+
+        $this->importService->expects($this->never())->method('importFromJson');
+
+        $result = $this->controller->import('products');
+
+        $this->assertSame(404, $result->getStatus());
+        unlink($bundlePath);
+    }
+
+    /**
+     * A missing register with a non-JSON upload (e.g. Excel) still 404s
+     * immediately, unchanged — auto-create only applies to JSON bundles.
+     */
+    public function testImportMissingRegisterExcelReturns404(): void
+    {
+        $this->request->method('getUploadedFile')->willReturn([
+            'name' => 'data.xlsx',
+            'tmp_name' => '/tmp/nonexistent-data.xlsx',
+            'size' => 2048,
+        ]);
+        $this->request->method('getParam')->willReturnMap([
+            ['type', null, 'excel'],
+        ]);
+
+        $this->registerMapper->method('find')
+            ->willThrowException(new DoesNotExistException('Not found'));
+
+        $this->importService->expects($this->never())->method('importFromExcel');
+
+        $result = $this->controller->import(999);
+
+        $this->assertSame(404, $result->getStatus());
+    }
+
     // ── PublishToGitHub edge cases ───────────────────────────────────
 
     public function testPublishToGitHubUsesDefaultPathWhenEmpty(): void

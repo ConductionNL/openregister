@@ -32,7 +32,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\ObjectHandling;
+use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Listener\NotifyPushListener;
+use OCA\OpenRegister\Service\Configuration\ImportHandler as ConfigurationImportHandler;
 use OCA\OpenRegister\Service\MigrationPack\MappingEngine;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCP\IUserManager;
@@ -536,10 +538,24 @@ class ImportService
      * multi-tenancy. JSON carries no spreadsheet, so no PhpSpreadsheet (and
      * therefore no ZipStream) is involved.
      *
+     * When `$register` is null (the caller could not resolve the target
+     * register by slug), the payload is inspected for a register-bundle
+     * envelope — the same `components.registers` + `components.schemas` shape
+     * `ConfigurationService::importFromApp()` and the Repair-step register
+     * importers understand. A bundle auto-creates its register and schemas
+     * (reusing that same creation path — no duplicated logic, ADR-011) before
+     * objects import into it; idempotent — re-importing an existing register's
+     * bundle skips creation (registers/schemas are looked up by slug first).
+     * A non-bundle payload with no resolvable register fails with a clear,
+     * actionable error naming the missing slug rather than a silent no-op or
+     * an opaque exception.
+     *
      * @param string        $filePath      Path to the uploaded JSON file
-     * @param Register|null $register      Register to import into
+     * @param Register|null $register      Register to import into. When null, the payload is checked for
+     *                                     a register-bundle envelope to auto-create it; see
+     *                                     `$registerSlug` and `@throws` below.
      * @param Schema|null   $schema        Target schema (required — JSON import is single-schema, like
-     *                                     CSV)
+     *                                     CSV — unless resolved from a register-bundle's own schemas)
      * @param bool          $validation    Whether to validate objects against the schema
      * @param bool          $events        Whether to dispatch object lifecycle events
      * @param bool          $_rbac         Whether to apply RBAC permissions
@@ -551,10 +567,16 @@ class ImportService
      *                                     object is mapped through `MappingEngine::mapRow()` (source resolved via
      *                                     JSON-Pointer-style paths against the raw decoded object) before save.
      * @param bool          $dryRun        When true, rows are mapped and validated but nothing is saved.
+     * @param string|null   $registerSlug  The register slug/id the caller originally requested, used ONLY to
+     *                                     name the missing register in the clear-failure error when `$register`
+     *                                     is null and the payload is not a creatable bundle (REQ-IMP-AC-02).
      *
      * @return array<string, mixed> Sheet-shaped summary (keyed 'JSON') plus importJobId
      *
-     * @throws InvalidArgumentException When no schema is given or the payload is not an array of objects
+     * @throws InvalidArgumentException When no schema is given (and none is resolvable from a bundle) or the
+     *                                   payload is not an array of objects
+     * @throws RegisterNotFoundException When `$register` is null and the payload is not a creatable
+     *                                    register-bundle (REQ-IMP-AC-02)
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags control import behavior options
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Mirrors the Excel/CSV importer signatures
@@ -562,6 +584,9 @@ class ImportService
      *
      * @spec exclude Retrofit — JSON object import/export added alongside the existing Excel/CSV importers; no dedicated openspec change.
      * @spec openspec/specs/migration-mapping-packs/spec.md
+     * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
+     * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-clear-failure-when-auto-create-is-impossible-req-imp-ac-02
+     * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-idempotent-register-bundle-re-import-req-imp-ac-03
      */
     public function importFromJson(
         string $filePath,
@@ -575,15 +600,12 @@ class ImportService
         ?IUser $currentUser=null,
         bool $enrich=true,
         ?array $pack=null,
-        bool $dryRun=false
+        bool $dryRun=false,
+        ?string $registerSlug=null
     ): array {
         // Clear caches at the start of each import to prevent stale data issues.
         $this->clearCaches();
         $startTime = microtime(true);
-
-        if ($schema === null) {
-            throw new InvalidArgumentException('JSON import requires a specific schema');
-        }
 
         if ($publish === true) {
             $this->logger->warning(
@@ -602,10 +624,43 @@ class ImportService
             throw new InvalidArgumentException('JSON import expects an array of objects');
         }
 
-        // Accept both a bare array and a `{ "results": [...] }` envelope (the
-        // shape some object-list endpoints return).
+        // Register-bundle auto-create-or-fail-clearly (REQ-IMP-AC-01/02/03).
+        // The caller passes $register=null when the target register could not
+        // be resolved by slug. Detect whether the payload is a register-bundle
+        // envelope (an object — not a list — carrying `components.registers`
+        // with the register definition, the same shape the existing
+        // configuration/register-import path understands) versus a plain
+        // object list: a bundle auto-creates its register + schemas; anything
+        // else fails clearly, naming the missing slug.
+        if ($register === null) {
+            $isBundle = array_is_list($decoded) === false
+                && isset($decoded['components']['registers']) === true
+                && is_array($decoded['components']['registers']) === true
+                && count($decoded['components']['registers']) > 0;
+
+            if ($isBundle === false) {
+                throw new RegisterNotFoundException(
+                    registerSlugOrId: $registerSlug ?? 'unknown',
+                    code: 404,
+                    remedies: 'Create the register first, or supply a full register bundle '
+                        .'(a register definition together with its schemas) to auto-create it.'
+                );
+            }
+
+            [$register, $schema] = $this->autoCreateRegisterFromBundle(bundle: $decoded, schemaHint: $schema);
+        }//end if
+
+        if ($schema === null) {
+            throw new InvalidArgumentException('JSON import requires a specific schema');
+        }
+
+        // Accept a bare array, a `{ "results": [...] }` envelope (the shape
+        // some object-list endpoints return), or — for a register-bundle
+        // import — the bundle's own `components.objects` list.
         $objects = $decoded;
-        if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
+        if (isset($decoded['components']['objects']) === true && is_array($decoded['components']['objects']) === true) {
+            $objects = $decoded['components']['objects'];
+        } else if (isset($decoded['results']) === true && is_array($decoded['results']) === true) {
             $objects = $decoded['results'];
         }
 
@@ -758,6 +813,82 @@ class ImportService
             $this->auditTrailMapper->setRequestImportJobId(importJobId: null);
         }//end try
     }//end importFromJson()
+
+    /**
+     * Resolve or auto-create a register (and its schemas) from a register-bundle
+     * envelope, for a JSON import whose target register could not be resolved.
+     *
+     * Reuses `ConfigurationImportHandler::importRegister()` and `::importSchema()`
+     * — the SAME register/schema creation path `ConfigurationService::importFromApp()`
+     * and the Repair-step register importers already use — instead of duplicating
+     * creation logic (ADR-011). Both methods look the target up by slug first, so
+     * re-importing a bundle whose register already exists skips creation and is a
+     * no-op here (idempotent — REQ-IMP-AC-03); the existing schema/object upsert
+     * then proceeds unchanged.
+     *
+     * @param array<string, mixed> $bundle     Decoded register-bundle envelope — MUST carry
+     *                                         `components.registers` (validated by the caller).
+     * @param Schema|null          $schemaHint A schema the caller already resolved explicitly; when
+     *                                         given, it is returned as-is (bundle schemas are still
+     *                                         created/updated) rather than re-derived from the bundle.
+     *
+     * @return array{0: Register, 1: ?Schema} The resolved/created register and, when resolvable
+     *                                        (either `$schemaHint` or the bundle's single referenced
+     *                                        schema — this importer is single-schema, like CSV), the schema.
+     *
+     * @throws InvalidArgumentException When the bundle's register references anything other than
+     *                                   exactly one schema and no `$schemaHint` was given — this
+     *                                   importer cannot disambiguate which schema the objects belong to.
+     *
+     * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-auto-create-a-missing-register-from-a-bundle-req-imp-ac-01
+     * @spec openspec/changes/register-import-auto-create/specs/data-import-export/spec.md#requirement-idempotent-register-bundle-re-import-req-imp-ac-03
+     */
+    private function autoCreateRegisterFromBundle(array $bundle, ?Schema $schemaHint): array
+    {
+        // Lazily resolved via the container to avoid a circular dependency,
+        // mirroring ConfigurationService::getImportHandler().
+        $importHandler = $this->container->get(ConfigurationImportHandler::class);
+        assert($importHandler instanceof ConfigurationImportHandler);
+
+        $registersData = $bundle['components']['registers'];
+        $schemasData   = $bundle['components']['schemas'] ?? [];
+
+        // The envelope this method understands describes a single register per
+        // import (mirrors ExportHandler::exportConfig() for one register) —
+        // take its (only) entry.
+        $registerKey  = array_key_first($registersData);
+        $registerData = $registersData[$registerKey];
+
+        $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
+
+        $createdSchemas = [];
+        foreach ($schemasData as $schemaKey => $schemaData) {
+            if (isset($schemaData['title']) === false && is_string($schemaKey) === true) {
+                $schemaData['title'] = $schemaKey;
+            }
+
+            $createdSchema = $importHandler->importSchema(
+                data: $schemaData,
+                slugsAndIdsMap: $slugsAndIdsMap
+            );
+            $createdSchemas[$createdSchema->getSlug()] = $createdSchema;
+        }//end foreach
+
+        $register = $importHandler->importRegister(data: $registerData);
+
+        $schema = $schemaHint;
+        if ($schema === null && count($createdSchemas) === 1) {
+            $schema = array_values($createdSchemas)[0];
+        }
+
+        if ($schema === null && count($createdSchemas) !== 1) {
+            $msg  = 'Register bundle import requires exactly one schema when no schema is ';
+            $msg .= 'explicitly specified; found '.count($createdSchemas).' in the bundle.';
+            throw new InvalidArgumentException($msg);
+        }
+
+        return [$register, $schema];
+    }//end autoCreateRegisterFromBundle()
 
     /**
      * Process spreadsheet with multiple schemas using batch saving for better performance
