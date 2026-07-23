@@ -194,6 +194,138 @@ class ToolRegistryFacadeTest extends TestCase
     }//end testListToolsNarrowsByWhitelist()
 
     /**
+     * A whitelist naming a FUNCTION resolves it — the id space consumers
+     * actually store.
+     *
+     * Regression: the whitelist used to be intersected against registry ids, so
+     * an entry naming a real function of a multi-function tool (`list_schemas`,
+     * exactly what the agent tool-catalog offers) matched nothing and silently
+     * resolved to ZERO tools — indistinguishable from a tool-less agent.
+     *
+     * @return void
+     */
+    public function testListToolsResolvesAWhitelistedFunctionName(): void
+    {
+        $this->registry->registerTool(
+            'openregister.schema',
+            $this->createToolMock(
+                [
+                    ['name' => 'list_schemas', 'description' => 'List', 'parameters' => []],
+                    ['name' => 'delete_schema', 'description' => 'Delete', 'parameters' => []],
+                ]
+            ),
+            $this->metadata('openregister')
+        );
+
+        $result = $this->facade->listTools(['list_schemas']);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('list_schemas', $result[0]['name']);
+    }//end testListToolsResolvesAWhitelistedFunctionName()
+
+    /**
+     * A whitelist naming one function does NOT drag in its tool's other
+     * functions.
+     *
+     * Regression (the other direction of the same defect): matching per TOOL
+     * meant a read-only intent silently handed over every function the tool
+     * owns, `delete_schema` included.
+     *
+     * @return void
+     */
+    public function testListToolsDoesNotAdmitSiblingFunctionsOfAWhitelistedFunction(): void
+    {
+        $this->registry->registerTool(
+            'openregister.schema',
+            $this->createToolMock(
+                [
+                    ['name' => 'list_schemas', 'description' => 'List', 'parameters' => []],
+                    ['name' => 'delete_schema', 'description' => 'Delete', 'parameters' => []],
+                ]
+            ),
+            $this->metadata('openregister')
+        );
+
+        $names = array_column($this->facade->listTools(['list_schemas']), 'name');
+
+        $this->assertNotContains('delete_schema', $names);
+    }//end testListToolsDoesNotAdmitSiblingFunctionsOfAWhitelistedFunction()
+
+    /**
+     * A whitelist naming a tool's REGISTRY id still admits all of its functions
+     * (the pre-existing coarse-grained grant stays valid).
+     *
+     * @return void
+     */
+    public function testListToolsRegistryIdStillAdmitsEveryFunctionOfThatTool(): void
+    {
+        $this->registry->registerTool(
+            'openregister.schema',
+            $this->createToolMock(
+                [
+                    ['name' => 'list_schemas', 'description' => 'List', 'parameters' => []],
+                    ['name' => 'delete_schema', 'description' => 'Delete', 'parameters' => []],
+                ]
+            ),
+            $this->metadata('openregister')
+        );
+
+        $names = array_column($this->facade->listTools(['openregister.schema']), 'name');
+
+        $this->assertSame(['list_schemas', 'delete_schema'], $names);
+    }//end testListToolsRegistryIdStillAdmitsEveryFunctionOfThatTool()
+
+    /**
+     * A whitelist naming a function's dotted `mcpId` resolves it — the third
+     * accepted form, and the one an ADR-035 toolWhitelist stores for bridged
+     * tools.
+     *
+     * @return void
+     */
+    public function testListToolsResolvesAWhitelistedMcpId(): void
+    {
+        $this->registry->registerTool(
+            'openbuild.upsertSchema',
+            $this->createToolMock(
+                [
+                    [
+                        'name'        => 'openbuild_upsertSchema',
+                        'mcpId'       => 'openbuild.upsertSchema',
+                        'description' => 'Upsert',
+                        'parameters'  => [],
+                    ],
+                ]
+            ),
+            $this->metadata('openbuild')
+        );
+
+        $result = $this->facade->listTools(['openbuild.upsertSchema']);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('openbuild_upsertSchema', $result[0]['name']);
+    }//end testListToolsResolvesAWhitelistedMcpId()
+
+    /**
+     * An unknown whitelist entry resolves to nothing — it must NOT fuzzy-match.
+     *
+     * `openregister.schemas` (plural) is not a real id; the tool is
+     * `openregister.schema`. Resolving to zero is correct here; making that zero
+     * VISIBLE is the consumer's job (Hermiq raises on it).
+     *
+     * @return void
+     */
+    public function testListToolsUnknownWhitelistEntryResolvesToNothing(): void
+    {
+        $this->registry->registerTool(
+            'openregister.schema',
+            $this->createToolMock([['name' => 'list_schemas', 'description' => 'List', 'parameters' => []]]),
+            $this->metadata('openregister')
+        );
+
+        $this->assertSame([], $this->facade->listTools(['openregister.schemas']));
+    }//end testListToolsUnknownWhitelistEntryResolvesToNothing()
+
+    /**
      * An explicit empty whitelist means "all discovered tools allowed"
      * (hydra ADR-035 Decision 4 default semantics).
      *

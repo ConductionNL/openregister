@@ -175,6 +175,112 @@ class ChunkMapperKeywordSearchTest extends TestCase
     }//end testSearchByKeywordReturnsEmptyWithWarningWhenColumnMissing()
 
     // =========================================================================
+    // searchByKeyword — unranked fallback (expose-content-search-in-object-service, task 5)
+    // =========================================================================
+
+    public function testSearchByKeywordUnrankedFallbackRunsLikeQueryOnMariaDbWhenRequested(): void
+    {
+        $this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
+        $this->db->method('escapeLikeParameter')->willReturnArgument(0);
+        $this->logger->expects($this->never())->method('warning');
+
+        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr->method('iLike')->willReturnCallback(fn(string $col, $val): string => "$col ILIKE $val");
+        $expr->method('eq')->willReturnCallback(fn(string $col, $val): string => "$col = $val");
+
+        $stmt = $this->createMock(IResult::class);
+        $stmt->method('fetchAll')->willReturn([$this->makeKeywordRow(1, 'quarterly mention in a memo', 0.0)]);
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('executeQuery')->willReturn($stmt);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+        $this->db->expects($this->never())->method('executeQuery');
+
+        $results = $this->mapper->searchByKeyword('quarterly', 10, [], true);
+
+        $this->assertCount(1, $results);
+        $this->assertSame('file', $results[0]['entity_type']);
+        $this->assertSame('101', $results[0]['entity_id']);
+        $this->assertSame(0.0, $results[0]['score']);
+        $this->assertSame([], $results[0]['metadata']);
+    }//end testSearchByKeywordUnrankedFallbackRunsLikeQueryOnMariaDbWhenRequested()
+
+    public function testSearchByKeywordUnrankedFallbackHonoursSourceTypeFilter(): void
+    {
+        $this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
+        $this->db->method('escapeLikeParameter')->willReturnArgument(0);
+
+        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr->method('iLike')->willReturnCallback(fn(string $col, $val): string => "$col ILIKE $val");
+
+        $capturedFilterCol = null;
+        $expr->method('eq')->willReturnCallback(
+            function (string $col, $val) use (&$capturedFilterCol): string {
+                $capturedFilterCol = $col;
+                return "$col = $val";
+            }
+        );
+
+        $stmt = $this->createMock(IResult::class);
+        $stmt->method('fetchAll')->willReturn([]);
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->expects($this->once())->method('andWhere')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('executeQuery')->willReturn($stmt);
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $this->mapper->searchByKeyword('quarterly', 10, ['source_type' => 'file'], true);
+
+        $this->assertSame('source_type', $capturedFilterCol);
+    }//end testSearchByKeywordUnrankedFallbackHonoursSourceTypeFilter()
+
+    public function testSearchByKeywordUnrankedFallbackDegradesGracefullyOnQueryFailure(): void
+    {
+        $this->db->method('getDatabasePlatform')->willReturn(new MariaDBPlatform());
+        $this->db->method('escapeLikeParameter')->willReturnArgument(0);
+
+        $expr = $this->createMock(IExpressionBuilder::class);
+        $expr->method('iLike')->willReturnCallback(fn(string $col, $val): string => "$col ILIKE $val");
+
+        $qb = $this->createMock(IQueryBuilder::class);
+        $qb->method('select')->willReturnSelf();
+        $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('orderBy')->willReturnSelf();
+        $qb->method('setMaxResults')->willReturnSelf();
+        $qb->method('expr')->willReturn($expr);
+        $qb->method('createNamedParameter')->willReturnArgument(0);
+        $qb->method('executeQuery')->willThrowException(new \Exception('syntax error'));
+
+        $this->db->method('getQueryBuilder')->willReturn($qb);
+
+        $this->logger->expects($this->once())
+            ->method('warning')
+            ->with($this->stringContains('Unranked keyword search query failed'), $this->anything());
+
+        $results = $this->mapper->searchByKeyword('quarterly', 10, [], true);
+
+        $this->assertSame([], $results);
+    }//end testSearchByKeywordUnrankedFallbackDegradesGracefullyOnQueryFailure()
+
+    // =========================================================================
     // findUnvectorized — FIFO work queue (task 5.1)
     // =========================================================================
 

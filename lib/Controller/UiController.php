@@ -323,7 +323,6 @@ class UiController extends Controller
         return $this->makeSpaResponse();
     }//end tables()
 
-
     /**
      * Returns the configurations page template.
      *
