@@ -26,23 +26,40 @@ define('PHPUNIT_RUN', 1);
 // Include Composer's autoloader.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Load minimal Doctrine DBAL stubs so nextcloud/ocp v31 interface constants
-// (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated
-// in the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
-require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
+// Resolve execution mode FIRST: the three stub files below all declare
+// class_exists()-guarded fakes for the classes real Nextcloud's own
+// lib/base.php provides (most notably \OC itself, in
+// NextcloudInternalStubs.php). Loading them unconditionally BEFORE checking
+// whether the real bootstrap is available means the guard sees "not yet
+// declared", the stub wins the race, and base.php's later attempt to
+// declare the real \OC then fatals with "Cannot redeclare class OC" — this
+// reproduces on ANY unit test (not just this change's) when the app is
+// mounted at the standard two-levels-under-server-root depth inside a real
+// Nextcloud container. The stubs exist specifically for the bare
+// php:8.3-cli CI environment where no real Nextcloud is present at that
+// path; skip them entirely whenever the real bootstrap is available.
+$nextcloudBasePath = __DIR__ . '/../../../lib/base.php';
+$hasRealNextcloud   = file_exists($nextcloudBasePath);
 
-// Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
-// the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
-require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+if ($hasRealNextcloud === false) {
+    // Load minimal Doctrine DBAL stubs so nextcloud/ocp v31 interface constants
+    // (IQueryBuilder::PARAM_NULL = ParameterType::NULL, etc.) can be evaluated
+    // in the bare php:8.3-cli CI environment where doctrine/dbal is not installed.
+    require_once __DIR__ . '/stubs/DoctrineDbalStubs.php';
 
-// Load the Doriath contract stubs + test fixtures for the credential-broker
-// Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
-require_once __DIR__ . '/stubs/DoriathStubs.php';
+    // Load minimal Nextcloud internal-class stubs (OC\Hooks\Emitter, etc.) that
+    // the nextcloud/ocp v31 stubs reference but are not shipped by the OCP package.
+    require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
+
+    // Load the Doriath contract stubs + test fixtures for the credential-broker
+    // Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
+    require_once __DIR__ . '/stubs/DoriathStubs.php';
+}
 
 // Bootstrap Nextcloud — since we run inside the Docker container,
 // the full environment (including \OC::$server) is available.
-if (file_exists(__DIR__ . '/../../../lib/base.php')) {
-    require_once __DIR__ . '/../../../lib/base.php';
+if ($hasRealNextcloud === true) {
+    require_once $nextcloudBasePath;
 }
 
 // Register Test\ namespace for NC test classes.

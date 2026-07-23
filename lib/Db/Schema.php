@@ -1793,6 +1793,30 @@ class Schema extends Entity implements JsonSerializable
     }//end getObjectSource()
 
     /**
+     * Check whether this schema's objects are opted into Context Chat indexing.
+     *
+     * Reads the `x-openregister-contextchat` annotation (default OFF). Follows
+     * the same `x-openregister-*` boolean-flag convention as other schema
+     * annotations — objects of this schema are only ever submitted to
+     * `OCP\ContextChat` when this returns true AND the object independently
+     * satisfies the publication predicate (see ContextChatSubmissionListener).
+     *
+     * @return bool True when the schema opted in to Context Chat indexing.
+     *
+     * @spec openspec/specs/context-chat-provider/spec.md
+     */
+    public function isContextChatIndexingEnabled(): bool
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return false;
+        }
+
+        return ($configuration['x-openregister-contextchat'] ?? false) === true;
+    }//end isContextChatIndexingEnabled()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -2283,6 +2307,13 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-handoff',
         'x-openregister-mcp',
         'x-openregister-approval-chains',
+        // Per-schema opt-in for OCP\ContextChat content submission (default
+        // OFF — see ContentProvider / ContextChatSubmissionListener). Absent
+        // from the vocabulary means the key round-trips through
+        // setConfiguration() and gets silently dropped, so the opt-in could
+        // never take effect (same or#460/#462-class bug the vocabulary
+        // exists to prevent).
+        'x-openregister-contextchat',
         // Nested write-only dot-paths. Unlike every other entry in this list
         // this key is NOT a plain pass-through: validateConfigurationEntry has
         // a dedicated branch above that validates its shape, and
