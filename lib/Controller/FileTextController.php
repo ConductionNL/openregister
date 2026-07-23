@@ -411,6 +411,11 @@ class FileTextController extends Controller
      * replaced by placeholders in the format [ENTITY_TYPE: key].
      * The original file remains unchanged.
      *
+     * Accepts an optional `preserveStructure` request param (REQ-ORTPR-004):
+     * PDF only, tri-state (absent/empty = auto — preserve iff the input is a
+     * tagged PDF). The response carries a `structurePreservation` block for
+     * PDF inputs (REQ-ORTPR-003) — omitted for DOCX/ODT/text.
+     *
      * @param int $fileId Nextcloud file ID to anonymize
      *
      * @NoAdminRequired
@@ -419,8 +424,13 @@ class FileTextController extends Controller
      *
      * @return JSONResponse JSON response with anonymization result
      *
+     * @SuppressWarnings(PHPMD.NPathComplexity) Sequential independent request-param guards
+     *                                          (scope, dossierKey, preserveStructure) and a
+     *                                          response-shape guard — not nested branching.
+     *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-1/tasks.md#task-2
      * @spec openspec/specs/pdf-anonymisation/spec.md
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
     public function anonymizeFile(int $fileId): JSONResponse
     {
@@ -532,11 +542,22 @@ class FileTextController extends Controller
                 $dossierKey = (string) $dossierKeyParam;
             }
 
+            // PDF-only tag-preserving-redaction option (REQ-ORTPR-004): tri-state,
+            // absent/empty MUST resolve to null (auto — preserve iff the input is
+            // a tagged PDF); the request param is otherwise cast via
+            // FILTER_VALIDATE_BOOLEAN so "false"/"0" resolve to explicit false.
+            $preserveOptionParam = $this->request->getParam('preserveStructure', null);
+            $preserveStructure   = null;
+            if ($preserveOptionParam !== null && $preserveOptionParam !== '') {
+                $preserveStructure = filter_var($preserveOptionParam, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            }
+
             $anonymizedFile = $this->fileService->anonymizeDocument(
                 node: $fileNode,
                 entities: $entities,
                 scope: $scope,
-                dossierKey: $dossierKey
+                dossierKey: $dossierKey,
+                preserveStructure: $preserveStructure
             );
 
             // Best-effort policy: the file is produced even when some entity
@@ -547,6 +568,10 @@ class FileTextController extends Controller
             // product-owner-approved deviation from the no-PII-in-responses rule).
             $residualEntities = $this->fileService->getLastResidualEntities();
             $isComplete       = (count($residualEntities) === 0);
+
+            // Tag-preserving-redaction result block (REQ-ORTPR-003): PDF
+            // inputs only — null for DOCX/ODT/text (no PDF structure tree).
+            $structureResult = $this->fileService->getLastStructurePreservation();
 
             $logSuffix     = ' with residual entities';
             $messageResult = 'File anonymized, but some entities could not be fully removed — review the output'
@@ -571,19 +596,25 @@ class FileTextController extends Controller
                 ]
             );
 
-            return new JSONResponse(
-                data: [
-                    'success'            => true,
-                    'complete'           => $isComplete,
-                    'message'            => $messageResult,
-                    'original_file_id'   => $fileId,
-                    'anonymized_file_id' => $anonymizedFile->getId(),
-                    'anonymized_path'    => $anonymizedFile->getPath(),
-                    'entities_replaced'  => count($entities),
-                    'residual_count'     => count($residualEntities),
-                    'residual_entities'  => $residualEntities,
-                ]
-            );
+            $responseData = [
+                'success'            => true,
+                'complete'           => $isComplete,
+                'message'            => $messageResult,
+                'original_file_id'   => $fileId,
+                'anonymized_file_id' => $anonymizedFile->getId(),
+                'anonymized_path'    => $anonymizedFile->getPath(),
+                'entities_replaced'  => count($entities),
+                'residual_count'     => count($residualEntities),
+                'residual_entities'  => $residualEntities,
+            ];
+
+            // Omit the block entirely for non-PDF redactions (REQ-ORTPR-003) —
+            // the accessor already returns null on the DOCX/ODT/text branches.
+            if ($structureResult !== null) {
+                $responseData['structurePreservation'] = $structureResult->jsonSerialize();
+            }
+
+            return new JSONResponse(data: $responseData);
         } catch (PdfAnonymisationException $e) {
             // Map the structured PDF-anonymisation reason to an HTTP status
             // per the `pdf-anonymisation` spec (REQ:filter-coverage +

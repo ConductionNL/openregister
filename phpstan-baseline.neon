@@ -1,6 +1,15 @@
 parameters:
 	ignoreErrors:
 		-
+			# ddn/sapp's own docblock for PDFDoc::get_object_iterator() uses an
+			# informal "oid=>obj" pseudo-type that PHPStan misreads as a real
+			# class ddn\sapp\oid — a vendor docblock quirk, not a real type
+			# error (tag-preserving-redaction, PdfStructureInspector).
+			message: "#^Iterating over an object of an unknown class ddn\\\\sapp\\\\oid\\.$#"
+			count: 2
+			path: lib/Service/File/Pdf/PdfStructureInspector.php
+
+		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\ConfigurationController\\:\\:discover\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|400\\|500, array\\{error\\?\\: string, total_count\\?\\: mixed, results\\?\\: array\\{0\\?\\: mixed\\}, page\\?\\: int, per_page\\?\\: int\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<403, array\\{error\\: string\\}, array\\{\\}\\>\\.$#"
 			count: 1
 			path: lib/Controller/ConfigurationController.php
