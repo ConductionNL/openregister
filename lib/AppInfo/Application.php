@@ -143,7 +143,9 @@ use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FlowActionListener;
+use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
@@ -2448,6 +2450,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+
+        // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
+        // transition). Routed by EventCatalogListener so create/update/delete are
+        // not double-handled. Each event carries the object, so its schema's flows
+        // run — see EventCatalogService for the trigger ids.
+        $context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
+
+        // Native Nextcloud Flow (workflowengine) composition — expose OR objects
+        // as a Flow entity and OR flows as a Flow operation. Guarded by
+        // class_exists so boot never fatals on an instance without the (soft
+        // dependency) workflowengine app.
+        if (class_exists('OCP\\WorkflowEngine\\Events\\RegisterEntitiesEvent') === true) {
+            $context->registerEventListener(
+                \OCP\WorkflowEngine\Events\RegisterEntitiesEvent::class,
+                FlowEngineRegistrationListener::class
+            );
+            $context->registerEventListener(
+                \OCP\WorkflowEngine\Events\RegisterOperationsEvent::class,
+                FlowEngineRegistrationListener::class
+            );
+        }
 
         // System-entity notification bridge — routes create/update signals from
         // OpenRegister's own system entities through the same annotation-notification
