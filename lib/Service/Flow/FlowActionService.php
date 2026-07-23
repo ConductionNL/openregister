@@ -151,6 +151,72 @@ class FlowActionService
     }//end run()
 
     /**
+     * Run a single named flow's actions against an object, ignoring the flow's
+     * own trigger.
+     *
+     * Used by the native Nextcloud Flow operation
+     * ({@see \OCA\OpenRegister\WorkflowEngine\RunFlowOperation}) so an admin can
+     * gate a specific flow behind Flow's check system. The flow is looked up by
+     * `name` on the object's schema; its actions run regardless of the flow's
+     * declared `trigger`, because the matching Flow rule already decided it
+     * should fire.
+     *
+     * @param ObjectEntity $object   The object the rule matched.
+     * @param string       $flowName The `name` of the flow to run.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/visual-flow-builder/specs/integration-flow/spec.md
+     */
+    public function runNamedFlow(ObjectEntity $object, string $flowName): void
+    {
+        try {
+            $schema = $this->resolveSchema(object: $object);
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        if ($schema === null) {
+            return;
+        }
+
+        $flows = $this->flowsForSchema(schema: $schema);
+        if (empty($flows) === true) {
+            return;
+        }
+
+        $data = $this->buildContext(object: $object);
+
+        foreach ($flows as $flow) {
+            if (is_array($flow) === false) {
+                continue;
+            }
+
+            if ((string) ($flow['name'] ?? '') !== $flowName) {
+                continue;
+            }
+
+            $actions = ($flow['actions'] ?? []);
+            if (is_array($actions) === false) {
+                continue;
+            }
+
+            foreach ($actions as $action) {
+                if (is_array($action) === false) {
+                    continue;
+                }
+
+                $this->runAction(
+                    action: $action,
+                    object: $object,
+                    data: $data,
+                    flowName: $flowName
+                );
+            }
+        }//end foreach
+    }//end runNamedFlow()
+
+    /**
      * Resolve the object's schema (internal lookup, no RBAC/multitenancy).
      *
      * @param ObjectEntity $object The object.
