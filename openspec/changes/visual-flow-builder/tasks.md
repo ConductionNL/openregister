@@ -17,7 +17,8 @@
 ## Phase 3 — Nextcloud Flow interoperability
 - [~] 3.1/3.2 **Deferred (not buildable honestly).** `OCP\WorkflowEngine` exposes no public "invoke operation" API — operations only run via `onEvent()` driven by the engine's rule-matcher. A `nc-flow-operation` action that "invokes the selected NC operation" would be a dead block, so it is intentionally not built.
 - [x] 3.3 `WorkflowEngine/RegisterObjectEntity` (`IEntity`) registers OR objects as a Flow entity (object created/updated/deleted triggers); `WorkflowEngine/RunFlowOperation` (`ISpecificOperation`) registers "Run an OpenRegister flow" so a Flow rule can run a named flow gated behind Flow's checks. `FlowActionService::runNamedFlow()` runs one flow by name. Live-verified: both appear in the Flow admin UI.
-- [~] 3.4 Registration + UI availability live-verified; full rule→fire→action e2e not yet run.
+- [x] 3.4 Full rule→fire→action e2e live-verified: a global Flow rule (OR object updated → Run flow "NC stamp", whose own trigger is `object.locked` so the native listener can't fire it) stamped the object's title on update — proving the NC Flow path ran the OR flow.
+- [ ] 3.5 Follow-up: register a frontend operator-settings component (`window.OCA.WorkflowEngine.registerOperator`) so the flow-name value is enterable in the Flow admin UI (today it is set via the workflows API). Operation is registered, visible, and fires; only the value-input UI is missing.
 
 ## Phase 4 — Object-CRUD action nodes
 - [x] 4.1 `object.set-field`/`object.update`, `object.create`, `object.delete`, and `condition` (guard, halts on false) in `FlowActionService::runAction()` (returns bool; loop breaks on a failed condition). Recursion guarded via an `activeObjects` UUID set. Live-verified: an `updated` flow set a Case title, persisted, did not loop.
