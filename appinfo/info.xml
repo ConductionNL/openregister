@@ -165,6 +165,8 @@ Vrij en open source onder de EUPL-licentie.
 		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
 		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
+		<!-- Batched Context Chat backfill for opted-in, published objects. -->
+		<command>OCA\OpenRegister\Command\ContextChatReindexCommand</command>
 	</commands>
 
 	<notification>

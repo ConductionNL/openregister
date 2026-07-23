@@ -154,6 +154,8 @@ use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
@@ -2360,6 +2362,15 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\OcmResourceTypeListener::class
         );
 
+        // Register OpenRegister as a Context Chat (OCP\ContextChat) content
+        // provider — softly gated by IContentManager::isContextChatAvailable()
+        // inside the listener body, so an instance without the `context_chat`
+        // app installed is entirely unaffected.
+        $context->registerEventListener(
+            \OCP\ContextChat\Events\ContentProviderRegisterEvent::class,
+            ContentProviderRegistrationListener::class
+        );
+
         // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
@@ -2437,6 +2448,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectMetricsListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
+
+        // Context Chat submission listener — submits/removes object content
+        // to OCP\ContextChat on create/update/delete for schemas opted in via
+        // x-openregister-contextchat. Fail-soft: never aborts the write it
+        // observes; safe no-op when `context_chat` is not installed.
+        $context->registerEventListener(ObjectCreatedEvent::class, ContextChatSubmissionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ContextChatSubmissionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ContextChatSubmissionListener::class);
 
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.

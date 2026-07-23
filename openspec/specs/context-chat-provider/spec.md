@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: done
 ---
 # Context Chat Provider
 
@@ -9,10 +9,10 @@ status: in-progress
 
 Registers OpenRegister as a Nextcloud Context Chat (`OCP\ContextChat`) content provider so opted-in, published register objects become searchable/reasonable-over by the NC Assistant's RAG pipeline — the same way OpenRegister already surfaces objects to unified search, notifications, and activity. Registration is soft-gated on `isContextChatAvailable()` (zero hard dependency on the `context_chat` app). Content is submitted on object create/update and removed on delete via the existing object-lifecycle events, is scoped by an explicit, default-OFF per-schema opt-in (`configuration['x-openregister-contextchat']`), and is further restricted to objects satisfying the same published predicate unified search already enforces. `getItemUrl()` reuses the existing `DeepLinkRegistryService::resolveUrl()` fleet-wide deep-link mechanism (no bespoke URL-template config). An `occ openregister:contextchat:reindex` command and `triggerInitialImport()` provide batched backfill.
 
-**Status**: in-progress
+**Status**: done
 
 **OpenSpec changes**
-- `context-chat-provider` (in-progress) — implements `IContentProvider` (`getId`/`getAppId`/`getItemUrl`/`triggerInitialImport`) registered via `ContentProviderRegisterEvent`; submits/removes content on the existing `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectDeletedEvent` listeners; adds the `x-openregister-contextchat` per-schema opt-in to the `Schema` configuration allow-list; adds the `openregister:contextchat:reindex` occ command.
+- [`context-chat-provider`](../../changes/archive/2026-07-23-context-chat-provider/) _(archived 2026-07-23)_ — implements `IContentProvider` (`getId`/`getAppId`/`getItemUrl`/`triggerInitialImport`) registered via `ContentProviderRegisterEvent`; submits/removes content on the existing `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectDeletedEvent` listeners; adds the `x-openregister-contextchat` per-schema opt-in to the `Schema` configuration allow-list; adds the `openregister:contextchat:reindex` occ command.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ OpenRegister SHALL listen for `ContentProviderRegisterEvent` and register exactl
 
 ### Requirement: Only opted-in, published objects are submitted to Context Chat
 
-Content submission to Context Chat SHALL be scoped by two independent gates: (1) the object's schema carries `configuration['x-openregister-contextchat']` set to a truthy value (default OFF), and (2) the object satisfies the published predicate already used by unified search (`@self.published` set and in the past, `@self.depublished` unset or in the future). Deleted objects, or objects that become unpublished, SHALL have their content removed from Context Chat rather than left stale. The full normative behaviour is defined by the `context-chat-provider` change delta.
+Content submission to Context Chat SHALL be scoped by two independent gates: (1) the object's schema carries `configuration['x-openregister-contextchat']` set to a truthy value (default OFF), and (2) the object satisfies a publication predicate. **Implementation note**: the change proposal originally specified this predicate as the legacy `@self.published`/`@self.depublished` object metadata; those columns were removed fleet-wide by `deprecate-published-metadata` (replaced by RBAC `$now`-based authorization rules) before this change shipped. The predicate actually implemented is the living equivalent: an object is treated as published when the `public` group would be granted `read` under the schema's currently-resolved authorization (`PermissionHandler::hasGroupPermission()` with `groupId: 'public'`, `action: 'read'`) — the exact mechanism `deprecate-published-metadata`'s own migration guide documents for expressing a publication window. Deleted objects, or objects that become unpublished, SHALL have their content removed from Context Chat rather than left stale. The full normative behaviour is defined by the `context-chat-provider` change delta.
 
 #### Scenario: Object submission respects opt-in and publish state
 - **GIVEN** objects across opted-in and non-opted-in schemas, in both published and unpublished states
