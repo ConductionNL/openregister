@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
@@ -1971,11 +1972,14 @@ class FileService
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node        $node       The file node to anonymize.
-     * @param array       $entities   Array of detected entities with 'text' and 'key' fields.
-     * @param string      $scope      Placeholder-numbering scope: 'document' (default) or 'dossier'.
-     * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
-     *                                back to the file's parent folder.
+     * @param Node        $node              The file node to anonymize.
+     * @param array       $entities          Array of detected entities with 'text' and 'key' fields.
+     * @param string      $scope             Placeholder-numbering scope: 'document' (default) or 'dossier'.
+     * @param string|null $dossierKey        Stable folder id of the dossier (per-dossier scope); null falls
+     *                                       back to the file's parent folder.
+     * @param bool|null   $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
+     *                                       option — null/absent = auto (preserve iff the input is a
+     *                                       tagged PDF), true = attempt, false = skip but still measure.
      *
      * @throws Exception If anonymization fails.
      *
@@ -1987,13 +1991,15 @@ class FileService
         Node $node,
         array $entities,
         string $scope='document',
-        ?string $dossierKey=null
+        ?string $dossierKey=null,
+        ?bool $preserveStructure=null
     ): Node {
         return $this->documentProcessingHandler->anonymizeDocument(
             node: $node,
             entities: $entities,
             scope: $scope,
-            dossierKey: $dossierKey
+            dossierKey: $dossierKey,
+            preserveStructure: $preserveStructure
         );
     }//end anonymizeDocument()
 
@@ -2013,6 +2019,21 @@ class FileService
     {
         return $this->documentProcessingHandler->getLastResidualEntities();
     }//end getLastResidualEntities()
+
+    /**
+     * The `structurePreservation` result block from the most recent PDF
+     * redaction (best-effort accessibility-structure preservation).
+     *
+     * @return StructurePreservation|null The result block, or null when the
+     *                                    last redaction did not take the PDF
+     *                                    branch.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastStructurePreservation.
+     */
+    public function getLastStructurePreservation(): ?StructurePreservation
+    {
+        return $this->documentProcessingHandler->getLastStructurePreservation();
+    }//end getLastStructurePreservation()
 
     /**
      * Per-entity placeholder map from the most recent anonymizeDocument() call.
