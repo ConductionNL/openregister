@@ -3405,8 +3405,63 @@ class ImportHandler
                 $register->setDescription($description);
             }
 
+            // Reconcile schema references. Union the freshly-imported (app-owned)
+            // ids in, but first PRUNE any currently-listed id that is now
+            // SHADOWED by a newly-imported schema sharing the same slug. This
+            // self-heals a register that — before the cross-app slug-collision
+            // fix — had a FOREIGN app's same-slug schema bound into it (e.g.
+            // pipelinq's 'conversation' #701 living in hermiq's register). Once
+            // the app imports its OWN 'conversation', the foreign shadow is
+            // dropped from THIS app's register so a slug resolves unambiguously
+            // to the app's own schema.
             $currentSchemaIds = $register->getSchemas() ?? [];
-            $unionSchemaIds   = $currentSchemaIds;
+
+            // Map lower(slug) -> app-owned id for everything we just imported.
+            $newSlugToId = [];
+            foreach ($schemas as $schema) {
+                if ($schema instanceof Schema
+                    && $schema->getId() !== null
+                    && $schema->getSlug() !== null
+                ) {
+                    $newSlugToId[strtolower($schema->getSlug())] = (int) $schema->getId();
+                }
+            }
+
+            // Drop any currently-listed id whose slug matches a freshly-imported
+            // schema but whose id differs (the shadowed, foreign/stale one).
+            $prunedSchemaIds = [];
+            foreach ($currentSchemaIds as $currentId) {
+                $currentId = (int) $currentId;
+                $keep      = true;
+                try {
+                    $existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
+                    if ($existingSlug !== null) {
+                        $slugKey = strtolower($existingSlug);
+                        if (isset($newSlugToId[$slugKey]) === true && $newSlugToId[$slugKey] !== $currentId) {
+                            $keep = false;
+                            $this->logger->info(
+                                message: sprintf(
+                                    "[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+                                    $slug,
+                                    $currentId,
+                                    $existingSlug,
+                                    $newSlugToId[$slugKey]
+                                ),
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
+                        }
+                    }
+                } catch (\Throwable $ignore) {
+                    // Missing / undecodable schema id — keep it as-is; nothing to compare against.
+                }
+
+                if ($keep === true) {
+                    $prunedSchemaIds[] = $currentId;
+                }
+            }
+
+            // Union the freshly-imported app-owned ids into the pruned list.
+            $unionSchemaIds = $prunedSchemaIds;
             foreach ($newSchemaIds as $newId) {
                 if (in_array($newId, $unionSchemaIds, true) === false) {
                     $unionSchemaIds[] = $newId;
