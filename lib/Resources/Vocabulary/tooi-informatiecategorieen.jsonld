@@ -1,0 +1,255 @@
+{
+  "@context": {
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dct": "http://purl.org/dc/terms/",
+    "owl": "http://www.w3.org/2002/07/owl#"
+  },
+  "@graph": [
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/",
+      "@type": "skos:ConceptScheme",
+      "dct:title": "Woo-informatiecategorieën",
+      "dct:publisher": "Kennis- en Exploitatiecentrum Officiele Overheidspublicaties (KOOP)",
+      "owl:versionInfo": "1.0",
+      "dct:source": "https://identifier.overheid.nl/tooi/set/scw_woo_informatiecategorieen"
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_139c6280",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_139c6280",
+      "skos:prefLabel": [
+        {
+          "@value": "Wetten en algemeen verbindende voorschriften",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_aab6bfc7",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_aab6bfc7",
+      "skos:prefLabel": [
+        {
+          "@value": "Overige besluiten van algemene strekking",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_759721e2",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_759721e2",
+      "skos:prefLabel": [
+        {
+          "@value": "Ontwerpen van wet- en regelgeving met adviesaanvraag",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_40a05794",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_40a05794",
+      "skos:prefLabel": [
+        {
+          "@value": "Organisatie en werkwijze",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_89ee6784",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_89ee6784",
+      "skos:prefLabel": [
+        {
+          "@value": "Bereikbaarheidsgegevens",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_8c840238",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_8c840238",
+      "skos:prefLabel": [
+        {
+          "@value": "Bij vertegenwoordigende organen ingekomen stukken",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_c76862ab",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_c76862ab",
+      "skos:prefLabel": [
+        {
+          "@value": "Vergaderstukken Staten-Generaal",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_db4862c3",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_db4862c3",
+      "skos:prefLabel": [
+        {
+          "@value": "Vergaderstukken decentrale overheden",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_3a248e3a",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_3a248e3a",
+      "skos:prefLabel": [
+        {
+          "@value": "Agenda's en besluitenlijsten bestuurscolleges",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_99a836c7",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_99a836c7",
+      "skos:prefLabel": [
+        {
+          "@value": "Adviezen",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_8fc2335c",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_8fc2335c",
+      "skos:prefLabel": [
+        {
+          "@value": "Convenanten",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_c6cd1213",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_c6cd1213",
+      "skos:prefLabel": [
+        {
+          "@value": "Jaarplannen en jaarverslagen",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_cf268088",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_cf268088",
+      "skos:prefLabel": [
+        {
+          "@value": "Subsidieverplichtingen anders dan met beschikking",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_3baef532",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_3baef532",
+      "skos:prefLabel": [
+        {
+          "@value": "Woo-verzoeken en -besluiten",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_fdaee95e",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_fdaee95e",
+      "skos:prefLabel": [
+        {
+          "@value": "Onderzoeksrapporten",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_46a81018",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_46a81018",
+      "skos:prefLabel": [
+        {
+          "@value": "Beschikkingen",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_a870c43d",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/"
+      },
+      "skos:notation": "c_a870c43d",
+      "skos:prefLabel": [
+        {
+          "@value": "Klachtoordelen",
+          "@language": "nl"
+        }
+      ]
+    }
+  ]
+}

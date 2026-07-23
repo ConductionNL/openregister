@@ -81,6 +81,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</post-migration>
@@ -94,6 +95,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</install>

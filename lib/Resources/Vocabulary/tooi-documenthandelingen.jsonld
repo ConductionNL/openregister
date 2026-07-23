@@ -1,0 +1,59 @@
+{
+  "@context": {
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "dct": "http://purl.org/dc/terms/",
+    "owl": "http://www.w3.org/2002/07/owl#"
+  },
+  "@graph": [
+    {
+      "@id": "https://identifier.overheid.nl/tooi/set/scw_diwoo_documenthandelingen",
+      "@type": "skos:ConceptScheme",
+      "dct:title": "DiWoo Documenthandelingen",
+      "dct:publisher": "Kennis- en Exploitatiecentrum Officiele Overheidspublicaties (KOOP)",
+      "owl:versionInfo": "1.0",
+      "dct:source": "https://identifier.overheid.nl/tooi/set/scw_diwoo_documenthandelingen"
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_dfcee535",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/set/scw_diwoo_documenthandelingen"
+      },
+      "skos:notation": "c_dfcee535",
+      "skos:prefLabel": [
+        {
+          "@value": "ontvangst",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_641ecd76",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/set/scw_diwoo_documenthandelingen"
+      },
+      "skos:notation": "c_641ecd76",
+      "skos:prefLabel": [
+        {
+          "@value": "vaststelling",
+          "@language": "nl"
+        }
+      ]
+    },
+    {
+      "@id": "https://identifier.overheid.nl/tooi/def/thes/kern/c_e1ec050e",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://identifier.overheid.nl/tooi/set/scw_diwoo_documenthandelingen"
+      },
+      "skos:notation": "c_e1ec050e",
+      "skos:prefLabel": [
+        {
+          "@value": "ondertekening",
+          "@language": "nl"
+        }
+      ]
+    }
+  ]
+}

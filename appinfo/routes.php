@@ -629,6 +629,15 @@ return [
         // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
+        // Vocabulary (skos-concept-registers) — public read-only SKOS concept
+        // resolution over the bundled `vocabulary` register. Query-param based
+        // (uri/scheme values are full URIs, unsafe as path segments). 404
+        // standard error shape on unknown uri/scheme/notation (SKOS-004).
+        // @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+        ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
+        ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
+        ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
+
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
         // only filters + cursor-paginates the entries linked to an OR
