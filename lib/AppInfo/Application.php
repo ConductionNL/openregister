@@ -143,6 +143,7 @@ use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FlowActionListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
@@ -2448,6 +2449,15 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+
+        // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
+        // transition). Routed by EventCatalogListener so create/update/delete are
+        // not double-handled. Each event carries the object, so its schema's flows
+        // run — see EventCatalogService for the trigger ids.
+        $context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
 
         // System-entity notification bridge — routes create/update signals from
         // OpenRegister's own system entities through the same annotation-notification

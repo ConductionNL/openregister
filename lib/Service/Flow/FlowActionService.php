@@ -75,6 +75,7 @@ class FlowActionService
      * @param LoggerInterface        $logger                 Logs flow execution + failures.
      * @param IEventDispatcher       $eventDispatcher        Dispatches AgentRunRequestedEvent (ADR-041).
      * @param FederationShareService $federationShareService Creates federated shares (federate-share action).
+     * @param EventCatalogService    $eventCatalog           Resolves trigger aliases (catalog id ⇄ legacy).
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -83,7 +84,8 @@ class FlowActionService
         private readonly IConfig $config,
         private readonly LoggerInterface $logger,
         private readonly IEventDispatcher $eventDispatcher,
-        private readonly FederationShareService $federationShareService
+        private readonly FederationShareService $federationShareService,
+        private readonly EventCatalogService $eventCatalog
     ) {
     }//end __construct()
 
@@ -91,7 +93,9 @@ class FlowActionService
      * Run every flow on the object's schema whose trigger matches.
      *
      * @param ObjectEntity $object  The object the lifecycle event fired on.
-     * @param string       $trigger One of 'created' | 'updated' | 'deleted'.
+     * @param string       $trigger A catalog trigger id (e.g. 'object.created', 'object.transitioned')
+     *                              or a legacy alias ('created'|'updated'|'deleted'); the two forms are
+     *                              interchangeable via EventCatalogService::aliasesFor().
      *
      * @return void
      *
@@ -122,7 +126,7 @@ class FlowActionService
             }
 
             $flowTrigger = (string) ($flow['trigger'] ?? 'created');
-            if ($flowTrigger !== $trigger) {
+            if (in_array($flowTrigger, $this->eventCatalog->aliasesFor($trigger), true) === false) {
                 continue;
             }
 

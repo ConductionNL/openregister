@@ -477,6 +477,9 @@ return [
         // everyone. NC Flow operations are configured globally in the
         // Workflow Settings UI; this surface only records "operation X
         // is pinned to OR object Y" so the sidebar tab can show it.
+        // Visual flow builder — trigger event catalog (read-only, all users).
+        ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
+
         ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
