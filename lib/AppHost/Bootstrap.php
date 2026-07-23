@@ -55,7 +55,7 @@ use Psr\Container\ContainerInterface;
  * Declarative one-call bootstrap for AppHost leaf apps.
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-3.1
- * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+ * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
  */
 class Bootstrap
 {
@@ -113,7 +113,7 @@ class Bootstrap
      *
      * @return void
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: One-Call Bootstrap
      */
     public static function register(IRegistrationContext $context, string $appId, array $options=[]): void
     {

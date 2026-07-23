@@ -68,7 +68,7 @@ final class SystemOperationContext
      *
      * @return mixed Whatever the callable returns.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-14
+     * @spec openspec/specs/faceting-configuration/spec.md
      */
     public static function run(callable $operation)
     {

@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#messagecontext-json-column
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);

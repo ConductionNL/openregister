@@ -1146,10 +1146,12 @@ class SaveObjectDeepTest extends TestCase
 
     public function testSetSelfMetadataOrganisation(): void
     {
-        // SECURITY (wave-11 SB1): @self.organisation is only applied when the caller
-        // has verified membership in the requested organisation.  With the default mock
-        // setup (userSession→null user, groupManager→null, hasAccessToOrganisation→false)
-        // the organisation must NOT be stamped from client input.
+        // SECURITY (wave-11 SB1 / wave-12 Fix 3): @self.organisation is only applied
+        // when the caller is an admin or has verified membership in the requested
+        // organisation. With the default mock setup (userSession→null user,
+        // groupManager→null so callerIsAdmin() is false, hasAccessToOrganisation→false)
+        // BOTH arms of the gate are closed and the organisation must NOT be stamped
+        // from client input.
         $entity = $this->createObjectEntity(1, 'uuid-1');
         $this->invokePrivateMethod('setSelfMetadata', [$entity, ['organisation' => 'org-uuid'], []]);
         $this->assertNull($entity->getOrganisation());

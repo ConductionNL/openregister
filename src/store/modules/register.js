@@ -310,7 +310,7 @@ export const useRegisterStore = defineStore('register', {
 		 * @param {Function} onStatusChange - Callback for heartbeat status changes
 		 * @return {object} - Object with stop() method and status property
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-1
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		startImportHeartbeat(intervalMs = 15000, onStatusChange = null) {
 			let heartbeatCount = 0
@@ -360,7 +360,7 @@ export const useRegisterStore = defineStore('register', {
 
 			return {
 				/**
-				 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-1
+				 * @spec openspec/specs/frontend-store-client-state/spec.md
 				 */
 				stop() {
 					clearInterval(heartbeatInterval)

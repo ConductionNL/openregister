@@ -78,7 +78,7 @@ class GenericMetricsController extends Controller
      *
      * @return TextPlainResponse Prometheus text exposition 0.0.4.
      *
-     * @spec openspec/changes/apphost-observability-engine/specs/apphost-observability/spec.md — Requirement: Declarative Metrics Execution
+     * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Metrics Execution
      */
     #[NoCSRFRequired]
     public function index(): TextPlainResponse

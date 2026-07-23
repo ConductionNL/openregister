@@ -78,7 +78,7 @@
  * creates the object and connects the email to it). Lives in its own file
  * per ADR-004 modal-isolation.
  *
- * @spec openspec/changes/integration-email/tasks.md
+ * @spec openspec/specs/integration-email/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
@@ -124,7 +124,7 @@ export default {
 	},
 	computed: {
 		/**
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		schemaTitle() {
 			return this.schema?.title || t('openregister', 'object')
@@ -133,7 +133,7 @@ export default {
 		 * Build the editable field descriptors from the template keys, typed
 		 * against the schema's property definitions.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		fields() {
 			const props = this.schema?.properties || {}
@@ -152,7 +152,7 @@ export default {
 		/**
 		 * Reset the working copy whenever the dialog (re)opens for an email.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		show: {
 			immediate: true,
@@ -166,7 +166,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		humanize(key) {
 			return key
@@ -178,7 +178,7 @@ export default {
 		/**
 		 * Pick an input control for a property based on its schema type.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		controlFor(key, def) {
 			if (Array.isArray(def.enum) && def.enum.length) {
@@ -203,7 +203,7 @@ export default {
 		 * Return the edited values merged over the full template so fields
 		 * that were not surfaced still get their templated values.
 		 *
-		 * @spec openspec/changes/integration-email/tasks.md
+		 * @spec openspec/specs/integration-email/spec.md
 		 */
 		collect() {
 			return { ...this.initialData, ...this.form }

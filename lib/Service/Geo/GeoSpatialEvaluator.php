@@ -33,9 +33,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class GeoSpatialEvaluator
      *
      * @return bool True when the row passes the filter; null geometries always fail.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function matches(?array $rowGeometry, GeoFilter $filter): bool
     {
@@ -109,7 +109,7 @@ class GeoSpatialEvaluator
      *
      * @return float Distance in meters.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     public function haversineMeters(float $lon1, float $lat1, float $lon2, float $lat2): float
     {
@@ -132,7 +132,7 @@ class GeoSpatialEvaluator
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesBbox(array $geometry, array $bbox): bool
     {
@@ -158,7 +158,7 @@ class GeoSpatialEvaluator
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     private function matchesNear(array $geometry, array $payload): bool
     {
@@ -185,7 +185,7 @@ class GeoSpatialEvaluator
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesWithin(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -206,7 +206,7 @@ class GeoSpatialEvaluator
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesIntersects(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -250,7 +250,7 @@ class GeoSpatialEvaluator
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *   Same: each geometry type is one branch.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function extractRepresentativePoint(array $geometry): ?array
     {
@@ -309,7 +309,7 @@ class GeoSpatialEvaluator
      *
      * @return ?array `[lon, lat]` centroid, or null when the ring is empty.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function ringCentroid(array $ring): ?array
     {
@@ -350,7 +350,7 @@ class GeoSpatialEvaluator
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function pointInPolygonGeometry(array $point, array $geometry): bool
     {
@@ -375,7 +375,7 @@ class GeoSpatialEvaluator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Standard Bevis & Chatelain ray-casting algorithm; the branches are inherent to the geometry test.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function pointInRing(array $point, array $ring): bool
     {

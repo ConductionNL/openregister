@@ -118,8 +118,8 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Install Plumbing via Repair Steps
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Install Plumbing via Repair Steps
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -142,7 +142,7 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Install Plumbing via Repair Steps
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Install Plumbing via Repair Steps
      */
     private function importConfiguration(IOutput $output): void
     {
@@ -179,8 +179,8 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function registerCredentialConsumer(IOutput $output): void
     {
@@ -213,7 +213,7 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function registerBrokerAppKey(IOutput $output): void
     {
@@ -252,7 +252,7 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function registerDoriathApplication(): void
     {
@@ -265,7 +265,7 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return string|null The manifest description, or null.
      *
-     * @spec openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function manifestDescription(): ?string
     {
@@ -298,7 +298,7 @@ class GenericInitializeSettings implements IRepairStep
      *
      * @return bool True when the manifest declares a non-empty credentials array.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function manifestDeclaresCredentials(): bool
     {

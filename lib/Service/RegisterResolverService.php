@@ -33,7 +33,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+ * @spec openspec/specs/register-resolver-service/spec.md
  */
 
 declare(strict_types=1);
@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * Register / Schema entities, with request-scoped caching and
  * multi-tenant awareness.
  *
- * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+ * @spec openspec/specs/register-resolver-service/spec.md
  */
 final class RegisterResolverService
 {
@@ -125,7 +125,7 @@ final class RegisterResolverService
      *
      * @throws MissingConfigException If the config is unset and no default was provided.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolveRegisterId)
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) The organisationUuid parameter is reserved for
@@ -163,7 +163,7 @@ final class RegisterResolverService
      *
      * @throws MissingConfigException If the config is unset and no default was provided.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolveSchemaId)
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same parity rationale as resolveRegisterId.
@@ -204,7 +204,7 @@ final class RegisterResolverService
      *
      * @throws MissingConfigException If the config is unset and no default was provided.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolvePropertyId)
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) Same parity rationale as resolveRegisterId.
@@ -241,7 +241,7 @@ final class RegisterResolverService
      * @throws MissingConfigException    If config is unset and no default.
      * @throws RegisterNotFoundException If the value does not resolve in the caller tenant.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolveRegister)
      */
     public function resolveRegister(
@@ -302,7 +302,7 @@ final class RegisterResolverService
      * @throws MissingConfigException  If config is unset and no default.
      * @throws SchemaNotFoundException If the value does not resolve in the caller tenant.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolveSchema)
      */
     public function resolveSchema(
@@ -376,7 +376,7 @@ final class RegisterResolverService
      * @throws SchemaNotFoundException   If the schema id does not resolve.
      * @throws PropertyNotFoundException If the property id does not match any property on the schema.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolveProperty)
      */
     public function resolveProperty(
@@ -448,7 +448,7 @@ final class RegisterResolverService
      * @throws RegisterNotFoundException If the register cannot be resolved.
      * @throws SchemaNotFoundException   If the schema cannot be resolved.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: resolvePair)
      */
     public function resolvePair(
@@ -483,7 +483,7 @@ final class RegisterResolverService
      *
      * @return array<string, string> Map of config-key → raw configured value.
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: enumerateAppConfigs)
      */
     public function enumerateAppConfigs(string $appId): array
@@ -517,7 +517,7 @@ final class RegisterResolverService
      *
      * @return void
      *
-     * @spec openspec/changes/register-resolver-service/specs/register-resolver-service/spec.md
+     * @spec openspec/specs/register-resolver-service/spec.md
      *   (Requirement: service MUST cache resolved entities at the request scope — clear hook used
      *   by maybeFlushOnTenantSwitch + by test suites needing a fresh cache between cases.)
      */

@@ -31,7 +31,7 @@ namespace OCA\OpenRegister\Service\SchemaImport;
 /**
  * The mapped schema produced by a dialect importer.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 final class ImportedSchema
 {
@@ -65,7 +65,7 @@ final class ImportedSchema
      *
      * @return array<string, mixed> The schema array (title, description, properties, configuration).
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function toSchemaArray(array $baseConfiguration=[]): array
     {

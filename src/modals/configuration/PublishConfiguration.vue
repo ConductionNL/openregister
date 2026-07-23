@@ -207,7 +207,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		closeModal() {
 			if (!this.loading) {

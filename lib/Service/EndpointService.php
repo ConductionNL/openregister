@@ -106,7 +106,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-15
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function testEndpoint(Endpoint $endpoint, array $testData=[]): array
     {
@@ -176,7 +176,7 @@ class EndpointService
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-14
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function executeEndpoint(Endpoint $endpoint, array $request): array
     {
@@ -251,7 +251,7 @@ class EndpointService
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-suppress UnusedParam - False positive: both parameters are used within the method.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-16
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
     {
@@ -402,7 +402,7 @@ class EndpointService
      *
      * @return bool True if user can execute, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-17
+     * @spec openspec/specs/object-interactions/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
      */
@@ -451,7 +451,7 @@ class EndpointService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-18
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function logEndpointCall(Endpoint $endpoint, array $request, array $result): void
     {

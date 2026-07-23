@@ -137,14 +137,14 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#master-entities-show-quality-columns
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		masterEntities() {
 			return qualityStore.masterEntities
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#golden-record-detail-shows-attribute-provenance
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		goldenRecord() {
 			return qualityStore.goldenRecord
@@ -152,7 +152,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+	 * @spec openspec/specs/mdm-frontend/spec.md
 	 */
 	mounted() {
 		if (this.hasSelection) {
@@ -192,7 +192,7 @@ export default {
 		 * Select a master entity and open its golden-record detail panel.
 		 *
 		 * @param {object} entity Selected master-entity row.
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
+		 * @spec openspec/specs/mdm-frontend/spec.md#requirement-master-entity-list-with-golden-record-detail
 		 */
 		async selectEntity(entity) {
 			this.selectedObject = entity

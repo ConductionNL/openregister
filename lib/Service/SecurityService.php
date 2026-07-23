@@ -210,7 +210,7 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function checkLoginRateLimit(string $username, string $ipAddress): array
     {
@@ -298,7 +298,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordFailedLoginAttempt(string $username, string $ipAddress, string $reason='invalid_credentials'): void
     {
@@ -365,7 +365,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordSuccessfulLogin(string $username, string $ipAddress): void
     {
@@ -409,7 +409,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function clearIpRateLimits(string $ipAddress): void
     {
@@ -437,7 +437,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function clearUserRateLimits(string $username): void
     {
@@ -479,7 +479,7 @@ class SecurityService
      *
      * @return array{allowed: bool, lockout_until?: int, reason?: string} Result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function checkAuthRateLimit(string $identity, string $ipAddress): array
     {
@@ -513,7 +513,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordFailedAuthAttempt(string $identity, string $ipAddress, string $reason='inbound_auth_failed'): void
     {
@@ -573,7 +573,7 @@ class SecurityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function recordSuccessfulAuth(string $identity, string $ipAddress): void
     {
@@ -596,7 +596,7 @@ class SecurityService
      *
      * @return string The trusted client IP address
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function getTrustedClientIpAddress(IRequest $request): string
     {
@@ -634,7 +634,7 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+     * @spec openspec/specs/auth-system/spec.md#requirement-input-sanitization-must-prevent-xss-and-injection-attacks
      */
     public function sanitizeInput(mixed $input, int $maxLength=255): mixed
     {
@@ -680,7 +680,7 @@ class SecurityService
      *
      * @return array Validated and sanitized credentials or error information
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-4
+     * @spec openspec/specs/auth-system/spec.md#requirement-input-sanitization-must-prevent-xss-and-injection-attacks
      */
     public function validateLoginCredentials(array $credentials): array
     {
@@ -731,7 +731,7 @@ class SecurityService
      *
      * @return JSONResponse The response with added security headers
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function addSecurityHeaders(JSONResponse $response): JSONResponse
     {
@@ -756,7 +756,7 @@ class SecurityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-5
+     * @spec openspec/specs/auth-system/spec.md#requirement-cors-policy-must-be-enforced-per-consumer-and-prevent-csrf
      */
     public function getClientIpAddress(IRequest $request): string
     {

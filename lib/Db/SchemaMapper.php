@@ -1172,7 +1172,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
      */
     private function validateMcpAnnotation(Schema $schema): void

@@ -28,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
  */
 
 declare(strict_types=1);
@@ -68,7 +68,7 @@ class GeoJsonGeometryValidator
      *
      * @return bool
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     public function isGeoType(string $type): bool
     {
@@ -88,7 +88,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[] Validation errors (empty = valid).
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     public function validate(string $type, mixed $value): array
     {
@@ -129,7 +129,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validateAny(mixed $geometryType, array $value): array
     {
@@ -155,7 +155,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validatePoint(array $value): array
     {
@@ -179,7 +179,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validatePosition(array $position): array
     {
@@ -209,7 +209,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validateLineString(array $value): array
     {
@@ -243,7 +243,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validatePolygon(array $value): array
     {
@@ -267,7 +267,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validateMultiPolygon(array $value): array
     {
@@ -302,7 +302,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validateRings(array $rings, string $label): array
     {
@@ -343,7 +343,7 @@ class GeoJsonGeometryValidator
      *
      * @return string[]
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-001
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-001
      */
     private function validateBag(mixed $value): array
     {

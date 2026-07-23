@@ -30,7 +30,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return array A GeoJSON FeatureCollection.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function buildFeatureCollection(
         array $rows,
@@ -115,7 +115,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return ?array The Feature, or null when no geometry is present.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function buildFeature(
         array $row,
@@ -165,7 +165,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return array A WFS-compatible GeoJSON FeatureCollection.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function buildWfsResponse(array $rows, ?string $geoProperty=null, ?int $maxFeatures=null): array
     {
@@ -189,7 +189,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return array{0: ?string, 1: ?array} Tuple of [property key, geometry].
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function locateGeometry(array $row, ?string $geoProperty): array
     {
@@ -218,7 +218,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return array The Feature properties.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function shapeProperties(array $row, ?string $geomKey, ?array $fields): array
     {
@@ -246,7 +246,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return ?array The geometry when shape matches, null otherwise.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function coerceGeometry(mixed $value): ?array
     {
@@ -277,7 +277,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return ?float The geodesic area in square meters, or null.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     public function geodesicAreaM2(array $geometry): ?float
     {
@@ -319,7 +319,7 @@ class GeoFeatureCollectionBuilder
      *
      * @return float Signed area in square meters.
      *
-     * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-008
+     * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-008
      */
     private function ringArea(array $ring): float
     {

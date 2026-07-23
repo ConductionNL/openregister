@@ -50,7 +50,7 @@ interface CredentialStore
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function put(string $uuid, string $secret, string $scope='personal'): void;
 
@@ -62,7 +62,7 @@ interface CredentialStore
      *
      * @return string|null The raw secret, or null when absent. Never logged.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function get(string $uuid, string $scope='personal'): ?string;
 
@@ -74,7 +74,7 @@ interface CredentialStore
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-secret-storage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function delete(string $uuid, string $scope='personal'): void;
 }//end interface

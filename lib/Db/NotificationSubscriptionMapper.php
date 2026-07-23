@@ -24,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
+ * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
  *
  * @template-extends QBMapper<NotificationSubscription>
  *

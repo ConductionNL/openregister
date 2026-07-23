@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notification-engine-scheduled-conditions/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);

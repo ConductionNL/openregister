@@ -116,7 +116,7 @@ class AnalyticsProvider extends AbstractIntegrationProvider
      *
      * @return array List of registry leaf rows.
      *
-     * @spec openspec/changes/integration-analytics/tasks.md
+     * @spec openspec/specs/integration-analytics/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

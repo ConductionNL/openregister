@@ -97,7 +97,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with entities list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function index(): JSONResponse
     {
@@ -237,7 +237,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with entity details
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -312,7 +312,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with entity types
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function getTypes(): JSONResponse
     {
@@ -378,7 +378,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with entity categories
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function getCategories(): JSONResponse
     {
@@ -444,7 +444,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with entity statistics
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function getStats(): JSONResponse
     {
@@ -579,7 +579,7 @@ class GdprEntitiesController extends Controller
      *
      * @return JSONResponse JSON response with deletion result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-7
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function destroy(int $id): JSONResponse
     {

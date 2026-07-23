@@ -29,8 +29,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -213,7 +213,7 @@ class ChatStreamController extends Controller
      * one readable sequence; extracting sub-stages would split the exit-based control flow across
      * multiple methods and make the error-path analysis harder.
      *
-     * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
+     * @spec openspec/specs/chat-ai/spec.md
      */
     #[NoAdminRequired]
     public function stream(): Response
@@ -641,7 +641,7 @@ class ChatStreamController extends Controller
      *                          stream() entry point translates this into the
      *                          `forbidden` SSE error.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation
     {

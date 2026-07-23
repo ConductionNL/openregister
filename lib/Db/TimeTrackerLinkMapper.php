@@ -196,7 +196,7 @@ class TimeTrackerLinkMapper extends QBMapper
      *
      * @return TimeTrackerLink[]
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     public function findAll(?string $objectUuid=null): array
     {

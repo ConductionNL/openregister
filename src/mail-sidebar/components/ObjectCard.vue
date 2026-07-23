@@ -62,7 +62,7 @@ export default {
 		 * (e.g. `{"nl":"…"}`); unwrap it to the first locale value so the
 		 * card shows the human-readable name.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		objectTitle() {
 			const raw = this.object.objectTitle || this.object.objectUuid || ''
@@ -78,7 +78,7 @@ export default {
 			return raw
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		deepLink() {
 			const registerId = this.object.registerId || ''
@@ -87,7 +87,7 @@ export default {
 			return `/apps/openregister/registers/${registerId}/${schemaId}/${objectUuid}`
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		cardAriaLabel() {
 			const parts = [this.objectTitle]

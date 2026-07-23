@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ class ActionScheduleJob extends TimedJob
      * @param ActionExecutor  $actionExecutor Action executor
      * @param LoggerInterface $logger         Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -75,8 +75,8 @@ class ActionScheduleJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-6
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-5
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md
+     * @spec openspec/specs/actions/spec.md
      */
     protected function run($argument): void
     {

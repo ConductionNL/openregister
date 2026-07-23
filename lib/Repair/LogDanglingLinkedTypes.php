@@ -31,7 +31,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -74,7 +74,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function getName(): string
     {
@@ -88,7 +88,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -132,7 +132,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return array<int, mixed>|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function loadSchemas(): ?array
     {
@@ -162,7 +162,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return array<int, array{slug: string, id: string, danglingType: string}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function scan(array $schemas, array $registeredIds): array
     {
@@ -204,7 +204,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return array<int, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractLinkedTypes($schema): array
     {
@@ -283,7 +283,7 @@ class LogDanglingLinkedTypes implements IRepairStep
      *
      * @return string|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-2b-command-repair-middleware/tasks.md#task-3
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function safeStringAccessor($schema, array $accessors): ?string
     {

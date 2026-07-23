@@ -578,7 +578,7 @@ export default {
 		 * Check if this discovered configuration is already imported in the backend
 		 * Makes an API call to check by appId and stores the full config
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-2
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		async checkIfImported() {
 			if (!this.appId || this.checkingImportStatus) return

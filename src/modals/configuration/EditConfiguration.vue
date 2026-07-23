@@ -708,7 +708,7 @@ export default {
 	methods: {
 		/**
 		 * @param value
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-1
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		updateTitle(value) {
 			if (!configurationStore.configurationItem) {

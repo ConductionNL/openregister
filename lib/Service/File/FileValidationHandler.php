@@ -79,7 +79,7 @@ class FileValidationHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -192,7 +192,7 @@ class FileValidationHandler
      * @psalm-return   void
      * @phpstan-return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function detectExecutableMagicBytes(string $content, string $fileName): void
     {
@@ -269,7 +269,7 @@ class FileValidationHandler
      *
      * @throws NotPermittedException When the file is not readable by the current session.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function checkOwnership(Node $file): void
     {
@@ -301,7 +301,7 @@ class FileValidationHandler
      * @psalm-return   bool
      * @phpstan-return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-010
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function ownFile(Node $file): bool
     {

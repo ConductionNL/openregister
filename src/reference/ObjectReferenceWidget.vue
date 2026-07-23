@@ -71,37 +71,37 @@ export default {
 
 	computed: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		title() {
 			return this.richObject.title || t('openregister', 'Unknown Object')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		objectUrl() {
 			return this.richObject.url || '#'
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		iconUrl() {
 			return this.richObject.icon_url || ''
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		schemaTitle() {
 			return this.richObject.schema?.title || t('openregister', 'Unknown Schema')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		registerTitle() {
 			return this.richObject.register?.title || t('openregister', 'Unknown Register')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		properties() {
 			return this.richObject.properties || []
@@ -110,7 +110,7 @@ export default {
 			return this.richObject.updated || ''
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-6
+		 * @spec openspec/specs/mail-smart-picker/spec.md
 		 */
 		formattedDate() {
 			if (!this.updated) {

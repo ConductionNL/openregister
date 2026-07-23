@@ -22,7 +22,7 @@ import {
  * data that is frequently needed across the application.
  *
  * @return {Promise<void>}
- * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
 export async function initializeAppData() {
 	try {
@@ -53,7 +53,7 @@ export async function initializeAppData() {
  * This always fetches fresh data regardless of whether it's already loaded.
  *
  * @return {Promise<void>}
- * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
 export async function reloadAppData() {
 	try {
@@ -213,7 +213,7 @@ async function forceLoadSources() {
  * Check if all essential data is loaded.
  *
  * @return {boolean} True if all data is loaded
- * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-8
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
 export function isAppDataLoaded() {
 	return Boolean(

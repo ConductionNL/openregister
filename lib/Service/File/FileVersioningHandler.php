@@ -15,7 +15,7 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/content-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ class FileVersioningHandler
      * @param IUserSession    $userSession User session for current user context.
      * @param LoggerInterface $logger      Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function __construct(
         private readonly IRootFolder $rootFolder,
@@ -70,7 +70,7 @@ class FileVersioningHandler
      *
      * @return bool True if files_versions is enabled.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function isVersioningEnabled(): bool
     {
@@ -87,7 +87,7 @@ class FileVersioningHandler
      *
      * @return array{versions: array, warning?: string} Version listing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+     * @spec openspec/specs/content-versioning/spec.md
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -166,7 +166,7 @@ class FileVersioningHandler
      *
      * @throws Exception If versioning is not enabled or version not found.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+     * @spec openspec/specs/content-versioning/spec.md
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */
@@ -216,7 +216,7 @@ class FileVersioningHandler
      *
      * @return string The current user ID or 'system'.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-content-versioning/tasks.md#task-1
+     * @spec openspec/specs/content-versioning/spec.md
      */
     private function getCurrentUserId(): string
     {

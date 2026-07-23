@@ -98,7 +98,7 @@ export default {
 	 *
 	 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-deep-link-preselects-register-and-schema
 	 * @spec openspec/changes/mdm-views-route-scoping-e2e/specs/mdm-views-route-scoping/spec.md#scenario-route-query-takes-precedence-over-stored-selection
-	 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+	 * @spec openspec/specs/mdm-frontend/spec.md
 	 */
 	async mounted() {
 		await qualityStore.fetchRegisters()

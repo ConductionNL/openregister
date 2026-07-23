@@ -176,7 +176,7 @@ class ConfigurationController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array<'Failed to fetch configurations'|Configuration>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function index(): JSONResponse
     {
@@ -213,7 +213,7 @@ class ConfigurationController extends Controller
      *     array{error: 'Configuration not found'|'Failed to fetch configuration'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -250,7 +250,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with enriched configuration details
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function enrichDetails(): JSONResponse
     {
@@ -340,7 +340,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with created configuration
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function create(): JSONResponse
     {
@@ -413,7 +413,7 @@ class ConfigurationController extends Controller
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) Already refactored — NPath from try/catch + field mapping
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -515,7 +515,7 @@ class ConfigurationController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -562,7 +562,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with version comparison
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function versionStatus(int $id): JSONResponse
     {
@@ -619,7 +619,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with configuration preview
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function preview(int $id): JSONResponse
     {
@@ -929,7 +929,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with repositories list
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitHubRepositories(): JSONResponse
     {
@@ -989,7 +989,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with configuration files
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitHubConfigurations(): JSONResponse
     {
@@ -1104,7 +1104,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with configuration files
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-2
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitLabConfigurations(): JSONResponse
     {

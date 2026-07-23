@@ -105,7 +105,7 @@ class SchemaRevalidationService
      *
      * @throws SchemaRunConcurrencyException When an active run already exists.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function start(int $schemaId, int $registerId, ?array $proposedDefinition=null, ?string $startedBy=null): SchemaRun
     {
@@ -141,7 +141,7 @@ class SchemaRevalidationService
      *
      * @return bool True when more work remains.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function processBatch(SchemaRun $run, int $batchSize=self::DEFAULT_BATCH): bool
     {
@@ -307,7 +307,7 @@ class SchemaRevalidationService
      *
      * @return void
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function finish(SchemaRun $run, string $state): void
     {
@@ -325,7 +325,7 @@ class SchemaRevalidationService
      *
      * @throws SchemaRunConcurrencyException When an active run exists.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function assertNoActiveRun(int $schemaId): void
     {

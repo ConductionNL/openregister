@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Unit\Service\Object;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Service\Object\ContentSearchHandler;
 use OCA\OpenRegister\Service\Object\FacetHandler;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
@@ -56,6 +57,7 @@ class QueryHandlerLimitClampTest extends TestCase
             $this->createMock(SearchQueryHandler::class),
             $this->createMock(FacetHandler::class),
             $this->createMock(PerformanceOptimizationHandler::class),
+            $this->createMock(ContentSearchHandler::class),
             $this->createMock(IAppContainer::class),
             $this->createMock(LoggerInterface::class),
             $this->createMock(IRequest::class)

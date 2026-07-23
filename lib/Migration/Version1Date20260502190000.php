@@ -18,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/tasks.md "Read/unread tracking MUST be maintained per user per notification"
+ * @spec openspec/specs/notificatie-engine/spec.md "Read/unread tracking MUST be maintained per user per notification"
  */
 
 declare(strict_types=1);

@@ -50,7 +50,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -67,7 +67,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -98,7 +98,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeCreated(NodeCreatedEvent $_event): void
     {
@@ -117,7 +117,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeDeleted(NodeDeletedEvent $_event): void
     {
@@ -136,7 +136,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeTouched(NodeTouchedEvent $_event): void
     {
@@ -155,7 +155,7 @@ class AbstractNodeFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeWritten(NodeWrittenEvent $_event): void
     {

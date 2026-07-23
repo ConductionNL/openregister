@@ -127,7 +127,7 @@ class ApprovalChainMapper extends QBMapper
      *
      * @return ApprovalChain|null The matching chain, or null when none exists yet.
      *
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain
     {

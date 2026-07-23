@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-20
  */
 
@@ -148,7 +148,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function set(string $registerSlug, string $schemaSlug, string $name, array $filter, array $result): void
     {
@@ -212,7 +212,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function setAdhoc(string $registerSlug, string $schemaSlug, AggregationQuery $query, array $result): void
     {
@@ -263,7 +263,7 @@ class AggregationCache
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-1
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function evictForSchema(string $registerSlug, string $schemaSlug): void
     {

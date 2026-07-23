@@ -688,6 +688,75 @@ class Schema extends Entity implements JsonSerializable
     }//end getWriteOnlyProperties()
 
     /**
+     * The schema-level annotation declaring nested write-only dot-paths.
+     *
+     * `writeOnly: true` is a JSON Schema keyword and can therefore only be
+     * attached to a property the schema actually DECLARES. A secret nested
+     * inside an untyped `object` property (the canonical case: a Source's
+     * `configuration.authentication.client_secret`, a Rule's
+     * `configuration.authentication.keys`) has no declaration to hang it on —
+     * `configuration` is `type: object` with no `properties` — and marking the
+     * whole `configuration` object writeOnly breaks the editors that
+     * legitimately read the rest of it back. This annotation is the missing
+     * declaration surface: it names individual nested paths as write-only
+     * without touching their untyped parent.
+     *
+     * @var string
+     */
+    public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
+
+    /**
+     * Whether the schema declares any nested write-only dot-paths.
+     *
+     * Companion to hasWriteOnlyProperties(): that one answers "does a declared
+     * property carry `writeOnly: true`", this one answers "does the schema
+     * declare a nested path as write-only". The render path must strip when
+     * EITHER is true, so every gate checks both.
+     *
+     * @return bool True when at least one nested write-only path is declared.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    public function hasWriteOnlyPaths(): bool
+    {
+        return empty($this->getWriteOnlyPaths()) === false;
+    }//end hasWriteOnlyPaths()
+
+    /**
+     * Get the nested write-only dot-paths declared by this schema.
+     *
+     * Paths are dot-separated and rooted at a declared top-level property,
+     * e.g. `configuration.authentication.client_secret`. A path denotes the
+     * value at that location AND everything beneath it, so declaring
+     * `configuration.authentication` strips the whole sub-tree.
+     *
+     * @return array<int, string> Declared write-only dot-paths (possibly empty).
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    public function getWriteOnlyPaths(): array
+    {
+        $configuration = $this->configuration;
+        if (is_array($configuration) === false) {
+            return [];
+        }
+
+        $paths = ($configuration[self::WRITEONLY_PATHS_ANNOTATION] ?? null);
+        if (is_array($paths) === false) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($paths as $path) {
+            if (is_string($path) === true && $path !== '') {
+                $result[] = $path;
+            }
+        }
+
+        return $result;
+    }//end getWriteOnlyPaths()
+
+    /**
      * Check if any property in the schema is declared encrypted at rest.
      *
      * A property carrying `x-openregister-encrypted: true` (the OpenRegister
@@ -699,7 +768,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return bool True if at least one property has x-openregister-encrypted === true
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function hasEncryptedProperties(): bool
     {
@@ -723,7 +792,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return array<int, string> List of encrypted property names
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function getEncryptedProperties(): array
     {
@@ -1848,12 +1917,105 @@ class Schema extends Entity implements JsonSerializable
                     validatedConfig: $validatedConfig
                 );
             } catch (\InvalidArgumentException $e) {
+                // The write-only path annotation is exempt from per-key
+                // isolation and MUST fail the whole save.
+                //
+                // For every other key, "drop the offending key and keep the
+                // rest" is a safe degradation: the corresponding feature
+                // simply does not fire. For THIS key the failure mode is
+                // inverted — dropping it means the schema saves successfully
+                // with its nested secrets NO LONGER PROTECTED. A typo'd path
+                // (`configuratio.authentication.keys`) would persist a schema
+                // that looks annotated to a reviewer, passes save, and serves
+                // the secret in cleartext on the next read. That is precisely
+                // the phantom-annotation class this repo has been bitten by,
+                // except fail-OPEN instead of merely inert. A security control
+                // must fail closed and loudly: re-throw so a direct API save
+                // 400s and an app import aborts rather than silently shipping
+                // an unprotected schema.
+                if ((string) $key === self::WRITEONLY_PATHS_ANNOTATION) {
+                    throw $e;
+                }
+
                 $this->droppedKeys[] = (string) $key;
-            }
+            }//end try
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
+
+    /**
+     * Validate the `x-openregister-writeonly-paths` annotation value.
+     *
+     * Accepts a list of dot-separated paths rooted at a declared top-level
+     * property. Everything here throws rather than warns, because the caller
+     * re-throws for this key (see validateConfigurationArray): a declaration
+     * that does not parse must never persist as an unenforced no-op.
+     *
+     * Rejects, in order: a non-list value; a non-string / empty entry; a path
+     * with an empty segment (`a..b`, leading/trailing dot); and a path whose
+     * ROOT segment is not a property this schema declares — the last one is
+     * what turns a real-world typo into a 400 instead of a silent leak.
+     *
+     * A path is NOT required to resolve beyond its root, and deliberately so:
+     * the whole point is to name keys inside an untyped `object` property that
+     * the schema cannot describe, so there is nothing to validate them against.
+     *
+     * @param mixed $value The raw annotation value.
+     *
+     * @throws \InvalidArgumentException If the declaration is malformed.
+     *
+     * @return array<int, string> The validated list of paths.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    private function validateWriteOnlyPathsValue(mixed $value): array
+    {
+        if (is_array($value) === false || array_is_list($value) === false) {
+            throw new \InvalidArgumentException(
+                self::WRITEONLY_PATHS_ANNOTATION.' must be a list of dot-separated path strings'
+            );
+        }
+
+        $declared = [];
+        if (is_array($this->properties) === true) {
+            $declared = array_map('strval', array_keys($this->properties));
+        }
+
+        $validated = [];
+        foreach ($value as $path) {
+            if (is_string($path) === false || trim($path) === '') {
+                throw new \InvalidArgumentException(
+                    self::WRITEONLY_PATHS_ANNOTATION.' entries must be non-empty strings'
+                );
+            }
+
+            $segments = explode('.', $path);
+            foreach ($segments as $segment) {
+                if (trim($segment) === '') {
+                    throw new \InvalidArgumentException(
+                        self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" has an empty segment'
+                    );
+                }
+            }
+
+            // Root-segment existence check. Skipped when the schema declares no
+            // properties at all — an entity built in isolation (unit tests,
+            // partial hydration) has nothing to check against, and failing there
+            // would reject valid declarations for the wrong reason.
+            $rootIsDeclared = (empty($declared) === true || in_array($segments[0], $declared, true) === true);
+            if ($rootIsDeclared === false) {
+                throw new \InvalidArgumentException(
+                    self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" is rooted at "'.$segments[0]
+                    .'", which is not a declared property of this schema'
+                );
+            }
+
+            $validated[] = $path;
+        }//end foreach
+
+        return array_values(array_unique($validated));
+    }//end validateWriteOnlyPathsValue()
 
     /**
      * Validate and apply a single configuration entry.
@@ -1912,6 +2074,11 @@ class Schema extends Entity implements JsonSerializable
         if ($key === 'mailObjectTemplate') {
             $this->validateMailObjectTemplateValue(value: $value);
             $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
+            $validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
             return;
         }
 
@@ -2116,6 +2283,11 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-handoff',
         'x-openregister-mcp',
         'x-openregister-approval-chains',
+        // Nested write-only dot-paths. Unlike every other entry in this list
+        // this key is NOT a plain pass-through: validateConfigurationEntry has
+        // a dedicated branch above that validates its shape, and
+        // validateConfigurationArray re-throws instead of dropping it.
+        self::WRITEONLY_PATHS_ANNOTATION,
     ];
 
     /**
@@ -2143,7 +2315,7 @@ class Schema extends Entity implements JsonSerializable
      * @return void
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -2230,7 +2402,7 @@ class Schema extends Entity implements JsonSerializable
      *
      * @return array<int, string>
      *
-     * @spec openspec/changes/cleanup-linked-entity-type-map/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
      */
     private static function legacyLinkedTypeIds(): array
     {

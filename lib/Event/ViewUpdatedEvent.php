@@ -54,7 +54,7 @@ class ViewUpdatedEvent extends Event
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-4
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(View $newView, View $oldView)
     {

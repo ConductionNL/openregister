@@ -81,7 +81,7 @@ export default {
 		 * Load the signed-in user's personal API tokens. Errors during initial load
 		 * are swallowed because a new user legitimately has no tokens yet.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-5
+		 * @spec openspec/specs/account-self-service/spec.md
 		 * @return {Promise<void>}
 		 */
 		async loadTokens() {

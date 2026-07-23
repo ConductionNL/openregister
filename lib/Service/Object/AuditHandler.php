@@ -20,8 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ class AuditHandler
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
      * @param LoggerInterface  $logger           PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -74,8 +74,8 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/audit-trail-immutable/spec.md
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
@@ -129,7 +129,7 @@ class AuditHandler
      *
      * @return array Prepared filters for audit trail query.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     private function prepareFilters(string $uuid, array $filters): array
     {
@@ -167,7 +167,7 @@ class AuditHandler
      *
      * @return string Schema ID
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     private function extractSchemaId(mixed $schema): string
     {
@@ -189,7 +189,7 @@ class AuditHandler
      *
      * @return null|string Schema slug
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     private function extractSchemaSlug(mixed $schema): string|null
     {

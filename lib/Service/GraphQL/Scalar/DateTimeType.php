@@ -57,7 +57,7 @@ class DateTimeType extends ScalarType
      *
      * @throws Error If the value cannot be serialized
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function serialize(mixed $value): string
     {
@@ -84,7 +84,7 @@ class DateTimeType extends ScalarType
      *
      * @throws Error If the value is not a valid ISO 8601 date-time
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseValue(mixed $value): string
     {
@@ -123,7 +123,7 @@ class DateTimeType extends ScalarType
      *
      * @throws Error If the node is not a string
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): string
     {

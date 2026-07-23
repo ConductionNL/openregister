@@ -34,7 +34,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-time-tracker/tasks.md
+ * @spec openspec/specs/integration-time-tracker/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class TimeProvider extends AbstractIntegrationProvider
      *
      * @return string
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     private function backendAppId(): string
     {
@@ -173,7 +173,7 @@ class TimeProvider extends AbstractIntegrationProvider
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $register, $schema and $filters are required by the
      * IntegrationProvider interface contract; this implementation routes by $objectId only.
      *
-     * @spec openspec/changes/integration-time-tracker/tasks.md
+     * @spec openspec/specs/integration-time-tracker/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

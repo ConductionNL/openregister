@@ -41,7 +41,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+ * @spec openspec/specs/integration-maps-overview/spec.md
  */
 
 declare(strict_types=1);
@@ -121,7 +121,7 @@ class MapsOverviewService
      *
      * @throws InvalidArgumentException When no user is logged in.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     public function ensureCanRegister(): void
     {
@@ -156,7 +156,7 @@ class MapsOverviewService
      *
      * @throws InvalidArgumentException On empty key / register / schema.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     public function registerOverview(
         string $overviewKey,
@@ -220,7 +220,7 @@ class MapsOverviewService
      *
      * @throws InvalidArgumentException On empty register / schema.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     public function ensureReadablePoints(
         string | int $register,
@@ -258,7 +258,7 @@ class MapsOverviewService
      *
      * @throws InvalidArgumentException On empty register / schema.
      *
-     * @spec openspec/changes/integration-maps-overview-page-surface/specs/integration-maps-overview/spec.md
+     * @spec openspec/specs/integration-maps-overview/spec.md
      */
     public function queryPoints(
         string | int $register,

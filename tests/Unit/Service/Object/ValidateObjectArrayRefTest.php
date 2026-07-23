@@ -191,4 +191,35 @@ class ValidateObjectArrayRefTest extends TestCase
 
         $this->assertTrue($result->isValid(), 'nested array-of-objects must keep its object items');
     }//end testNestedArrayOfObjectsStillValidates()
+
+    /**
+     * Regression: when a property's `items` decodes as an associative ARRAY rather
+     * than a stdClass (as `Schema::getSchemaObject()` produces for some sources —
+     * e.g. hermiq `Skill.installedOn.items {"$ref":"Agent"}`), the array-items
+     * $ref-strip must still run. Before the fix the `is_object($items)` guard
+     * skipped it, leaving the bare `$ref` for Opis and raising
+     * "Unresolved reference: schema:///Agent#" (HTTP 500) on every install.
+     *
+     * @return void
+     */
+    public function testArrayItemsAsAssociativeArrayStillStripsRef(): void
+    {
+        // Build the schema with `items` as a PHP array (NOT a stdClass), the shape
+        // that triggered the bug — json_decode() would otherwise yield an object.
+        $schemaObject             = new stdClass();
+        $schemaObject->type       = 'object';
+        $property                 = new stdClass();
+        $property->type           = 'array';
+        $property->items          = ['$ref' => 'Agent', 'type' => 'string', 'format' => 'uuid'];
+        $schemaObject->properties = (object) ['installedOn' => $property];
+
+        $object = ['installedOn' => ['00000000-0000-0000-0000-000000000000']];
+
+        $result = $this->handler->validateObject($object, $this->schema('agentskill'), $schemaObject);
+
+        $this->assertTrue(
+            $result->isValid(),
+            'array items given as an associative array must still have their $ref stripped'
+        );
+    }//end testArrayItemsAsAssociativeArrayStillStripsRef()
 }//end class

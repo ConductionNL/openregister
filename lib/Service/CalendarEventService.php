@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+ * @spec openspec/specs/event-driven-architecture/spec.md#requirement-webhookeventlistener-must-extract-structured-payloads-from-all-event-types
  */
 
 declare(strict_types=1);
@@ -134,7 +134,7 @@ class CalendarEventService
      *
      * @throws Exception If no user is logged in or no calendar found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getEventsForObject(string $objectUuid): array
     {
@@ -337,7 +337,7 @@ class CalendarEventService
      *
      * @throws Exception If no user or calendar found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function createEvent(
         int $registerId,
@@ -420,7 +420,7 @@ class CalendarEventService
      *
      * @throws Exception If the event is not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function linkEvent(
         int $calendarId,
@@ -461,7 +461,7 @@ class CalendarEventService
      *
      * @throws Exception If the event is not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function unlinkEvent(string $calendarId, string $eventUri): void
     {
@@ -503,7 +503,7 @@ class CalendarEventService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function unlinkEventsForObject(string $objectUuid): void
     {
@@ -754,7 +754,7 @@ class CalendarEventService
      *
      * @return array{objectUuid: string|null, registerId: int|null, schemaId: int|null}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-25
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-webhookeventlistener-must-extract-structured-payloads-from-all-event-types
      */
     private function extractOpenRegisterProperties(mixed $vevent): array
     {

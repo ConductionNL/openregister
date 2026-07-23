@@ -58,7 +58,7 @@ class JsonType extends ScalarType
      *
      * @return mixed The serialized value
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-misc-annotate/tasks.md#task-2
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function serialize(mixed $value): mixed
     {
@@ -73,7 +73,7 @@ class JsonType extends ScalarType
      *
      * @return mixed The parsed value
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseValue(mixed $value): mixed
     {
@@ -89,7 +89,7 @@ class JsonType extends ScalarType
      *
      * @return mixed The parsed value
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): mixed
     {

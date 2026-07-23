@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+ * @spec openspec/specs/schema-migration/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @SuppressWarnings(PHPMD.UnusedFormalParameter)
  *
- * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+ * @spec openspec/specs/schema-migration/spec.md
  */
 class Version1Date20260614120000 extends SimpleMigrationStep
 {
@@ -59,7 +59,7 @@ class Version1Date20260614120000 extends SimpleMigrationStep
      *
      * @return ISchemaWrapper|null
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

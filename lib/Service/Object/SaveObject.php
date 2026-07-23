@@ -292,7 +292,7 @@ class SaveObject
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -3692,6 +3692,16 @@ class SaveObject
         // "skip validation when reference unchanged" check honest.
         $oldData = $existingObject->getObject();
 
+        // Detect which declared write-only locations this payload OMITS, so the stored
+        // values can be carried forward below instead of being nulled (openregister#463).
+        // This runs on the RAW $data on purpose: prepareObjectData's setDefaultValues()
+        // applies a property's `default` when the key is absent, which would materialize
+        // an omitted key and hide the omission from this check.
+        $omittedWriteOnly = $this->propertyRbacHandler->collectOmittedWriteOnlyPaths(
+            schema: $schema,
+            incoming: $data
+        );
+
         // Prepare the data.
         $preparedData = $this->prepareObjectData(objectEntity: $existingObject, schema: $schema, data: $data);
 
@@ -3703,6 +3713,35 @@ class SaveObject
             register: $existingObject->getRegister(),
             oldData: $oldData
         );
+
+        // Carry omitted write-only values forward from the stored object (openregister#463).
+        // The read boundary strips writeOnly from every response, so a client doing the
+        // natural GET/edit/PUT round-trip re-sends a body without the secret it was never
+        // shown; the PUT-semantic null-fill immediately below would then destroy it. This
+        // is the save-side half of the writeOnly contract, symmetric with the read-side
+        // strip in PropertyRbacHandler::stripWriteOnlyProperties().
+        //
+        // Ordering is load-bearing in both directions. It must run AFTER prepareObjectData
+        // because that is where FieldEncryptionHandler::encryptProperties() runs: $oldData
+        // holds the stored value, which for an encrypted property is ciphertext, and
+        // restoring it any earlier would double-encrypt it. It must run BEFORE the null-fill
+        // because that fill materializes every absent property as null, after which an
+        // omitted secret is indistinguishable from one the client explicitly cleared.
+        //
+        // $oldData is the raw ObjectEntity::getObject() snapshot taken above — never a
+        // rendered read, which by construction would already have the secret stripped.
+        //
+        // Short-circuited on the common case exactly as the read path is (RenderObject
+        // gates its strip on schemaHasWriteOnlyRule()): the overwhelming majority of
+        // schemas declare no write-only location, and for those this whole rule must be
+        // provably inert rather than merely harmless.
+        if (empty($omittedWriteOnly) === false) {
+            $preparedData = $this->propertyRbacHandler->restoreWriteOnlyValues(
+                prepared: $preparedData,
+                stored: $oldData,
+                omittedPaths: $omittedWriteOnly
+            );
+        }
 
         // PUT semantics: fill missing schema properties with null to ensure complete replacement.
         // For magic-mapped objects, the MagicMapper generates SET clauses only for properties
@@ -3778,20 +3817,24 @@ class SaveObject
         // - For background / system contexts (no IUserSession user) applyOwnerAttribution
         // only fills in owner when it is empty, so a client-supplied value would
         // persist — that is the actual attack vector closed by this change.
-        // SECURITY (wave-11 SB1): organisation must only be accepted from @self when the
-        // caller is an admin or has verified membership in that organisation.
+        // SECURITY (wave-11 SB1 / wave-12 Fix 3): organisation must only be accepted from
+        // @self when the caller is an admin or has verified membership in that organisation.
         // Blindly applying a client-supplied organisation UUID allows any authenticated
         // user to plant data inside another tenant's view (cross-tenant data injection).
+        //
+        // Wave-12 closed SB1 with an admin-ONLY gate; this lineage later widened the
+        // allow-list to admins OR verified members of the requested organisation. That
+        // widening does not reopen SB1: hasAccessToOrganisation() verifies the caller
+        // actually belongs to the target organisation, so a caller can still never plant
+        // data in a tenant they are not a member of — which is the vector SB1 describes.
+        // The admin arm delegates to wave-12's callerIsAdmin() helper, which is the same
+        // session-user + IGroupManager check this lineage had inlined, additionally
+        // hardened against IGroupManager throwing.
         if (array_key_exists('organisation', $selfData) === true
             && empty($selfData['organisation']) === false
         ) {
-            $sessionUser = $this->userSession->getUser();
-            $isAdmin     = $sessionUser !== null
-                && $this->groupManager !== null
-                && $this->groupManager->isAdmin($sessionUser->getUID()) === true;
-
             // Only allow admin, or callers who actually belong to the requested organisation.
-            if ($isAdmin === true
+            if ($this->callerIsAdmin() === true
                 || $this->organisationService->hasAccessToOrganisation($selfData['organisation']) === true
             ) {
                 $objectEntity->setOrganisation($selfData['organisation']);
@@ -3862,6 +3905,31 @@ class SaveObject
         // Therefore: strip @self.tmlo entirely here; let populateTmloDefaults() own it.
         // (No setTmlo() call — the field is intentionally omitted).
     }//end setSelfMetadata()
+
+    /**
+     * Resolve whether the current session user is in the admin group.
+     *
+     * Used as the gate for accepting `@self.organisation` overrides on write
+     * (Wave-12 Fix 3). Returns false when:
+     *  - no session user (anonymous / background);
+     *  - no IGroupManager was injected (legacy DI in tests);
+     *  - IGroupManager raises an exception.
+     *
+     * @return bool True when the current caller is an admin.
+     */
+    private function callerIsAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null || $this->groupManager === null) {
+            return false;
+        }
+
+        try {
+            return $this->groupManager->isAdmin($user->getUID());
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end callerIsAdmin()
 
     /**
      * Populate TMLO defaults on a new object if the register has TMLO enabled.

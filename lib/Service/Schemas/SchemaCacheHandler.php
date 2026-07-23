@@ -199,7 +199,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSchema(int $schemaId): ?Schema
     {
@@ -254,7 +254,7 @@ class SchemaCacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearSchemaCache(int $schemaId): void
     {
@@ -296,7 +296,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchema(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -324,7 +324,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -347,7 +347,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchemaProperties(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -373,7 +373,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidate(int $schemaId): void
     {
@@ -402,7 +402,7 @@ class SchemaCacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -466,7 +466,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearAllCaches(): void
     {
@@ -507,7 +507,7 @@ class SchemaCacheHandler
      *
      * @psalm-return int<min, max>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cleanExpiredEntries(): int
     {
@@ -544,7 +544,7 @@ class SchemaCacheHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-11
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getCacheStatistics(): array
     {

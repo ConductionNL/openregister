@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -41,7 +41,7 @@ namespace OCA\OpenRegister\Service\File;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 final class SanitizationResult
 {
@@ -51,7 +51,7 @@ final class SanitizationResult
      * @param string             $path   Absolute path to the sanitised temp file.
      * @param SanitizationReport $report Per-category sanitisation counts.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(
         public readonly string $path,

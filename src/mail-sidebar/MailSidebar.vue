@@ -69,8 +69,8 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-49
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
@@ -100,7 +100,7 @@ export default {
 		AccountMultiple,
 	},
 	/**
-	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
@@ -121,13 +121,13 @@ export default {
 	},
 	computed: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		sidebarTitle() {
 			return t('openregister', 'Connections')
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-4
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		sidebarSubname() {
 			return ''
@@ -152,7 +152,7 @@ export default {
 		},
 	},
 	/**
-	 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+	 * @spec openspec/specs/mail-sidebar/spec.md
 	 */
 	created() {
 		const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY)
@@ -163,7 +163,7 @@ export default {
 	methods: {
 		t,
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		toggleCollapsed() {
 			this.collapsed = !this.collapsed
@@ -171,7 +171,7 @@ export default {
 		},
 		/**
 		 * @param tabId
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-1
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		switchTab(tabId) {
 			this.activeTab = tabId
@@ -195,7 +195,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-49
+		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
 		 */
 		onLinked() {
 			if (this.$refs.objectsTab) {

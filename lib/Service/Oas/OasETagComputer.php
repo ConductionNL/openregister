@@ -25,7 +25,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md "Performance Impact of Validation / ETag caching"
+ * @spec openspec/specs/oas-validation/spec.md "Performance Impact of Validation / ETag caching"
  */
 
 declare(strict_types=1);

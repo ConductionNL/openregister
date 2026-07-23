@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class TablesTableDeletedListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function handle(Event $event): void
     {
@@ -98,7 +98,7 @@ class TablesTableDeletedListener implements IEventListener
      *
      * @return int|null The table id, or null when unresolvable.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function tableIdFromEvent(object $event): ?int
     {

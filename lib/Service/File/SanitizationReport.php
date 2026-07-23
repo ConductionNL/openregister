@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -46,7 +46,7 @@ use JsonSerializable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 final class SanitizationReport implements JsonSerializable
 {
@@ -65,7 +65,7 @@ final class SanitizationReport implements JsonSerializable
      *
      * @SuppressWarnings(PHPMD.LongVariable) Property names are the stable audit-report JSON keys (design D9).
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(
         public readonly int $commentsRemoved=0,
@@ -85,7 +85,7 @@ final class SanitizationReport implements JsonSerializable
      *
      * @return array<string, int|string>
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function jsonSerialize(): array
     {

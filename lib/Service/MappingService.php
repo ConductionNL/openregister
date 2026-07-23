@@ -228,7 +228,7 @@ class MappingService
      *
      * @throws Exception When mapping fails
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-3
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {

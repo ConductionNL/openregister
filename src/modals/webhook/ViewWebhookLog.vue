@@ -185,7 +185,7 @@ export default {
 		 * Load log data from navigation store transferData.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-2
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		loadLogData() {
 			const transferData = navigationStore.getTransferData()

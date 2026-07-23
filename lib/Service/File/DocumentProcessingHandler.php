@@ -178,7 +178,7 @@ class DocumentProcessingHandler
      * @return SanitizationReport|null The report, or null when the last
      *                                 anonymisation did not sanitise an Office document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function getLastSanitizationReport(): ?SanitizationReport
     {
@@ -257,7 +257,7 @@ class DocumentProcessingHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed vs lenient validation per the entity-anonymisation contract.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function replaceWords(Node $node, array $replacements, ?string $outputName=null, bool $strict=false): File
     {
@@ -313,7 +313,7 @@ class DocumentProcessingHandler
      *
      * @return File The anonymized document file.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function anonymizeDocument(
         Node $node,
@@ -689,7 +689,7 @@ class DocumentProcessingHandler
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function persistAnonymisationLog(Node $node, int $fileId, array $replacements): void
     {
@@ -772,7 +772,7 @@ class DocumentProcessingHandler
      *
      * @return File The anonymised document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function anonymizeSanitizableDocument(File $node, array $replacements, string $outputName): File
     {
@@ -838,7 +838,7 @@ class DocumentProcessingHandler
      *
      * @return File The anonymised document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function replaceWordsInOfficeContainer(
         File $node,
@@ -1222,7 +1222,7 @@ class DocumentProcessingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each guard maps a distinct SAPP failure mode to a typed reason.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Same — sequential fail-closed guards, not nested branching.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     private function replaceWordsInPdfDocument(
         File $node,

@@ -51,7 +51,7 @@ use OCP\IRequest;
  * @psalm-suppress UnusedClass
  *
  * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-1.1
- * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+ * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
  */
 class GenericDashboardController extends Controller
 {
@@ -73,7 +73,7 @@ class GenericDashboardController extends Controller
      *
      * @return TemplateResponse The rendered template for the calling app.
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -87,7 +87,7 @@ class GenericDashboardController extends Controller
      *
      * @return TemplateResponse The rendered template for the calling app.
      *
-     * @spec openspec/changes/apphost-boilerplate-controllers/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
+     * @spec openspec/specs/apphost-boilerplate/spec.md — Requirement: Canonical Route Table
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

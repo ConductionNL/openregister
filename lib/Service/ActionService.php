@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -86,7 +86,7 @@ class ActionService
      *
      * @throws InvalidArgumentException If required fields are missing
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function createAction(array $data): Action
     {
@@ -151,7 +151,7 @@ class ActionService
      *
      * @return Action The updated action
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function updateAction(int $id, array $data): Action
     {
@@ -179,7 +179,7 @@ class ActionService
      *
      * @return Action The deleted action
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function deleteAction(int $id): Action
     {
@@ -213,7 +213,7 @@ class ActionService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -285,7 +285,7 @@ class ActionService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
+     * @spec openspec/specs/actions/spec.md
      */
     public function migrateFromHooks(int $schemaId): array
     {
@@ -366,7 +366,7 @@ class ActionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function updateStatistics(int $actionId, string $status): void
     {

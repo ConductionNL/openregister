@@ -220,7 +220,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with settings data
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function index(): JSONResponse
     {
@@ -239,7 +239,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function update(): JSONResponse
     {
@@ -259,7 +259,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with loaded settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function load(): JSONResponse
     {
@@ -281,7 +281,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with rebase result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function rebase(): JSONResponse
     {
@@ -303,7 +303,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with statistics
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function stats(): JSONResponse
     {
@@ -325,7 +325,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with statistics
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-2
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getStatistics(): JSONResponse
     {
@@ -343,7 +343,7 @@ class SettingsController extends Controller
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSearchBackend(): JSONResponse
     {
@@ -364,7 +364,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated backend config
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-15
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function updateSearchBackend(): JSONResponse
     {
@@ -410,7 +410,7 @@ class SettingsController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getDatabaseInfo(): JSONResponse
     {
@@ -587,7 +587,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with refreshed database info
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-3
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function refreshDatabaseInfo(): JSONResponse
     {
@@ -731,7 +731,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with version info
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-4
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getVersionInfo(): JSONResponse
     {
@@ -893,8 +893,18 @@ class SettingsController extends Controller
                 ->where($qb->expr()->like('o.name', $qb->createNamedParameter('%Samenwerking%')))
                 ->orWhere($qb->expr()->like('o.name', $qb->createNamedParameter('%Community%')));
 
+            // NC's IResult does not expose Doctrine's fetchAllAssociative() on
+            // every supported server (absent on NC 32) — iterate fetch() instead
+            // (see RegisterMapper::getAllRegisterIdsWithSchema / MarkerLookupTrait).
             $stmt = $qb->executeQuery();
-            $rows = $stmt->fetchAllAssociative();
+            $rows = [];
+            $row  = $stmt->fetch();
+            while ($row !== false) {
+                $rows[] = $row;
+                $row    = $stmt->fetch();
+            }
+
+            $stmt->closeCursor();
 
             $results['direct_database_query'] = [
                 'count'         => count($rows),
@@ -943,7 +953,7 @@ class SettingsController extends Controller
      *     limit?: int, filters?: array, timestamp?: string},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function semanticSearch(string $query, int $limit=10, array $filters=[], ?string $provider=null): JSONResponse
     {
@@ -996,7 +1006,7 @@ class SettingsController extends Controller
      *
      * @return JSONResponse JSON response with hybrid search results
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-20
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function hybridSearch(
         string $query,

@@ -17,8 +17,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+ * @spec openspec/specs/approval-workflow/spec.md
+ * @spec openspec/specs/approval-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -97,9 +97,9 @@ class ApprovalService
      *
      * @return array<int, ApprovalStep> Created steps
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-4
+     * @spec openspec/specs/approval-workflow/spec.md
      * @spec openspec/changes/add-approval-step-events/tasks.md#task-3
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function initializeChain(
         ApprovalChain $chain,
@@ -153,7 +153,7 @@ class ApprovalService
      *
      * @throws Exception If user is not authorised or step is not pending
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      * @spec openspec/changes/add-approval-step-events/tasks.md#task-4
      */
     public function approveStep(int $stepId, string $userId, string $comment=''): array
@@ -257,7 +257,7 @@ class ApprovalService
      *
      * @throws Exception If user is not authorised or step is not pending
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      * @spec openspec/changes/add-approval-step-events/tasks.md#task-5
      */
     public function rejectStep(int $stepId, string $userId, string $comment=''): array
@@ -332,7 +332,7 @@ class ApprovalService
      * @throws Exception When the decider is the chain's own requester and
      *                   separation of duties applies.
      *
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function verifySeparationOfDuties(ApprovalStep $step, string $userId): void
     {
@@ -370,7 +370,7 @@ class ApprovalService
      *
      * @return bool True when separation of duties applies.
      *
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function resolveSeparationOfDuties(ApprovalChain $chain): bool
     {
@@ -413,7 +413,7 @@ class ApprovalService
      *
      * @throws Exception If user is not in the required group
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function verifyRole(string $userId, string $role): void
     {
@@ -431,7 +431,7 @@ class ApprovalService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-01-approval-workflow/tasks.md#task-5
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     private function persistApprovalExecution(
         ApprovalChain $chain,

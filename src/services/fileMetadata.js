@@ -41,7 +41,7 @@ function buildFileUrl(registerId, schemaId, objectId, fileId, suffix = '') {
  * @param {string[]} params.labels New labels (use [] to clear all)
  * @return {Promise<object>} The formatted file response
  * @throws {Error} On HTTP error or network failure
- * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-10
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
 export async function updateFileLabels({ registerId, schemaId, objectId, fileId, labels }) {
 	const url = buildFileUrl(registerId, schemaId, objectId, fileId, '/labels')
@@ -71,7 +71,7 @@ export async function updateFileLabels({ registerId, schemaId, objectId, fileId,
  * @param {string[]|null} [params.labels] Labels (or null to skip)
  * @return {Promise<object>} The formatted file response
  * @throws {Error} On HTTP error or network failure
- * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-10
+ * @spec openspec/specs/frontend-app-bootstrap/spec.md
  */
 export async function updateFileMetadata({
 	registerId,

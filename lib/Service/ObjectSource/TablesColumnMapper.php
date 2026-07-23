@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class TablesColumnMapper
      *
      * @return array<int, string> Map of columnId → property name.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function buildColumnMap(array $columns): array
     {
@@ -118,7 +118,7 @@ class TablesColumnMapper
      *
      * @return array<string, mixed> The projected object payload (property → value).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function projectRow(array $row, array $columns, array $columnMap, callable $targetSchemaExists): array
     {
@@ -155,7 +155,7 @@ class TablesColumnMapper
      *
      * @return array{properties: array<string, mixed>, required: array<int, string>}
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function buildSchemaProperties(array $columns): array
     {
@@ -191,7 +191,7 @@ class TablesColumnMapper
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function columnToProperty(array $column): array
     {
@@ -225,7 +225,7 @@ class TablesColumnMapper
      *
      * @return string The property name.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function propertyName(array $column): string
     {
@@ -249,7 +249,7 @@ class TablesColumnMapper
      *
      * @return string The slug (may be empty when the value has no word chars).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function slug(string $value): string
     {
@@ -270,7 +270,7 @@ class TablesColumnMapper
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function coerceCell(mixed $value, array $column, callable $targetSchemaExists): mixed
     {
@@ -321,7 +321,7 @@ class TablesColumnMapper
      *
      * @return string|int The derived uuid, or the raw integer rowId on fallback.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function relationValue(mixed $value, array $column, callable $targetSchemaExists): string|int
     {
@@ -352,7 +352,7 @@ class TablesColumnMapper
      *
      * @return array<string, mixed> The JSON-schema property fragment.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function numberProperty(array $column, string $subtype): array
     {
@@ -389,7 +389,7 @@ class TablesColumnMapper
      *
      * @return array<string, mixed> The JSON-schema property fragment.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function selectionProperty(array $column, string $subtype): array
     {
@@ -418,7 +418,7 @@ class TablesColumnMapper
      *
      * @return string The JSON-schema format keyword.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function dateFormat(string $subtype): string
     {
@@ -440,7 +440,7 @@ class TablesColumnMapper
      *
      * @return bool True when the column is integral.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function isIntegral(array $column): bool
     {

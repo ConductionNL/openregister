@@ -71,7 +71,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @param ITimeFactory $time Time factory for parent class
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function __construct(ITimeFactory $time)
     {
@@ -94,7 +94,7 @@ class BlobMigrationJob extends TimedJob
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     protected function run($argument): void
     {
@@ -281,7 +281,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return bool True if the table exists
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function blobTableExists(IDBConnection $db): bool
     {
@@ -313,7 +313,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<int, array<string, mixed>> Raw rows from the blob table
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function fetchBlobObjects(IDBConnection $db): array
     {
@@ -336,7 +336,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return int Number of remaining rows
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function countBlobRows(IDBConnection $db): int
     {
@@ -361,7 +361,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<string, array<int, array<string, mixed>>> Grouped rows keyed by "registerId_schemaId"
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function groupByRegisterSchema(array $objects, LoggerInterface $logger): array
     {
@@ -401,7 +401,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return array<string, mixed> Object array for saving to magic table
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function blobRowToObjectArray(array $row): array
     {
@@ -458,7 +458,7 @@ class BlobMigrationJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-9
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function deleteBlobRows(IDBConnection $db, array $rows): void
     {

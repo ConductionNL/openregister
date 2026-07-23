@@ -1522,6 +1522,11 @@ class SaveObjectCoverageTest extends TestCase
      */
     public function testSetSelfMetadataWithOrganisation(): void
     {
+        // Wave-12 Fix 3 / Wave-11 SB1: non-admin callers cannot inject organisation
+        // via @self — the cross-tenant data-injection vector. The fixture has no
+        // IGroupManager so callerIsAdmin() returns false, and the default
+        // organisationService mock reports no membership, so both arms of the gate
+        // are closed and the organisation is dropped.
         $entity   = $this->createObjectEntity(1, 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
         $selfData = ['organisation' => 'org-uuid'];
 

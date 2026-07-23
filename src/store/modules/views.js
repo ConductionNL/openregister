@@ -345,7 +345,7 @@ export const useViewsStore = defineStore('views', {
 		 * @param {object} searchStore - The search store instance
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		applyView(view, searchStore) {
 			if (!view || !view.configuration) {
@@ -414,7 +414,7 @@ export const useViewsStore = defineStore('views', {
 		 * @param {boolean} isPublic - Whether this view should be public
 		 * @return {object} The view configuration
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-2/tasks.md#task-3
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		createViewFromSearchState(searchStore, name, description = '', isDefault = false, isPublic = false) {
 			return {

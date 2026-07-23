@@ -114,7 +114,7 @@ class CredentialStoreResolver
      *
      * @return CredentialStore The Doriath leaf when eligible, else the NC-vault leaf.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function resolve(): CredentialStore
     {
@@ -130,7 +130,7 @@ class CredentialStoreResolver
      *
      * @return bool True when the Doriath leaf may be used.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function isDoriathEligible(): bool
     {
@@ -167,7 +167,7 @@ class CredentialStoreResolver
      *
      * @return bool True when the application UUID and public key PEM are persisted.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#openregister-self-registration-as-a-doriath-application
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isSelfRegistered(): bool
     {
@@ -193,7 +193,7 @@ class CredentialStoreResolver
      *
      * @return array<int, string> The probed FQCNs.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function doriathServiceClasses(): array
     {
@@ -207,7 +207,7 @@ class CredentialStoreResolver
      *
      * @return string The probed FQCN.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#credential-store-backend-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     protected function secretServiceClass(): string
     {

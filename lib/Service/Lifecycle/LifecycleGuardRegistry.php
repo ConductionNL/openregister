@@ -60,7 +60,7 @@ final class LifecycleGuardRegistry
      * @param IServerContainer   $serverContainer NC server container used as fallback for FQCN-tagged guards (F06).
      * @param LoggerInterface    $logger          Logger for guard resolution diagnostics.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ContainerInterface $container,
@@ -78,7 +78,7 @@ final class LifecycleGuardRegistry
      *
      * @throws RuntimeException When the tag is not registered or the resolved service does not implement the interface.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function resolve(string $tag): LifecycleGuardInterface
     {

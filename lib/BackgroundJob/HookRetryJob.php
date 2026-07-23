@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class HookRetryJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
      */
     protected function run($argument): void
     {

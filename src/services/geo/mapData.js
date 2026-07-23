@@ -11,8 +11,8 @@
  * auto-fit bounds), REQ-GEO-007 (layer catalogue), and REQ-GEO-014
  * (NL Design System marker token).
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-003
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-007
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-007
  */
 
 /**

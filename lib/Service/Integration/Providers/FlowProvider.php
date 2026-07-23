@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-flow/tasks.md
+ * @spec openspec/specs/integration-flow/spec.md
  */
 
 declare(strict_types=1);
@@ -107,7 +107,7 @@ class FlowProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-flow/tasks.md
+     * @spec openspec/specs/integration-flow/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

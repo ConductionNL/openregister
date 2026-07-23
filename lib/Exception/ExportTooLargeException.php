@@ -16,7 +16,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-export-enforces-a-row-count-cap-to-bound-memory-use
+ * @spec openspec/specs/export-pdf-format/spec.md
  */
 
 namespace OCA\OpenRegister\Exception;

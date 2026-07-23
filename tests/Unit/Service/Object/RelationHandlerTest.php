@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Object;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -51,6 +52,9 @@ class RelationHandlerTest extends TestCase
 
     /** @var MagicMapper&MockObject */
     private MagicMapper $objectMapper;
+
+    /** @var RegisterMapper&MockObject */
+    private RegisterMapper $registerMapper;
 
     /** @var SchemaMapper&MockObject */
     private SchemaMapper $schemaMapper;
@@ -74,6 +78,7 @@ class RelationHandlerTest extends TestCase
         parent::setUp();
 
         $this->objectMapper = $this->createMock(MagicMapper::class);
+        $this->registerMapper     = $this->createMock(RegisterMapper::class);
         $this->schemaMapper       = $this->createMock(SchemaMapper::class);
         $this->performanceHandler = $this->createMock(PerformanceHandler::class);
         $this->rbacHandler        = $this->createMock(MagicRbacHandler::class);
@@ -84,7 +89,8 @@ class RelationHandlerTest extends TestCase
             schemaMapper: $this->schemaMapper,
             performanceHandler: $this->performanceHandler,
             rbacHandler: $this->rbacHandler,
-            logger: $this->logger
+            logger: $this->logger,
+            registerMapper: $this->registerMapper
         );
     }//end setUp()
 

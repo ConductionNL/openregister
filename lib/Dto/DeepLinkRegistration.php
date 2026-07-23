@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+ * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
  */
 
 declare(strict_types=1);
@@ -48,7 +48,7 @@ class DeepLinkRegistration
      *
      * @return void
      *
-     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function __construct(
         public readonly string $appId,
@@ -76,7 +76,7 @@ class DeepLinkRegistration
      *
      * @return string The resolved URL
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
      */
     public function resolveUrl(array $objectData, array $contactContext=[]): string
     {

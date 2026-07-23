@@ -118,7 +118,7 @@ class DeckLinkService
      *     OCP\AppFramework\Db\Entity::__call magic) — required to
      *     tolerate missing fields without burying the call site.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkCard(string $objectUuid, int $registerId, int $schemaId, int $cardId): DeckLink
     {
@@ -201,7 +201,7 @@ class DeckLinkService
      *
      * @throws Exception When no matching link is found (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkCard(string $objectUuid, int $cardId): void
     {
@@ -223,7 +223,7 @@ class DeckLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedCards(string $objectUuid): array
     {
@@ -277,7 +277,7 @@ class DeckLinkService
      *
      * @throws Exception On missing user, Deck unavailable, or create failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkCard(
         string $objectUuid,
@@ -371,7 +371,7 @@ class DeckLinkService
      *
      * @return array<int,array{id:int,title:string}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailableBoards(): array
     {
@@ -429,7 +429,7 @@ class DeckLinkService
      *
      * @return array<int,array{id:int,title:string,boardId:int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getStacksForBoard(int $boardId): array
     {

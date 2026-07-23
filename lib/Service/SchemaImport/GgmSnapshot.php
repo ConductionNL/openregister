@@ -33,7 +33,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Indexed view over a normalised GGM release.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class GgmSnapshot
 {
@@ -76,7 +76,7 @@ class GgmSnapshot
      *
      * @return self The snapshot.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public static function fromNormalised(array $normalised): self
     {
@@ -88,7 +88,7 @@ class GgmSnapshot
      *
      * @return string The version.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function version(): string
     {
@@ -107,7 +107,7 @@ class GgmSnapshot
      *
      * @return array<string, mixed>|null The objecttype record, or null when unknown.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function findObjecttype(string $reference): ?array
     {
@@ -135,7 +135,7 @@ class GgmSnapshot
      *
      * @return array<int, array<string, mixed>> Matching objecttype records.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function searchObjecttypes(string $query): array
     {

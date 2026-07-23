@@ -26,7 +26,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
+ * @spec openspec/specs/tmlo-validation/spec.md#scenario-valid-iso-8601-duration-accepted
  */
 
 namespace OCA\OpenRegister\Service;
@@ -234,7 +234,7 @@ class TmloService
      *
      * @return string|null ISO-8601 date string or null if invalid duration
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-32
+     * @spec openspec/specs/tmlo-validation/spec.md#scenario-valid-iso-8601-duration-accepted
      */
     public function calculateArchiefactiedatum(string $duration): ?string
     {
