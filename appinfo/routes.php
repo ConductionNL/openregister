@@ -980,6 +980,11 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Read-only presentation data — drag-to-move goes through the existing
+		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
+		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
+		['name' => 'views#kanban', 'url' => '/api/views/{id}/kanban', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#calendar', 'url' => '/api/views/{id}/calendar', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
 		// Chat - AI Assistant endpoints.
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
