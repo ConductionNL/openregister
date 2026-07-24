@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\ScriptManifestLoader;
 use OCP\App\IAppManager;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -95,7 +96,7 @@ class MailAppScriptListener implements IEventListener
         }
 
         // Inject the sidebar script.
-        Util::addScript('openregister', 'openregister-mail-sidebar');
+        ScriptManifestLoader::addEntryScripts('openregister', 'mailSidebar', 'openregister-mail-sidebar');
         Util::addStyle('openregister', 'mail-sidebar');
 
         $this->logger->debug(
