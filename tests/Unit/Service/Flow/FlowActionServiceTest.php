@@ -55,7 +55,13 @@ class FlowActionServiceTest extends TestCase
         // the object-CRUD action nodes landed; this construction was not
         // updated with it, so every test in this file errored before reaching
         // an assertion.
-        $this->eventCatalog = $this->createMock(EventCatalogService::class);
+        //
+        // EventCatalogService is REAL, not a mock. It is a pure lookup over a
+        // class constant with no collaborators, and run() matches a flow's
+        // trigger through it — a mock returns [] from aliasesFor(), so every
+        // flow is silently skipped and every assertion in this file fails
+        // while the production code is perfectly correct.
+        $this->eventCatalog = new EventCatalogService();
         $this->objectService = $this->createMock(ObjectService::class);
 
         $this->service = new FlowActionService(
