@@ -528,11 +528,8 @@ trait MultiTenancyTrait
             return;
         }
 
-        $orgConditions = $qb->expr()->orX();
-
-        $this->addOrganisationConditions(
+        $orgPredicates = $this->buildOrganisationConditions(
             qb: $qb,
-            orgConditions: $orgConditions,
             activeOrgUuids: $activeOrgUuids,
             organisationColumn: $organisationColumn
         );
@@ -540,36 +537,66 @@ trait MultiTenancyTrait
         // Allow null organisation entities when explicitly permitted by the caller.
         // This is used for system-wide resources like Registers and Schemas.
         if ($allowNullOrg === true) {
-            $orgConditions->add($qb->expr()->isNull($organisationColumn));
+            $orgPredicates[] = $qb->expr()->isNull($organisationColumn);
         }
 
-        $qb->andWhere($orgConditions);
+        // Guard: OCP\DB\QueryBuilder\IExpressionBuilder::orX() documents that calling it
+        // with zero arguments is deprecated and "requires at least one defined when
+        // converting to string" — NC34 already logs a debug-level deprecation exception
+        // on every zero-arg call and has flagged it will throw in a future release.
+        // $orgPredicates is expected to always contain at least one predicate here
+        // (the caller, applyOrganisationFilter(), only reaches this method when
+        // $activeOrgUuids is non-empty), but we defend against that invariant breaking
+        // instead of ever handing orX() an empty argument list.
+        //
+        // Per @spec openspec/specs/tenant-isolation-audit/spec.md ("the system MUST
+        // verify that no Organisation's query filter returns objects belonging to
+        // another Organisation"), an inability to build a positive tenant-match
+        // predicate MUST fail CLOSED (no rows), matching the existing no-active-org
+        // behaviour in applyNoActiveOrgFilter() — never fail open by skipping the
+        // WHERE clause.
+        if ($orgPredicates === []) {
+            if (isset($this->logger) === true) {
+                $this->logger->warning(
+                    message: '[MultiTenancyTrait] applyActiveOrgFilter built zero org predicates '
+                        .'— failing closed (no rows) instead of calling orX() with no arguments',
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+
+            $qb->andWhere('1 = 0');
+            return;
+        }
+
+        $qb->andWhere($qb->expr()->orX(...$orgPredicates));
     }//end applyActiveOrgFilter()
 
     /**
-     * Add organisation conditions to the query
+     * Build the organisation predicates for the active organisation(s).
+     *
+     * Returns a plain array of query expressions instead of mutating a composite
+     * expression so the caller can decide how (and whether) to combine them —
+     * see the empty-predicate guard in applyActiveOrgFilter().
      *
      * @param IQueryBuilder $qb                 Query builder
-     * @param mixed         $orgConditions      Organisation conditions object
      * @param array         $activeOrgUuids     Active organisation UUIDs
      * @param string        $organisationColumn Organisation column name
      *
-     * @return void
+     * @return array<int, mixed> The organisation predicates (always at least one entry
+     *                           when $activeOrgUuids is non-empty).
      */
-    private function addOrganisationConditions(
+    private function buildOrganisationConditions(
         IQueryBuilder $qb,
-        mixed $orgConditions,
         array $activeOrgUuids,
         string $organisationColumn
-    ): void {
+    ): array {
         $directActiveOrgUuid = $this->getActiveOrganisationUuid();
 
         if ($directActiveOrgUuid !== null) {
-            $orgConditions->add(
-                $qb->expr()->eq(
-                    $organisationColumn,
-                    $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR)
-                )
+            $conditions   = [];
+            $conditions[] = $qb->expr()->eq(
+                $organisationColumn,
+                $qb->createNamedParameter($directActiveOrgUuid, IQueryBuilder::PARAM_STR)
             );
 
             $parentOrgs = array_filter(
@@ -580,24 +607,26 @@ trait MultiTenancyTrait
             );
 
             if (count($parentOrgs) > 0) {
-                $orgConditions->add(
-                    $qb->expr()->in(
-                        $organisationColumn,
-                        $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
+                $conditions[] = $qb->expr()->in(
+                    $organisationColumn,
+                    $qb->createNamedParameter($parentOrgs, IQueryBuilder::PARAM_STR_ARRAY)
                 );
             }
 
-            return;
+            return $conditions;
         }//end if
 
-        $orgConditions->add(
+        if (empty($activeOrgUuids) === true) {
+            return [];
+        }
+
+        return [
             $qb->expr()->in(
                 $organisationColumn,
                 $qb->createNamedParameter($activeOrgUuids, IQueryBuilder::PARAM_STR_ARRAY)
-            )
-        );
-    }//end addOrganisationConditions()
+            ),
+        ];
+    }//end buildOrganisationConditions()
 
     /**
      * Set organisation on an entity during creation.
