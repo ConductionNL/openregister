@@ -3304,6 +3304,25 @@ class ImportHandler
                 result: $result
             );
 
+            // MAGIC-TABLE COLUMN SYNC (fixes #2082): reconcile the physical
+            // table of EVERY imported schema, in every register that holds it.
+            //
+            // The two pre-existing ensureTableForRegisterSchema() call sites
+            // only cover (a) registers that were just auto-created and (b)
+            // schemas that ship seed objects. An EXISTING schema in an
+            // EXISTING register with no seed data — by far the common case for
+            // an app shipping a `register.d` fragment that adds a property —
+            // was never reconciled, so the new column was simply absent until
+            // something happened to write an object of that type.
+            //
+            // Observed 2026-07-24 on softwarecatalog: `beoordeeling` gained a
+            // `status` property and `gebruik` gained TIME fields; neither
+            // column existed afterwards, not even after a FORCED re-import.
+            // Because the schema's own RBAC read rule matched on `status`, the
+            // generated SQL referenced a non-existent column and EVERY read —
+            // including the anonymous public path — returned HTTP 500.
+            $this->ensureMagicTablesForImportedSchemas(schemas: $result['schemas'] ?? []);
+
             return $result;
         } catch (Exception $e) {
             $this->logger->error(
@@ -3313,6 +3332,84 @@ class ImportHandler
             throw new Exception("Failed to import configuration for app {$appId}: ".$e->getMessage());
         }//end try
     }//end importFromApp()
+
+    /**
+     * Reconcile the magic table of every imported schema, in every register that holds it.
+     *
+     * `ensureTableForRegisterSchema()` creates the table when absent and, when it
+     * already exists, syncs missing/retyped columns via `handleExistingTable()`.
+     * Calling it here closes the gap where an existing schema in an existing
+     * register — with no seed data — never had its physical table reconciled
+     * after a property was added, leaving reads that filter on the new column
+     * throwing a raw SQL error (see #2082).
+     *
+     * A schema may belong to several registers, each with its own physical
+     * table, so every owning register is reconciled.
+     *
+     * Failures are logged and never abort the import: a table that cannot be
+     * reconciled must not lose the rest of an otherwise-successful import.
+     *
+     * @param array $schemas The imported Schema entities.
+     *
+     * @return void
+     */
+    private function ensureMagicTablesForImportedSchemas(array $schemas): void
+    {
+        if ($this->magicMapper === null || empty($schemas) === true) {
+            return;
+        }
+
+        foreach ($schemas as $schema) {
+            if ($schema instanceof Schema === false || $schema->getId() === null) {
+                continue;
+            }
+
+            $schemaId = (int) $schema->getId();
+
+            try {
+                $registerIds = $this->registerMapper->getAllRegisterIdsWithSchema(schemaId: $schemaId);
+            } catch (\Exception $e) {
+                $this->logger->warning(
+                    message: '[ImportHandler] Could not resolve registers for imported schema; magic table not reconciled',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'schema_id' => $schemaId,
+                        'error'     => $e->getMessage(),
+                    ]
+                );
+                continue;
+            }
+
+            foreach ($registerIds as $registerId) {
+                try {
+                    $register = $this->registerMapper->find(
+                        id: (int) $registerId,
+                        _rbac: false,
+                        _multitenancy: false
+                    );
+
+                    $this->magicMapper->ensureTableForRegisterSchema(
+                        register: $register,
+                        schema: $schema
+                    );
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[ImportHandler] Failed to reconcile magic table for imported schema',
+                        context: [
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'schema_id'   => $schemaId,
+                            'schema_slug' => $schema->getSlug(),
+                            'register_id' => $registerId,
+                            'error'       => $e->getMessage(),
+                        ]
+                    );
+                }//end try
+            }//end foreach
+        }//end foreach
+
+    }//end ensureMagicTablesForImportedSchemas()
 
     /**
      * Auto-create or reconcile a Register entity for application-type imports
