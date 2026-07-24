@@ -16,6 +16,8 @@ use OCA\OpenRegister\Event\AgentRunRequestedEvent;
 use OCA\OpenRegister\Service\CalendarEventService;
 use OCA\OpenRegister\Service\FederationShareService;
 use OCA\OpenRegister\Service\Flow\FlowActionService;
+use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 use OCP\Mail\IMailer;
@@ -49,6 +51,13 @@ class FlowActionServiceTest extends TestCase
         );
         $this->mailer->method('createMessage')->willReturn($this->createMock(IMessage::class));
 
+        // FlowActionService gained an event catalog and an ObjectService when
+        // the object-CRUD action nodes landed; this construction was not
+        // updated with it, so every test in this file errored before reaching
+        // an assertion.
+        $this->eventCatalog = $this->createMock(EventCatalogService::class);
+        $this->objectService = $this->createMock(ObjectService::class);
+
         $this->service = new FlowActionService(
             $this->schemaMapper,
             $this->calendar,
@@ -56,7 +65,9 @@ class FlowActionServiceTest extends TestCase
             $this->config,
             $this->logger,
             $this->eventDispatcher,
-            $this->federationShareService
+            $this->federationShareService,
+            $this->eventCatalog,
+            $this->objectService
         );
     }
 

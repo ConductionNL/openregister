@@ -2356,6 +2356,22 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Flow node discovery. OpenRegister contributes its own built-ins
+        // through the same event every consuming app uses, so the contribution
+        // path is exercised by its owner and cannot rot unnoticed.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
+        );
+
+        // Bridge into Nextcloud Flow: a core rule can start an OpenRegister
+        // flow, which is the composable direction. The reverse is impossible —
+        // IOperation::onEvent() returns void and takes an event, not data.
+        $context->registerEventListener(
+            \OCP\WorkflowEngine\Events\RegisterOperationsEvent::class,
+            \OCA\OpenRegister\Listener\NcFlowOperationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,

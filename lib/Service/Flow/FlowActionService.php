@@ -395,7 +395,6 @@ class FlowActionService
                         );
                         return false;
                     }
-
                     return true;
                 case 'object.set-field':
                 case 'object.update':
