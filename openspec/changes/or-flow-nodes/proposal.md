@@ -49,10 +49,12 @@ Wrapping an `IOperation` as a step would mean synthesising an `Event` and an
 - Discovery is `RegisterFlowNodesEvent`, a direct copy of core's
   `RegisterOperationsEvent` pattern. An app writes the same listener it would
   write for Nextcloud Flow.
-- The two systems **compose**: `RunFlowOperation` registers into Nextcloud Flow
-  so a core rule can start an OpenRegister flow — the direction that works.
-  Nextcloud Flow keeps what it is good at; a flow adds branching, joins, loops
-  and data between steps, which core cannot express.
+- The two systems **already compose**, and this change does not touch that.
+  OpenRegister ships `WorkflowEngine\RegisterObjectEntity` (object events as a
+  Nextcloud Flow entity) and `WorkflowEngine\RunFlowOperation` (a rule starting
+  a named flow), both registered by `FlowEngineRegistrationListener`. Nextcloud
+  Flow keeps what it is good at; a flow adds branching, joins, loops and data
+  between steps, which core cannot express.
 
 ## Discovery: why the event, not the fleet's other pattern
 
@@ -71,15 +73,26 @@ did not conflict here.
 - `IFlowNode`, `RegisterFlowNodesEvent`, `FlowNodeRegistry`.
 - `RegistryStepDispatcher` — the `FlowStepDispatcher` every consumer gets free.
 - `SetFieldsNode` — the first built-in and the reference implementation.
-- `RunFlowOperation` + `NcFlowOperationListener` — the Nextcloud Flow bridge.
+
+## What this change does NOT add
+
+An earlier draft of this change added its own `RunFlowOperation` and listener.
+That was a duplicate: OpenRegister already had a working bridge in
+`lib/WorkflowEngine/`, and the existing one is better — it is an
+`ISpecificOperation` bound to `RegisterObjectEntity`, so it is offered only on
+rules about OpenRegister objects.
+
+Writing a second one is precisely the defect this whole programme exists to
+stop, committed inside the change meant to prevent it. It has been removed.
+Repointing the existing bridge from `FlowActionService` at `FlowEngine` belongs
+with run persistence (#2076), because a Flow operation runs inside the dispatch
+of the event that triggered it and a graph must not block a file write.
 
 ## Out of scope (this change)
 
-- **Running the bridged flow.** `RunFlowOperation` recognises a matching rule
-  but does not execute inline: a Flow operation runs inside the dispatch of the
-  event that triggered it, often a file write, and an arbitrary graph does not
-  belong on that critical path. It needs the run queue, which waits on run
-  persistence (#2070).
+- **Repointing the existing Nextcloud Flow bridge at `FlowEngine`.** It runs
+  `FlowActionService` today. Moving it needs the run queue, which waits on run
+  persistence (#2076).
 - **The JSONLogic condition node** — belongs with the expression work (#2069),
   which owns moving `jwadhams/json-logic-php` off openconnector.
 - **Migrating hermiq** onto this (hermiq#35).

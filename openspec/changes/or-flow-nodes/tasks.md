@@ -25,10 +25,12 @@
 
 ## Nextcloud Flow bridge
 
-- [x] `RunFlowOperation` + `NcFlowOperationListener` — a core rule can start a
-      flow.
-- [ ] Execute the bridged flow via the run queue — needs run persistence
-      (#2070).
+- [x] Verified the bridge already exists (`WorkflowEngine\RegisterObjectEntity`
+      + `WorkflowEngine\RunFlowOperation`, wired by
+      `FlowEngineRegistrationListener`). An earlier draft of this change added a
+      duplicate; it has been removed.
+- [ ] Repoint the existing bridge from `FlowActionService` to `FlowEngine` —
+      needs the run queue (#2076).
 
 ## Verification
 

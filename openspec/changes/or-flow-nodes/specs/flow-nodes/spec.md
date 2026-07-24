@@ -134,26 +134,26 @@ that refuses to save.
 - **WHEN** the flow is saved
 - **THEN** validation fails and names what is missing
 
-### Requirement: Nextcloud Flow can start an OpenRegister flow (REQ-FN-008)
+### Requirement: The Nextcloud Flow bridge is not duplicated (REQ-FN-008)
 
-OpenRegister SHALL register a `Run an OpenRegister flow` operation on core's
-workflow engine, so any Nextcloud Flow rule can be a flow's entry point. The
-operation SHALL refuse a rule that names no flow.
+OpenRegister already bridges to Nextcloud Flow: `WorkflowEngine\RegisterObjectEntity`
+exposes object events as a Flow entity and `WorkflowEngine\RunFlowOperation`
+starts a named flow when a rule matches, both registered by
+`FlowEngineRegistrationListener`.
 
-The reverse bridge SHALL NOT be built: an `IOperation` cannot be invoked as a
-flow step, because `onEvent()` returns void and receives an event rather than
-data. Faking it would mean synthesising an `Event` and an `IRuleMatcher` and
-discarding output that does not exist.
+This change SHALL NOT add a second operation or a second registration. A node
+system whose own change ships a duplicate of an existing bridge would repeat
+the defect it exists to prevent.
 
-The flow SHALL NOT be executed inline in the operation. A Flow operation runs
-inside the dispatch of the event that triggered it — often a file write or a
-share change — and an arbitrary graph does not belong on the critical path of a
-user action.
+The reverse bridge SHALL NOT be built at all: an `IOperation` cannot be invoked
+as a flow step, because `onEvent()` returns void and receives an event rather
+than data. Faking it would mean synthesising an `Event` and an `IRuleMatcher`
+and discarding output that does not exist.
 
-#### Scenario: A rule naming no flow is rejected
+#### Scenario: Only one operation is registered on the workflow engine
 
-- **GIVEN** a Nextcloud Flow rule using this operation with an empty flow id
-- **WHEN** the rule is saved
-- **THEN** validation fails asking for a flow
+- **GIVEN** OpenRegister's bootstrap
+- **WHEN** `RegisterOperationsEvent` is dispatched
+- **THEN** exactly one OpenRegister operation is registered
 
 @e2e exclude node contribution and dispatch are backend-only — covered by PHPUnit; the palette's rendering is covered by the flow editor's own tests
