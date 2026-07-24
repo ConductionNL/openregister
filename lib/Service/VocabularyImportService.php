@@ -449,7 +449,7 @@ class VocabularyImportService
 
             $this->collectEdges(node: $node, predicate: 'broader', uuid: $uuid, uuidByUri: $uuidByUri, forward: $broaderOf, reverse: $narrowerOf);
             $this->collectEdges(node: $node, predicate: 'narrower', uuid: $uuid, uuidByUri: $uuidByUri, forward: $narrowerOf, reverse: $broaderOf);
-            // related is symmetric: the same map serves as both forward and reverse.
+            // Related is symmetric: the same map serves as both forward and reverse.
             $this->collectEdges(node: $node, predicate: 'related', uuid: $uuid, uuidByUri: $uuidByUri, forward: $relatedOf, reverse: $relatedOf);
         }//end foreach
 
@@ -469,13 +469,14 @@ class VocabularyImportService
      * -> `$uuid`) so a relation asserted in only one direction by the source
      * is still readable from either concept.
      *
-     * @param array<string,mixed>           $node      The parsed concept node.
-     * @param string                        $predicate The relation predicate local name (broader|narrower|related).
-     * @param string                        $uuid      The concept's own uuid.
-     * @param array<string,string>          $uuidByUri uri => uuid map for this import.
-     * @param array<string,array<string>>   $forward   Accumulator for `$uuid` -> targets (by reference).
-     * @param array<string,array<string>>   $reverse   Accumulator for target -> `$uuid` (by reference; same
-     *                                                 array as `$forward` for a symmetric predicate like `related`).
+     * @param array<string,mixed>         $node      The parsed concept node.
+     * @param string                      $predicate The relation predicate local name (broader|narrower|related).
+     * @param string                      $uuid      The concept's own uuid.
+     * @param array<string,string>        $uuidByUri uri => uuid map for this import.
+     * @param array<string,array<string>> $forward   Accumulator for `$uuid` -> targets (by reference).
+     * @param array<string,array<string>> $reverse   Accumulator for target -> `$uuid` (by reference; same
+     *                                               array as `$forward` for a symmetric predicate like
+     *                                               `related`).
      *
      * @return void
      */
@@ -487,7 +488,7 @@ class VocabularyImportService
                 continue;
             }
 
-            $forward[$uuid][]      = $targetUuid;
+            $forward[$uuid][]       = $targetUuid;
             $reverse[$targetUuid][] = $uuid;
         }
     }//end collectEdges()

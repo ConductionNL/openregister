@@ -889,8 +889,8 @@ class RegisterMapper extends QBMapper
         }
 
         $result->closeCursor();
-        $needle = (string) $schemaId;
-        $matches    = [];
+        $needle  = (string) $schemaId;
+        $matches = [];
 
         foreach ($candidates as $row) {
             $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));

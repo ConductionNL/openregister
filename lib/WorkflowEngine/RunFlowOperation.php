@@ -126,9 +126,9 @@ class RunFlowOperation implements ISpecificOperation
     /**
      * Validate the configured operation value (a non-empty flow name).
      *
-     * @param string             $name      Rule name.
-     * @param array<int, mixed>  $checks    Configured checks.
-     * @param string             $operation The flow name to run.
+     * @param string            $name      Rule name.
+     * @param array<int, mixed> $checks    Configured checks.
+     * @param string            $operation The flow name to run.
      *
      * @return void
      *
@@ -152,7 +152,7 @@ class RunFlowOperation implements ISpecificOperation
      */
     public function onEvent(string $eventName, Event $event, IRuleMatcher $ruleMatcher): void
     {
-        $object = $this->objectFromEvent($event);
+        $object = $this->objectFromEvent(event: $event);
         if ($object === null) {
             return;
         }
