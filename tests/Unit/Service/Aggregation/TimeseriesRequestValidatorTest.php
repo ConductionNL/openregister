@@ -318,4 +318,93 @@ class TimeseriesRequestValidatorTest extends TestCase
         $this->assertSame('duration', $query->field);
         $this->assertSame('status', $query->getGroupByField());
     }//end testSumOverDeclaredFieldPasses()
+
+    // -----------------------------------------------------------------------
+    // Cumulative running total (REQ-AGG-103).
+    // -----------------------------------------------------------------------
+
+    /**
+     * @return void
+     */
+    public function testCumulativeTrueWithIntervalPasses(): void
+    {
+        $schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
+
+        $query = $this->validator->validate(
+            input: [
+                'field'      => 'created',
+                'interval'   => 'DAY',
+                'from'       => '2026-05-01T00:00:00Z',
+                'to'         => '2026-05-22T00:00:00Z',
+                'cumulative' => 'true',
+            ],
+            schema: $schema
+        );
+
+        $this->assertTrue($query->isCumulative());
+
+    }//end testCumulativeTrueWithIntervalPasses()
+
+    /**
+     * @return void
+     */
+    public function testCumulativeAcceptsBooleanAndStringOneAsTruthy(): void
+    {
+        $schema = $this->schemaWith(['created' => ['type' => 'string', 'format' => 'date-time']]);
+
+        $withBool = $this->validator->validate(
+            input: [
+                'field'      => 'created',
+                'interval'   => 'DAY',
+                'from'       => '2026-05-01T00:00:00Z',
+                'to'         => '2026-05-22T00:00:00Z',
+                'cumulative' => true,
+            ],
+            schema: $schema
+        );
+        $withOne = $this->validator->validate(
+            input: [
+                'field'      => 'created',
+                'interval'   => 'DAY',
+                'from'       => '2026-05-01T00:00:00Z',
+                'to'         => '2026-05-22T00:00:00Z',
+                'cumulative' => '1',
+            ],
+            schema: $schema
+        );
+
+        $this->assertTrue($withBool->isCumulative());
+        $this->assertTrue($withOne->isCumulative());
+
+    }//end testCumulativeAcceptsBooleanAndStringOneAsTruthy()
+
+    /**
+     * @return void
+     */
+    public function testCumulativeDefaultsToFalseWhenAbsent(): void
+    {
+        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+
+        $query = $this->validator->validate(input: ['field' => 'status'], schema: $schema);
+
+        $this->assertFalse($query->isCumulative());
+
+    }//end testCumulativeDefaultsToFalseWhenAbsent()
+
+    /**
+     * @return void
+     */
+    public function testCumulativeWithoutIntervalIsRejected(): void
+    {
+        $schema = $this->schemaWith(['status' => ['type' => 'string']]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('`cumulative` requires `interval`');
+
+        $this->validator->validate(
+            input: ['field' => 'status', 'cumulative' => 'true'],
+            schema: $schema
+        );
+
+    }//end testCumulativeWithoutIntervalIsRejected()
 }//end class

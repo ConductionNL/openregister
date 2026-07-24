@@ -499,7 +499,8 @@ class AggregationRunner
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
             dateBucket: $query->dateBucket,
-            metrics: $query->metrics
+            metrics: $query->metrics,
+            cumulative: $query->cumulative
         );
 
         // Read-through cache. Identical query + filter + RBAC scope →
@@ -570,7 +571,8 @@ class AggregationRunner
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
             dateBucket: $query->dateBucket,
-            metrics: $query->getMetrics()
+            metrics: $query->getMetrics(),
+            cumulative: $query->cumulative
         );
 
         if ($native !== null) {
@@ -606,7 +608,8 @@ class AggregationRunner
             filter: $resolvedFilter,
             groupBy: $query->groupBy,
             dateBucket: $query->dateBucket,
-            metrics: $query->getMetrics()
+            metrics: $query->getMetrics(),
+            cumulative: $query->cumulative
         );
         $this->cache->setAdhoc(
             registerSlug: (string) $register->getSlug(),
@@ -909,6 +912,20 @@ class AggregationRunner
      *                                                                           `$dateBucket` (rejected
      *                                                                           upstream by
      *                                                                           AggregationQuery::create()).
+     * @param bool                                                   $cumulative Running-total flag
+     *                                                                           (REQ-AGG-103).
+     *                                                                           Only consulted
+     *                                                                           when `$dateBucket`
+     *                                                                           is set; adds a
+     *                                                                           `cumulative` key
+     *                                                                           to each ordered
+     *                                                                           bucket via {@see
+     *                                                                           addCumulativeColumn()}
+     *                                                                           — the
+     *                                                                           PHP-post-pass half
+     *                                                                           of the SQL-window
+     *                                                                           / PHP parity pair
+     *                                                                           (design D3).
      *
      * @return array<string, mixed> Either `{value, backend, cached}` or
      *                              `{groups, backend, cached}` mirroring the
@@ -922,7 +939,7 @@ class AggregationRunner
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function bucketInPhp(
         Register $register,
@@ -932,7 +949,8 @@ class AggregationRunner
         array $filter,
         ?array $groupBy,
         ?array $dateBucket,
-        ?array $metrics=null
+        ?array $metrics=null,
+        bool $cumulative=false
     ): array {
         $objects = $this->magicMapper->findAllInRegisterSchemaTable(
             register: $register,
@@ -979,7 +997,10 @@ class AggregationRunner
                 $buckets[$key][] = $row;
             }
 
-            // Compute the metric per bucket.
+            // Compute the metric per bucket. ksort() on the ISO-8601-UTC
+            // bucket keys sorts them chronologically ascending (string
+            // ordering matches time ordering for this key format), which
+            // is the ordering addCumulativeColumn() assumes.
             $groups = [];
             ksort($buckets);
             foreach ($buckets as $key => $bucketRows) {
@@ -987,6 +1008,10 @@ class AggregationRunner
                     'key'   => $key,
                     'value' => $this->computeMetric(rows: $bucketRows, metric: $metric, field: $field),
                 ];
+            }
+
+            if ($cumulative === true) {
+                $groups = $this->addCumulativeColumn(groups: $groups);
             }
 
             return [
@@ -1029,6 +1054,48 @@ class AggregationRunner
         ];
 
     }//end bucketInPhp()
+
+    /**
+     * Add a `cumulative` (running-total) key to each already-ordered
+     * time-bucket group (REQ-AGG-103 / design D3).
+     *
+     * Assumes `$groups` is already sorted ascending by bucket start — the
+     * native SQL paths `ORDER BY bucket` and the PHP fallback `ksort()`s
+     * the bucket map before building `$groups` — and simply accumulates
+     * `value` left-to-right. This is the PHP-post-pass half of the
+     * SQL-window / PHP-post-pass parity pair: MySQL, SQLite and the PHP
+     * fallback path call this helper; the Postgres native path instead
+     * computes the identical running total in SQL via
+     * `SUM(...) OVER (ORDER BY bucket)` (see {@see tryNativeAggregation()}).
+     * The two MUST agree bucket-for-bucket on the same input — pinned by
+     * `AggregationRunnerCumulativeTest::testSqlWindowAndPhpPostPassAgreeOnTheSameData()`.
+     *
+     * A `null` per-bucket value (an empty bucket) contributes `0` to the
+     * running total rather than propagating `null`, matching Postgres
+     * `SUM(...) OVER (...)` semantics (SQL `SUM` ignores `NULL` inputs).
+     *
+     * @param array<int, array{key: mixed, value: int|float|null}> $groups Ordered buckets, ascending by bucket start.
+     *
+     * @return array<int, array{key: mixed, value: int|float|null, cumulative: int|float}>
+     *         The same groups with a running-total `cumulative` key added.
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    private function addCumulativeColumn(array $groups): array
+    {
+        $running = 0;
+        foreach ($groups as $index => $group) {
+            $value = ($group['value'] ?? null);
+            if ($value !== null) {
+                $running += $value;
+            }
+
+            $groups[$index]['cumulative'] = $running;
+        }
+
+        return $groups;
+
+    }//end addCumulativeColumn()
 
     /**
      * Polyfill for Postgres `date_trunc($gap, ts)::text` over a Unix
@@ -1138,7 +1205,7 @@ class AggregationRunner
      *
      * @return array<string, int|float|null> Metric results keyed by response key.
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function computeMetrics(array $rows, array $metrics): array
     {
@@ -1214,7 +1281,7 @@ class AggregationRunner
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
      * @spec openspec/specs/aggregation-api/spec.md
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function computeGrouped(array $rows, string $metric, mixed $field, array $groupFields, ?array $metrics=null): array
     {
@@ -1354,7 +1421,7 @@ class AggregationRunner
      *
      * @return array<int, array<string, mixed>> Filtered rows.
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function applyFilter(array $rows, array $filter): array
     {
@@ -1424,7 +1491,7 @@ class AggregationRunner
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function checkOp(mixed $value, string $op, mixed $opValue): bool
     {
@@ -1473,7 +1540,7 @@ class AggregationRunner
      *
      * @return bool True when the row value overlaps any candidate.
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function valueMatchesAnyOf(mixed $rowValue, array $candidates): bool
     {
@@ -1580,10 +1647,29 @@ class AggregationRunner
      *                                                                           single-metric path below;
      *                                                                           `$metric`/`$field` are
      *                                                                           then ignored.
+     * @param bool                                                   $cumulative Running-total flag
+     *                                                                           (REQ-AGG-103),
+     *                                                                           only consulted
+     *                                                                           when `$dateBucket`
+     *                                                                           is set. On
+     *                                                                           Postgres this adds
+     *                                                                           a `SUM(...) OVER
+     *                                                                           (ORDER BY bucket)`
+     *                                                                           window column to
+     *                                                                           the SQL (native
+     *                                                                           running total).
+     *                                                                           MySQL and SQLite
+     *                                                                           fall through to
+     *                                                                           the {@see
+     *                                                                           addCumulativeColumn()}
+     *                                                                           PHP post-pass —
+     *                                                                           the two MUST agree
+     *                                                                           bucket-for- bucket
+     *                                                                           (design D3).
      *
      * @return array{value: int|float|null}
      *         |array{values: array<string, int|float|null>}
-     *         |array{groups: array<int, array{key: mixed, value: int|float|null}>}
+     *         |array{groups: array<int, array{key: mixed, value: int|float|null, cumulative?: int|float}>}
      *         |null
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -1596,7 +1682,7 @@ class AggregationRunner
      *   the mutual-exclusion read at the call site.
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function tryNativeAggregation(
         Register $register,
@@ -1606,7 +1692,8 @@ class AggregationRunner
         array $filter,
         ?array $groupBy,
         ?array $dateBucket=null,
-        ?array $metrics=null
+        ?array $metrics=null,
+        bool $cumulative=false
     ): ?array {
         if (is_array($metrics) === true && count($metrics) > 1) {
             return $this->tryNativeMultiMetric(
@@ -1879,7 +1966,23 @@ class AggregationRunner
                     }
                 }//end if
 
-                $sql  = "SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg
+                // REQ-AGG-103 / design D3: on Postgres, compute the
+                // running total natively via a window function over the
+                // already-grouped/ordered buckets — `SUM(...) OVER
+                // (ORDER BY bucket)` reads the `bucket` OUTPUT alias
+                // (the same alias `GROUP BY`/`ORDER BY` above already
+                // reference), so no extra bind parameter is introduced.
+                // MySQL/SQLite do NOT get a window column here; they (and
+                // the PHP fallback) instead go through the
+                // addCumulativeColumn() PHP post-pass below — the two
+                // MUST produce identical numbers for the same data
+                // (pinned by AggregationRunnerCumulativeTest).
+                $cumulativeSelect = '';
+                if ($platformName === 'postgres' && $cumulative === true) {
+                    $cumulativeSelect = ", SUM({$aggSql}) OVER (ORDER BY bucket) AS cumulative_agg";
+                }
+
+                $sql  = "SELECT {$bucketExpr} AS bucket, {$aggSql} AS agg{$cumulativeSelect}
                          FROM {$fullTable}
                          WHERE {$boundedWhere}
                          GROUP BY bucket
@@ -1888,17 +1991,25 @@ class AggregationRunner
                 $stmt->execute($bindings);
                 $groups = [];
                 while (($row = $stmt->fetch()) !== false) {
-                    $value = $row['agg'];
-                    if ($metric !== 'count' && is_string($value) === true) {
-                        $value = (float) $value;
-                    } else if ($value !== null) {
-                        $value = (int) $value;
-                    }
+                    $value = $this->coerceAggregateValue(raw: $row['agg'], metric: $metric);
 
-                    $groups[] = [
+                    $group = [
                         'key'   => $this->coerceBucketKey(raw: $row['bucket']),
                         'value' => $value,
                     ];
+
+                    if ($cumulativeSelect !== '') {
+                        $group['cumulative'] = $this->coerceAggregateValue(raw: ($row['cumulative_agg'] ?? null), metric: $metric);
+                    }
+
+                    $groups[] = $group;
+                }//end while
+
+                // Non-Postgres engines (and the PHP-fallback caller of
+                // this method's sibling, bucketInPhp()) compute the
+                // running total in PHP instead of a native SQL window.
+                if ($cumulative === true && $platformName !== 'postgres') {
+                    $groups = $this->addCumulativeColumn(groups: $groups);
                 }
 
                 return ['groups' => $groups];
@@ -2005,7 +2116,7 @@ class AggregationRunner
      *         |array{groups: array<int, array{key?: mixed, keys?: array<string, mixed>, values: array<string, int|float|null>}>}
      *         |null
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     private function tryNativeMultiMetric(
         Register $register,
@@ -2080,6 +2191,38 @@ class AggregationRunner
         return ['groups' => $groups];
 
     }//end tryNativeMultiMetric()
+
+    /**
+     * Coerce a raw native-SQL aggregate column value (`agg` or, for
+     * REQ-AGG-103, `cumulative_agg`) to the same numeric type the
+     * time-bucket path has always returned: `float` for a non-count
+     * metric whose driver returned a numeric string (Postgres numeric
+     * casts round-trip as strings), `int` otherwise (including `count`),
+     * `null` when the row column itself is `null`.
+     *
+     * Extracted so the per-bucket `value` and the running-total
+     * `cumulative` column (same SQL row, same metric) are coerced
+     * identically — the pre-existing inline logic this replaces is
+     * unchanged, just shared between the two columns.
+     *
+     * @param mixed  $raw    The raw column value from the DB row.
+     * @param string $metric One of count/sum/avg/min/max.
+     *
+     * @return int|float|null The coerced value.
+     */
+    private function coerceAggregateValue(mixed $raw, string $metric): int|float|null
+    {
+        if ($metric !== 'count' && is_string($raw) === true) {
+            return (float) $raw;
+        }
+
+        if ($raw !== null) {
+            return (int) $raw;
+        }
+
+        return null;
+
+    }//end coerceAggregateValue()
 
     /**
      * Coerce a Postgres date_trunc bucket label to a stable
