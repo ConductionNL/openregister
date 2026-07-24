@@ -425,6 +425,30 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
+            // REGISTER-SCOPED SLUG RESOLUTION (cross-app collision fix).
+            // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
+            // every app on the instance and returns the FIRST row it fetches. On
+            // the shared instance that lets a generic slug (e.g. 'conversation',
+            // 'order', 'task') resolve to another app's schema that shares the
+            // lower(slug). When a register context is present, the slug must
+            // resolve to the schema THAT REGISTER references. Try that first; it
+            // is a no-op (null) for numeric ids, uuids, or slugs the register
+            // does not carry, so we transparently fall back to the global find
+            // for every legacy / register-less caller.
+            if (is_string($schema) === true
+                && is_numeric($schema) === false
+                && $this->currentRegister !== null
+            ) {
+                $scoped = $this->schemaMapper->findBySlugInIds(
+                    slug: $schema,
+                    schemaIds: ($this->currentRegister->getSchemas() ?? [])
+                );
+                if ($scoped !== null) {
+                    $this->currentSchema = $scoped;
+                    return $this;
+                }
+            }
+
             // Resolve the identifier through the mapper. SchemaMapper::find()
             // already provides request-scoped caching (findCache) and supports
             // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
@@ -2183,19 +2207,29 @@ class ObjectService
             );
         }
 
-        // Resolve schema slug → numeric ID, scoped to the same multi-tenancy
-        // boundary. A schema that exists in another organisation MUST throw,
-        // not return the foreign-org entity (principle of least surprise).
-        try {
-            $schema = $this->schemaMapper->find(
-                id: $schemaSlug,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-        } catch (OcpDoesNotExistException $e) {
-            throw new OcpDoesNotExistException(
-                'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
-            );
+        // Resolve schema slug → numeric ID. REGISTER-SCOPED first (cross-app
+        // collision fix): a generic slug must resolve to the schema THIS
+        // register references, not to whichever same-slug row find() fetches
+        // first across the shared instance. Fall back to the multi-tenancy
+        // scoped global find when the register does not carry the slug — a
+        // schema in another organisation MUST then throw, not return the
+        // foreign-org entity (principle of least surprise).
+        $schema = $this->schemaMapper->findBySlugInIds(
+            slug: $schemaSlug,
+            schemaIds: ($register->getSchemas() ?? [])
+        );
+        if ($schema === null) {
+            try {
+                $schema = $this->schemaMapper->find(
+                    id: $schemaSlug,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+            } catch (OcpDoesNotExistException $e) {
+                throw new OcpDoesNotExistException(
+                    'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
+                );
+            }
         }
 
         // Merge resolved numeric IDs into the @self block of the filters.
