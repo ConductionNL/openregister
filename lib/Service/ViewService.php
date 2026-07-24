@@ -26,10 +26,12 @@
 namespace OCA\OpenRegister\Service;
 
 use Exception;
+use InvalidArgumentException;
 use stdClass;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,22 +75,35 @@ class ViewService
     private readonly LoggerInterface $logger;
 
     /**
+     * Schema mapper
+     *
+     * Used to resolve the view's schema when validating a presentation
+     * config's groupByField/dateField against real schema properties.
+     *
+     * @var SchemaMapper Schema mapper instance
+     */
+    private readonly SchemaMapper $schemaMapper;
+
+    /**
      * Constructor
      *
      * Initializes service with view mapper and logger for view operations.
      *
-     * @param ViewMapper      $viewMapper View mapper for database operations
-     * @param LoggerInterface $logger     Logger for error tracking
+     * @param ViewMapper      $viewMapper   View mapper for database operations
+     * @param LoggerInterface $logger       Logger for error tracking
+     * @param SchemaMapper    $schemaMapper Schema mapper for presentation field validation
      *
      * @return void
      */
     public function __construct(
         ViewMapper $viewMapper,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        SchemaMapper $schemaMapper
     ) {
         // Store dependencies for use in service methods.
-        $this->viewMapper = $viewMapper;
-        $this->logger     = $logger;
+        $this->viewMapper   = $viewMapper;
+        $this->logger       = $logger;
+        $this->schemaMapper = $schemaMapper;
     }//end __construct()
 
     /**
@@ -150,17 +165,20 @@ class ViewService
      * Creates a new view entity with specified properties. If view is set as default,
      * clears any existing default view for the user. Validates and stores view in database.
      *
-     * @param string               $name        The name of the view
-     * @param string               $description The description of the view
-     * @param string               $owner       The owner user ID
-     * @param bool                 $isPublic    Whether the view is public (accessible to all users)
-     * @param bool                 $isDefault   Whether the view is the default view for the user
-     * @param array<string, mixed> $query       The query parameters (registers, schemas, filters)
+     * @param string               $name         The name of the view
+     * @param string               $description  The description of the view
+     * @param string               $owner        The owner user ID
+     * @param bool                 $isPublic     Whether the view is public (accessible to all users)
+     * @param bool                 $isDefault    Whether the view is the default view for the user
+     * @param array<string, mixed> $query        The query parameters (registers, schemas, filters)
+     * @param array|null           $presentation Presentation config (viewType + kanban/calendar config); null = table (default)
      *
      * @return View The created view entity
      *
      * @throws Exception If view creation fails (database error, validation error, etc.)
+     * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
      *
+     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function create(
@@ -169,9 +187,13 @@ class ViewService
         string $owner,
         bool $isPublic,
         bool $isDefault,
-        array $query
+        array $query,
+        ?array $presentation=null
     ): View {
         try {
+            // Step 0: Reject a presentation config that cannot render before touching the DB.
+            $this->validatePresentationConfig(presentation: $presentation, query: $query);
+
             // Step 1: If this view is set as default, clear any existing default for this user.
             // Only one default view per user is allowed.
             if ($isDefault === true) {
@@ -186,6 +208,7 @@ class ViewService
             $view->setIsPublic($isPublic);
             $view->setIsDefault($isDefault);
             $view->setQuery($query);
+            $view->setPresentation($presentation);
             $view->setFavoredBy([]);
 
             // Step 3: Insert view into database and return created entity.
@@ -203,19 +226,22 @@ class ViewService
     /**
      * Update an existing view.
      *
-     * @param int|string $id          The ID of the view to update
-     * @param string     $name        The name of the view
-     * @param string     $description The description of the view
-     * @param string     $owner       The owner user ID (for access control)
-     * @param bool       $isPublic    Whether the view is public
-     * @param bool       $isDefault   Whether the view is default
-     * @param array      $query       The query parameters
-     * @param array|null $favoredBy   Array of user IDs who favor this view
+     * @param int|string $id           The ID of the view to update
+     * @param string     $name         The name of the view
+     * @param string     $description  The description of the view
+     * @param string     $owner        The owner user ID (for access control)
+     * @param bool       $isPublic     Whether the view is public
+     * @param bool       $isDefault    Whether the view is default
+     * @param array      $query        The query parameters
+     * @param array|null $favoredBy    Array of user IDs who favor this view
+     * @param array|null $presentation Presentation config (viewType + kanban/calendar config); null leaves the existing value untouched
      *
      * @return View The updated view
      *
      * @throws Exception If update fails
+     * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
      *
+     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function update(
@@ -226,9 +252,13 @@ class ViewService
         bool $isPublic,
         bool $isDefault,
         array $query,
-        ?array $favoredBy=null
+        ?array $favoredBy=null,
+        ?array $presentation=null
     ): View {
         try {
+            // Reject a presentation config that cannot render before touching the DB.
+            $this->validatePresentationConfig(presentation: $presentation, query: $query);
+
             $view = $this->find(id: $id, owner: $owner);
 
             // If this is set as default, schema: unset any existing default for this user.
@@ -245,6 +275,13 @@ class ViewService
             // Update favoredBy if provided.
             if ($favoredBy !== null) {
                 $view->setFavoredBy($favoredBy);
+            }
+
+            // Update presentation if provided; a null presentation leaves the
+            // existing stored value untouched (mirrors favoredBy's semantics)
+            // so a PATCH that doesn't mention presentation can't silently wipe it.
+            if ($presentation !== null) {
+                $view->setPresentation($presentation);
             }
 
             return $this->viewMapper->update($view);
@@ -300,4 +337,112 @@ class ViewService
             }
         }
     }//end clearDefaultForUser()
+
+    /**
+     * Validate a presentation config against the view's schema.
+     *
+     * A null presentation (or an explicit `viewType: table`) is always valid —
+     * `table` has no field to check. A `kanban` presentation must declare a
+     * `groupByField`, and a `calendar` presentation a `dateField` (with an
+     * optional `endDateField`); each declared field MUST be a real property
+     * on the view's (first configured) schema, or the save is rejected.
+     *
+     * @param array|null           $presentation The presentation config to validate, or null
+     * @param array<string, mixed> $query        The view's query (used to resolve its schema)
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException If the presentation cannot render
+     *
+     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     */
+    private function validatePresentationConfig(?array $presentation, array $query): void
+    {
+        if ($presentation === null) {
+            return;
+        }
+
+        $viewType = $presentation['viewType'] ?? 'table';
+
+        if ($viewType === 'table') {
+            return;
+        }
+
+        if ($viewType === 'kanban') {
+            $groupByField = $presentation['kanban']['groupByField'] ?? null;
+            if (is_string($groupByField) === false || $groupByField === '') {
+                throw new InvalidArgumentException('A kanban presentation requires a non-empty kanban.groupByField');
+            }
+
+            $this->assertFieldExistsOnViewSchema(field: $groupByField, query: $query, label: 'kanban.groupByField');
+            return;
+        }
+
+        if ($viewType === 'calendar') {
+            $dateField = $presentation['calendar']['dateField'] ?? null;
+            if (is_string($dateField) === false || $dateField === '') {
+                throw new InvalidArgumentException('A calendar presentation requires a non-empty calendar.dateField');
+            }
+
+            $this->assertFieldExistsOnViewSchema(field: $dateField, query: $query, label: 'calendar.dateField');
+
+            $endDateField = $presentation['calendar']['endDateField'] ?? null;
+            if ($endDateField !== null) {
+                if (is_string($endDateField) === false || $endDateField === '') {
+                    throw new InvalidArgumentException('calendar.endDateField must be a non-empty string when provided');
+                }
+
+                $this->assertFieldExistsOnViewSchema(field: $endDateField, query: $query, label: 'calendar.endDateField');
+            }
+
+            return;
+        }
+
+        throw new InvalidArgumentException('Unknown presentation viewType: '.(string) $viewType);
+    }//end validatePresentationConfig()
+
+    /**
+     * Assert that a field name is a real property on the view's (first) schema.
+     *
+     * Kanban/calendar are single-schema presentations (per design non-goals:
+     * no cross-register kanban), so the first schema referenced by the view's
+     * query is the one validated against.
+     *
+     * @param string               $field The property name to check
+     * @param array<string, mixed> $query The view's query (holds `schemas`)
+     * @param string               $label Human-readable label for the error message
+     *
+     * @return void
+     *
+     * @throws InvalidArgumentException If no schema is configured, the schema can't be
+     *                                   resolved, or the field is not one of its properties
+     *
+     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     */
+    private function assertFieldExistsOnViewSchema(string $field, array $query, string $label): void
+    {
+        $schemaRef = $query['schemas'][0] ?? null;
+        if ($schemaRef === null || $schemaRef === '') {
+            throw new InvalidArgumentException(
+                'Cannot validate '.$label.': the view has no schema configured to validate against'
+            );
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaRef);
+        } catch (Exception $e) {
+            throw new InvalidArgumentException(
+                'Cannot validate '.$label.': schema "'.$schemaRef.'" could not be resolved',
+                0,
+                $e
+            );
+        }
+
+        $properties = $schema->getProperties();
+        if (array_key_exists($field, $properties) === false) {
+            throw new InvalidArgumentException(
+                'Presentation '.$label.' "'.$field.'" is not a property of the view\'s schema'
+            );
+        }
+    }//end assertFieldExistsOnViewSchema()
 }//end class
