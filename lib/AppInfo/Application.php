@@ -2356,6 +2356,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Flow node discovery. OpenRegister contributes its own built-ins
+        // through the same event every consuming app uses, so the contribution
+        // path is exercised by its owner and cannot rot unnoticed.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
@@ -3127,6 +3135,11 @@ class Application extends App implements IBootstrap
         \Psr\Log\LoggerInterface $logger
     ): ?ContainerInterface {
         try {
+            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
+            // resolves the server container only. The sniff says this is removed in NC 34,
+            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
+            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
+            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
             $appContainer = \OC::$server->getRegisteredAppContainer($appId);
         } catch (\Throwable $e) {
             $logger->debug(

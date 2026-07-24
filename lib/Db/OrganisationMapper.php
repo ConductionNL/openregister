@@ -68,6 +68,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class OrganisationMapper extends QBMapper
 {
+
     /**
      * Request-scoped memo of the active-organisation UUID per user id.
      *
