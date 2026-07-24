@@ -28,7 +28,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -44,9 +46,14 @@ class FlowNodeRegistrationListener implements IEventListener
      * Constructor.
      *
      * @param SetFieldsNode $setFields The built-in "Edit fields" node.
+     * @param FilterNode    $filter    The built-in "Filter" node.
+     * @param WaitNode      $wait      The built-in "Wait" node.
      */
-    public function __construct(private readonly SetFieldsNode $setFields)
-    {
+    public function __construct(
+        private readonly SetFieldsNode $setFields,
+        private readonly FilterNode $filter,
+        private readonly WaitNode $wait
+    ) {
 
     }//end __construct()
 
@@ -66,6 +73,8 @@ class FlowNodeRegistrationListener implements IEventListener
         }
 
         $event->registerNode(node: $this->setFields);
+        $event->registerNode(node: $this->filter);
+        $event->registerNode(node: $this->wait);
 
     }//end handle()
 }//end class
