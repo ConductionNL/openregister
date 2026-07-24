@@ -3343,6 +3343,7 @@ class Application extends App implements IBootstrap
      *
      * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
+
     /**
      * Collect providers from apps that announce themselves with a listener.
      *
@@ -3383,8 +3384,8 @@ class Application extends App implements IBootstrap
                     continue;
                 }
 
-                $seen[$appId]  = true;
-                $providers[]   = $provider;
+                $seen[$appId] = true;
+                $providers[]  = $provider;
             }
         } catch (\Throwable $e) {
             // Discovery must never take the container down: an app with a
@@ -3397,6 +3398,21 @@ class Application extends App implements IBootstrap
 
     }//end collectAnnouncedMcpProviders()
 
+    /**
+     * Collect per-app providers by container alias (legacy path).
+     *
+     * Kept for one release while the fleet migrates to the registration event;
+     * removed once every app announces itself. See the discovery-cache notes
+     * above, which document this method's caching behaviour.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
+     */
     private function collectPerAppMcpProviders(
         ContainerInterface $container,
         \Psr\Log\LoggerInterface $logger,
