@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 
 declare(strict_types=1);

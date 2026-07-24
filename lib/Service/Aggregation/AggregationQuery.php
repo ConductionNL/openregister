@@ -86,6 +86,10 @@ class AggregationQuery
      *                                                                            — see {@see getMetrics()}
      *                                                                            for the canonicalisation and
      *                                                                            response-shape contract.
+     * @param bool                                                    $cumulative Optional running-total flag
+     *                                                                            (REQ-AGG-103) — only valid
+     *                                                                            alongside `$dateBucket`; see
+     *                                                                            {@see isCumulative()}.
      */
     private function __construct(
         public readonly string $metric,
@@ -93,7 +97,8 @@ class AggregationQuery
         public readonly array $filter,
         public readonly ?array $groupBy,
         public readonly ?array $dateBucket=null,
-        public readonly ?array $metrics=null
+        public readonly ?array $metrics=null,
+        public readonly bool $cumulative=false
     ) {
 
     }//end __construct()
@@ -133,6 +138,18 @@ class AggregationQuery
      *                                                                            supported — REQ-AGG-102
      *                                                                            covers the categorical
      *                                                                            value/grouped paths only).
+     * @param bool                                                    $cumulative Optional running-total
+     *                                                                            flag (REQ-AGG-103).
+     *                                                                            Only meaningful —
+     *                                                                            and only accepted —
+     *                                                                            alongside a
+     *                                                                            `$dateBucket` (the
+     *                                                                            time-bucket
+     *                                                                            primitive); a
+     *                                                                            categorical `$groupBy`
+     *                                                                            has no inherent bucket
+     *                                                                            ordering to accumulate
+     *                                                                            over.
      *
      * @return self
      *
@@ -147,7 +164,6 @@ class AggregationQuery
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      * @spec openspec/specs/aggregation-api/spec.md
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
      */
     public static function create(
         string $metric,
@@ -155,7 +171,8 @@ class AggregationQuery
         array $filter=[],
         ?array $groupBy=null,
         ?array $dateBucket=null,
-        ?array $metrics=null
+        ?array $metrics=null,
+        bool $cumulative=false
     ): self {
         if (in_array($metric, self::METRICS, true) === false) {
             throw new InvalidArgumentException(
@@ -240,13 +257,20 @@ class AggregationQuery
             );
         }
 
+        if ($cumulative === true && $dateBucket === null) {
+            throw new InvalidArgumentException(
+                'cumulative MUST only be combined with a dateBucket (time-bucket) aggregation'
+            );
+        }
+
         return new self(
             metric: $metric,
             field: $field,
             filter: $filter,
             groupBy: $groupBy,
             dateBucket: $dateBucket,
-            metrics: $metrics
+            metrics: $metrics,
+            cumulative: $cumulative
         );
 
     }//end create()
@@ -417,6 +441,20 @@ class AggregationQuery
     }//end hasDateBucket()
 
     /**
+     * Test whether the request asked for a running-total (cumulative)
+     * time-bucket result (REQ-AGG-103).
+     *
+     * @return bool
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public function isCumulative(): bool
+    {
+        return $this->cumulative;
+
+    }//end isCumulative()
+
+    /**
      * Canonical, always-populated metrics list.
      *
      * Falls back to the legacy single `{metric, field}` pair (as a
@@ -426,7 +464,7 @@ class AggregationQuery
      *
      * @return array<int, array{metric: string, field: ?string}> Ordered, normalised metric requests.
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function getMetrics(): array
     {
@@ -457,7 +495,7 @@ class AggregationQuery
      *
      * @return bool
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function isMultiMetric(): bool
     {
@@ -476,7 +514,7 @@ class AggregationQuery
      *
      * @return string The response key.
      *
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public static function metricResponseKey(string $metric, ?string $field): string
     {
@@ -502,10 +540,13 @@ class AggregationQuery
      *   field: ?string,
      *   filter: array<string, mixed>,
      *   groupBy: array<string, mixed>|null,
-     *   dateBucket: array<string, mixed>|null
+     *   dateBucket: array<string, mixed>|null,
+     *   metrics: array<int, mixed>|null,
+     *   cumulative: bool
      * } Canonical wire shape of the query.
      *
      * @spec openspec/specs/aggregations-backend-native/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function toArray(): array
     {
@@ -516,6 +557,11 @@ class AggregationQuery
             'groupBy'    => $this->groupBy,
             'dateBucket' => $this->dateBucket,
             'metrics'    => $this->metrics,
+            // REQ-AGG-103 / REQ-AGG-105: cumulative is part of the
+            // normalized query shape so the ad-hoc cache key
+            // differentiates a running-total request from a plain
+            // per-bucket request over otherwise-identical parameters.
+            'cumulative' => $this->cumulative,
         ];
 
     }//end toArray()

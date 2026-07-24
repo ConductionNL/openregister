@@ -37,7 +37,7 @@
  * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/specs/aggregations-backend-native/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
- * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+ * @spec openspec/specs/aggregation-api/spec.md
  */
 
 declare(strict_types=1);
@@ -139,7 +139,7 @@ class AggregationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function value(string $register, string $schema): JSONResponse
     {
@@ -276,7 +276,7 @@ class AggregationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function grouped(string $register, string $schema): JSONResponse
     {
@@ -399,9 +399,15 @@ class AggregationController extends Controller
      *  - metric       (optional, default `count`)
      *  - metricField  (required when metric != count)
      *  - filter[...]  (optional, reuses the existing filter vocabulary)
+     *  - cumulative   (optional, default `false` — REQ-AGG-103; running
+     *                  total of the metric alongside each per-bucket
+     *                  value, ordered ascending by bucket start. Only
+     *                  valid when `interval` is set.)
      *
-     * Returns `{ groups: [{ key, value }], backend, cached }` matching the
-     * GraphQL `groups` field shape so `CnChartWidget` can normalise once.
+     * Returns `{ groups: [{ key, value, cumulative? }], backend, cached }`
+     * matching the GraphQL `groups` field shape so `CnChartWidget` can
+     * normalise once. The `cumulative` per-group field is present only
+     * when the request set `cumulative=true`.
      *
      * @param string $register Register reference.
      * @param string $schema   Schema reference.
@@ -413,7 +419,7 @@ class AggregationController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-15
-     * @spec openspec/changes/adhoc-aggregation-suite/specs/aggregation-api/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function timeseries(string $register, string $schema): JSONResponse
     {
@@ -437,6 +443,7 @@ class AggregationController extends Controller
             'metric'      => $this->request->getParam('metric', 'count'),
             'metricField' => $this->request->getParam('metricField'),
             'filter'      => (array) ($this->request->getParam('filter', [])),
+            'cumulative'  => $this->request->getParam('cumulative', false),
         ];
 
         try {
