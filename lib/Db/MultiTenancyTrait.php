@@ -70,8 +70,10 @@ trait MultiTenancyTrait
     protected function getActiveOrganisationUuid(): ?string
     {
         if (isset($this->logger) === true) {
-            $this->logger->info(
-                message: '[MultiTenancyTrait] 🔹 MultiTenancyTrait: getActiveOrganisationUuid called',
+            // Debug, not info: this runs on the hot tenant-filter path (once per mapper
+            // query), so at info level it emitted ~1,000 lines per object write.
+            $this->logger->debug(
+                message: '[MultiTenancyTrait] getActiveOrganisationUuid called',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
         }
@@ -90,7 +92,7 @@ trait MultiTenancyTrait
         if (isset($this->organisationMapper) === true) {
             $organisationMapper = $this->organisationMapper;
             if (isset($this->logger) === true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[MultiTenancyTrait] Calling getActiveOrganisationWithFallback for user: '.$user->getUID(),
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
