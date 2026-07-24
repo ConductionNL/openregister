@@ -42,3 +42,14 @@
 - [ ] 4.3 Move openbuild's `DecisionTableEvaluator` to OR as the shared
       decision-table service
 - [ ] 4.4 DMN/CMMN interchange (openregister#466) — driver unconfirmed
+
+## Item data channel
+
+- [x] `FlowItems` — normalisation, single-item seeding from the subject, and
+      `pairedItem` provenance.
+- [x] `FlowStepDispatcher::dispatch()` takes and returns items; `context` is
+      demoted to run-level metadata.
+- [x] `FlowEngine` threads items between steps and reports per-step item counts
+      in the run log.
+- [x] Tests: threading, fan-out with provenance, filtering to empty, and
+      single-item seeding.

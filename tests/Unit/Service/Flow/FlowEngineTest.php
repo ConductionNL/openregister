@@ -15,6 +15,7 @@ namespace Unit\Service\Flow;
 
 use OCA\OpenRegister\Service\Flow\FlowDefinitionBuilder;
 use OCA\OpenRegister\Service\Flow\FlowEngine;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStepDispatcher;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -32,20 +33,33 @@ class RecordingDispatcher implements FlowStepDispatcher
 {
     public array $dispatched = [];
 
-    public function __construct(private readonly ?string $failOn = null)
+    public function __construct(protected readonly ?string $failOn = null)
     {
     }
 
-    public function dispatch(array $step, object $subject, array $context): ?array
+    /** Items this dispatcher was handed, per step id. */
+    public array $seenItems = [];
+
+    public function dispatch(array $step, array $items, array $context): array
     {
         $name = (string) ($step['id'] ?? '');
         $this->dispatched[] = $name;
+        $this->seenItems[$name] = $items;
 
         if ($this->failOn !== null && $name === $this->failOn) {
             throw new RuntimeException('step blew up');
         }
 
-        return [$name => 'ran'];
+        // One item out per item in, tagged with the step that produced it, so a
+        // test can assert both the threading and the per-item pairing.
+        $out = [];
+        foreach ($items as $index => $item) {
+            $json = (array) ($item['json'] ?? []);
+            $json['ranBy'] = $name;
+            $out[] = FlowItems::item(json: $json, binary: [], fromItemIndex: $index);
+        }
+
+        return $out;
     }
 }
 
@@ -104,18 +118,82 @@ class FlowEngineTest extends TestCase
 
         $this->assertSame(
             [
-                ['transition' => 'first', 'status' => 'completed'],
-                ['transition' => 'second', 'status' => 'completed'],
+                ['transition' => 'first', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1],
+                ['transition' => 'second', 'status' => 'completed', 'itemsIn' => 1, 'itemsOut' => 1],
             ],
             $result['log']
         );
     }
 
-    public function testAStepsReturnedContextIsVisibleToLaterSteps(): void
+    public function testItemsAreThreadedFromEachStepIntoTheNext(): void
     {
-        $result = $this->runFlow($this->linearFlow());
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->runFlow($this->linearFlow(), $dispatcher);
 
-        $this->assertSame(['first' => 'ran', 'second' => 'ran'], $result['context']);
+        // The second step sees what the first produced, not the run's seed.
+        $this->assertSame('first', $dispatcher->seenItems['second'][0]['json']['ranBy']);
+        $this->assertSame('second', $result['items'][0]['json']['ranBy']);
+    }
+
+    public function testARunSeedsExactlyOneItemFromTheSubject(): void
+    {
+        $dispatcher = new RecordingDispatcher();
+        $this->runFlow($this->linearFlow(), $dispatcher);
+
+        $this->assertCount(1, $dispatcher->seenItems['first']);
+        $this->assertArrayHasKey('json', $dispatcher->seenItems['first'][0]);
+        $this->assertArrayHasKey('binary', $dispatcher->seenItems['first'][0]);
+        $this->assertArrayHasKey('pairedItem', $dispatcher->seenItems['first'][0]);
+    }
+
+    public function testAStepThatFansOutIsFollowedByOneCallPerItem(): void
+    {
+        // A step returning three items must hand all three to the next step:
+        // this is the property the whole item model exists for.
+        $fanOut = new class extends RecordingDispatcher {
+            public function dispatch(array $step, array $items, array $context): array
+            {
+                $name = (string) ($step['id'] ?? '');
+                $this->dispatched[] = $name;
+                $this->seenItems[$name] = $items;
+
+                if ($name !== 'first') {
+                    return $items;
+                }
+
+                return [
+                    FlowItems::item(json: ['n' => 1], binary: [], fromItemIndex: 0),
+                    FlowItems::item(json: ['n' => 2], binary: [], fromItemIndex: 0),
+                    FlowItems::item(json: ['n' => 3], binary: [], fromItemIndex: 0),
+                ];
+            }
+        };
+
+        $result = $this->runFlow($this->linearFlow(), $fanOut);
+
+        $this->assertCount(3, $fanOut->seenItems['second']);
+        $this->assertCount(3, $result['items']);
+        // Provenance survives the hop: every item still points at input item 0.
+        $this->assertSame(['item' => 0], $result['items'][0]['pairedItem']);
+    }
+
+    public function testAStepReturningNothingEndsThatBranchesData(): void
+    {
+        $filter = new class extends RecordingDispatcher {
+            public function dispatch(array $step, array $items, array $context): array
+            {
+                $name = (string) ($step['id'] ?? '');
+                $this->dispatched[] = $name;
+                $this->seenItems[$name] = $items;
+
+                return ($name === 'first') ? [] : $items;
+            }
+        };
+
+        $result = $this->runFlow($this->linearFlow(), $filter);
+
+        $this->assertSame([], $filter->seenItems['second']);
+        $this->assertSame([], $result['items']);
     }
 
     /**
@@ -265,10 +343,10 @@ class FlowEngineTest extends TestCase
             {
             }
 
-            public function dispatch(array $step, object $subject, array $context): ?array
+            public function dispatch(array $step, array $items, array $context): array
             {
                 $this->steps[] = $step;
-                return null;
+                return $items;
             }
         };
 

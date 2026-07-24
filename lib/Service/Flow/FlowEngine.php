@@ -102,13 +102,20 @@ class FlowEngine
      * not ours — a genuinely concurrent net is expressed as a split, not as a
      * race between edges.
      *
+     * The data channel is an item LIST ({@see FlowItems}), threaded from step to
+     * step. `$subject` is not that data: it carries the Petri-net marking and
+     * names what the run is about. A run with no explicit seed starts from one
+     * item built out of the subject, so a flow that never fans out behaves
+     * exactly like the single-object model this replaces.
+     *
      * @param array                 $flow       The flow document.
      * @param MarkingStoreInterface $store      Where the marking lives (an OR object, in production).
-     * @param object                $subject    The object the run is about.
+     * @param object                $subject    The object the run is about; holds the marking.
      * @param FlowStepDispatcher    $dispatcher Performs each step's side effect.
-     * @param array                 $context    Initial context passed to every step.
+     * @param array                 $context    Run-level metadata handed to every step.
+     * @param array|null            $items      Seed items; defaults to one item from the subject.
      *
-     * @return array The run result: `{status, log: [], context: []}`.
+     * @return array The run result: `{status, log: [], context: [], items: []}`.
      *
      * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
      */
@@ -117,8 +124,11 @@ class FlowEngine
         MarkingStoreInterface $store,
         object $subject,
         FlowStepDispatcher $dispatcher,
-        array $context=[]
+        array $context=[],
+        ?array $items=null
     ): array {
+        $items = ($items ?? FlowItems::fromSubject(subject: $subject));
+
         try {
             $definition = $this->builder->build(flow: $flow);
         } catch (InvalidArgumentException $e) {
@@ -132,6 +142,7 @@ class FlowEngine
                 'status'  => self::STATUS_FAILED,
                 'log'     => [],
                 'context' => $context,
+                'items'   => $items,
                 'error'   => $e->getMessage(),
             ];
         }//end try
@@ -150,6 +161,7 @@ class FlowEngine
                     'status'  => self::STATUS_COMPLETED,
                     'log'     => $log,
                     'context' => $context,
+                    'items'   => $items,
                 ];
             }
 
@@ -163,6 +175,7 @@ class FlowEngine
                     'status'  => self::STATUS_FAILED,
                     'log'     => $log,
                     'context' => $context,
+                    'items'   => $items,
                     'error'   => sprintf('Flow did not settle within %d transitions; it may contain an unbounded loop.', self::MAX_TRANSITIONS),
                 ];
             }
@@ -170,11 +183,17 @@ class FlowEngine
             $transition = $enabled[0];
             $name       = $transition->getName();
             $step       = $this->stepFor(flow: $flow, transitionName: $name);
+            $itemsIn    = $items;
 
             try {
-                $result  = $dispatcher->dispatch(step: $step, subject: $subject, context: $context);
-                $context = array_merge($context, ($result ?? []));
-                $log[]   = ['transition' => $name, 'status' => 'completed'];
+                $produced = $dispatcher->dispatch(step: $step, items: $items, context: $context);
+                $items    = FlowItems::normalise(value: $produced);
+                $log[]    = [
+                    'transition' => $name,
+                    'status'     => 'completed',
+                    'itemsIn'    => count($itemsIn),
+                    'itemsOut'   => count($items),
+                ];
             } catch (Throwable $e) {
                 $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);
                 $log[]  = ['transition' => $name, 'status' => 'failed', 'error' => $e->getMessage()];
@@ -192,13 +211,13 @@ class FlowEngine
                 );
 
                 if ($policy === self::ON_ERROR_DEAD_LETTER) {
-                    return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context];
+                    return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
                 }
 
                 if ($policy !== self::ON_ERROR_CONTINUE) {
                     // `stop` is the default: an unknown policy stops rather than
                     // continues, so a typo fails safe instead of running on.
-                    return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context];
+                    return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
                 }
             }//end try
 

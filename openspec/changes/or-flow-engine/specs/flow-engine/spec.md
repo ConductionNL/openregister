@@ -17,8 +17,8 @@ an engine change.
 - **GIVEN** a consumer implementing `FlowStepDispatcher`
 - **WHEN** `FlowEngine::run()` reaches a step
 - **THEN** the engine calls `dispatch()` with that step's own edge
-  configuration (including `type` and `configRef`) and merges any returned
-  array into the run context
+  configuration (including `type` and `configRef`) plus the step's input items,
+  and threads the returned items on to the next step
 - **AND** the engine itself makes no assumption about what the step does
 
 ### Requirement: The execution core is a Petri net (REQ-FE-002)
@@ -143,6 +143,57 @@ openconnector's `FlowRunnerService`:
 - **WHEN** the flow runs
 - **THEN** both steps are dispatched and the run ends `completed`
 - **AND** the run log records the first step as `failed` with its error
+
+### Requirement: The data channel between steps is an item list (REQ-FE-008)
+
+The engine SHALL thread a LIST of items between steps, not a single object.
+A step SHALL receive its input items and SHALL return its output items, so a
+step that acts per record acts once per item, a step that filters returns
+fewer items than it received, and a step that fans out returns more.
+
+- An item SHALL carry `json` (the record), `binary` (attachments keyed by
+  name), and `pairedItem` (which input item produced it).
+- A run SHALL seed exactly one item from the subject when no seed is supplied,
+  so a flow that never fans out behaves exactly like the single-object model.
+- The engine SHALL normalise a dispatcher's return value, accepting a full item
+  list, a single item, or a bare record. Rejecting the looser shapes would push
+  identical boilerplate into every consuming app's dispatcher.
+- An empty returned list SHALL be meaningful — it ends that branch's data — and
+  SHALL NOT be treated as "no change".
+- Run-level metadata SHALL travel in `context`, which is NOT the data channel.
+  Records placed in `context` stop being per-record the moment a step fans out.
+- Each run-log entry SHALL record the item count in and out for that step.
+
+`pairedItem` is what makes a run explainable: given an item at the end of a
+flow it is the chain back to the input that caused it. A fan-out with no
+provenance leaves no way to answer "where did this come from", which is the
+first question asked of any failed run.
+
+#### Scenario: A step's output items become the next step's input
+
+- **GIVEN** a two-step flow
+- **WHEN** the first step returns items it has tagged
+- **THEN** the second step receives exactly those items, not the run's seed
+
+#### Scenario: A fan-out hands every item to the next step
+
+- **GIVEN** a two-step flow whose first step returns three items
+- **WHEN** the flow runs
+- **THEN** the second step receives all three
+- **AND** each output item's `pairedItem` still names the input item it came from
+
+#### Scenario: A step returning no items ends that branch's data
+
+- **GIVEN** a two-step flow whose first step returns an empty list
+- **WHEN** the flow runs
+- **THEN** the second step receives an empty item list
+- **AND** the run's final items are empty
+
+#### Scenario: A run with no seed starts from one item built from the subject
+
+- **GIVEN** a run started without explicit items
+- **WHEN** the first step is dispatched
+- **THEN** it receives exactly one well-formed item
 
 ### Requirement: A run cannot loop forever (REQ-FE-007)
 

@@ -42,6 +42,11 @@ Governed by ADR-065 (hydra: `openspec/architecture/adr-065-flow-engine-and-canva
 - `FlowStepDispatcher` — the seam between *when* a step runs (engine) and *what
   it does* (app), so the engine is container-free testable and consumers add
   step types without touching it.
+- `FlowItems` — the data channel. Steps exchange a LIST of items
+  (`{json, binary, pairedItem}`), not one object, so "fetch 200 rows and act on
+  each" needs no author-drawn loop and a fan-out stays explainable. This shape
+  is settled here, before any consumer exists, precisely because changing it
+  later would break every dispatcher in the fleet at once.
 
 ## Out of scope (this change)
 
