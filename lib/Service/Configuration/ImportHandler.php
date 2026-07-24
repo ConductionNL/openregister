@@ -1407,24 +1407,63 @@ class ImportHandler
             }//end if
 
             // Check if schema already exists by slug.
-            // Bypass multi-tenancy so we find schemas regardless of organisation context,
-            // preventing duplicate schemas when the active organisation UUID changes.
+            //
+            // CROSS-APP SLUG-COLLISION FIX. Historically this did a GLOBAL slug
+            // lookup (`find($slug, _multitenancy:false)`) — a slug was unique
+            // INSTANCE-WIDE, not per app. On the shared instance that made a
+            // generic slug (e.g. 'conversation', 'order', 'task') shipped by app
+            // B silently BIND to app A's schema, and — if B's version was newer —
+            // OVERWRITE A's live schema via updateFromArray() below. When we have
+            // an app context, resolve the existing schema scoped to THIS app:
+            // an app only ever updates a schema it owns, so importing a colliding
+            // slug creates the app's OWN schema (see the create path below)
+            // instead of clobbering a foreign one. Without an app context
+            // (manual / UI-driven single imports) the historical global behaviour
+            // is preserved for backward compatibility.
             $existingSchema = null;
-            try {
-                $existingSchema = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-            } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                $msg = "Schema '{$data['slug']}' not found, will create new one";
-                $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-                $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
-                $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
-            } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-                $this->handleDuplicateSchemaError(
-                    slug: $data['slug'],
-                    appId: $appId ?? 'unknown',
-                    version: $version ?? 'unknown'
-                );
-            }
+            if ($appId !== null && $appId !== '') {
+                $existingSchema = $this->schemaMapper->findByApplicationAndSlug(slug: $data['slug'], application: $appId);
+
+                // Visibility: if we own none but a DIFFERENT app already owns the
+                // slug, surface the collision instead of silently forking. We
+                // still (correctly) create our own schema below.
+                if ($existingSchema === null) {
+                    try {
+                        $foreign    = $this->schemaMapper->find($data['slug'], _multitenancy: false);
+                        $foreignApp = $foreign->getApplication();
+                        if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
+                            $this->logger->warning(
+                                message: sprintf(
+                                    "[ImportHandler] Schema slug '%s' is already owned by app '%s'; ".
+                                    "app '%s' will create its OWN schema to avoid a cross-app collision.",
+                                    $data['slug'],
+                                    $foreignApp,
+                                    $appId
+                                ),
+                                context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
+                            );
+                        }
+                    } catch (\Throwable $ignore) {
+                        // No pre-existing schema (or ambiguous) — nothing to warn about.
+                    }
+                }
+            } else {
+                try {
+                    $existingSchema = $this->schemaMapper->find($data['slug'], _multitenancy: false);
+                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+                    $msg = "Schema '{$data['slug']}' not found, will create new one";
+                    $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+                    $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
+                    $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+                } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+                    $this->handleDuplicateSchemaError(
+                        slug: $data['slug'],
+                        appId: $appId ?? 'unknown',
+                        version: $version ?? 'unknown'
+                    );
+                }
+            }//end if
 
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
@@ -3367,8 +3406,63 @@ class ImportHandler
                 $register->setDescription($description);
             }
 
+            // Reconcile schema references. Union the freshly-imported (app-owned)
+            // ids in, but first PRUNE any currently-listed id that is now
+            // SHADOWED by a newly-imported schema sharing the same slug. This
+            // self-heals a register that — before the cross-app slug-collision
+            // fix — had a FOREIGN app's same-slug schema bound into it (e.g.
+            // pipelinq's 'conversation' #701 living in hermiq's register). Once
+            // the app imports its OWN 'conversation', the foreign shadow is
+            // dropped from THIS app's register so a slug resolves unambiguously
+            // to the app's own schema.
             $currentSchemaIds = $register->getSchemas() ?? [];
-            $unionSchemaIds   = $currentSchemaIds;
+
+            // Map lower(slug) -> app-owned id for everything we just imported.
+            $newSlugToId = [];
+            foreach ($schemas as $schema) {
+                if ($schema instanceof Schema
+                    && $schema->getId() !== null
+                    && $schema->getSlug() !== null
+                ) {
+                    $newSlugToId[strtolower($schema->getSlug())] = (int) $schema->getId();
+                }
+            }
+
+            // Drop any currently-listed id whose slug matches a freshly-imported
+            // schema but whose id differs (the shadowed, foreign/stale one).
+            $prunedSchemaIds = [];
+            foreach ($currentSchemaIds as $currentId) {
+                $currentId = (int) $currentId;
+                $keep      = true;
+                try {
+                    $existingSlug = $this->schemaMapper->find($currentId, _multitenancy: false)->getSlug();
+                    if ($existingSlug !== null) {
+                        $slugKey = strtolower($existingSlug);
+                        if (isset($newSlugToId[$slugKey]) === true && $newSlugToId[$slugKey] !== $currentId) {
+                            $keep = false;
+                            $this->logger->info(
+                                message: sprintf(
+                                    "[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
+                                    $slug,
+                                    $currentId,
+                                    $existingSlug,
+                                    $newSlugToId[$slugKey]
+                                ),
+                                context: ['file' => __FILE__, 'line' => __LINE__]
+                            );
+                        }
+                    }
+                } catch (\Throwable $ignore) {
+                    // Missing / undecodable schema id — keep it as-is; nothing to compare against.
+                }//end try
+
+                if ($keep === true) {
+                    $prunedSchemaIds[] = $currentId;
+                }
+            }//end foreach
+
+            // Union the freshly-imported app-owned ids into the pruned list.
+            $unionSchemaIds = $prunedSchemaIds;
             foreach ($newSchemaIds as $newId) {
                 if (in_array($newId, $unionSchemaIds, true) === false) {
                     $unionSchemaIds[] = $newId;
