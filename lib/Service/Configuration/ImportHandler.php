@@ -1429,12 +1429,13 @@ class ImportHandler
                 // still (correctly) create our own schema below.
                 if ($existingSchema === null) {
                     try {
-                        $foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
+                        $foreign    = $this->schemaMapper->find($data['slug'], _multitenancy: false);
                         $foreignApp = $foreign->getApplication();
                         if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
                             $this->logger->warning(
                                 message: sprintf(
-                                    "[ImportHandler] Schema slug '%s' is already owned by app '%s'; app '%s' will create its OWN schema to avoid a cross-app collision.",
+                                    "[ImportHandler] Schema slug '%s' is already owned by app '%s'; ".
+                                    "app '%s' will create its OWN schema to avoid a cross-app collision.",
                                     $data['slug'],
                                     $foreignApp,
                                     $appId
@@ -3453,12 +3454,12 @@ class ImportHandler
                     }
                 } catch (\Throwable $ignore) {
                     // Missing / undecodable schema id — keep it as-is; nothing to compare against.
-                }
+                }//end try
 
                 if ($keep === true) {
                     $prunedSchemaIds[] = $currentId;
                 }
-            }
+            }//end foreach
 
             // Union the freshly-imported app-owned ids into the pruned list.
             $unionSchemaIds = $prunedSchemaIds;

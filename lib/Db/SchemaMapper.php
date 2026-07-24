@@ -417,8 +417,8 @@ class SchemaMapper extends QBMapper
      * same-slug row {@see find()} happens to fetch first. Callers pass the
      * register's own `schemas` id list; the slug is matched only among those.
      *
-     * @param string    $slug      The schema slug (matched case-insensitively).
-     * @param int[]     $schemaIds The candidate schema ids (a register's schemas list).
+     * @param string $slug      The schema slug (matched case-insensitively).
+     * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
      *
      * @return Schema|null The matching schema within the id set, or null when
      *                     none of the register's schemas carry this slug.
