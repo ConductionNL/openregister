@@ -64,6 +64,38 @@ class SearchQueryHandlerObjectSourceFilterTest extends TestCase
     }
 
     /**
+     * The object-source structural lookup MUST resolve the schema as a system
+     * operation — `find()` called with RBAC and multitenancy disabled — so that
+     * when saasMode is active and the schema lives in another organisation, the
+     * object-source detection still succeeds and snake_case column filters
+     * (e.g. `app_id`) are kept literal instead of being wrongly dot-un-mangled
+     * (openregister#2089 follow-on: cross-org DBAL registers were silently
+     * unfilterable).
+     */
+    public function testObjectSourceLookupBypassesRbacAndMultitenancy(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getObjectSource')->willReturn(['provider' => 'dbal-source', 'config' => []]);
+        $this->schemaMapper = $this->createMock(SchemaMapper::class);
+        // A tenant-scoped find() (the default) would throw for a cross-org
+        // schema; the handler MUST call it with _rbac=false, _multitenancy=false.
+        $this->schemaMapper->expects($this->once())
+            ->method('find')
+            ->with(777, $this->anything(), false, false)
+            ->willReturn($schema);
+
+        $result = $this->makeHandler()->buildSearchQuery(
+            ['app_id' => '6', '_limit' => '5'],
+            null,
+            777
+        );
+
+        $this->assertArrayHasKey('app_id', $result, 'snake_case column must stay literal for a cross-org object-source schema');
+        $this->assertSame('6', $result['app_id']);
+        $this->assertArrayNotHasKey('app', $result, 'app_id must not be split into a nested array');
+    }//end testObjectSourceLookupBypassesRbacAndMultitenancy()
+
+    /**
      * A magic-table (non-object-source) schema must keep the historical
      * dot-un-mangling: `person_address_street` reconstructs a nested `person`.
      */
