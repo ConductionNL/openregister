@@ -238,6 +238,28 @@ class FlowEngine
             $itemsIn = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
             $items   = $itemsIn;
 
+            // Pinned output (n8n's "pin data"): when a run supplies a pin for
+            // this step, its stored output is used verbatim and the step is NOT
+            // executed — the side effect is skipped. This is what makes iterating
+            // on a flow cheap: pin the node that hits a real API, then re-run the
+            // downstream steps as often as needed without calling it again. A pin
+            // short-circuits before dispatch, so it also can neither stop,
+            // suspend nor fail — a pinned step always "just produces".
+            $pinned = $this->pinnedItems(flow: $flow, context: $context, transitionName: $name);
+            if ($pinned !== null) {
+                $items = $pinned;
+                $log[] = [
+                    'transition' => $name,
+                    'status'     => 'pinned',
+                    'itemsIn'    => count($itemsIn),
+                    'itemsOut'   => count($items),
+                ];
+
+                $placeItems = $this->advanceItems(transition: $transition, placeItems: $placeItems, items: $items);
+                $workflow->apply(subject: $subject, transitionName: $name);
+                continue;
+            }
+
             try {
                 $produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
                 $items    = FlowItems::normalise(value: $produced);
@@ -293,29 +315,21 @@ class FlowEngine
                     'resumeAt' => $suspension->getResumeAt(),
                 ];
             } catch (Throwable $e) {
-                $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);
-                $log[]  = ['transition' => $name, 'status' => 'failed', 'error' => $e->getMessage()];
-
-                $this->logger->warning(
-                    message: '[FlowEngine] Flow step failed',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'flow'       => ($flow['id'] ?? null),
-                        'transition' => $name,
-                        'policy'     => $policy,
-                        'error'      => $e->getMessage(),
-                    ]
+                $log[]   = ['transition' => $name, 'status' => 'failed', 'error' => $e->getMessage()];
+                $outcome = $this->outcomeForFailedStep(
+                    step: $step,
+                    error: $e,
+                    name: $name,
+                    flow: $flow,
+                    log: $log,
+                    context: $context,
+                    items: $items
                 );
 
-                if ($policy === self::ON_ERROR_DEAD_LETTER) {
-                    return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
-                }
-
-                if ($policy !== self::ON_ERROR_CONTINUE) {
-                    // `stop` is the default: an unknown policy stops rather than
-                    // continues, so a typo fails safe instead of running on.
-                    return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
+                // A terminal outcome ends the run; null means the step's policy
+                // is `continue`, so the walk goes on.
+                if ($outcome !== null) {
+                    return $outcome;
                 }
             }//end try
 
@@ -357,6 +371,89 @@ class FlowEngine
         return [];
 
     }//end stepFor()
+
+    /**
+     * Decide what a failed step does, per its `onError` policy.
+     *
+     * Returns the terminal run result when the policy ends the run
+     * (`dead_letter`, or `stop` — the default, which also catches an unknown
+     * policy so a typo fails safe), or null when the policy is `continue` and
+     * the walk should go on. The failure is logged either way.
+     *
+     * @param array     $step    The step configuration.
+     * @param Throwable $error   The failure.
+     * @param string    $name    The transition name.
+     * @param array     $flow    The flow document (for the log context).
+     * @param array     $log     The run log so far (already holding the failure).
+     * @param array     $context The run context.
+     * @param array     $items   The items in hand at the failure.
+     *
+     * @return array|null The terminal result, or null to continue the walk.
+     *
+     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     */
+    private function outcomeForFailedStep(
+        array $step,
+        Throwable $error,
+        string $name,
+        array $flow,
+        array $log,
+        array $context,
+        array $items
+    ): ?array {
+        $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);
+
+        $this->logger->warning(
+            message: '[FlowEngine] Flow step failed',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'flow'       => ($flow['id'] ?? null),
+                'transition' => $name,
+                'policy'     => $policy,
+                'error'      => $error->getMessage(),
+            ]
+        );
+
+        if ($policy === self::ON_ERROR_DEAD_LETTER) {
+            return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
+        }
+
+        if ($policy !== self::ON_ERROR_CONTINUE) {
+            return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
+        }
+
+        return null;
+
+    }//end outcomeForFailedStep()
+
+    /**
+     * The pinned output for a step, or null when it is not pinned.
+     *
+     * Pins are a map of step name to an item list. A run carries them in its
+     * `context` under `pins` (a test/authoring run supplies them without
+     * touching the stored flow); a flow may also carry a `pins` map of its own,
+     * used only as the fallback so a run's pins always win. A step whose name is
+     * absent from both is not pinned and runs normally.
+     *
+     * @param array  $flow           The flow document.
+     * @param array  $context        The run context.
+     * @param string $transitionName The step's transition name.
+     *
+     * @return array<int, mixed>|null The pinned items, or null when not pinned.
+     *
+     * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+     */
+    private function pinnedItems(array $flow, array $context, string $transitionName): ?array
+    {
+        $pins = (array) ($context['pins'] ?? ($flow['pins'] ?? []));
+        if (array_key_exists($transitionName, $pins) === false) {
+            return null;
+        }
+
+        return FlowItems::normalise(value: $pins[$transitionName]);
+
+    }//end pinnedItems()
 
     /**
      * Choose which enabled transition to fire, honouring edge conditions.

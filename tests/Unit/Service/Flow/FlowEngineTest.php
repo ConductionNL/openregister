@@ -329,6 +329,75 @@ class FlowEngineTest extends TestCase
         $this->assertStringContainsString('unbounded loop', $result['error']);
     }
 
+    public function testAPinnedStepIsNotExecutedAndItsOutputIsUsed(): void
+    {
+        // Pin the first step's output. The dispatcher must never run it, the log
+        // must mark it pinned, and the next step must see the pinned items.
+        $dispatcher = new RecordingDispatcher();
+        $pinned = [FlowItems::item(json: ['pinned' => true])];
+
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => $pinned]]
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // Only 'second' ran — 'first' was served from the pin.
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        $this->assertSame('pinned', $result['log'][0]['status']);
+        // The next step saw the pinned output, not a re-execution.
+        $this->assertTrue($dispatcher->seenItems['second'][0]['json']['pinned']);
+    }
+
+    public function testAFlowLevelPinIsUsedWhenTheRunSuppliesNone(): void
+    {
+        $flow = $this->linearFlow();
+        $flow['pins'] = ['first' => [FlowItems::item(json: ['source' => 'flow-pin'])]];
+
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->runFlow($flow, $dispatcher);
+
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        $this->assertSame('flow-pin', $dispatcher->seenItems['second'][0]['json']['source']);
+    }
+
+    public function testARunPinOverridesAFlowPin(): void
+    {
+        $flow = $this->linearFlow();
+        $flow['pins'] = ['first' => [FlowItems::item(json: ['source' => 'flow-pin'])]];
+
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->engine->run(
+            $flow,
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => [FlowItems::item(json: ['source' => 'run-pin'])]]]
+        );
+
+        // The run's pin wins over the flow's own.
+        $this->assertSame('run-pin', $dispatcher->seenItems['second'][0]['json']['source']);
+    }
+
+    public function testAPinnedStepThatWouldHaveFailedStillSucceeds(): void
+    {
+        // The whole point of a pin: skip the step that blows up (or hits a real
+        // API) and carry on with its stored output.
+        $dispatcher = new RecordingDispatcher(failOn: 'first');
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => [FlowItems::item(json: ['ok' => true])]]]
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+    }
+
     public function testAStepCarriesItsOwnEdgeConfigToTheDispatcher(): void
     {
         $flow = $this->linearFlow();
