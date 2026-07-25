@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -37,6 +39,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use stdClass;
 
 /**
  * REST surface for inspecting and retrying flow runs.
@@ -46,16 +49,18 @@ class FlowRunController extends Controller
     /**
      * Constructor.
      *
-     * @param string         $appName The app id.
-     * @param IRequest       $request The request.
-     * @param FlowRunMapper  $mapper  Reads runs.
-     * @param FlowRunService $runner  Retries and requeues.
+     * @param string               $appName   The app id.
+     * @param IRequest             $request   The request.
+     * @param FlowRunMapper        $mapper    Reads runs.
+     * @param FlowRunService       $runner    Retries, requeues and runs.
+     * @param FlowResolverRegistry $resolvers Resolves a flow id to its document.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly FlowRunMapper $mapper,
-        private readonly FlowRunService $runner
+        private readonly FlowRunService $runner,
+        private readonly FlowResolverRegistry $resolvers
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -162,4 +167,68 @@ class FlowRunController extends Controller
         return new JSONResponse($new->jsonSerialize(), Http::STATUS_CREATED);
 
     }//end retry()
+
+    /**
+     * Run a flow now and return its result — the interactive test run.
+     *
+     * Unlike a trigger, which queues a run for the worker, this runs the flow
+     * synchronously and hands back the whole trace, so an author gets the log and
+     * the items straight away. It carries the two authoring aids: `startAt` runs
+     * from a chosen node (run-from-here), and `pins` supplies stored output for
+     * named steps so the expensive ones are skipped. Together they are the
+     * "iterate on the tail of a flow" loop.
+     *
+     * The run is persisted like any other (trigger `test`), so it also shows up
+     * in the history — a test run is not a throwaway.
+     *
+     * @return JSONResponse The finished run, or a 4xx when the flow is unknown.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+     */
+    #[NoAdminRequired]
+    public function test(): JSONResponse
+    {
+        $flowId = trim((string) $this->request->getParam('flowId', ''));
+        if ($flowId === '') {
+            return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $flow = $this->resolvers->resolveFlow(flowId: $flowId);
+        if ($flow === null) {
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        $startAt = trim((string) $this->request->getParam('startAt', ''));
+        if ($startAt === '') {
+            $startAt = null;
+        }
+
+        $pins = (array) $this->request->getParam('pins', []);
+
+        $seed      = null;
+        $seedParam = $this->request->getParam('seedItems');
+        if ($seedParam !== null) {
+            $seed = FlowItems::normalise(value: $seedParam);
+        }
+
+        $run = $this->runner->queue(
+            flowId: $flowId,
+            subject: [],
+            trigger: 'test',
+            context: ['pins' => $pins]
+        );
+
+        $run = $this->runner->execute(
+            run: $run,
+            flow: $flow,
+            subject: new stdClass(),
+            seedItems: $seed,
+            startAt: $startAt
+        );
+
+        return new JSONResponse($run->jsonSerialize());
+
+    }//end test()
 }//end class
