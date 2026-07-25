@@ -104,6 +104,43 @@ class FlowRunService
     }//end queue()
 
     /**
+     * Queue a fresh run that repeats a finished one.
+     *
+     * Retry NEVER re-executes the old run — that would repeat every side effect
+     * it already performed. It creates a NEW queued run against the same flow,
+     * subject and trigger, so the worker executes it from the start. The
+     * original is left exactly as it ended, as the record of what happened.
+     *
+     * Only a terminal run can be retried: a queued or running one is already on
+     * its way, and a suspended one resumes rather than restarts.
+     *
+     * @param FlowRun $run The run to repeat.
+     *
+     * @return FlowRun|null The new queued run, or null when the source is not terminal.
+     *
+     * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+     */
+    public function retry(FlowRun $run): ?FlowRun
+    {
+        if ($run->isTerminal() === false) {
+            return null;
+        }
+
+        return $this->queue(
+            flowId: (string) $run->getFlowId(),
+            subject: [
+                'uuid'     => $run->getSubjectUuid(),
+                'register' => $run->getSubjectRegister(),
+                'schema'   => $run->getSubjectSchema(),
+            ],
+            trigger: 'retry',
+            context: ($run->getContext() ?? []),
+            user: $run->getTriggeredBy()
+        );
+
+    }//end retry()
+
+    /**
      * Execute (or continue) a run to its next stopping point.
      *
      * Called by the queue worker, never by a trigger. Returns the run in
