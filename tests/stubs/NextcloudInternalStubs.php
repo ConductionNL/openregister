@@ -67,7 +67,16 @@ if (class_exists('OC_FakeConfig') === false) {
 // registerService() can be retrieved via get().  Unknown services return null
 // so tests that just guard against an error don't blow up.
 // -----------------------------------------------------------------
-if (class_exists(\OC::class) === false) {
+// OC_FakeServer is declared in its OWN class_exists()-guarded block,
+// independent of whether the real `\OC` class is already loaded (e.g. when
+// OPENREGISTER_TEST_NC_ROOT bootstraps a real Nextcloud root). Tests that
+// reflect-invoke seams like Application::getRegisteredAppContainer() build
+// fakes that `extends \OC_FakeServer` regardless of which server topology is
+// in play, so this stub must stay available even when the "real \OC" branch
+// below is skipped. Nesting it inside the `class_exists(\OC::class)` guard
+// (the pre-fix layout) meant a real NC bootstrap satisfied that guard and
+// silently left `OC_FakeServer` undefined — "Class OC_FakeServer not found".
+if (class_exists('OC_FakeServer') === false) {
     // We have to declare this in the global namespace without a namespace block.
     // eval() makes that possible even when this file is parsed under strict_types.
     eval('
@@ -110,7 +119,13 @@ if (class_exists(\OC::class) === false) {
         /** @return mixed */
         public function getAppInfo(string $appName): mixed { return []; }
     }
+    ');
+}//end if
 
+if (class_exists(\OC::class) === false) {
+    // We have to declare this in the global namespace without a namespace block.
+    // eval() makes that possible even when this file is parsed under strict_types.
+    eval('
     class OC {
         public static OC_FakeServer $server;
         /** @var bool CLI mode flag (false in unit tests) */
