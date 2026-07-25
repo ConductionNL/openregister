@@ -2383,6 +2383,15 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
         );
 
+        // Flow resolution. OpenRegister resolves flows stored as its own objects
+        // (a `flows` register / `flow` schema by default), so a flow can live in
+        // OpenRegister itself and not only in a consuming app — contributed
+        // through the same resolver event.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
+            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
