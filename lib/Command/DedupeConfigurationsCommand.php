@@ -1,6 +1,6 @@
 <?php
 /**
- * occ command to remove duplicate app configuration rows.
+ * Occ command to remove duplicate app configuration rows.
  *
  * @category Command
  * @package  OCA\OpenRegister\Command
@@ -42,7 +42,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class DedupeConfigurationsCommand extends Command
 {
-
     /**
      * Constructor.
      *
@@ -123,7 +122,7 @@ class DedupeConfigurationsCommand extends Command
                     $app,
                     $group['keep'],
                     count($group['delete']),
-                    implode(', ', array_slice($group['delete'], 0, 10)).(count($group['delete']) > 10 ? ', …' : '')
+                    implode(', ', array_slice($group['delete'], 0, 10)).$this->overflowMark(total: count($group['delete']))
                 )
             );
         }
@@ -160,6 +159,23 @@ class DedupeConfigurationsCommand extends Command
         return 0;
 
     }//end execute()
+
+    /**
+     * The "and N more" marker when a delete list was truncated at ten.
+     *
+     * @param int $total The full count.
+     *
+     * @return string The marker, or an empty string when nothing was truncated.
+     */
+    private function overflowMark(int $total): string
+    {
+        if ($total > 10) {
+            return ', …';
+        }
+
+        return '';
+
+    }//end overflowMark()
 
     /**
      * Plan which configuration rows to delete, grouped by app.
@@ -201,5 +217,4 @@ class DedupeConfigurationsCommand extends Command
         return $plan;
 
     }//end planDeletions()
-
 }//end class
