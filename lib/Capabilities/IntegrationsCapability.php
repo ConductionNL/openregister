@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\Capabilities\ICapability;
 use OCP\IGroupManager;
@@ -61,6 +62,7 @@ class IntegrationsCapability implements ICapability
      * @param IUserSession        $userSession  Current user session.
      * @param IGroupManager       $groupManager Group manager (admin check).
      * @param IAppManager         $appManager   App manager (installed check).
+     * @param LeafRegistry        $leafRegistry Cross-app leaf catalogue (ADR-066).
      *
      * @return void
      */
@@ -69,6 +71,7 @@ class IntegrationsCapability implements ICapability
         private IUserSession $userSession,
         private IGroupManager $groupManager,
         private IAppManager $appManager,
+        private LeafRegistry $leafRegistry,
     ) {
     }//end __construct()
 
@@ -102,6 +105,12 @@ class IntegrationsCapability implements ICapability
                     // `providers`.
                     'registered'      => $this->registry->listIds(),
                     'providers'       => $rows,
+                    // `leaves` — the cross-app leaf catalogue (ADR-066). A
+                    // manifest app or admin UI discovers which leaves exist
+                    // (id, label, requiredApp, surfaces, kinds, usability)
+                    // WITHOUT loading any leaf app's JS bundle. Render-surface
+                    // parity to the JS registration is correlated by shared id.
+                    'leaves'          => $this->leafRegistry->describeForCapabilities(),
                 ],
             ],
         ];

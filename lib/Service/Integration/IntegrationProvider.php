@@ -38,13 +38,21 @@ namespace OCA\OpenRegister\Service\Integration;
  * (`getId`, `getRequiredApp`, `getStorageStrategy`, `isEnabled`, ...) to
  * route sub-resource calls and render UI surfaces.
  *
- * The four storage strategies that providers MAY declare:
+ * The five storage strategies that providers MAY declare:
  *   - 'magic-column' — link stored as a column on the OR object row.
  *   - 'link-table'   — link stored in a dedicated openregister_*_links table.
  *   - 'external'     — no local persistence; CRUD routed through OpenConnector.
  *   - 'query-time'   — no local persistence; source system queried live on
  *                      every list() call. Mutation methods throw
  *                      NotImplementedException (AD-22).
+ *   - 'app-local'    — no local persistence in OpenRegister; the data lives in a
+ *                      SIBLING Nextcloud app's own store and read/optional write
+ *                      are served by the provider's own methods, which run in
+ *                      that app's DI context because the app's listener
+ *                      constructed the provider there (ADR-066). This is the
+ *                      generalisation of the built-in files/notes/calendar
+ *                      leaves to any sibling app. OpenRegister routes the call
+ *                      and persists nothing.
  */
 interface IntegrationProvider
 {
@@ -108,13 +116,16 @@ interface IntegrationProvider
     /**
      * Where this integration's links are stored.
      *
-     * One of `'magic-column' | 'link-table' | 'external' | 'query-time'`.
+     * One of `'magic-column' | 'link-table' | 'external' | 'query-time' | 'app-local'`.
      * See the interface-level docblock for semantics.
      *
      * The registry uses this to choose the dispatch path:
      *   - magic-column / link-table -> ObjectsController routes
      *   - external -> ExternalIntegrationRouter -> OpenConnector
-     *   - query-time -> live read against the upstream source.
+     *   - query-time -> live read against the upstream source
+     *   - app-local -> the provider's own list()/create() served from the
+     *     contributing sibling app's store (ADR-066); OpenRegister persists
+     *     nothing.
      *
      * @return string Storage strategy.
      */
