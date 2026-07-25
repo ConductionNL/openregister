@@ -1,36 +1,31 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-12T13:34:59.662Z",
+  "generatedAt": "2026-07-25T07:12:30.384Z",
   "features": [
     {
       "slug": "avg-verwerkingsregister",
       "title": "AVG Verwerkingsregister",
-      "summary": "**Tender demand**: 58% of analyzed government tenders require AVG processing register capabilities. Cross-referencing with archivering-vernietiging (77%), audit-trail-immutable (56%), and auth-system (67%) shows that GDPR compliance is a prerequisite capability for nearly all Dutch government tender participation.",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/avg-verwerkingsregister/spec.md"
+      "summary": "**Tender demand**: 58% of analyzed government tenders require AVG processing register capabilities. Cross-referencing with archivering-vernietiging (77%), audit-trail-immutable (56%), and auth-system (67%) shows that GDPR compliance is a prerequisite capability for nearly all Dutch government tender participation."
     },
     {
       "slug": "deprecate-published-metadata",
       "title": "Deprecate Published/Depublished Object Metadata",
-      "summary": "Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls.",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/deprecate-published-metadata/spec.md"
+      "summary": "Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls."
     },
     {
       "slug": "graphql-api",
       "title": "GraphQL API",
-      "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE).",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/graphql-api/spec.md"
+      "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE)."
     },
     {
       "slug": "rapportage-bi-export",
       "title": "Rapportage en BI Export",
-      "summary": "**Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView).",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/rapportage-bi-export/spec.md"
+      "summary": "**Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView)."
     },
     {
       "slug": "saved-search-views",
       "title": "Saved Search Views",
-      "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.",
-      "docsUrl": "https://codeberg.org/Conduction/openregister/blob/main/openspec/specs/saved-search-views/spec.md"
+      "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent."
     }
   ]
 }
