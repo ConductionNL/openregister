@@ -268,6 +268,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
 use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
@@ -1240,6 +1241,22 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // LeafRegistry — the cross-app leaf catalogue (ADR-066). Collects the
+        // leaves sibling apps contribute through RegisterLeafProvidersEvent,
+        // lazily on first read, and lands their data providers on the shared
+        // IntegrationRegistry so existing per-object routing reaches them.
+        $context->registerService(
+            LeafRegistry::class,
+            function (ContainerInterface $container) {
+                return new LeafRegistry(
+                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+                    integrationRegistry: $container->get(IntegrationRegistry::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         $this->registerBuiltinIntegrationProviders(context: $context);
 
         // IntegrationsController — read-only API over the registry.
@@ -1288,7 +1305,8 @@ class Application extends App implements IBootstrap
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
-                    appManager: $container->get('OCP\App\IAppManager')
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    leafRegistry: $container->get(LeafRegistry::class)
                 );
             }
         );
@@ -3833,6 +3851,7 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootLeafRegistry(server: $server);
         $this->bootObjectSourceProviders(server: $server);
         $this->bootFederation(server: $server);
 
@@ -4020,6 +4039,42 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Install the lazy leaf loader on the shared IntegrationRegistry.
+     *
+     * The loader is a closure that reads the LeafRegistry catalogue, which
+     * dispatches `RegisterLeafProvidersEvent` once and lands any data-provider
+     * leaves on the IntegrationRegistry. Installing it here (rather than
+     * dispatching now) keeps the collect-event LAZY: it fires only when
+     * something actually reads the registry or the leaf catalogue in a request
+     * (ADR-066). Guarded so a registry-less build still boots.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+     */
+    private function bootLeafRegistry($server): void
+    {
+        try {
+            $integrationRegistry = $server->get(IntegrationRegistry::class);
+            $integrationRegistry->setLeafLoader(
+                static function () use ($server): void {
+                    // Reading the catalogue triggers LeafRegistry::ensureLoaded(),
+                    // which dispatches the event and calls addProvider() for each
+                    // data-provider leaf.
+                    $server->get(LeafRegistry::class)->getDescriptors();
+                }
+            );
+        } catch (\Throwable $e) {
+            // Registry binding not available — skip silently; the leaf catalogue
+            // simply stays empty on this build.
+            return;
+        }
+
+    }//end bootLeafRegistry()
 
     /**
      * Register the built-in object-source providers with the shared
