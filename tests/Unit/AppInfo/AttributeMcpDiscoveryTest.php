@@ -55,6 +55,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use ReflectionMethod;
+use ReflectionProperty;
 use RuntimeException;
 
 require_once __DIR__.'/../Mcp/Fixtures/AttributeFixtureService.php';
@@ -408,6 +409,25 @@ class AttributeMcpDiscoveryTest extends TestCase
      * Reflect-invoke the REAL getRegisteredAppContainer() seam (not the
      * RecordingApplication override) with a controlled `\OC::$server`.
      *
+     * These tests swap `\OC::$server` for a lightweight object extending
+     * `\OC_FakeServer` — which only works when `\OC::$server` is declared
+     * with that (narrow, stub-only) type. That is true in the pure-unit /
+     * no-NC-root bootstrap (tests/stubs/NextcloudInternalStubs.php declares
+     * `class OC { public static OC_FakeServer $server; }`). Under a booted
+     * real Nextcloud (OPENREGISTER_TEST_NC_ROOT — the CI hard-gate mode),
+     * `\OC` is core's real class and `\OC::$server` is strictly typed
+     * `\OC\Server`; PHP enforces that declared type on every assignment,
+     * including this one, so a fake extending `\OC_FakeServer` (unrelated to
+     * `\OC\Server`) cannot be assigned — TypeError. Building a
+     * type-compatible fake would mean subclassing the real, heavyweight
+     * `\OC\Server` (non-trivial constructor, full service wiring) purely to
+     * dodge a property-type check, which is worse than just skipping: this
+     * seam is exercised for real by every OTHER test in this file via the
+     * `RecordingApplication` override (see `invokeCollect()` above), so
+     * skipping here loses no coverage of `Application`'s own logic — only of
+     * the raw `\OC::$server` plumbing, which is itself stubbed to be a no-op
+     * fail-soft path in real NC.
+     *
      * @param object          $server The fake server to install on \OC::$server.
      * @param string          $appId  The app id to resolve.
      * @param LoggerInterface $logger PSR logger.
@@ -416,6 +436,18 @@ class AttributeMcpDiscoveryTest extends TestCase
      */
     private function invokeRealSeam(object $server, string $appId, LoggerInterface $logger): ?ContainerInterface
     {
+        $declaredType = (new ReflectionProperty(\OC::class, 'server'))->getType()?->getName();
+        if ($declaredType !== \OC_FakeServer::class) {
+            self::markTestSkipped(
+                sprintf(
+                    '\OC::$server is declared as %s in this bootstrap (real Nextcloud is loaded), not '
+                    .'OC_FakeServer — a fake extending OC_FakeServer cannot be assigned without a TypeError. '
+                    .'See the docblock on invokeRealSeam() for why this is skipped rather than worked around.',
+                    ($declaredType ?? 'unknown')
+                )
+            );
+        }
+
         \OC::$server = $server;
         $app         = (new ReflectionClass(Application::class))->newInstanceWithoutConstructor();
         $method      = new ReflectionMethod(Application::class, 'getRegisteredAppContainer');

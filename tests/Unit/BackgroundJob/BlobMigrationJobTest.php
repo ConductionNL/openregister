@@ -46,9 +46,52 @@ class BlobMigrationJobTest extends TestCase
     private SchemaMapper&MockObject $schemaMapper;
     private MagicMapper&MockObject $magicMapper;
 
+    /**
+     * The real, container-resolved instances for every service id this test
+     * overrides in \OC::$server, captured once (before this class's first
+     * override) so tearDown() can restore them.
+     *
+     * BlobMigrationJob is instantiated by Nextcloud's background-job runner
+     * with a fixed `ITimeFactory`-only constructor, so — unlike most services
+     * in this suite — its other dependencies cannot be handed in via the
+     * constructor; the job resolves them itself via `\OCP\Server::get()`.
+     * That forces this test to fake resolution by registering mocks directly
+     * on the process-wide `\OC::$server` container. Without a matching
+     * restore, those mocks leak into every LATER test in the same PHPUnit
+     * process that resolves the same service id (e.g.
+     * RelationsControllerTest's pluggable leaf integrations, which construct
+     * MapLinkService/PollLinkService/etc. through the real container and
+     * transitively need a real IDBConnection) — the leaked mock has no
+     * configured expectations by then and throws, which
+     * RelationsController::gatherRelations() catches and surfaces as a
+     * spurious `_errors` entry.
+     *
+     * @var array<class-string, object>
+     */
+    private static array $originalServices = [];
+
+    /**
+     * Whether {@see self::$originalServices} has been captured yet.
+     *
+     * @var bool
+     */
+    private static bool $originalsCaptured = false;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        if (self::$originalsCaptured === false) {
+            self::$originalServices = [
+                LoggerInterface::class => \OC::$server->get(LoggerInterface::class),
+                IDBConnection::class   => \OC::$server->get(IDBConnection::class),
+                IAppConfig::class      => \OC::$server->get(IAppConfig::class),
+                RegisterMapper::class  => \OC::$server->get(RegisterMapper::class),
+                SchemaMapper::class    => \OC::$server->get(SchemaMapper::class),
+                MagicMapper::class     => \OC::$server->get(MagicMapper::class),
+            ];
+            self::$originalsCaptured = true;
+        }
 
         $this->timeFactory    = $this->createMock(ITimeFactory::class);
         $this->logger         = $this->createMock(LoggerInterface::class);
@@ -57,6 +100,19 @@ class BlobMigrationJobTest extends TestCase
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper   = $this->createMock(SchemaMapper::class);
         $this->magicMapper    = $this->createMock(MagicMapper::class);
+    }
+
+    /**
+     * Restore the real \OC::$server bindings captured in setUp() so this
+     * test's mocks never leak into a later test's container resolution.
+     */
+    protected function tearDown(): void
+    {
+        foreach (self::$originalServices as $id => $instance) {
+            \OC::$server->registerService($id, static fn () => $instance);
+        }
+
+        parent::tearDown();
     }
 
     /**

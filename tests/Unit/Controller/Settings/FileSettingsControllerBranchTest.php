@@ -8,37 +8,11 @@ use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Service\Anonymisation\AnonymisationBackendService;
 use OCA\OpenRegister\Service\Anonymisation\ProbeResult;
 use OCA\OpenRegister\Service\SettingsService;
-use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-
-/**
- * Minimal test-double that restores the legacy empty-endpoint guard on
- * testOpenAnonymiserConnection (removed from production code when the method
- * was refactored to use AnonymisationBackendService via AppAPI).
- *
- * @internal
- */
-class LegacyGuardFileSettingsController extends FileSettingsController
-{
-    public function testOpenAnonymiserConnection(string $apiEndpoint=''): JSONResponse
-    {
-        if (empty($apiEndpoint) === true) {
-            return new JSONResponse(
-                data: [
-                    'success' => false,
-                    'error'   => 'API endpoint is required',
-                ],
-                statusCode: 400
-            );
-        }
-
-        return parent::testOpenAnonymiserConnection(apiEndpoint: $apiEndpoint);
-    }
-}
 
 /**
  * Branch coverage tests for FileSettingsController — targets uncovered branches in
@@ -61,7 +35,16 @@ class FileSettingsControllerBranchTest extends TestCase
         $this->settingsService = $this->createMock(SettingsService::class);
         $this->logger         = $this->createMock(LoggerInterface::class);
 
-        $this->controller = new LegacyGuardFileSettingsController(
+        // NOTE: this used to construct a LegacyGuardFileSettingsController
+        // test-double that re-added a "400 when $apiEndpoint is empty" guard
+        // on testOpenAnonymiserConnection(). That guard was removed from
+        // production when the method was refactored to detect OpenAnonymiser
+        // via AnonymisationBackendService (AppAPI ExApp detection) instead of
+        // a caller-supplied endpoint — see testTestOpenAnonymiserConnectionEmptyEndpoint()
+        // below, which now asserts the CURRENT behavior (200 + success=false)
+        // and therefore must run against the real controller, not the legacy
+        // double.
+        $this->controller = new FileSettingsController(
             'openregister',
             $this->request,
             $this->container,

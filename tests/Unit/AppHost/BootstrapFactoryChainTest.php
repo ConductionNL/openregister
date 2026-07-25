@@ -90,6 +90,13 @@ class BootstrapFactoryChainTest extends TestCase
         $map['OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService']
             = $this->createMock(\OCA\OpenRegister\Service\Credential\CredentialAppTokenService::class);
 
+        // The InitializeActions factory injects the Doriath application
+        // registrar for the D-G manifest auto-onboarding hook
+        // (credential-doriath-leaf); a mock is enough — the repair step only
+        // calls it at run() time, never at construction.
+        $map['OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar']
+            = $this->createMock(\OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::class);
+
         $container = $this->createMock(ContainerInterface::class);
         $container->method('get')->willReturnCallback(
             function (string $id) use (&$map, $container) {

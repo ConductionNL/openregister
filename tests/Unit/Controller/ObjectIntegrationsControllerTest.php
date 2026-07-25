@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ObjectIntegrationsController;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Exception\ProviderUnavailableException;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
@@ -141,7 +142,8 @@ class ObjectIntegrationsControllerTest extends TestCase
             request: $request,
             registry: $registry,
             logger: new NullLogger(),
-            objectService: $objectService ?? $this->accessibleObjectService()
+            objectService: $objectService ?? $this->accessibleObjectService(),
+            schemaMapper: $this->createMock(SchemaMapper::class)
         );
     }//end buildController()
 
