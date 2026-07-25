@@ -88,7 +88,7 @@ class FlowRunWorker extends TimedJob
         parent::__construct(time: $time);
         // Every minute: a Wait step's resolution is bounded by this, and a
         // queued run should feel immediate to the person who triggered it.
-        $this->setInterval(interval: 60);
+        $this->setInterval(seconds: 60);
 
     }//end __construct()
 
