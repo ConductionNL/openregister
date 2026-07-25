@@ -473,6 +473,62 @@ class DashboardServiceTest extends TestCase
         $this->assertSame('Orphaned Items', $result[$lastIndex]['title']);
     }
 
+    /**
+     * A register whose schemas cannot be loaded (e.g. the cross-app
+     * schema-format conflict in openregister#2087) must NOT blank the whole
+     * dashboard. It degrades to a flagged entry, and every other register
+     * still renders.
+     *
+     * @return void
+     */
+    public function testABadRegisterIsFlaggedRatherThanAbortingTheDashboard(): void
+    {
+        $good = $this->createRegisterEntity(1, 'Healthy Register');
+        $bad  = $this->createRegisterEntity(2, 'Broken Register');
+        $schema = $this->createSchemaEntity(10, 'Test Schema');
+
+        $this->registerMapper
+            ->method('findAll')
+            ->willReturn([$good, $bad]);
+
+        // The broken register throws on schema hydration, exactly as the
+        // format-constraint conflict does; the healthy one returns normally.
+        $this->registerMapper
+            ->method('getSchemasByRegisterId')
+            ->willReturnCallback(function (int $registerId) use ($schema) {
+                if ($registerId === 2) {
+                    throw new \RuntimeException("Schema '1119': Property 'orderDate' cannot change format from 'date-time' to 'date'");
+                }
+
+                return [$schema];
+            });
+
+        $this->setupStatsMappers();
+
+        $result = $this->service->getRegistersWithSchemas();
+
+        // The whole call still succeeds — no throw.
+        $byId = [];
+        foreach ($result as $entry) {
+            $byId[$entry['id']] = $entry;
+        }
+
+        // Healthy register renders in full.
+        $this->assertArrayHasKey(1, $byId);
+        $this->assertCount(1, $byId[1]['schemas']);
+        $this->assertArrayNotHasKey('error', $byId[1]);
+
+        // Broken register is present but flagged, not missing and not fatal.
+        $this->assertArrayHasKey(2, $byId);
+        $this->assertArrayHasKey('error', $byId[2]);
+        $this->assertStringContainsString('cannot change format', $byId[2]['error']);
+        $this->assertSame([], $byId[2]['schemas']);
+
+        // Totals and orphaned bookends still present.
+        $this->assertSame('totals', $result[0]['id']);
+        $this->assertSame('orphaned', $result[count($result) - 1]['id']);
+    }
+
     public function testGetRegistersWithSchemasFiltersByRegisterId(): void
     {
         $register = $this->createRegisterEntity(5, 'Filtered Register');

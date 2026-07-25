@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.17-unstable.15</version>
+    <version>0.2.17-unstable.16</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -162,6 +162,8 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->

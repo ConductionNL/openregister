@@ -177,9 +177,10 @@ class ConfigurationMapper extends QBMapper
     /**
      * Find configurations by app
      *
-     * @param string $app    App identifier
-     * @param int    $limit  Maximum number of results
-     * @param int    $offset Offset for pagination
+     * @param string $app          App identifier
+     * @param int    $limit        Maximum number of results
+     * @param int    $offset       Offset for pagination
+     * @param bool   $systemLookup When true, bypass the organisation filter (global platform lookup)
      *
      * @return Configuration[]
      *
@@ -187,7 +188,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      */
-    public function findByApp(string $app, int $limit=50, int $offset=0): array
+    public function findByApp(string $app, int $limit=50, int $offset=0, bool $systemLookup=false): array
     {
         // Verify RBAC permission to read.
         // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
@@ -201,8 +202,13 @@ class ConfigurationMapper extends QBMapper
             ->setFirstResult($offset)
             ->orderBy('created', 'DESC');
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+        // Apply organisation filter unless this is a system lookup. The
+        // configuration row for an app is a global platform record, not tenant
+        // data. Org-filtering the import find-or-create meant that importing
+        // under a different active organisation than the row's owning org could
+        // not see the existing row and inserted a NEW one on every such import —
+        // the fleet accrued thousands of duplicate configuration rows (#2072).
+        $this->applyOrganisationFilter(qb: $qb, multiTenancyEnabled: ($systemLookup === false));
 
         return $this->findEntities(query: $qb);
     }//end findByApp()
@@ -213,14 +219,15 @@ class ConfigurationMapper extends QBMapper
      * This method finds a configuration by its source URL, which serves as a unique
      * identifier for configurations loaded from files or remote sources.
      *
-     * @param string $sourceUrl Source URL to search for
+     * @param string $sourceUrl    Source URL to search for
+     * @param bool   $systemLookup When true, bypass the organisation filter (global platform lookup)
      *
      * @return Configuration|null The configuration entity or null if not found
      * @throws \Exception If user doesn't have read permission
      *
      * @since 0.2.10
      */
-    public function findBySourceUrl(string $sourceUrl): ?Configuration
+    public function findBySourceUrl(string $sourceUrl, bool $systemLookup=false): ?Configuration
     {
         // Verify RBAC permission to read.
         // TEMPORARILY DISABLED FOR TESTING - TODO: Re-enable after fixing CLI/import context.
@@ -233,8 +240,10 @@ class ConfigurationMapper extends QBMapper
             ->orderBy('created', 'DESC')
             ->setMaxResults(1);
 
-        // Apply organisation filter.
-        $this->applyOrganisationFilter(qb: $qb);
+        // Apply organisation filter unless this is a system lookup — see the
+        // note on findByApp(): the app configuration is a global record, and
+        // org-scoping the import lookup produced duplicate rows (#2072).
+        $this->applyOrganisationFilter(qb: $qb, multiTenancyEnabled: ($systemLookup === false));
 
         try {
             return $this->findEntity(query: $qb);

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -39,8 +39,8 @@ use Psr\Log\LoggerInterface;
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md#d2
- * @spec openspec/changes/object-views-kanban-calendar/design.md#d4
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
  */
 class ViewPresentationService
 {
@@ -101,7 +101,7 @@ class ViewPresentationService
      *
      * @throws InvalidArgumentException If the view is not a kanban view or its config is incomplete
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
      */
     public function getKanbanBoard(View $view, array $requestParams=[]): array
     {
@@ -191,7 +191,7 @@ class ViewPresentationService
      *
      * @throws InvalidArgumentException If the view is not a calendar view or its config is incomplete
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
      */
     public function getCalendarObjects(View $view, string $rangeStart, string $rangeEnd, array $requestParams=[]): array
     {

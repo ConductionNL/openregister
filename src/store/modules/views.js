@@ -436,5 +436,88 @@ export const useViewsStore = defineStore('views', {
 				},
 			}
 		},
+
+		/**
+		 * Fetch the kanban board for a view: columns derived from
+		 * `presentation.kanban.groupByField` (columnOrder > enum > discovered),
+		 * with cards paginated per the existing object-query machinery.
+		 * @param {string} id - The view ID
+		 * @param {object} [params] - Optional query params (`_limit`/`_offset`, applied to every column)
+		 * @return {Promise<{viewType: string, groupByField: string, columns: Array<object>}>}
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+		 */
+		async fetchKanbanBoard(id, params = {}) {
+			this.loading = true
+			this.error = null
+
+			try {
+				const query = new URLSearchParams()
+				if (params._limit != null) query.set('_limit', params._limit)
+				if (params._offset != null) query.set('_offset', params._offset)
+				const qs = query.toString()
+				const url = `/index.php/apps/openregister/api/views/${id}/kanban${qs ? `?${qs}` : ''}`
+
+				const response = await fetch(url, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					const body = await response.json().catch(() => null)
+					throw new Error(body?.error || `HTTP error! status: ${response.status}`)
+				}
+
+				return await response.json()
+			} catch (error) {
+				console.error('Error fetching kanban board:', error)
+				this.error = error.message
+				throw error
+			} finally {
+				this.loading = false
+			}
+		},
+
+		/**
+		 * Fetch the objects for a calendar view whose `presentation.calendar.dateField`
+		 * falls within the visible range (spanning to `endDateField` when configured).
+		 * @param {string} id - The view ID
+		 * @param {string} rangeStart - Inclusive range start (ISO 8601 date/datetime)
+		 * @param {string} rangeEnd - Inclusive range end (ISO 8601 date/datetime)
+		 * @return {Promise<{viewType: string, dateField: string, endDateField: (string|null), rangeStart: string, rangeEnd: string, objects: Array<object>, total: number}>}
+		 *
+		 * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+		 */
+		async fetchCalendarObjects(id, rangeStart, rangeEnd) {
+			this.loading = true
+			this.error = null
+
+			try {
+				const query = new URLSearchParams({ start: rangeStart, end: rangeEnd })
+				const url = `/index.php/apps/openregister/api/views/${id}/calendar?${query.toString()}`
+
+				const response = await fetch(url, {
+					method: 'GET',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+				})
+
+				if (!response.ok) {
+					const body = await response.json().catch(() => null)
+					throw new Error(body?.error || `HTTP error! status: ${response.status}`)
+				}
+
+				return await response.json()
+			} catch (error) {
+				console.error('Error fetching calendar objects:', error)
+				this.error = error.message
+				throw error
+			} finally {
+				this.loading = false
+			}
+		},
 	},
 })

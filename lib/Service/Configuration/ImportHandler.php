@@ -1092,6 +1092,85 @@ class ImportHandler
     }//end getDuplicateSchemaInfo()
 
     /**
+     * Decide whether an incoming schema definition structurally differs from the stored one.
+     *
+     * The importer skips updating an existing schema when the incoming version
+     * is not newer. That gate assumes the `version` field is bumped on every
+     * change, which apps frequently do not do when they add a property or adjust
+     * an authorization rule via a register.d fragment. This method lets the
+     * importer detect that "version-equal but content-changed" case so the
+     * update is applied anyway (see #2075/#2082).
+     *
+     * Only the structural fields that must reach the database are compared:
+     * `properties` (drives the magic-table columns), `required`, and
+     * `authorization` (drives read/write access, whose match rules can
+     * reference newly-added properties). Comparison is order-insensitive so a
+     * mere reordering is not treated as a change.
+     *
+     * @param array  $data     The incoming schema definition.
+     * @param Schema $existing The currently-stored schema entity.
+     *
+     * @return bool True when a structural field differs and the update must be applied.
+     */
+    private function schemaContentDiffers(array $data, Schema $existing): bool
+    {
+        $fields = [
+            'properties'    => $existing->getProperties(),
+            'required'      => $existing->getRequired(),
+            'authorization' => $existing->getAuthorization(),
+        ];
+
+        foreach ($fields as $key => $storedValue) {
+            $incoming = ($data[$key] ?? null);
+            if ($this->normaliseForCompare(value: $incoming) !== $this->normaliseForCompare(value: $storedValue)) {
+                return true;
+            }
+        }
+
+        return false;
+
+    }//end schemaContentDiffers()
+
+    /**
+     * Normalise a JSON-ish value into an order-insensitive canonical string.
+     *
+     * Associative arrays get their keys sorted recursively; lists of scalars
+     * are sorted by value so a reorder does not read as a change. Empty and
+     * null values collapse to the same canonical form, so "absent" and "empty
+     * array" compare equal.
+     *
+     * @param mixed $value The value to normalise.
+     *
+     * @return string A stable canonical representation.
+     */
+    private function normaliseForCompare(mixed $value): string
+    {
+        if ($value === null || $value === []) {
+            return 'null';
+        }
+
+        if (is_array($value) === true) {
+            $isList = (array_keys($value) === range(0, (count($value) - 1)));
+            if ($isList === true) {
+                $parts = array_map(fn($item) => $this->normaliseForCompare(value: $item), $value);
+                sort($parts);
+                return '['.implode(',', $parts).']';
+            }
+
+            ksort($value);
+            $parts = [];
+            foreach ($value as $key => $item) {
+                $parts[] = json_encode($key).':'.$this->normaliseForCompare(value: $item);
+            }
+
+            return '{'.implode(',', $parts).'}';
+        }
+
+        return json_encode($value);
+
+    }//end normaliseForCompare()
+
+    /**
      * Import a schema from configuration data.
      *
      * @param array       $data           The schema data with slugs to be converted to IDs.
@@ -1469,12 +1548,38 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingSchema->getVersion() ?? '0.0.0';
                 $incomingVersion = $data['version'] ?? '0.0.0';
-                if ($force === false && version_compare($incomingVersion, $existingVersion, '<=') === true) {
+                // The version field is an OPTIMISATION, not the source of truth.
+                // Apps routinely add a property (or change an authorization rule)
+                // on a schema via a register.d fragment WITHOUT bumping that
+                // schema's own `version`, so incoming == existing and this gate
+                // would skip the update — yet the configuration-level content
+                // version advances separately, leaving the instance "imported"
+                // but the schema stale. That silently drops columns (no place to
+                // persist the new property) and, when an authorization rule
+                // matches the new property, makes every read a 500 (#2075/#2082).
+                // So when the version says skip, still apply the update if the
+                // schema's structural content actually differs from what is
+                // stored. Content is authoritative; the version only lets us
+                // skip the no-op case cheaply.
+                $versionSaysSkip = ($force === false && version_compare($incomingVersion, $existingVersion, '<=') === true);
+                if ($versionSaysSkip === true && $this->schemaContentDiffers(data: $data, existing: $existingSchema) === false) {
                     $this->logger->info(
-                        message: '[ImportHandler] Skipping schema import as existing version is newer or equal.',
+                        message: '[ImportHandler] Skipping schema import: version not newer and content unchanged.',
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
                     return $existingSchema;
+                }
+
+                if ($versionSaysSkip === true) {
+                    $this->logger->info(
+                        message: '[ImportHandler] Schema version not newer but content differs; applying update anyway.',
+                        context: [
+                            'file'        => __FILE__,
+                            'line'        => __LINE__,
+                            'schema_slug' => $existingSchema->getSlug(),
+                            'schema_id'   => $existingSchema->getId(),
+                        ]
+                    );
                 }
 
                 // Update existing schema.
@@ -3021,7 +3126,7 @@ class ImportHandler
             // If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness).
             if ($sourceUrl !== null) {
                 try {
-                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl);
+                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
                     if ($configuration !== null) {
                         $this->logger->info(
                             message: "[ImportHandler] Found existing configuration by sourceUrl",
@@ -3042,7 +3147,7 @@ class ImportHandler
             // If not found by sourceUrl, try by appId.
             if ($configuration === null) {
                 try {
-                    $configurations = $this->configurationMapper->findByApp($appId);
+                    $configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
                     if (count($configurations) > 0) {
                         // Use the first (most recent) configuration.
                         $configuration = $configurations[0];
@@ -3824,7 +3929,7 @@ class ImportHandler
             // Try to find existing configuration for this app.
             $existingConfig = null;
             try {
-                $configurations = $this->configurationMapper->findByApp($appId);
+                $configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
                 if (count($configurations) > 0) {
                     $existingConfig = $configurations[0];
                 }
