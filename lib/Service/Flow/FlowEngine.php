@@ -191,10 +191,34 @@ class FlowEngine
                 ];
             }
 
-            $transition = $enabled[0];
-            $name       = $transition->getName();
-            $step       = $this->stepFor(flow: $flow, transitionName: $name);
-            $itemsIn    = $items;
+            // Conditional branching (If/Switch). Among the enabled transitions,
+            // fire the first whose edge condition holds; an edge with no
+            // condition is the default/else and only wins when no conditioned
+            // sibling matches. This is what makes a multi-output node a switch,
+            // with no special node type — routing is a property of the edge.
+            $transition = $this->selectTransition(
+                enabled: $enabled,
+                flow: $flow,
+                items: $items,
+                context: $context
+            );
+
+            if ($transition === null) {
+                // Every active choice point is gated by a condition that did
+                // not hold and has no default edge: a Switch with no matching
+                // case and no fallback. The run ends here rather than spinning
+                // on the same un-fireable transitions until the ceiling.
+                return [
+                    'status'  => self::STATUS_COMPLETED,
+                    'log'     => $log,
+                    'context' => $context,
+                    'items'   => $items,
+                ];
+            }
+
+            $name    = $transition->getName();
+            $step    = $this->stepFor(flow: $flow, transitionName: $name);
+            $itemsIn = $items;
 
             try {
                 $produced = $dispatcher->dispatch(step: $step, items: $items, context: $context);
@@ -204,6 +228,31 @@ class FlowEngine
                     'status'     => 'completed',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                ];
+            } catch (FlowStop $stop) {
+                // A deliberate end, requested by a Stop step. Caught before the
+                // generic Throwable so it is never treated as a step failure and
+                // never subject to an onError policy — the author asked the run
+                // to end, and it ends with their message and their outcome.
+                $log[] = [
+                    'transition' => $name,
+                    'status'     => 'stopped',
+                    'reason'     => $stop->getMessage(),
+                ];
+
+                $stopStatus = self::STATUS_STOPPED;
+                $stopError  = null;
+                if ($stop->isError() === true) {
+                    $stopStatus = self::STATUS_FAILED;
+                    $stopError  = $stop->getMessage();
+                }
+
+                return [
+                    'status'  => $stopStatus,
+                    'log'     => $log,
+                    'context' => $context,
+                    'items'   => $items,
+                    'error'   => $stopError,
                 ];
             } catch (FlowSuspension $suspension) {
                 // A pause, not a failure. Caught before Throwable so the step's
@@ -286,4 +335,59 @@ class FlowEngine
         return [];
 
     }//end stepFor()
+
+    /**
+     * Choose which enabled transition to fire, honouring edge conditions.
+     *
+     * Rules, in order:
+     *  - A conditioned edge whose condition holds wins, first by declaration
+     *    order — so a Switch's cases are tried top to bottom.
+     *  - An edge with no condition is the default/else. It is eligible, but a
+     *    matching conditioned sibling beats it, so it is only taken when no
+     *    condition matched.
+     *  - If nothing is eligible (every enabled transition is gated by a
+     *    condition that did not hold, with no default), null is returned and
+     *    the run ends at this choice point.
+     *
+     * The condition is evaluated against the first item as the representative
+     * of the list. Per-item routing — sending each item down a different branch
+     * — is a larger feature (it needs the engine to carry more than one item
+     * list across a split) and is not attempted here.
+     *
+     * @param array<int, object>   $enabled The enabled transitions.
+     * @param array<string, mixed> $flow    The flow document.
+     * @param array<int, mixed>    $items   The current item list.
+     * @param array<string, mixed> $context Run-level metadata.
+     *
+     * @return object|null The transition to fire, or null when none is eligible.
+     *
+     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+     */
+    private function selectTransition(array $enabled, array $flow, array $items, array $context): ?object
+    {
+        $fallback = null;
+        $data     = FlowExpression::dataFor(
+            item: ($items[0] ?? []),
+            itemCount: count($items),
+            context: $context
+        );
+
+        foreach ($enabled as $transition) {
+            $edge      = $this->stepFor(flow: $flow, transitionName: $transition->getName());
+            $condition = ($edge['condition'] ?? null);
+
+            if ($condition === null || $condition === []) {
+                // Remember the first default edge; keep looking for a match.
+                $fallback = ($fallback ?? $transition);
+                continue;
+            }
+
+            if (FlowExpression::isTrue(logic: $condition, data: $data) === true) {
+                return $transition;
+            }
+        }
+
+        return $fallback;
+
+    }//end selectTransition()
 }//end class

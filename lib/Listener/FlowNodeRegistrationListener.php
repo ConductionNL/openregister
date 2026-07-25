@@ -30,6 +30,8 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
+use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
 use OCA\OpenRegister\Service\Flow\Nodes\WaitNode;
 use OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent;
 use OCP\EventDispatcher\Event;
@@ -48,11 +50,15 @@ class FlowNodeRegistrationListener implements IEventListener
      * @param SetFieldsNode $setFields The built-in "Edit fields" node.
      * @param FilterNode    $filter    The built-in "Filter" node.
      * @param WaitNode      $wait      The built-in "Wait" node.
+     * @param SwitchNode    $switch    The built-in "Switch" node.
+     * @param StopNode      $stop      The built-in "Stop" node.
      */
     public function __construct(
         private readonly SetFieldsNode $setFields,
         private readonly FilterNode $filter,
-        private readonly WaitNode $wait
+        private readonly WaitNode $wait,
+        private readonly SwitchNode $switch,
+        private readonly StopNode $stop
     ) {
 
     }//end __construct()
@@ -75,6 +81,8 @@ class FlowNodeRegistrationListener implements IEventListener
         $event->registerNode(node: $this->setFields);
         $event->registerNode(node: $this->filter);
         $event->registerNode(node: $this->wait);
+        $event->registerNode(node: $this->switch);
+        $event->registerNode(node: $this->stop);
 
     }//end handle()
 }//end class
