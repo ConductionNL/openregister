@@ -1234,5 +1234,10 @@ return [
 		// NoCSRFRequired attribute is declared in the controller for the create method.
 		['name' => 'gitHubIssues#index', 'url' => '/api/github/issues', 'verb' => 'GET'],
 		['name' => 'gitHubIssues#create', 'url' => '/api/github/issues', 'verb' => 'POST'],
+
+		// Flow-run tooling (or-flow-tooling): history, inspection, retry.
+		['name' => 'flowRun#index', 'url' => '/api/flow-runs', 'verb' => 'GET'],
+		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
     ],
 ];
