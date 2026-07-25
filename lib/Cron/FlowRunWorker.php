@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Cron;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -161,12 +162,21 @@ class FlowRunWorker extends TimedJob
 
             // A subjectless run still needs an object to carry the marking; a
             // bare holder does, since the marking store keeps the marking on the
-            // run itself ({@see FlowRunMarkingStore}).
+            // run itself ({@see FlowRunMarkingStore}). Such a run is seeded from
+            // its payload instead of an object: a non-object trigger (a file, a
+            // user) puts what it is about under `payload` on the run context, and
+            // that becomes the first item, so the flow reads a file's path or a
+            // user's id exactly as it would an object's fields.
+            $seed = null;
             if ($subject === null) {
                 $subject = new \stdClass();
+                $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
+                if ($payload !== []) {
+                    $seed = [FlowItems::item(json: $payload)];
+                }
             }
 
-            $this->runner->execute(run: $run, flow: $flow, subject: $subject);
+            $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
         } catch (Throwable $e) {
             $this->logger->error(
                 message: '[FlowRunWorker] Failed to advance a run',
