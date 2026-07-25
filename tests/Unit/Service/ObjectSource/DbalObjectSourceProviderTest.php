@@ -120,6 +120,7 @@ class DbalObjectSourceProviderTest extends TestCase
         $sourceMapper = $this->createMock(SourceMapper::class);
         $sourceMapper->method('find')->willReturn($source);
         $sourceMapper->method('findAll')->willReturn([$source]);
+        $sourceMapper->method('findForSystem')->willReturn($source);
 
         $store = new class implements CredentialStore {
             /**
@@ -232,6 +233,96 @@ class DbalObjectSourceProviderTest extends TestCase
     {
         $this->assertSame('dbal-source', $this->provider()->getId());
     }//end testGetId()
+
+    /**
+     * Regression for openregister#2089: resolving the schema's configured
+     * Source MUST go through `SourceMapper::findForSystem()` — the
+     * unfiltered, RBAC-free system lookup — never through the
+     * organisation-filtered `find()`/`findAll()` path. A Source that belongs
+     * to a DIFFERENT organisation than the caller's active one (the exact
+     * `saasMode: true` scenario from the issue, where admin override is
+     * unconditionally disabled) MUST still resolve and serve objects.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
+     */
+    public function testResolveSourceUsesSystemLookupAcrossOrganisations(): void
+    {
+        $source = new Source();
+        $source->setId(9);
+        $source->setUuid('00000000-0000-0000-0000-000000000000');
+        $source->setType('database');
+        // Belongs to an organisation different from whatever the caller's
+        // active organisation would be — resolution must not depend on it.
+        $source->setOrganisation('286a9152-4b09-4714-9115-fabbbad342d0');
+        $source->setAuthConfig(['driver' => 'pdo_sqlite', 'path' => self::$dbPath, 'writable' => false]);
+
+        $sourceMapper = $this->createMock(SourceMapper::class);
+        $sourceMapper->expects($this->atLeastOnce())
+            ->method('findForSystem')
+            ->with($this->equalTo('9'))
+            ->willReturn($source);
+        // The organisation-filtered lookups must NEVER be used to resolve a
+        // schema's configured source — that is precisely the #2089 defect.
+        $sourceMapper->expects($this->never())->method('find');
+        $sourceMapper->expects($this->never())->method('findAll');
+
+        $store = new class implements \OCA\OpenRegister\Service\Credential\CredentialStore {
+            /**
+             * {@inheritDoc}
+             *
+             * @param string $uuid   The credential UUID.
+             * @param string $secret The secret.
+             * @param string $scope  The scope.
+             *
+             * @return void
+             */
+            public function put(string $uuid, string $secret, string $scope='personal'): void
+            {
+            }//end put()
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param string $uuid  The credential UUID.
+             * @param string $scope The scope.
+             *
+             * @return string|null Always null.
+             */
+            public function get(string $uuid, string $scope='personal'): ?string
+            {
+                return null;
+            }//end get()
+
+            /**
+             * {@inheritDoc}
+             *
+             * @param string $uuid  The credential UUID.
+             * @param string $scope The scope.
+             *
+             * @return void
+             */
+            public function delete(string $uuid, string $scope='personal'): void
+            {
+            }//end delete()
+        };
+
+        $provider = new DbalObjectSourceProvider(
+            sourceMapper: $sourceMapper,
+            connectionFactory: new DbalConnectionFactory(credentialStore: $store, logger: new NullLogger()),
+            logger: new NullLogger()
+        );
+
+        $objects = $provider->findAll(
+            register: $this->register(),
+            schema: $this->peopleSchema(),
+            query: ['limit' => 5],
+            config: $this->peopleConfig()
+        );
+
+        $this->assertCount(5, $objects);
+    }//end testResolveSourceUsesSystemLookupAcrossOrganisations()
 
     /**
      * findAll() with a filter and a limit applies both in SQL.
