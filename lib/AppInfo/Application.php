@@ -256,6 +256,7 @@ use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
@@ -2787,6 +2788,7 @@ class Application extends App implements IBootstrap
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
                     $container->get(IntegrationsToolProvider::class),
+                    $container->get(FlowMcpToolProvider::class),
                 ];
 
                 // Preferred path: apps announce themselves with a listener,
