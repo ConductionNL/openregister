@@ -63,6 +63,10 @@ class EventCatalogService
         ['id' => 'file.deleted', 'label' => 'A file is deleted', 'group' => 'File'],
         ['id' => 'user.created', 'label' => 'A user is created', 'group' => 'User'],
         ['id' => 'user.deleted', 'label' => 'A user is deleted', 'group' => 'User'],
+        ['id' => 'share.created', 'label' => 'A share is created', 'group' => 'Share'],
+        ['id' => 'share.deleted', 'label' => 'A share is deleted', 'group' => 'Share'],
+        ['id' => 'tag.assigned', 'label' => 'A tag is assigned', 'group' => 'Tag'],
+        ['id' => 'tag.unassigned', 'label' => 'A tag is removed', 'group' => 'Tag'],
     ];
 
     /**

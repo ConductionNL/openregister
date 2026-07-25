@@ -2433,6 +2433,10 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(\OCP\Files\Events\Node\NodeDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
         $context->registerEventListener(\OCP\User\Events\UserCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
         $context->registerEventListener(\OCP\User\Events\UserDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagAssignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagUnassignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);

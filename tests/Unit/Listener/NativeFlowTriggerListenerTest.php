@@ -17,6 +17,8 @@ use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\Node;
 use OCP\IUser;
 use OCP\IUserSession;
+use OCP\Share\Events\ShareCreatedEvent;
+use OCP\Share\IShare;
 use OCP\User\Events\UserCreatedEvent;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -99,6 +101,36 @@ class NativeFlowTriggerListenerTest extends TestCase
         $event->method('getNode')->willReturn($this->node());
         $this->listener->handle($event);
     }
+
+    public function testAShareCreationFiresWithItsPayload(): void
+    {
+        $node = $this->createMock(Node::class);
+        $node->method('getPath')->willReturn('/admin/files/shared.txt');
+
+        $share = $this->createMock(IShare::class);
+        $share->method('getId')->willReturn('7');
+        $share->method('getNodeId')->willReturn(99);
+        $share->method('getShareType')->willReturn(0);
+        $share->method('getSharedWith')->willReturn('bob');
+        $share->method('getNode')->willReturn($node);
+
+        $this->triggers->expects($this->once())->method('fire')
+            ->with(
+                'share.created',
+                [],
+                null,
+                ['payload' => ['shareId' => '7', 'nodeId' => 99, 'shareType' => 0, 'sharedWith' => 'bob', 'path' => '/admin/files/shared.txt']]
+            )
+            ->willReturn(1);
+
+        $event = $this->createMock(ShareCreatedEvent::class);
+        $event->method('getShare')->willReturn($share);
+        $this->listener->handle($event);
+    }
+
+    // Tag events (TagAssignedEvent / TagUnassignedEvent) are newer OCP classes
+    // absent from the composer-only test stubs, so they cannot be mocked here;
+    // the tag path is live-verified on an instance where the class exists.
 
     public function testAnUnrelatedEventFiresNothing(): void
     {

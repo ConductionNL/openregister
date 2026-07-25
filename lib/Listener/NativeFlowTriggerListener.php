@@ -42,6 +42,11 @@ use OCP\Files\Events\Node\NodeDeletedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
 use OCP\Files\Node;
 use OCP\IUserSession;
+use OCP\Share\Events\ShareCreatedEvent;
+use OCP\Share\Events\ShareDeletedEvent;
+use OCP\Share\IShare;
+use OCP\SystemTag\TagAssignedEvent;
+use OCP\SystemTag\TagUnassignedEvent;
 use OCP\User\Events\UserCreatedEvent;
 use OCP\User\Events\UserDeletedEvent;
 use Throwable;
@@ -49,7 +54,7 @@ use Throwable;
 /**
  * Queues flow runs on native file and user events.
  *
- * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent|NodeDeletedEvent|UserCreatedEvent|UserDeletedEvent>
+ * @template-implements IEventListener<NodeCreatedEvent|NodeWrittenEvent|NodeDeletedEvent|UserCreatedEvent|UserDeletedEvent|ShareCreatedEvent|ShareDeletedEvent|TagAssignedEvent|TagUnassignedEvent>
  */
 class NativeFlowTriggerListener implements IEventListener
 {
@@ -126,9 +131,84 @@ class NativeFlowTriggerListener implements IEventListener
             return ['user.deleted', ['uid' => $event->getUser()->getUID()]];
         }
 
+        if ($event instanceof ShareCreatedEvent) {
+            return ['share.created', $this->sharePayload(share: $event->getShare())];
+        }
+
+        if ($event instanceof ShareDeletedEvent) {
+            return ['share.deleted', $this->sharePayload(share: $event->getShare())];
+        }
+
+        if ($event instanceof TagAssignedEvent) {
+            return ['tag.assigned', $this->tagPayload(event: $event)];
+        }
+
+        if ($event instanceof TagUnassignedEvent) {
+            return ['tag.unassigned', $this->tagPayload(event: $event)];
+        }
+
         return [null, []];
 
     }//end describe()
+
+    /**
+     * The payload describing a share event.
+     *
+     * @param IShare $share The share the event is about.
+     *
+     * @return array<string, mixed> The share payload.
+     */
+    private function sharePayload(IShare $share): array
+    {
+        $payload = [];
+        foreach ([
+            'shareId'    => static fn (): string => (string) $share->getId(),
+            'nodeId'     => static fn (): int => $share->getNodeId(),
+            'shareType'  => static fn (): int => (int) $share->getShareType(),
+            'sharedWith' => static fn (): string => (string) $share->getSharedWith(),
+            'path'       => static fn (): string => $share->getNode()->getPath(),
+        ] as $key => $read
+        ) {
+            try {
+                $payload[$key] = $read();
+            } catch (Throwable $e) {
+                continue;
+            }
+        }
+
+        return $payload;
+
+    }//end sharePayload()
+
+    /**
+     * The payload describing a tag assign/unassign event.
+     *
+     * @param TagAssignedEvent|TagUnassignedEvent $event The tag event.
+     *
+     * @return array<string, mixed> The tag payload.
+     */
+    private function tagPayload(TagAssignedEvent | TagUnassignedEvent $event): array
+    {
+        $payload = [];
+        foreach ([
+            'objectType' => static fn (): string => $event->getObjectType(),
+            'objectIds'  => static fn (): array => $event->getObjectIds(),
+            'tags'       => static fn (): array => array_map(
+                    static fn ($tag): array => ['id' => $tag->getId(), 'name' => $tag->getName()],
+                    $event->getTags()
+                ),
+        ] as $key => $read
+        ) {
+            try {
+                $payload[$key] = $read();
+            } catch (Throwable $e) {
+                continue;
+            }
+        }
+
+        return $payload;
+
+    }//end tagPayload()
 
     /**
      * The payload describing a file event.
