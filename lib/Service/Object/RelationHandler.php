@@ -63,6 +63,7 @@ class RelationHandler
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param RegisterMapper     $registerMapper     Mapper for registers.
      *
      * @spec openspec/specs/linked-entity-types/spec.md
      */

@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use DateTime;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
@@ -62,6 +63,16 @@ class FlowEngine
     public const STATUS_DEAD_LETTER = 'dead_letter';
 
     public const STATUS_FAILED = 'failed';
+
+    /**
+     * The run stopped mid-graph and will be resumed.
+     *
+     * Distinct from `stopped`, which is terminal. A suspended run keeps its
+     * marking and its items, and the marking is exactly what makes resuming
+     * cheap: the run picks up where it was instead of replaying side effects
+     * it already performed.
+     */
+    public const STATUS_SUSPENDED = 'suspended';
 
     /**
      * Per-step error policies, ported from openconnector's `onError`.
@@ -193,6 +204,26 @@ class FlowEngine
                     'status'     => 'completed',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                ];
+            } catch (FlowSuspension $suspension) {
+                // A pause, not a failure. Caught before Throwable so the step's
+                // onError policy never sees it — `continue` would otherwise skip
+                // straight past a Wait, which is the opposite of waiting.
+                //
+                // The marking is NOT advanced: the run must resume ON this
+                // transition, re-entering the step that asked to wait.
+                $log[] = [
+                    'transition' => $name,
+                    'status'     => 'suspended',
+                    'reason'     => $suspension->getMessage(),
+                ];
+
+                return [
+                    'status'   => self::STATUS_SUSPENDED,
+                    'log'      => $log,
+                    'context'  => $context,
+                    'items'    => $itemsIn,
+                    'resumeAt' => $suspension->getResumeAt(),
                 ];
             } catch (Throwable $e) {
                 $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);

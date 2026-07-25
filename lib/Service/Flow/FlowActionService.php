@@ -76,6 +76,7 @@ class FlowActionService
      * @param IEventDispatcher       $eventDispatcher        Dispatches AgentRunRequestedEvent (ADR-041).
      * @param FederationShareService $federationShareService Creates federated shares (federate-share action).
      * @param EventCatalogService    $eventCatalog           Resolves trigger aliases (catalog id ⇄ legacy).
+     * @param ObjectService          $objectService          Reads and writes objects for the object-CRUD actions.
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -395,7 +396,6 @@ class FlowActionService
                         );
                         return false;
                     }
-
                     return true;
                 case 'object.set-field':
                 case 'object.update':
@@ -451,7 +451,10 @@ class FlowActionService
             $actual = implode(', ', array_map('strval', $actual));
         }
 
-        $actualStr = ($actual === null) ? '' : (string) $actual;
+        $actualStr = '';
+        if ($actual !== null) {
+            $actualStr = (string) $actual;
+        }
 
         switch ($operator) {
             case 'eq':
@@ -549,7 +552,11 @@ class FlowActionService
     private function runObjectDelete(array $action, ObjectEntity $object, array $data): void
     {
         $target = trim($this->render(template: (string) ($action['target'] ?? ''), data: $data));
-        $uuid   = ($target !== '') ? $target : (string) $object->getUuid();
+        $uuid   = (string) $object->getUuid();
+        if ($target !== '') {
+            $uuid = $target;
+        }
+
         if ($uuid === '') {
             return;
         }

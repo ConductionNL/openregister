@@ -50,6 +50,7 @@ use OCP\WorkflowEngine\IRuleMatcher;
  */
 class RegisterObjectEntity implements IEntity
 {
+
     /**
      * The object carried by the event currently being matched.
      *
@@ -115,7 +116,7 @@ class RegisterObjectEntity implements IEntity
      */
     public function prepareRuleMatcher(IRuleMatcher $ruleMatcher, string $eventName, Event $event): void
     {
-        $object = $this->objectFromEvent($event);
+        $object = $this->objectFromEvent(event: $event);
         if ($object === null) {
             return;
         }

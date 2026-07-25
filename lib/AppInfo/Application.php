@@ -2356,6 +2356,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Flow node discovery. OpenRegister contributes its own built-ins
+        // through the same event every consuming app uses, so the contribution
+        // path is exercised by its owner and cannot rot unnoticed.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
@@ -2774,6 +2782,19 @@ class Application extends App implements IBootstrap
                     $container->get(IntegrationsToolProvider::class),
                 ];
 
+                // Preferred path: apps announce themselves with a listener,
+                // the same way they contribute a flow node and the same way
+                // core's workflow engine collects operations.
+                $this->collectAnnouncedMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
+                // Legacy path, kept for one release so the fleet is never
+                // broken mid-migration. Five apps outside OpenRegister still
+                // register by container alias; each is skipped here once it
+                // announces itself, so a migrated app is never collected twice.
                 $this->collectPerAppMcpProviders(
                     container: $container,
                     logger: $logger,
@@ -3127,6 +3148,11 @@ class Application extends App implements IBootstrap
         \Psr\Log\LoggerInterface $logger
     ): ?ContainerInterface {
         try {
+            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
+            // resolves the server container only. The sniff says this is removed in NC 34,
+            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
+            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
+            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
             $appContainer = \OC::$server->getRegisteredAppContainer($appId);
         } catch (\Throwable $e) {
             $logger->debug(
@@ -3316,6 +3342,76 @@ class Application extends App implements IBootstrap
      * @return void
      *
      * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
+     */
+
+    /**
+     * Collect providers from apps that announce themselves with a listener.
+     *
+     * One dispatch, no `info.xml` parsing, no candidate aliases, no container
+     * probing and nothing to cache — the whole apparatus the alias scan needed
+     * exists because it looked for something apps never declared.
+     *
+     * A provider whose appId is already present is skipped, which is what makes
+     * running both paths during the migration safe: an app that has added its
+     * listener is not also collected by the alias scan.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array, modified in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
+     */
+    private function collectAnnouncedMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $dispatcher = $container->get(\OCP\EventDispatcher\IEventDispatcher::class);
+            $event      = new \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent();
+            $dispatcher->dispatchTyped($event);
+
+            $seen = [];
+            foreach ($providers as $existing) {
+                $seen[$existing->getAppId()] = true;
+            }
+
+            foreach ($event->getProviders() as $provider) {
+                $appId = $provider->getAppId();
+                if (isset($seen[$appId]) === true) {
+                    continue;
+                }
+
+                $seen[$appId] = true;
+                $providers[]  = $provider;
+            }
+        } catch (\Throwable $e) {
+            // Discovery must never take the container down: an app with a
+            // broken listener costs its own tools, not everyone else's.
+            $logger->warning(
+                message: '[MCP] Announced-provider collection failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }//end try
+
+    }//end collectAnnouncedMcpProviders()
+
+    /**
+     * Collect per-app providers by container alias (legacy path).
+     *
+     * Kept for one release while the fleet migrates to the registration event;
+     * removed once every app announces itself. See the discovery-cache notes
+     * above, which document this method's caching behaviour.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
      */
     private function collectPerAppMcpProviders(
         ContainerInterface $container,
