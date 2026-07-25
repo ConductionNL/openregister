@@ -4526,7 +4526,7 @@ class MagicMapper extends AbstractObjectMapper
                 // existing rows; otherwise the column is added nullable. Required-ness
                 // is enforced by schema validation at write time, not by the physical
                 // column constraint (see #2082/#2075).
-                $hasDefault = isset($columnDef['default']);
+                $hasDefault  = isset($columnDef['default']);
                 $wantNotNull = (($columnDef['nullable'] ?? true) === false);
 
                 if ($wantNotNull === true && $hasDefault === true) {

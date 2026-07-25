@@ -1,6 +1,6 @@
 <?php
 /**
- * occ command to reconcile magic-table columns against schema definitions.
+ * Occ command to reconcile magic-table columns against schema definitions.
  *
  * @category Command
  * @package  OCA\OpenRegister\Command
@@ -44,7 +44,6 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ReconcileMagicTablesCommand extends Command
 {
-
     /**
      * Constructor.
      *
@@ -97,15 +96,15 @@ class ReconcileMagicTablesCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $apply         = (bool) $input->getOption('apply');
+        $apply          = (bool) $input->getOption('apply');
         $registerFilter = $input->getOption('register');
 
         $registers = $this->registerMapper->findAll(_rbac: false, _multitenancy: false);
 
-        $driftTables    = 0;
-        $driftColumns   = 0;
-        $repaired       = 0;
-        $failed         = 0;
+        $driftTables  = 0;
+        $driftColumns = 0;
+        $repaired     = 0;
+        $failed       = 0;
 
         foreach ($registers as $register) {
             if ($register instanceof Register === false) {
@@ -134,7 +133,7 @@ class ReconcileMagicTablesCommand extends Command
                     );
 
                     // Table not materialised yet — ensureTable will create it on apply.
-                    $currentColumns = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
+                    $currentColumns  = $this->magicMapper->getExistingTableColumns(tableName: $tableName);
                     $requiredColumns = $this->magicMapper->buildTableColumnsFromSchema(schema: $schema);
                     $missing         = $this->magicMapper->findMissingColumns(
                         currentColumns: $currentColumns,
@@ -151,7 +150,7 @@ class ReconcileMagicTablesCommand extends Command
                         )
                     );
                     continue;
-                }
+                }//end try
 
                 if (empty($missing) === true) {
                     continue;
@@ -215,8 +214,11 @@ class ReconcileMagicTablesCommand extends Command
             )
         );
 
-        return ($failed === 0) ? 0 : 1;
+        if ($failed === 0) {
+            return 0;
+        }
+
+        return 1;
 
     }//end execute()
-
 }//end class
