@@ -146,16 +146,17 @@ class FlowRunService
      * Called by the queue worker, never by a trigger. Returns the run in
      * whatever state the walk left it: terminal, or suspended and resumable.
      *
-     * @param FlowRun $run       The run to advance.
-     * @param array   $flow      The flow document.
-     * @param object  $subject   The object the run is about.
-     * @param array   $seedItems Items to start from; ignored when resuming.
+     * @param FlowRun     $run       The run to advance.
+     * @param array       $flow      The flow document.
+     * @param object      $subject   The object the run is about.
+     * @param array       $seedItems Items to start from; ignored when resuming.
+     * @param string|null $startAt   Node to start from (run-from-here); ignored when resuming.
      *
      * @return FlowRun The updated run.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
-    public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems=null): FlowRun
+    public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems=null, ?string $startAt=null): FlowRun
     {
         if ($run->isTerminal() === true) {
             // Re-executing a finished run would repeat every side effect it
@@ -169,11 +170,14 @@ class FlowRunService
         $this->mapper->update($run);
 
         $items = $seedItems;
+        $start = $startAt;
         if ($resuming === true) {
             // On resume the stored items win: they are what the run was
             // carrying when it paused. Re-seeding from the subject would throw
-            // away everything the earlier steps produced.
+            // away everything the earlier steps produced. A start node is a
+            // fresh-run concern too — the marking already holds where to resume.
             $items = ($run->getItems() ?? []);
+            $start = null;
         }
 
         $context            = ($run->getContext() ?? []);
@@ -187,7 +191,8 @@ class FlowRunService
                 subject: $subject,
                 dispatcher: new RegistryStepDispatcher(registry: $this->registry),
                 context: $context,
-                items: $items
+                items: $items,
+                startAt: $start
             );
         } catch (Throwable $e) {
             // The engine itself failing (rather than a step) is not something

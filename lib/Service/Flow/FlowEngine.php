@@ -120,12 +120,20 @@ class FlowEngine
      * item built out of the subject, so a flow that never fans out behaves
      * exactly like the single-object model this replaces.
      *
+     * `$startAt` runs the flow from a chosen node instead of its start — n8n's
+     * "run from here". The seed items land on that node, and the steps before it
+     * do not run; an author pins their output ({@see self::pinnedItems()}) and
+     * re-runs only the part being worked on. It is the initial place overridden,
+     * so a resume — whose marking is already mid-graph and comes from the store —
+     * is unaffected.
+     *
      * @param array                 $flow       The flow document.
      * @param MarkingStoreInterface $store      Where the marking lives (an OR object, in production).
      * @param object                $subject    The object the run is about; holds the marking.
      * @param FlowStepDispatcher    $dispatcher Performs each step's side effect.
      * @param array                 $context    Run-level metadata handed to every step.
      * @param array|null            $items      Seed items; defaults to one item from the subject.
+     * @param string|null           $startAt    Node to start from; defaults to the flow's own start.
      *
      * @return array The run result: `{status, log: [], context: [], items: []}`.
      *
@@ -137,9 +145,11 @@ class FlowEngine
         object $subject,
         FlowStepDispatcher $dispatcher,
         array $context=[],
-        ?array $items=null
+        ?array $items=null,
+        ?string $startAt=null
     ): array {
         $items = ($items ?? FlowItems::fromSubject(subject: $subject));
+        $flow  = $this->withStartNode(flow: $flow, startAt: $startAt);
 
         try {
             $definition = $this->builder->build(flow: $flow);
@@ -344,6 +354,31 @@ class FlowEngine
         }//end while
 
     }//end run()
+
+    /**
+     * Override where a flow starts, for "run from here".
+     *
+     * A non-empty start node replaces the flow's `initial`; the builder then
+     * validates it exists, so an unknown node fails the run exactly as a bad
+     * document does. An empty or absent start leaves the flow untouched, so the
+     * ordinary path is unaffected.
+     *
+     * @param array       $flow    The flow document.
+     * @param string|null $startAt The node to start from, or null/empty for none.
+     *
+     * @return array The flow document, with `initial` overridden when asked.
+     *
+     * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+     */
+    private function withStartNode(array $flow, ?string $startAt): array
+    {
+        if (($startAt ?? '') !== '') {
+            $flow['initial'] = $startAt;
+        }
+
+        return $flow;
+
+    }//end withStartNode()
 
     /**
      * Find the step configuration attached to a transition.

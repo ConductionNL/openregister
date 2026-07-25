@@ -398,6 +398,61 @@ class FlowEngineTest extends TestCase
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
     }
 
+    public function testRunFromHereStartsAtTheChosenNodeAndSkipsWhatIsBefore(): void
+    {
+        // A three-step line start -> middle -> end. Starting at 'middle' must
+        // run only the 'second' step (middle -> end); 'first' never runs.
+        $dispatcher = new RecordingDispatcher();
+        $seed = [FlowItems::item(json: ['from' => 'run-from-here'])];
+
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            [],
+            $seed,
+            'middle'
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        // The chosen start's step saw the supplied seed, not a subject item.
+        $this->assertSame('run-from-here', $dispatcher->seenItems['second'][0]['json']['from']);
+    }
+
+    public function testRunFromAnUnknownNodeFailsLoudly(): void
+    {
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            new RecordingDispatcher(),
+            [],
+            null,
+            'no-such-node'
+        );
+
+        $this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+    }
+
+    public function testAnEmptyStartAtIsIgnoredAndTheFlowRunsFromItsStart(): void
+    {
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            [],
+            null,
+            ''
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        $this->assertSame(['first', 'second'], $dispatcher->dispatched);
+    }
+
     public function testAStepCarriesItsOwnEdgeConfigToTheDispatcher(): void
     {
         $flow = $this->linearFlow();
