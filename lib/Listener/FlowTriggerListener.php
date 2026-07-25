@@ -3,12 +3,19 @@
 /**
  * Fires object-lifecycle triggers into the flow engine.
  *
- * The first Nextcloud-native trigger: when an OpenRegister object is created,
- * updated or deleted, this hands the event to {@see FlowTriggerService}, which
- * queues a run for every flow wired to it. Other native triggers (files,
- * shares, calendar, users, tags) will register the same way — a small listener
- * that translates a core event into a `FlowTriggerService::fire()` call — so the
- * mechanism is here once and each new trigger is a few lines.
+ * The object-lifecycle triggers: when an OpenRegister object is created,
+ * updated, deleted, locked, unlocked, reverted or changes state, this hands the
+ * event to {@see FlowTriggerService}, which queues a run for every flow wired to
+ * it. Each is one line in the event map here; the mechanism is written once.
+ *
+ * The lock/revert/state triggers were declared in the event catalog from the
+ * start but had no listener firing them — a flow could select "an object is
+ * locked" and it would never run. Wiring them here closes that gap so every
+ * catalog trigger a flow can pick is one the engine actually fires.
+ *
+ * Non-object native triggers (files, shares, calendar, users, tags) carry a
+ * subject that is not an OpenRegister object, so they need a run-seed model this
+ * object-centric listener does not have; they are a separate change.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -31,6 +38,10 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
+use OCA\OpenRegister\Event\ObjectLockedEvent;
+use OCA\OpenRegister\Event\ObjectRevertedEvent;
+use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Event\ObjectUnlockedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Service\Flow\FlowTriggerService;
 use OCP\EventDispatcher\Event;
@@ -38,9 +49,9 @@ use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
 
 /**
- * Queues flow runs on object create / update / delete.
+ * Queues flow runs on every object-lifecycle event.
  *
- * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
+ * @template-implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent|ObjectLockedEvent|ObjectUnlockedEvent|ObjectRevertedEvent|ObjectTransitionedEvent>
  */
 class FlowTriggerListener implements IEventListener
 {
@@ -86,10 +97,38 @@ class FlowTriggerListener implements IEventListener
                 'register' => (string) $object->getRegister(),
                 'schema'   => (string) $object->getSchema(),
             ],
-            user: $user
+            user: $user,
+            context: $this->contextFor(event: $event)
         );
 
     }//end handle()
+
+    /**
+     * Extra run context an event carries beyond the object it is about.
+     *
+     * A state change is the one lifecycle event that is *about* a change rather
+     * than a moment: which action ran and the places it moved between are what a
+     * flow wired to "an object changes state" needs to branch on, so they are
+     * put on the run context where the flow's conditions can read them. Every
+     * other lifecycle event adds nothing beyond its subject.
+     *
+     * @param Event $event The dispatched event.
+     *
+     * @return array<string, string> The extra context, empty for most events.
+     */
+    private function contextFor(Event $event): array
+    {
+        if ($event instanceof ObjectTransitionedEvent) {
+            return [
+                'action' => $event->getAction(),
+                'from'   => $event->getFrom(),
+                'to'     => $event->getTo(),
+            ];
+        }
+
+        return [];
+
+    }//end contextFor()
 
     /**
      * Map an event class to the trigger id flows are wired to.
@@ -112,6 +151,22 @@ class FlowTriggerListener implements IEventListener
 
         if ($event instanceof ObjectDeletedEvent) {
             return 'object.deleted';
+        }
+
+        if ($event instanceof ObjectLockedEvent) {
+            return 'object.locked';
+        }
+
+        if ($event instanceof ObjectUnlockedEvent) {
+            return 'object.unlocked';
+        }
+
+        if ($event instanceof ObjectRevertedEvent) {
+            return 'object.reverted';
+        }
+
+        if ($event instanceof ObjectTransitionedEvent) {
+            return 'object.transitioned';
         }
 
         return null;
