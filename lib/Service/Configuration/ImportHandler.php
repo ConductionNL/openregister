@@ -3126,7 +3126,7 @@ class ImportHandler
             // If sourceUrl is provided, try to find by sourceUrl first (ensures uniqueness).
             if ($sourceUrl !== null) {
                 try {
-                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl);
+                    $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
                     if ($configuration !== null) {
                         $this->logger->info(
                             message: "[ImportHandler] Found existing configuration by sourceUrl",
@@ -3147,7 +3147,7 @@ class ImportHandler
             // If not found by sourceUrl, try by appId.
             if ($configuration === null) {
                 try {
-                    $configurations = $this->configurationMapper->findByApp($appId);
+                    $configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
                     if (count($configurations) > 0) {
                         // Use the first (most recent) configuration.
                         $configuration = $configurations[0];
@@ -3929,7 +3929,7 @@ class ImportHandler
             // Try to find existing configuration for this app.
             $existingConfig = null;
             try {
-                $configurations = $this->configurationMapper->findByApp($appId);
+                $configurations = $this->configurationMapper->findByApp($appId, systemLookup: true);
                 if (count($configurations) > 0) {
                     $existingConfig = $configurations[0];
                 }
