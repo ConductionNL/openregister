@@ -24,7 +24,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md#d1
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCP\Migration\SimpleMigrationStep;
  *
  * @package OCA\OpenRegister\Migration
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md#d1
+ * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
  */
 class Version1Date20260724000000 extends SimpleMigrationStep
 {
@@ -60,7 +60,7 @@ class Version1Date20260724000000 extends SimpleMigrationStep
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/object-views-kanban-calendar/design.md#d1
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {

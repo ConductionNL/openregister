@@ -24,17 +24,16 @@
 
 ## 4. Frontend + nc-vue
 
-- [ ] 4.1 Ship `CnObjectKanban` + `CnObjectCalendar` in nextcloud-vue (shared components; declared dependency) and dispatch `src/views/` object-list on `presentation.viewType` to them, passing objects/config/write-callback (REQ-VIEW-PRES-05)
-  - nc-vue components land in a beta first (or lockstep); backend is verifiable independently.
-  - **PHASE 2 — not started.** Backend contract this phase leaves for the frontend phase to consume: `presentation` on the View API response; `GET /api/views/{id}/kanban` (columns + paginated cards); `GET /api/views/{id}/calendar?start=&end=` (date-range objects); drag-to-move calls the existing object PATCH/PUT endpoint directly (no new endpoint to wire).
+- [x] 4.1 Ship `CnObjectKanban` + `CnObjectCalendar` in nextcloud-vue (shared components; declared dependency) and dispatch `src/views/` object-list on `presentation.viewType` to them, passing objects/config/write-callback (REQ-VIEW-PRES-05)
+  - Components published in `@conduction/nextcloud-vue@1.0.0-beta.220` (nc-vue PR#530). OpenRegister bumped to `^1.0.0-beta.220`; `SearchIndex.vue` dispatches on `presentation.viewType` (`table` default → CnIndexPage unchanged; `kanban` → CnObjectKanban; `calendar` → CnObjectCalendar); store `fetchKanbanBoard`/`fetchCalendarObjects` hit the two endpoints; drag-to-move calls the existing guarded object PATCH with resolve/reject rollback. Jest: 21 tests green; production webpack build green with beta.220.
 
 ## 5. Verification
 
 - [x] 5.1 Unit tests: `presentation` persistence + field validation; kanban column-move updates `groupByField` through the guarded path and rejects an illegal lifecycle transition; calendar date-range query (REQ-VIEW-PRES-01, REQ-VIEW-KANBAN-03, REQ-VIEW-CAL-04)
   - Run in the `nextcloud:34` container: `docker run --rm -v $PWD:/app -w /app <nc-image> php vendor/bin/phpunit`.
   - Done: `tests/Unit/Db/ViewTest.php`, `tests/Unit/Service/ViewServiceTest.php`, `tests/Unit/Service/ViewPresentationServiceTest.php`, `tests/Unit/Controller/ViewsControllerTest.php` — 123 tests, 270 assertions, green.
-- [ ] 5.2 Live smoke on 8080: create a kanban view grouped by an enum property, drag a card across columns, confirm the object's field changed; create a calendar view and confirm objects plot by date (REQ-VIEW-KANBAN-02, REQ-VIEW-CAL-04)
-  - **PHASE 2 — not started.** Needs the nc-vue components (task 4.1) wired into `src/views/` to exercise end-to-end through the UI; do this alongside 4.1.
+- [x] 5.2 Live smoke on a disposable nextcloud:34 + Postgres container (NOT the shared 8080 instance): created a register + `task` schema (enum `status` todo/doing/done + date `dueDate`), 5 objects, and kanban + calendar views (REQ-VIEW-KANBAN-02, REQ-VIEW-CAL-04)
+  - **PASS.** Kanban rendered 3 columns in `columnOrder` (todo:1, doing:3, done:1) with cards showing title + dueDate; a guarded PATCH move (todo→doing) persisted server-side and appeared in the `doing` column. Calendar rendered July 2026 with all 5 objects plotted on their exact `dueDate`. Console showed only unrelated sandbox errors (hermiq 404, NC core `user_status` 500) — ZERO from openregister or the CnObjectKanban/CnObjectCalendar components. Verified against `@conduction/nextcloud-vue@1.0.0-beta.220` (RUN in a real browser, not grepped). info.xml bumped to 0.2.17-unstable.16 to defeat the `?v=` cache-buster.
 
 Acceptance criteria:
 - A saved view persists a `viewType` of table/kanban/calendar with validated config; `table` remains the default and existing views are unchanged.
