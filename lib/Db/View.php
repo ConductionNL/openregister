@@ -137,7 +137,7 @@ class View extends Entity implements JsonSerializable
      *
      * @var array|null Presentation configuration, or null for the default table view
      *
-     * @spec openspec/changes/object-views-kanban-calendar/design.md#d1
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     protected ?array $presentation = null;
 
@@ -316,7 +316,7 @@ class View extends Entity implements JsonSerializable
      *
      * @return array{viewType: string, kanban?: array, calendar?: array} The effective presentation config
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     private function getPresentationFormatted(): array
     {
