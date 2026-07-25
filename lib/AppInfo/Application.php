@@ -2383,6 +2383,13 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
 
+        // Object-lifecycle flow triggers: queue a run for every flow wired to
+        // create / update / delete. The first Nextcloud-native trigger; others
+        // register the same way.
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
 

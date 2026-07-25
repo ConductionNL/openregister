@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SwitchNode;
@@ -52,13 +54,17 @@ class FlowNodeRegistrationListener implements IEventListener
      * @param WaitNode      $wait      The built-in "Wait" node.
      * @param SwitchNode    $switch    The built-in "Switch" node.
      * @param StopNode      $stop      The built-in "Stop" node.
+     * @param MergeNode     $merge     The built-in "Merge" node.
+     * @param LoopNode      $loop      The built-in "Loop over items" node.
      */
     public function __construct(
         private readonly SetFieldsNode $setFields,
         private readonly FilterNode $filter,
         private readonly WaitNode $wait,
         private readonly SwitchNode $switch,
-        private readonly StopNode $stop
+        private readonly StopNode $stop,
+        private readonly MergeNode $merge,
+        private readonly LoopNode $loop
     ) {
 
     }//end __construct()
@@ -83,6 +89,8 @@ class FlowNodeRegistrationListener implements IEventListener
         $event->registerNode(node: $this->wait);
         $event->registerNode(node: $this->switch);
         $event->registerNode(node: $this->stop);
+        $event->registerNode(node: $this->merge);
+        $event->registerNode(node: $this->loop);
 
     }//end handle()
 }//end class
