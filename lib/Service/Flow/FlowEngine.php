@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Workflow\Definition;
 use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
@@ -162,6 +163,15 @@ class FlowEngine
         $log      = [];
         $fired    = 0;
 
+        // Per-place item buffers. Items belong to the PLACES a token sits on,
+        // not to the run globally ({@see self::seedPlaceItems()}).
+        $placeItems = $this->seedPlaceItems(
+            workflow: $workflow,
+            subject: $subject,
+            definition: $definition,
+            items: $items
+        );
+
         while (true) {
             $enabled = $workflow->getEnabledTransitions(subject: $subject);
             if (empty($enabled) === true) {
@@ -199,7 +209,7 @@ class FlowEngine
             $transition = $this->selectTransition(
                 enabled: $enabled,
                 flow: $flow,
-                items: $items,
+                placeItems: $placeItems,
                 context: $context
             );
 
@@ -216,12 +226,20 @@ class FlowEngine
                 ];
             }
 
-            $name    = $transition->getName();
-            $step    = $this->stepFor(flow: $flow, transitionName: $name);
-            $itemsIn = $items;
+            $name = $transition->getName();
+            $step = $this->stepFor(flow: $flow, transitionName: $name);
+
+            // A step reads the items on its input place(s). For a join — several
+            // incoming edges converging on one node — that is the concatenation
+            // of every branch's items, in the froms' declared order, which is
+            // exactly what a Merge node then refines. The Petri net already
+            // holds the join until every input place is marked, so wait-for-both
+            // is the default and needs no code here.
+            $itemsIn = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $items   = $itemsIn;
 
             try {
-                $produced = $dispatcher->dispatch(step: $step, items: $items, context: $context);
+                $produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
                 $items    = FlowItems::normalise(value: $produced);
                 $log[]    = [
                     'transition' => $name,
@@ -301,6 +319,10 @@ class FlowEngine
                 }
             }//end try
 
+            // Move the items in lock-step with the token: onto the output
+            // places, off the consumed inputs ({@see self::advanceItems()}).
+            $placeItems = $this->advanceItems(transition: $transition, placeItems: $placeItems, items: $items);
+
             // The marking advances even when a `continue` step failed: the author
             // asked the run to proceed, and leaving the token behind would spin
             // this transition forever.
@@ -349,28 +371,24 @@ class FlowEngine
      *    condition that did not hold, with no default), null is returned and
      *    the run ends at this choice point.
      *
-     * The condition is evaluated against the first item as the representative
-     * of the list. Per-item routing — sending each item down a different branch
-     * — is a larger feature (it needs the engine to carry more than one item
-     * list across a split) and is not attempted here.
+     * Each candidate's condition is evaluated against the items on ITS input
+     * place — the data the branch would actually carry — not a single global
+     * list. Per-item routing (each item down a different branch) is a larger
+     * feature and is not attempted here; the condition uses the first item as
+     * the branch's representative.
      *
-     * @param array<int, object>   $enabled The enabled transitions.
-     * @param array<string, mixed> $flow    The flow document.
-     * @param array<int, mixed>    $items   The current item list.
-     * @param array<string, mixed> $context Run-level metadata.
+     * @param array<int, object>   $enabled    The enabled transitions.
+     * @param array<string, mixed> $flow       The flow document.
+     * @param array<string, array> $placeItems Items per place.
+     * @param array<string, mixed> $context    Run-level metadata.
      *
      * @return object|null The transition to fire, or null when none is eligible.
      *
      * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
      */
-    private function selectTransition(array $enabled, array $flow, array $items, array $context): ?object
+    private function selectTransition(array $enabled, array $flow, array $placeItems, array $context): ?object
     {
         $fallback = null;
-        $data     = FlowExpression::dataFor(
-            item: ($items[0] ?? []),
-            itemCount: count($items),
-            context: $context
-        );
 
         foreach ($enabled as $transition) {
             $edge      = $this->stepFor(flow: $flow, transitionName: $transition->getName());
@@ -382,12 +400,115 @@ class FlowEngine
                 continue;
             }
 
+            $items = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $data  = FlowExpression::dataFor(
+                item: ($items[0] ?? []),
+                itemCount: count($items),
+                context: $context
+            );
+
             if (FlowExpression::isTrue(logic: $condition, data: $data) === true) {
                 return $transition;
             }
-        }
+        }//end foreach
 
         return $fallback;
 
     }//end selectTransition()
+
+    /**
+     * Gather the items a transition reads: every input place's items, in the
+     * froms' declared order.
+     *
+     * For a normal step this is just its one input place. For a join it is the
+     * concatenation of every incoming branch's items — which is what a Merge
+     * node receives and then combines.
+     *
+     * @param object               $transition The transition.
+     * @param array<string, array> $placeItems Items per place.
+     *
+     * @return array<int, mixed> The gathered input items.
+     *
+     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+     */
+    private function itemsForTransition(object $transition, array $placeItems): array
+    {
+        $items = [];
+        foreach ($transition->getFroms() as $from) {
+            foreach (($placeItems[(string) $from] ?? []) as $item) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+
+    }//end itemsForTransition()
+
+    /**
+     * Seed the per-place item buffers from the current marking.
+     *
+     * Items belong to the PLACES a token sits on, not to the run globally: a
+     * parallel split hands each branch the items from the split point, and a
+     * join reads the items every incoming branch left on it. A single shared
+     * list cannot express either — the second branch to run would overwrite
+     * the first.
+     *
+     * Seeded from the CURRENT marking, which is what makes resume work: a fresh
+     * run's marking is the initial place, a resumed run's is wherever it
+     * suspended, and either way the stored items land on the place that holds
+     * the token.
+     *
+     * @param Workflow   $workflow   The workflow.
+     * @param object     $subject    The subject holding the marking.
+     * @param Definition $definition The definition (for the initial-place fallback).
+     * @param array      $items      The seed items.
+     *
+     * @return array<string, array> Items keyed by place.
+     *
+     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+     */
+    private function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array
+    {
+        $placeItems = [];
+        foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
+            $placeItems[(string) $place] = $items;
+        }
+
+        if ($placeItems === []) {
+            foreach ($definition->getInitialPlaces() as $place) {
+                $placeItems[(string) $place] = $items;
+            }
+        }
+
+        return $placeItems;
+
+    }//end seedPlaceItems()
+
+    /**
+     * Move a fired transition's items: onto its output places, off its inputs.
+     *
+     * Clearing the consumed inputs matters for a loop that re-enters the
+     * transition — it must read fresh items, not a stale copy left behind.
+     *
+     * @param object               $transition The fired transition.
+     * @param array<string, array> $placeItems The current per-place buffers.
+     * @param array                $items      What the step produced.
+     *
+     * @return array<string, array> The updated buffers.
+     *
+     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+     */
+    private function advanceItems(object $transition, array $placeItems, array $items): array
+    {
+        foreach ($transition->getTos() as $to) {
+            $placeItems[(string) $to] = $items;
+        }
+
+        foreach ($transition->getFroms() as $from) {
+            unset($placeItems[(string) $from]);
+        }
+
+        return $placeItems;
+
+    }//end advanceItems()
 }//end class
