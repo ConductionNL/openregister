@@ -346,10 +346,10 @@ class DashboardService
                         context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $register->getId()]
                     );
 
-                    $registerArray          = $register->jsonSerialize();
-                    $registerArray['stats'] = [];
+                    $registerArray            = $register->jsonSerialize();
+                    $registerArray['stats']   = [];
                     $registerArray['schemas'] = [];
-                    $registerArray['error'] = $registerError->getMessage();
+                    $registerArray['error']   = $registerError->getMessage();
                     $result[] = $registerArray;
                 }//end try
             }//end foreach
