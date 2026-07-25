@@ -1,0 +1,88 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Flows",
+    "description": "OpenRegister-native flow definitions. A flow is an object with nodes and edges the flow engine walks (ADR-022, ADR-065). Storing flows as ordinary OpenRegister objects is what lets OpenRegister author and run its own flows — the OpenRegisterFlowResolver resolves this register/schema by default (flow_register / flow_schema app-config), so triggers, sub-flows and the /test endpoint all work with a flow authored here. Materialised by the ImportFlowRegister Repair step (OR does not self-import its own register JSON at boot — ADR-037).",
+    "version": "1.0.0"
+  },
+  "x-openregister": {
+    "type": "core",
+    "app": "openregister",
+    "openregister": "^v0.2.10",
+    "description": "Foundational flow-definition register shipped by OpenRegister so a flow can live in OpenRegister itself and not only in a consuming app. The engine, nodes and resolver live in code (lib/Service/Flow); this descriptor is only the store the resolver reads by default."
+  },
+  "paths": {},
+  "components": {
+    "registers": {
+      "flows": {
+        "slug": "flows",
+        "title": "Flows",
+        "version": "1.0.0",
+        "description": "OpenRegister-native flow definitions (nodes + edges) the flow engine runs.",
+        "published": true,
+        "schemas": ["flow"],
+        "folder": "Flows"
+      }
+    },
+    "schemas": {
+      "flow": {
+        "slug": "flow",
+        "title": "Flow",
+        "version": "1.0.0",
+        "published": true,
+        "summary": "A flow definition the OpenRegister flow engine walks.",
+        "description": "A flow is a graph of nodes and edges. Each edge carries the step to run (its `type` names a registered flow node such as openregister.set-fields, openregister.route or openregister.sub-flow, and `config` its options); the engine walks the graph, threading an item list from step to step. `trigger` (with optional `triggerRegister` / `triggerSchema`) wires the flow to an event so it runs automatically; `enabled` must be true for a trigger to fire it.",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Human-readable name of the flow.",
+            "maxLength": 255,
+            "facetable": true,
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the flow does.",
+            "title": "Description"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the flow is active. A trigger only fires an enabled flow.",
+            "default": false,
+            "facetable": true,
+            "title": "Enabled"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "The event that starts the flow (a catalog trigger id such as object.created, file.created, tag.assigned, or manual for a flow run only on request).",
+            "facetable": true,
+            "title": "Trigger"
+          },
+          "triggerRegister": {
+            "type": "string",
+            "description": "Restrict an object-event trigger to one register (empty = any).",
+            "title": "Trigger register"
+          },
+          "triggerSchema": {
+            "type": "string",
+            "description": "Restrict an object-event trigger to one schema (empty = any).",
+            "title": "Trigger schema"
+          },
+          "nodes": {
+            "type": "array",
+            "description": "The flow's nodes; each carries an id.",
+            "items": { "type": "object" },
+            "title": "Nodes"
+          },
+          "edges": {
+            "type": "array",
+            "description": "The flow's edges; each carries from/to plus the step type and config to run.",
+            "items": { "type": "object" },
+            "title": "Edges"
+          }
+        }
+      }
+    }
+  }
+}
