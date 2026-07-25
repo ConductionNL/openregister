@@ -398,6 +398,91 @@ class FlowEngineTest extends TestCase
         $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
     }
 
+    public function testPerItemRoutingSendsEachItemDownItsTaggedBranch(): void
+    {
+        // A router edge start -> [high, low], then a step off each. The router
+        // tags n>5 for 'high', the rest for 'low'. Each branch must see only its
+        // own items — this is what per-item routing means.
+        $router = new class extends RecordingDispatcher {
+            public function dispatch(array $step, array $items, array $context): array
+            {
+                $name = (string) ($step['id'] ?? '');
+                $this->dispatched[] = $name;
+                $this->seenItems[$name] = $items;
+
+                if ($name !== 'route') {
+                    return $items;
+                }
+
+                $out = [];
+                foreach ($items as $i => $item) {
+                    $n = (int) ($item['json']['n'] ?? 0);
+                    $out[] = FlowItems::item(
+                        json: $item['json'],
+                        binary: [],
+                        fromItemIndex: $i,
+                        output: ($n > 5 ? 'high' : 'low')
+                    );
+                }
+
+                return $out;
+            }
+        };
+
+        $flow = [
+            'id'    => 'route',
+            'nodes' => [['id' => 'start'], ['id' => 'high'], ['id' => 'low'], ['id' => 'hEnd'], ['id' => 'lEnd']],
+            'edges' => [
+                ['id' => 'route', 'from' => 'start', 'to' => ['high', 'low']],
+                ['id' => 'doHigh', 'from' => 'high', 'to' => 'hEnd'],
+                ['id' => 'doLow', 'from' => 'low', 'to' => 'lEnd'],
+            ],
+        ];
+
+        $seed = [
+            FlowItems::item(json: ['n' => 1]),
+            FlowItems::item(json: ['n' => 7]),
+            FlowItems::item(json: ['n' => 3]),
+        ];
+
+        $result = $this->engine->run(
+            $flow,
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $router,
+            [],
+            $seed
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // High branch saw only n=7; low branch saw n=1 and n=3.
+        $this->assertSame([7], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doHigh']));
+        $this->assertSame([1, 3], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doLow']));
+        // The routing tag does not linger on the items the branch step sees.
+        $this->assertArrayNotHasKey('output', $router->seenItems['doHigh'][0]);
+    }
+
+    public function testAnUntaggedSplitStillBroadcastsToEveryBranch(): void
+    {
+        // The no-regression guarantee: a fork whose items carry no output tag
+        // delivers every item to every branch, exactly as before per-item routing.
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->runFlow([
+            'id'    => 'fork',
+            'nodes' => [['id' => 'start'], ['id' => 'a'], ['id' => 'b'], ['id' => 'aEnd'], ['id' => 'bEnd']],
+            'edges' => [
+                ['id' => 'fork', 'from' => 'start', 'to' => ['a', 'b']],
+                ['id' => 'doA', 'from' => 'a', 'to' => 'aEnd'],
+                ['id' => 'doB', 'from' => 'b', 'to' => 'bEnd'],
+            ],
+        ], $dispatcher);
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // Both branches saw the (single, untagged) item.
+        $this->assertCount(1, $dispatcher->seenItems['doA']);
+        $this->assertCount(1, $dispatcher->seenItems['doB']);
+    }
+
     public function testRunFromHereStartsAtTheChosenNodeAndSkipsWhatIsBefore(): void
     {
         // A three-step line start -> middle -> end. Starting at 'middle' must

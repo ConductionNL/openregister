@@ -619,6 +619,14 @@ class FlowEngine
     /**
      * Move a fired transition's items: onto its output places, off its inputs.
      *
+     * Per-item routing (n8n's If/Switch) lives here. An item that names an output
+     * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
+     * place with that name; an item that names none is broadcast to every output,
+     * which is the ordinary behaviour and what a parallel split relies on. So a
+     * step whose items carry no output tag distributes exactly as before — this
+     * is additive, not a change to any existing flow. The tag is stripped as the
+     * item lands, so it never lingers to misroute a later step.
+     *
      * Clearing the consumed inputs matters for a loop that re-enters the
      * transition — it must read fresh items, not a stale copy left behind.
      *
@@ -628,12 +636,12 @@ class FlowEngine
      *
      * @return array<string, array> The updated buffers.
      *
-     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
      */
     private function advanceItems(object $transition, array $placeItems, array $items): array
     {
         foreach ($transition->getTos() as $to) {
-            $placeItems[(string) $to] = $items;
+            $placeItems[(string) $to] = $this->itemsForOutput(items: $items, output: (string) $to);
         }
 
         foreach ($transition->getFroms() as $from) {
@@ -643,4 +651,33 @@ class FlowEngine
         return $placeItems;
 
     }//end advanceItems()
+
+    /**
+     * The items that belong on one output place: those routed to it, plus the
+     * unrouted ones that go everywhere. The output tag is dropped on the way.
+     *
+     * @param array<int, array> $items  The produced items.
+     * @param string            $output The output place's name.
+     *
+     * @return array<int, array> The items for that output, tag removed.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    private function itemsForOutput(array $items, string $output): array
+    {
+        $out = [];
+        foreach ($items as $item) {
+            $tag = FlowItems::outputOf(member: (array) $item);
+            if ($tag !== null && $tag !== $output) {
+                // Routed elsewhere: not this output's item.
+                continue;
+            }
+
+            unset($item[FlowItems::OUTPUT]);
+            $out[] = $item;
+        }
+
+        return $out;
+
+    }//end itemsForOutput()
 }//end class
