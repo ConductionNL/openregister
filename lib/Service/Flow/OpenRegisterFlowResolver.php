@@ -181,7 +181,7 @@ class OpenRegisterFlowResolver implements IFlowResolver
     {
         try {
             $flows = $this->objectService->findAll(
-                config: ['register' => $this->flowRegister(), 'schema' => $this->flowSchema()],
+                config: ['filters' => ['register' => $this->flowRegister(), 'schema' => $this->flowSchema()]],
                 _rbac: false,
                 _multitenancy: false
             );

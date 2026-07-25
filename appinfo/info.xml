@@ -128,6 +128,7 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
 		<job>OCA\OpenRegister\Cron\FlowRunWorker</job>
+		<job>OCA\OpenRegister\Cron\FlowScheduleWorker</job>
 		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
