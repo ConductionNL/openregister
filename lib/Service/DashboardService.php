@@ -26,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use RuntimeException;
+use Throwable;
 use stdClass;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -331,35 +332,26 @@ class DashboardService
                 'schemas'     => [],
             ];
 
-            // For each register, get its schemas and statistics.
+            // For each register, get its schemas and statistics. Each register
+            // is processed in its own try/catch: a single register whose
+            // schemas fail to hydrate (e.g. a cross-app schema-format conflict,
+            // openregister#2087) must degrade to a flagged entry, not blank the
+            // whole dashboard for every register and every user.
             foreach ($registers as $register) {
-                $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+                try {
+                    $result[] = $this->buildRegisterEntry(register: $register, schemaId: $schemaId);
+                } catch (Throwable $registerError) {
+                    $this->logger->warning(
+                        message: '[DashboardService] Skipping a register whose schemas could not be loaded: '.$registerError->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $register->getId()]
+                    );
 
-                // Get register-level statistics.
-                $registerStats = $this->getStats(registerId: $register->getId());
-
-                // Convert register to array and add statistics.
-                $registerArray          = $register->jsonSerialize();
-                $registerArray['stats'] = $registerStats;
-
-                // Process schemas.
-                $schemasArray = [];
-                foreach ($schemas as $schema) {
-                    if ($schemaId !== null &&  $schema->getId() !== $schemaId) {
-                        continue;
-                    }
-
-                    // Get schema-level statistics.
-                    $schemaStats = $this->getStats(registerId: $register->getId(), schemaId: $schema->getId());
-
-                    // Convert schema to array and add statistics.
-                    $schemaArray          = $schema->jsonSerialize();
-                    $schemaArray['stats'] = $schemaStats;
-                    $schemasArray[]       = $schemaArray;
-                }
-
-                $registerArray['schemas'] = $schemasArray;
-                $result[] = $registerArray;
+                    $registerArray          = $register->jsonSerialize();
+                    $registerArray['stats'] = [];
+                    $registerArray['schemas'] = [];
+                    $registerArray['error'] = $registerError->getMessage();
+                    $result[] = $registerArray;
+                }//end try
             }//end foreach
 
             // Add orphaned items statistics as a special "register".
@@ -381,6 +373,45 @@ class DashboardService
             throw new Exception('Failed to get registers with schemas: '.$e->getMessage());
         }//end try
     }//end getRegistersWithSchemas()
+
+    /**
+     * Build one register's dashboard entry: its stats plus each schema's stats.
+     *
+     * Split out of {@see self::getRegistersWithSchemas()} so a failure here is
+     * caught per register rather than aborting the whole dashboard. Any throw
+     * (a schema-hydration conflict, a stats query error) is the caller's to
+     * turn into a flagged entry.
+     *
+     * @param \OCA\OpenRegister\Db\Register $register The register.
+     * @param int|null                      $schemaId Restrict to one schema, or null for all.
+     *
+     * @return array<string, mixed> The register entry, with `stats` and `schemas`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     */
+    private function buildRegisterEntry(\OCA\OpenRegister\Db\Register $register, ?int $schemaId): array
+    {
+        $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+
+        $registerArray          = $register->jsonSerialize();
+        $registerArray['stats'] = $this->getStats(registerId: $register->getId());
+
+        $schemasArray = [];
+        foreach ($schemas as $schema) {
+            if ($schemaId !== null && $schema->getId() !== $schemaId) {
+                continue;
+            }
+
+            $schemaArray          = $schema->jsonSerialize();
+            $schemaArray['stats'] = $this->getStats(registerId: $register->getId(), schemaId: $schema->getId());
+            $schemasArray[]       = $schemaArray;
+        }
+
+        $registerArray['schemas'] = $schemasArray;
+
+        return $registerArray;
+
+    }//end buildRegisterEntry()
 
     /**
      * Recalculate sizes for objects in specified registers and/or schemas
