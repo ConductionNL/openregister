@@ -4517,13 +4517,33 @@ class MagicMapper extends AbstractObjectMapper
                 $colType       = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
                 $sql           = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
 
-                // Add NOT NULL if specified.
-                if (($columnDef['nullable'] ?? true) === false) {
+                // This path retrofits a column onto an ALREADY-EXISTING table, which
+                // may already hold rows. `ADD COLUMN ... NOT NULL` without a DEFAULT
+                // is rejected by the database on a populated table ("column contains
+                // null values"), which is exactly why a required property added to an
+                // existing schema could never get its column and the change was lost.
+                // A NOT NULL is therefore only safe here when a DEFAULT backfills the
+                // existing rows; otherwise the column is added nullable. Required-ness
+                // is enforced by schema validation at write time, not by the physical
+                // column constraint (see #2082/#2075).
+                $hasDefault = isset($columnDef['default']);
+                $wantNotNull = (($columnDef['nullable'] ?? true) === false);
+
+                if ($wantNotNull === true && $hasDefault === true) {
                     $sql .= ' NOT NULL';
+                } else if ($wantNotNull === true) {
+                    $this->logger->info(
+                        message: '[MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows)',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'columnName' => $columnName,
+                        ]
+                    );
                 }
 
-                // Add DEFAULT if specified.
-                if (isset($columnDef['default']) === true) {
+                if ($hasDefault === true) {
                     $defaultValue = $this->formatDefaultValueForSQL(default: $columnDef['default']);
                     $sql         .= ' DEFAULT '.$defaultValue;
                 }
