@@ -37,6 +37,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use stdClass;
@@ -72,10 +73,12 @@ class FlowRunController extends Controller
      * @return JSONResponse The runs plus the paging window.
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function index(): JSONResponse
     {
         $flowId = $this->request->getParam('flowId');
@@ -118,10 +121,12 @@ class FlowRunController extends Controller
      * @return JSONResponse The run, or 404.
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function show(string $uuid): JSONResponse
     {
         try {
@@ -142,10 +147,12 @@ class FlowRunController extends Controller
      * @return JSONResponse The new run, or a 4xx when the source cannot be retried.
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function retry(string $uuid): JSONResponse
     {
         try {
@@ -184,10 +191,12 @@ class FlowRunController extends Controller
      * @return JSONResponse The finished run, or a 4xx when the flow is unknown.
      *
      * @NoAdminRequired
+     * @NoCSRFRequired
      *
      * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
      */
     #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function test(): JSONResponse
     {
         $flowId = trim((string) $this->request->getParam('flowId', ''));

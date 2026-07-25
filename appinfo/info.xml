@@ -78,6 +78,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
@@ -92,6 +93,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\SeedAppVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\SeedTablesVirtualSchemas</step>
 			<step>OCA\OpenRegister\Repair\ImportCredentialBrokerRegister</step>
+			<step>OCA\OpenRegister\Repair\ImportFlowRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
