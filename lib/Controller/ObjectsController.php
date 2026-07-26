@@ -57,6 +57,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -2593,7 +2594,21 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     *
+     * BUG-RATE-1: this endpoint is `@PublicPage` so anonymous callers (e.g.
+     * public form submissions via CaseToken/FormLink) need throttling —
+     * that is what #[AnonRateLimit] is for (added for the public-create
+     * path, see commit 044faee7d). But Nextcloud's RateLimitingMiddleware
+     * applies an Anon-only limit to EVERY caller, authenticated or not,
+     * when no #[UserRateLimit] is present ("If only an AnonRateThrottle is
+     * specified that one will also be applied to logged-in users" —
+     * lib/private/AppFramework/Middleware/Security/RateLimitingMiddleware.php).
+     * Without this explicit, more generous authenticated-user limit, every
+     * logged-in API caller — including bulk imports/integrations and this
+     * app's own CI test suite — was capped at the same 30 requests/minute
+     * meant only for anonymous abuse prevention.
      */
+    #[UserRateLimit(limit: 300, period: 60)]
     #[AnonRateLimit(limit: 30, period: 60)]
     public function create(
         string $register,
