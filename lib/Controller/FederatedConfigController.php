@@ -35,6 +35,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Throwable;
@@ -60,12 +61,13 @@ class FederatedConfigController extends Controller
     /**
      * Constructor.
      *
-     * @param string                 $appName     The app id.
-     * @param IRequest               $request     The request.
-     * @param FederatedConfigService $service     The federation engine.
-     * @param FederatedConfigAccess  $access      Per-org publish/install gating.
-     * @param IUserSession           $userSession The current user.
-     * @param IConfig                $config      Reads the user's chosen store credential.
+     * @param string                 $appName      The app id.
+     * @param IRequest               $request      The request.
+     * @param FederatedConfigService $service      The federation engine.
+     * @param FederatedConfigAccess  $access       Per-org publish/install gating.
+     * @param IUserSession           $userSession  The current user.
+     * @param IConfig                $config       Reads the user's chosen store credential.
+     * @param IGroupManager          $groupManager Gates the trust-governance endpoints to admins.
      */
     public function __construct(
         string $appName,
@@ -73,7 +75,8 @@ class FederatedConfigController extends Controller
         private readonly FederatedConfigService $service,
         private readonly FederatedConfigAccess $access,
         private readonly IUserSession $userSession,
-        private readonly IConfig $config
+        private readonly IConfig $config,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -223,6 +226,10 @@ class FederatedConfigController extends Controller
             $branch = 'main';
         }
 
+        // A newly created store repo is public by default; `visibility: private`
+        // makes it private (the token must have rights to create private repos).
+        $private = (trim((string) $this->request->getParam('visibility', 'public')) === 'private');
+
         try {
             $result = $this->service->publish(
                 typeId: $type,
@@ -230,7 +237,8 @@ class FederatedConfigController extends Controller
                 repo: $repo,
                 path: $path,
                 credentialId: $credentialId,
-                branch: $branch
+                branch: $branch,
+                private: $private
             );
         } catch (UnexpectedValueException $e) {
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
@@ -241,6 +249,83 @@ class FederatedConfigController extends Controller
         return new JSONResponse($result);
 
     }//end publish()
+
+    /**
+     * The organisation's trust configuration (admin only).
+     *
+     * @return JSONResponse `{sourceAllowlist, trustedKeys, publishGroups, installGroups}` or 403.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function trust(): JSONResponse
+    {
+        if ($this->isAdmin() === false) {
+            return new JSONResponse(['error' => 'Only an administrator may read the trust configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
+        return new JSONResponse($this->service->getTrustConfig());
+
+    }//end trust()
+
+    /**
+     * Set one trust-configuration value, or trust a publisher key (admin only).
+     *
+     * Accepts either `{field, value}` (field ∈ sourceAllowlist|trustedKeys|
+     * publishGroups|installGroups) or `{trustKey}` to append a public key to the
+     * trusted-keys list.
+     *
+     * @return JSONResponse The updated trust configuration, or a 4xx.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function setTrust(): JSONResponse
+    {
+        if ($this->isAdmin() === false) {
+            return new JSONResponse(['error' => 'Only an administrator may change the trust configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
+        $trustKey = trim((string) $this->request->getParam('trustKey', ''));
+        if ($trustKey !== '') {
+            $this->service->trustPublisherKey(publicKey: $trustKey);
+            return new JSONResponse($this->service->getTrustConfig());
+        }
+
+        $field = trim((string) $this->request->getParam('field', ''));
+        if ($field === '') {
+            return new JSONResponse(['error' => 'A trust update needs a field or a trustKey.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        try {
+            $this->service->setTrustValue(field: $field, value: (string) $this->request->getParam('value', ''));
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        }
+
+        return new JSONResponse($this->service->getTrustConfig());
+
+    }//end setTrust()
+
+    /**
+     * Whether the current user is a Nextcloud administrator.
+     *
+     * @return boolean Whether the caller is an admin.
+     */
+    private function isAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        return $user !== null && $this->groupManager->isAdmin($user->getUID());
+
+    }//end isAdmin()
 
     /**
      * Discover published bundles across GitHub by a type's discovery topic.

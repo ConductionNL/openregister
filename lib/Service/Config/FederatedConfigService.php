@@ -63,6 +63,18 @@ class FederatedConfigService
     private const ALLOWLIST_KEY = 'federated_config_source_allowlist';
 
     /**
+     * Trust-configuration fields → their app-config keys (for the governance API).
+     *
+     * @var array<string, string>
+     */
+    private const TRUST_KEYS = [
+        'sourceAllowlist' => 'federated_config_source_allowlist',
+        'trustedKeys'     => 'federated_config_trusted_keys',
+        'publishGroups'   => 'federated_config_publish_groups',
+        'installGroups'   => 'federated_config_install_groups',
+    ];
+
+    /**
      * The GitHub API host for anonymous discovery.
      */
     private const GITHUB_API = 'https://api.github.com';
@@ -187,7 +199,8 @@ class FederatedConfigService
         string $repo,
         string $path,
         string $credentialId,
-        string $branch='main'
+        string $branch='main',
+        bool $private=false
     ): array {
         $type = $this->typeOrFail(typeId: $typeId);
 
@@ -195,7 +208,7 @@ class FederatedConfigService
         // freshly published config is findable via discover() (both single-config
         // and config-set repos rely on this). Best-effort: a failure here still
         // lets the contents write surface a clear error.
-        $this->ensureRepo(repo: $repo, credentialId: $credentialId);
+        $this->ensureRepo(repo: $repo, credentialId: $credentialId, private: $private);
         $this->setTopics(repo: $repo, topics: [$type->getTopic()], credentialId: $credentialId);
 
         $bundle  = $this->signer->sign(bundle: $type->serialise(selection: $selection));
@@ -241,12 +254,13 @@ class FederatedConfigService
      * used, otherwise the authenticated user's; a failure is logged, not fatal
      * (the subsequent contents write reports a missing repo clearly).
      *
-     * @param string $repo         The `owner/repo`.
-     * @param string $credentialId The broker credential.
+     * @param string  $repo         The `owner/repo`.
+     * @param string  $credentialId The broker credential.
+     * @param boolean $private      Whether a freshly created repo should be private.
      *
      * @return void
      */
-    private function ensureRepo(string $repo, string $credentialId): void
+    private function ensureRepo(string $repo, string $credentialId, bool $private=false): void
     {
         [$owner, $name] = array_pad(explode('/', $repo, 2), 2, '');
         if ($owner === '' || $name === '') {
@@ -277,7 +291,7 @@ class FederatedConfigService
                     method: 'POST',
                     path: $createPath,
                     headers: ['Accept' => 'application/vnd.github+json'],
-                    body: (string) json_encode(['name' => $name, 'private' => false, 'auto_init' => true])
+                    body: (string) json_encode(['name' => $name, 'private' => $private, 'auto_init' => true])
                 );
                 if ((int) ($created['status'] ?? 0) >= 200 && (int) ($created['status'] ?? 0) < 300) {
                     return;
@@ -485,6 +499,72 @@ class FederatedConfigService
         return $this->signer->publicKey();
 
     }//end publicKey()
+
+    /**
+     * The organisation's trust configuration (for a governance UI).
+     *
+     * @return array{sourceAllowlist: string, trustedKeys: string, publishGroups: string, installGroups: string}
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function getTrustConfig(): array
+    {
+        $out = [];
+        foreach (self::TRUST_KEYS as $field => $key) {
+            $out[$field] = $this->appConfig->getValueString(self::APP_ID, $key, '');
+        }
+
+        return $out;
+
+    }//end getTrustConfig()
+
+    /**
+     * Set one trust-configuration value (the allowlist, trusted keys, or a group list).
+     *
+     * @param string $field One of `sourceAllowlist|trustedKeys|publishGroups|installGroups`.
+     * @param string $value The new value (comma-separated).
+     *
+     * @return void
+     *
+     * @throws UnexpectedValueException When the field is unknown.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function setTrustValue(string $field, string $value): void
+    {
+        if (isset(self::TRUST_KEYS[$field]) === false) {
+            throw new UnexpectedValueException(sprintf('Unknown trust setting "%s".', $field));
+        }
+
+        $this->appConfig->setValueString(self::APP_ID, self::TRUST_KEYS[$field], trim($value));
+
+    }//end setTrustValue()
+
+    /**
+     * Add a base64 public key to the trusted-keys allowlist (a convenience over
+     * hand-editing the comma-separated list).
+     *
+     * @param string $publicKey The base64 Ed25519 public key to trust.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function trustPublisherKey(string $publicKey): void
+    {
+        $publicKey = trim($publicKey);
+        if ($publicKey === '') {
+            return;
+        }
+
+        $current = array_filter(array_map('trim', explode(',', $this->appConfig->getValueString(self::APP_ID, self::TRUST_KEYS['trustedKeys'], ''))));
+        if (in_array($publicKey, $current, true) === false) {
+            $current[] = $publicKey;
+        }
+
+        $this->appConfig->setValueString(self::APP_ID, self::TRUST_KEYS['trustedKeys'], implode(',', $current));
+
+    }//end trustPublisherKey()
 
     /**
      * Whether a source may be installed from.
