@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-/**
+/*
  * Schema Annotation Vocabulary Unit Tests
  *
  * Verifies that x-openregister-archival and x-openregister-seed survive
@@ -11,8 +11,8 @@ declare(strict_types=1);
  * @category Tests
  * @package  OCA\OpenRegister\Tests\Unit\Db
  *
- * @author   Conduction Development Team <dev@conduction.nl>
- * @license  EUPL-1.2
+ * @author  Conduction Development Team <dev@conduction.nl>
+ * @license EUPL-1.2
  *
  * @spec openspec/changes/add-archival-annotation-support/tasks.md#task-1.2
  */
@@ -36,7 +36,7 @@ class SchemaAnnotationVocabularyTest extends TestCase
     {
         parent::setUp();
         $this->schema = new Schema();
-    }
+    }//end setUp()
 
     /**
      * ANNOTATION_VOCABULARY constant exists and contains the two new keys.
@@ -63,7 +63,7 @@ class SchemaAnnotationVocabularyTest extends TestCase
         // ProcessingLogService but absent from the vocabulary, so it was
         // silently dropped and per-schema AVG logReads could never be enabled.
         $this->assertContains('x-openregister-processing', $vocabulary);
-    }
+    }//end testAnnotationVocabularyContainsArchivalButNotSeed()
 
     /**
      * x-openregister-archival survives setConfiguration() → getConfiguration() round-trip.
@@ -74,16 +74,18 @@ class SchemaAnnotationVocabularyTest extends TestCase
             'retention' => ['default' => 'P30D'],
         ];
 
-        $this->schema->setConfiguration([
-            'x-openregister-archival' => $archival,
-        ]);
+        $this->schema->setConfiguration(
+                [
+                    'x-openregister-archival' => $archival,
+                ]
+                );
 
         $config = $this->schema->getConfiguration();
 
         $this->assertNotNull($config);
         $this->assertArrayHasKey('x-openregister-archival', $config);
         $this->assertSame($archival, $config['x-openregister-archival']);
-    }
+    }//end testArchivalAnnotationSurvivesRoundTrip()
 
     /**
      * x-openregister-seed is now DROPPED LOUDLY — it has no engine.
@@ -97,9 +99,11 @@ class SchemaAnnotationVocabularyTest extends TestCase
     {
         $seed = ['objects' => [['title' => 'Example']]];
 
-        $this->schema->setConfiguration([
-            'x-openregister-seed' => $seed,
-        ]);
+        $this->schema->setConfiguration(
+                [
+                    'x-openregister-seed' => $seed,
+                ]
+                );
 
         // The key is the only entry, so the configuration ends up empty/null.
         $config = ($this->schema->getConfiguration() ?? []);
@@ -110,7 +114,7 @@ class SchemaAnnotationVocabularyTest extends TestCase
             $this->schema->consumeDroppedAnnotationKeys(),
             'Declaring the engine-less seed key must be reported, not silently accepted'
         );
-    }
+    }//end testSeedAnnotationIsDroppedLoudlyBecauseItHasNoEngine()
 
     /**
      * x-openregister-processing reaches its engine's expected shape.
@@ -125,9 +129,11 @@ class SchemaAnnotationVocabularyTest extends TestCase
     {
         $processing = ['code' => 'demo-activity', 'logReads' => true];
 
-        $this->schema->setConfiguration([
-            ProcessingLogService::ANNOTATION_KEY => $processing,
-        ]);
+        $this->schema->setConfiguration(
+                [
+                    ProcessingLogService::ANNOTATION_KEY => $processing,
+                ]
+                );
 
         $config = $this->schema->getConfiguration();
 
@@ -142,7 +148,7 @@ class SchemaAnnotationVocabularyTest extends TestCase
             ProcessingLogService::ANNOTATION_KEY,
             $this->schema->consumeDroppedAnnotationKeys()
         );
-    }
+    }//end testProcessingAnnotationSurvivesRoundTripAndReachesItsEngine()
 
     /**
      * FAILING PATH (approval-chains-declarative): `x-openregister-approval-chains`
@@ -163,26 +169,56 @@ class SchemaAnnotationVocabularyTest extends TestCase
             ],
         ];
 
-        $this->schema->setConfiguration([
-            'x-openregister-approval-chains' => $chains,
-        ]);
+        $this->schema->setConfiguration(
+                [
+                    'x-openregister-approval-chains' => $chains,
+                ]
+                );
 
         $config = $this->schema->getConfiguration();
 
         $this->assertNotNull($config);
         $this->assertArrayHasKey('x-openregister-approval-chains', $config);
         $this->assertSame($chains, $config['x-openregister-approval-chains']);
-    }
+    }//end testApprovalChainsAnnotationSurvivesRoundTrip()
+
+    /**
+     * FAILING PATH (federated-config-sharing): `x-openregister-shareable`
+     * MUST survive the round-trip. It is the marker
+     * SchemaShareableConfigScanner reads to surface a schema's objects as a
+     * shareable configuration type; absent from the vocabulary the marker
+     * would be silently dropped and the schema could never become shareable.
+     *
+     * Both the boolean form (defaults derived) and the object form (id/topic/
+     * name refined) must reach the configuration column intact.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function testShareableAnnotationSurvivesRoundTrip(): void
+    {
+        $this->schema->setConfiguration(['x-openregister-shareable' => true]);
+        $config = $this->schema->getConfiguration();
+        $this->assertNotNull($config);
+        $this->assertTrue($config['x-openregister-shareable']);
+
+        $refined = ['id' => 'procest.casetype', 'topic' => 'procest-casetype', 'name' => 'Case type'];
+        $this->schema->setConfiguration(['x-openregister-shareable' => $refined]);
+        $config = $this->schema->getConfiguration();
+        $this->assertNotNull($config);
+        $this->assertSame($refined, $config['x-openregister-shareable']);
+    }//end testShareableAnnotationSurvivesRoundTrip()
 
     /**
      * Actual typos (non-vocabulary x-openregister-* keys) are still dropped.
      */
     public function testActualTypoIsDropped(): void
     {
-        $this->schema->setConfiguration([
-            'x-openregister-lifecycl' => ['states' => ['open']],
-            'x-openregister-archival' => ['retention' => ['default' => 'P7D']],
-        ]);
+        $this->schema->setConfiguration(
+                [
+                    'x-openregister-lifecycl' => ['states' => ['open']],
+                    'x-openregister-archival' => ['retention' => ['default' => 'P7D']],
+                ]
+                );
 
         $config = $this->schema->getConfiguration();
 
@@ -191,5 +227,5 @@ class SchemaAnnotationVocabularyTest extends TestCase
 
         // Valid vocabulary key should survive.
         $this->assertArrayHasKey('x-openregister-archival', $config);
-    }
+    }//end testActualTypoIsDropped()
 }//end class
