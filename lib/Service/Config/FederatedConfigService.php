@@ -189,7 +189,16 @@ class FederatedConfigService
         string $credentialId,
         string $branch='main'
     ): array {
-        $bundle  = $this->signer->sign(bundle: $this->bundle(typeId: $typeId, selection: $selection));
+        $type = $this->typeOrFail(typeId: $typeId);
+
+        // Make the target repo exist and carry the type's discovery topic, so a
+        // freshly published config is findable via discover() (both single-config
+        // and config-set repos rely on this). Best-effort: a failure here still
+        // lets the contents write surface a clear error.
+        $this->ensureRepo(repo: $repo, credentialId: $credentialId);
+        $this->setTopics(repo: $repo, topics: [$type->getTopic()], credentialId: $credentialId);
+
+        $bundle  = $this->signer->sign(bundle: $type->serialise(selection: $selection));
         $content = base64_encode((string) json_encode($bundle, JSON_PRETTY_PRINT));
 
         // The broker makes the call with the token it custodies (Doriath/NC
@@ -214,9 +223,110 @@ class FederatedConfigService
             throw new RuntimeException(sprintf('GitHub publish failed (%d).', $status));
         }
 
-        return ['published' => true, 'path' => $path, 'status' => $status];
+        return [
+            'published' => true,
+            'repo'      => $repo,
+            'path'      => $path,
+            'topic'     => $type->getTopic(),
+            'status'    => $status,
+        ];
 
     }//end publish()
+
+    /**
+     * Ensure a GitHub repository exists, creating it when absent.
+     *
+     * A config store is often published into a fresh, per-set repo. Creation is
+     * best-effort: when the owner is an organisation the org-repo endpoint is
+     * used, otherwise the authenticated user's; a failure is logged, not fatal
+     * (the subsequent contents write reports a missing repo clearly).
+     *
+     * @param string $repo         The `owner/repo`.
+     * @param string $credentialId The broker credential.
+     *
+     * @return void
+     */
+    private function ensureRepo(string $repo, string $credentialId): void
+    {
+        [$owner, $name] = array_pad(explode('/', $repo, 2), 2, '');
+        if ($owner === '' || $name === '') {
+            return;
+        }
+
+        try {
+            $existing = $this->broker->request(
+                credentialId: $credentialId,
+                appId: self::APP_ID,
+                method: 'GET',
+                path: sprintf('/repos/%s/%s', $owner, $name),
+                headers: ['Accept' => 'application/vnd.github+json']
+            );
+            if ((int) ($existing['status'] ?? 0) === 200) {
+                return;
+            }
+        } catch (Throwable $e) {
+            // Fall through to creation.
+        }
+
+        // Try an org repo first, then the authenticated user's namespace.
+        foreach ([sprintf('/orgs/%s/repos', $owner), '/user/repos'] as $createPath) {
+            try {
+                $created = $this->broker->request(
+                    credentialId: $credentialId,
+                    appId: self::APP_ID,
+                    method: 'POST',
+                    path: $createPath,
+                    headers: ['Accept' => 'application/vnd.github+json'],
+                    body: (string) json_encode(['name' => $name, 'private' => false, 'auto_init' => true])
+                );
+                if ((int) ($created['status'] ?? 0) >= 200 && (int) ($created['status'] ?? 0) < 300) {
+                    return;
+                }
+            } catch (Throwable $e) {
+                continue;
+            }
+        }
+
+        $this->logger->warning(
+            message: '[FederatedConfigService] could not ensure repo '.$repo.' exists; relying on the write to report it.',
+            context: ['file' => __FILE__, 'line' => __LINE__]
+        );
+
+    }//end ensureRepo()
+
+    /**
+     * Set a repository's discovery topics (best-effort).
+     *
+     * @param string             $repo         The `owner/repo`.
+     * @param array<int, string> $topics       The topics to set.
+     * @param string             $credentialId The broker credential.
+     *
+     * @return void
+     */
+    private function setTopics(string $repo, array $topics, string $credentialId): void
+    {
+        $names = array_values(array_filter(array_map('trim', $topics)));
+        if ($names === []) {
+            return;
+        }
+
+        try {
+            $this->broker->request(
+                credentialId: $credentialId,
+                appId: self::APP_ID,
+                method: 'PUT',
+                path: sprintf('/repos/%s/topics', $repo),
+                headers: ['Accept' => 'application/vnd.github+json'],
+                body: (string) json_encode(['names' => $names])
+            );
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[FederatedConfigService] could not set topics on '.$repo.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }
+
+    }//end setTopics()
 
     /**
      * Discover published bundles across GitHub by their type's discovery topic.

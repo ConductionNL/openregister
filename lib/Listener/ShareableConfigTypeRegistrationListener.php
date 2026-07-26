@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent;
 use OCA\OpenRegister\Service\Config\SchemaShareableConfigScanner;
+use OCA\OpenRegister\Service\Config\Types\ConfigSetShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
 use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
 use OCP\EventDispatcher\Event;
@@ -46,11 +47,13 @@ class ShareableConfigTypeRegistrationListener implements IEventListener
      *
      * @param FlowShareableConfigType           $flows     The built-in "Flows" type.
      * @param RegisterSchemaShareableConfigType $registers The built-in "Registers & schemas" type.
+     * @param ConfigSetShareableConfigType      $configSet The built-in "Configuration set" type.
      * @param SchemaShareableConfigScanner      $scanner   Turns shareable-marked schemas into types.
      */
     public function __construct(
         private readonly FlowShareableConfigType $flows,
         private readonly RegisterSchemaShareableConfigType $registers,
+        private readonly ConfigSetShareableConfigType $configSet,
         private readonly SchemaShareableConfigScanner $scanner
     ) {
 
@@ -73,6 +76,7 @@ class ShareableConfigTypeRegistrationListener implements IEventListener
 
         $event->registerType(type: $this->flows);
         $event->registerType(type: $this->registers);
+        $event->registerType(type: $this->configSet);
 
         // Any schema that marked itself shareable becomes a type — no per-app code.
         foreach ($this->scanner->scan() as $type) {

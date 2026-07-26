@@ -181,4 +181,44 @@ class FederatedConfigServiceTest extends TestCase
         $result = $service->install('demo.type', [], 'ConductionNL/pack');
         $this->assertSame(['x'], $result['installed']);
     }
+
+    public function testPublishEnsuresRepoSetsTopicAndReturnsMetadata(): void
+    {
+        $this->registry->method('get')->willReturn($this->type());
+
+        $broker = $this->createMock(CredentialBrokerService::class);
+        // Repo missing (404) → created → topics set → contents written; every
+        // broker call returns a 2xx so publish completes and reports metadata.
+        $calls = [];
+        $broker->method('request')->willReturnCallback(
+            function (string $credentialId, string $appId, string $method, string $path) use (&$calls) {
+                $calls[] = $method.' '.$path;
+                // The initial repo existence check is a miss so ensureRepo creates it.
+                if ($method === 'GET' && str_starts_with($path, '/repos/') === true) {
+                    return ['status' => 404, 'body' => ''];
+                }
+                return ['status' => 201, 'body' => '{}'];
+            }
+        );
+
+        $signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+        $signer->method('sign')->willReturnArgument(0);
+        $service = new FederatedConfigService(
+            $this->registry,
+            $broker,
+            $signer,
+            $this->createMock(\OCP\Http\Client\IClientService::class),
+            $this->config,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+
+        $result = $service->publish('demo.type', ['x' => 1], 'ConductionNL/pack', 'set.json', 'cred-1');
+
+        $this->assertTrue($result['published']);
+        $this->assertSame('ConductionNL/pack', $result['repo']);
+        $this->assertSame('demo-topic', $result['topic']);
+        // The topic was set and the bundle written.
+        $this->assertContains('PUT /repos/ConductionNL/pack/topics', $calls);
+        $this->assertContains('PUT /repos/ConductionNL/pack/contents/set.json', $calls);
+    }
 }
