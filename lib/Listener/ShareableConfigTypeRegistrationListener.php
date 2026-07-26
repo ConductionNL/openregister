@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent;
 use OCA\OpenRegister\Service\Config\Types\FlowShareableConfigType;
+use OCA\OpenRegister\Service\Config\Types\RegisterSchemaShareableConfigType;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -42,10 +43,13 @@ class ShareableConfigTypeRegistrationListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param FlowShareableConfigType $flows The built-in "Flows" type.
+     * @param FlowShareableConfigType           $flows     The built-in "Flows" type.
+     * @param RegisterSchemaShareableConfigType $registers The built-in "Registers & schemas" type.
      */
-    public function __construct(private readonly FlowShareableConfigType $flows)
-    {
+    public function __construct(
+        private readonly FlowShareableConfigType $flows,
+        private readonly RegisterSchemaShareableConfigType $registers
+    ) {
 
     }//end __construct()
 
@@ -65,6 +69,7 @@ class ShareableConfigTypeRegistrationListener implements IEventListener
         }
 
         $event->registerType(type: $this->flows);
+        $event->registerType(type: $this->registers);
 
     }//end handle()
 }//end class

@@ -68,13 +68,31 @@ test.describe('Federated configuration sharing', () => {
 		return uuid
 	}
 
-	test('the shareable types include Flows', async ({ request }) => {
+	test('the shareable types include Flows and Registers', async ({ request }) => {
 		const resp = await request.get(`${API}/federated-config/types`)
 		expect(resp.status()).toBe(200)
 		const types = (await resp.json()).types ?? []
 		const flows = types.find((t: any) => t.id === 'openregister.flows')
 		expect(flows, 'Flows is a shareable type').toBeTruthy()
 		expect(flows.topic).toBe('openregister-flow')
+		// A second, very different consumer proves the standard generalises.
+		const registers = types.find((t: any) => t.id === 'openregister.registers')
+		expect(registers, 'Registers & schemas is a shareable type').toBeTruthy()
+		expect(registers.topic).toBe('openregister-register')
+	})
+
+	test('a register bundles into a portable OpenAPI document', async ({ request }) => {
+		// Read-only: bundle the shipped `flows` register; do not install (that
+		// would re-import a shared register).
+		const resp = await request.post(`${API}/federated-config/bundle`, {
+			headers: JSON_HEADERS,
+			data: { type: 'openregister.registers', selection: { register: 'flows' } },
+		})
+		expect(resp.status()).toBe(200)
+		const bundle = await resp.json()
+		expect(bundle.openapi, 'the bundle is an OpenAPI document').toBeTruthy()
+		expect(bundle.components?.registers?.flows, 'it carries the flows register').toBeTruthy()
+		expect(bundle.components?.schemas?.flow, 'and its flow schema').toBeTruthy()
 	})
 
 	test('a flow bundles into a portable shape and installs as a fresh flow that runs', async ({ request }) => {
