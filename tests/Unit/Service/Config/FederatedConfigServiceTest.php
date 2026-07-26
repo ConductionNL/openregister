@@ -182,6 +182,45 @@ class FederatedConfigServiceTest extends TestCase
         $this->assertSame(['x'], $result['installed']);
     }
 
+    public function testFetchBundleDecodesTheRepoContentsFile(): void
+    {
+        $bundle  = ['type' => 'demo.type', 'objects' => [['a' => 1]]];
+        $content = base64_encode((string) json_encode($bundle));
+
+        $broker = $this->createMock(CredentialBrokerService::class);
+        $broker->method('request')->willReturn(['status' => 200, 'body' => (string) json_encode(['content' => $content, 'encoding' => 'base64'])]);
+
+        $service = new FederatedConfigService(
+            $this->registry,
+            $broker,
+            $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+            $this->createMock(\OCP\Http\Client\IClientService::class),
+            $this->config,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+
+        $out = $service->fetchBundle('ConductionNL/pack', 'set.json', 'cred-1');
+        $this->assertSame($bundle, $out);
+    }
+
+    public function testFetchBundleRejectsMissingContent(): void
+    {
+        $broker = $this->createMock(CredentialBrokerService::class);
+        $broker->method('request')->willReturn(['status' => 404, 'body' => '{"message":"Not Found"}']);
+
+        $service = new FederatedConfigService(
+            $this->registry,
+            $broker,
+            $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+            $this->createMock(\OCP\Http\Client\IClientService::class),
+            $this->config,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+
+        $this->expectException(RuntimeException::class);
+        $service->fetchBundle('ConductionNL/pack', 'missing.json', 'cred-1');
+    }
+
     public function testPublishEnsuresRepoSetsTopicAndReturnsMetadata(): void
     {
         $this->registry->method('get')->willReturn($this->type());

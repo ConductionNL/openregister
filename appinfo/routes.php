@@ -1247,6 +1247,7 @@ return [
 		['name' => 'federatedConfig#install', 'url' => '/api/federated-config/install', 'verb' => 'POST'],
 		['name' => 'federatedConfig#publish', 'url' => '/api/federated-config/publish', 'verb' => 'POST'],
 		['name' => 'federatedConfig#discover', 'url' => '/api/federated-config/discover', 'verb' => 'GET'],
+		['name' => 'federatedConfig#fetch', 'url' => '/api/federated-config/fetch', 'verb' => 'GET'],
 		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
     ],
 ];
