@@ -6,7 +6,9 @@
  * Covers:
  *  - accessors round-trip the constructed metadata;
  *  - kinds are reported and `hasKind()` answers correctly;
- *  - toArray() carries availability + capability metadata but NO components;
+ *  - renderMode defaults to `component` and round-trips a `mount` value;
+ *  - toArray() carries availability + capability metadata (incl. renderMode)
+ *    but NO components;
  *  - the render-and-read boundary (ADR-066): the descriptor exposes no verb,
  *    command, handler, or dispatch method.
  *
@@ -105,8 +107,33 @@ class LeafDescriptorTest extends TestCase
         $this->assertSame([], $descriptor->getSurfaces());
         $this->assertNull($descriptor->getReferenceType());
         $this->assertNull($descriptor->requiresPermission());
+        // renderMode defaults to `component` — the existing SFC contract, so
+        // every descriptor that does not opt in keeps rendering as before.
+        $this->assertSame(LeafDescriptor::RENDER_MODE_COMPONENT, $descriptor->getRenderMode());
+        $this->assertSame('component', $descriptor->getRenderMode());
 
     }//end testOptionalMetadataDefaults()
+
+    /**
+     * A descriptor may declare the `mount` render mode; the getter round-trips it.
+     *
+     * @return void
+     */
+    public function testRenderModeMountIsRoundTripped(): void
+    {
+        $descriptor = new LeafDescriptor(
+            id: 'hermiq-agent',
+            label: 'Agent',
+            icon: 'Robot',
+            kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+            surfaces: ['single-entity'],
+            renderMode: LeafDescriptor::RENDER_MODE_MOUNT,
+        );
+
+        $this->assertSame('mount', $descriptor->getRenderMode());
+        $this->assertSame('mount', $descriptor->toArray()['renderMode']);
+
+    }//end testRenderModeMountIsRoundTripped()
 
     /**
      * toArray() carries capability metadata but no Vue components.
@@ -129,6 +156,10 @@ class LeafDescriptorTest extends TestCase
         $this->assertSame('acme-notes', $array['id']);
         $this->assertSame(['detail-page'], $array['surfaces']);
         $this->assertSame([LeafDescriptor::KIND_DATA_PROVIDER], $array['kinds']);
+        // renderMode is carried as discovery metadata (HOW a render leaf
+        // renders), defaulting to `component`; it is a mode string, not a
+        // shipped Vue component.
+        $this->assertSame('component', $array['renderMode']);
 
         // No component/render field is carried on the server descriptor;
         // render components live on the JS layer under the same id.
