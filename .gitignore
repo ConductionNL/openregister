@@ -41,6 +41,11 @@ phpqa_output.log
 *.csv
 *.xls
 *.xlsx
+# Exception: committed Newman fixture consumed by
+# tests/integration/magic-mapper-import.postman_collection.json — the CI
+# Newman job checks out the app fresh (no dev-container state), so the
+# fixture must be tracked, not generated.
+!tests/integration/magic-mapper-data/*.csv
 
 # Files with unusual names (trailing space, no extension) that are likely mistakes.
 # Patterns listed here must NOT match legitimate PHP source filenames.
