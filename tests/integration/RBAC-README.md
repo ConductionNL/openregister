@@ -75,9 +75,9 @@ Authorization is enforced by OpenRegister centrally
    readable and listable anonymously; a non-published (scoped) object is hidden
    from the anonymous context.
 3. **Cross-org isolation** — the list path filters out another organisation's
-   objects (`3a`); the single-object read-by-id path is **known to leak**
-   across organisations via an unfiltered fallback (`3b`, quarantined — see
-   "Findings" below). The Setup folder creates a second organisation (`S6b`)
+   objects (`3a`); the single-object read-by-id path, including its
+   cross-schema UUID fallback, denies a cross-organisation read with a 404
+   (`3b`, fixed — see "Findings" below). The Setup folder creates a second organisation (`S6b`)
    and switches admin's active org into it (`S6c`) just for the creation of
    object Z (`S7`), then switches back (`S7b`) — this makes object Z
    genuinely cross-org relative to `e2euser`, which stays in the default
@@ -103,7 +103,7 @@ over 403 so an unauthorized caller cannot distinguish "forbidden" from "absent",
 avoiding existence leakage). Verified live: scoped read now 404, admin/public
 reads unaffected.
 
-### QUARANTINED (security) — cross-org IDOR survives via the unfiltered cross-table fallback
+### FIXED (openregister#2137, security) — cross-org IDOR via the unfiltered cross-table fallback
 
 Test `3b`. Commit `71c6b7e47` closed the **direct** scoped single-object read:
 `MagicMapper::findInRegisterSchemaTable` now delegates to `MagicSearchHandler::
@@ -115,27 +115,35 @@ so the assertion went green without the scenario it claims to cover ever
 actually executing cross-org.
 
 Live-verifying it on NC32 with two real organisations (`S6a`-`S7b` above,
-added PHASE-4b) shows the IDOR is still live, via a **different** code path:
+added PHASE-4b) showed the IDOR was still live, via a **different** code path:
 `ObjectService::find()` catches the `DoesNotExistException` the (correctly
 org-filtered) scoped lookup now raises and, because the identifier is a UUID,
 retries via `MagicMapper::findAcrossAllMagicTables()` — a pre-existing
 cross-schema fallback (commit `ab0da0133`, added to resolve relation UUIDs
-when the URL's register/schema is stale). That fallback accepts
-`_rbac`/`_multitenancy` parameters but **never uses them** — its identifier
-lookup (`locateIdentifierInMagicTables`/`fetchMagicRowById`) applies zero
-org/RBAC filtering. It cannot tell "the URL's register/schema was stale" (its
-intended trigger) apart from "the scoped read was correctly denied by RBAC/
-multitenancy" (this case) — both surface as the same `DoesNotExistException`
-— so it unconditionally falls through and returns the row anyway.
+when the URL's register/schema is stale). That fallback accepted
+`_rbac`/`_multitenancy` parameters but **never used them** — its identifier
+lookup (`locateIdentifierInMagicTables`/`fetchMagicRowById`) applied zero
+org/RBAC filtering. It could not tell "the URL's register/schema was stale"
+(its intended trigger) apart from "the scoped read was correctly denied by
+RBAC/multitenancy" (this case) — both surfaced as the same
+`DoesNotExistException` — so it unconditionally fell through and returned the
+row anyway.
 
-**Net effect:** any authenticated non-admin user can read any object by UUID
-across any organisation on this endpoint, regardless of the scoped-path fix.
-`3b` is pinned back to the insecure `200` with a detailed comment.
-**FIX-ME (openregister, security):** either apply the same access-control
-filtering inside `findAcrossAllMagicTables()`, or have the fallback trigger
-only on a genuine register/schema mismatch (not on an RBAC/multitenancy
-denial) — then change `3b` back to expect `403`/`404`, and this time verify it
-live against two real organisations before merging.
+**Net effect (before the fix):** any authenticated non-admin user could read
+any object by UUID across any organisation on this endpoint, regardless of the
+scoped-path fix.
+
+**Fix:** `MagicMapper::findAcrossAllMagicTables()` now re-runs the same
+`MagicSearchHandler::applyAccessControlToQuery()` filters used by the scoped
+path against the one candidate row it matched (scoped to that row's own
+table). A row that fails those filters — cross-org, or RBAC-denied — is
+treated exactly like "not found in this table" (the scan keeps looking at
+remaining candidates, and a fully exhausted scan raises the same
+`DoesNotExistException` as a genuine miss, so there is no existence leak and
+no new distinguishable status code). Callers that explicitly pass
+`_rbac=false`/`_multitenancy=false` (admin/system context) are unaffected. `3b`
+now asserts the secure `404` and is live-verified against two genuinely
+distinct organisations (see PHASE-4b Setup above).
 
 ### FIXED — `_owner` not persisted on magic-mapper create
 
