@@ -2392,6 +2392,14 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
         );
 
+        // Federated configuration sharing. Any app declares its shareable config
+        // types (flows, registers, case types, themes …) through this event, the
+        // same idiom as flow nodes; OpenRegister contributes its own built-ins.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
+            \OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
