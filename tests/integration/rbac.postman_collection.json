@@ -170,6 +170,73 @@
           ]
         },
         {
+          "name": "S0b. Warm e2euser session (initialise home before RBAC asserts)",
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "OCS-APIRequest",
+                "value": "true"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/ocs/v1.php/cloud/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ocs",
+                "v1.php",
+                "cloud",
+                "user"
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{e2e_user}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{e2e_password}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// e2euser's FIRST authenticated request triggers Nextcloud core's one-time",
+                  "// skeleton copy (completeLogin -> copySkeleton). Under the DB locking provider",
+                  "// (CI has no Redis) that copy can raise a LockedException on '/<uid>/files/Documents',",
+                  "// surfacing as a 500 on whatever endpoint happens to be first. This warm-up absorbs",
+                  "// that one-time initialisation so the later RBAC assertions see a settled home.",
+                  "// Any status is acceptable here; we only care that the home is initialised afterwards.",
+                  "pm.test('e2euser session warmed (home initialised)', () => {",
+                  "    pm.expect(pm.response.code).to.be.a('number');",
+                  "});",
+                  "console.log('e2euser warm-up statuscode', pm.response.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "S1. Create RBAC test register",
           "protocolProfileBehavior": {
             "disableCookies": true
