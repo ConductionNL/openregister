@@ -5308,6 +5308,73 @@ class MagicMapper extends AbstractObjectMapper
                         );
             }
 
+            // SECURITY (cross-org IDOR fix, openregister#2137): this UUID/slug/uri
+            // fallback used to accept `_rbac`/`_multitenancy` and never apply them —
+            // a non-admin in org B could read an org-A object by UUID even though the
+            // register/schema-scoped primary path (findInRegisterSchemaTable, above)
+            // correctly enforces both. Mirror that path exactly: re-run the access
+            // control filters used by the list/search path against the ONE row we
+            // matched, scoped to this table. If the row disappears under those
+            // filters, the caller may not read it — treat it exactly like "not found
+            // in this table" (no distinct error, no existence leak) and keep scanning
+            // the remaining candidates instead of trusting this hit.
+            if ($_rbac === true || $_multitenancy === true) {
+                if ($schema === null) {
+                    // Can't resolve the schema that would tell us whether this read
+                    // is authorized (register/schema deleted mid-scan, or load
+                    // failed above) — fail closed rather than trust an unverifiable
+                    // row.
+                    $this->logger->warning(
+                        message: '[MagicMapper] findAcrossAllMagicTables: Denying unverifiable cross-table hit (schema unresolved)',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                        ]
+                    );
+                    continue;
+                }
+
+                $accessQb = $this->db->getQueryBuilder();
+                $accessQb->select('t.'.self::METADATA_PREFIX.'id')->from($tableName, 't');
+                $accessQb->where(
+                    $accessQb->expr()->eq(
+                        't.'.self::METADATA_PREFIX.'id',
+                        $accessQb->createNamedParameter($hit['id'], IQueryBuilder::PARAM_INT)
+                    )
+                );
+                if ($includeDeleted === false) {
+                    $accessQb->andWhere($accessQb->expr()->isNull('t.'.self::METADATA_PREFIX.'deleted'));
+                }
+
+                $this->searchHandler->applyAccessControlToQuery(
+                    qb: $accessQb,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+
+                $accessResult = $accessQb->executeQuery();
+                $accessRow    = $accessResult->fetch();
+                $accessResult->closeCursor();
+
+                if ($accessRow === false) {
+                    $this->logger->debug(
+                        message: '[MagicMapper] findAcrossAllMagicTables: Denying cross-org/unauthorized hit',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                        ]
+                    );
+                    continue;
+                }
+            }//end if
+
             // Convert row to ObjectEntity.
             $object = $this->convertRowToObjectEntity(
                 row: $row,
