@@ -6793,6 +6793,16 @@ class MagicMapper extends AbstractObjectMapper
 
         $qb = $this->db->getQueryBuilder();
 
+        // PostgreSQL's CASE type-resolution infers the expression's overall
+        // type from its WHEN/THEN literals (here: text), so assigning the
+        // result straight into a jsonb column fails with SQLSTATE 42804
+        // ("column is of type jsonb but expression is of type text"). An
+        // explicit `::jsonb` cast on the whole CASE result fixes the
+        // mismatch; MySQL's JSON column accepts the string form as-is and
+        // does not need (nor understand) a Postgres-style cast.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
         $caseSql = '(CASE '.$uuidCol;
         $uuids   = [];
         foreach ($items as $item) {
@@ -6804,6 +6814,9 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         $caseSql .= ' END)';
+        if ($isPostgres === true) {
+            $caseSql .= '::jsonb';
+        }
 
         $qb->update($tableName)
             ->set($deletedCol, $qb->createFunction($caseSql))

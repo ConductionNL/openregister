@@ -92,6 +92,16 @@ class AuditTrailMapperBulkInsertTest extends TestCase
         $queryBuilder->method('getTableName')->willReturn('"oc_openregister_audit_trails"');
         $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
 
+        // BUG-SQL-1 fix coverage: insertAuditTrailChunk() now quotes every
+        // INSERT column via the platform (e.g. `user` is a reserved word in
+        // PostgreSQL and breaks an unquoted multi-row INSERT). Reuse the
+        // same platform mock pattern as the QueryBuilder above.
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $platform->method('quoteIdentifier')->willReturnCallback(
+            static fn (string $identifier): string => '"'.$identifier.'"'
+        );
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
         $this->statements = [];
         $this->db->method('executeStatement')
             ->willReturnCallback(
