@@ -92,6 +92,8 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The changelog entries.
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/specs/schema-migration/spec.md
      */
     public function changelog(int $id): JSONResponse
@@ -111,6 +113,8 @@ class SchemaMigrationController extends Controller
      * @param int $id The schema id.
      *
      * @return JSONResponse The created run, or an error.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-migration/spec.md
      */
@@ -156,6 +160,8 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The runs.
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/specs/schema-migration/spec.md
      */
     public function runs(int $id): JSONResponse
@@ -177,6 +183,8 @@ class SchemaMigrationController extends Controller
      * @param int $run The run id.
      *
      * @return JSONResponse The run + entries.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-migration/spec.md
      */
@@ -218,6 +226,8 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse Before/after pairs, or a plan-validation error.
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/specs/schema-migration/spec.md
      */
     public function previewMigration(int $id): JSONResponse
@@ -257,6 +267,8 @@ class SchemaMigrationController extends Controller
      * @param int $id The schema id.
      *
      * @return JSONResponse The created run, or an error.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-migration/spec.md
      */
@@ -310,6 +322,8 @@ class SchemaMigrationController extends Controller
      * @param int $run The migration run id.
      *
      * @return JSONResponse The rolled-back run, or an error.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-migration/spec.md
      */
