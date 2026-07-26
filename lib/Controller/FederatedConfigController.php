@@ -27,13 +27,16 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Service\Config\FederatedConfigAccess;
 use OCA\OpenRegister\Service\Config\FederatedConfigService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IConfig;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Throwable;
 use UnexpectedValueException;
 
@@ -42,17 +45,35 @@ use UnexpectedValueException;
  */
 class FederatedConfigController extends Controller
 {
+
+    /**
+     * The app its user preferences live under.
+     */
+    private const APP_ID = 'openregister';
+
+    /**
+     * User-preference key holding the chosen store GitHub credential (written by
+     * the nc-vue Configuration store settings pane via /api/preferences).
+     */
+    private const CREDENTIAL_PREF = 'pref_federated-config-credential';
+
     /**
      * Constructor.
      *
-     * @param string                 $appName The app id.
-     * @param IRequest               $request The request.
-     * @param FederatedConfigService $service The federation engine.
+     * @param string                 $appName     The app id.
+     * @param IRequest               $request     The request.
+     * @param FederatedConfigService $service     The federation engine.
+     * @param FederatedConfigAccess  $access      Per-org publish/install gating.
+     * @param IUserSession           $userSession The current user.
+     * @param IConfig                $config      Reads the user's chosen store credential.
      */
     public function __construct(
         string $appName,
         IRequest $request,
-        private readonly FederatedConfigService $service
+        private readonly FederatedConfigService $service,
+        private readonly FederatedConfigAccess $access,
+        private readonly IUserSession $userSession,
+        private readonly IConfig $config
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -122,6 +143,10 @@ class FederatedConfigController extends Controller
     #[NoCSRFRequired]
     public function install(): JSONResponse
     {
+        if ($this->access->canInstall(user: $this->userSession->getUser()) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to install shared configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
         $type = trim((string) $this->request->getParam('type', ''));
         if ($type === '') {
             return new JSONResponse(['error' => 'An install needs a type.'], Http::STATUS_BAD_REQUEST);
@@ -136,16 +161,136 @@ class FederatedConfigController extends Controller
         } catch (UnexpectedValueException $e) {
             return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
         } catch (Throwable $e) {
-            // A blocked source (allowlist) is a 403; anything else a 500.
-            $status = Http::STATUS_INTERNAL_SERVER_ERROR;
-            if (str_contains($e->getMessage(), 'allowlist') === true) {
+            // A blocked source, an untrusted key, or a bad signature is a 403;
+            // anything else a 500.
+            $status  = Http::STATUS_INTERNAL_SERVER_ERROR;
+            $message = $e->getMessage();
+            if (str_contains($message, 'allowlist') === true
+                || str_contains($message, 'trusted') === true
+                || str_contains($message, 'signature') === true
+            ) {
                 $status = Http::STATUS_FORBIDDEN;
             }
 
-            return new JSONResponse(['error' => $e->getMessage()], $status);
-        }
+            return new JSONResponse(['error' => $message], $status);
+        }//end try
 
         return new JSONResponse($result);
 
     }//end install()
+
+    /**
+     * Publish a selection to a GitHub repository, using the user's chosen store
+     * credential and signing the bundle.
+     *
+     * The credential is NOT taken from the request — it is the one the user
+     * selected in the Configuration store settings pane — so a caller can never
+     * publish with a credential they did not choose.
+     *
+     * @return JSONResponse `{published, path, status}`, or a 4xx.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function publish(): JSONResponse
+    {
+        $user = $this->userSession->getUser();
+        if ($this->access->canPublish(user: $user) === false) {
+            return new JSONResponse(['error' => 'You are not allowed to publish configuration.'], Http::STATUS_FORBIDDEN);
+        }
+
+        $type = trim((string) $this->request->getParam('type', ''));
+        $repo = trim((string) $this->request->getParam('repo', ''));
+        $path = trim((string) $this->request->getParam('path', ''));
+        if ($type === '' || $repo === '' || $path === '') {
+            return new JSONResponse(['error' => 'A publish needs a type, repo and path.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $credentialId = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+        if ($credentialId === '') {
+            return new JSONResponse(
+                ['error' => 'No store credential selected. Choose a GitHub credential in the Configuration store settings.'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $branch = trim((string) $this->request->getParam('branch', ''));
+        if ($branch === '') {
+            $branch = 'main';
+        }
+
+        try {
+            $result = $this->service->publish(
+                typeId: $type,
+                selection: (array) $this->request->getParam('selection', []),
+                repo: $repo,
+                path: $path,
+                credentialId: $credentialId,
+                branch: $branch
+            );
+        } catch (UnexpectedValueException $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        return new JSONResponse($result);
+
+    }//end publish()
+
+    /**
+     * Discover published bundles across GitHub by a type's discovery topic.
+     *
+     * @return JSONResponse `{results: [{repo, name, description, url, stars, updated, topics}]}`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function discover(): JSONResponse
+    {
+        $topic = trim((string) $this->request->getParam('topic', ''));
+        if ($topic === '') {
+            return new JSONResponse(['error' => 'Discovery needs a topic.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        // An authenticated search (higher rate limit) uses the user's chosen
+        // store credential when they have one; otherwise it is anonymous.
+        $credentialId = null;
+        $user         = $this->userSession->getUser();
+        if ($user !== null) {
+            $stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+            if ($stored !== '') {
+                $credentialId = $stored;
+            }
+        }
+
+        return new JSONResponse(['results' => $this->service->discover(topic: $topic, credentialId: $credentialId)]);
+
+    }//end discover()
+
+    /**
+     * This instance's signing public key, for other orgs to add to their trust list.
+     *
+     * @return JSONResponse `{publicKey}`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function publicKey(): JSONResponse
+    {
+        return new JSONResponse(['publicKey' => $this->service->publicKey()]);
+
+    }//end publicKey()
 }//end class
