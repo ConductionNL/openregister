@@ -107,9 +107,12 @@ class IntegrationsCapability implements ICapability
                     'providers'       => $rows,
                     // `leaves` — the cross-app leaf catalogue (ADR-066). A
                     // manifest app or admin UI discovers which leaves exist
-                    // (id, label, requiredApp, surfaces, kinds, usability)
-                    // WITHOUT loading any leaf app's JS bundle. Render-surface
-                    // parity to the JS registration is correlated by shared id.
+                    // (id, label, requiredApp, surfaces, kinds, renderMode,
+                    // usability) WITHOUT loading any leaf app's JS bundle.
+                    // `renderMode` (component | mount) reports HOW a render-
+                    // surface leaf renders. Render-surface parity to the JS
+                    // registration — including the renderMode correlation — is
+                    // keyed by the shared id.
                     'leaves'          => $this->leafRegistry->describeForCapabilities(),
                 ],
             ],

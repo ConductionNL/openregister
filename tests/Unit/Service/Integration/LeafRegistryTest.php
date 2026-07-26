@@ -7,6 +7,8 @@
  *  - an announced leaf reaches the catalogue; built-ins still present;
  *  - a throwing listener is swallowed and other leaves survive;
  *  - empty-kinds / unknown-kind rejected; data-provider requires a provider;
+ *  - a `mount` renderMode leaf is accepted; an unknown renderMode is rejected;
+ *    discovery reports each leaf's renderMode;
  *  - first-wins on duplicate id (ADR-013); namespaced ids do not collide;
  *  - a data-provider leaf lands on the IntegrationRegistry and is reachable
  *    through the lazy loader hook;
@@ -362,6 +364,64 @@ class LeafRegistryTest extends TestCase
     }//end testUnknownKindIsRejected()
 
     /**
+     * A render-surface leaf declaring renderMode `mount` is accepted with no
+     * bespoke tab/widget expectation (the mount/unmount pair lives on the JS
+     * layer, so the server only records the mode).
+     *
+     * @return void
+     */
+    public function testMountRenderModeLeafIsAccepted(): void
+    {
+        $registry = $this->makeRegistry([
+            function (RegisterLeafProvidersEvent $event) {
+                $event->registerLeaf(
+                    new LeafDescriptor(
+                        id: 'hermiq-agent',
+                        label: 'Agent',
+                        icon: 'Robot',
+                        kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+                        surfaces: ['single-entity'],
+                        renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+                    )
+                );
+            },
+        ]);
+
+        $descriptors = $registry->getDescriptors();
+        $this->assertCount(1, $descriptors);
+        $this->assertSame('mount', $descriptors[0]->getRenderMode());
+    }//end testMountRenderModeLeafIsAccepted()
+
+    /**
+     * An unknown renderMode is rejected and skipped, leaving the rest of the
+     * catalogue unaffected — mirroring the unknown-kind rule.
+     *
+     * @return void
+     */
+    public function testUnknownRenderModeIsRejected(): void
+    {
+        $registry = $this->makeRegistry([
+            function (RegisterLeafProvidersEvent $event) {
+                $event->registerLeaf(
+                    new LeafDescriptor(
+                        id: 'bad-mode',
+                        label: 'X',
+                        icon: 'Cube',
+                        kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+                        renderMode: 'teleport'
+                    )
+                );
+                $event->registerLeaf(
+                    new LeafDescriptor(id: 'ok', label: 'Ok', icon: 'Cube', kinds: [LeafDescriptor::KIND_RENDER_SURFACE])
+                );
+            },
+        ]);
+
+        $ids = array_map(fn ($d) => $d->getId(), $registry->getDescriptors());
+        $this->assertSame(['ok'], $ids, 'unknown renderMode rejected, the rest of the catalogue unaffected');
+    }//end testUnknownRenderModeIsRejected()
+
+    /**
      * A data-provider kind without an accompanying provider is rejected.
      *
      * @return void
@@ -533,8 +593,39 @@ class LeafRegistryTest extends TestCase
         $this->assertSame('acme-notes', $rows[0]['id']);
         $this->assertSame(['detail-page'], $rows[0]['surfaces']);
         $this->assertSame([LeafDescriptor::KIND_DATA_PROVIDER], $rows[0]['kinds']);
+        // renderMode defaults to `component` on the discovery surface.
+        $this->assertSame('component', $rows[0]['renderMode']);
         $this->assertTrue($rows[0]['usable']);
     }//end testDescribeForCapabilitiesReportsLeavesAndUsability()
+
+    /**
+     * OCS discovery reports a mount-mode render-surface leaf's renderMode so a
+     * manifest app / admin UI learns HOW it renders without loading its JS.
+     *
+     * @return void
+     */
+    public function testDescribeForCapabilitiesReportsMountRenderMode(): void
+    {
+        $registry = $this->makeRegistry([
+            function (RegisterLeafProvidersEvent $event) {
+                $event->registerLeaf(
+                    new LeafDescriptor(
+                        id: 'hermiq-agent',
+                        label: 'Agent',
+                        icon: 'Robot',
+                        kinds: [LeafDescriptor::KIND_RENDER_SURFACE],
+                        surfaces: ['single-entity'],
+                        renderMode: LeafDescriptor::RENDER_MODE_MOUNT
+                    )
+                );
+            },
+        ]);
+
+        $rows = $registry->describeForCapabilities();
+        $this->assertCount(1, $rows);
+        $this->assertSame('hermiq-agent', $rows[0]['id']);
+        $this->assertSame('mount', $rows[0]['renderMode']);
+    }//end testDescribeForCapabilitiesReportsMountRenderMode()
 
     /**
      * A leaf whose required app is disabled reports unusable.
