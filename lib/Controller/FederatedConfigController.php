@@ -277,6 +277,46 @@ class FederatedConfigController extends Controller
     }//end discover()
 
     /**
+     * Fetch a published bundle file from a GitHub repo (the bridge from discover
+     * to install).
+     *
+     * @return JSONResponse The decoded bundle, or a 4xx.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function fetch(): JSONResponse
+    {
+        $repo = trim((string) $this->request->getParam('repo', ''));
+        $path = trim((string) $this->request->getParam('path', ''));
+        if ($repo === '' || $path === '') {
+            return new JSONResponse(['error' => 'A fetch needs a repo and a path.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $credentialId = null;
+        $user         = $this->userSession->getUser();
+        if ($user !== null) {
+            $stored = $this->config->getUserValue($user->getUID(), self::APP_ID, self::CREDENTIAL_PREF, '');
+            if ($stored !== '') {
+                $credentialId = $stored;
+            }
+        }
+
+        try {
+            $bundle = $this->service->fetchBundle(repo: $repo, path: $path, credentialId: $credentialId);
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => $e->getMessage()], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse(['bundle' => $bundle]);
+
+    }//end fetch()
+
+    /**
      * This instance's signing public key, for other orgs to add to their trust list.
      *
      * @return JSONResponse `{publicKey}`.

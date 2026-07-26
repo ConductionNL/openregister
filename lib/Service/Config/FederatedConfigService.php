@@ -406,6 +406,74 @@ class FederatedConfigService
     }//end discover()
 
     /**
+     * Fetch a published bundle file from a GitHub repository.
+     *
+     * The bridge between discover() (which returns repo cards) and install()
+     * (which takes a bundle): given a repo and the path of its bundle file, this
+     * reads and decodes it. Public repos are read anonymously; a broker credential
+     * is used when supplied (rate limit, private repos).
+     *
+     * @param string      $repo         The `owner/repo`.
+     * @param string      $path         The bundle file path within the repo.
+     * @param string|null $credentialId Optional broker credential for an authenticated read.
+     *
+     * @return array The decoded bundle.
+     *
+     * @throws RuntimeException When the file cannot be fetched or decoded.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function fetchBundle(string $repo, string $path, ?string $credentialId=null): array
+    {
+        $repo = trim($repo);
+        $path = ltrim(trim($path), '/');
+        if ($repo === '' || $path === '') {
+            throw new RuntimeException('Fetching a bundle needs a repo and a path.');
+        }
+
+        $apiPath = sprintf('/repos/%s/contents/%s', $repo, $path);
+
+        try {
+            if ($credentialId !== null && $credentialId !== '') {
+                $result = $this->broker->request(
+                    credentialId: $credentialId,
+                    appId: self::APP_ID,
+                    method: 'GET',
+                    path: $apiPath,
+                    headers: ['Accept' => 'application/vnd.github+json']
+                );
+                $body   = (string) ($result['body'] ?? '');
+            } else {
+                $response = $this->clientService->newClient()->get(
+                    self::GITHUB_API.$apiPath,
+                    ['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
+                );
+                $body     = (string) $response->getBody();
+            }
+        } catch (Throwable $e) {
+            throw new RuntimeException(sprintf('Could not fetch %s from %s: %s', $path, $repo, $e->getMessage()));
+        }//end try
+
+        $meta = json_decode($body, true);
+        if (is_array($meta) === false || isset($meta['content']) === false) {
+            throw new RuntimeException(sprintf('No bundle at %s in %s.', $path, $repo));
+        }
+
+        $decoded = base64_decode((string) $meta['content'], true);
+        if ($decoded === false) {
+            throw new RuntimeException(sprintf('Bundle at %s in %s is not valid base64.', $path, $repo));
+        }
+
+        $bundle = json_decode($decoded, true);
+        if (is_array($bundle) === false) {
+            throw new RuntimeException(sprintf('Bundle at %s in %s is not valid JSON.', $path, $repo));
+        }
+
+        return $bundle;
+
+    }//end fetchBundle()
+
+    /**
      * This instance's signing public key (base64) for others to trust.
      *
      * @return string The base64 Ed25519 public key.
