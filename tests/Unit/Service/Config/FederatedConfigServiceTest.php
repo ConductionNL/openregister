@@ -260,4 +260,44 @@ class FederatedConfigServiceTest extends TestCase
         $this->assertContains('PUT /repos/ConductionNL/pack/topics', $calls);
         $this->assertContains('PUT /repos/ConductionNL/pack/contents/set.json', $calls);
     }
+
+    public function testTrustConfigReadWriteRoundTrips(): void
+    {
+        $store = [];
+        $cfg   = $this->createMock(IAppConfig::class);
+        $cfg->method('getValueString')->willReturnCallback(
+            function (string $a, string $k, string $d = '') use (&$store) {
+                return ($store[$k] ?? $d);
+            }
+        );
+        $cfg->method('setValueString')->willReturnCallback(
+            function (string $a, string $k, string $v) use (&$store): bool {
+                $store[$k] = $v;
+                return true;
+            }
+        );
+
+        $service = new FederatedConfigService(
+            $this->registry,
+            $this->createMock(CredentialBrokerService::class),
+            $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class),
+            $this->createMock(\OCP\Http\Client\IClientService::class),
+            $cfg,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+
+        $service->setTrustValue('sourceAllowlist', 'ConductionNL');
+        $service->setTrustValue('publishGroups', 'editors');
+        $service->trustPublisherKey('KEYA=');
+        $service->trustPublisherKey('KEYA=');
+        $service->trustPublisherKey('KEYB=');
+
+        $trust = $service->getTrustConfig();
+        $this->assertSame('ConductionNL', $trust['sourceAllowlist']);
+        $this->assertSame('editors', $trust['publishGroups']);
+        $this->assertSame('KEYA=,KEYB=', $trust['trustedKeys']);
+
+        $this->expectException(UnexpectedValueException::class);
+        $service->setTrustValue('nope', 'x');
+    }
 }

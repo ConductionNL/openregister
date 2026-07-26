@@ -1249,5 +1249,7 @@ return [
 		['name' => 'federatedConfig#discover', 'url' => '/api/federated-config/discover', 'verb' => 'GET'],
 		['name' => 'federatedConfig#fetch', 'url' => '/api/federated-config/fetch', 'verb' => 'GET'],
 		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
+		['name' => 'federatedConfig#trust', 'url' => '/api/federated-config/trust', 'verb' => 'GET'],
+		['name' => 'federatedConfig#setTrust', 'url' => '/api/federated-config/trust', 'verb' => 'PUT'],
     ],
 ];
