@@ -37,9 +37,17 @@ class FederatedConfigServiceTest extends TestCase
             fn (string $app, string $key, string $default = '') => $this->allowlist[0]
         );
 
+        $signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+        // Default: unsigned bundles pass (allowlist not enforced) so the existing
+        // install/allowlist assertions are unaffected by signing.
+        $signer->method('verify')->willReturn(['signed' => false, 'valid' => false, 'trusted' => true, 'publicKey' => null]);
+        $signer->method('sign')->willReturnArgument(0);
+
         $this->service = new FederatedConfigService(
             $this->registry,
             $this->createMock(CredentialBrokerService::class),
+            $signer,
+            $this->createMock(\OCP\Http\Client\IClientService::class),
             $this->config,
             $this->createMock(\Psr\Log\LoggerInterface::class)
         );
@@ -117,5 +125,60 @@ class FederatedConfigServiceTest extends TestCase
         $this->assertTrue($this->service->isSourceAllowed('ConductionNL/flows'));
         $this->assertTrue($this->service->isSourceAllowed('acme/anything'));
         $this->assertFalse($this->service->isSourceAllowed('other/repo'));
+    }
+
+    /**
+     * Build a service whose signer returns a fixed verify() verdict.
+     *
+     * @param array $verdict The verdict verify() should return.
+     *
+     * @return FederatedConfigService The service.
+     */
+    private function serviceWithVerdict(array $verdict): FederatedConfigService
+    {
+        $signer = $this->createMock(\OCA\OpenRegister\Service\Config\BundleSigner::class);
+        $signer->method('verify')->willReturn($verdict);
+        $signer->method('sign')->willReturnArgument(0);
+
+        return new FederatedConfigService(
+            $this->registry,
+            $this->createMock(CredentialBrokerService::class),
+            $signer,
+            $this->createMock(\OCP\Http\Client\IClientService::class),
+            $this->config,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
+        );
+    }
+
+    public function testInstallRefusesATamperedSignature(): void
+    {
+        $this->allowlist = [''];
+        $this->registry->method('get')->willReturn($this->type());
+        $service = $this->serviceWithVerdict(['signed' => true, 'valid' => false, 'trusted' => true, 'publicKey' => 'k']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/signature/');
+        $service->install('demo.type', ['provenance' => ['signature' => 'bad']], 'ConductionNL/pack');
+    }
+
+    public function testInstallRefusesAnUntrustedPublisher(): void
+    {
+        $this->allowlist = [''];
+        $this->registry->method('get')->willReturn($this->type());
+        $service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => false, 'publicKey' => 'k']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/trusted/');
+        $service->install('demo.type', [], 'ConductionNL/pack');
+    }
+
+    public function testInstallAcceptsAValidTrustedBundle(): void
+    {
+        $this->allowlist = [''];
+        $this->registry->method('get')->willReturn($this->type());
+        $service = $this->serviceWithVerdict(['signed' => true, 'valid' => true, 'trusted' => true, 'publicKey' => 'k']);
+
+        $result = $service->install('demo.type', [], 'ConductionNL/pack');
+        $this->assertSame(['x'], $result['installed']);
     }
 }

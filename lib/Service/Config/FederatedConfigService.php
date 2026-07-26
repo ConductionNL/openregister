@@ -39,9 +39,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Config;
 
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
+use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 use UnexpectedValueException;
 
 /**
@@ -61,16 +63,25 @@ class FederatedConfigService
     private const ALLOWLIST_KEY = 'federated_config_source_allowlist';
 
     /**
+     * The GitHub API host for anonymous discovery.
+     */
+    private const GITHUB_API = 'https://api.github.com';
+
+    /**
      * Constructor.
      *
-     * @param ShareableConfigTypeRegistry $registry  The contributed types.
-     * @param CredentialBrokerService     $broker    Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
-     * @param IAppConfig                  $appConfig Reads the org source allowlist.
-     * @param LoggerInterface             $logger    The logger.
+     * @param ShareableConfigTypeRegistry $registry      The contributed types.
+     * @param CredentialBrokerService     $broker        Custodies the GitHub token (Doriath's vault where installed, the NC vault otherwise).
+     * @param BundleSigner                $signer        Signs published bundles and verifies installed ones.
+     * @param IClientService              $clientService NC HTTP client factory (anonymous discovery).
+     * @param IAppConfig                  $appConfig     Reads the org source allowlist.
+     * @param LoggerInterface             $logger        The logger.
      */
     public function __construct(
         private readonly ShareableConfigTypeRegistry $registry,
         private readonly CredentialBrokerService $broker,
+        private readonly BundleSigner $signer,
+        private readonly IClientService $clientService,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
@@ -137,6 +148,18 @@ class FederatedConfigService
             throw new RuntimeException(sprintf('Source "%s" is not on this organisation\'s allowlist.', $source));
         }
 
+        // Provenance: a tampered signature is always refused; an unsigned or
+        // untrusted-key bundle is refused only once the org enforces signing (a
+        // non-empty trusted-keys allowlist).
+        $verdict = $this->signer->verify(bundle: $bundle);
+        if ($verdict['signed'] === true && $verdict['valid'] === false) {
+            throw new RuntimeException('Bundle signature is invalid — refusing to install a tampered bundle.');
+        }
+
+        if ($verdict['trusted'] === false) {
+            throw new RuntimeException('Bundle publisher key is not trusted by this organisation.');
+        }
+
         return $this->typeOrFail(typeId: $typeId)->deserialise(bundle: $bundle);
 
     }//end install()
@@ -166,7 +189,7 @@ class FederatedConfigService
         string $credentialId,
         string $branch='main'
     ): array {
-        $bundle  = $this->bundle(typeId: $typeId, selection: $selection);
+        $bundle  = $this->signer->sign(bundle: $this->bundle(typeId: $typeId, selection: $selection));
         $content = base64_encode((string) json_encode($bundle, JSON_PRETTY_PRINT));
 
         // The broker makes the call with the token it custodies (Doriath/NC
@@ -194,6 +217,96 @@ class FederatedConfigService
         return ['published' => true, 'path' => $path, 'status' => $status];
 
     }//end publish()
+
+    /**
+     * Discover published bundles across GitHub by their type's discovery topic.
+     *
+     * Discovery is public data (GitHub topic search), so it runs anonymously by
+     * default; when a broker credential is supplied it goes through the broker
+     * (higher rate limit, private-visible repos). Returns lightweight cards for a
+     * browse UI — never installs.
+     *
+     * @param string      $topic        The discovery topic to search for.
+     * @param string|null $credentialId Optional broker credential for an authenticated search.
+     *
+     * @return array<int, array<string, mixed>> The discovered repositories as
+     *         `{repo, name, description, url, stars, updated, topics}` cards.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function discover(string $topic, ?string $credentialId=null): array
+    {
+        $topic = trim($topic);
+        if ($topic === '') {
+            return [];
+        }
+
+        $path = '/search/repositories?q='.rawurlencode('topic:'.$topic).'&sort=updated&per_page=50';
+
+        try {
+            if ($credentialId !== null && $credentialId !== '') {
+                $result = $this->broker->request(
+                    credentialId: $credentialId,
+                    appId: self::APP_ID,
+                    method: 'GET',
+                    path: $path,
+                    headers: ['Accept' => 'application/vnd.github+json']
+                );
+                $body   = (string) ($result['body'] ?? '');
+            } else {
+                $response = $this->clientService->newClient()->get(
+                    self::GITHUB_API.$path,
+                    ['headers' => ['Accept' => 'application/vnd.github+json'], 'http_errors' => false]
+                );
+                $body     = (string) $response->getBody();
+            }
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[FederatedConfigService] discovery failed for topic '.$topic.': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return [];
+        }//end try
+
+        $decoded = json_decode($body, true);
+        $items   = [];
+        if (is_array($decoded) === true && isset($decoded['items']) === true && is_array($decoded['items']) === true) {
+            $items = $decoded['items'];
+        }
+
+        $cards = [];
+        foreach ($items as $item) {
+            if (is_array($item) === false) {
+                continue;
+            }
+
+            $cards[] = [
+                'repo'        => (string) ($item['full_name'] ?? ''),
+                'name'        => (string) ($item['name'] ?? ''),
+                'description' => (string) ($item['description'] ?? ''),
+                'url'         => (string) ($item['html_url'] ?? ''),
+                'stars'       => (int) ($item['stargazers_count'] ?? 0),
+                'updated'     => (string) ($item['updated_at'] ?? ''),
+                'topics'      => array_values(array_filter((array) ($item['topics'] ?? []), 'is_string')),
+            ];
+        }//end foreach
+
+        return $cards;
+
+    }//end discover()
+
+    /**
+     * This instance's signing public key (base64) for others to trust.
+     *
+     * @return string The base64 Ed25519 public key.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    public function publicKey(): string
+    {
+        return $this->signer->publicKey();
+
+    }//end publicKey()
 
     /**
      * Whether a source may be installed from.

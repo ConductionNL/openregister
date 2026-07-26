@@ -1241,9 +1241,12 @@ return [
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
 		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
-		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install a bundle.
+		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.
 		['name' => 'federatedConfig#types', 'url' => '/api/federated-config/types', 'verb' => 'GET'],
 		['name' => 'federatedConfig#bundle', 'url' => '/api/federated-config/bundle', 'verb' => 'POST'],
 		['name' => 'federatedConfig#install', 'url' => '/api/federated-config/install', 'verb' => 'POST'],
+		['name' => 'federatedConfig#publish', 'url' => '/api/federated-config/publish', 'verb' => 'POST'],
+		['name' => 'federatedConfig#discover', 'url' => '/api/federated-config/discover', 'verb' => 'GET'],
+		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
     ],
 ];
