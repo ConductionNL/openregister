@@ -35,7 +35,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow;
 
+use OCA\OpenRegister\Db\FlowRun;
 use Psr\Log\LoggerInterface;
+use stdClass;
 use Throwable;
 
 /**
@@ -43,6 +45,14 @@ use Throwable;
  */
 class FlowTriggerService
 {
+
+    /**
+     * The execution mode that runs a flow inline rather than queueing it.
+     *
+     * @var string
+     */
+    private const MODE_SYNC = 'sync';
+
     /**
      * Constructor.
      *
@@ -86,7 +96,7 @@ class FlowTriggerService
 
             $queued = 0;
             foreach ($flowIds as $flowId) {
-                $this->runner->queue(
+                $run = $this->runner->queue(
                     flowId: $flowId,
                     subject: $subject,
                     trigger: $event,
@@ -94,6 +104,14 @@ class FlowTriggerService
                     user: $user
                 );
                 $queued++;
+
+                // A `sync` flow runs inside the call that triggered it, so its
+                // effects are done before the caller's save returns. It is still
+                // queued first and executed second — one persistence path means
+                // history, retry and resume treat it exactly like a drained run.
+                // A sync flow that suspends is simply left for the worker; the
+                // inline call never blocks on a wait.
+                $this->runInline(run: $run, flowId: $flowId, subject: $subject);
             }
 
             $this->logger->debug(
@@ -112,4 +130,64 @@ class FlowTriggerService
         }//end try
 
     }//end fire()
+
+    /**
+     * Execute a just-queued run inline when its flow asked to be synchronous.
+     *
+     * Deliberately best-effort. A flow that does not declare `sync`, a flow no
+     * resolver owns, or a subject that cannot be resolved all leave the run
+     * exactly as `queue()` left it — and `FlowRunWorker` picks it up on its next
+     * pass with the full defensive handling it already owns. That is why this
+     * method does not fail runs itself: duplicating the worker's failure
+     * semantics here would give the engine two places that decide what a broken
+     * run means, and they would drift.
+     *
+     * @param FlowRun $run     The run just queued.
+     * @param string  $flowId  The flow's id.
+     * @param array   $subject The subject descriptor the trigger fired for.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/openregister-flow-executionmode-and-token/specs/flow-execution-mode/spec.md
+     */
+    private function runInline(FlowRun $run, string $flowId, array $subject): void
+    {
+        $flow = $this->resolvers->resolveFlow($flowId);
+        if ($flow === null) {
+            return;
+        }
+
+        if (strtolower(trim((string) ($flow['executionMode'] ?? ''))) !== self::MODE_SYNC) {
+            return;
+        }
+
+        // Mirrors the worker's seeding rule: a run with a subject carries the
+        // object, a subjectless one (a file, a user) is seeded from the payload
+        // its trigger recorded on the context.
+        $seed   = null;
+        $object = null;
+        $uuid   = trim((string) ($subject['uuid'] ?? ''));
+        if ($uuid !== '') {
+            $object = $this->resolvers->resolveSubject(
+                $uuid,
+                (string) ($subject['register'] ?? ''),
+                (string) ($subject['schema'] ?? '')
+            );
+
+            if ($object === null) {
+                return;
+            }
+        }
+
+        if ($object === null) {
+            $object  = new stdClass();
+            $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
+            if ($payload !== []) {
+                $seed = [FlowItems::item(json: $payload)];
+            }
+        }
+
+        $this->runner->execute(run: $run, flow: $flow, subject: $object, seedItems: $seed);
+
+    }//end runInline()
 }//end class

@@ -41,10 +41,16 @@ interface IFlowResolver
     /**
      * Load a flow document by its id.
      *
+     * A resolver MAY carry an `executionMode` of `sync` on the document to have
+     * the trigger run the flow inline rather than queue it. Omitting the key
+     * means `async`, so a resolver written before execution modes existed keeps
+     * behaving exactly as it did.
+     *
      * @param string $flowId The flow's id.
      *
-     * @return array|null The flow document (`{id, nodes, edges, ...}`), or null
-     *                    when this resolver does not own that flow.
+     * @return array|null The flow document (`{id, nodes, edges, executionMode?,
+     *                    ...}`), or null when this resolver does not own that
+     *                    flow.
      *
      * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
      */
