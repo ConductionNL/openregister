@@ -519,8 +519,7 @@ the first two here and the third does not exist.
         "match": [ { "property": "uuid", "value": "{{uuid}}" } ],
         "fields": {
           "triageVerdict": "{{verdict}}",
-          "triageRationale": "{{rationale}}",
-          "triagedAt": "{{@now}}"
+          "triageRationale": "{{rationale}}"
         }
       } }
   ],
@@ -666,6 +665,32 @@ PATCH semantics, match expressiveness and the write cap — were all answered by
 the PO review of 2026-07-27 and are now specified (D7, D3, D8, D9
 respectively). One process question remains and is recorded in
 DEFERRED_QUESTIONS below rather than blocking the work.
+
+Two findings from implementation (2026-07-27) are recorded here rather than
+silently absorbed:
+
+- **No `{{@now}}` token exists, and an earlier draft of the seed example above
+  used one.** Because an unresolved template omits its key by design, that
+  example would have silently dropped `triagedAt` — precisely the silent-data-loss
+  class this spec forbids elsewhere. The example no longer uses it. A
+  clock/now token is deliberately NOT invented here: it needs its own semantics
+  (timezone, format, determinism under replay) and belongs in a follow-up
+  covering flow templating tokens generally. Until then, a flow that needs a
+  timestamp must carry one in from an upstream node.
+
+- **The acting-user RBAC subject is only threaded on the delete path.**
+  `deleteObject()` now evaluates its permission check against the explicit user,
+  but `saveObject()` / `patchObject()` still resolve their RBAC subject from
+  `IUserSession` (`checkSavePermissions()` passes `userId: null`) and `findAll()`
+  takes no acting-user parameter at all. Consequence: under a sessionless
+  `FlowRunWorker` (webcron) run, the match read and the save-side permission
+  check evaluate as anonymous rather than as the run's owner; under CLI cron the
+  `PHP_SAPI === 'cli'` trust in `MultiTenancyTrait` short-circuits it instead.
+  Widening `saveObject()`'s RBAC subject changes behaviour for `ImportService`,
+  `TransitionEngine` and `Configuration\ImportHandler` — all existing
+  `currentUser` callers — so it is deliberately out of scope here and filed as
+  the follow-up `or-objectservice-acting-user-threading`. This is the most
+  likely thing to surface during live verification.
 
 ## DEFERRED_QUESTIONS
 
