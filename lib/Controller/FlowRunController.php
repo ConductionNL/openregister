@@ -40,6 +40,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUserSession;
 use stdClass;
 
 /**
@@ -61,7 +62,8 @@ class FlowRunController extends Controller
         IRequest $request,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
-        private readonly FlowResolverRegistry $resolvers
+        private readonly FlowResolverRegistry $resolvers,
+        private readonly IUserSession $userSession
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -222,11 +224,19 @@ class FlowRunController extends Controller
             $seed = FlowItems::normalise(value: $seedParam);
         }
 
+        // Attribute the test run to the caller. Without this the run is
+        // ownerless, so `context['triggeredBy']` is null and every
+        // attribution-requiring node refuses — ObjectWriteNode returns "this
+        // flow run has no owner". An interactive test run has a session by
+        // definition, so there is no reason for it to be the one dispatch path
+        // that discards its actor. Same defect class as or#2158 in
+        // FlowMcpToolProvider::runFlow().
         $run = $this->runner->queue(
             flowId: $flowId,
             subject: [],
             trigger: 'test',
-            context: ['pins' => $pins]
+            context: ['pins' => $pins],
+            user: $this->userSession->getUser()?->getUID()
         );
 
         $run = $this->runner->execute(
