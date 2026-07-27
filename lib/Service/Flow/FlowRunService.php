@@ -193,6 +193,13 @@ class FlowRunService
         // to someone other than whoever queued it. See or#2158.
         $context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
 
+        // The token is stored as plain values but handed to steps as an object:
+        // a step receives $context by value, so only a handle gives it write
+        // access. Rehydrating here (and serialising in persistResult) is what
+        // carries a value across a suspension — the run that resumes days later
+        // gets back exactly what it held when it stopped.
+        $context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
+
         try {
             $result = $this->engine->run(
                 flow: $flow,
@@ -241,9 +248,18 @@ class FlowRunService
         // whole run, not just the segment since it last woke up.
         $log = array_merge(($run->getLog() ?? []), (array) ($result['log'] ?? []));
 
+        // The token travels as an object so steps can write to it; the column
+        // holds JSON. Serialising here — on the suspended path as much as the
+        // terminal ones — is what makes "pause and continue later" keep the
+        // values the run had already gathered.
+        $context = (array) ($result['context'] ?? []);
+        if (isset($context[FlowToken::CONTEXT_KEY]) === true && $context[FlowToken::CONTEXT_KEY] instanceof FlowToken === true) {
+            $context[FlowToken::CONTEXT_KEY] = $context[FlowToken::CONTEXT_KEY]->jsonSerialize();
+        }
+
         $run->setStatus($status);
         $run->setItems((array) ($result['items'] ?? []));
-        $run->setContext((array) ($result['context'] ?? []));
+        $run->setContext($context);
         $run->setLog($log);
         $run->setError(($result['error'] ?? null));
         $run->setUpdated(new DateTime());

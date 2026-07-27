@@ -116,10 +116,11 @@ class OpenRegisterFlowResolver implements IFlowResolver
         }
 
         return [
-            'id'     => $flowId,
-            'nodes'  => (array) ($data['nodes'] ?? []),
-            'edges'  => (array) ($data['edges'] ?? []),
-            'limits' => (array) ($data['limits'] ?? []),
+            'id'            => $flowId,
+            'nodes'         => (array) ($data['nodes'] ?? []),
+            'edges'         => (array) ($data['edges'] ?? []),
+            'limits'        => (array) ($data['limits'] ?? []),
+            'executionMode' => (string) ($data['executionMode'] ?? ''),
         ];
 
     }//end resolveFlow()

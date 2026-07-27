@@ -20,7 +20,9 @@
         "version": "1.1.0",
         "description": "OpenRegister-native flow definitions (nodes + edges) the flow engine runs.",
         "published": true,
-        "schemas": ["flow"],
+        "schemas": [
+          "flow"
+        ],
         "folder": "Flows"
       }
     },
@@ -28,11 +30,13 @@
       "flow": {
         "slug": "flow",
         "title": "Flow",
-        "version": "1.1.0",
+        "version": "1.2.0",
         "published": true,
         "summary": "A flow definition the OpenRegister flow engine walks.",
         "description": "A flow is a graph of nodes and edges. Each edge carries the step to run (its `type` names a registered flow node such as openregister.set-fields, openregister.route or openregister.sub-flow, and `config` its options); the engine walks the graph, threading an item list from step to step. `trigger` (with optional `triggerRegister` / `triggerSchema`) wires the flow to an event so it runs automatically; `enabled` must be true for a trigger to fire it.",
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -64,6 +68,16 @@
             "description": "For a schedule trigger: the cron expression that decides when the flow runs (e.g. \"0 9 * * 1\" = 09:00 every Monday). Ignored for other triggers.",
             "title": "Cron schedule"
           },
+          "executionMode": {
+            "type": "string",
+            "enum": [
+              "async",
+              "sync"
+            ],
+            "default": "async",
+            "description": "When to run the flow relative to what triggered it. async (the default) queues the run and a background worker picks it up within a minute. sync runs the flow inside the triggering action, so its effects are complete before that action returns — choose it only when a caller genuinely depends on that, because the flow then runs on someone's critical path and a slow flow means a slow save. A sync flow that hits a wait is left for the worker rather than blocking.",
+            "title": "Execution mode"
+          },
           "triggerRegister": {
             "type": "string",
             "description": "Restrict an object-event trigger to one register (empty = any).",
@@ -77,13 +91,17 @@
           "nodes": {
             "type": "array",
             "description": "The flow's nodes; each carries an id.",
-            "items": { "type": "object" },
+            "items": {
+              "type": "object"
+            },
             "title": "Nodes"
           },
           "edges": {
             "type": "array",
             "description": "The flow's edges; each carries from/to plus the step type and config to run.",
-            "items": { "type": "object" },
+            "items": {
+              "type": "object"
+            },
             "title": "Edges"
           }
         }
