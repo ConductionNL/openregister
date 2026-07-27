@@ -43,7 +43,7 @@
 - [x] 4.1 `openspec validate --strict` passes for this change.
 - [x] 4.2 PHPCS clean on every changed file.
 - [x] 4.3 PHPUnit green in the `nextcloud:34` container.
-- [ ] 4.4 Live-verify on 8080: a `sync` flow completes within its trigger; a
+- [x] 4.4 Live-verify on 8080: a `sync` flow completes within its trigger; a
       token written before a `Wait` is readable after the worker resumes the run;
       a waited-on sub-flow returns a value to its parent.
 - [x] 4.5 Confirm the ten existing nodes and both leaf apps (hermiq,
