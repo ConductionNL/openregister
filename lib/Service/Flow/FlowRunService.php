@@ -183,6 +183,15 @@ class FlowRunService
         $context            = ($run->getContext() ?? []);
         $context['runUuid'] = $run->getUuid();
         $context['resuming'] = $resuming;
+        // Carry the run's owner into the node context. Nodes read
+        // `context['triggeredBy']` to attribute what they do — ObjectWriteNode
+        // REFUSES to write without it, SubFlowNode propagates it to child runs,
+        // and Hermiq's agent node runs the turn as that user. Nothing else in
+        // lib/ ever wrote this key, so every trigger reached its nodes
+        // ownerless and only hand-injected contexts (tests, harnesses) worked.
+        // An explicit context value still wins, so a caller can attribute a run
+        // to someone other than whoever queued it. See or#2158.
+        $context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
 
         try {
             $result = $this->engine->run(
