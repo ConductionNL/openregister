@@ -1792,6 +1792,14 @@ class ObjectService
      *                                                  to bypass the archival-immutability gate.
      *                                                  Reachable only via PHP DI; no HTTP surface
      *                                                  exposes it. Defaults to false.
+     * @param IUser|null               $currentUser     Explicit acting user for the RBAC `delete`
+     *                                                  check. Defaults to null → the permission
+     *                                                  subject is resolved from `IUserSession`,
+     *                                                  which is today's behaviour for every HTTP
+     *                                                  caller. A sessionless caller (flow run, cron,
+     *                                                  import pipeline) MUST pass one: anonymous is
+     *                                                  default-deny, so without it the delete is
+     *                                                  neither attributable nor permitted.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1805,6 +1813,7 @@ class ObjectService
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
         string $uuid,
@@ -1812,8 +1821,13 @@ class ObjectService
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $_retentionSweep=false
+        bool $_retentionSweep=false,
+        ?IUser $currentUser=null
     ): bool {
+        // Explicit acting user for the permission check; null keeps today's
+        // session-resolved behaviour for every existing caller.
+        $actingUserId = $currentUser?->getUID();
+
         // Resolve the explicit scope (if any) onto the service's currentRegister
         // / currentSchema so downstream context (permission checks, audit-trail
         // recording) sees the API-supplied scope, not a stale leftover from a
@@ -1881,7 +1895,7 @@ class ObjectService
             $this->checkPermission(
                 schema: $this->currentSchema,
                 action: 'delete',
-                userId: null,
+                userId: $actingUserId,
                 objectOwner: $objectToDelete->getOwner(),
                 _rbac: $_rbac,
                 object: $objectToDelete
@@ -1901,7 +1915,7 @@ class ObjectService
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'delete',
-                    userId: null,
+                    userId: $actingUserId,
                     objectOwner: null,
                     _rbac: $_rbac
                 );
@@ -4188,32 +4202,140 @@ class ObjectService
     }//end updateObject()
 
     /**
-     * Patch existing object (partial update)
+     * Patch an existing object (PATCH-semantic partial update).
      *
-     * @param string $objectId      Object ID or UUID
-     * @param array  $data          Partial object data
-     * @param bool   $_rbac         Apply RBAC checks
-     * @param bool   $_multitenancy Apply multitenancy filtering
+     * This is the fleet's supported PATCH-semantic write path. `saveObject()` is
+     * PUT-semantic — a property absent from the payload is written as null — so
+     * every partial-write caller either merges first or silently nulls live
+     * data. That merge belongs here, once, rather than in each caller.
+     *
+     * MERGE RULES (RFC 7386 shaped):
+     *  - a key present with a non-null value overwrites the stored value;
+     *  - a key absent from the payload leaves the stored value untouched;
+     *  - a key present with an explicit `null` clears the stored value, so
+     *    "unset this" is expressible and distinguishable from "not mentioned";
+     *  - two associative arrays merge recursively on the same three rules;
+     *  - lists (JSON arrays) are replaced wholesale, never element-merged —
+     *    there is no stable identity to merge elements on and a positional
+     *    merge corrupts any reordered list.
+     *
+     * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
+     * numeric id, scoped to exactly one magic table when both `$register` and
+     * `$schema` are supplied (the #1638 defect class).
+     *
+     * The merged result goes through `saveObject()`, so schema validation, the
+     * audit trail and event dispatch all apply — a patch is a save of a
+     * different shape, not a privileged shortcut around one.
+     *
+     * @param string                   $objectId      Object id, uuid or slug.
+     * @param array                    $data          Partial object data to merge.
+     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
+     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
+     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
+     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
+     *                                                MUST pass one to avoid the default-deny fall-through.
      *
      * @return ObjectEntity Patched object entity
      *
      * @throws \Exception If patch fails
      *
-     * @spec exclude Facade delegating to saveObject() with merged partial data; patch behavior owned by object-interactions.
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function patchObject(
         string $objectId,
         array $data,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?IUser $currentUser=null
     ): ObjectEntity {
-        // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() for patching.
-        // Get existing object, merge partial data, and save.
-        $existing     = $this->objectMapper->find((int) $objectId);
-        $merged       = array_merge($existing->getObject(), $data);
-        $merged['id'] = $objectId;
-        return $this->saveObject(object: $merged);
+        // Resolve the caller's scope onto the service context first, so the
+        // lookup below and the save that follows both see the same one.
+        $this->setContextFromParameters(
+            register: $register,
+            schema: $schema
+        );
+
+        // Scoped lookup when both halves of the scope are known — that targets
+        // exactly one magic table. Otherwise the legacy cross-table resolve,
+        // which every existing caller relies on. Note the identifier is passed
+        // through unchanged: casting a uuid to int resolves to an unrelated row.
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($register !== null && $schema !== null) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        $existing = $this->objectMapper->find(
+            identifier: $objectId,
+            register: $scopedRegister,
+            schema: $scopedSchema
+        );
+
+        $merged = $this->mergePatchData(
+            stored: (array) $existing->getObject(),
+            patch: $data
+        );
+
+        // Address the save at the object we actually resolved, not at whatever
+        // form of the identifier the caller happened to hold.
+        $merged['id'] = ($existing->getUuid() ?? $objectId);
+
+        return $this->saveObject(
+            object: $merged,
+            register: $register,
+            schema: $schema,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            currentUser: $currentUser
+        );
     }//end patchObject()
+
+    /**
+     * Merge a partial payload onto stored data, PATCH-semantically.
+     *
+     * See `patchObject()` for the rules this implements and why each is what it
+     * is. Kept private because the merge is only meaningful as part of the
+     * read-merge-save cycle; exposing it alone would invite callers to merge and
+     * then save PUT-semantically, which is the trap the method exists to close.
+     *
+     * @param array $stored The stored object data.
+     * @param array $patch  The partial payload.
+     *
+     * @return array The merged data.
+     */
+    private function mergePatchData(array $stored, array $patch): array
+    {
+        foreach ($patch as $key => $value) {
+            // An explicit null clears. Without this there is no way to unset a
+            // property through PATCH at all.
+            if ($value === null) {
+                $stored[$key] = null;
+                continue;
+            }
+
+            $storedValue = ($stored[$key] ?? null);
+
+            // Two associative arrays merge recursively. Lists — on either side —
+            // replace wholesale.
+            if (is_array($value) === true
+                && array_is_list($value) === false
+                && is_array($storedValue) === true
+                && array_is_list($storedValue) === false
+            ) {
+                $stored[$key] = $this->mergePatchData(stored: $storedValue, patch: $value);
+                continue;
+            }
+
+            $stored[$key] = $value;
+        }//end foreach
+
+        return $stored;
+    }//end mergePatchData()
 
     /**
      * Build search query from request parameters
