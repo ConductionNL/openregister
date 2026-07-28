@@ -135,18 +135,15 @@ class Version1Date20260706101000 extends SimpleMigrationStep
             }
 
             $this->connection->executeStatement(
-                "CREATE INDEX $indexName ON $tableName "
-                ."USING gin (to_tsvector('simple', text_content))"
+                "CREATE INDEX $indexName ON $tableName USING gin (to_tsvector('simple', text_content))"
             );
 
             $output->info(
                 "Created functional GIN index $indexName on $tableName (to_tsvector('simple', text_content))"
             );
         } catch (Exception $e) {
-            $output->warning(
-                'Failed to create functional GIN index on '.$tableName.': '.$e->getMessage()
-                .'. Ranked keyword search over chunk text stays unavailable.'
-            );
+            $msg = 'Failed to create functional GIN index on '.$tableName.': '.$e->getMessage();
+            $output->warning($msg.'. Ranked keyword search over chunk text stays unavailable.');
         }//end try
     }//end createGinIndex()
 }//end class

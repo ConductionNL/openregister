@@ -40,6 +40,7 @@ use Psr\Log\NullLogger;
  */
 class ChunkMapper extends QBMapper
 {
+
     /**
      * Logger instance for warn-level diagnostics on search-path failures.
      *
@@ -470,8 +471,7 @@ class ChunkMapper extends QBMapper
             }
 
             $this->logger->warning(
-                message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
-                    .'with the tsvector keyword-search index',
+                message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL with the tsvector keyword-search index',
                 context: [
                     'file'     => __FILE__,
                     'line'     => __LINE__,
@@ -490,12 +490,11 @@ class ChunkMapper extends QBMapper
             $params['sourceType'] = $filters['source_type'];
         }
 
-        $sql = 'SELECT id, source_type, source_id, text_content, chunk_index, '
-            .'ts_rank('.$tsVector.", plainto_tsquery('simple', :query)) AS score "
-            .'FROM *PREFIX*openregister_chunks '
-            .'WHERE '.implode(' AND ', $where).' '
-            .'ORDER BY score DESC '
-            .'LIMIT '.max(1, $limit);
+        $rank     = 'ts_rank('.$tsVector.", plainto_tsquery('simple', :query)) AS score";
+        $whereSql = implode(' AND ', $where);
+        $limitVal = max(1, $limit);
+        $cols     = "id, source_type, source_id, text_content, chunk_index, $rank";
+        $sql      = "SELECT $cols FROM *PREFIX*openregister_chunks WHERE $whereSql ORDER BY score DESC LIMIT $limitVal";
 
         try {
             $result = $this->db->executeQuery($sql, $params);

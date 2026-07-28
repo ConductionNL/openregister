@@ -130,13 +130,10 @@ class Version1Date20260706110000 extends SimpleMigrationStep
                 // Fall through to the warning below.
             }
 
-            $output->warning(
-                'pg_trgm extension is not installed and could not be created ('
-                .$e->getMessage()
-                .'). Fuzzy/substring search over magic-table _name and searchable properties '
-                .'stays on the unindexed ILIKE/similarity() path. '
-                .'Run CREATE EXTENSION pg_trgm; as a superuser and re-run this migration to enable it.'
-            );
+            $reason = 'pg_trgm extension is not installed and could not be created ('.$e->getMessage().').';
+            $impact = 'Fuzzy/substring search over magic-table _name and searchable properties stays on the unindexed ILIKE/similarity() path.';
+            $action = 'Run CREATE EXTENSION pg_trgm; as a superuser and re-run this migration to enable it.';
+            $output->warning($reason.' '.$impact.' '.$action);
         }//end try
     }//end ensurePgTrgmExtension()
 }//end class

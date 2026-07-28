@@ -60,15 +60,16 @@ class QueryHandler
     /**
      * Constructor for QueryHandler.
      *
-     * @param MagicMapper                    $objectMapper       Unified mapper for objects.
-     * @param GetObject                      $getHandler         Get handler.
-     * @param RenderObject                   $renderHandler      Render handler.
-     * @param SearchQueryHandler             $searchQueryHandler Search handler.
-     * @param FacetHandler                   $facetHandler       Facet handler.
-     * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
-     * @param IAppContainer                  $container          App container.
-     * @param LoggerInterface                $logger             Logger.
-     * @param IRequest                       $request            Request object.
+     * @param MagicMapper                    $objectMapper         Unified mapper for objects.
+     * @param GetObject                      $getHandler           Get handler.
+     * @param RenderObject                   $renderHandler        Render handler.
+     * @param SearchQueryHandler             $searchQueryHandler   Search handler.
+     * @param FacetHandler                   $facetHandler         Facet handler.
+     * @param PerformanceOptimizationHandler $performanceHandler   Performance handler.
+     * @param IAppContainer                  $container            App container.
+     * @param LoggerInterface                $logger               Logger.
+     * @param IRequest                       $request              Request object.
+     * @param ContentSearchHandler|null      $contentSearchHandler Optional content-search augmenter (WOO-517).
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
@@ -448,18 +449,15 @@ class QueryHandler
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );
-            $results = $augmented['results'];
-            $total   = $augmented['total'];
+            $results            = $augmented['results'];
+            $total = $augmented['total'];
             $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
         } else if ($this->contentSearchHandler === null && $contentSearchRequested === true) {
             // Fail-open: DI-nullable ContentSearchHandler is a safety net for older
             // wiring/tests, but silent activation-failure on a real request is hard
             // to diagnose. Warn so operators can see the mis-wire in the log.
-            $this->logger->warning(
-                '[QueryHandler] _content_search=true requested but ContentSearchHandler '
-                .'is not wired — augmentation skipped, metadata-only results returned.'
-            );
-        }
+            $this->logger->warning('[QueryHandler] _content_search=true but ContentSearchHandler unwired — augmentation skipped.');
+        }//end if
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
         // Skip @self.register and @self.schema from extend since we include them in response @self.
