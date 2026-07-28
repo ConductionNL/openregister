@@ -328,19 +328,28 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-/* Table row borders for managed schemas (external - green) */
-:deep(.viewTableRow--managed) {
-	border-left: 4px solid var(--color-success);
+/* Table row accents. Drawn with an inset box-shadow, never border-left: a
+   border adds layout width and shifts the row's cell content sideways, while
+   box-shadow paints inside the box. Matches .cn-table-row--selected.
+
+   Skipped on a selected row so the library's .cn-table-row--selected accent
+   wins. Scoping adds a [data-v-*] attribute, which would otherwise outweigh
+   the library's single-class rule and leave a selected row showing its
+   managed/local colour instead of the selection colour. */
+
+/* Managed schemas (external - green) */
+:deep(.viewTableRow--managed:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-success);
 }
 
-/* Table row borders for local configurations (orange) */
-:deep(.viewTableRow--local) {
-	border-left: 4px solid var(--color-warning);
+/* Local configurations (orange) */
+:deep(.viewTableRow--local:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-warning);
 }
 
-/* Table row borders for in-use schemas */
-:deep(.viewTableRow--in-use) {
-	border-left: 4px solid var(--color-success);
+/* In-use schemas */
+:deep(.viewTableRow--in-use:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-success);
 }
 
 /* Status Pills */
