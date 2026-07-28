@@ -86,23 +86,18 @@ test.describe('OpenConnector flow-node leaves', () => {
 	test('both leaves are registered in the shared node registry', async ({ request }) => {
 		// The palette is the registry's public face; a leaf missing here is a
 		// leaf no flow author can ever place, however green its unit tests are.
-		const resp = await request.get(`${API}/flow/nodes`)
+		//
+		// This assertion used to skip, because OpenRegister exposed no palette
+		// endpoint at all — `FlowNodeRegistry::palette()` was in-process only.
+		// #2177 added `/api/flow/node-catalog`, so the registry is now observable
+		// over HTTP and the check can be real. That matters: openconnector's
+		// leaves silently failed to register for a load-order reason
+		// (openconnector#1076), and nothing before this could see it.
+		const resp = await request.get(`${API}/flow/node-catalog`)
 
-		if (resp.status() === 404) {
-			// Not a wrong path: OpenRegister ships NO palette endpoint at all.
-			// `FlowNodeRegistry::palette()` is in-process only and `FlowController`
-			// exposes just `eventCatalog()`, so nothing over HTTP can enumerate the
-			// registered node types — a flow-authoring UI cannot discover which
-			// leaves exist. Registration itself is still covered: the steps below
-			// place these node types in a real flow and the engine resolves them,
-			// which fails loudly for an unregistered type.
-			test.skip(true, 'OpenRegister exposes no node-palette endpoint; registration is asserted by the runs below')
-			return
-		}
-
-		expect(resp.ok(), 'fetch node palette').toBeTruthy()
+		expect(resp.ok(), 'fetch node catalog').toBeTruthy()
 		const body = await resp.json()
-		const ids: string[] = (body.nodes ?? body.results ?? body ?? []).map((n: any) => n.id ?? n.type)
+		const ids: string[] = (body.results ?? []).map((n: any) => n.id)
 
 		expect(ids, 'source-call is offered').toContain('openconnector.source-call')
 		expect(ids, 'synchronization-run is offered').toContain('openconnector.synchronization-run')
