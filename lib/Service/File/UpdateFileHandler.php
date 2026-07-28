@@ -120,7 +120,7 @@ class UpdateFileHandler
      *
      * @throws Exception When the FileMapper is not wired (legacy fixtures).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function updateFileMetadata(
         int $fileId,
@@ -195,7 +195,7 @@ class UpdateFileHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file resolution and update paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file update with logging requires extensive code
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function updateFile(
         string|int $filePath,

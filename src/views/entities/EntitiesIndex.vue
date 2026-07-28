@@ -366,7 +366,7 @@ export default {
 		/**
 		 * Toggle the entities filter sidebar via navigationStore.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {

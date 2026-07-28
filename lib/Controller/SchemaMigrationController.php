@@ -92,7 +92,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The changelog entries.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function changelog(int $id): JSONResponse
     {
@@ -112,7 +114,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The created run, or an error.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function revalidate(int $id): JSONResponse
     {
@@ -156,7 +160,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The runs.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function runs(int $id): JSONResponse
     {
@@ -178,7 +184,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The run + entries.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function run(int $id, int $run): JSONResponse
     {
@@ -218,7 +226,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse Before/after pairs, or a plan-validation error.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function previewMigration(int $id): JSONResponse
     {
@@ -258,7 +268,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The created run, or an error.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function migrate(int $id): JSONResponse
     {
@@ -311,7 +323,9 @@ class SchemaMigrationController extends Controller
      *
      * @return JSONResponse The rolled-back run, or an error.
      *
-     * @spec openspec/changes/schema-versioning-and-object-migration/specs/schema-migration/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-migration/spec.md
      */
     public function rollback(int $id, int $run): JSONResponse
     {

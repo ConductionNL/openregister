@@ -28,7 +28,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+ * @spec openspec/specs/register-service-extensions/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Psr\Log\LoggerInterface;
  * found in the DB) are retained in their original array position; the
  * serializer logs a warning and does not throw.
  *
- * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+ * @spec openspec/specs/register-service-extensions/spec.md
  */
 final class RegisterSerializer
 {
@@ -87,7 +87,7 @@ final class RegisterSerializer
      *
      * @return array Serialized register payload, with extensions applied.
      *
-     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     * @spec openspec/specs/register-service-extensions/spec.md
      *   (Requirement: schemas extension SHALL replace schema IDs with full schema objects)
      */
     public function serialize(Register $register, array $extend=[], ?array $schemaStats=null): array
@@ -115,7 +115,7 @@ final class RegisterSerializer
      *
      * @return array<int,array> Serialized payload for each register.
      *
-     * @spec openspec/changes/extend-schemas-in-register-service/specs/register-service-extensions/spec.md
+     * @spec openspec/specs/register-service-extensions/spec.md
      */
     public function serializeMany(
         array $registers,

@@ -75,8 +75,8 @@ class DeepLinkRegistrationEvent extends Event
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
-     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function register(
         string $appId,

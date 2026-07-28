@@ -110,7 +110,7 @@ class CacheHandler
      *
      * @return Configuration[] Array of configuration entities for active organisation
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-31
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-metadata-facets-via-self-namespace
      */
     public function getConfigurationsForActiveOrganisation(): array
     {

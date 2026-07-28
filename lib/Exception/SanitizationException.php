@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 class SanitizationException extends \Exception
 {
@@ -104,7 +104,7 @@ class SanitizationException extends \Exception
      * @param string         $message  PII-free human-readable detail.
      * @param Throwable|null $previous Previous exception.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(
         string $reason,
@@ -126,7 +126,7 @@ class SanitizationException extends \Exception
      *
      * @return string One of the REASON_* constants.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function getReason(): string
     {

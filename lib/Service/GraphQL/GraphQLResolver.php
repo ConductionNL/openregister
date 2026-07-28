@@ -16,10 +16,10 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+ * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
+ * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
+ * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
+ * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -127,7 +127,7 @@ class GraphQLResolver
      *
      * @throws Error If object not found or access denied
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     public function resolveSingle(Schema $schema, mixed $root, array $args): ?array
     {
@@ -178,7 +178,7 @@ class GraphQLResolver
      *
      * @return array<string, mixed> The connection result
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *   The connection-build pipeline is intentionally inline:
@@ -313,7 +313,7 @@ class GraphQLResolver
      *
      * @throws Error When validation fails or RBAC denies the request.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-19
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function resolveGroupBy(Schema $schema, ?Register $register, array $rawArgs): ?array
     {
@@ -378,7 +378,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or validation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function resolveCreate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -441,7 +441,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied, not found, or validation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function resolveUpdate(Schema $schema, array $args, ?string $operationName=null): array
     {
@@ -516,7 +516,7 @@ class GraphQLResolver
      *
      * @throws Error If access denied or not found
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function resolveDelete(Schema $schema, array $args): bool
     {
@@ -547,7 +547,7 @@ class GraphQLResolver
      *
      * @return Deferred A deferred value that resolves after batching
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function resolveRelation(string $uuid, Schema $parentSchema, array $path): Deferred
     {
@@ -575,7 +575,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The audit trail entries
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function resolveAuditTrail(string $objectUuid, int $last=10): array
     {
@@ -600,7 +600,7 @@ class GraphQLResolver
      *
      * @return array<array<string, mixed>> The referencing objects
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     public function resolveUsedBy(string $objectUuid): array
     {
@@ -614,7 +614,7 @@ class GraphQLResolver
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-20
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function flushRelationBuffer(): void
     {
@@ -647,7 +647,7 @@ class GraphQLResolver
      *
      * @throws Error If permission denied
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     private function checkSchemaPermission(Schema $schema, string $action): void
     {
@@ -823,7 +823,7 @@ class GraphQLResolver
      *
      * @return Register|null The register
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     private function findRegisterForSchema(Schema $schema): ?Register
     {
@@ -855,7 +855,7 @@ class GraphQLResolver
      *
      * @return string The encoded cursor
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-21
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function encodeCursor(string $uuid, int|string $offset): string
     {
@@ -870,7 +870,7 @@ class GraphQLResolver
      *
      * @return Error[]
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
      */
     public function getPartialErrors(): array
     {
@@ -883,7 +883,7 @@ class GraphQLResolver
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-resolver-must-reset-state-between-requests
      */
     public function reset(): void
     {

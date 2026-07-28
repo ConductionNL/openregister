@@ -47,7 +47,7 @@ class MigrateStorageCommand extends Command
      *
      * @param MigrationService $migrationService Migration service instance.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MigrationService $migrationService,
@@ -60,7 +60,7 @@ class MigrateStorageCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function configure(): void
     {
@@ -130,7 +130,7 @@ class MigrateStorageCommand extends Command
      *
      * @return int Command exit code.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

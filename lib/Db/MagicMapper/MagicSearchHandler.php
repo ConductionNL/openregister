@@ -1191,7 +1191,7 @@ class MagicSearchHandler
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/field-level-object-encryption/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-encrypted-fields-are-excluded-from-search-and-facets
      */
     private function applyObjectFilters(IQueryBuilder $qb, array $filters, Schema $schema): void
     {

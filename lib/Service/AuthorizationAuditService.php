@@ -17,8 +17,8 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-authorization-cache
  */
 
 declare(strict_types=1);
@@ -115,7 +115,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
      */
     public function logRegisterAuthorizationChange(
         int $registerId,
@@ -172,7 +172,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-authorization-cache
      */
     public function logRoleDefinitionChange(
         int $registerId,

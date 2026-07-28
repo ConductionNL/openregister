@@ -5,8 +5,8 @@
  *
  * @package
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-47
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-1
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-quick-link-endpoint-for-sidebar-use
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import axios from '@nextcloud/axios'
@@ -57,7 +57,7 @@ export async function fetchSenderObjects(sender, signal) {
  * @param {object} params The link parameters (objectUuid, mailAccountId, mailMessageId).
  * @return {Promise<object>} The updated linked IDs.
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-47
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-quick-link-endpoint-for-sidebar-use
  */
 export async function createQuickLink(params) {
 	const { objectUuid, mailAccountId, mailMessageId } = params

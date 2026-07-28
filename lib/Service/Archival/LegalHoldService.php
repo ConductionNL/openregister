@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -114,8 +114,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold applied.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function placeHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -157,8 +157,8 @@ class LegalHoldService
      *
      * @return ObjectEntity The updated object with legal hold released.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function releaseHold(ObjectEntity $object, string $reason): ObjectEntity
     {
@@ -210,7 +210,7 @@ class LegalHoldService
      *
      * @return bool True if the object has an active legal hold.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function hasActiveHold(ObjectEntity $object): bool
     {
@@ -227,7 +227,7 @@ class LegalHoldService
      *
      * @return bool True if the retention data indicates an active legal hold.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function hasActiveHoldFromRetention(array $retention): bool
     {
@@ -245,8 +245,8 @@ class LegalHoldService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function bulkPlaceHold(int $schemaId, int $registerId, string $reason): void
     {
@@ -280,7 +280,7 @@ class LegalHoldService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function getCurrentUserId(): string
     {

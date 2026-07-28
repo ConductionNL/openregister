@@ -83,7 +83,7 @@ class TranslationProjectionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-1
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
@@ -207,7 +207,7 @@ class TranslationProjectionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-2
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function purge(ObjectEntity $object): void
     {

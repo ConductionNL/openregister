@@ -19,10 +19,10 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-87
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-39
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
+ * @spec openspec/specs/event-driven-architecture/spec.md
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -61,8 +61,8 @@ use Psr\Log\LoggerInterface;
  * @suppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 class WebhooksController extends Controller
 {
@@ -206,7 +206,7 @@ class WebhooksController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity)      Complex request parameter handling for flexible API
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -321,7 +321,7 @@ class WebhooksController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-4
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -372,7 +372,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -459,7 +459,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -538,7 +538,7 @@ class WebhooksController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -602,7 +602,7 @@ class WebhooksController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-87
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -731,7 +731,7 @@ class WebhooksController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1077,7 +1077,7 @@ class WebhooksController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1147,7 +1147,7 @@ class WebhooksController extends Controller
      *     'Webhook not found', total?: int, successful?: int, failed?: int,
      *     pendingRetries?: int<0, max>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1208,7 +1208,7 @@ class WebhooksController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-5
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -1331,7 +1331,7 @@ class WebhooksController extends Controller
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

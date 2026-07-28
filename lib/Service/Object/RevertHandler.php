@@ -119,7 +119,7 @@ class RevertHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean needed to control version overwrite behavior
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-12
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function revert(
         string $register,

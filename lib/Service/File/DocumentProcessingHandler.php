@@ -28,6 +28,7 @@ use OCA\OpenRegister\Exception\PdfAnonymisationException;
 use OCA\OpenRegister\Exception\SanitizationException;
 use OCA\OpenRegister\Service\File\Pdf\PdfMetadataSanitizer;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\FileService;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use Throwable;
@@ -125,6 +126,18 @@ class DocumentProcessingHandler
     private array $lastResidualEntities = [];
 
     /**
+     * The `structurePreservation` result block from the most recent PDF
+     * redaction (best-effort accessibility-structure preservation).
+     *
+     * Populated only when {@see anonymizeDocument()} / {@see replaceWords()}
+     * took the PDF branch; null for DOCX/ODT/text redactions (no PDF
+     * structure tree is involved) and before the first PDF run.
+     *
+     * @var StructurePreservation|null
+     */
+    private ?StructurePreservation $lastStructurePreservation = null;
+
+    /**
      * Per-entity placeholder map from the most recent anonymisation.
      *
      * Maps the internal global entity id (`openregister_entities.id`, stringified)
@@ -178,7 +191,7 @@ class DocumentProcessingHandler
      * @return SanitizationReport|null The report, or null when the last
      *                                 anonymisation did not sanitise an Office document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function getLastSanitizationReport(): ?SanitizationReport
     {
@@ -199,6 +212,23 @@ class DocumentProcessingHandler
     {
         return $this->lastResidualEntities;
     }//end getLastResidualEntities()
+
+    /**
+     * The `structurePreservation` result block from the most recent PDF
+     * redaction, mirroring the {@see getLastResidualEntities()} /
+     * {@see getLastSanitizationReport()} accessor pattern.
+     *
+     * @return StructurePreservation|null The result block, or null when the
+     *                                    last redaction did not take the PDF
+     *                                    branch (DOCX/ODT/text — no PDF
+     *                                    structure tree is involved).
+     *
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-003
+     */
+    public function getLastStructurePreservation(): ?StructurePreservation
+    {
+        return $this->lastStructurePreservation;
+    }//end getLastStructurePreservation()
 
     /**
      * Per-entity placeholder map from the most recent anonymizeDocument() call.
@@ -236,12 +266,17 @@ class DocumentProcessingHandler
      * For Word documents, replacements are applied recursively across all sections, headers,
      * footers, tables, and lists.
      *
-     * @param Node        $node         The file node to process.
-     * @param array       $replacements Array of replacement mappings (search => replace).
-     * @param string|null $outputName   Optional name for the output file.
-     * @param bool        $strict       PDF only: when true (entity anonymisation),
-     *                                  residual entity text in the output fails
-     *                                  closed instead of being logged as partial.
+     * @param Node        $node              The file node to process.
+     * @param array       $replacements      Array of replacement mappings (search => replace).
+     * @param string|null $outputName        Optional name for the output file.
+     * @param bool        $strict            PDF only: when true (entity anonymisation),
+     *                                       residual entity text in the output fails
+     *                                       closed instead of being logged as partial.
+     * @param bool|null   $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-
+     *                                       preservation option — null/absent = auto (preserve
+     *                                       iff the input is a tagged PDF), true = attempt,
+     *                                       false = skip but still measure. Ignored for
+     *                                       DOCX/ODT/text (no PDF structure tree involved).
      *
      * @throws Exception If node is not a file or replacement fails.
      *
@@ -257,9 +292,10 @@ class DocumentProcessingHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed vs lenient validation per the entity-anonymisation contract.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
-    public function replaceWords(Node $node, array $replacements, ?string $outputName=null, bool $strict=false): File
+    public function replaceWords(Node $node, array $replacements, ?string $outputName=null, bool $strict=false, ?bool $preserveStructure=null): File
     {
         if (($node instanceof File) === false) {
             throw new Exception('Node must be a file');
@@ -283,7 +319,13 @@ class DocumentProcessingHandler
         }
 
         if ($fileExtension === 'pdf') {
-            return $this->replaceWordsInPdfDocument(node: $node, replacements: $replacements, outputName: $outputName, strict: $strict);
+            return $this->replaceWordsInPdfDocument(
+                node: $node,
+                replacements: $replacements,
+                outputName: $outputName,
+                strict: $strict,
+                preserveStructure: $preserveStructure
+            );
         }
 
         return $this->replaceWordsInTextDocument(node: $node, replacements: $replacements, outputName: $outputName);
@@ -296,14 +338,18 @@ class DocumentProcessingHandler
      * in the format [ENTITY_TYPE: key]. It builds a replacement mapping from entity detection
      * results and applies them using the replaceWords method.
      *
-     * @param Node        $node       The file node to anonymize.
-     * @param array       $entities   Array of detected entities with 'text', 'entityType', and 'key' fields.
-     * @param string      $scope      Placeholder-numbering scope: 'document' (default — counter restarts
-     *                                per run, no persistence) or 'dossier' (counter consistent across all
-     *                                files in the dossier folder, recomputed deterministically).
-     * @param string|null $dossierKey Stable folder id identifying the dossier when $scope='dossier'.
-     *                                When absent (and scope='dossier') the file's parent folder is used.
-     *                                Ignored for the per-document scope.
+     * @param Node        $node              The file node to anonymize.
+     * @param array       $entities          Array of detected entities with 'text', 'entityType', and 'key' fields.
+     * @param string      $scope             Placeholder-numbering scope: 'document' (default — counter restarts
+     *                                       per run, no persistence) or 'dossier' (counter consistent across all
+     *                                       files in the dossier folder, recomputed deterministically).
+     * @param string|null $dossierKey        Stable folder id identifying the dossier when $scope='dossier'.
+     *                                       When absent (and scope='dossier') the file's parent folder is used.
+     *                                       Ignored for the per-document scope.
+     * @param bool|null   $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
+     *                                       option forwarded to {@see replaceWords()} — null/absent = auto
+     *                                       (preserve iff the input is a tagged PDF), true = attempt,
+     *                                       false = skip but still measure.
      *
      * @throws Exception If anonymization fails.
      *
@@ -313,19 +359,22 @@ class DocumentProcessingHandler
      *
      * @return File The anonymized document file.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-008
+     * @spec openspec/specs/file-actions/spec.md
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
     public function anonymizeDocument(
         Node $node,
         array $entities,
         string $scope='document',
-        ?string $dossierKey=null
+        ?string $dossierKey=null,
+        ?bool $preserveStructure=null
     ): File {
-        // Reset any report/residuals/placeholder-map from a prior call on this
-        // (potentially reused) handler.
-        $this->lastSanitizationReport = null;
-        $this->lastResidualEntities   = [];
-        $this->lastPlaceholderMap     = [];
+        // Reset any report/residuals/placeholder-map/structure-result from a
+        // prior call on this (potentially reused) handler.
+        $this->lastSanitizationReport    = null;
+        $this->lastResidualEntities      = [];
+        $this->lastPlaceholderMap        = [];
+        $this->lastStructurePreservation = null;
 
         // Resolve the source file id once — the substitution placeholder
         // format and the post-redaction audit flag both key off it.
@@ -367,10 +416,9 @@ class DocumentProcessingHandler
         // deterministically recomputed from the whole dossier's stored rows,
         // so the same person is the same number across every file in the
         // folder.
+        $translator = PlaceholderIdTranslator::perDocument();
         if ($scope === 'dossier') {
             $translator = $this->recomputeDossierTranslator(node: $node, dossierKey: $dossierKey);
-        } else {
-            $translator = PlaceholderIdTranslator::perDocument();
         }
 
         // Build replacements array from entities.
@@ -464,7 +512,13 @@ class DocumentProcessingHandler
         // Entity anonymisation is GDPR-critical: fail closed (strict) if any
         // original entity text survives in the output rather than writing a
         // file marked '_anonymized' that still contains it.
-        $anonymizedFile = $this->replaceWords(node: $node, replacements: $replacements, outputName: $anonymizedFileName, strict: true);
+        $anonymizedFile = $this->replaceWords(
+            node: $node,
+            replacements: $replacements,
+            outputName: $anonymizedFileName,
+            strict: true,
+            preserveStructure: $preserveStructure
+        );
         if (($node instanceof File) === true
             && $this->sanitizer->isSanitizable($node->getMimeType()) === true
         ) {
@@ -689,7 +743,7 @@ class DocumentProcessingHandler
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function persistAnonymisationLog(Node $node, int $fileId, array $replacements): void
     {
@@ -772,7 +826,7 @@ class DocumentProcessingHandler
      *
      * @return File The anonymised document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function anonymizeSanitizableDocument(File $node, array $replacements, string $outputName): File
     {
@@ -838,7 +892,7 @@ class DocumentProcessingHandler
      *
      * @return File The anonymised document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function replaceWordsInOfficeContainer(
         File $node,
@@ -1200,12 +1254,15 @@ class DocumentProcessingHandler
      * text from the input, the call defers to the `ocr-document-scanning`
      * capability via `REASON_TEXT_LAYER_MISSING` (caller's responsibility to route).
      *
-     * @param File   $node         The PDF file node to process.
-     * @param array  $replacements Map: entity-text => placeholder.
-     * @param string $outputName   Output file name.
-     * @param bool   $strict       When true (entity anonymisation), residual
-     *                             entity text fails closed instead of being
-     *                             written as a partial result.
+     * @param File      $node              The PDF file node to process.
+     * @param array     $replacements      Map: entity-text => placeholder.
+     * @param string    $outputName        Output file name.
+     * @param bool      $strict            When true (entity anonymisation), residual
+     *                                     entity text fails closed instead of being
+     *                                     written as a partial result.
+     * @param bool|null $preserveStructure Tri-state structure-preservation option
+     *                                     (REQ-ORTPR-004), forwarded to
+     *                                     {@see PdfTextReplacer::replaceInPdf()}.
      *
      * @throws Exception                  If node content is unreadable.
      * @throws PdfAnonymisationException  On encrypted PDF, missing text
@@ -1222,13 +1279,15 @@ class DocumentProcessingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Each guard maps a distinct SAPP failure mode to a typed reason.
      * @SuppressWarnings(PHPMD.NPathComplexity)       Same — sequential fail-closed guards, not nested branching.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
     private function replaceWordsInPdfDocument(
         File $node,
         array $replacements,
         string $outputName,
-        bool $strict=false
+        bool $strict=false,
+        ?bool $preserveStructure=null
     ): File {
         // File::getContent() returns the content string and throws on failure
         // (NotPermitted/Locked) — it never returns false.
@@ -1295,12 +1354,23 @@ class DocumentProcessingHandler
         // text — it returns the residual needles so we can produce the file
         // and warn instead of discarding it.
         $residualNeedles = [];
+        $structureResult = null;
         $replacedBytes   = $replacer->replaceInPdf(
             pdfBytes: $content,
             substitutions: $replacements,
             strict: $strict,
-            residualEntities: $residualNeedles
+            residualEntities: $residualNeedles,
+            preserveStructure: $preserveStructure,
+            structureResult: $structureResult
         );
+
+        // Expose the `structurePreservation` result block (REQ-ORTPR-003).
+        // `PdfMetadataSanitizer::sanitize()` below strips ONLY /Info + XMP —
+        // it never touches /StructTreeRoot, /MarkInfo or /StructElem objects
+        // (ADR-022, consumed unchanged) — so the measurement taken inside
+        // `replaceInPdf` already reflects the accessibility structure of the
+        // bytes this method goes on to write.
+        $this->lastStructurePreservation = $structureResult;
 
         // Map residual needles back to entity records {text, type, id} via the
         // placeholder map (`[<TYPE>: <id>]`). Logs stay PII-free (ADR-005); the

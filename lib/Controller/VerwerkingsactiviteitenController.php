@@ -90,7 +90,7 @@ class VerwerkingsactiviteitenController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function index(): JSONResponse
     {
@@ -148,7 +148,7 @@ class VerwerkingsactiviteitenController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function show(string $id): JSONResponse
     {
@@ -196,7 +196,7 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function create(): JSONResponse
     {
@@ -234,7 +234,7 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function update(string $id): JSONResponse
     {
@@ -280,7 +280,7 @@ class VerwerkingsactiviteitenController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-4
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function destroy(string $id): JSONResponse
     {
@@ -331,7 +331,7 @@ class VerwerkingsactiviteitenController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-5
+     * @spec openspec/specs/verwerkingsregister-api/spec.md
      */
     public function verantwoording(): JSONResponse
     {

@@ -72,7 +72,7 @@ export default {
 		 * and emit a `toggle` event carrying the new collapsed state.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-components/tasks.md#task-3
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		toggleCollapsed() {
 			if (this.collapsible) {

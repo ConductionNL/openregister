@@ -23,8 +23,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ class GeoFilterApplier
      *
      * @return array The matching rows, in original order.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function applyAll(array $rows, array $filters): array
     {
@@ -85,7 +85,7 @@ class GeoFilterApplier
      *
      * @return bool True when the row passes every filter.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function rowMatchesAll(array $row, array $filters): bool
     {
@@ -134,7 +134,7 @@ class GeoFilterApplier
      *
      * @return ?array The geometry when shape matches, null otherwise.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     private function coerceGeometry(mixed $value): ?array
     {

@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#imcptoolprovider-php-interface
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);

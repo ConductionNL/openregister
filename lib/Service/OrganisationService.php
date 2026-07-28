@@ -913,7 +913,7 @@ class OrganisationService
      *
      * @return bool True when the user is an org owner or a Nextcloud admin.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-credential-administration
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function isOrganisationAdmin(string $organisationUuid, ?string $userId=null): bool
     {

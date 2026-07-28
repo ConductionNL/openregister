@@ -117,6 +117,121 @@ class ValidateObject
     private array $preparedSchemaCache = [];
 
     /**
+     * Walk the schema's property definitions (raw `$schema->getProperties()`
+     * shape: associative array) and find every property whose definition sets
+     * `readOnly: true` at the top level.
+     *
+     * Wave-12 Fix 1 helper. We deliberately ignore nested readOnly inside
+     * object/array sub-schemas — the wave-11 audit (Section A) flagged
+     * top-level enforcement only; nested cases can be added by the same
+     * mechanism in a follow-up once the leaf-app contract is stabilised.
+     *
+     * @param array $properties Raw schema properties (associative array; key = property name).
+     *
+     * @return array<int, string> List of property names whose schema sets `readOnly: true`.
+     */
+    private function collectReadOnlyPropertyNames(array $properties): array
+    {
+        $readOnly = [];
+        foreach ($properties as $name => $definition) {
+            if (is_array($definition) === false) {
+                continue;
+            }
+
+            $isReadOnly = ($definition['readOnly'] ?? false);
+            if ($isReadOnly === true) {
+                $readOnly[] = (string) $name;
+            }
+        }
+
+        return $readOnly;
+    }//end collectReadOnlyPropertyNames()
+
+    /**
+     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     *
+     * For each top-level property declared `readOnly: true` on the schema:
+     *  - If the incoming payload omits the property → OK (no violation).
+     *  - If the incoming payload includes the property AND its value differs
+     *    from the previously-stored value → reject with a structured error.
+     *  - If the value matches the previously-stored value → OK (no-op write).
+     *
+     * CREATE is intentionally NOT covered: there's no prior value to violate,
+     * and the canonical use of `readOnly` is "server-stamped on create,
+     * immutable afterwards." For CREATE-time immutability use `const` or a
+     * `default: …` with `defaultBehavior: 'always'` (both already enforced by
+     * SaveObject::setDefaultValues).
+     *
+     * Wave-12 Fix 1. Audited gap at `/tmp/wave11-or-engine-primitives.md`
+     * Section A: prior to this method, `readOnly: true` was pure metadata —
+     * `SchemaMapper.php:2303-2304` flagged it as a "freely overridable
+     * metadataField," with no write-path enforcement anywhere.
+     *
+     * @param array  $incomingObject The candidate object data (top-level keys
+     *                               are property names).
+     * @param array  $existingObject The previously-stored object data (same
+     *                               shape). Pass the empty array `[]` to
+     *                               opt out (CREATE / no existing record).
+     * @param Schema $schema         The schema whose `readOnly` declarations
+     *                               drive enforcement.
+     *
+     * @return array<int, array{property: string, attempted: mixed, stored: mixed, message: string}>
+     *         List of violations. Empty array when the update is compliant.
+     *         Callers MUST throw `ValidationException` (or equivalent 422
+     *         response) when this method returns a non-empty list.
+     */
+    public function validateReadOnlyConstraints(
+        array $incomingObject,
+        array $existingObject,
+        Schema $schema
+    ): array {
+        // No existing object → CREATE path, readOnly is not enforced.
+        if ($existingObject === []) {
+            return [];
+        }
+
+        $properties = $schema->getProperties();
+        if (is_array($properties) === false || $properties === []) {
+            return [];
+        }
+
+        $readOnlyNames = $this->collectReadOnlyPropertyNames(properties: $properties);
+        if ($readOnlyNames === []) {
+            return [];
+        }
+
+        $violations = [];
+        foreach ($readOnlyNames as $name) {
+            // Omitted from the payload → not a mutation → OK.
+            if (array_key_exists($name, $incomingObject) === false) {
+                continue;
+            }
+
+            $attempted = $incomingObject[$name];
+            $stored    = $existingObject[$name] ?? null;
+
+            // Compare with PHP-equality (===) so type-coercion doesn't mask a
+            // mutation: `42` (int) vs `"42"` (string) IS a mutation. Authors
+            // who care about looser equality should use `default` instead.
+            if ($attempted === $stored) {
+                continue;
+            }
+
+            $violations[] = [
+                'property'  => $name,
+                'attempted' => $attempted,
+                'stored'    => $stored,
+                'message'   => sprintf(
+                    "Property '%s' is declared readOnly and cannot be modified after creation.",
+                    $name
+                ),
+            ];
+        }//end foreach
+
+        return $violations;
+    }//end validateReadOnlyConstraints()
+
+    /**
      * Constructor for ValidateObject
      *
      * @param IAppConfig      $config       Configuration service.
@@ -412,6 +527,15 @@ class ValidateObject
         $isArrayType = ($propertySchema->type ?? null) !== null
             && $propertySchema->type === 'array';
         $hasItems    = ($propertySchema->items ?? null) !== null;
+        // `items` may decode as an associative array rather than a stdClass depending on the
+        // schema source; normalise it to an object so the $ref-strip below runs. Without this,
+        // an array-items $ref (e.g. `installedOn.items {"$ref":"Agent"}`) is left intact and
+        // Opis JSON Schema fails with "Unresolved reference: schema:///Agent#" — unlike a scalar
+        // string $ref, which is stripped by a separate branch that needs no object cast.
+        if ($isArrayType === true && $hasItems === true && is_array($propertySchema->items) === true) {
+            $propertySchema->items = (object) $propertySchema->items;
+        }
+
         if ($isArrayType === true && $hasItems === true && is_object($propertySchema->items) === true) {
             $itemsSchema = $propertySchema->items;
 
@@ -1596,6 +1720,48 @@ class ValidateObject
                     }
                 }//end foreach
             }//end if
+        }//end if
+
+        // Translatable properties accept EITHER the scalar value (source-language
+        // / legacy write, or the X-Translation-Target-Language wrap path) OR a
+        // language-keyed object like {"nl": "Welkom", "en": "Welcome"}. The scalar
+        // branch is validated by the original (null-widened) property schema; the
+        // language-map branch validates every inner language value against that
+        // same scalar schema via additionalProperties. Without this widening a
+        // language-keyed write body is rejected by plain type validation (object
+        // vs string) BEFORE TranslationHandler::normalizeTranslationsForSave() can
+        // split it into per-language translation rows — which broke the entire
+        // i18n write path (see i18n-api-language-negotiation / i18n-source-of-truth).
+        if (property_exists($schemaObject, 'properties') === true
+            && is_object($schemaObject->properties) === true
+        ) {
+            foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+                if (is_object($propertySchema) === false) {
+                    continue;
+                }
+
+                if (($propertySchema->translatable ?? null) !== true) {
+                    continue;
+                }
+
+                // Scalar branch: the property schema minus the custom marker.
+                $valueSchema = json_decode(json_encode($propertySchema));
+                unset($valueSchema->translatable);
+
+                // Language-map branch: an object whose every value matches the
+                // scalar schema (so language values are still type-checked).
+                $languageObjectSchema = (object) [
+                    'type'                 => 'object',
+                    'additionalProperties' => json_decode(json_encode($valueSchema)),
+                ];
+
+                $schemaObject->properties->$propertyName = (object) [
+                    'anyOf' => [
+                        $valueSchema,
+                        $languageObjectSchema,
+                    ],
+                ];
+            }//end foreach
         }//end if
 
         return [

@@ -30,7 +30,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-aggregations-backend-native/tasks.md#task-5
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  */
 
 declare(strict_types=1);

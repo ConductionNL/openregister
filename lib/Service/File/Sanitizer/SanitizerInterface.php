@@ -21,7 +21,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCA\OpenRegister\Service\File\SanitizationReport;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 interface SanitizerInterface
 {
@@ -56,7 +56,7 @@ interface SanitizerInterface
      *
      * @return bool True when this strategy can sanitise the format.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function supports(string $mimeType): bool;
 
@@ -72,7 +72,7 @@ interface SanitizerInterface
      *
      * @return SanitizationReport Per-category sanitisation counts.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function sanitize(string $sourcePath, string $destPath): SanitizationReport;
 }//end interface

@@ -20,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 
 declare(strict_types=1);
@@ -64,8 +64,8 @@ class CalendarEventTransformer
      *
      * @return array|null The VEVENT array, or null if the object lacks required date data
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function transform(
         ObjectEntity $object,
@@ -163,8 +163,8 @@ class CalendarEventTransformer
      *
      * @return bool True if events should be all-day
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function determineAllDay(array $calendarConfig, Schema $schema, string $dtstartField): bool
     {
@@ -222,8 +222,8 @@ class CalendarEventTransformer
      *
      * @return array The formatted [value, params] array
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function formatDateValue(string $value, bool $allDay): array
     {
@@ -333,7 +333,7 @@ class CalendarEventTransformer
      *
      * @return array The formatted [value, params] array for DTEND
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function buildDtend(
         array $objectData,
@@ -386,8 +386,8 @@ class CalendarEventTransformer
      *
      * @return string The interpolated string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function interpolateTemplate(string $template, array $objectData): string
     {
@@ -421,7 +421,7 @@ class CalendarEventTransformer
      *
      * @return string The VEVENT STATUS value (CONFIRMED, CANCELLED, TENTATIVE)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-3
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function resolveStatus(array $objectData, array $calendarConfig): string
     {

@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-talk/tasks.md
+ * @spec openspec/specs/integration-talk/spec.md
  */
 
 declare(strict_types=1);
@@ -141,7 +141,7 @@ class TalkProvider extends AbstractIntegrationProvider
      *     (lib/Service/Integration/IntegrationProvider.php:209) but Talk room
      *     lookup is keyed solely on $objectId.
      *
-     * @spec openspec/changes/integration-talk/tasks.md
+     * @spec openspec/specs/integration-talk/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

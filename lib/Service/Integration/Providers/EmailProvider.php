@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-email/tasks.md
+ * @spec openspec/specs/integration-email/spec.md
  */
 
 declare(strict_types=1);
@@ -143,7 +143,7 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * @return array{items:array<int,array<string,mixed>>,total:int,nextCursor:?string}
      *
-     * @spec openspec/changes/integration-email/tasks.md
+     * @spec openspec/specs/integration-email/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -218,7 +218,7 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/integration-email/tasks.md
+     * @spec openspec/specs/integration-email/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -252,7 +252,7 @@ class EmailProvider extends AbstractIntegrationProvider
      *
      * @return void
      *
-     * @spec openspec/changes/integration-email/tasks.md
+     * @spec openspec/specs/integration-email/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

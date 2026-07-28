@@ -363,6 +363,106 @@ class SchemaMapper extends QBMapper
     }//end find()
 
     /**
+     * Resolve a schema by slug, scoped to a single owning application.
+     *
+     * The plain {@see find()} matches a schema by `LOWER(slug)` GLOBALLY across
+     * every application on the instance and returns the FIRST row it fetches.
+     * On a shared instance where ~20 apps live in one OpenRegister, that lets a
+     * generic slug (e.g. `conversation`, `order`, `task`) from app B silently
+     * bind to — or, on import, OVERWRITE — app A's schema that happens to share
+     * the lower(slug). This scoped lookup is the import-side fix: an app only
+     * ever matches (and therefore updates) a schema IT owns, so importing a
+     * colliding slug creates the app's OWN schema instead of clobbering a
+     * foreign one.
+     *
+     * @param string $slug        The schema slug (matched case-insensitively).
+     * @param string $application The owning application id (exact match).
+     *
+     * @return Schema|null The application-owned schema, or null when the app
+     *                     does not (yet) own a schema with this slug.
+     */
+    public function findByApplicationAndSlug(string $slug, string $application): ?Schema
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->eq(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->andWhere(
+                $qb->expr()->eq('application', $qb->createNamedParameter(value: $application, type: IQueryBuilder::PARAM_STR))
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+    }//end findByApplicationAndSlug()
+
+    /**
+     * Resolve a schema by slug, scoped to a set of schema ids.
+     *
+     * This is the runtime-resolution half of the cross-app slug-collision fix.
+     * When an object operation carries a register context, a schema slug must
+     * resolve to the schema THAT REGISTER references — not to whichever
+     * same-slug row {@see find()} happens to fetch first. Callers pass the
+     * register's own `schemas` id list; the slug is matched only among those.
+     *
+     * @param string $slug      The schema slug (matched case-insensitively).
+     * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
+     *
+     * @return Schema|null The matching schema within the id set, or null when
+     *                     none of the register's schemas carry this slug.
+     */
+    public function findBySlugInIds(string $slug, array $schemaIds): ?Schema
+    {
+        // Normalise to a list of positive integers; an empty set can never match.
+        $ids = [];
+        foreach ($schemaIds as $candidate) {
+            if (is_numeric($candidate) === true && (int) $candidate > 0) {
+                $ids[] = (int) $candidate;
+            }
+        }
+
+        if ($ids === []) {
+            return null;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->eq(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->andWhere(
+                $qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+    }//end findBySlugInIds()
+
+    /**
      * Clear the request-scoped find cache for a specific schema
      *
      * Used by the runtime-schema-api CRUD path to drop the in-memory
@@ -1172,7 +1272,7 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-schema-dialect/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DIALECT-002 — Save-time validation of the dialect shape)
      */
     private function validateMcpAnnotation(Schema $schema): void

@@ -198,8 +198,8 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 import {
 	NcAppContent,
@@ -255,7 +255,7 @@ export default {
 			)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		paginatedSearchTrails() {
 			// Ensure we always return a clean array
@@ -324,7 +324,7 @@ export default {
 		 * Load search trails from API
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async loadSearchTrails() {
 			try {
@@ -350,7 +350,7 @@ export default {
 		 * @param {object} searchTrail - Search trail entry to view
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 		 */
 		viewDetails(searchTrail) {
 			// Create a formatted details message
@@ -380,7 +380,7 @@ export default {
 		 * @param {object} searchTrail - Search trail entry with parameters
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
 		 */
 		viewParameters(searchTrail) {
 			// Set the search trail item and open the specialized parameters modal
@@ -442,7 +442,7 @@ export default {
 		 * Clean up old search trails
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async cleanupSearchTrails() {
 			if (!confirm(this.t('openregister', 'Are you sure you want to cleanup old search trails? This will delete entries older than 30 days.'))) {
@@ -468,7 +468,7 @@ export default {
 		 * Refresh search trails list
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async refreshSearchTrails() {
 			await this.loadSearchTrails()
@@ -591,7 +591,7 @@ export default {
 		 * Delete selected search trails using bulk operation
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
 		 */
 		async bulkDeleteSearchTrails() {
 			if (this.selectedSearchTrails.length === 0) return

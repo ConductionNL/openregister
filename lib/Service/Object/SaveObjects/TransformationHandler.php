@@ -15,7 +15,7 @@
  * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
  * @link      https://github.com/ConductionNL/openregister
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Object\SaveObjects;
@@ -90,7 +90,7 @@ class TransformationHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Method handles complete transformation workflow
      * Else branches handle different object structures and fallbacks
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function transformObjectsToDatabaseFormatInPlace(array &$objects, array $schemaCache): array
     {

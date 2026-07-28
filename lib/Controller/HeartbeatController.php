@@ -89,7 +89,7 @@ class HeartbeatController extends Controller
      *     message: 'Heartbeat successful - connection kept alive'},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-5
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function heartbeat(): JSONResponse
     {

@@ -105,7 +105,7 @@ class CalendarEventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -139,7 +139,7 @@ class CalendarEventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function create(string $register, string $schema, string $id): JSONResponse
     {
@@ -189,7 +189,7 @@ class CalendarEventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -243,7 +243,7 @@ class CalendarEventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function unlink(string $register, string $schema, string $id, string $eventUid): JSONResponse
     {
@@ -285,7 +285,7 @@ class CalendarEventsController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function destroy(string $register, string $schema, string $id, string $eventId): JSONResponse
     {
@@ -339,7 +339,7 @@ class CalendarEventsController extends Controller
      * @NoCSRFRequired
      * @no-admin-idor-exempt Session-scoped list: returns only the current user's VEVENT-capable calendars; no caller-supplied object id.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function listCalendars(): JSONResponse
     {
@@ -364,7 +364,7 @@ class CalendarEventsController extends Controller
      *   scoped to the session user's principal (getCalendarsForUser); a non-owned URI resolves to null and throws, never leaking
      *   another user's calendar.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function listCalendarEvents(string $calendarUri): JSONResponse
     {

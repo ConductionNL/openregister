@@ -72,7 +72,7 @@ class FileExtractionController extends Controller
      * @param IUserSession          $userSession          Active user session for caller identity
      * @param IGroupManager         $groupManager         Group manager for admin checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         string $appName,
@@ -143,7 +143,7 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function index(): JSONResponse
     {
@@ -274,7 +274,7 @@ class FileExtractionController extends Controller
      *     sourceType: null|string, startOffset: int, updatedAt: null|string,
      *     uuid: null|string, vectorized: bool}>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -338,7 +338,7 @@ class FileExtractionController extends Controller
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
@@ -416,7 +416,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function discover(int $limit=100): JSONResponse
     {
@@ -471,7 +471,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractAll(int $limit=100): JSONResponse
     {
@@ -523,7 +523,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function retryFailed(int $limit=50): JSONResponse
     {
@@ -582,7 +582,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function stats(): JSONResponse
     {
@@ -630,7 +630,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cleanup(): JSONResponse
     {
@@ -688,7 +688,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function fileTypes(): JSONResponse
     {
@@ -726,7 +726,7 @@ class FileExtractionController extends Controller
      *
      * @return JSONResponse JSON response with vectorization result
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function vectorizeBatch(): JSONResponse
     {

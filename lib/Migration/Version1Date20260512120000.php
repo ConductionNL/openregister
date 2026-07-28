@@ -37,7 +37,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/entity-relation-grondslagen/tasks.md "1.1 Add a new migration class"
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md "1.1 Add a new migration class"
  */
 
 declare(strict_types=1);

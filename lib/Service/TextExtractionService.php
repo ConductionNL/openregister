@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
  */
 
 declare(strict_types=1);
@@ -1422,7 +1422,7 @@ class TextExtractionService
      * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility;
      * making it non-static would not improve testability or DI.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractEml(\OCP\Files\File $file): ?string
     {
@@ -1461,7 +1461,7 @@ class TextExtractionService
      *
      * @throws \OCA\OpenRegister\Exception\EmlParseException
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
     {

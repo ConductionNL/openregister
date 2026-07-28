@@ -39,7 +39,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notification-delivery-windows/specs/notificatie-engine/spec.md
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 
 declare(strict_types=1);

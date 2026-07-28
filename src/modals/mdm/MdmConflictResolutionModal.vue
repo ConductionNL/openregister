@@ -178,7 +178,7 @@ export default {
 		 * payload: an explicit `sources` array, or the first array-valued
 		 * field whose entries look like source records.
 		 *
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#requirement-conflict-resolution-modal-surfaces-disagreeing-sources-per-attribute
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#requirement-conflict-resolution-modal-surfaces-disagreeing-sources-per-attribute
 		 * @return {Array<object>}
 		 */
 		sourceRecords() {
@@ -198,7 +198,7 @@ export default {
 		 * supplied by the linked sources. Only attributes with MORE THAN ONE
 		 * distinct value are conflicts.
 		 *
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-only-disagreeing-attributes-are-listed
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-only-disagreeing-attributes-are-listed
 		 * @return {Array<{attribute: string, options: Array<{id: string, label: string, value: *, sourceSystem: string}>}>}
 		 */
 		conflicts() {
@@ -227,7 +227,7 @@ export default {
 		/**
 		 * Save is enabled once every listed conflict has a selected winner.
 		 *
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-selecting-a-winning-source-enables-save
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-selecting-a-winning-source-enables-save
 		 * @return {boolean}
 		 */
 		canSave() {
@@ -297,9 +297,9 @@ export default {
 		 * and `saved` is emitted. On failure, shows an error and keeps the
 		 * modal open.
 		 *
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-one-off-choice-sets-a-per-object-override
-		 * @spec openspec/changes/mdm-survivorship-override/specs/mdm-conflict-resolution-ui/spec.md#scenario-save-failure-surfaces-an-error-and-keeps-the-modal-open
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-persistent-choice-writes-a-trust-configuration-row
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-one-off-choice-sets-a-per-object-override
+		 * @spec openspec/specs/mdm-conflict-resolution-ui/spec.md#scenario-save-failure-surfaces-an-error-and-keeps-the-modal-open
 		 * @return {Promise<void>}
 		 */
 		async save() {

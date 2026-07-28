@@ -58,7 +58,7 @@ class FilesSidebarListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handle(Event $event): void
     {

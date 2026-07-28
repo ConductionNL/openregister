@@ -564,7 +564,7 @@ export default {
 		},
 		/**
 		 * Map saved views into NcSelect options for the view picker.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} View options
 		 */
 		viewOptions() {
@@ -578,7 +578,7 @@ export default {
 		},
 		/**
 		 * Resolve the active saved view into NcSelect value shape.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {object|null} Active view option, or null
 		 */
 		selectedViewValue() {
@@ -592,7 +592,7 @@ export default {
 
 		/**
 		 * Filter the saved-view list by search query and sort favorites first.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Array} Filtered, favorite-sorted views
 		 */
 		filteredViews() {
@@ -1409,7 +1409,7 @@ export default {
 
 		/**
 		 * Activate a selected saved view by fetching it and applying its configuration.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object|null} option - Selected view option (or null to clear)
 		 * @return {Promise<void>}
 		 */
@@ -1432,7 +1432,7 @@ export default {
 
 		/**
 		 * Apply a saved view's stored query config to the live search state and re-run search.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The saved view (with query/configuration block)
 		 * @return {void}
 		 */
@@ -1479,7 +1479,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration as a new saved view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async saveView() {
@@ -1529,7 +1529,7 @@ export default {
 
 		/**
 		 * Reset and hide the save-view form without persisting.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		cancelSaveView() {
@@ -1542,7 +1542,7 @@ export default {
 
 		/**
 		 * Persist the current search configuration onto the active saved view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async updateActiveView() {
@@ -1583,7 +1583,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for the currently active view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		openEditDialogForActiveView() {
@@ -1593,7 +1593,7 @@ export default {
 
 		/**
 		 * Stage the active view for deletion and open the confirm dialog.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		confirmDeleteActiveView() {
@@ -1604,7 +1604,7 @@ export default {
 
 		/**
 		 * Fetch and activate a saved view, apply its config, and switch to the search tab.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to load
 		 * @return {Promise<void>}
 		 */
@@ -1630,7 +1630,7 @@ export default {
 
 		/**
 		 * Stage a view for deletion and open the confirm dialog.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to delete
 		 * @return {void}
 		 */
@@ -1641,7 +1641,7 @@ export default {
 
 		/**
 		 * Whether the given view is the currently active view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
 		 */
@@ -1654,7 +1654,7 @@ export default {
 
 		/**
 		 * Whether the current user has favorited the given view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to test
 		 * @return {boolean}
 		 */
@@ -1669,7 +1669,7 @@ export default {
 
 		/**
 		 * Add or remove the current user from a view's favoredBy via PATCH, then refresh.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-2
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to favorite/unfavorite
 		 * @return {Promise<void>}
 		 */
@@ -1723,7 +1723,7 @@ export default {
 
 		/**
 		 * Open the view-edit dialog for a given view.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @param {object} view - The view to edit
 		 * @return {void}
 		 */
@@ -1734,7 +1734,7 @@ export default {
 
 		/**
 		 * Close the view-edit dialog without saving.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {void}
 		 */
 		cancelEditView() {
@@ -1744,7 +1744,7 @@ export default {
 
 		/**
 		 * After a delete dialog closes, refresh the view list and clear the active view if deleted.
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-1
+		 * @spec openspec/specs/saved-search-views/spec.md
 		 * @return {Promise<void>}
 		 */
 		async handleDeleteClose() {

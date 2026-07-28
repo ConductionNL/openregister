@@ -79,7 +79,7 @@ class DeckLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function index(string $register, string $schema, string $id): JSONResponse
     {
@@ -120,7 +120,7 @@ class DeckLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function link(string $register, string $schema, string $id): JSONResponse
     {
@@ -177,7 +177,7 @@ class DeckLinksController extends Controller
      *     Each branch carries a distinct surface contract — splitting would
      *     scatter the request-handling intent across helper methods.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function createNew(string $register, string $schema, string $id): JSONResponse
     {
@@ -257,7 +257,7 @@ class DeckLinksController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function destroy(string $register, string $schema, string $id, string $cardId): JSONResponse
     {
@@ -293,7 +293,7 @@ class DeckLinksController extends Controller
      * @NoCSRFRequired
      * @no-admin-idor-exempt Session-scoped list: Deck BoardService returns only boards the current user may access; no unguarded caller-supplied id.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function boards(): JSONResponse
     {
@@ -320,7 +320,7 @@ class DeckLinksController extends Controller
      * @no-admin-idor-exempt Guarded downstream: DeckLinkService::getStacksForBoard delegates to Deck StackService::findAll,
      *   which calls PermissionService::checkPermission(READ) on the board and throws NoPermissionException for non-members.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md#requirement-tier-2-integration-leaf-link-controller-contract
      */
     public function stacks(string $boardId): JSONResponse
     {

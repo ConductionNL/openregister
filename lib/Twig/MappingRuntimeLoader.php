@@ -42,7 +42,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      * @param MappingService $mappingService The mapping service
      * @param MappingMapper  $mappingMapper  The mapping mapper
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MappingService $mappingService,
@@ -57,7 +57,7 @@ class MappingRuntimeLoader implements RuntimeLoaderInterface
      *
      * @return MappingRuntime|null The runtime instance or null if not this class
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function load(string $class): ?MappingRuntime
     {

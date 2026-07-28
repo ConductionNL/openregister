@@ -37,7 +37,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Imports Schema.org types as register schemas.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class SchemaOrgImporter implements SchemaDialectImporter
 {
@@ -74,7 +74,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
     /**
      * {@inheritDoc}
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @return string The dialect key.
      */
@@ -86,7 +86,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
     /**
      * {@inheritDoc}
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @return string The snapshot version.
      */
@@ -102,7 +102,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
      *
      * @return array<int, array<string, mixed>> Candidate type records.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function discover(string $query): array
     {
@@ -136,7 +136,7 @@ class SchemaOrgImporter implements SchemaDialectImporter
      *
      * @throws SchemaImportException When the type is unknown to the snapshot.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $reference, ImportOptions $options): ImportedSchema
     {

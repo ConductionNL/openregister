@@ -43,6 +43,7 @@ namespace OCA\OpenRegister\Db\MagicMapper;
 use DateTime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -178,7 +179,24 @@ class MagicRbacHandler
         }
 
         // Get effective authorization (schema-level, or register cascade).
-        $authorization = $this->resolveSchemaAuthorization(schema: $schema);
+        // Fail-closed: an unresolvable authorization clamps the query to the
+        // IMPOSSIBLE predicate rather than falling through to the open default.
+        try {
+            $authorization = $this->resolveSchemaAuthorization(schema: $schema);
+        } catch (AuthorizationUnresolvableException $e) {
+            $this->logger->error(
+                message: '[MagicRbacHandler] Authorization unresolvable; clamping query to deny-all (fail-closed)',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schema->getId(),
+                    'action'   => $action,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            $qb->andWhere($qb->expr()->eq($qb->createNamedParameter(1), $qb->createNamedParameter(0)));
+            return;
+        }
 
         // If no authorization is configured, schema is open to all.
         if (empty($authorization) === true) {
@@ -984,7 +1002,23 @@ class MagicRbacHandler
         }
 
         // Get effective authorization (schema-level, or register cascade).
-        $authorization = $this->resolveSchemaAuthorization(schema: $schema);
+        // Fail-closed: an unresolvable authorization yields the deny-all result
+        // (`bypass => false` with no conditions) rather than the open bypass.
+        try {
+            $authorization = $this->resolveSchemaAuthorization(schema: $schema);
+        } catch (AuthorizationUnresolvableException $e) {
+            $this->logger->error(
+                message: '[MagicRbacHandler] Authorization unresolvable; returning deny-all conditions (fail-closed)',
+                context: [
+                    'file'     => __FILE__,
+                    'line'     => __LINE__,
+                    'schemaId' => $schema->getId(),
+                    'action'   => $action,
+                    'error'    => $e->getMessage(),
+                ]
+            );
+            return ['bypass' => false, 'conditions' => []];
+        }
 
         // If no authorization is configured, schema is open to all.
         if (empty($authorization) === true) {
@@ -1592,12 +1626,19 @@ class MagicRbacHandler
      * @param Schema $schema The schema to resolve authorization for.
      *
      * @return array|null The effective authorization array.
+     *
+     * @throws AuthorizationUnresolvableException When authorization cannot be determined. Callers MUST deny.
      */
     private function resolveSchemaAuthorization(Schema $schema): ?array
     {
         try {
             $permissionHandler = $this->container->get(PermissionHandler::class);
             return $permissionHandler->resolveAuthorization($schema);
+        } catch (AuthorizationUnresolvableException $e) {
+            // Fail-closed: propagate. Falling back to the schema's own (possibly
+            // absent) authorization here would re-open the very hole the resolver
+            // now closes — `empty($authorization)` below means "open to all".
+            throw $e;
         } catch (\Throwable $e) {
             // Fallback to direct schema authorization if PermissionHandler unavailable.
             $this->logger->debug(

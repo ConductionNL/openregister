@@ -35,7 +35,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class ToolRegistryFacade
      * @param ToolRegistry    $toolRegistry The chat-side tool registry.
      * @param LoggerInterface $logger       PSR logger.
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         private readonly ToolRegistry $toolRegistry,
@@ -99,27 +99,93 @@ class ToolRegistryFacade
      * LLM provider. Mirrors what ToolManagementHandler does internally for
      * the in-app chat path, as a public stable read.
      *
-     * @param array<int,string> $toolWhitelist Optional whitelist of registry ids
+     * The whitelist is matched PER FUNCTION, the same dual-form way invokeTool()
+     * resolves a call: an entry may name a function's LLPhant-safe `name`
+     * (`list_schemas`), its dotted `mcpId` (`openbuild.upsertSchema`), or the
+     * registry id of the owning tool (`openregister.schema`, which admits all of
+     * that tool's functions).
+     *
+     * Matching per FUNCTION rather than per TOOL is deliberate and load-bearing.
+     * A registry id such as `openregister.schema` is ONE tool exposing five
+     * functions (list/get/create/update/delete_schema), and most built-in
+     * descriptors carry no `mcpId` at all — so intersecting the whitelist against
+     * registry ids made the two id spaces disagree in BOTH directions: an entry
+     * naming a real function (`list_schemas`) matched nothing and silently
+     * resolved to zero tools, while an entry naming a tool handed over every
+     * function it owns — `delete_schema` included — defeating a caller's
+     * read-only intent. Consumers store function-level ids (an ADR-035
+     * toolWhitelist, Hermiq's per-agent grants) and invokeTool() has always
+     * resolved them function-level; this is listTools() keeping the contract the
+     * rest of the class already documents.
+     *
+     * @param array<int,string> $toolWhitelist Optional whitelist of function names,
+     *                                         dotted mcpIds and/or registry ids
      *                                         ({appId}.{toolName}). Empty = all
      *                                         discovered tools allowed (ADR-035
      *                                         Decision 4 default semantics).
      *
      * @return array<int,array<string,mixed>> Flattened LLPhant function descriptors.
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function listTools(array $toolWhitelist=[]): array
     {
         $descriptors = [];
 
-        foreach ($this->resolveRegisteredTools(toolWhitelist: $toolWhitelist) as $tool) {
+        foreach ($this->resolveRegisteredTools(toolWhitelist: []) as $registryId => $tool) {
             foreach ($tool->getFunctions() as $function) {
+                $allowed = $this->functionIsWhitelisted(
+                    function: $function,
+                    registryId: (string) $registryId,
+                    toolWhitelist: $toolWhitelist
+                );
+
+                if ($allowed === false) {
+                    continue;
+                }
+
                 $descriptors[] = $function;
             }
         }
 
         return $descriptors;
     }//end listTools()
+
+    /**
+     * Whether one function descriptor is admitted by a whitelist.
+     *
+     * An empty whitelist admits everything (ADR-035 Decision 4). Otherwise the
+     * entry must name the function's `name`, its dotted `mcpId`, or the registry
+     * id of the tool that owns it.
+     *
+     * @param array<string,mixed> $function      The LLPhant function descriptor.
+     * @param string              $registryId    Registry id of the owning tool.
+     * @param array<int,string>   $toolWhitelist The whitelist to apply.
+     *
+     * @return bool True when the descriptor should be listed.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     */
+    private function functionIsWhitelisted(array $function, string $registryId, array $toolWhitelist): bool
+    {
+        if ($toolWhitelist === []) {
+            return true;
+        }
+
+        $candidates = [$registryId];
+
+        $name = ($function['name'] ?? null);
+        if (is_string($name) === true && $name !== '') {
+            $candidates[] = $name;
+        }
+
+        $mcpId = ($function['mcpId'] ?? null);
+        if (is_string($mcpId) === true && $mcpId !== '') {
+            $candidates[] = $mcpId;
+        }
+
+        return (array_intersect($candidates, $toolWhitelist) !== []);
+    }//end functionIsWhitelisted()
 
     /**
      * Invoke a tool function by its descriptor name or dotted mcpId.
@@ -143,7 +209,7 @@ class ToolRegistryFacade
      * @return array{result: array<string,mixed>, isError: bool} Result envelope
      *         (same shape as McpToolsService::invokeTool()).
      *
-     * @spec openspec/changes/or-tool-registry-facade/specs/ai-mcp/spec.md#req-006
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function invokeTool(string $toolId, array $arguments): array
     {

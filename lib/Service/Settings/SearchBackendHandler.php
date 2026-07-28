@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
  */
 
 namespace OCA\OpenRegister\Service\Settings;
@@ -99,7 +99,7 @@ class SearchBackendHandler
      *
      * @throws \RuntimeException If backend configuration retrieval fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
      */
     public function getSearchBackendConfig(): array
     {
@@ -123,7 +123,7 @@ class SearchBackendHandler
      *
      * @psalm-return array{active: 'database', available: list{'database'}, updated: int<1, max>}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-88
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-backend-agnostic-search-architecture
      */
     public function updateSearchBackendConfig(string $backend): array
     {

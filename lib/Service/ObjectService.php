@@ -374,11 +374,9 @@ class ObjectService
      *
      * @return mixed Whatever the callable returns.
      *
-     * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext is a static execution-context holder by design
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-7
-     *
      * @SuppressWarnings(PHPMD.StaticAccess) SystemOperationContext::run is the canonical scoped-elevation API
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function runAsSystem(callable $operation)
     {
@@ -425,6 +423,30 @@ class ObjectService
     public function setSchema(Schema | string | int $schema): static
     {
         if (is_string($schema) === true || is_int($schema) === true) {
+            // REGISTER-SCOPED SLUG RESOLUTION (cross-app collision fix).
+            // SchemaMapper::find() resolves a slug by LOWER(slug) GLOBALLY across
+            // every app on the instance and returns the FIRST row it fetches. On
+            // the shared instance that lets a generic slug (e.g. 'conversation',
+            // 'order', 'task') resolve to another app's schema that shares the
+            // lower(slug). When a register context is present, the slug must
+            // resolve to the schema THAT REGISTER references. Try that first; it
+            // is a no-op (null) for numeric ids, uuids, or slugs the register
+            // does not carry, so we transparently fall back to the global find
+            // for every legacy / register-less caller.
+            if (is_string($schema) === true
+                && is_numeric($schema) === false
+                && $this->currentRegister !== null
+            ) {
+                $scoped = $this->schemaMapper->findBySlugInIds(
+                    slug: $schema,
+                    schemaIds: ($this->currentRegister->getSchemas() ?? [])
+                );
+                if ($scoped !== null) {
+                    $this->currentSchema = $scoped;
+                    return $this;
+                }
+            }
+
             // Resolve the identifier through the mapper. SchemaMapper::find()
             // already provides request-scoped caching (findCache) and supports
             // numeric IDs, UUIDs, and slugs via orX(id, uuid, slug).
@@ -1227,6 +1249,11 @@ class ObjectService
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired(object: $object);
 
+        // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
+        // Skipped on CREATE (no prior value to violate). Loads the existing
+        // object exactly once so the check is data-driven, not metadata-only.
+        $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
+
         // Ensure folder exists for the object.
         $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
 
@@ -1490,6 +1517,106 @@ class ObjectService
     }//end validateObjectIfRequired()
 
     /**
+     * Enforce JSON-Schema `readOnly: true` on the UPDATE write path.
+     *
+     * No-op on CREATE (uuid === null). On UPDATE:
+     *  1. Strip `@self` from the incoming payload (it is not a user-controllable
+     *     business field — readOnly applies to schema properties, not metadata).
+     *  2. Load the previously-stored business data via the magic mapper.
+     *     `_rbac: false` is intentional here — readOnly enforcement is a
+     *     schema-level invariant, not a permission check, and the actual write
+     *     downstream still goes through the full RBAC pipeline.
+     *  3. Delegate to {@see ValidateObject::validateReadOnlyConstraints()} for
+     *     the per-property comparison.
+     *  4. Throw a `ValidationException` carrying the violation list when any
+     *     readOnly field was mutated.
+     *
+     * Wave-12 Fix 1. See `/tmp/wave11-or-engine-primitives.md` Section A.
+     *
+     * @param array       $object Incoming object payload (top-level keys = property names).
+     * @param string|null $uuid   Object UUID — null indicates CREATE (no enforcement).
+     *
+     * @return void
+     *
+     * @throws ValidationException When one or more readOnly properties were mutated.
+     */
+    private function enforceReadOnlyOnUpdate(array $object, ?string $uuid): void
+    {
+        if ($uuid === null || $this->currentSchema === null) {
+            return;
+        }
+
+        // Load the existing record. Anything that prevents load (not found,
+        // RBAC reject, multitenancy filter) means we're not in a true UPDATE
+        // and the engine's normal CREATE path will run — no readOnly check
+        // applies.
+        //
+        // Pass the already-resolved register/schema so find() takes the scoped
+        // register/schema-table path directly. Omitting them leaves find() to
+        // rely on the request's URL scope; under a stale scope it falls back to
+        // the deliberate cross-table search (see the resolution-cache note above,
+        // openregister#1520). We are on the save path with both already resolved,
+        // so there is no reason to risk that fallback here.
+        try {
+            $existing = $this->objectMapper->find(
+                $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Throwable $e) {
+            return;
+        }
+
+        $existingData = $existing->getObject();
+        // Drop the synthesised `id` key getObject() prepends — readOnly applies
+        // to schema properties, not the engine-stamped identifier.
+        if (isset($existingData['id']) === true && isset($object['id']) === false) {
+            unset($existingData['id']);
+        }
+
+        // Strip @self from the incoming payload before comparing — readOnly
+        // is for business properties only.
+        $candidate = $object;
+        unset($candidate['@self']);
+
+        $violations = $this->validateHandler->validateReadOnlyConstraints(
+            incomingObject: $candidate,
+            existingObject: $existingData,
+            schema: $this->currentSchema
+        );
+
+        if ($violations === []) {
+            return;
+        }
+
+        $properties = array_map(static fn (array $v): string => $v['property'], $violations);
+        $suffix     = 'ies';
+        if (count($violations) === 1) {
+            $suffix = 'y';
+        }
+
+        $message = 'Cannot modify readOnly propert'.$suffix.': '.implode(', ', $properties);
+
+        $this->logger->info(
+            message: '[ObjectService] readOnly enforcement rejected UPDATE',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'uuid'       => $uuid,
+                'schemaId'   => $this->currentSchema->getId(),
+                'violations' => $violations,
+            ]
+        );
+
+        // ValidationException's `$errors` argument is typed `?ValidationError`
+        // (Opis), not an arbitrary array — pass null and let the message +
+        // log entry carry the violation detail.
+        throw new ValidationException(message: $message);
+    }//end enforceReadOnlyOnUpdate()
+
+    /**
      * Normalize date values in object data before validation.
      *
      * For properties with format "date", this accepts datetime strings
@@ -1665,6 +1792,14 @@ class ObjectService
      *                                                  to bypass the archival-immutability gate.
      *                                                  Reachable only via PHP DI; no HTTP surface
      *                                                  exposes it. Defaults to false.
+     * @param IUser|null               $currentUser     Explicit acting user for the RBAC `delete`
+     *                                                  check. Defaults to null → the permission
+     *                                                  subject is resolved from `IUserSession`,
+     *                                                  which is today's behaviour for every HTTP
+     *                                                  caller. A sessionless caller (flow run, cron,
+     *                                                  import pipeline) MUST pass one: anonymous is
+     *                                                  default-deny, so without it the delete is
+     *                                                  neither attributable nor permitted.
      *
      * @return bool Whether the deletion was successful
      *
@@ -1678,6 +1813,7 @@ class ObjectService
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
      * @spec openspec/specs/archival-annotation-vocabulary/spec.md
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function deleteObject(
         string $uuid,
@@ -1685,8 +1821,13 @@ class ObjectService
         Schema | string | int | null $schema=null,
         bool $_rbac=true,
         bool $_multitenancy=true,
-        bool $_retentionSweep=false
+        bool $_retentionSweep=false,
+        ?IUser $currentUser=null
     ): bool {
+        // Explicit acting user for the permission check; null keeps today's
+        // session-resolved behaviour for every existing caller.
+        $actingUserId = $currentUser?->getUID();
+
         // Resolve the explicit scope (if any) onto the service's currentRegister
         // / currentSchema so downstream context (permission checks, audit-trail
         // recording) sees the API-supplied scope, not a stale leftover from a
@@ -1754,7 +1895,7 @@ class ObjectService
             $this->checkPermission(
                 schema: $this->currentSchema,
                 action: 'delete',
-                userId: null,
+                userId: $actingUserId,
                 objectOwner: $objectToDelete->getOwner(),
                 _rbac: $_rbac,
                 object: $objectToDelete
@@ -1774,7 +1915,7 @@ class ObjectService
                 $this->checkPermission(
                     schema: $this->currentSchema,
                     action: 'delete',
-                    userId: null,
+                    userId: $actingUserId,
                     objectOwner: null,
                     _rbac: $_rbac
                 );
@@ -2078,19 +2219,29 @@ class ObjectService
             );
         }
 
-        // Resolve schema slug → numeric ID, scoped to the same multi-tenancy
-        // boundary. A schema that exists in another organisation MUST throw,
-        // not return the foreign-org entity (principle of least surprise).
-        try {
-            $schema = $this->schemaMapper->find(
-                id: $schemaSlug,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy
-            );
-        } catch (OcpDoesNotExistException $e) {
-            throw new OcpDoesNotExistException(
-                'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
-            );
+        // Resolve schema slug → numeric ID. REGISTER-SCOPED first (cross-app
+        // collision fix): a generic slug must resolve to the schema THIS
+        // register references, not to whichever same-slug row find() fetches
+        // first across the shared instance. Fall back to the multi-tenancy
+        // scoped global find when the register does not carry the slug — a
+        // schema in another organisation MUST then throw, not return the
+        // foreign-org entity (principle of least surprise).
+        $schema = $this->schemaMapper->findBySlugInIds(
+            slug: $schemaSlug,
+            schemaIds: ($register->getSchemas() ?? [])
+        );
+        if ($schema === null) {
+            try {
+                $schema = $this->schemaMapper->find(
+                    id: $schemaSlug,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+            } catch (OcpDoesNotExistException $e) {
+                throw new OcpDoesNotExistException(
+                    'searchObjectsBySlug: schema slug not found in caller organisation: '.$schemaSlug
+                );
+            }
         }
 
         // Merge resolved numeric IDs into the @self block of the filters.
@@ -2308,7 +2459,12 @@ class ObjectService
      *                                   discovery (true/false) - _extend: Properties to
      *                                   extend - _fields: Fields to include - _filter/_unset:
      *                                   Fields to exclude - _queries: Specific fields for
-     *                                   legacy facets
+     *                                   legacy facets - _content_search: opt-in bool
+     *                                   (default false) to widen `_search` matches to
+     *                                   attached-file/object chunk body text via
+     *                                   `ChunkMapper::searchByKeyword()`; absent/false is
+     *                                   byte-identical to pre-change behaviour (see
+     *                                   openspec/changes/expose-content-search-in-object-service)
      * @param bool        $_rbac         Whether to apply RBAC checks (default: true)
      * @param bool        $_multitenancy Whether to apply multitenancy filtering (default: true)
      * @param bool        $deleted       Whether to include deleted objects (default: false)
@@ -2590,11 +2746,9 @@ class ObjectService
      *
      * @return array<string, mixed> The query with provider-contract keys added.
      *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design
+     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-by-key mapping; each guard is independent by design, one guard per provider key
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
-     *
-     * @SuppressWarnings(PHPMD.NPathComplexity) Additive key-mapping requires one guard per provider key
      */
     private function normaliseObjectSourceQuery(array $query): array
     {
@@ -4048,32 +4202,140 @@ class ObjectService
     }//end updateObject()
 
     /**
-     * Patch existing object (partial update)
+     * Patch an existing object (PATCH-semantic partial update).
      *
-     * @param string $objectId      Object ID or UUID
-     * @param array  $data          Partial object data
-     * @param bool   $_rbac         Apply RBAC checks
-     * @param bool   $_multitenancy Apply multitenancy filtering
+     * This is the fleet's supported PATCH-semantic write path. `saveObject()` is
+     * PUT-semantic — a property absent from the payload is written as null — so
+     * every partial-write caller either merges first or silently nulls live
+     * data. That merge belongs here, once, rather than in each caller.
+     *
+     * MERGE RULES (RFC 7386 shaped):
+     *  - a key present with a non-null value overwrites the stored value;
+     *  - a key absent from the payload leaves the stored value untouched;
+     *  - a key present with an explicit `null` clears the stored value, so
+     *    "unset this" is expressible and distinguishable from "not mentioned";
+     *  - two associative arrays merge recursively on the same three rules;
+     *  - lists (JSON arrays) are replaced wholesale, never element-merged —
+     *    there is no stable identity to merge elements on and a positional
+     *    merge corrupts any reordered list.
+     *
+     * The identifier is NOT cast to int. It is resolved as a uuid, a slug or a
+     * numeric id, scoped to exactly one magic table when both `$register` and
+     * `$schema` are supplied (the #1638 defect class).
+     *
+     * The merged result goes through `saveObject()`, so schema validation, the
+     * audit trail and event dispatch all apply — a patch is a save of a
+     * different shape, not a privileged shortcut around one.
+     *
+     * @param string                   $objectId      Object id, uuid or slug.
+     * @param array                    $data          Partial object data to merge.
+     * @param Register|string|int|null $register      Optional register scope (object, id, uuid or slug).
+     * @param Schema|string|int|null   $schema        Optional schema scope (object, id, uuid or slug).
+     * @param bool                     $_rbac         Whether to apply RBAC checks (default: true).
+     * @param bool                     $_multitenancy Whether to apply multitenancy filtering (default: true).
+     * @param IUser|null               $currentUser   Explicit acting user, forwarded to `saveObject()`.
+     *                                                Non-HTTP callers (cron, flow runs, import pipelines)
+     *                                                MUST pass one to avoid the default-deny fall-through.
      *
      * @return ObjectEntity Patched object entity
      *
      * @throws \Exception If patch fails
      *
-     * @spec exclude Facade delegating to saveObject() with merged partial data; patch behavior owned by object-interactions.
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
      */
     public function patchObject(
         string $objectId,
         array $data,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?IUser $currentUser=null
     ): ObjectEntity {
-        // REFACTORED: Removed CrudHandler (was unimplemented stub). Use saveObject() for patching.
-        // Get existing object, merge partial data, and save.
-        $existing     = $this->objectMapper->find((int) $objectId);
-        $merged       = array_merge($existing->getObject(), $data);
-        $merged['id'] = $objectId;
-        return $this->saveObject(object: $merged);
+        // Resolve the caller's scope onto the service context first, so the
+        // lookup below and the save that follows both see the same one.
+        $this->setContextFromParameters(
+            register: $register,
+            schema: $schema
+        );
+
+        // Scoped lookup when both halves of the scope are known — that targets
+        // exactly one magic table. Otherwise the legacy cross-table resolve,
+        // which every existing caller relies on. Note the identifier is passed
+        // through unchanged: casting a uuid to int resolves to an unrelated row.
+        $scopedRegister = null;
+        $scopedSchema   = null;
+        if ($register !== null && $schema !== null) {
+            $scopedRegister = $this->currentRegister;
+            $scopedSchema   = $this->currentSchema;
+        }
+
+        $existing = $this->objectMapper->find(
+            identifier: $objectId,
+            register: $scopedRegister,
+            schema: $scopedSchema
+        );
+
+        $merged = $this->mergePatchData(
+            stored: (array) $existing->getObject(),
+            patch: $data
+        );
+
+        // Address the save at the object we actually resolved, not at whatever
+        // form of the identifier the caller happened to hold.
+        $merged['id'] = ($existing->getUuid() ?? $objectId);
+
+        return $this->saveObject(
+            object: $merged,
+            register: $register,
+            schema: $schema,
+            _rbac: $_rbac,
+            _multitenancy: $_multitenancy,
+            currentUser: $currentUser
+        );
     }//end patchObject()
+
+    /**
+     * Merge a partial payload onto stored data, PATCH-semantically.
+     *
+     * See `patchObject()` for the rules this implements and why each is what it
+     * is. Kept private because the merge is only meaningful as part of the
+     * read-merge-save cycle; exposing it alone would invite callers to merge and
+     * then save PUT-semantically, which is the trap the method exists to close.
+     *
+     * @param array $stored The stored object data.
+     * @param array $patch  The partial payload.
+     *
+     * @return array The merged data.
+     */
+    private function mergePatchData(array $stored, array $patch): array
+    {
+        foreach ($patch as $key => $value) {
+            // An explicit null clears. Without this there is no way to unset a
+            // property through PATCH at all.
+            if ($value === null) {
+                $stored[$key] = null;
+                continue;
+            }
+
+            $storedValue = ($stored[$key] ?? null);
+
+            // Two associative arrays merge recursively. Lists — on either side —
+            // replace wholesale.
+            if (is_array($value) === true
+                && array_is_list($value) === false
+                && is_array($storedValue) === true
+                && array_is_list($storedValue) === false
+            ) {
+                $stored[$key] = $this->mergePatchData(stored: $storedValue, patch: $value);
+                continue;
+            }
+
+            $stored[$key] = $value;
+        }//end foreach
+
+        return $stored;
+    }//end mergePatchData()
 
     /**
      * Build search query from request parameters

@@ -12,7 +12,7 @@
  * @package   OCA\OpenRegister
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
- * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link      https://github.com/ConductionNL/openregister
  */
 
@@ -43,7 +43,7 @@ use Exception;
  * @category Service
  * @package  OCA\OpenRegister
  * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @link     https://github.com/ConductionNL/openregister
  * @version  1.0.0
  *
@@ -64,7 +64,7 @@ class ValidationHandler
      * @param MagicMapper     $magicMapper        Mapper for magic tables.
      * @param LoggerInterface $logger             Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ValidateObject $validateHandler,
@@ -86,7 +86,7 @@ class ValidationHandler
      * @psalm-param   ValidationException|CustomValidationException $exception
      * @phpstan-param ValidationException|CustomValidationException $exception
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function handleValidationException(ValidationException|CustomValidationException $exception): mixed
     {
@@ -108,7 +108,7 @@ class ValidationHandler
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function validateRequiredFields(array $objects): void
     {
@@ -163,7 +163,7 @@ class ValidationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple exception types require separate handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function validateObjectsBySchema(int $schemaId, callable $saveCallback): array
     {
@@ -281,7 +281,7 @@ class ValidationHandler
      *
      * @throws \Exception If schema/register loading fails or object retrieval fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function validateAndSaveObjectsBySchema(
         int $registerId,
@@ -414,7 +414,7 @@ class ValidationHandler
      * @psalm-return   array{schema: \OCA\OpenRegister\Db\Schema, register: \OCA\OpenRegister\Db\Register}|null
      * @phpstan-return array{schema: \OCA\OpenRegister\Db\Schema, register: \OCA\OpenRegister\Db\Register}|null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function loadSchemaAndRegister(int $registerId, int $schemaId): ?array
     {
@@ -451,7 +451,7 @@ class ValidationHandler
      *
      * @return array|null Array of objects, or null on failure.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function loadObjectsForValidation(mixed $register, mixed $schema, int $schemaId): ?array
     {
@@ -483,7 +483,7 @@ class ValidationHandler
      *
      * @return array The sliced array of objects.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function applyLimitOffset(array $allObjects, int $schemaId, int $totalObjects, ?int $limit, int $offset): array
     {
@@ -513,7 +513,7 @@ class ValidationHandler
      *
      * @return int The chunk size to use.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function calculateChunkSize(int $objectsToProcess): int
     {
@@ -546,7 +546,7 @@ class ValidationHandler
      *
      * @return array{processed: int, updated: int, failed: int} Aggregated totals.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function processAllChunks(
         array $allObjects,
@@ -611,7 +611,7 @@ class ValidationHandler
      *
      * @return array{processed: int, updated: int, failed: int} Chunk processing results.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function processValidationChunk(
         array $objectsChunk,
@@ -730,7 +730,7 @@ class ValidationHandler
      *
      * @return array Array of object data arrays.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function convertChunkToArrays(array $objectsChunk): array
     {
@@ -748,112 +748,6 @@ class ValidationHandler
     }//end convertChunkToArrays()
 
     /**
-     * Validate all objects belonging to a specific schema (comprehensive version).
-     *
-     * This method validates all objects that belong to the specified schema against their schema definition.
-     * It returns detailed validation results including valid and invalid objects with error details.
-     *
-     * @param int      $schemaId     The ID of the schema whose objects should be validated.
-     * @param callable $saveCallback Callback to validate objects (object, register, schema, uuid, rbac, multi, silent).
-     *
-     * @return array Comprehensive validation results.
-     *
-     * @throws \Exception If the validation operation fails.
-     *
-     * @phpstan-return array{valid_count: int, invalid_count: int,
-     *     valid_objects: array<int, array>, invalid_objects: array<int, array>,
-     *     schema_id: int}
-     * @psalm-return   array{valid_count: int<0, max>,
-     *     invalid_count: int<0, max>,
-     *     valid_objects: list<array{data: array, id: int,
-     *     name: null|string, uuid: null|string}>,
-     *     invalid_objects: list<array{data: array,
-     *     errors: list<array{keyword: 'exception'|'validation'|mixed,
-     *     message: mixed|non-falsy-string, path: 'general'|'unknown'|mixed}>,
-     *     id: int, name: null|string, uuid: null|string}>, schema_id: int}
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Comprehensive validation with detailed error extraction
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
-     */
-    public function validateSchemaObjects(int $schemaId, callable $saveCallback): array
-    {
-        // Use the mapper's findBySchema method to get all objects for this schema.
-        // This bypasses RBAC and multi-tenancy automatically.
-        $objects = $this->objectEntityMapper->findBySchema($schemaId);
-
-        $validObjects   = [];
-        $invalidObjects = [];
-
-        foreach ($objects as $object) {
-            $objectData = [];
-            try {
-                // Get the object data for validation.
-                $objectData = $object->getObject();
-
-                // Use saveCallback with silent=true to validate without actually saving.
-                // This will trigger validation and return any errors.
-                $saveCallback(
-                    $objectData,
-                    $object->getRegister(),
-                    $schemaId,
-                    $object->getUuid(),
-                    false,
-                    false,
-                    true
-                );
-
-                // If saveCallback succeeded, the object is valid.
-                $validObjects[] = [
-                    'id'   => $object->getId(),
-                    'uuid' => $object->getUuid(),
-                    'name' => $object->getName(),
-                    'data' => $objectData,
-                ];
-            } catch (\Exception $e) {
-                // Extract validation errors from the exception.
-                $errors = [];
-
-                // Check if it's a validation exception with detailed errors.
-                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException) {
-                    foreach ($e->getErrors() ?? [] as $error) {
-                        $errors[] = [
-                            'path'    => $error['path'] ?? 'unknown',
-                            'message' => $error['message'] ?? $error,
-                            'keyword' => $error['keyword'] ?? 'validation',
-                        ];
-                    }
-                }
-
-                if ($e instanceof \OCA\OpenRegister\Exception\ValidationException === false) {
-                    // Generic error.
-                    $errors[] = [
-                        'path'    => 'general',
-                        'message' => 'Validation failed: '.$e->getMessage(),
-                        'keyword' => 'exception',
-                    ];
-                }
-
-                $invalidObjects[] = [
-                    'id'     => $object->getId(),
-                    'uuid'   => $object->getUuid(),
-                    'name'   => $object->getName(),
-                    'data'   => $objectData,
-                    'errors' => $errors,
-                ];
-            }//end try
-        }//end foreach
-
-        return [
-            'valid_count'     => count($validObjects),
-            'invalid_count'   => count($invalidObjects),
-            'valid_objects'   => $validObjects,
-            'invalid_objects' => $invalidObjects,
-            'schema_id'       => $schemaId,
-        ];
-    }//end validateSchemaObjects()
-
-    /**
      * Apply inversedBy filter to query filters.
      *
      * This method resolves inversedBy relationships in filters and returns the matching object IDs.
@@ -863,7 +757,7 @@ class ValidationHandler
      *
      * @return array|null Matching object IDs or null.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-2
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function applyInversedByFilter(array &$_filters): array|null
     {

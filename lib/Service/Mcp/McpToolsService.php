@@ -23,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#mcptoolsservice-provider-discovery-refactor
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -122,12 +122,55 @@ class McpToolsService
                     continue;
                 }
 
+                $descriptor['inputSchema'] = $this->normaliseInputSchema(
+                    inputSchema: ($descriptor['inputSchema'] ?? [])
+                );
+
                 $tools[] = $descriptor;
-            }
+            }//end foreach
         }//end foreach
 
         return ['tools' => $tools];
     }//end listTools()
+
+    /**
+     * Force `inputSchema.properties` to serialise as a JSON object.
+     *
+     * MCP requires `inputSchema` to be a JSON Schema object whose `properties`
+     * is itself an object. A tool with no parameters has an empty properties
+     * map, and PHP's `json_encode` renders an empty PHP array as `[]` (a JSON
+     * array), not `{}`. Strict MCP clients — notably the Claude CLI's MCP client
+     * — reject the whole `tools/list` with
+     * "Invalid input: expected record, received array (at tools.N.inputSchema.properties)",
+     * so a single argument-less tool breaks every tool the server exposes.
+     *
+     * Force an empty or absent `properties` (and an absent `type`) to a
+     * `stdClass`/`'object'` so the schema always serialises validly. Providers
+     * that already supply a non-empty properties map are left untouched.
+     *
+     * @param mixed $inputSchema The descriptor's `inputSchema` (usually an array).
+     *
+     * @return array<string, mixed> The normalised input schema.
+     */
+    private function normaliseInputSchema(mixed $inputSchema): array
+    {
+        if (is_array($inputSchema) === false) {
+            return ['type' => 'object', 'properties' => new \stdClass()];
+        }
+
+        if (isset($inputSchema['type']) === false) {
+            $inputSchema['type'] = 'object';
+        }
+
+        if (array_key_exists('properties', $inputSchema) === false
+            || $inputSchema['properties'] === []
+            || $inputSchema['properties'] === null
+        ) {
+            $inputSchema['properties'] = new \stdClass();
+        }
+
+        return $inputSchema;
+    }//end normaliseInputSchema()
 
     /**
      * Execute an MCP tool by its namespaced id or short name

@@ -17,8 +17,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-configuration-entity
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
  */
 
 declare(strict_types=1);
@@ -70,7 +70,7 @@ class WorkflowEngineRegistry
      *
      * @throws InvalidArgumentException If engine type is unsupported
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-configuration-entity
      */
     public function resolveAdapter(WorkflowEngine $engine): WorkflowEngineInterface
     {
@@ -200,7 +200,7 @@ class WorkflowEngineRegistry
      *
      * @return array{healthy: bool, responseTime: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-85
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-health-monitoring
      */
     public function healthCheck(int $id): array
     {
@@ -265,7 +265,7 @@ class WorkflowEngineRegistry
      *
      * @return array<string, mixed> Decrypted auth config
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-84
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-engine-configuration-entity
      */
     private function decryptAuthConfig(WorkflowEngine $engine): array
     {

@@ -86,7 +86,7 @@ class BulkTranslationService
      *
      * @return array{translated: array<string, string>, skipped: array<string, string>}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-7
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)

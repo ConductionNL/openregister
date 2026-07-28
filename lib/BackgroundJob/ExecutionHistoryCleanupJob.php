@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-32
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md
  */
 
 declare(strict_types=1);
@@ -76,7 +76,7 @@ class ExecutionHistoryCleanupJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-jobs-listeners/tasks.md#task-6
+     * @spec openspec/specs/workflow-operations/spec.md
      */
     protected function run($argument): void
     {

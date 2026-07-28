@@ -477,6 +477,10 @@ return [
         // everyone. NC Flow operations are configured globally in the
         // Workflow Settings UI; this surface only records "operation X
         // is pinned to OR object Y" so the sidebar tab can show it.
+        // Visual flow builder — trigger event catalog (read-only, all users).
+        ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
+        ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+
         ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'flowLinks#link',      'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
@@ -625,6 +629,15 @@ return [
         // provider. Fails closed (404) on unknown/revoked/expired tokens.
         // @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md.
         ['name' => 'caseToken#resolve', 'url' => '/api/public/case-tokens/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
+
+        // Vocabulary (skos-concept-registers) — public read-only SKOS concept
+        // resolution over the bundled `vocabulary` register. Query-param based
+        // (uri/scheme values are full URIs, unsafe as path segments). 404
+        // standard error shape on unknown uri/scheme/notation (SKOS-004).
+        // @spec openspec/changes/skos-concept-registers/specs/skos-concept-registers/spec.md#skos-004
+        ['name' => 'vocabulary#resolveByUri', 'url' => '/api/vocabulary/concept', 'verb' => 'GET'],
+        ['name' => 'vocabulary#resolveByNotation', 'url' => '/api/vocabulary/concept/notation', 'verb' => 'GET'],
+        ['name' => 'vocabulary#listConcepts', 'url' => '/api/vocabulary/concepts', 'verb' => 'GET'],
 
         // Activity — Tier-2 read-only API. NC Activity entries are
         // core-generated (no link/create/delete verbs); this surface
@@ -968,6 +981,11 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Read-only presentation data — drag-to-move goes through the existing
+		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
+		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
+		['name' => 'views#kanban', 'url' => '/api/views/{id}/kanban', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#calendar', 'url' => '/api/views/{id}/calendar', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
 		// Chat - AI Assistant endpoints.
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
@@ -1217,5 +1235,22 @@ return [
 		// NoCSRFRequired attribute is declared in the controller for the create method.
 		['name' => 'gitHubIssues#index', 'url' => '/api/github/issues', 'verb' => 'GET'],
 		['name' => 'gitHubIssues#create', 'url' => '/api/github/issues', 'verb' => 'POST'],
+
+		// Flow-run tooling (or-flow-tooling): history, inspection, retry.
+		['name' => 'flowRun#index', 'url' => '/api/flow-runs', 'verb' => 'GET'],
+		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
+		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.
+		['name' => 'federatedConfig#types', 'url' => '/api/federated-config/types', 'verb' => 'GET'],
+		['name' => 'federatedConfig#bundle', 'url' => '/api/federated-config/bundle', 'verb' => 'POST'],
+		['name' => 'federatedConfig#install', 'url' => '/api/federated-config/install', 'verb' => 'POST'],
+		['name' => 'federatedConfig#publish', 'url' => '/api/federated-config/publish', 'verb' => 'POST'],
+		['name' => 'federatedConfig#discover', 'url' => '/api/federated-config/discover', 'verb' => 'GET'],
+		['name' => 'federatedConfig#fetch', 'url' => '/api/federated-config/fetch', 'verb' => 'GET'],
+		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
+		['name' => 'federatedConfig#trust', 'url' => '/api/federated-config/trust', 'verb' => 'GET'],
+		['name' => 'federatedConfig#setTrust', 'url' => '/api/federated-config/trust', 'verb' => 'PUT'],
     ],
 ];

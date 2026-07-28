@@ -58,7 +58,7 @@ class TranslationCsvCodec
      *
      * @return array<string, scalar|null>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-12
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -134,7 +134,7 @@ class TranslationCsvCodec
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-i18n-endpoint-gql-wh/tasks.md#task-13
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

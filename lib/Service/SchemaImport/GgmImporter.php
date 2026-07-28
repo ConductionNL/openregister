@@ -36,7 +36,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Imports GGM objecttypes as register schemas.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class GgmImporter implements SchemaDialectImporter
 {
@@ -55,7 +55,7 @@ class GgmImporter implements SchemaDialectImporter
     /**
      * {@inheritDoc}
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @return string The dialect key.
      */
@@ -67,7 +67,7 @@ class GgmImporter implements SchemaDialectImporter
     /**
      * {@inheritDoc}
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @return string The snapshot version.
      */
@@ -83,7 +83,7 @@ class GgmImporter implements SchemaDialectImporter
      *
      * @return array<int, array<string, mixed>> Candidate objecttype records.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function discover(string $query): array
     {
@@ -112,7 +112,7 @@ class GgmImporter implements SchemaDialectImporter
      *
      * @throws SchemaImportException When the objecttype is unknown to the snapshot.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $reference, ImportOptions $options): ImportedSchema
     {

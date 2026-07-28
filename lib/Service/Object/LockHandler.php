@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+ * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);
@@ -356,7 +356,7 @@ class LockHandler
      * @throws LockedException If object is already locked.
      * @throws \Exception      If lock operation fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function lock(string $identifier, ?string $process=null, ?int $duration=null, bool $advisory=false): array
     {
@@ -465,7 +465,7 @@ class LockHandler
      *
      * @throws \Exception If unlock operation fails
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-59
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function unlock(string $identifier, bool $advisory=false): bool
     {
@@ -567,7 +567,7 @@ class LockHandler
      *
      * @return bool True if locked, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function isLocked(string $identifier): bool
     {
@@ -605,7 +605,7 @@ class LockHandler
      *
      * @return array|null Lock info array or null if not locked.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-12
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getLockInfo(string $identifier): array|null
     {

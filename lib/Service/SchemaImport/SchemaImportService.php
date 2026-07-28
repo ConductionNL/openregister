@@ -38,7 +38,7 @@ use OCA\OpenRegister\Exception\SchemaImportException;
 /**
  * Registers dialect importers and orchestrates standards imports.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class SchemaImportService
 {
@@ -90,7 +90,7 @@ class SchemaImportService
      *
      * @return void
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function register(SchemaDialectImporter $importer): void
     {
@@ -102,7 +102,7 @@ class SchemaImportService
      *
      * @return array<int, string> The dialect keys.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function importableDialects(): array
     {
@@ -118,7 +118,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When no importer handles the dialect.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function importerFor(string $dialect): SchemaDialectImporter
     {
@@ -142,7 +142,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the dialect is unknown.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function discover(string $dialect, string $query): array
     {
@@ -163,7 +163,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the dialect is unknown.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function snapshotInfo(string $dialect): array
     {
@@ -185,7 +185,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the dialect or reference is unknown.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $dialect, string $reference, ImportOptions $options): ImportedSchema
     {
@@ -204,7 +204,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the objecttype is unknown to the upload.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function importGgmUpload(array $normalised, string $reference, ImportOptions $options, string $sourceLabel='upload'): ImportedSchema
     {
@@ -219,7 +219,7 @@ class SchemaImportService
      *
      * @return string|null The detected dialect, or null when undetectable.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function detectDialect(array $document): ?string
     {
@@ -237,7 +237,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the dialect cannot be resolved (422).
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function resolveUploadDialect(array $document, ?string $explicitDialect): string
     {
@@ -268,7 +268,7 @@ class SchemaImportService
      *
      * @throws SchemaImportException When the schema has no recorded import source.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function previewUpdateFromSource(array $importSource, array $currentProperties, array $resolvedConflicts=[]): array
     {

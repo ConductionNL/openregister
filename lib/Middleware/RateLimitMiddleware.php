@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+ * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ class RateLimitMiddleware extends Middleware
      * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address in
      * network-security code; renaming to $ipAddress would conflict with the SecurityService parameter name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function beforeController(Controller $controller, string $methodName): void
     {
@@ -150,7 +150,7 @@ class RateLimitMiddleware extends Middleware
      * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
      * renaming disagrees with SecurityService's own parameter naming.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function afterController(Controller $controller, string $methodName, Response $response): Response
     {
@@ -199,7 +199,7 @@ class RateLimitMiddleware extends Middleware
      * @SuppressWarnings(PHPMD.ShortVariable)         $ip is the established abbreviation for IP address;
      * renaming disagrees with SecurityService's own parameter naming.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-3
+     * @spec openspec/specs/auth-system/spec.md#requirement-rate-limiting-must-protect-against-brute-force-attacks-and-api-abuse
      */
     public function afterException(Controller $controller, string $methodName, \Exception $exception): ?Response
     {

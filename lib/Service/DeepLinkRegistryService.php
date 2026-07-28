@@ -19,11 +19,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+ * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+ * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
+ * @spec openspec/specs/deep-link-registry/spec.md
+ * @spec openspec/specs/deep-link-registry/spec.md
+ * @spec openspec/specs/deep-link-registry/spec.md
  */
 
 declare(strict_types=1);
@@ -132,9 +132,9 @@ class DeepLinkRegistryService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
-     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
+     * @spec openspec/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function register(
         string $appId,
@@ -190,8 +190,8 @@ class DeepLinkRegistryService
      *
      * @return DeepLinkRegistration|null The registration, or null if none exists
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration
     {
@@ -223,8 +223,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The resolved URL, or null to use default
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolveUrl(
         int $registerId,
@@ -251,8 +251,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The icon identifier, or null
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolveIcon(int $registerId, int $schemaId): ?string
     {
@@ -273,7 +273,7 @@ class DeepLinkRegistryService
      *
      * @return string|null The display name, the app id, or null if unclaimed
      *
-     * @spec openspec/changes/unified-search-provider/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolveDisplayName(int $registerId, int $schemaId): ?string
     {
@@ -294,7 +294,7 @@ class DeepLinkRegistryService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     private function ensureIdMaps(): void
     {
@@ -351,7 +351,7 @@ class DeepLinkRegistryService
      *
      * @return bool True if at least one deep link is registered
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     public function hasRegistrations(): bool
     {
@@ -363,7 +363,7 @@ class DeepLinkRegistryService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     public static function reset(): void
     {

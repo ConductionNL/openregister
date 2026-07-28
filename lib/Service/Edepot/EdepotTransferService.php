@@ -20,9 +20,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -401,7 +401,7 @@ class EdepotTransferService
      *     }>
      * }> Objects with file metadata.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function gatherObjectsWithFiles(array $objectRefs): array
     {
@@ -448,8 +448,8 @@ class EdepotTransferService
      *     isRendition: bool
      * }> File metadata array.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function getObjectFiles(ObjectEntity $object): array
     {
@@ -621,7 +621,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void
     {
@@ -729,7 +729,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function markObjectTransferFailed(ObjectEntity $object, string $error, string $timestamp): void
     {
@@ -764,7 +764,7 @@ class EdepotTransferService
      *
      * @return array<string,mixed> The transport configuration.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getTransportConfig(): array
     {
@@ -792,7 +792,7 @@ class EdepotTransferService
      *
      * @return array<string, string> Map of profile ID to display name.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getAvailableProfiles(): array
     {
@@ -806,7 +806,7 @@ class EdepotTransferService
      *
      * @return bool True if valid.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function isValidProfile(string $profileName): bool
     {
@@ -821,7 +821,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logTransferInitiated(array $transferList, string $transport): void
     {
@@ -846,7 +846,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logObjectTransferred(ObjectEntity $object, string $transferUuid, string $reference): void
     {
@@ -886,7 +886,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logTransferFailed(array $transferList, string $error, string $transport): void
     {
@@ -909,7 +909,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-6
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function notifyTransferCompletion(array $transferList): void
     {

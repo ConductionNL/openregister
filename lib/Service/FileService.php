@@ -27,7 +27,7 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+ * @spec openspec/specs/content-versioning/spec.md
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
  */
 
@@ -79,6 +79,7 @@ use OCA\OpenRegister\Service\File\FileSharingHandler;
 use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCA\OpenRegister\Service\File\FileVersioningHandler;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
+use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use OCA\OpenRegister\Service\File\ReadFileHandler;
 use OCA\OpenRegister\Service\File\TaggingHandler;
 use OCA\OpenRegister\Service\File\UpdateFileHandler;
@@ -868,7 +869,7 @@ class FileService
      * @psalm-return   Folder|null
      * @phpstan-return Folder|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-4
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getObjectFolder(ObjectEntity|string $objectEntity, int|string|null $registerId=null): ?Folder
     {
@@ -1402,7 +1403,7 @@ class FileService
      * @psalm-return   string
      * @phpstan-return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function generateObjectTag(ObjectEntity|string $objectEntity): string
     {
@@ -1509,7 +1510,7 @@ class FileService
      * @psalm-return   list<string>
      * @phpstan-return array<int, string>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-5
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getAllTags(): array
     {
@@ -1652,7 +1653,7 @@ class FileService
      *
      * @psalm-return \OCP\AppFramework\Http\StreamResponse<200, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-3
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function streamFile(File $file): \OCP\AppFramework\Http\StreamResponse
     {
@@ -1971,11 +1972,14 @@ class FileService
      * This is a convenience method that creates replacement mappings
      * from entity detection results and applies them to a document.
      *
-     * @param Node        $node       The file node to anonymize.
-     * @param array       $entities   Array of detected entities with 'text' and 'key' fields.
-     * @param string      $scope      Placeholder-numbering scope: 'document' (default) or 'dossier'.
-     * @param string|null $dossierKey Stable folder id of the dossier (per-dossier scope); null falls
-     *                                back to the file's parent folder.
+     * @param Node        $node              The file node to anonymize.
+     * @param array       $entities          Array of detected entities with 'text' and 'key' fields.
+     * @param string      $scope             Placeholder-numbering scope: 'document' (default) or 'dossier'.
+     * @param string|null $dossierKey        Stable folder id of the dossier (per-dossier scope); null falls
+     *                                       back to the file's parent folder.
+     * @param bool|null   $preserveStructure PDF only (REQ-ORTPR-004): tri-state structure-preservation
+     *                                       option — null/absent = auto (preserve iff the input is a
+     *                                       tagged PDF), true = attempt, false = skip but still measure.
      *
      * @throws Exception If anonymization fails.
      *
@@ -1987,13 +1991,15 @@ class FileService
         Node $node,
         array $entities,
         string $scope='document',
-        ?string $dossierKey=null
+        ?string $dossierKey=null,
+        ?bool $preserveStructure=null
     ): Node {
         return $this->documentProcessingHandler->anonymizeDocument(
             node: $node,
             entities: $entities,
             scope: $scope,
-            dossierKey: $dossierKey
+            dossierKey: $dossierKey,
+            preserveStructure: $preserveStructure
         );
     }//end anonymizeDocument()
 
@@ -2013,6 +2019,21 @@ class FileService
     {
         return $this->documentProcessingHandler->getLastResidualEntities();
     }//end getLastResidualEntities()
+
+    /**
+     * The `structurePreservation` result block from the most recent PDF
+     * redaction (best-effort accessibility-structure preservation).
+     *
+     * @return StructurePreservation|null The result block, or null when the
+     *                                    last redaction did not take the PDF
+     *                                    branch.
+     *
+     * @spec exclude One-line delegation to DocumentProcessingHandler::getLastStructurePreservation.
+     */
+    public function getLastStructurePreservation(): ?StructurePreservation
+    {
+        return $this->documentProcessingHandler->getLastStructurePreservation();
+    }//end getLastStructurePreservation()
 
     /**
      * Per-entity placeholder map from the most recent anonymizeDocument() call.
@@ -2036,7 +2057,7 @@ class FileService
      *
      * @return FileVersioningHandler The versioning handler.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-11
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function getVersioningHandler(): FileVersioningHandler
     {
@@ -2094,7 +2115,7 @@ class FileService
      *
      * @throws Exception If the rename fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function renameFile(ObjectEntity $object, int $fileId, string $newName): File
     {
@@ -2149,7 +2170,7 @@ class FileService
      *
      * @throws Exception If the copy fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function copyFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {
@@ -2254,7 +2275,7 @@ class FileService
      *
      * @throws Exception If the move fails.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-file-actions/tasks.md#task-1
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function moveFile(ObjectEntity $sourceObject, int $fileId, ObjectEntity $targetObject): File
     {

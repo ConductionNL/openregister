@@ -12,6 +12,16 @@ status: in-progress
   `POST /orgs/*/repos` (search, PAT identity, repo creation). Existing repo
   read/contents/git rules and the `gitlab`/`doffin` entries stay unchanged; the
   catalogue remains runtime-immutable, changed only via this reviewed release.
+- `anthropic-cli-inject-only-provider` (in-progress) — registers `anthropic-cli`
+  as the first `inject_only` provider justified by a NON-HTTP CONSUMER rather than
+  an unbounded host: a Claude Max/Pro subscription token bound for the `claude`
+  CLI's process environment, where there is no request to proxy and no header to
+  substitute, so the constrained-proxy path cannot express it at any host.
+  Generalises `inject_only` to mean "the broker cannot bound this call, so it
+  refuses to make it". Records the personal-scope-only Anthropic ToS constraint
+  (declared here; enforced by the consuming app, which owns the only resolution
+  path). `anthropic`/`anthropic-oauth` and the `generic-*` entries stay unchanged;
+  catalogue `1.5.0` → `1.6.0`.
 
 ## Purpose
 TBD - created by archiving change harden-credential-token-binding. Update Purpose after archive.

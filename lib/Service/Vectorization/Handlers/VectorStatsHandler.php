@@ -58,7 +58,7 @@ class VectorStatsHandler
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int|mixed>, object_vectors: int, file_vectors: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getStats(): array
     {
@@ -87,7 +87,7 @@ class VectorStatsHandler
      * @psalm-return array{total_vectors: int, by_type: array<int>,
      *     by_model: array<int>, object_vectors: int, file_vectors: int}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-5
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function getStatsFromDatabase(): array
     {

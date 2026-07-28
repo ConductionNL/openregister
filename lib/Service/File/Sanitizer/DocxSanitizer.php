@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ use ZipArchive;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     OOXML surgery spans comments / tracked-changes / customXml / metadata / fields / hyperlinks.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Each OOXML structure needs its own DOM/XPath pass.
@@ -109,7 +109,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @param string $sentinel The sentinel string applied to scrubbed metadata.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(private readonly string $sentinel='DocuDesk Anonymisation')
     {
@@ -122,7 +122,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return bool True for the DOCX MIME type.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function supports(string $mimeType): bool
     {
@@ -139,7 +139,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return SanitizationReport Per-category counts.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function sanitize(string $sourcePath, string $destPath): SanitizationReport
     {
@@ -243,7 +243,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return string[] Part names present in the archive.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function bodyParts(ZipArchive $zip): array
     {
@@ -271,7 +271,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return string[] Relationship IDs of flattened external hyperlinks in this part.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function processBodyPart(ZipArchive $zip, string $part, array &$counts): array
     {
@@ -305,7 +305,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function removeCommentParts(ZipArchive $zip, array &$counts, array &$overridePartNames, array &$documentRelTargets): void
     {
@@ -336,7 +336,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function removeCommentMarkers(DOMXPath $xpath): void
     {
@@ -356,7 +356,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function resolveTrackedChanges(DOMXPath $xpath, DOMDocument $dom, array &$counts): void
     {
@@ -383,7 +383,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of attributes removed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function stripRevisionAttributes(DOMDocument $dom): int
     {
@@ -412,7 +412,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function stripCustomXmlParts(ZipArchive $zip, array &$counts, array &$overridePartNames, array &$documentRelTargets): void
     {
@@ -449,7 +449,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function unwrapDataBoundSdt(DOMXPath $xpath): void
     {
@@ -477,7 +477,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubMetadata(ZipArchive $zip, array &$counts): void
     {
@@ -493,7 +493,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of fields scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubCorePart(ZipArchive $zip): int
     {
@@ -526,7 +526,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of fields scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubAppPart(ZipArchive $zip): int
     {
@@ -559,7 +559,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of properties scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubCustomPart(ZipArchive $zip): int
     {
@@ -597,7 +597,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of elements scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubElements(DOMDocument $dom, array $fields): int
     {
@@ -623,7 +623,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of fields removed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function stripSimpleFields(DOMDocument $dom): int
     {
@@ -655,7 +655,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return int The number of fields removed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Sequential field-char state machine.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Same — linear begin/separate/end scan.
@@ -721,7 +721,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return string The fldChar type (begin / separate / end) or ''.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function fldCharType(DOMXPath $xpath, DOMNode $run): string
     {
@@ -745,7 +745,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return bool True when the field name is in the strip list.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function instructionMatches(string $instr): bool
     {
@@ -767,7 +767,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return string[] The relationship IDs of flattened external hyperlinks.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function flattenHyperlinkElements(DOMXPath $xpath, array &$counts): array
     {
@@ -795,7 +795,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function reconcileContentTypes(ZipArchive $zip, array $partNames): void
     {
@@ -833,7 +833,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dual-criteria relationship filter (by-target OR by-hyperlink-id) over a single DOM pass.
      */
@@ -873,7 +873,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function unwrap(DOMNode $node): void
     {
@@ -897,7 +897,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function replaceWithChildren(DOMNode $node, DOMNode $source): void
     {
@@ -922,7 +922,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return DOMDocument The loaded document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function loadXml(string $xml): DOMDocument
     {
@@ -949,7 +949,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return DOMXPath The namespace-aware xpath context.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function wXpath(DOMDocument $dom): DOMXPath
     {
@@ -966,7 +966,7 @@ class DocxSanitizer implements SanitizerInterface
      *
      * @return SanitizationException The mapped exception.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function mapOpenFailure(int $code): SanitizationException
     {

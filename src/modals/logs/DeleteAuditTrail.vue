@@ -55,7 +55,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcButton,
@@ -91,7 +91,7 @@ export default {
 		 * Close the dialog and reset state
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -105,7 +105,7 @@ export default {
 		 * Delete the audit trail entry
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async deleteAuditTrail() {
 			this.loading = true
@@ -140,7 +140,7 @@ export default {
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatDate(dateString) {
 			if (!dateString) return '-'

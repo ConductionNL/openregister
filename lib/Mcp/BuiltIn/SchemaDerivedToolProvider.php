@@ -40,7 +40,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+ * @spec openspec/specs/ai-mcp/spec.md
  */
 
 declare(strict_types=1);
@@ -207,9 +207,9 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      *
      * @throws InvalidArgumentException If the tool id is unknown or required params are missing.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-005 — Writes go through ObjectService with RBAC intact)
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
      */
     public function invokeTool(string $toolId, array $arguments): array
@@ -275,7 +275,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      *
      * @throws InvalidArgumentException If `filters` names an undeclared property.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-004 — Search verb: filters, pagination, projection, truncation)
      */
     private function search(Schema $schema, ?Register $register, array $arguments): array
@@ -379,7 +379,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      *
      * @return array<string, mixed> Serialized created object.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-005 — Write is authorized exactly as the REST path)
      */
     private function create(Schema $schema, ?Register $register, array $arguments): array
@@ -435,7 +435,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      *
      * @throws InvalidArgumentException If `id` is missing.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-005 — Unauthorized write fails, no bypass)
      */
     private function delete(Schema $schema, ?Register $register, array $arguments): array
@@ -784,7 +784,7 @@ class SchemaDerivedToolProvider implements IMcpToolProvider
      *
      * @return void
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
      */
     private function writeAudit(

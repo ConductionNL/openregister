@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -117,7 +117,7 @@ class ConversationManagementHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         ConversationMapper $conversationMapper,
@@ -147,7 +147,7 @@ class ConversationManagementHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Title generation requires multiple LLM provider paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -291,7 +291,7 @@ class ConversationManagementHandler
      *
      * @return string Fallback title
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function generateFallbackTitle(string $message): string
     {
@@ -323,7 +323,7 @@ class ConversationManagementHandler
      *
      * @return string Unique title with number suffix if needed
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -397,7 +397,7 @@ class ConversationManagementHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function checkAndSummarize(Conversation $conversation): void
     {
@@ -488,7 +488,7 @@ class ConversationManagementHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Summary generation requires handling multiple LLM providers
      * @SuppressWarnings(PHPMD.NPathComplexity)      Summary generation requires handling multiple LLM providers
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function generateSummary(array $messages): string
     {

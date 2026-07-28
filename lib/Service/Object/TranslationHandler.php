@@ -52,7 +52,7 @@ class TranslationHandler
      * @param LanguageService $languageService The request-scoped language service
      * @param LoggerInterface $logger          Logger interface
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly LanguageService $languageService,
@@ -70,7 +70,7 @@ class TranslationHandler
      *
      * @return string[] Array of translatable property names
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getTranslatableProperties(Schema $schema): array
     {
@@ -104,7 +104,7 @@ class TranslationHandler
      *
      * @return array The object data with resolved translations
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function resolveTranslationsForRender(
         array $objectData,
@@ -293,7 +293,7 @@ class TranslationHandler
      *
      * @return bool True if this looks like a language-keyed object
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isLanguageKeyedObject(array $value): bool
     {

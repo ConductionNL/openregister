@@ -17,7 +17,7 @@
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+ * @spec openspec/specs/text-extraction/spec.md
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -98,7 +98,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple field extraction paths with optional data
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $sourceMeta and $force kept to honour interface contract
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-2
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -222,7 +222,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -253,7 +253,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *     register: null|string, version: null|string, organization: mixed,
      *     owner: null|string, updated: \DateTime|null}
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-1
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -278,7 +278,7 @@ class ObjectHandler implements TextExtractionHandlerInterface
      *
      * @return int Unix timestamp.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-3
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceTimestamp(int $sourceId): int
     {

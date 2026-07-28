@@ -261,6 +261,7 @@ class ControllersIntegrationTest extends TestCase
             'openregister',
             $this->request,
             \OC::$server->get(ViewService::class),
+            \OC::$server->get(\OCA\OpenRegister\Service\ViewPresentationService::class),
             $this->userSession,
             \OC::$server->get(LoggerInterface::class)
         );

@@ -872,9 +872,25 @@ class RegisterMapper extends QBMapper
         $qb->select('id', 'schemas')
             ->from('openregister_registers');
 
-        $candidates = $qb->executeQuery()->fetchAllAssociative();
-        $needle     = (string) $schemaId;
-        $matches    = [];
+        // NC's IResult (OC\DB\ResultAdapter) does not expose Doctrine's
+        // fetchAllAssociative() on every supported server (absent on NC 32) —
+        // calling it throws "undefined method". This method runs inside the
+        // PermissionHandler authorization resolver (getRegisterForSchema), whose
+        // catch re-throws as AuthorizationUnresolvableException and FAIL-CLOSES
+        // the action — so on NC 32 EVERY RBAC-checked read (find(): dashboard
+        // widgets, status-transition engine, single-object reads) is denied,
+        // even for admin. Iterate fetch() instead, matching MarkerLookupTrait.
+        $result     = $qb->executeQuery();
+        $candidates = [];
+        $row        = $result->fetch();
+        while ($row !== false) {
+            $candidates[] = $row;
+            $row          = $result->fetch();
+        }
+
+        $result->closeCursor();
+        $needle  = (string) $schemaId;
+        $matches = [];
 
         foreach ($candidates as $row) {
             $schemas = $this->decodeSchemasField(raw: ($row['schemas'] ?? null));

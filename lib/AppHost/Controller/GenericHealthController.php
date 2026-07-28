@@ -72,7 +72,7 @@ class GenericHealthController extends Controller
      *
      * @return JSONResponse `{status, app, version, checks}` with HTTP code per statusCodePolicy.
      *
-     * @spec openspec/changes/apphost-observability-engine/specs/apphost-observability/spec.md — Requirement: Declarative Health Execution
+     * @spec openspec/specs/apphost-observability/spec.md — Requirement: Declarative Health Execution
      */
     #[PublicPage]
     #[NoCSRFRequired]

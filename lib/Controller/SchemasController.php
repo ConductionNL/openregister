@@ -89,7 +89,7 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   NC AppFramework controller DI requires injecting
  * framework + RBAC + audit + domain services, each used in separate endpoint groups.
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-registry-views/tasks.md#task-1
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class SchemasController extends Controller
 {
@@ -546,6 +546,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
@@ -759,6 +760,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
@@ -1076,7 +1078,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function uploadUpdate(?int $id=null): JSONResponse
     {
@@ -1108,7 +1110,7 @@ class SchemasController extends Controller
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple message-substring checks for error classification; each adds one branch.
      * @SuppressWarnings(PHPMD.ShortVariable)         $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function upload(?int $id=null): JSONResponse
     {
@@ -1227,6 +1229,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
@@ -1272,7 +1275,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function download(int $id): JSONResponse
     {
@@ -1311,7 +1314,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function related(int|string $id): JSONResponse
     {
@@ -1383,7 +1386,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-6
+     * @spec openspec/specs/production-observability/spec.md#requirement-per-entity-statistics-and-endpoint-delivery-log-api
      */
     public function stats(int $id): JSONResponse
     {
@@ -1453,7 +1456,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function explore(int $id): JSONResponse
     {
@@ -1513,7 +1516,7 @@ class SchemasController extends Controller
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-4
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function updateFromExploration(int $id): JSONResponse
     {
@@ -1737,7 +1740,7 @@ class SchemasController extends Controller
      *
      * @return array<string, mixed>|JSONResponse The (possibly mapped) schema array, or an error response.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) One branch per supported dialect.
      */

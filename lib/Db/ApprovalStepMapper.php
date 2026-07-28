@@ -149,7 +149,7 @@ class ApprovalStepMapper extends QBMapper
      *
      * @return array<int, ApprovalStep>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-1
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function findAllFiltered(array $filters=[], ?int $limit=null, ?int $offset=null): array
     {
@@ -253,7 +253,7 @@ class ApprovalStepMapper extends QBMapper
      *
      * @return int Number of rows deleted (0 on error).
      *
-     * @spec openspec/changes/approval-chains-declarative/specs/approval-workflow/spec.md
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function deleteByChainAndObject(int $chainId, string $objectUuid): int
     {

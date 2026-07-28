@@ -196,7 +196,7 @@ class AnalyticsLinkService
      * @throws Exception On missing user (401), missing report (404),
      *                   duplicate (409), Analytics unavailable (503).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkReport(string $objectUuid, int $registerId, int $schemaId, int $reportId): AnalyticsLink
     {
@@ -248,7 +248,7 @@ class AnalyticsLinkService
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkReport(
         string $objectUuid,
@@ -327,7 +327,7 @@ class AnalyticsLinkService
      *
      * @throws Exception On missing user (401) or no matching link (404).
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkReport(string $objectUuid, int $reportId): void
     {
@@ -350,7 +350,7 @@ class AnalyticsLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedReports(string $objectUuid): array
     {
@@ -382,7 +382,7 @@ class AnalyticsLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailableReports(?string $search=null): array
     {

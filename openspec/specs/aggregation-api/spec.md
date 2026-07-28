@@ -340,3 +340,137 @@ request.
 - **WHEN** a controller path needs object names and the in-memory name cache is empty
 - **THEN** it does not synchronously load the entire objects table
 
+### Requirement: The system SHALL honour a multi-field (cross-tab) groupBy
+
+The aggregation engine (`AggregationQuery` + `AggregationRunner`, native-SQL and PHP-fallback paths) SHALL accept a `groupBy` expressed as an ordered list of two or more scalar fields and SHALL produce one grouped row per distinct field **tuple** (a cross-tab), applying the same metric (count/sum/avg/min/max), filters, RBAC gate, and multi-tenant predicate as a single-field groupBy.
+
+A multi-field `groupBy` MAY be supplied in either the explicit shape `{ fields: ["a", "b"] }` or the plain ordered-list shape `["a", "b"]`. The single-field shape `{ field: "a" }` SHALL remain accepted and behaviourally unchanged.
+
+The engine SHALL NOT silently ignore extra group fields. A malformed `groupBy` — an empty list, an empty-string member, a non-string member, or duplicate fields — SHALL be rejected with an `InvalidArgumentException` (HTTP 400 at the controller boundary), never partially honoured.
+
+Result shape:
+- A **single-field** group row SHALL keep the backward-compatible shape `{ key: <fieldValue>, value: <metric> }`.
+- A **multi-field** group row SHALL expose a composite key map `{ keys: { "a": <valueA>, "b": <valueB> }, value: <metric> }`, with every declared group field present, so a consumer can pivot the result into a cross-tab.
+
+On PostgreSQL, MySQL and SQLite the categorical groupBy SHALL execute natively as `GROUP BY <col_a>, <col_b>, ...` over the sanitised magic-table columns; the PHP fallback SHALL bucket on the same field tuple and SHALL produce grouped rows that agree with the native path.
+
+#### Scenario: Two-field native groupBy returns one row per distinct tuple
+- **GIVEN** a register/schema magic table with rows carrying `vendorId` ∈ {V1, V2, V3} and `dueDateBucket` ∈ {current, 30days}
+- **AND** a filter `state IN [issued, partially-paid, overdue, disputed]` that excludes the `paid` rows
+- **WHEN** an aggregation runs with metric `sum(amount)` and `groupBy: { fields: ["vendorId", "dueDateBucket"] }`
+- **THEN** the native path SHALL emit SQL containing `GROUP BY "vendor_id", "due_date_bucket"`
+- **AND** the result SHALL contain exactly the tuples `(V1,current)=150`, `(V1,30days)=200`, `(V2,current)=300`, `(V2,30days)=100`
+- **AND** each group row SHALL carry `keys: { vendorId: ..., dueDateBucket: ... }` and a numeric `value`
+
+#### Scenario: Single-field groupBy stays backward compatible
+- **GIVEN** the same dataset
+- **WHEN** an aggregation runs with `groupBy: { field: "vendorId" }`
+- **THEN** each group row SHALL carry a scalar `key` and a `value`
+- **AND** no group row SHALL carry a composite `keys` map
+
+#### Scenario: Native and PHP-fallback paths agree
+- **GIVEN** the same dataset and `groupBy: { fields: ["vendorId", "dueDateBucket"] }` with metric `sum(amount)`
+- **WHEN** the aggregation is computed once via the native-SQL path (`backend: "sqlite"`) and once via the PHP fallback (`backend: "php-fallback"`)
+- **THEN** the two grouped result sets SHALL contain the same tuples with the same values
+
+#### Scenario: Malformed multi-field groupBy is rejected
+- **WHEN** an `AggregationQuery` is built with `groupBy: ["vendorId", ""]` or `groupBy: ["vendorId", "vendorId"]`
+- **THEN** construction SHALL throw `InvalidArgumentException`
+- **AND** no partial (single-field or ungrouped) aggregation SHALL be produced
+
+@e2e exclude Data-layer aggregation primitive with no OpenRegister UI surface — the multi-field groupBy is exercised against a real in-memory SQLite database via PHPUnit (`AggregationRunnerMultiFieldGroupByTest`) proving the native `GROUP BY a, b` output and native ⇄ PHP-fallback agreement, plus value-object shape/validation units (`AggregationQueryTest`). Covered by PHPUnit.
+
+### Requirement: Multi-field group-by (REQ-AGG-101)
+
+The grouped aggregation endpoint MUST accept `groupBy` as either a single field
+(unchanged behaviour) or an ordered list of fields, emitting a composite
+`GROUP BY` and returning each group keyed by an ordered tuple. A single-field
+request MUST return the same response shape as before this change (scalar
+`key`); a multi-field request MUST return `key` as an ordered object of
+field→value. Field names MUST be validated against the schema and MUST NOT be
+interpolated raw into SQL.
+
+#### Scenario: Group by two fields
+
+- **GIVEN** objects with `status` and `type` properties
+- **WHEN** a client requests `groupBy=status,type` with `metric=count`
+- **THEN** each returned group is keyed by both `status` and `type` and carries
+  the count of objects in that combination.
+
+#### Scenario: Single-field shape is unchanged
+
+- **WHEN** a client requests `groupBy=status`
+- **THEN** the response shape is identical to the pre-change single-field shape.
+
+### Requirement: Multi-metric responses (REQ-AGG-102)
+
+The aggregation endpoints MUST accept a list of metrics
+(`count`, `sum`, `avg`, `min`, `max`) in one request and return every requested
+metric per group under a `values` object. Non-`count` metrics MUST require a
+numeric field, validated before execution. The legacy single `metric`/`field`
+params MUST remain valid and map to a one-element metrics list.
+
+#### Scenario: Count and sum in one call
+
+- **WHEN** a client requests `metrics=[{count},{sum,price}]` grouped by `status`
+- **THEN** each group carries both the count and the summed `price`.
+
+### Requirement: Cumulative time-bucket aggregates (REQ-AGG-103)
+
+The time-bucket primitive MUST accept a `cumulative: true` flag that orders
+buckets ascending by bucket start and returns a running total of the selected
+metric alongside each per-bucket value. The cumulative result MUST be identical
+whether computed by a SQL window function or a PHP post-pass.
+
+#### Scenario: Running total over months
+
+- **GIVEN** a monthly time-bucket over `createdAt`
+- **WHEN** a client requests it with `cumulative=true`
+- **THEN** each bucket carries its own value and the running total up to and
+  including that bucket.
+
+### Requirement: Cross-dialect native time-bucket (REQ-AGG-104)
+
+Time-bucket grouping MUST execute natively on PostgreSQL, MySQL/MariaDB and
+SQLite for the intervals `hour`, `day`, `week`, `month`, `quarter`, `year`, with
+bucket boundaries that agree across dialects. A dialect/interval combination
+with no native expression MUST fall back to a documented PHP-side bucketer
+rather than emit incorrect SQL.
+
+#### Scenario: Same boundaries on every dialect
+
+- **GIVEN** the same objects loaded on Postgres, MySQL and SQLite
+- **WHEN** a monthly time-bucket aggregation runs on each
+- **THEN** the bucket boundaries and per-bucket counts are identical.
+
+### Requirement: Timeseries result caching (REQ-AGG-105)
+
+Timeseries/time-bucket results MUST be cacheable in `AggregationCache`, keyed on
+register, schema and a normalized query hash (field, interval, metrics, filters,
+cumulative). The timeseries endpoint MUST report `X-OR-Cache: hit` or
+`X-OR-Cache: miss`, and cached entries MUST be invalidated when an object in the
+register+schema is written.
+
+#### Scenario: Second identical request is a cache hit
+
+- **WHEN** the same timeseries request is issued twice with no intervening write
+- **THEN** the first responds `X-OR-Cache: miss` and the second
+  `X-OR-Cache: hit` with an identical body.
+
+### Requirement: Multi-value and in-operator filters on the value path (REQ-AGG-106)
+
+On the value/count and grouped paths, a bare array filter value MUST be treated
+as an implicit `in` (any-of) match, and the `in` operator MUST generate an
+`IN (…)` predicate — including an any-overlap test for multi-value object
+properties stored as JSON arrays. Scalar filter values MUST be unchanged. This
+aligns aggregation filter semantics with the main object-search filter
+semantics.
+
+#### Scenario: Count with a multi-value filter
+
+- **GIVEN** objects whose `tags` property holds arrays
+- **WHEN** a client counts with a filter `tags=[a,b]`
+- **THEN** objects whose tags include `a` or `b` are counted (not a raw
+  array-equality that matches none), and the `in` operator over a scalar field
+  returns the any-of count rather than `0`.
+

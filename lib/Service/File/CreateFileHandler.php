@@ -132,7 +132,7 @@ class CreateFileHandler
      * File creation requires handling multiple content formats and error cases.
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple execution paths for content processing and validation.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function addFile(
         ObjectEntity|string $objectEntity,
@@ -279,7 +279,7 @@ class CreateFileHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple share toggle.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-006
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function saveFile(
         ObjectEntity $objectEntity,

@@ -70,18 +70,34 @@ use Throwable;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+ * @spec openspec/specs/pdf-anonymisation/spec.md
  */
 class PdfTextReplacer
 {
+
+    /**
+     * Structure-tree inspector used to detect taggedness and count
+     * `/StructElem` objects before/after redaction (REQ-ORTPR-001/002).
+     *
+     * @var PdfStructureInspector
+     */
+    private readonly PdfStructureInspector $structureInspector;
+
     /**
      * Constructor.
      *
-     * @param LoggerInterface $logger Logger for diagnostic surfaces (PII-free).
+     * @param LoggerInterface            $logger             Logger for diagnostic surfaces (PII-free).
+     * @param PdfStructureInspector|null $structureInspector Structure-tree inspector; a default instance
+     *                                                       is created when omitted (test seam only —
+     *                                                       production callers never pass this).
+     *
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
     public function __construct(
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        ?PdfStructureInspector $structureInspector=null
     ) {
+        $this->structureInspector = $structureInspector ?? new PdfStructureInspector();
     }//end __construct()
 
     /**
@@ -92,13 +108,24 @@ class PdfTextReplacer
      * carries a diagnostic surface (which entities remained, how many
      * streams were modified, etc.) for ops review.
      *
-     * @param string $pdfBytes         Raw input PDF bytes.
-     * @param array  $substitutions    Map: entity-text => placeholder
-     *                                 (e.g. ['Jan Jansen' => '[PERSON: 7]']).
-     * @param bool   $strict           Forwarded to {@see validateOutput}: when
-     *                                 true, residual entity text fails closed.
-     * @param array  $residualEntities Out-param receiving any entity text that
-     *                                 remained after replacement.
+     * @param string                     $pdfBytes          Raw input PDF bytes.
+     * @param array                      $substitutions     Map: entity-text => placeholder
+     *                                                      (e.g. ['Jan Jansen' =>
+     *                                                      '[PERSON: 7]']).
+     * @param bool                       $strict            Forwarded to {@see validateOutput}: when
+     *                                                      true, residual entity text fails closed.
+     * @param array                      $residualEntities  Out-param receiving any entity text that
+     *                                                      remained after replacement.
+     * @param bool|null                  $preserveStructure Tri-state structure-preservation option
+     *                                                      (REQ-ORTPR-004): null/absent = auto
+     *                                                      (preserve iff the input is tagged);
+     *                                                      true = attempt even on ambiguous
+     *                                                      detection; false = skip but still
+     *                                                      measure. Default null (auto).
+     * @param StructurePreservation|null $structureResult   Out-param receiving the
+     *                                                      `structurePreservation` result block
+     *                                                      (REQ-ORTPR-003) for this run. Always populated
+     *                                                      on return (never left null).
      *
      * @return string Anonymised PDF bytes.
      *
@@ -107,15 +134,31 @@ class PdfTextReplacer
      * @phpstan-param array<string, string> $substitutions
      * @psalm-param   array<string, string> $substitutions
      *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict forwards the fail-closed vs lenient validation policy.
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   $strict forwards the fail-closed vs lenient validation policy.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear load → measure → replace → re-measure → serialise →
+     *                                                attest → validate pipeline; splitting obscures the flow
+     *                                                (same rationale as DocumentProcessingHandler::replaceWordsInPdfDocument()).
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md
      */
-    public function replaceInPdf(string $pdfBytes, array $substitutions, bool $strict=false, array &$residualEntities=[]): string
-    {
+    public function replaceInPdf(
+        string $pdfBytes,
+        array $substitutions,
+        bool $strict=false,
+        array &$residualEntities=[],
+        ?bool $preserveStructure=null,
+        ?StructurePreservation &$structureResult=null
+    ): string {
         $residualEntities = [];
+        $structureResult  = null;
+
         if (count($substitutions) === 0) {
-            // No-op: nothing to anonymise.
+            // No-op: nothing to anonymise. Output bytes are byte-identical to
+            // the input (REQ-ORTPR-005), so tagCountAfter trivially equals
+            // tagCountBefore — still measured for a truthful report even on
+            // this fast path.
+            $structureResult = $this->measureNoOpStructurePreservation(pdfBytes: $pdfBytes, preserveStructure: $preserveStructure);
             return $pdfBytes;
         }
 
@@ -159,6 +202,12 @@ class PdfTextReplacer
             );
         }
 
+        // Measure BEFORE any mutation, reusing this same loaded $doc — no
+        // second parse (REQ-ORTPR-001; design.md "Risks" — the extra-parse
+        // cost is avoided by inspecting the object model already in memory).
+        $tagCountBefore = $this->structureInspector->countStructElements(doc: $doc);
+        $requested      = $this->resolveRequestedPreservation(preserveStructure: $preserveStructure, tagCountBefore: $tagCountBefore);
+
         try {
             $stats = $doc->replace_text_in_document(substitutions: $substitutions);
         } catch (Throwable $e) {
@@ -169,6 +218,16 @@ class PdfTextReplacer
                 previous: $e
             );
         }
+
+        // Re-measure AFTER text replacement, on the SAME in-memory $doc
+        // (`replace_text_in_document` mutates content streams only; the
+        // structure-tree objects — `/StructTreeRoot`, `/MarkInfo`,
+        // `/StructElem` — are not content streams, so this reflects what
+        // `to_pdf_file_s(rebuild: true)` below will serialise). Never a
+        // silent flatten: any loss surfaces via $structureResult regardless
+        // of $preserveStructure (REQ-ORTPR-002).
+        $tagCountAfter        = $this->structureInspector->countStructElements(doc: $doc);
+        $structureIntactAfter = $this->structureInspector->isTagged(doc: $doc);
 
         // Serialise with rebuild=true per the SAPP contract: incremental
         // mode produces an unopenable PDF once _pdf_objects is populated
@@ -187,6 +246,19 @@ class PdfTextReplacer
         }
 
         $outputBytes = $serialised;
+
+        // Attest the conservative `preserved` rule (design.md D1) and build
+        // the contracted result block (REQ-ORTPR-002/003). This never
+        // changes $outputBytes — preservation is measurement + honest
+        // degradation, not a repair the current stack can perform.
+        $structureResult = $this->attestStructurePreservation(
+            rawOption: $preserveStructure,
+            requested: $requested,
+            tagCountBefore: $tagCountBefore,
+            tagCountAfter: $tagCountAfter,
+            structureIntactAfter: $structureIntactAfter,
+            streamsModified: (int) ($stats['streams_modified'] ?? 0)
+        );
 
         // Validation: re-extract the output and collect any residual
         // substitution-map keys. Best-effort (no longer fails closed) — the
@@ -243,7 +315,7 @@ class PdfTextReplacer
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) $strict selects fail-closed (entity anonymisation) vs lenient (ad-hoc) behaviour.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public function validateOutput(string $outputBytes, array $substitutions, array $replaceStats=[], bool $strict=false): array
     {
@@ -400,7 +472,7 @@ class PdfTextReplacer
      *
      * @return string Text with adjacent identical placeholders collapsed.
      *
-     * @spec openspec/changes/pdf-anonymisation/specs/pdf-anonymisation/spec.md
+     * @spec openspec/specs/pdf-anonymisation/spec.md
      */
     public static function collapseAdjacentDuplicatePlaceholders(string $text): string
     {
@@ -418,4 +490,145 @@ class PdfTextReplacer
         // ensured the underlying PDF is correct.
         return $result ?? $text;
     }//end collapseAdjacentDuplicatePlaceholders()
+
+    /**
+     * Resolve the tri-state `preserveStructure` option to an effective
+     * boolean (design.md D3 / REQ-ORTPR-004).
+     *
+     * @param bool|null $preserveStructure Caller-supplied option: null = auto,
+     *                                     true = attempt, false = skip.
+     * @param int       $tagCountBefore    Structure-element count of the input,
+     *                                     used by the auto rule.
+     *
+     * @return bool True when preservation is in effect for this run.
+     *
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-004
+     */
+    private function resolveRequestedPreservation(?bool $preserveStructure, int $tagCountBefore): bool
+    {
+        if ($preserveStructure === null) {
+            // Auto: preserve iff the input is tagged.
+            return ($tagCountBefore > 0);
+        }
+
+        return $preserveStructure;
+    }//end resolveRequestedPreservation()
+
+    /**
+     * Apply the conservative `preserved` attestation rule and build the
+     * `structurePreservation` result block (design.md D1 / D2, REQ-ORTPR-002).
+     *
+     * `preserved: true` is asserted ONLY when preservation was requested AND
+     * the input was tagged AND `tagCountAfter === tagCountBefore` AND the
+     * structure tree is still detected on the output AND no structured
+     * content stream was modified by the replacement. SAPP has zero
+     * marked-content (`/MCID`) awareness, so ANY content-stream mutation on
+     * a tagged document means the tag→content correspondence can no longer
+     * be guaranteed — the engine reports the degradation explicitly rather
+     * than presenting a pass-through as a faithful preservation.
+     *
+     * @param bool|null $rawOption            The RAW caller-supplied tri-state option (distinct from
+     *                                        $requested — needed to tell "explicit false" apart from
+     *                                        "auto resolved to false because untagged", which report
+     *                                        different `lossReasons`, design.md D3/REQ-ORTPR-005).
+     * @param bool      $requested            Resolved preservation option (see {@see resolveRequestedPreservation()}).
+     * @param int       $tagCountBefore       `/StructElem` count of the input.
+     * @param int       $tagCountAfter        `/StructElem` count of the output.
+     * @param bool      $structureIntactAfter Whether the output is still detected as tagged.
+     * @param int       $streamsModified      Count of content streams the replacement touched
+     *                                        (SAPP's `replace_text_in_document` stats).
+     *
+     * @return StructurePreservation The result block for this run.
+     *
+     * @spec openspec/changes/tag-preserving-redaction/specs/tag-preserving-redaction/spec.md#REQ-ORTPR-002
+     */
+    private function attestStructurePreservation(
+        ?bool $rawOption,
+        bool $requested,
+        int $tagCountBefore,
+        int $tagCountAfter,
+        bool $structureIntactAfter,
+        int $streamsModified
+    ): StructurePreservation {
+        if ($rawOption === false) {
+            // Explicit opt-out: no assertion of loss either, per D3 — counts
+            // are still measured for the truthful report.
+            return new StructurePreservation(
+                requested: false,
+                preserved: false,
+                tagCountBefore: $tagCountBefore,
+                tagCountAfter: $tagCountAfter,
+                lossReasons: []
+            );
+        }
+
+        if ($tagCountBefore === 0) {
+            // Preservation requested (auto or explicit true) but not
+            // applicable — the input was not tagged. $requested reflects
+            // the resolved auto/true outcome (false for auto+untagged, true
+            // for explicit true — REQ-ORTPR-004); either way the loss is
+            // reported as "not applicable", not a failure.
+            return new StructurePreservation(
+                requested: $requested,
+                preserved: false,
+                tagCountBefore: $tagCountBefore,
+                tagCountAfter: $tagCountAfter,
+                lossReasons: [StructurePreservation::LOSS_REASON_INPUT_NOT_TAGGED]
+            );
+        }
+
+        $lossReasons = [];
+        if ($tagCountAfter !== $tagCountBefore || $structureIntactAfter === false) {
+            $lossReasons[] = StructurePreservation::LOSS_REASON_STRUCTTREEROOT_DROPPED;
+        } else if ($streamsModified > 0) {
+            $lossReasons[] = StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN;
+        }
+
+        return new StructurePreservation(
+            requested: true,
+            preserved: (count($lossReasons) === 0),
+            tagCountBefore: $tagCountBefore,
+            tagCountAfter: $tagCountAfter,
+            lossReasons: $lossReasons
+        );
+    }//end attestStructurePreservation()
+
+    /**
+     * Build the `structurePreservation` block for the empty-substitutions
+     * no-op path (REQ-ORTPR-005): output bytes are identical to the input,
+     * so `tagCountAfter` trivially equals `tagCountBefore` and nothing was
+     * modified.
+     *
+     * @param string    $pdfBytes          The (unchanged) input bytes.
+     * @param bool|null $preserveStructure Caller-supplied tri-state option.
+     *
+     * @return StructurePreservation The result block for this no-op run.
+     */
+    private function measureNoOpStructurePreservation(string $pdfBytes, ?bool $preserveStructure): StructurePreservation
+    {
+        $tagCountBefore = 0;
+
+        try {
+            $doc = PDFDoc::from_string(buffer: $pdfBytes);
+            if ($doc !== false) {
+                $tagCountBefore = $this->structureInspector->countStructElements(doc: $doc);
+            }
+        } catch (Throwable $e) {
+            // Measurement-only failure on a no-op call: fall back to 0
+            // rather than letting an inspection error mask the (successful)
+            // no-op — the caller still gets $pdfBytes back unchanged.
+            $tagCountBefore = 0;
+        }
+
+        $requested = $this->resolveRequestedPreservation(preserveStructure: $preserveStructure, tagCountBefore: $tagCountBefore);
+
+        return $this->attestStructurePreservation(
+            rawOption: $preserveStructure,
+            requested: $requested,
+            tagCountBefore: $tagCountBefore,
+            tagCountAfter: $tagCountBefore,
+            structureIntactAfter: true,
+            streamsModified: 0
+        );
+    }//end measureNoOpStructurePreservation()
 }//end class

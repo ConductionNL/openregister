@@ -82,6 +82,18 @@ class PermissionHandlerCustomScopeTest extends TestCase
         $this->container       = $this->createMock(ContainerInterface::class);
         $this->eventDispatcher = $this->createMock(IEventDispatcher::class);
 
+        // These schemas legitimately belong to no register, so the register
+        // cascade finds nothing and authorization resolves to "none configured".
+        // The container MUST be wired: an unconfigured mock returns null, and
+        // calling a method on null is an ERROR the resolver now (correctly)
+        // treats as unresolvable -> deny, which would mask what these tests are
+        // actually about (custom-scope listener voting).
+        $registerMapper = $this->createMock(RegisterMapper::class);
+        $registerMapper->method('getFirstRegisterWithSchema')->willReturn(null);
+        $this->container->method('get')
+            ->with(RegisterMapper::class)
+            ->willReturn($registerMapper);
+
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('getValueBool')->willReturn(true);
 

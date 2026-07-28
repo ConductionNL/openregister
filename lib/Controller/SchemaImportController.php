@@ -80,7 +80,9 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The discovery results.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function types(string $dialect): JSONResponse
     {
@@ -101,7 +103,9 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The snapshot info.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function snapshot(string $dialect): JSONResponse
     {
@@ -121,7 +125,9 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The created schema, or a structured error.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-import/spec.md
      */
     public function import(string $dialect): JSONResponse
     {
@@ -170,7 +176,9 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The classified diff (preview) or the updated schema.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @NoCSRFRequired
+     *
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.ShortVariable) $id matches the {id} URL route parameter; renaming breaks route binding.
      */
@@ -247,12 +255,11 @@ class SchemaImportController extends Controller
      */
     private function persistNewSchema(ImportedSchema $imported): Schema
     {
-        $payload = $imported->toSchemaArray();
-
-        $schema = new Schema();
-        $schema->hydrate($payload);
-
-        return $this->schemaMapper->insert($schema);
+        // Use the canonical creation path so the schema gets its uuid, slug,
+        // version, facet configuration and delta extraction. Hand-rolling
+        // hydrate()+insert() bypasses cleanObject() and inserts a NULL uuid,
+        // which the NOT NULL constraint on oc_openregister_schemas rejects.
+        return $this->schemaMapper->createFromArray($imported->toSchemaArray());
 
     }//end persistNewSchema()
 

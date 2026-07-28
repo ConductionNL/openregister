@@ -39,7 +39,7 @@
  * /apps/mail/api/messages/{id}/body) so the list always reflects the open
  * email — never global PII from other messages.
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-4
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
@@ -66,7 +66,7 @@ export default {
 	},
 	computed: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		groupedEntities() {
 			const groups = {}
@@ -82,7 +82,7 @@ export default {
 	},
 	watch: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		messageId() {
 			this.loadEntities()
@@ -95,7 +95,7 @@ export default {
 		t,
 		/**
 		 * @param type
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		formatType(type) {
 			const labels = {
@@ -112,7 +112,7 @@ export default {
 		 * Extract the entities present in the current email — envelope people
 		 * and addresses plus body-level emails / phones / IBANs / links.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		async loadEntities() {
 			if (!this.messageId) {
@@ -136,7 +136,7 @@ export default {
 		/**
 		 * Build the deduplicated entity list from one message envelope.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-misc/tasks.md#task-3
+		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		extractEntities(envelope) {
 			const seen = new Set()

@@ -128,7 +128,7 @@ class ReadFileHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File lookup requires handling ID vs path scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple file resolution paths with fallback logic
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getFile(ObjectEntity|string|null $object=null, string|int $file=''): ?File
     {
@@ -213,7 +213,7 @@ class ReadFileHandler
      * @phpstan-param  int $fileId
      * @phpstan-return File|null
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getFileById(int $fileId): ?File
     {
@@ -262,7 +262,7 @@ class ReadFileHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag is intentional for simple filter toggle
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getFiles(
         ObjectEntity|string $object,

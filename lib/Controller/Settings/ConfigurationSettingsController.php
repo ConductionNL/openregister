@@ -65,7 +65,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with RBAC settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function getRbacSettings(): JSONResponse
     {
@@ -84,7 +84,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated RBAC settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-12
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function updateRbacSettings(): JSONResponse
     {
@@ -104,7 +104,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with organisation settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function getOrganisationSettings(): JSONResponse
     {
@@ -123,7 +123,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated organisation settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function updateOrganisationSettings(): JSONResponse
     {
@@ -143,7 +143,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with multitenancy settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function getMultitenancySettings(): JSONResponse
     {
@@ -162,7 +162,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated multitenancy settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-13
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function updateMultitenancySettings(): JSONResponse
     {
@@ -182,7 +182,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getObjectSettings(): JSONResponse
     {
@@ -212,7 +212,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function updateObjectSettings(): JSONResponse
     {
@@ -250,7 +250,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with patched object settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-1
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function patchObjectSettings(): JSONResponse
     {
@@ -264,7 +264,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with retention settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function getRetentionSettings(): JSONResponse
     {
@@ -283,7 +283,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated retention settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-11
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function updateRetentionSettings(): JSONResponse
     {
@@ -303,7 +303,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with archival settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function getArchivalSettings(): JSONResponse
     {
@@ -322,7 +322,7 @@ class ConfigurationSettingsController extends Controller
      *
      * @return JSONResponse JSON response with updated archival settings
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-14
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function updateArchivalSettings(): JSONResponse
     {

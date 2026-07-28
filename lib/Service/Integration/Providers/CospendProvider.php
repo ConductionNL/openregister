@@ -158,7 +158,7 @@ class CospendProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>> List of registry leaf rows.
      *
-     * @spec openspec/changes/integration-cospend/tasks.md
+     * @spec openspec/specs/integration-cospend/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {

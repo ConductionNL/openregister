@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -103,7 +103,7 @@ class ToolRegistry
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      * @param LoggerInterface  $logger          Logger
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         IEventDispatcher $eventDispatcher,
@@ -120,7 +120,7 @@ class ToolRegistry
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-1
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function loadTools(): void
     {
@@ -165,7 +165,7 @@ class ToolRegistry
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-2
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
@@ -220,7 +220,7 @@ class ToolRegistry
      *
      * @return ToolInterface|null Tool instance or null if not found
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTool(string $id): ?ToolInterface
     {
@@ -238,8 +238,8 @@ class ToolRegistry
      *
      * @return array Array of tool IDs and their metadata
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-10
+     * @spec openspec/specs/ai-mcp/spec.md
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getAllTools(): array
     {
@@ -262,7 +262,7 @@ class ToolRegistry
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
      *
-     * @spec openspec/changes/retrofit-2026-05-24-ai-mcp/tasks.md#task-3
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTools(array $ids): array
     {

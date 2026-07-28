@@ -100,7 +100,7 @@ class RegisterCacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-object-facade/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidate(int $registerId): void
     {

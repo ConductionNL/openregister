@@ -110,7 +110,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with object names or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -260,7 +260,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with object names or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -372,7 +372,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with object name or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -469,7 +469,7 @@ class NamesController extends Controller
      *     distributed_cache_available: true, warmup_available: true}},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -517,7 +517,7 @@ class NamesController extends Controller
      *
      * @return JSONResponse JSON response with warmup result or error
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-settings-observ/tasks.md#task-22
+     * @spec openspec/specs/schema-driven-read-coercion/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]

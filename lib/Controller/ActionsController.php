@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -129,7 +129,7 @@ class ActionsController extends Controller
      *
      * @return JSONResponse|null 403 response when not admin, null when allowed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     private function requireAdmin(): ?JSONResponse
     {
@@ -168,8 +168,8 @@ class ActionsController extends Controller
      * parameters (limit, offset, page, search, field filters); each is a single isset/cast guard and
      * cannot be split without duplicating the parameter-parsing logic.
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-5
+     * @spec openspec/specs/actions/spec.md
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -276,7 +276,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -309,7 +309,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function create(): JSONResponse
@@ -363,7 +363,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function update(int $id): JSONResponse
@@ -412,7 +412,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function patch(int $id): JSONResponse
@@ -433,7 +433,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function destroy(int $id): JSONResponse
@@ -472,7 +472,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function test(int $id): JSONResponse
@@ -518,7 +518,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-4
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
@@ -578,7 +578,7 @@ class ActionsController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-actions/tasks.md#task-3
+     * @spec openspec/specs/actions/spec.md
      */
     #[NoCSRFRequired]
     public function migrateFromHooks(int $schemaId): JSONResponse

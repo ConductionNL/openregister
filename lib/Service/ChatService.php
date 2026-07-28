@@ -20,8 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -211,7 +211,7 @@ class ChatService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function processMessage(
         int $conversationId,
@@ -369,7 +369,7 @@ class ChatService
      *
      * @return string Generated title
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -387,7 +387,7 @@ class ChatService
      *
      * @return string Unique title
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-9
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {

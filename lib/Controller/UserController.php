@@ -107,7 +107,7 @@ class UserController extends Controller
      *
      * @suppressWarnings(PHPMD.ShortMethodName) Standard REST API endpoint name for current user
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function me(): JSONResponse
     {
@@ -153,7 +153,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with updated user profile
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function updateMe(): JSONResponse
     {
@@ -231,7 +231,7 @@ class UserController extends Controller
      *
      * @return JSONResponse A JSON response containing login result and user information
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-9
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function login(): JSONResponse
     {
@@ -391,7 +391,7 @@ class UserController extends Controller
      *
      * @return JSONResponse A JSON response confirming logout
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-9
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function logout(): JSONResponse
     {
@@ -410,7 +410,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function changePassword(): JSONResponse
     {
@@ -476,7 +476,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function uploadAvatar(): JSONResponse
     {
@@ -520,7 +520,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-10
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function deleteAvatar(): JSONResponse
     {
@@ -555,7 +555,7 @@ class UserController extends Controller
      *
      * @return JSONResponse|DataDownloadResponse JSON response with export data
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function exportData(): JSONResponse|DataDownloadResponse
     {
@@ -599,7 +599,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with preferences
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function getNotificationPreferences(): JSONResponse
     {
@@ -627,7 +627,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with updated preferences
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function updateNotificationPreferences(): JSONResponse
     {
@@ -666,7 +666,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with activity list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function getActivity(): JSONResponse
     {
@@ -700,7 +700,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with token list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function listTokens(): JSONResponse
     {
@@ -728,7 +728,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with the created token
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function createToken(): JSONResponse
     {
@@ -772,7 +772,7 @@ class UserController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function revokeToken(string $id): JSONResponse
     {
@@ -807,7 +807,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function requestDeactivation(): JSONResponse
     {
@@ -851,7 +851,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with status
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function getDeactivationStatus(): JSONResponse
     {
@@ -879,7 +879,7 @@ class UserController extends Controller
      *
      * @return JSONResponse JSON response with result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-ai-gdpr-i18n/tasks.md#task-11
+     * @spec openspec/specs/auth-system/spec.md
      */
     public function cancelDeactivation(): JSONResponse
     {

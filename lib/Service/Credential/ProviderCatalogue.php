@@ -73,7 +73,7 @@ class ProviderCatalogue
      *
      * @return array<string, mixed>|null The provider entry, or null.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function get(string $providerId): ?array
     {
@@ -95,7 +95,7 @@ class ProviderCatalogue
      *
      * @return array<string, mixed> The parsed provider catalogue.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function all(): array
     {
@@ -117,7 +117,7 @@ class ProviderCatalogue
      *
      * @return array<string, mixed> The parsed provider map, or empty on error.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function load(): array
     {

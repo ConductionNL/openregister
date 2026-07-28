@@ -207,7 +207,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -297,7 +297,7 @@ export default {
 		 *
 		 * @return {Array} Array of property options
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -328,7 +328,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-views/tasks.md#task-2
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {

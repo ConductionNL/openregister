@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  */
 
 declare(strict_types=1);
@@ -51,7 +51,7 @@ use ZipArchive;
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+ * @spec openspec/specs/office-document-sanitization/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects) DOM / ZipArchive collaborators are intrinsic to ZIP-and-XML surgery.
  */
@@ -83,7 +83,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @param string $sentinel The sentinel string applied to scrubbed metadata.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function __construct(private readonly string $sentinel='DocuDesk Anonymisation')
     {
@@ -96,7 +96,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return bool True for the ODT MIME type.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function supports(string $mimeType): bool
     {
@@ -113,7 +113,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return SanitizationReport Per-category counts.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     public function sanitize(string $sourcePath, string $destPath): SanitizationReport
     {
@@ -190,7 +190,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function removeAnnotations(DOMXPath $xpath, array &$counts): void
     {
@@ -212,7 +212,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function acceptTrackedChanges(DOMXPath $xpath, array &$counts): void
     {
@@ -247,7 +247,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function flattenHyperlinks(DOMXPath $xpath, array &$counts): void
     {
@@ -265,7 +265,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function removeIdentityPlaceholders(DOMXPath $xpath, array &$counts): void
     {
@@ -285,7 +285,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubMetadata(ZipArchive $zip, array &$counts): void
     {
@@ -318,7 +318,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return int The number of fields scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubNamedFields(DOMDocument $dom, array $fields): int
     {
@@ -344,7 +344,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return int The number of fields scrubbed.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function scrubUserDefinedFields(DOMDocument $dom): int
     {
@@ -369,7 +369,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return void
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function unwrap(DOMNode $node): void
     {
@@ -394,7 +394,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return DOMDocument The loaded document.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function loadXml(string $xml): DOMDocument
     {
@@ -419,7 +419,7 @@ class OdtSanitizer implements SanitizerInterface
      *
      * @return DOMXPath The namespace-aware xpath context.
      *
-     * @spec openspec/changes/office-document-sanitization/specs/office-document-sanitization/spec.md
+     * @spec openspec/specs/office-document-sanitization/spec.md
      */
     private function xpath(DOMDocument $dom): DOMXPath
     {

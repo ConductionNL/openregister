@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Tests\Unit\Controller;
 
 use OCA\OpenRegister\Controller\ViewsController;
+use OCA\OpenRegister\Db\View;
+use OCA\OpenRegister\Service\ViewPresentationService;
 use OCA\OpenRegister\Service\ViewService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
@@ -20,6 +22,7 @@ class ViewsControllerTest extends TestCase
     private ViewsController $controller;
     private IRequest&MockObject $request;
     private ViewService&MockObject $viewService;
+    private ViewPresentationService&MockObject $viewPresentationService;
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
 
@@ -29,6 +32,7 @@ class ViewsControllerTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->viewService = $this->createMock(ViewService::class);
+        $this->viewPresentationService = $this->createMock(ViewPresentationService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
@@ -36,6 +40,7 @@ class ViewsControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->viewService,
+            $this->viewPresentationService,
             $this->userSession,
             $this->logger
         );
@@ -407,7 +412,8 @@ class ViewsControllerTest extends TestCase
                     'searchTerms'   => ['test'],
                     'facetFilters'  => ['status' => 'active'],
                     'enabledFacets' => ['status'],
-                ]
+                ],
+                null
             )
             ->willReturn($view);
 
@@ -443,7 +449,8 @@ class ViewsControllerTest extends TestCase
                     'searchTerms'   => [],
                     'facetFilters'  => [],
                     'enabledFacets' => [],
-                ]
+                ],
+                null
             )
             ->willReturn($view);
 
@@ -562,7 +569,9 @@ class ViewsControllerTest extends TestCase
                     'searchTerms'   => ['foo'],
                     'facetFilters'  => ['type' => 'bar'],
                     'enabledFacets' => ['type'],
-                ]
+                ],
+                null,
+                null
             )
             ->willReturn($view);
 
@@ -688,7 +697,8 @@ class ViewsControllerTest extends TestCase
                     'facetFilters'  => ['cat' => 'dog'],
                     'enabledFacets' => ['cat'],
                 ],
-                []
+                [],
+                null
             )
             ->willReturn($updatedView);
 
@@ -718,7 +728,8 @@ class ViewsControllerTest extends TestCase
                 false,
                 false,
                 ['registers' => [99], 'schemas' => [88]],
-                []
+                [],
+                null
             )
             ->willReturn($updatedView);
 
@@ -749,7 +760,8 @@ class ViewsControllerTest extends TestCase
                 true,
                 true,
                 ['registers' => []],
-                []
+                [],
+                null
             )
             ->willReturn($updatedView);
 
@@ -779,7 +791,8 @@ class ViewsControllerTest extends TestCase
                 false,
                 false,
                 ['registers' => []],
-                ['user1', 'user2']
+                ['user1', 'user2'],
+                null
             )
             ->willReturn($updatedView);
 
@@ -812,7 +825,8 @@ class ViewsControllerTest extends TestCase
                 true,
                 true,
                 ['registers' => [42]],
-                ['userX']
+                ['userX'],
+                null
             )
             ->willReturn($updatedView);
 
@@ -849,5 +863,276 @@ class ViewsControllerTest extends TestCase
         $data = $result->getData();
         $this->assertEquals('Failed to delete view', $data['error']);
         $this->assertEquals('Delete failed', $data['message']);
+    }
+
+    // ---------------------------------------------------------------
+    // create()/update() — presentation passthrough + validation errors
+    // ---------------------------------------------------------------
+
+    public function testCreatePassesPresentationThrough(): void
+    {
+        $this->mockAuthenticatedUser();
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $this->request->method('getParams')->willReturn([
+            'name'         => 'Kanban View',
+            'query'        => ['registers' => [1], 'schemas' => [2]],
+            'presentation' => $presentation,
+        ]);
+
+        $view = $this->createViewEntity();
+        $this->viewService->expects($this->once())
+            ->method('create')
+            ->with(
+                'Kanban View',
+                '',
+                'testuser',
+                false,
+                false,
+                ['registers' => [1], 'schemas' => [2]],
+                $presentation
+            )
+            ->willReturn($view);
+
+        $result = $this->controller->create();
+
+        $this->assertEquals(201, $result->getStatus());
+    }
+
+    public function testCreateWithInvalidPresentationReturns400(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([
+            'name'         => 'Kanban View',
+            'query'        => ['registers' => [1], 'schemas' => [2]],
+            'presentation' => ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']],
+        ]);
+
+        $this->viewService->method('create')
+            ->willThrowException(new \InvalidArgumentException('Presentation kanban.groupByField "status" is not a property of the view\'s schema'));
+
+        $result = $this->controller->create();
+
+        $this->assertEquals(400, $result->getStatus());
+        $this->assertStringContainsString('groupByField', $result->getData()['error']);
+    }
+
+    public function testUpdateWithInvalidPresentationReturns400(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([
+            'name'         => 'Kanban View',
+            'query'        => ['registers' => [1], 'schemas' => [2]],
+            'presentation' => ['viewType' => 'calendar', 'calendar' => ['dateField' => 'missing']],
+        ]);
+
+        $this->viewService->method('update')
+            ->willThrowException(new \InvalidArgumentException('Presentation calendar.dateField "missing" is not a property of the view\'s schema'));
+
+        $result = $this->controller->update('1');
+
+        $this->assertEquals(400, $result->getStatus());
+        $this->assertStringContainsString('dateField', $result->getData()['error']);
+    }
+
+    public function testPatchPreservesExistingPresentationWhenOmitted(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn(['name' => 'Renamed']);
+
+        $existingPresentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $view = $this->createViewEntity();
+        $view->setPresentation($existingPresentation);
+        $this->viewService->method('find')->willReturn($view);
+
+        $updatedView = $this->createViewEntity();
+        $this->viewService->expects($this->once())
+            ->method('update')
+            ->with(
+                '1',
+                'Renamed',
+                'Desc',
+                'testuser',
+                false,
+                false,
+                ['registers' => []],
+                [],
+                $existingPresentation
+            )
+            ->willReturn($updatedView);
+
+        $result = $this->controller->patch('1');
+
+        $this->assertEquals(200, $result->getStatus());
+    }
+
+    // ---------------------------------------------------------------
+    // kanban() — read-only board data
+    // ---------------------------------------------------------------
+
+    public function testKanbanNotAuthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $result = $this->controller->kanban('1');
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testKanbanNotFound(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->viewService->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $result = $this->controller->kanban('999');
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    public function testKanbanSuccess(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $view = $this->createViewEntity();
+        $this->viewService->method('find')->willReturn($view);
+
+        $board = [
+            'viewType'     => 'kanban',
+            'groupByField' => 'status',
+            'columns'      => [
+                ['value' => 'todo', 'cards' => [], 'total' => 0, 'limit' => 20, 'offset' => 0],
+            ],
+        ];
+        $this->viewPresentationService->method('getKanbanBoard')->willReturn($board);
+
+        $result = $this->controller->kanban('1');
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertEquals($board, $result->getData());
+    }
+
+    public function testKanbanInvalidConfigReturns400(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $view = $this->createViewEntity();
+        $this->viewService->method('find')->willReturn($view);
+        $this->viewPresentationService->method('getKanbanBoard')
+            ->willThrowException(new \InvalidArgumentException('View is not a kanban view (viewType is "table")'));
+
+        $result = $this->controller->kanban('1');
+
+        $this->assertEquals(400, $result->getStatus());
+    }
+
+    // ---------------------------------------------------------------
+    // calendar() — date-range object query
+    // ---------------------------------------------------------------
+
+    public function testCalendarNotAuthenticated(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+
+        $result = $this->controller->calendar('1');
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testCalendarMissingRangeReturns400(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([]);
+
+        $result = $this->controller->calendar('1');
+
+        $this->assertEquals(400, $result->getStatus());
+    }
+
+    public function testCalendarSuccess(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([
+            'start' => '2026-07-01',
+            'end'   => '2026-07-31',
+        ]);
+
+        $view = $this->createViewEntity();
+        $this->viewService->method('find')->willReturn($view);
+
+        $calendarResult = [
+            'viewType'     => 'calendar',
+            'dateField'    => 'dueDate',
+            'endDateField' => null,
+            'rangeStart'   => '2026-07-01',
+            'rangeEnd'     => '2026-07-31',
+            'objects'      => [],
+            'total'        => 0,
+        ];
+        $this->viewPresentationService->method('getCalendarObjects')->willReturn($calendarResult);
+
+        $result = $this->controller->calendar('1');
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertEquals($calendarResult, $result->getData());
+    }
+
+    public function testCalendarNotFound(): void
+    {
+        $this->mockAuthenticatedUser();
+        $this->request->method('getParams')->willReturn([
+            'start' => '2026-07-01',
+            'end'   => '2026-07-31',
+        ]);
+        $this->viewService->method('find')
+            ->willThrowException(new DoesNotExistException('not found'));
+
+        $result = $this->controller->calendar('999');
+
+        $this->assertEquals(404, $result->getStatus());
+    }
+
+    // ---------------------------------------------------------------
+    // Kanban drag-to-move MUST reuse the guarded object PATCH/PUT path
+    // (REQ-VIEW-KANBAN-03, design.md D3) — no bespoke "move card" endpoint.
+    // ---------------------------------------------------------------
+
+    public function testNoBespokeCardMoveEndpointOnController(): void
+    {
+        $reflection  = new \ReflectionClass(ViewsController::class);
+        $methodNames = array_map(
+            fn (\ReflectionMethod $m): string => $m->getName(),
+            $reflection->getMethods(\ReflectionMethod::IS_PUBLIC)
+        );
+
+        $suspicious = array_values(array_filter(
+            $methodNames,
+            fn (string $name): bool => (bool) preg_match('/move|drag/i', $name)
+        ));
+
+        $this->assertSame(
+            [],
+            $suspicious,
+            'Kanban drag-to-move must go through the existing guarded object PATCH/PUT path — '
+                .'ViewsController must not define a bespoke move/drag-card endpoint.'
+        );
+    }
+
+    public function testKanbanAndCalendarRoutesAreReadOnlyGet(): void
+    {
+        $routesFile = dirname(__DIR__, 3).'/appinfo/routes.php';
+        $this->assertFileExists($routesFile);
+        $contents = file_get_contents($routesFile);
+
+        $this->assertMatchesRegularExpression(
+            "/'views#kanban'\s*,\s*'url'\s*=>\s*'\/api\/views\/\{id\}\/kanban'\s*,\s*'verb'\s*=>\s*'GET'/",
+            $contents
+        );
+        $this->assertMatchesRegularExpression(
+            "/'views#calendar'\s*,\s*'url'\s*=>\s*'\/api\/views\/\{id\}\/calendar'\s*,\s*'verb'\s*=>\s*'GET'/",
+            $contents
+        );
+        $this->assertDoesNotMatchRegularExpression("/'views#(moveCard|dragCard|move|drag)'/i", $contents);
     }
 }

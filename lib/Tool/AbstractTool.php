@@ -91,7 +91,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function setAgent(?Agent $agent): void
     {
@@ -110,7 +110,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return string|null User ID or null if no user context
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function getUserId(?string $explicitUserId=null): ?string
     {
@@ -140,7 +140,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return bool True if user context is available
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function hasUserContext(?string $explicitUserId=null): bool
     {
@@ -157,7 +157,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @return array Query parameters with view filters applied
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function applyViewFilters(array $params): array
     {
@@ -187,7 +187,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function formatSuccess($data, string $message='Success'): array
     {
@@ -208,7 +208,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-return array{success: false, error: string, details?: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function formatError(string $message, $details=null): array
     {
@@ -240,7 +240,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @psalm-suppress PossiblyNullArgument
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function log(string $functionName, array $parameters, string $level='info', string $message=''): void
     {
@@ -307,7 +307,7 @@ abstract class AbstractTool implements ToolInterface
      *
      * @throws \InvalidArgumentException If any required parameter is missing
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function validateParameters(array $parameters, array $required): void
     {
@@ -349,7 +349,7 @@ abstract class AbstractTool implements ToolInterface
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple type conversion paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive type handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __call(string $name, array $arguments)
     {

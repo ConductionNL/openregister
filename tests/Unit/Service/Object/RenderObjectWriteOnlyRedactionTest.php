@@ -262,17 +262,23 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
     }
 
     /**
-     * A system-context render (`_rbac: false`) is NOT redacted.
+     * `writeOnly` is NOT `_rbac`-gated: even a `_rbac: false` render is redacted.
      *
-     * The engine reads sources, configurations and credentials through `ObjectService::find()`
-     * with `_rbac: false`, and find() always renders through renderEntity(). If redaction
-     * applied there too, every synchronisation and the credential engine would lose the
-     * secret they legitimately need. `_rbac: false` is OR's existing marker for trusted
-     * internal reads, so it is the bypass.
+     * This test previously asserted the OPPOSITE — that `_rbac: false` returned the
+     * secret — and had been failing at HEAD ever since #389 changed the rule. It was the
+     * pre-#389 contract left behind, which is worse than no test: it documented a leak as
+     * the intended behaviour. #389 made the strip unconditional precisely because an admin
+     * HTTP GET renders with `_rbac: false`, so gating writeOnly on `_rbac` handed every
+     * admin-context read the plaintext secret.
+     *
+     * The real bypass for internal engines is `_render: false` (ObjectService::find), which
+     * returns the raw entity WITHOUT entering renderEntity at all — see
+     * testRenderFalseBypassesRedactionEntirelyForTheEngine(). Redaction is a property of the
+     * render boundary; code that must not cross it does not render.
      *
      * @return void
      */
-    public function testSystemContextReadIsNotRedacted(): void
+    public function testWriteOnlyIsStrippedEvenForARbacFalseRender(): void
     {
         $entity = $this->sourceEntity();
 
@@ -292,8 +298,9 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
 
         $data = $rendered->getObject();
 
-        $this->assertSame('SECRET_APIKEY_MUST_NOT_LEAK', $data['apiKey'], 'The engine (system context) must still receive the secret');
-        $this->assertSame('SECRET_CLIENTSECRET_MUST_NOT_LEAK', $data['secret']);
+        $this->assertArrayNotHasKey('apiKey', $data, 'writeOnly is a hard render-boundary rule and is not _rbac-gated (#389)');
+        $this->assertArrayNotHasKey('secret', $data);
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rendered->jsonSerialize()));
     }
 
     /**
@@ -387,17 +394,130 @@ class RenderObjectWriteOnlyRedactionTest extends TestCase
     }
 
     /**
-     * A system-context list read (`_rbac: false`) is NOT redacted — the engine batch-reads
-     * sources and must still get the secrets.
+     * The cheap-path strips writeOnly even when `_rbac: false` (openregister#460).
+     *
+     * This test asserted the OPPOSITE until #460: it pinned a bypass whose comment claimed
+     * "the engine batch-reads sources and must still get the secrets". No such consumer
+     * exists — `redactWriteOnlyFromRows()` is reachable only from `searchObjectsPaginated`,
+     * whose every internal caller passes `_rbac: true`. The only callers that pass
+     * `_rbac: false` are the three `ObjectsController` list/search sites, which derive it as
+     * `($isAdmin === false)` and serialise straight to a `JSONResponse` — so the bypass had
+     * exactly one real-world effect: handing admins plaintext secrets.
+     *
+     * `_rbac: false` on a read means "bypass WHICH OBJECTS you may see", never "you may see
+     * secrets". Internal code that needs the raw value uses `_render: false`, which never
+     * enters a render path at all — see testTheRawEntityStillCarriesTheSecretForTheEngine()
+     * here and testFindSkipsRenderingWhenRenderFalse() in ObjectServiceTest. This mirrors
+     * testWriteOnlyIsStrippedEvenForARbacFalseRender() on the single-object path (#389).
      *
      * @return void
      */
-    public function testCheapPathRowRedactionSkipsSystemContext(): void
+    public function testCheapPathRowRedactionStripsWriteOnlyEvenWhenRbacIsFalse(): void
     {
         $rows = [$this->sourceEntity()];
 
         $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, false);
 
-        $this->assertSame('SECRET_APIKEY_MUST_NOT_LEAK', $rows[0]->getObject()['apiKey']);
+        $data = $rows[0]->getObject();
+        $this->assertArrayNotHasKey('apiKey', $data, 'An admin/system list read must not receive writeOnly secrets (#460).');
+        $this->assertArrayNotHasKey('secret', $data);
+        $this->assertSame('BRP HaalCentraal', $data['name'], 'Non-secret properties survive the strip.');
+
+        // The @self.relations mirror rides the same unconditional boundary (#429).
+        $this->assertArrayNotHasKey('apiKey', $rows[0]->getRelations());
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rows[0]->jsonSerialize()));
+    }
+
+    /**
+     * The cheap-path strips writeOnly under SystemOperationContext too (openregister#460).
+     *
+     * @return void
+     */
+    public function testCheapPathRowRedactionStripsWriteOnlyUnderSystemOperationContext(): void
+    {
+        $rows = [$this->sourceEntity()];
+
+        \OCA\OpenRegister\Service\SystemOperationContext::run(
+            function () use (&$rows) {
+                $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, true);
+            }
+        );
+
+        $this->assertArrayNotHasKey('apiKey', $rows[0]->getObject());
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rows[0]->jsonSerialize()));
+    }
+
+    /**
+     * ARRAY rows are stripped when `_rbac: false` as well — the SOLR/index list shape must
+     * not become the leak the ObjectEntity shape no longer is (openregister#460).
+     *
+     * @return void
+     */
+    public function testCheapPathArrayRowRedactionStripsWriteOnlyEvenWhenRbacIsFalse(): void
+    {
+        $rows = [
+            [
+                'name'     => 'BRP HaalCentraal',
+                'apiKey'   => 'SECRET_APIKEY_MUST_NOT_LEAK',
+                'password' => 'SECRET_PASSWORD_MUST_NOT_LEAK',
+                '@self'    => [
+                    'schema'    => 213,
+                    'relations' => ['apiKey' => 'SECRET_APIKEY_MUST_NOT_LEAK', 'name' => 'BRP HaalCentraal'],
+                ],
+            ],
+        ];
+
+        $this->renderer($this->schemaWithWriteOnlySecrets())->redactWriteOnlyFromRows($rows, false);
+
+        $this->assertArrayNotHasKey('apiKey', $rows[0]);
+        $this->assertArrayNotHasKey('password', $rows[0]);
+        $this->assertArrayNotHasKey('apiKey', $rows[0]['@self']['relations']);
+        $this->assertSame('BRP HaalCentraal', $rows[0]['name']);
+        $this->assertStringNotContainsString('MUST_NOT_LEAK', json_encode($rows));
+    }
+
+    /**
+     * Property `authorization.read` stripping REMAINS `_rbac`-gated on the cheap path
+     * (openregister#460 changed writeOnly ONLY).
+     *
+     * The two strips share a method but are different rules with different boundaries:
+     * `authorization.read` is a group-based visibility rule that trusted internal reads are
+     * meant to bypass (mirroring PermissionHandler::hasPermission()), whereas writeOnly is a
+     * secret boundary nobody bypasses. #460's whole point is that conflating them leaked
+     * secrets — so this test pins the OTHER half, guarding against "fixing" writeOnly by
+     * over-applying the strip and breaking the internal reads that legitimately depend on
+     * the authorization bypass.
+     *
+     * @return void
+     */
+    public function testCheapPathAuthorizationReadStrippingRemainsRbacGated(): void
+    {
+        $schema = new Schema();
+        $ref    = new ReflectionClass($schema);
+        $idProp = $ref->getProperty('id');
+        $idProp->setAccessible(true);
+        $idProp->setValue($schema, 214);
+        $schema->setSlug('case');
+        $schema->setProperties(
+            [
+                'title'        => ['type' => 'string'],
+                'internalNote' => ['type' => 'string', 'authorization' => ['read' => ['staff']]],
+            ]
+        );
+
+        $row = new ObjectEntity();
+        $row->setUuid('case-1');
+        $row->setRegister('1');
+        $row->setSchema('214');
+        $row->setObject(['title' => 'Case', 'internalNote' => 'staff-only-note']);
+
+        $rows = [$row];
+        $this->renderer($schema)->redactWriteOnlyFromRows($rows, false);
+
+        $this->assertSame(
+            'staff-only-note',
+            $rows[0]->getObject()['internalNote'],
+            'A trusted internal read (_rbac: false) must still bypass the authorization.read strip.'
+        );
     }
 }

@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+ * @spec openspec/specs/credential-broker/spec.md
  */
 
 declare(strict_types=1);
@@ -79,7 +79,7 @@ class ImportCredentialBrokerRegister implements IRepairStep
      *
      * @return string The step name.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function getName(): string
     {
@@ -93,7 +93,7 @@ class ImportCredentialBrokerRegister implements IRepairStep
      *
      * @return void
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function run(IOutput $output): void
     {

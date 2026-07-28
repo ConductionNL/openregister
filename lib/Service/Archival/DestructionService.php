@@ -21,15 +21,15 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -158,8 +158,8 @@ class DestructionService
      *
      * @return array<int, array<string, mixed>> Array of eligible object data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function findEligibleObjects(array $existingListObjectIds=[]): array
     {
@@ -240,8 +240,8 @@ class DestructionService
      *
      * @return array<string, mixed> The created destruction list data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function createDestructionList(array $eligibleObjects): array
     {
@@ -292,9 +292,9 @@ class DestructionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Configuration-driven dual approval toggle
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
-     * @spec openspec/changes/revive-or-dead-capabilities/specs/archival-destruction-workflow/spec.md#archival-approve-route-executes-destruction
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function approveList(
         array $destructionList,
@@ -403,7 +403,7 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-3
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function handlePartialApproval(
         array $destructionList,
@@ -454,8 +454,8 @@ class DestructionService
      *
      * @return array<string, mixed> The updated destruction list.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function rejectList(array $destructionList, string $reason): array
     {
@@ -498,50 +498,6 @@ class DestructionService
     }//end rejectList()
 
     /**
-     * Validate a destruction list for pre-flight checks.
-     *
-     * Scans all objects (and their cascade targets) for legal holds.
-     *
-     * @param array<string, mixed> $destructionList The destruction list to validate.
-     *
-     * @return array<string, mixed> Validation result with warnings and blocked objects.
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     */
-    public function validateDestructionList(array $destructionList): array
-    {
-        $warnings = [];
-        $blocked  = [];
-
-        foreach ($destructionList['objects'] as $objectEntry) {
-            $uuid = $objectEntry['uuid'];
-
-            try {
-                $object = $this->objectMapper->findByUuid($uuid);
-
-                // Check for legal hold.
-                if ($this->legalHoldService->hasActiveHold($object) === true) {
-                    $blocked[] = [
-                        'uuid'   => $uuid,
-                        'reason' => 'active_legal_hold',
-                    ];
-                }
-            } catch (\Exception $e) {
-                $warnings[] = [
-                    'uuid'   => $uuid,
-                    'reason' => 'object_not_found',
-                ];
-            }
-        }
-
-        return [
-            'valid'    => empty($blocked),
-            'warnings' => $warnings,
-            'blocked'  => $blocked,
-        ];
-    }//end validateDestructionList()
-
-    /**
      * Extend the archiefactiedatum for an object by the configured period.
      *
      * @param string $uuid            The object UUID.
@@ -550,7 +506,7 @@ class DestructionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function extendArchiefactiedatum(string $uuid, string $extensionPeriod, string $reason): void
     {
@@ -594,7 +550,7 @@ class DestructionService
      *
      * @return string The user ID or 'system' if no user is authenticated.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function getCurrentUserId(): string
     {

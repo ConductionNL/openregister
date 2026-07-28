@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -59,8 +59,8 @@ class SftpTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-34
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -133,7 +133,7 @@ class SftpTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function testConnection(array $config): bool
     {
@@ -164,7 +164,7 @@ class SftpTransport implements TransportInterface
      *
      * @return string The transport name.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function getName(): string
     {
@@ -180,7 +180,7 @@ class SftpTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     private function validateConfig(array $config): void
     {
@@ -207,7 +207,7 @@ class SftpTransport implements TransportInterface
      *
      * @psalm-suppress UndefinedClass
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
      */

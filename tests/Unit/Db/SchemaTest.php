@@ -582,6 +582,33 @@ class SchemaTest extends TestCase
         $this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
     }
 
+    /**
+     * #context-chat-provider task 1.1: `x-openregister-contextchat` must be
+     * on the annotation vocabulary allow-list so it round-trips through
+     * setConfiguration() instead of being silently dropped (same
+     * or#460/#462-class bug the allow-list exists to prevent).
+     */
+    public function testContextChatAnnotationRoundTrips(): void
+    {
+        $this->schema->setConfiguration(['x-openregister-contextchat' => true]);
+        $result = $this->schema->getConfiguration();
+        $this->assertIsArray($result);
+        $this->assertArrayHasKey('x-openregister-contextchat', $result);
+        $this->assertTrue($result['x-openregister-contextchat']);
+        $this->assertTrue($this->schema->isContextChatIndexingEnabled());
+    }
+
+    public function testIsContextChatIndexingEnabledDefaultFalse(): void
+    {
+        $this->assertFalse($this->schema->isContextChatIndexingEnabled());
+    }
+
+    public function testIsContextChatIndexingEnabledFalseWhenFlagFalse(): void
+    {
+        $this->schema->setConfiguration(['x-openregister-contextchat' => false]);
+        $this->assertFalse($this->schema->isContextChatIndexingEnabled());
+    }
+
     // --- Searchable ---
 
     public function testIsSearchableDefaultTrue(): void

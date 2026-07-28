@@ -329,7 +329,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+ * @spec openspec/specs/data-import-export/spec.md
  */
 import {
 	NcButton,
@@ -417,7 +417,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -464,7 +464,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -687,7 +687,7 @@ export default {
 		},
 		/**
 		 * @param option
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-14
+		 * @spec openspec/specs/data-import-export/spec.md
 		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)

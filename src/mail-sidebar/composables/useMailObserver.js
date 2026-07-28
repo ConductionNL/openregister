@@ -5,7 +5,7 @@
  *
  * @package
  *
- * @spec openspec/changes/retrofit-2026-05-24-mail-sidebar/tasks.md#task-2
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import { ref, onMounted, onBeforeUnmount } from 'vue'

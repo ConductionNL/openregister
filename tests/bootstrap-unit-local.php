@@ -47,6 +47,15 @@ if (is_dir($ocpStubBase . '/OCP') === true) {
 // IRootFolder fails unless another suite happened to load the stub first.
 require_once __DIR__ . '/stubs/NextcloudInternalStubs.php';
 
+// Doriath custody-leaf contract stubs + test fixtures (credential-doriath-leaf).
+// PART 1 is class_exists-guarded (the real OCA\Doriath\* classes win whenever the
+// Doriath app is autoloadable), PART 2 declares the always-present
+// OCA\OpenRegister\Tests\Fixtures\Doriath\* recording fakes that the credential
+// Doriath-store unit tests inject through the production classes' protected seams.
+// Loading it here (never via composer autoload — see the file header) is what makes
+// DoriathCredentialStoreTest / CredentialStoreResolverTest resolve their fixtures.
+require_once __DIR__ . '/stubs/DoriathStubs.php';
+
 // Minimal in-process Doctrine\DBAL\* stubs.
 // OCP\DB\QueryBuilder\IQueryBuilder references ParameterType::*, Types::*,
 // ArrayParameterType::*, and Connection::* class constants at parse time

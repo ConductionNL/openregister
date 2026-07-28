@@ -79,6 +79,71 @@ class AggregationQueryTest extends TestCase
     }//end testGroupByMustHaveField()
 
 
+    public function testMultiFieldGroupByFieldsShape(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'sum',
+            field: 'amount',
+            filter: [],
+            groupBy: ['fields' => ['vendorId', 'dueDateBucket']]
+        );
+        $this->assertTrue($q->isGrouped());
+        $this->assertTrue($q->isMultiFieldGroupBy());
+        $this->assertSame(['vendorId', 'dueDateBucket'], $q->getGroupByFields());
+        // Backward-compatible accessor returns the FIRST field only.
+        $this->assertSame('vendorId', $q->getGroupByField());
+
+    }//end testMultiFieldGroupByFieldsShape()
+
+
+    public function testMultiFieldGroupByPlainListShape(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', 'dueDateBucket']
+        );
+        $this->assertTrue($q->isMultiFieldGroupBy());
+        $this->assertSame(['vendorId', 'dueDateBucket'], $q->getGroupByFields());
+
+    }//end testMultiFieldGroupByPlainListShape()
+
+
+    public function testSingleFieldGroupByIsNotMultiField(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['field' => 'status']
+        );
+        $this->assertFalse($q->isMultiFieldGroupBy());
+        $this->assertSame(['status'], $q->getGroupByFields());
+
+    }//end testSingleFieldGroupByIsNotMultiField()
+
+
+    public function testMultiFieldGroupByRejectsEmptyMember(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('groupBy MUST include a non-empty `field`');
+        AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', '']
+        );
+
+    }//end testMultiFieldGroupByRejectsEmptyMember()
+
+
+    public function testMultiFieldGroupByRejectsDuplicateFields(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('groupBy fields MUST be distinct');
+        AggregationQuery::create(
+            metric: 'count',
+            groupBy: ['vendorId', 'vendorId']
+        );
+
+    }//end testMultiFieldGroupByRejectsDuplicateFields()
+
+
     public function testFilterIsCarriedThrough(): void
     {
         $q = AggregationQuery::create(
@@ -230,6 +295,135 @@ class AggregationQueryTest extends TestCase
         $this->assertSame([], $arr['filter']);
 
     }//end testToArrayReturnsNullForMissingOptionalFields()
+
+
+    // -----------------------------------------------------------------------
+    // Multi-metric (REQ-AGG-102).
+    // -----------------------------------------------------------------------
+
+
+    public function testLegacySingleMetricIsNotMultiMetric(): void
+    {
+        $q = AggregationQuery::create(metric: 'count');
+        $this->assertFalse($q->isMultiMetric());
+        $this->assertSame([['metric' => 'count', 'field' => null]], $q->getMetrics());
+
+    }//end testLegacySingleMetricIsNotMultiMetric()
+
+
+    public function testExplicitMetricsListIsMultiMetric(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            metrics: [
+                ['metric' => 'count'],
+                ['metric' => 'sum', 'field' => 'price'],
+            ]
+        );
+        $this->assertTrue($q->isMultiMetric());
+        $this->assertSame(
+            [
+                ['metric' => 'count', 'field' => null],
+                ['metric' => 'sum', 'field' => 'price'],
+            ],
+            $q->getMetrics()
+        );
+
+    }//end testExplicitMetricsListIsMultiMetric()
+
+
+    public function testSingleElementMetricsListIsNotMultiMetric(): void
+    {
+        $q = AggregationQuery::create(
+            metric: 'count',
+            metrics: [['metric' => 'count']]
+        );
+        $this->assertFalse($q->isMultiMetric());
+
+    }//end testSingleElementMetricsListIsNotMultiMetric()
+
+
+    public function testMetricsListRejectsEmptyList(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('metrics list, when supplied, MUST NOT be empty');
+        AggregationQuery::create(metric: 'count', metrics: []);
+
+    }//end testMetricsListRejectsEmptyList()
+
+
+    public function testMetricsListRejectsInvalidMetric(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('invalid metric "median"');
+        AggregationQuery::create(
+            metric: 'count',
+            metrics: [['metric' => 'median']]
+        );
+
+    }//end testMetricsListRejectsInvalidMetric()
+
+
+    public function testMetricsListEntryRequiresFieldForNonCount(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('metrics entry "sum" MUST specify a field');
+        AggregationQuery::create(
+            metric: 'count',
+            metrics: [['metric' => 'sum']]
+        );
+
+    }//end testMetricsListEntryRequiresFieldForNonCount()
+
+
+    public function testMetricsListRejectsCombinationWithDateBucket(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('MUST NOT be combined with dateBucket');
+        AggregationQuery::create(
+            metric: 'count',
+            metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']],
+            dateBucket: [
+                'field' => 'created',
+                'start' => '2026-01-01T00:00:00Z',
+                'end'   => '2026-02-01T00:00:00Z',
+                'gap'   => 'day',
+            ]
+        );
+
+    }//end testMetricsListRejectsCombinationWithDateBucket()
+
+
+    public function testMetricResponseKeyIsCountForCount(): void
+    {
+        $this->assertSame('count', AggregationQuery::metricResponseKey(metric: 'count', field: null));
+
+    }//end testMetricResponseKeyIsCountForCount()
+
+
+    public function testMetricResponseKeyIsMetricUnderscoreFieldForValueMetrics(): void
+    {
+        $this->assertSame('sum_price', AggregationQuery::metricResponseKey(metric: 'sum', field: 'price'));
+        $this->assertSame('avg_amount', AggregationQuery::metricResponseKey(metric: 'avg', field: 'amount'));
+
+    }//end testMetricResponseKeyIsMetricUnderscoreFieldForValueMetrics()
+
+
+    public function testToArrayIncludesMetricsList(): void
+    {
+        $withMetrics = AggregationQuery::create(
+            metric: 'count',
+            metrics: [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']]
+        );
+        $withoutMetrics = AggregationQuery::create(metric: 'count');
+
+        $this->assertSame(
+            [['metric' => 'count'], ['metric' => 'sum', 'field' => 'price']],
+            $withMetrics->toArray()['metrics']
+        );
+        $this->assertNull($withoutMetrics->toArray()['metrics']);
+
+    }//end testToArrayIncludesMetricsList()
 
 
 }//end class

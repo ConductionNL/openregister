@@ -21,9 +21,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
+ * @spec openspec/specs/zoeken-filteren/spec.md
+ * @spec openspec/specs/zoeken-filteren/spec.md
  */
 
 declare(strict_types=1);
@@ -101,7 +101,7 @@ class SearchQueryHandler
      * @param IRequest           $request            Request object.
      * @param SearchTrailService $searchTrailService Service for recording search trails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function __construct(
         private readonly ViewMapper $viewMapper,
@@ -112,6 +112,45 @@ class SearchQueryHandler
         private readonly SearchTrailService $searchTrailService
     ) {
     }//end __construct()
+
+    /**
+     * Whether the target schema is served by an external object-source (DBAL
+     * virtual register), whose columns are flat snake_case and must not be run
+     * through the dot-un-mangling in {@see buildSearchQuery()}.
+     *
+     * Resolves the schema id/slug via the mapper (request-cached). A
+     * multi-schema (array) or absent schema, or any resolution failure, yields
+     * false so the legacy magic-table behaviour is preserved.
+     *
+     * This is a SYSTEM-level structural lookup (does the schema declare an
+     * object-source?), used only to decide how query params are parsed — it
+     * returns no schema data to the caller, so it MUST bypass RBAC and
+     * multitenancy. Otherwise, when saasMode is active and the schema lives in
+     * a different organisation than the caller's active org, the tenant-scoped
+     * find() cannot see it, this returns false, and snake_case column filters
+     * (e.g. `app_id`) are wrongly dot-un-mangled — silently emptying every
+     * per-object filter on a cross-org DBAL register. The actual data read is
+     * still RBAC/tenant-checked downstream in paginateObjectSource() (mirrors
+     * the object-source Source lookup, openregister#2089).
+     *
+     * @param int|string|array|null $schema The schema id/slug (single value only).
+     *
+     * @return bool True when the schema declares an x-openregister-object-source.
+     */
+    private function schemaHasObjectSource(int | string | array | null $schema): bool
+    {
+        if ($schema === null || is_array($schema) === true) {
+            return false;
+        }
+
+        try {
+            $entity = $this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return ($entity->getObjectSource() !== null);
+    }//end schemaHasObjectSource()
 
     /**
      * Build search query from request parameters
@@ -133,8 +172,8 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many paths for handling different parameter formats
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Handles extensive parameter processing for query building
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-95
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function buildSearchQuery(
         array $requestParams,
@@ -142,6 +181,17 @@ class SearchQueryHandler
         int | string | array | null $schema=null,
         ?array $ids=null
     ): array {
+        // A schema served from an external object-source (DBAL virtual register)
+        // has FLAT, snake_case columns — `product_line`, `app_slug`,
+        // `competitor_id`. The dot-un-mangling in STEP 1 (which rebuilds
+        // `@self.register` from PHP's mangled `@self_register`) would wrongly
+        // split those column names into nested arrays
+        // (`product_line` → ['product' => ['line' => …]]), silently dropping the
+        // filter. Detect object-source schemas so their snake_case object-field
+        // keys stay literal; `@self.*` metadata keys still un-mangle. Magic-table
+        // schemas are unaffected.
+        $isObjectSourceSchema = $this->schemaHasObjectSource(schema: $schema);
+
         // STEP 1: Fix PHP's dot-to-underscore mangling in query parameter names.
         // PHP converts dots to underscores in parameter names, e.g.:.
         // @self.register → @self_register.
@@ -156,7 +206,11 @@ class SearchQueryHandler
             }
 
             // Check if key contains underscores (indicating PHP mangled dots).
-            if (str_contains($key, '_') === true) {
+            // For object-source schemas, only un-mangle `@…` metadata keys and
+            // keep snake_case object-field keys (real DBAL columns) literal.
+            if (str_contains($key, '_') === true
+                && ($isObjectSourceSchema === false || str_starts_with(haystack: $key, needle: '@') === true)
+            ) {
                 // Split by underscore to reconstruct nested structure.
                 $parts = explode('_', $key);
 
@@ -315,7 +369,7 @@ class SearchQueryHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex view merging with multiple filter types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple view filter paths for registers, schemas, and search terms
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function applyViewsToQuery(array $query, array $viewIds): array
     {
@@ -435,7 +489,7 @@ class SearchQueryHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple conditional paths for parameter normalization
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function cleanQuery(array $parameters): array
     {
@@ -505,8 +559,8 @@ class SearchQueryHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-96
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function addPaginationUrls(array &$paginatedResults, int $page, int $pages): void
     {
@@ -551,7 +605,7 @@ class SearchQueryHandler
      *
      * @psalm-return '&'|'?'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     private function getUrlSeparator(string $url): string
     {
@@ -658,32 +712,6 @@ class SearchQueryHandler
 
         return $persisted;
     }//end flushSearchTrails()
-
-    /**
-     * Check if search trails are enabled in the settings
-     *
-     * @return bool True if search trails are enabled, false otherwise
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
-     */
-    public function isSearchTrailsEnabled(): bool
-    {
-        try {
-            $retentionSettings = $this->settingsService->getRetentionSettingsOnly();
-            return $retentionSettings['searchTrailsEnabled'] ?? true;
-        } catch (Exception $e) {
-            // If we can't get settings, default to enabled for safety.
-            $this->logger->warning(
-                message: '[SearchQueryHandler] Failed to check search trails setting, defaulting to enabled',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return true;
-        }
-    }//end isSearchTrailsEnabled()
 
     /**
      * Resolve the effective search-trail recording mode.

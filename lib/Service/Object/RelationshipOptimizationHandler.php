@@ -47,7 +47,7 @@ class RelationshipOptimizationHandler
      *
      * @param LoggerInterface $logger Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly LoggerInterface $logger
@@ -66,7 +66,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractAllRelationshipIds(array $_objects, array $_extend): array
     {
@@ -85,7 +85,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function bulkLoadRelationshipsBatched(array $_relationshipIds): array
     {
@@ -104,7 +104,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function bulkLoadRelationshipsParallel(array $_relationshipIds): array
     {
@@ -123,7 +123,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function loadRelationshipChunkOptimized(array $_relationshipIds): array
     {
@@ -140,7 +140,7 @@ class RelationshipOptimizationHandler
      *
      * @return null Created object entity or null.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function createLightweightObjectEntity(array $_row)
     {

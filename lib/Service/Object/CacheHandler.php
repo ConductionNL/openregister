@@ -170,7 +170,7 @@ class CacheHandler
      * @param SchemaMapper|null   $schemaMapper       Schema mapper for magic table queries
      * @param IDBConnection|null  $db                 Database connection for magic table queries
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly OrganisationMapper $organisationMapper,
@@ -205,7 +205,7 @@ class CacheHandler
              *
              * @return null
              *
-             * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+             * @spec openspec/specs/object-lifecycle/spec.md
              */
             public function getUser()
             {
@@ -222,7 +222,7 @@ class CacheHandler
      *
      * @throws RuntimeException When container is not available.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getObjectMapper(): MagicMapper
     {
@@ -250,7 +250,7 @@ class CacheHandler
      * @phpstan-return ObjectEntity|null
      * @psalm-return   ObjectEntity|null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getObject(int | string $identifier): ?ObjectEntity
     {
@@ -293,7 +293,7 @@ class CacheHandler
      *
      * @return string The tenant-scoped cache key
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function buildObjectCacheKey(string $rawKey): string
     {
@@ -305,7 +305,7 @@ class CacheHandler
      *
      * @return string The active organisation UUID, or a sentinel for no/unknown org
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getActiveOrganisationCacheScope(): string
     {
@@ -345,7 +345,7 @@ class CacheHandler
      *
      * @psalm-return array<ObjectEntity>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -406,7 +406,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function cacheObject(ObjectEntity $object): void
     {
@@ -456,7 +456,7 @@ class CacheHandler
      *     cache_size: int<0, max>, query_cache_size: int<0, max>,
      *     name_cache_size: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getStats(): array
     {
@@ -505,7 +505,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearSearchCache(?string $pattern=null): void
     {
@@ -562,7 +562,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
@@ -647,7 +647,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidateForObjectChange(
         ?ObjectEntity $object=null,
@@ -746,7 +746,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function clearObjectFromCache(ObjectEntity $object): void
     {
@@ -789,7 +789,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function clearObjectNameFromCache(ObjectEntity $object): void
     {
@@ -831,7 +831,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearAllCaches(): void
     {
@@ -901,7 +901,7 @@ class CacheHandler
      * @deprecated Use clearAllCaches() instead
      * @return     void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearCache(): void
     {
@@ -924,7 +924,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function setObjectName(string|int $identifier, string $name, int $ttl=86400): void
     {
@@ -978,7 +978,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSingleObjectName(string|int $identifier): ?string
     {
@@ -1093,7 +1093,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Bulk name retrieval with multiple cache layers requires extensive handling.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getMultipleObjectNames(array $identifiers): array
     {
@@ -1253,7 +1253,7 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getAllObjectNames(bool $forceWarmup=false): array
     {
@@ -1303,7 +1303,7 @@ class CacheHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function warmupNameCache(): int
     {
@@ -1395,7 +1395,7 @@ class CacheHandler
      *
      * @return int Number of names loaded from magic tables.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function loadNamesFromMagicTables(): int
     {
@@ -1497,7 +1497,7 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function batchLoadNamesFromMagicTables(array $uuids): array
     {
@@ -1605,7 +1605,7 @@ class CacheHandler
      *
      * @return array<string, string> Map of UUID to name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function queryTableForNames(string $tableName, array $uuids): array
     {
@@ -1670,7 +1670,7 @@ class CacheHandler
      *
      * @return int Number of entries stored in distributed cache.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function persistNameCacheToDistributed(): int
     {
@@ -1719,7 +1719,7 @@ class CacheHandler
      *
      * @return int The number of names in distributed cache, or 0 if unavailable
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getDistributedNameCacheCount(): int
     {
@@ -1747,7 +1747,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearNameCache(): void
     {

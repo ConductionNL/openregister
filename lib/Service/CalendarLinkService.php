@@ -18,7 +18,7 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/integration-calendar/tasks.md
+ * @spec openspec/specs/integration-calendar/spec.md
  */
 
 declare(strict_types=1);
@@ -91,7 +91,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user is logged in or the event cannot be located.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function linkEvent(
         string $objectUuid,
@@ -151,7 +151,7 @@ class CalendarLinkService
      *
      * @throws Exception On creation failure.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function createAndLinkEvent(
         string $objectUuid,
@@ -242,7 +242,7 @@ class CalendarLinkService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function unlinkEvent(string $objectUuid, string $eventUid): void
     {
@@ -319,7 +319,7 @@ class CalendarLinkService
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getLinkedEvents(string $objectUuid): array
     {
@@ -417,7 +417,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user is logged in.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getAvailableCalendars(): array
     {
@@ -462,7 +462,7 @@ class CalendarLinkService
      *
      * @throws Exception When no user, no calendar, or calendar URI is unknown.
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-1/tasks.md#task-1
+     * @spec openspec/specs/generic-integrations/spec.md
      */
     public function getEventsForCalendar(string $calendarUri, ?int $limit=100, ?DateTimeInterface $after=null): array
     {

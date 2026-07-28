@@ -32,7 +32,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/entity-relation-grondslagen/specs/entity-relation-grondslagen/spec.md
+ * @spec openspec/specs/entity-relation-grondslagen/spec.md
  *       "A PATCH /api/entity-relations/{id} endpoint MUST exist with a decision-only field whitelist"
  */
 

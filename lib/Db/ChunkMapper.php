@@ -500,20 +500,38 @@ class ChunkMapper extends QBMapper
      * keyword path existed before this change on any platform, so this is
      * purely additive).
      *
-     * @param string $query   Search query text
-     * @param int    $limit   Maximum number of results
-     * @param array  $filters Optional filters (source_type)
+     * @param string $query                 Search query text
+     * @param int    $limit                 Maximum number of results
+     * @param array  $filters               Optional filters (source_type)
+     * @param bool   $allowUnrankedFallback When true, non-PostgreSQL platforms run an
+     *                                      unranked `LIKE` scan over `text_content`
+     *                                      instead of returning `[]` (see {@see
+     *                                      searchByKeywordUnranked()}). Defaults to
+     *                                      false so the pre-existing hybrid-search
+     *                                      RRF caller ({@see
+     *                                      \OCA\OpenRegister\Controller\FileSearchController::hybridSearch()})
+     *                                      keeps its documented empty-on-non-Postgres
+     *                                      behaviour unchanged.
      *
      * @return array<int, array{entity_type: string, entity_id: string, score: float,
      *                          chunk_text: string|null, chunk_index: int, metadata: array}>
      *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Established pattern across this codebase
+     *   for opt-in behaviour flags (see SearchBackendInterface).
+     * @SuppressWarnings(PHPMD.LongVariable)        Descriptive variable name improves readability.
+     *
      * @spec openspec/changes/hybrid-document-search/tasks.md#3.3
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
      */
-    public function searchByKeyword(string $query, int $limit, array $filters=[]): array
+    public function searchByKeyword(string $query, int $limit, array $filters=[], bool $allowUnrankedFallback=false): array
     {
         $platform = $this->db->getDatabasePlatform();
 
         if (str_contains(get_class($platform), 'PostgreSQL') === false) {
+            if ($allowUnrankedFallback === true) {
+                return $this->searchByKeywordUnranked(query: $query, limit: $limit, filters: $filters);
+            }
+
             $this->logger->warning(
                 message: '[ChunkMapper] Ranked keyword search unavailable: requires PostgreSQL '
                     .'with the tsvector keyword-search index',
@@ -574,4 +592,78 @@ class ChunkMapper extends QBMapper
 
         return $results;
     }//end searchByKeyword()
+
+    /**
+     * Unranked `LIKE` fallback for platforms without a `tsvector` index (e.g. MariaDB).
+     *
+     * Preserves the match set (every chunk whose `text_content` contains the query as a
+     * substring) while degrading ranking — every row scores `0.0` and ordering is by
+     * chunk id rather than relevance. Called only from {@see searchByKeyword()} when
+     * `$allowUnrankedFallback` is true; the pre-existing hybrid-search RRF caller does not
+     * opt in and keeps seeing `[]` on non-PostgreSQL platforms.
+     *
+     * @param string $query   Search query text.
+     * @param int    $limit   Maximum number of results.
+     * @param array  $filters Optional filters (source_type).
+     *
+     * @return array<int, array{entity_type: string, entity_id: string, score: float,
+     *                          chunk_text: string|null, chunk_index: int, metadata: array}>
+     *
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+     */
+    private function searchByKeywordUnranked(string $query, int $limit, array $filters=[]): array
+    {
+        $qb            = $this->db->getQueryBuilder();
+        $searchPattern = '%'.$this->db->escapeLikeParameter($query).'%';
+
+        $qb->select('id', 'source_type', 'source_id', 'text_content', 'chunk_index')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->iLike(
+                    'text_content',
+                    $qb->createNamedParameter($searchPattern, IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->orderBy('id', 'ASC')
+            ->setMaxResults(max(1, $limit));
+
+        if (($filters['source_type'] ?? null) !== null) {
+            $qb->andWhere(
+                $qb->expr()->eq(
+                    'source_type',
+                    $qb->createNamedParameter($filters['source_type'], IQueryBuilder::PARAM_STR)
+                )
+            );
+        }
+
+        try {
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[ChunkMapper] Unranked keyword search query failed; returning empty result',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [];
+        }
+
+        $results = [];
+        foreach ($rows as $row) {
+            $results[] = [
+                'entity_type' => (string) ($row['source_type'] ?? 'file'),
+                'entity_id'   => (string) $row['source_id'],
+                'score'       => 0.0,
+                'chunk_text'  => $row['text_content'],
+                'chunk_index' => (int) $row['chunk_index'],
+                'metadata'    => [],
+            ];
+        }
+
+        return $results;
+    }//end searchByKeywordUnranked()
 }//end class

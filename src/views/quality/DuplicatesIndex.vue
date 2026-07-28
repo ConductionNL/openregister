@@ -138,28 +138,28 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#candidate-pairs-render-with-score-and-matched-attributes
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		duplicates() {
 			return qualityStore.duplicates
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#pagination-follows-the-endpoint-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		duplicatesTotal() {
 			return qualityStore.duplicatesTotal
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#pagination-follows-the-endpoint-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		duplicatesLimit() {
 			return qualityStore.duplicatesLimit
 		},
 
 		/**
-		 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#pagination-follows-the-endpoint-envelope
+		 * @spec openspec/specs/mdm-frontend/spec.md
 		 */
 		duplicatesOffset() {
 			return qualityStore.duplicatesOffset
@@ -167,7 +167,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/mdm-frontend/specs/mdm-frontend/spec.md#selection-persists-across-mdm-views
+	 * @spec openspec/specs/mdm-frontend/spec.md
 	 */
 	mounted() {
 		if (this.hasSelection) {
@@ -213,7 +213,7 @@ export default {
 		 * (`objectB`) to `from`.
 		 *
 		 * @param {object} pair Candidate pair with `objectA` / `objectB`.
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-merge-action-is-offered-per-candidate-pair
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-merge-action-is-offered-per-candidate-pair
 		 */
 		openMergeWizard(pair) {
 			this.mergeCandidate = { from: pair.objectB, into: pair.objectA }
@@ -223,7 +223,7 @@ export default {
 		 * Reload the candidate list once a merge has executed so the merged
 		 * pair no longer appears.
 		 *
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-confirming-a-merge-executes-it-and-refreshes-candidates
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-confirming-a-merge-executes-it-and-refreshes-candidates
 		 */
 		async onMerged() {
 			this.mergeCandidate = null

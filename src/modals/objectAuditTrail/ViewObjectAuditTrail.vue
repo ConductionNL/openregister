@@ -82,7 +82,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcModal,
@@ -120,7 +120,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setModal(null)
@@ -128,7 +128,7 @@ export default {
 		},
 		/**
 		 * @param value
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatValue(value) {
 			if (value === null || value === undefined) {
@@ -141,7 +141,7 @@ export default {
 			return value // Return the value as is for other types
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		fetchSchema() {
 			this.schemaLoading = true
@@ -152,7 +152,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		fetchRegister() {
 			this.registerLoading = true
@@ -163,7 +163,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		goToSchema() {
 			navigationStore.setModal(null)
@@ -172,7 +172,7 @@ export default {
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		goToRegister() {
 			navigationStore.setModal(null)

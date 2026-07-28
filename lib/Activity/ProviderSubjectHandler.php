@@ -57,7 +57,7 @@ class ProviderSubjectHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function applySubjectText(IEvent $event, object $l, array $params): void
     {
@@ -89,7 +89,7 @@ class ProviderSubjectHandler
      *
      * @return array The rich parameters.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function buildRichParams(IEvent $event, string $title): array
     {
@@ -114,7 +114,7 @@ class ProviderSubjectHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function applySimpleSubject(
         IEvent $event,

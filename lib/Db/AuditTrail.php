@@ -306,7 +306,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null Namespaced MCP tool id.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
      */
     protected ?string $toolId = null;
@@ -319,7 +319,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var string|null SHA-256 hex digest of the invocation arguments.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — A params digest, not raw params, is stored)
      */
     protected ?string $paramsDigest = null;
@@ -331,7 +331,7 @@ class AuditTrail extends Entity implements JsonSerializable
      *
      * @var array|null Result summary of an MCP tool invocation.
      *
-     * @spec openspec/changes/or-mcp-derived-tool-provider/specs/ai-mcp/spec.md
+     * @spec openspec/specs/ai-mcp/spec.md
      *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
      */
     protected ?array $resultSummary = null;

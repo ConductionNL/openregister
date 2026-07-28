@@ -101,6 +101,7 @@
 		"dragonmantank/cron-expression": "^3.3",
 		"elasticsearch/elasticsearch": "^v8.14.0",
 		"guzzlehttp/guzzle": "^7.0",
+		"jwadhams/json-logic-php": "^1.5",
 		"minishlink/web-push": "^9.0",
 		"opis/json-schema": "^2.3",
 		"phpoffice/phpspreadsheet": "^5.0",
@@ -114,6 +115,7 @@
 		"symfony/http-kernel": "^6.4",
 		"symfony/process": "^6.4",
 		"symfony/uid": "^6.4",
+		"symfony/workflow": "^6.4",
 		"symfony/yaml": "^6.4 || ^7.0",
 		"theodo-group/llphant": "^0.9.3",
 		"twig/twig": "^3.27.0",
@@ -134,6 +136,7 @@
 		"phpunit/phpunit": "^10.5.62",
 		"roave/security-advisories": "dev-latest",
 		"sabre/vobject": "^4.5",
+		"sabre/xml": "^2.2",
 		"squizlabs/php_codesniffer": "^3.9",
 		"vimeo/psalm": "^5.26"
 	},

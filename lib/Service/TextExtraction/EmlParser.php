@@ -40,9 +40,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
+ * @spec openspec/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
  */
 
 declare(strict_types=1);
@@ -104,7 +104,7 @@ class EmlParser
      *
      * @throws EmlParseException When the input is irrecoverably malformed.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parse(File $file, int $depth=0): EmlStructure
     {
@@ -139,7 +139,7 @@ class EmlParser
      *
      * @return EmlStructure
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parseMessage(IMessage $message, int $depth=0): EmlStructure
     {
@@ -168,7 +168,7 @@ class EmlParser
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
      * @SuppressWarnings(PHPMD.NPathComplexity)      Nested attachment-tree traversal
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function flatten(EmlStructure $structure, int $depth=0): string
     {
@@ -235,7 +235,7 @@ class EmlParser
      *
      * @return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractHeaders(IMessage $message): array
     {
@@ -335,7 +335,7 @@ class EmlParser
      *
      * @return EmlBody
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
      */
     private function extractBody(IMessage $message): EmlBody
     {
@@ -366,7 +366,7 @@ class EmlParser
      *
      * @return array<int, EmlAttachment>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractAttachments(IMessage $message, int $depth): array
     {
@@ -395,7 +395,7 @@ class EmlParser
      *
      * @return EmlAttachment
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function buildAttachment(IMessagePart $part, int $position, int $depth): EmlAttachment
     {
@@ -525,7 +525,7 @@ class EmlParser
      *                           tolerates a malformed nested EML so the
      *                           rest of the structure is still usable).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function parseNestedEml(string $bytes, int $depth): ?EmlStructure
     {
@@ -579,7 +579,7 @@ class EmlParser
      *
      * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromFormat is idiomatic PHP
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function parseDate(?string $raw): ?DateTimeImmutable
     {
@@ -623,7 +623,7 @@ class EmlParser
      *
      * @return string Plain text.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function htmlToText(string $html): string
     {
@@ -664,7 +664,7 @@ class EmlParser
      *
      * @return string UTF-8 string (or the raw input when detection fails).
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-31
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
      */
     private function ensureUtf8(string $value): string
     {
@@ -716,7 +716,7 @@ class EmlParser
      *
      * @return string Sanitised string safe to log.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public static function sanitisePiiForLogging(string $message): string
     {

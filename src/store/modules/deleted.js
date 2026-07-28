@@ -267,7 +267,7 @@ export const useDeletedStore = defineStore('deleted', {
 		 * Restore a deleted object
 		 * @param {string|number} id - The ID of the object to restore
 		 * @return {Promise<object>} The response data
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async restoreDeleted(id) {
 			try {
@@ -299,7 +299,7 @@ export const useDeletedStore = defineStore('deleted', {
 		 * Restore multiple deleted objects
 		 * @param {Array} ids - Array of object IDs to restore
 		 * @return {Promise<object>} The response data
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async restoreMultiple(ids) {
 			try {
@@ -332,7 +332,7 @@ export const useDeletedStore = defineStore('deleted', {
 		 * Permanently delete an object
 		 * @param {string|number} id - The ID of the object to permanently delete
 		 * @return {Promise<object>} The response data
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async permanentlyDelete(id) {
 			try {
@@ -364,7 +364,7 @@ export const useDeletedStore = defineStore('deleted', {
 		 * Permanently delete multiple objects
 		 * @param {Array} ids - Array of object IDs to permanently delete
 		 * @return {Promise<object>} The response data
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async permanentlyDeleteMultiple(ids) {
 			try {
@@ -407,7 +407,7 @@ export const useDeletedStore = defineStore('deleted', {
 
 		/**
 		 * Clear all deleted store data
-		 * @spec openspec/changes/retrofit-2026-05-25-fe-store-1/tasks.md#task-2
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		clearDeletedStore() {
 			this.deletedList = []

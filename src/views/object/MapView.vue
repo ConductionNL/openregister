@@ -50,8 +50,8 @@
  * the view degrades gracefully when map tiles or the map library can't
  * load (REQ-GEO-003, REQ-GEO-014).
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-003
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-014
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-003
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-014
  */
 import { NcSelect } from '@nextcloud/vue'
 import { translate as t } from '@nextcloud/l10n'

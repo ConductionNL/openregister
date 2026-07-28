@@ -42,7 +42,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-shares/tasks.md
+ * @spec openspec/specs/integration-shares/spec.md
  */
 
 declare(strict_types=1);

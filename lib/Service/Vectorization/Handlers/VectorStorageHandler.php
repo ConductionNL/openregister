@@ -74,7 +74,7 @@ class VectorStorageHandler
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function storeVector(
         string $entityType,
@@ -120,7 +120,7 @@ class VectorStorageHandler
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible vector storage options
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)   Multiple storage conditions and error handling
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function storeVectorInDatabase(
         string $entityType,
@@ -404,7 +404,7 @@ class VectorStorageHandler
      *
      * @return string Sanitized text safe for UTF-8 storage
      *
-     * @spec openspec/changes/retrofit-2026-05-24-newcap-vector-embeddings/tasks.md#task-2
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function sanitizeText(string $text): string
     {

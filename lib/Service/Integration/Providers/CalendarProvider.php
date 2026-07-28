@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-calendar/tasks.md
+ * @spec openspec/specs/integration-calendar/spec.md
  */
 
 declare(strict_types=1);
@@ -89,7 +89,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getId(): string
     {
@@ -101,7 +101,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getLabel(): string
     {
@@ -113,7 +113,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getIcon(): string
     {
@@ -125,7 +125,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getGroup(): ?string
     {
@@ -137,7 +137,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string|null
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getRequiredApp(): ?string
     {
@@ -149,7 +149,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return string
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getStorageStrategy(): string
     {
@@ -161,7 +161,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return bool
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function isEnabled(): bool
     {
@@ -198,7 +198,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -242,7 +242,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -270,7 +270,7 @@ class CalendarProvider extends AbstractIntegrationProvider
      *
      * @return array<string,mixed>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-calendar-integration/tasks.md#task-2
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function health(): array
     {

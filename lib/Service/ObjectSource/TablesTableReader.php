@@ -28,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+ * @spec openspec/specs/tables-virtual-register/spec.md
  */
 
 declare(strict_types=1);
@@ -106,7 +106,7 @@ class TablesTableReader
      *
      * @return bool True when Tables reads can be served.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function isAvailable(): bool
     {
@@ -126,7 +126,7 @@ class TablesTableReader
      *
      * @return array<int, array{id: int, title: string}> The table descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function listTables(string $userId): array
     {
@@ -178,7 +178,7 @@ class TablesTableReader
      *
      * @return array<int, array{id: int, title: string, columns: array<int, array<string, mixed>>}> The descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function collectTableDescriptors(array $userIds): array
     {
@@ -209,7 +209,7 @@ class TablesTableReader
      *
      * @return array<int, array<string, mixed>> The column descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function listColumns(int $tableId, string $userId): array
     {
@@ -247,7 +247,7 @@ class TablesTableReader
      *
      * @return array<int, array<string, mixed>> The row descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function findRowsByTable(int $tableId, string $userId, ?int $limit=null, ?int $offset=null): array
     {
@@ -264,7 +264,7 @@ class TablesTableReader
      *
      * @return array<int, array<string, mixed>> The row descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function findRowsByView(int $viewId, string $userId, ?int $limit=null, ?int $offset=null): array
     {
@@ -282,7 +282,7 @@ class TablesTableReader
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $userId is kept for reader-contract parity
      * with the View/table paths; RowService::find() resolves the acting user from the session.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function findRow(int $rowId, string $userId): ?array
     {
@@ -320,7 +320,7 @@ class TablesTableReader
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Mirrors the table-vs-View binding in the schema config.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     public function countRows(int $id, string $userId, bool $isView=false): int
     {
@@ -361,7 +361,7 @@ class TablesTableReader
      *
      * @return array<int, array<string, mixed>> The row descriptors.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function rows(string $getter, int $id, string $userId, ?int $limit, ?int $offset): array
     {
@@ -396,7 +396,7 @@ class TablesTableReader
      *
      * @return array<string, mixed> The row descriptor.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function rowDescriptor(object $row): array
     {
@@ -425,7 +425,7 @@ class TablesTableReader
      *
      * @return array{columnId: int, value: mixed}|null The normalised cell, or null.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function cellToArray(mixed $cell): ?array
     {
@@ -456,7 +456,7 @@ class TablesTableReader
      *
      * @return array<string, mixed> The column descriptor.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function columnDescriptor(object $column): array
     {
@@ -482,7 +482,7 @@ class TablesTableReader
      *
      * @return array<int, string> The option labels.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function selectionOptions(object $column): array
     {
@@ -506,7 +506,7 @@ class TablesTableReader
      *
      * @return object|null The resolved service, or null when Tables is absent.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function resolveService(string $class): ?object
     {
@@ -534,7 +534,7 @@ class TablesTableReader
      *
      * @return int|null The integer value, or null when unavailable.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function intGetter(object $entity, string $getter): ?int
     {
@@ -554,7 +554,7 @@ class TablesTableReader
      *
      * @return float|null The float value, or null when unavailable.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function floatGetter(object $entity, string $getter): ?float
     {
@@ -574,7 +574,7 @@ class TablesTableReader
      *
      * @return bool The boolean value (false when unavailable).
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function boolGetter(object $entity, string $getter): bool
     {
@@ -589,7 +589,7 @@ class TablesTableReader
      *
      * @return string The string value, or ''.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function stringGetter(object $entity, string $getter): string
     {
@@ -604,7 +604,7 @@ class TablesTableReader
      *
      * @return string|null The string value, or null.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function nullableStringGetter(object $entity, string $getter): ?string
     {
@@ -624,7 +624,7 @@ class TablesTableReader
      *
      * @return string|null The ISO-8601 date string, or null.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function dateGetter(object $entity, string $getter): ?string
     {
@@ -648,7 +648,7 @@ class TablesTableReader
      *
      * @return array<int|string, mixed> The array value, or [].
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function arrayGetter(object $entity, string $getter): array
     {
@@ -669,7 +669,7 @@ class TablesTableReader
      *
      * @return mixed The raw value, or null on failure.
      *
-     * @spec openspec/changes/tables-object-source-provider/specs/tables-virtual-register/spec.md
+     * @spec openspec/specs/tables-virtual-register/spec.md
      */
     private function rawGetter(object $entity, string $getter): mixed
     {

@@ -159,7 +159,7 @@ export default {
 		 * Confirm is disabled until the preview has loaded successfully and
 		 * a reason has been chosen.
 		 *
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-reason-is-mandatory
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-reason-is-mandatory
 		 * @return {boolean}
 		 */
 		canConfirm() {
@@ -168,7 +168,7 @@ export default {
 	},
 
 	/**
-	 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-previews-the-post-merge-golden-record-before-executing
+	 * @spec openspec/specs/mdm-merge-ui/spec.md#requirement-merge-wizard-previews-the-post-merge-golden-record-before-executing
 	 */
 	mounted() {
 		this.fetchPreview()
@@ -180,7 +180,7 @@ export default {
 		 * On a 403/404 the confirm control stays disabled and the returned
 		 * error message is shown.
 		 *
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-preview-failure-surfaces-an-error-and-blocks-confirmation
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-preview-failure-surfaces-an-error-and-blocks-confirmation
 		 */
 		async fetchPreview() {
 			this.loading = true
@@ -228,7 +228,7 @@ export default {
 		 * 403/404 error from the endpoint is surfaced inline and the
 		 * modal stays open.
 		 *
-		 * @spec openspec/changes/mdm-merge-ui/specs/mdm-merge-ui/spec.md#scenario-confirming-a-merge-executes-it-and-refreshes-candidates
+		 * @spec openspec/specs/mdm-merge-ui/spec.md#scenario-confirming-a-merge-executes-it-and-refreshes-candidates
 		 */
 		async confirm() {
 			if (!this.canConfirm) return

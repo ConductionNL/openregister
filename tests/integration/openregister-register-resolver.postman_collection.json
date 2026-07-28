@@ -13,7 +13,7 @@
     ]
   },
   "variable": [
-    { "key": "base_url", "value": "http://localhost:8080/index.php/apps/openregister" },
+    { "key": "base_url", "value": "http://localhost" },
     { "key": "admin_user", "value": "admin" },
     { "key": "admin_password", "value": "admin" }
   ],
@@ -24,9 +24,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/registers",
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers",
           "host": ["{{base_url}}"],
-          "path": ["api", "registers"]
+          "path": ["index.php", "apps", "openregister", "api", "registers"]
         }
       },
       "event": [
@@ -48,9 +48,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/registers/nonexistent-resolver-target",
+          "raw": "{{base_url}}/index.php/apps/openregister/api/registers/nonexistent-resolver-target",
           "host": ["{{base_url}}"],
-          "path": ["api", "registers", "nonexistent-resolver-target"]
+          "path": ["index.php", "apps", "openregister", "api", "registers", "nonexistent-resolver-target"]
         }
       },
       "event": [
@@ -59,7 +59,8 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Unknown register slug returns 404 or 500 with diagnostic body', function () { pm.expect([404, 500]).to.include(pm.response.code); });"
+              "pm.test('Unknown register slug returns a clean 404 JSON error (not an uncaught 500)', function () { pm.response.to.have.status(404); });",
+              "pm.test('Error body is JSON, not an HTML error page', function () { var j = pm.response.json(); pm.expect(j).to.have.property('error'); });"
             ]
           }
         }
@@ -71,9 +72,9 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{base_url}}/api/schemas",
+          "raw": "{{base_url}}/index.php/apps/openregister/api/schemas",
           "host": ["{{base_url}}"],
-          "path": ["api", "schemas"]
+          "path": ["index.php", "apps", "openregister", "api", "schemas"]
         }
       },
       "event": [

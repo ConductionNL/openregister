@@ -40,7 +40,7 @@ namespace OCA\OpenRegister\Service\SchemaImport;
 /**
  * Pure three-way merge for update-from-source.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 class ThreeWayMerge
 {
@@ -57,7 +57,7 @@ class ThreeWayMerge
      *     conflicts: string[], merged: array<string, array<string,mixed>>, applied: bool
      * }
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) The merge table is inherently branchy; each branch is one table row.
      * @SuppressWarnings(PHPMD.NPathComplexity)      The merge table is inherently branchy; each branch is one table row.

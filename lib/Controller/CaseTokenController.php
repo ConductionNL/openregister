@@ -36,7 +36,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+ * @spec openspec/specs/integration-leaf-foundation/spec.md
  */
 
 declare(strict_types=1);
@@ -87,7 +87,7 @@ class CaseTokenController extends Controller
      *
      * @return JSONResponse The public-safe object view, or 404.
      *
-     * @spec openspec/changes/integration-leaf-foundation-shares-analytics/specs/integration-leaf-foundation/spec.md
+     * @spec openspec/specs/integration-leaf-foundation/spec.md
      */
     #[PublicPage]
     #[NoCSRFRequired]

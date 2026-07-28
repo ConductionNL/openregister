@@ -1,5 +1,5 @@
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-54
+ * @spec openspec/specs/mock-registers/spec.md#requirement-brp-mock-register-basisregistratie-personen
  */
 import { Register } from './register'
 import { TRegister } from './register.types'

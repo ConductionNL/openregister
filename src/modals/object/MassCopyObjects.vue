@@ -145,7 +145,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-05-24-2b-modals/tasks.md#task-3
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)

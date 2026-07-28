@@ -143,7 +143,9 @@ use OCA\OpenRegister\Listener\AggregationCacheInvalidationListener;
 use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
+use OCA\OpenRegister\Listener\EventCatalogListener;
 use OCA\OpenRegister\Listener\FlowActionListener;
+use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
 use OCA\OpenRegister\Listener\NotificationDedupePruneListener;
@@ -152,12 +154,15 @@ use OCA\OpenRegister\Notification\AnnotationNotifier;
 use OCA\OpenRegister\Listener\CalculationOnSaveListener;
 use OCA\OpenRegister\Listener\QualityScoreOnSaveListener;
 use OCA\OpenRegister\Listener\ObjectMetricsListener;
+use OCA\OpenRegister\Listener\ContextChatSubmissionListener;
+use OCA\OpenRegister\ContextChat\ContentProviderRegistrationListener;
 use OCA\OpenRegister\Listener\SourceRecordChangeListener;
 use OCA\OpenRegister\Listener\SurvivorshipRecomputeListener;
 use OCA\OpenRegister\Listener\MailAppScriptListener;
 use OCA\OpenRegister\Listener\HookListener;
 use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
+use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
@@ -185,6 +190,9 @@ use OCA\OpenRegister\Listener\TablesTableDeletedListener;
 use OCA\OpenRegister\Service\ObjectSource\DbalObjectSourceProvider;
 use OCA\OpenRegister\Federation\OpenRegisterCloudFederationProvider;
 use OCP\Federation\ICloudFederationProviderManager;
+use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use OCP\Comments\CommentsEntityEvent;
 use OCP\Files\Events\Node\NodeCreatedEvent;
 use OCP\Files\Events\Node\NodeWrittenEvent;
@@ -248,6 +256,7 @@ use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
@@ -259,6 +268,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
 use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
@@ -342,6 +352,41 @@ class Application extends App implements IBootstrap
      * @var string
      */
     public const APP_ID = 'openregister';
+
+    /**
+     * Distributed-cache prefix for the per-app MCP provider discovery map.
+     *
+     * @var string
+     */
+    private const MCP_PROBE_CACHE_PREFIX = 'openregister_mcp_provider_probe';
+
+    /**
+     * IAppConfig key holding the MCP provider discovery-cache TTL in seconds.
+     *
+     * @var string
+     */
+    private const MCP_PROBE_TTL_CONFIG_KEY = 'mcp.provider_probe_cache_ttl';
+
+    /**
+     * Default MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_DEFAULT = 60;
+
+    /**
+     * Minimum allowed MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_MIN = 10;
+
+    /**
+     * Maximum allowed MCP provider discovery-cache TTL in seconds.
+     *
+     * @var integer
+     */
+    private const MCP_PROBE_TTL_MAX = 600;
 
     /**
      * Constructor for the Application class
@@ -1196,6 +1241,22 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // LeafRegistry — the cross-app leaf catalogue (ADR-066). Collects the
+        // leaves sibling apps contribute through RegisterLeafProvidersEvent,
+        // lazily on first read, and lands their data providers on the shared
+        // IntegrationRegistry so existing per-object routing reaches them.
+        $context->registerService(
+            LeafRegistry::class,
+            function (ContainerInterface $container) {
+                return new LeafRegistry(
+                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+                    integrationRegistry: $container->get(IntegrationRegistry::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         $this->registerBuiltinIntegrationProviders(context: $context);
 
         // IntegrationsController — read-only API over the registry.
@@ -1223,7 +1284,8 @@ class Application extends App implements IBootstrap
                     request: $container->get('OCP\IRequest'),
                     registry: $container->get(IntegrationRegistry::class),
                     logger: $container->get('Psr\Log\LoggerInterface'),
-                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class)
+                    objectService: $container->get(\OCA\OpenRegister\Service\ObjectService::class),
+                    schemaMapper: $container->get(\OCA\OpenRegister\Db\SchemaMapper::class)
                 );
             }
         );
@@ -1243,7 +1305,8 @@ class Application extends App implements IBootstrap
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
-                    appManager: $container->get('OCP\App\IAppManager')
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    leafRegistry: $container->get(LeafRegistry::class)
                 );
             }
         );
@@ -2312,15 +2375,76 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(NodeCreatedEvent::class, FileChangeListener::class);
         $context->registerEventListener(NodeWrittenEvent::class, FileChangeListener::class);
 
+        // Flow node discovery. OpenRegister contributes its own built-ins
+        // through the same event every consuming app uses, so the contribution
+        // path is exercised by its owner and cannot rot unnoticed.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowNodesEvent::class,
+            \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
+        );
+
+        // Flow resolution. OpenRegister resolves flows stored as its own objects
+        // (a `flows` register / `flow` schema by default), so a flow can live in
+        // OpenRegister itself and not only in a consuming app — contributed
+        // through the same resolver event.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
+            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+        );
+
+        // Federated configuration sharing. Any app declares its shareable config
+        // types (flows, registers, case types, themes …) through this event, the
+        // same idiom as flow nodes; OpenRegister contributes its own built-ins.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
+            \OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
             \OCA\OpenRegister\Listener\OcmResourceTypeListener::class
         );
 
+        // Register OpenRegister as a Context Chat (OCP\ContextChat) content
+        // provider — softly gated by IContentManager::isContextChatAvailable()
+        // inside the listener body, so an instance without the `context_chat`
+        // app installed is entirely unaffected.
+        $context->registerEventListener(
+            \OCP\ContextChat\Events\ContentProviderRegisterEvent::class,
+            ContentProviderRegistrationListener::class
+        );
+
         // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
+        // Object-lifecycle flow triggers: queue a run for every flow wired to a
+        // lifecycle event. Create / update / delete plus lock / unlock / revert /
+        // state-change — the last four were declared in the event catalog but had
+        // no listener firing them until now, so a flow could select them and never
+        // run.
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+
+        // Non-object native flow triggers: a file or a user is not an OpenRegister
+        // object, so its event rides on the run as a payload the worker seeds the
+        // first item from. A flow wired to file.created / user.created runs on
+        // these just as it does on object events.
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeWrittenEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\User\Events\UserCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\User\Events\UserDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagAssignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagUnassignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
@@ -2347,6 +2471,16 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
         $context->registerEventListener(ApprovalStepCompletedEvent::class, ApprovalChainAdvanceListener::class);
+
+        // Lifecycle action executor — see x-openregister-lifecycle.transitions[*].actions[].
+        // Runs the declared actions of a matched transition on the save path, so
+        // they fire for EVERY transition form — a named TransitionEngine action
+        // AND a plain list-form edit of the lifecycle field (issue #427). Registered
+        // after the validation + approval-gate listeners: a transition's actions
+        // must only run once its legality is established and no gate has blocked it
+        // (the listener checks isPropagationStopped()). A declared action naming an
+        // unregistered handler fails loudly via LifecycleActionRegistry.
+        $context->registerEventListener(ObjectUpdatingEvent::class, LifecycleActionListener::class);
 
         // Calculations annotation listener — materialises declared calculations
         // into the object payload before persistence (see x-openregister-calculations).
@@ -2386,6 +2520,14 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectMetricsListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, ObjectMetricsListener::class);
 
+        // Context Chat submission listener — submits/removes object content
+        // to OCP\ContextChat on create/update/delete for schemas opted in via
+        // x-openregister-contextchat. Fail-soft: never aborts the write it
+        // observes; safe no-op when `context_chat` is not installed.
+        $context->registerEventListener(ObjectCreatedEvent::class, ContextChatSubmissionListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, ContextChatSubmissionListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, ContextChatSubmissionListener::class);
+
         // Notifications annotation listener — fires INotificationManager
         // notifications declared on the schema's x-openregister-notifications.
         $context->registerEventListener(ObjectCreatedEvent::class, AnnotationNotificationListener::class);
@@ -2398,6 +2540,30 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
         $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+
+        // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
+        // transition). Routed by EventCatalogListener so create/update/delete are
+        // not double-handled. Each event carries the object, so its schema's flows
+        // run — see EventCatalogService for the trigger ids.
+        $context->registerEventListener(ObjectLockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, EventCatalogListener::class);
+
+        // Native Nextcloud Flow (workflowengine) composition — expose OR objects
+        // as a Flow entity and OR flows as a Flow operation. Guarded by
+        // class_exists so boot never fatals on an instance without the (soft
+        // dependency) workflowengine app.
+        if (class_exists('OCP\\WorkflowEngine\\Events\\RegisterEntitiesEvent') === true) {
+            $context->registerEventListener(
+                \OCP\WorkflowEngine\Events\RegisterEntitiesEvent::class,
+                FlowEngineRegistrationListener::class
+            );
+            $context->registerEventListener(
+                \OCP\WorkflowEngine\Events\RegisterOperationsEvent::class,
+                FlowEngineRegistrationListener::class
+            );
+        }
 
         // System-entity notification bridge — routes create/update signals from
         // OpenRegister's own system entities through the same annotation-notification
@@ -2651,6 +2817,50 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Self-dogfood the GET /api/health and /api/metrics routes at the
+        // generic AppHost controllers. appinfo/routes.php aliases these URLs
+        // to route names 'AppHost\Controller\GenericMetrics#index' /
+        // 'AppHost\Controller\GenericHealth#index' — NC's RouteParser turns
+        // that into the literal DI lookup key
+        // 'AppHost\Controller\GenericHealthController' (buildControllerName()
+        // appends 'Controller' to the route-name segment verbatim; it does
+        // NOT prefix the app namespace for a route name that already
+        // contains a backslash). Without an explicit binding under that
+        // exact key, \OC\AppFramework\App::main() failed to resolve the
+        // controller, was caught as a QueryException, and — because the
+        // string coincidentally contains '\Controller\' — misread as "a
+        // global route pointing at a disabled app", surfacing as a 503
+        // "App controller is not enabled" HTML error page instead of the
+        // health/metrics JSON contract (ADR-006). Every OTHER AppHost route
+        // (dashboard/preferences/settings) is bound this same way, per
+        // controller, by \OCA\OpenRegister\AppHost\Bootstrap for LEAF apps
+        // that call Bootstrap::register(); OpenRegister's own self-adoption
+        // never calls Bootstrap::register() and must bind these two
+        // controllers directly.
+        $context->registerService(
+            'AppHost\\Controller\\GenericHealthController',
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                    appName: self::APP_ID,
+                    request: $container->get('OCP\IRequest'),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    executor: $container->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                );
+            }
+        );
+
+        $context->registerService(
+            'AppHost\\Controller\\GenericMetricsController',
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                    appName: self::APP_ID,
+                    request: $container->get('OCP\IRequest'),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    engine: $container->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                );
+            }
+        );
     }//end registerAppHostObservability()
 
     /**
@@ -2677,8 +2887,22 @@ class Application extends App implements IBootstrap
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
                     $container->get(IntegrationsToolProvider::class),
+                    $container->get(FlowMcpToolProvider::class),
                 ];
 
+                // Preferred path: apps announce themselves with a listener,
+                // the same way they contribute a flow node and the same way
+                // core's workflow engine collects operations.
+                $this->collectAnnouncedMcpProviders(
+                    container: $container,
+                    logger: $logger,
+                    providers: $providers
+                );
+
+                // Legacy path, kept for one release so the fleet is never
+                // broken mid-migration. Five apps outside OpenRegister still
+                // register by container alias; each is skipped here once it
+                // announces itself, so a migrated app is never collected twice.
                 $this->collectPerAppMcpProviders(
                     container: $container,
                     logger: $logger,
@@ -2772,7 +2996,7 @@ class Application extends App implements IBootstrap
             }
         } catch (\Throwable $e) {
             $logger->warning(
-                '[McpToolsService] Schema-derived provider enumeration failed: '.$e->getMessage()
+                '[Application] Schema-derived provider enumeration failed: '.$e->getMessage()
             );
         }//end try
     }//end collectSchemaDerivedMcpProviders()
@@ -2810,7 +3034,7 @@ class Application extends App implements IBootstrap
             $owningApp = $this->resolveOwningAppId(schema: $schema, register: $register);
             if ($owningApp === null) {
                 $logger->debug(
-                    '[McpToolsService] Opted-in schema has no resolvable owning app — skipped',
+                    '[Application] Opted-in schema has no resolvable owning app — skipped',
                     ['schemaId' => $schema->getId()]
                 );
                 continue;
@@ -2846,7 +3070,7 @@ class Application extends App implements IBootstrap
             return $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
         } catch (\Throwable $e) {
             $logger->debug(
-                '[McpToolsService] Owning-register resolution failed for schema '.$schema->getId().': '.$e->getMessage()
+                '[Application] Owning-register resolution failed for schema '.$schema->getId().': '.$e->getMessage()
             );
             return null;
         }
@@ -3005,7 +3229,7 @@ class Application extends App implements IBootstrap
             }//end foreach
         } catch (\Throwable $e) {
             $logger->warning(
-                '[McpToolsService] Attributed-tool provider enumeration failed: '.$e->getMessage()
+                '[Application] Attributed-tool provider enumeration failed: '.$e->getMessage()
             );
         }//end try
     }//end collectAttributeMcpProviders()
@@ -3032,16 +3256,25 @@ class Application extends App implements IBootstrap
         \Psr\Log\LoggerInterface $logger
     ): ?ContainerInterface {
         try {
+            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
+            // resolves the server container only. The sniff says this is removed in NC 34,
+            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
+            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
+            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
             $appContainer = \OC::$server->getRegisteredAppContainer($appId);
         } catch (\Throwable $e) {
             $logger->debug(
-                '[McpToolsService] No registered app container',
+                '[Application] No registered app container',
                 ['appId' => $appId, 'error' => $e->getMessage()]
             );
             return null;
         }
 
-        return ($appContainer instanceof ContainerInterface) ? $appContainer : null;
+        if ($appContainer instanceof ContainerInterface) {
+            return $appContainer;
+        }
+
+        return null;
 
     }//end getRegisteredAppContainer()
 
@@ -3079,7 +3312,7 @@ class Application extends App implements IBootstrap
             $declaration = $appContainer->get($key);
         } catch (\Throwable $e) {
             $logger->debug(
-                '[McpToolsService] Scannable-services alias resolve failed',
+                '[Application] Scannable-services alias resolve failed',
                 ['appId' => $appId, 'error' => $e->getMessage()]
             );
             return [];
@@ -3141,7 +3374,7 @@ class Application extends App implements IBootstrap
 
             if (in_array($id, $derivedIds, true) === true) {
                 $logger->error(
-                    '[McpToolsService] Attributed tool id collides with a schema-derived tool id — rejected',
+                    '[Application] Attributed tool id collides with a schema-derived tool id — rejected',
                     ['appId' => $appId, 'toolId' => $id]
                 );
                 continue;
@@ -3157,7 +3390,7 @@ class Application extends App implements IBootstrap
                 $descriptor['instance'] = $appContainer->get($descriptor['class']);
             } catch (\Throwable $e) {
                 $logger->warning(
-                    '[McpToolsService] Could not resolve attributed tool service instance',
+                    '[Application] Could not resolve attributed tool service instance',
                     [
                         'appId' => $appId,
                         'class' => $descriptor['class'],
@@ -3180,11 +3413,113 @@ class Application extends App implements IBootstrap
      * Tries up to three candidate keys per app — alias, ucfirst FQCN,
      * and namespace-from-info.xml FQCN — stopping at the first match.
      *
+     * PROBE CACHE (#308) — the raw probe is expensive and, for a stock NC
+     * instance, almost entirely negative: every installed app costs an
+     * info.xml read + XML parse (buildMcpProviderCandidates()) plus a
+     * throwing container lookup and an autoloader miss
+     * (tryResolveMcpProviderCandidate()). This factory is registered
+     * `$shared` so it already runs only once per request — the waste is
+     * CROSS-request, once per MCP/chat turn.
+     *
+     * We therefore cache the discovery RESOLUTION MAP (appId => winning
+     * candidate key, or null for "this app has no provider" — the negative
+     * result is the whole point) in a distributed cache. Only the small
+     * string map is cached: IMcpToolProvider instances are container-resolved
+     * and request-scoped, so a warm request still calls $container->get() for
+     * the handful of winners, but skips the per-app info.xml + candidate
+     * probing entirely.
+     *
+     * Invalidation is twofold, because neither mechanism suffices alone:
+     *  - the cache key embeds a hash of the installed-app list, so
+     *    installing/removing an app rebuilds immediately; but
+     *  - an app UPGRADE can add a provider class WITHOUT changing the app
+     *    list, so a short clamped TTL bounds that staleness.
+     *
+     * Fail-open: with no distributed cache configured the map is never read
+     * or written and behaviour is byte-for-byte the pre-cache path.
+     *
+     * NOTE: only the DISCOVERY result is cached. McpToolsService::addProvider()
+     * remains a live runtime path for apps that self-register from their own
+     * boot() when discovery misses them — it mutates the live instance and is
+     * deliberately outside this cache.
+     *
      * @param ContainerInterface       $container The DI container.
      * @param \Psr\Log\LoggerInterface $logger    PSR logger.
      * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
+     */
+
+    /**
+     * Collect providers from apps that announce themselves with a listener.
+     *
+     * One dispatch, no `info.xml` parsing, no candidate aliases, no container
+     * probing and nothing to cache — the whole apparatus the alias scan needed
+     * exists because it looked for something apps never declared.
+     *
+     * A provider whose appId is already present is skipped, which is what makes
+     * running both paths during the migration safe: an app that has added its
+     * listener is not also collected by the alias scan.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array, modified in place.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
+     */
+    private function collectAnnouncedMcpProviders(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array &$providers
+    ): void {
+        try {
+            $dispatcher = $container->get(\OCP\EventDispatcher\IEventDispatcher::class);
+            $event      = new \OCA\OpenRegister\Mcp\RegisterMcpToolProvidersEvent();
+            $dispatcher->dispatchTyped($event);
+
+            $seen = [];
+            foreach ($providers as $existing) {
+                $seen[$existing->getAppId()] = true;
+            }
+
+            foreach ($event->getProviders() as $provider) {
+                $appId = $provider->getAppId();
+                if (isset($seen[$appId]) === true) {
+                    continue;
+                }
+
+                $seen[$appId] = true;
+                $providers[]  = $provider;
+            }
+        } catch (\Throwable $e) {
+            // Discovery must never take the container down: an app with a
+            // broken listener costs its own tools, not everyone else's.
+            $logger->warning(
+                message: '[MCP] Announced-provider collection failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }//end try
+
+    }//end collectAnnouncedMcpProviders()
+
+    /**
+     * Collect per-app providers by container alias (legacy path).
+     *
+     * Kept for one release while the fleet migrates to the registration event;
+     * removed once every app announces itself. See the discovery-cache notes
+     * above, which document this method's caching behaviour.
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     * @param array<IMcpToolProvider>  $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-mcp-registration-event/specs/mcp-discovery/spec.md
      */
     private function collectPerAppMcpProviders(
         ContainerInterface $container,
@@ -3193,8 +3528,29 @@ class Application extends App implements IBootstrap
     ): void {
         try {
             $appManager = $container->get('OCP\App\IAppManager');
-            foreach ($appManager->getInstalledApps() as $appId) {
-                $candidates = $this->buildMcpProviderCandidates(
+            $appIds     = $appManager->getInstalledApps();
+
+            $cache    = $this->getMcpDiscoveryCache(container: $container, logger: $logger);
+            $cacheKey = $this->buildMcpDiscoveryCacheKey(appIds: $appIds);
+            $map      = $this->readMcpDiscoveryMap(cache: $cache, cacheKey: $cacheKey);
+
+            if ($map !== null) {
+                // WARM — resolve only the known winners; no info.xml reads, no
+                // class_exists() misses, no throwing container lookups.
+                $this->materialiseMcpProvidersFromMap(
+                    container: $container,
+                    logger: $logger,
+                    map: $map,
+                    providers: $providers
+                );
+                return;
+            }
+
+            // COLD — run the full probe once and record the outcome per app.
+            $map = [];
+            foreach ($appIds as $appId) {
+                $map[$appId] = null;
+                $candidates  = $this->buildMcpProviderCandidates(
                     appId: $appId,
                     appManager: $appManager
                 );
@@ -3208,16 +3564,220 @@ class Application extends App implements IBootstrap
                     );
                     if ($resolved !== null) {
                         $providers[] = $resolved;
+                        $map[$appId] = $key;
                         break;
                     }
                 }//end foreach
             }//end foreach
+
+            $this->writeMcpDiscoveryMap(
+                container: $container,
+                cache: $cache,
+                cacheKey: $cacheKey,
+                map: $map
+            );
+
+            // One summary line per REBUILD replaces the ~2-3 debug lines per
+            // missing app the raw probe used to emit on every single request.
+            $logger->debug(
+                '[Application] Per-app MCP provider discovery rebuilt',
+                [
+                    'appsProbed' => count($map),
+                    'discovered' => array_keys(array_filter($map, static fn ($key) => $key !== null)),
+                    'cached'     => ($cache !== null),
+                ]
+            );
         } catch (\Throwable $e) {
             $logger->warning(
-                '[McpToolsService] Per-app provider enumeration failed: '.$e->getMessage()
+                '[Application] Per-app provider enumeration failed: '.$e->getMessage()
             );
         }//end try
     }//end collectPerAppMcpProviders()
+
+    /**
+     * Append providers for a cached discovery map's winning candidate keys.
+     *
+     * A cached key can go stale within the TTL (e.g. an app disabled mid-window),
+     * so each key is still resolved through the normal fail-soft path and a
+     * failure simply yields no provider for that app.
+     *
+     * @param ContainerInterface         $container The DI container.
+     * @param \Psr\Log\LoggerInterface   $logger    PSR logger.
+     * @param array<string, string|null> $map       Cached appId => winning key|null map.
+     * @param array<IMcpToolProvider>    $providers Providers array (modified in place by reference).
+     *
+     * @return void
+     */
+    private function materialiseMcpProvidersFromMap(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger,
+        array $map,
+        array &$providers
+    ): void {
+        foreach ($map as $appId => $key) {
+            if ($key === null) {
+                // Cached negative result — the app was probed on a previous
+                // request and ships no MCP tool provider. Skip silently.
+                continue;
+            }
+
+            $resolved = $this->tryResolveMcpProviderCandidate(
+                container: $container,
+                logger: $logger,
+                appId: (string) $appId,
+                key: $key
+            );
+            if ($resolved !== null) {
+                $providers[] = $resolved;
+            }
+        }//end foreach
+    }//end materialiseMcpProvidersFromMap()
+
+    /**
+     * Obtain the distributed discovery cache, or null when unavailable.
+     *
+     * Only armed when a genuinely DISTRIBUTED memory cache is configured
+     * (ICacheFactory::isAvailable()); createDistributed() otherwise silently
+     * degrades to a node-local backend. Returning null disables the cache and
+     * restores the exact pre-cache behaviour (constraint: fail open).
+     *
+     * @param ContainerInterface       $container The DI container.
+     * @param \Psr\Log\LoggerInterface $logger    PSR logger.
+     *
+     * @return ICache|null The cache, or null when no distributed backend exists.
+     */
+    private function getMcpDiscoveryCache(
+        ContainerInterface $container,
+        \Psr\Log\LoggerInterface $logger
+    ): ?ICache {
+        try {
+            $cacheFactory = $container->get(ICacheFactory::class);
+            if ($cacheFactory instanceof ICacheFactory === false || $cacheFactory->isAvailable() === false) {
+                return null;
+            }
+
+            return $cacheFactory->createDistributed(prefix: self::MCP_PROBE_CACHE_PREFIX);
+        } catch (\Throwable $e) {
+            $logger->debug(
+                '[Application] MCP discovery cache unavailable: '.$e->getMessage()
+            );
+            return null;
+        }//end try
+    }//end getMcpDiscoveryCache()
+
+    /**
+     * Build the discovery-map cache key for an installed-app list.
+     *
+     * The list is sorted before hashing so a pure ordering change from
+     * IAppManager does not needlessly invalidate the map.
+     *
+     * @param string[] $appIds The installed app ids.
+     *
+     * @return string The cache key.
+     */
+    private function buildMcpDiscoveryCacheKey(array $appIds): string
+    {
+        $sorted = $appIds;
+        sort($sorted);
+
+        return 'map:'.hash('sha256', implode(',', $sorted));
+    }//end buildMcpDiscoveryCacheKey()
+
+    /**
+     * Read the cached discovery map, or null on miss / disabled cache.
+     *
+     * @param ICache|null $cache    The cache, or null when disabled.
+     * @param string      $cacheKey The cache key.
+     *
+     * @return array<string, string|null>|null The cached map, or null on miss.
+     */
+    private function readMcpDiscoveryMap(?ICache $cache, string $cacheKey): ?array
+    {
+        if ($cache === null) {
+            return null;
+        }
+
+        $blob = $cache->get(key: $cacheKey);
+        if (is_string($blob) === false) {
+            return null;
+        }
+
+        $data = json_decode($blob, true);
+        if (is_array($data) === false) {
+            return null;
+        }
+
+        $map = [];
+        foreach ($data as $appId => $key) {
+            if ($key === null) {
+                $map[(string) $appId] = null;
+                continue;
+            }
+
+            if (is_string($key) === false || $key === '') {
+                // Corrupt entry — discard the whole blob rather than trust it.
+                return null;
+            }
+
+            $map[(string) $appId] = $key;
+        }//end foreach
+
+        return $map;
+    }//end readMcpDiscoveryMap()
+
+    /**
+     * Write the discovery map to the cache with the clamped TTL.
+     *
+     * @param ContainerInterface         $container The DI container (for the TTL config read).
+     * @param ICache|null                $cache     The cache, or null when disabled.
+     * @param string                     $cacheKey  The cache key.
+     * @param array<string, string|null> $map       The appId => winning key|null map.
+     *
+     * @return void
+     */
+    private function writeMcpDiscoveryMap(
+        ContainerInterface $container,
+        ?ICache $cache,
+        string $cacheKey,
+        array $map
+    ): void {
+        if ($cache === null) {
+            return;
+        }
+
+        $blob = json_encode($map);
+        if (is_string($blob) === false) {
+            return;
+        }
+
+        $cache->set(key: $cacheKey, value: $blob, ttl: $this->resolveMcpProbeCacheTtl(container: $container));
+    }//end writeMcpDiscoveryMap()
+
+    /**
+     * Resolve the discovery-cache TTL, clamped to the allowed range.
+     *
+     * The TTL is the ONLY thing that catches a provider class added by an app
+     * UPGRADE (which leaves the installed-app list, and therefore the cache
+     * key, unchanged) — so it is deliberately short and bounded.
+     *
+     * @param ContainerInterface $container The DI container.
+     *
+     * @return int The TTL in seconds.
+     */
+    private function resolveMcpProbeCacheTtl(ContainerInterface $container): int
+    {
+        try {
+            $ttl = $container->get(IAppConfig::class)->getValueInt(
+                self::APP_ID,
+                self::MCP_PROBE_TTL_CONFIG_KEY,
+                self::MCP_PROBE_TTL_DEFAULT
+            );
+        } catch (\Throwable $e) {
+            $ttl = self::MCP_PROBE_TTL_DEFAULT;
+        }
+
+        return max(self::MCP_PROBE_TTL_MIN, min(self::MCP_PROBE_TTL_MAX, $ttl));
+    }//end resolveMcpProbeCacheTtl()
 
     /**
      * Build the list of candidate lookup keys for a given app's MCP tool provider.
@@ -3229,12 +3789,15 @@ class Application extends App implements IBootstrap
      *    when the declared namespace differs from ucfirst($appId) (covers camel-cased
      *    app names like `openbuild` → `OpenBuild`).
      *
+     * Protected as a test seam (#308): the probe-cache tests override this to
+     * count how often the expensive info.xml read actually runs.
+     *
      * @param string $appId      The Nextcloud app id.
      * @param mixed  $appManager The IAppManager instance.
      *
      * @return string[] Ordered candidate key list.
      */
-    private function buildMcpProviderCandidates(string $appId, $appManager): array
+    protected function buildMcpProviderCandidates(string $appId, $appManager): array
     {
         $candidates = [
             'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::'.$appId,
@@ -3277,6 +3840,9 @@ class Application extends App implements IBootstrap
      * candidate does not exist, could not be resolved, or resolved to a
      * non-IMcpToolProvider object.
      *
+     * Protected as a test seam (#308): the probe-cache tests override this to
+     * count how many candidate resolutions a request actually performs.
+     *
      * @param ContainerInterface       $container The DI container.
      * @param \Psr\Log\LoggerInterface $logger    PSR logger.
      * @param string                   $appId     The Nextcloud app id (for logging).
@@ -3286,7 +3852,7 @@ class Application extends App implements IBootstrap
      *
      * @spec openspec/specs/chat-ai/spec.md#requirement-mcptoolsservice-provider-discovery-refactor
      */
-    private function tryResolveMcpProviderCandidate(
+    protected function tryResolveMcpProviderCandidate(
         ContainerInterface $container,
         \Psr\Log\LoggerInterface $logger,
         string $appId,
@@ -3299,12 +3865,10 @@ class Application extends App implements IBootstrap
                 // installed app (noisy).
                 if (class_exists($key) === false) {
                     // Expected for every installed app that ships no MCP tool
-                    // provider — debug, not warning, or each MCP request logs
-                    // one line per enabled app.
-                    $logger->debug(
-                        '[McpToolsService] Class does not exist',
-                        ['appId' => $appId, 'fqcn' => $key]
-                    );
+                    // provider — i.e. almost all of them. Deliberately silent:
+                    // this fired ~2 lines per installed app per request (#308).
+                    // The single summary line in collectPerAppMcpProviders()
+                    // carries the same information at 1/143rd the volume.
                     return null;
                 }
             }
@@ -3312,7 +3876,7 @@ class Application extends App implements IBootstrap
             $appProvider = $container->get($key);
             if ($appProvider instanceof IMcpToolProvider) {
                 $logger->info(
-                    '[McpToolsService] Discovered per-app tool provider',
+                    '[Application] Discovered per-app tool provider',
                     ['appId' => $appId, 'via' => $key, 'class' => get_class($appProvider)]
                 );
                 return $appProvider;
@@ -3320,19 +3884,19 @@ class Application extends App implements IBootstrap
 
             // Get_debug_type() returns the FQCN for objects and the type name for scalars.
             $logger->warning(
-                '[McpToolsService] Resolved but not IMcpToolProvider',
+                '[Application] Resolved but not IMcpToolProvider',
                 ['appId' => $appId, 'via' => $key, 'class' => get_debug_type($appProvider)]
             );
         } catch (\Psr\Container\NotFoundExceptionInterface $e) {
-            // Alias key not registered — the expected case for apps without an
-            // MCP provider; debug to keep per-request logs quiet.
-            $logger->debug(
-                '[McpToolsService] Resolve failed',
-                ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
-            );
+            // Alias key not registered — the expected case for every app
+            // without an MCP provider, i.e. almost all of them. Deliberately
+            // silent; see the class_exists() branch above (#308).
+            return null;
         } catch (\Throwable $e) {
+            // A genuine misconfiguration (the alias IS registered but its
+            // factory blew up) — this one is worth hearing about.
             $logger->warning(
-                '[McpToolsService] Resolve failed',
+                '[Application] Resolve failed',
                 ['appId' => $appId, 'key' => $key, 'error' => $e->getMessage()]
             );
         }//end try
@@ -3368,6 +3932,7 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootLeafRegistry(server: $server);
         $this->bootObjectSourceProviders(server: $server);
         $this->bootFederation(server: $server);
 
@@ -3555,6 +4120,42 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Install the lazy leaf loader on the shared IntegrationRegistry.
+     *
+     * The loader is a closure that reads the LeafRegistry catalogue, which
+     * dispatches `RegisterLeafProvidersEvent` once and lands any data-provider
+     * leaves on the IntegrationRegistry. Installing it here (rather than
+     * dispatching now) keeps the collect-event LAZY: it fires only when
+     * something actually reads the registry or the leaf catalogue in a request
+     * (ADR-066). Guarded so a registry-less build still boots.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+     */
+    private function bootLeafRegistry($server): void
+    {
+        try {
+            $integrationRegistry = $server->get(IntegrationRegistry::class);
+            $integrationRegistry->setLeafLoader(
+                static function () use ($server): void {
+                    // Reading the catalogue triggers LeafRegistry::ensureLoaded(),
+                    // which dispatches the event and calls addProvider() for each
+                    // data-provider leaf.
+                    $server->get(LeafRegistry::class)->getDescriptors();
+                }
+            );
+        } catch (\Throwable $e) {
+            // Registry binding not available — skip silently; the leaf catalogue
+            // simply stays empty on this build.
+            return;
+        }
+
+    }//end bootLeafRegistry()
 
     /**
      * Register the built-in object-source providers with the shared

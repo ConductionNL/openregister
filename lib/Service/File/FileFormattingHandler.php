@@ -121,7 +121,7 @@ class FileFormattingHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function formatFile(Node $file): array
     {
@@ -292,7 +292,7 @@ class FileFormattingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) File formatting with pagination requires multiple branches
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple filter and pagination paths
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-file/specs/file-actions/spec.md#REQ-007
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function formatFiles(array $files, ?array $requestParams=[]): array
     {

@@ -41,6 +41,15 @@
  * context, never request input); the broker applies the full guard chain
  * against it, failing closed.
  *
+ * MINTING (app-facing): {@see mint()} is the single path that brings a credential
+ * into existence — it writes the metadata object AND the vault secret, atomically
+ * from the caller's point of view, and needs no HTTP session. The controller and
+ * in-process callers (an openconnector migration repair step folding an inline
+ * plaintext secret into the broker) both go through it, so the metadata shape and
+ * the vault write live in exactly one place. Authorization for a mint (provider
+ * validation, the organisation-administrator gate) stays with the CALLER — those
+ * are request/authz concerns, not mint concerns.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Credential
  *
@@ -64,6 +73,8 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use DateTimeImmutable;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -75,7 +86,7 @@ use Throwable;
  *   security decision is independently auditable; the aggregate weighted method
  *   count is a by-product of that decomposition, not of tangled logic.
  *
- * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+ * @spec openspec/specs/credential-broker/spec.md
  */
 class CredentialBrokerService
 {
@@ -157,9 +168,9 @@ class CredentialBrokerService
      * @throws CredentialAccessDeniedException When any guard fails closed (mapped to a static 403).
      * @throws CredentialUpstreamException     When the outbound call fails at the transport level (mapped to a static 502).
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function request(
         string $credentialId,
@@ -174,7 +185,17 @@ class CredentialBrokerService
         $matchPath = $this->normalisePath(path: $path);
 
         // Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
-        $credential = $this->loadAdmittedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
+        // TRUST BOUNDARY (openregister#450): request() is HTTP-routed (credential#brokerRequest),
+        // so it MUST NEVER let a caller assert an acting organisation — passing null keeps the
+        // sessionless organisation admit path (assertOrganisationMember) unreachable from a routed
+        // request, exactly as the controller passes no actingUserId. A sessionless proxy call
+        // against an organisation credential therefore still denies; only the non-routed
+        // resolveInjectable() path may carry an in-process organisation assertion.
+        $credential = $this->loadAdmittedCredential(
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            actingOrganisationId: null
+        );
         $data       = $credential->jsonSerialize();
         $scope      = $this->scopeOf(data: $data);
 
@@ -236,24 +257,43 @@ class CredentialBrokerService
      * path (design D-G). `actingUserId` follows the same rule as request() (design D-K):
      * honored only when there is no user session.
      *
-     * @param string      $credentialId The `credential` object UUID.
-     * @param string      $appId        The authenticated calling app id (the caller's own id on the in-process path).
-     * @param string|null $actingUserId Optional asserted user for SESSIONLESS in-process callers; ignored with a session.
+     * SESSIONLESS ORGANISATION RESOLUTION (openregister#450, ADR-064 Rule 4): an
+     * `organisation`-scoped INFRASTRUCTURE credential (a source/consumer secret) MUST NOT be
+     * personal-scoped, yet its trusted in-process consumers — an openconnector migration repair
+     * step, a background sync job — run with NO user session. Such a caller may assert
+     * `actingOrganisationId`; the organisation guard then admits iff it MATCHES the credential's
+     * organisation (see {@see assertOrganisationMember()}). This is honored ONLY without a
+     * session and, exactly like `actingUserId`, is settable only by in-process code — this
+     * method is NOT HTTP-routed, so request input can never reach it.
+     *
+     * @param string      $credentialId         The `credential` object UUID.
+     * @param string      $appId                The authenticated calling app id (the caller's own id on the in-process path).
+     * @param string|null $actingUserId         Optional asserted user for SESSIONLESS in-process callers; ignored with a session.
+     * @param string|null $actingOrganisationId Optional asserted organisation for SESSIONLESS in-process callers resolving an
+     *                                          organisation credential; admits iff it equals the credential's organisation, and
+     *                                          ignored whenever a user session exists. NEVER settable from request input (this
+     *                                          method is not routed) — an in-process trust assertion only.
      *
      * @return string|null The raw secret for an inject-only credential, or null when the credential is a proxy credential.
      *
      * @throws CredentialAccessDeniedException When Guard 1 or 2 fails, or an inject-only credential has no stored secret.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#manifest-driven-credential-app-onboarding
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     public function resolveInjectable(
         string $credentialId,
         string $appId,
-        ?string $actingUserId=null
+        ?string $actingUserId=null,
+        ?string $actingOrganisationId=null
     ): ?string {
         // Guard 1 — access (per-object IDOR): scope-dispatched owner/membership check.
-        $credential = $this->loadAdmittedCredential(credentialId: $credentialId, actingUserId: $actingUserId);
+        $credential = $this->loadAdmittedCredential(
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            actingOrganisationId: $actingOrganisationId
+        );
         $data       = $credential->jsonSerialize();
         $scope      = $this->scopeOf(data: $data);
 
@@ -276,13 +316,159 @@ class CredentialBrokerService
     }//end resolveInjectable()
 
     /**
+     * Mint a credential: persist its metadata object and store its secret to the vault.
+     *
+     * The single mint path for the whole instance — the HTTP controller and any
+     * in-process caller (an openconnector migration repair step folding an inline
+     * plaintext source secret into the broker, say) go through here, so the metadata
+     * shape, the vault write, and the atomicity contract are defined exactly once.
+     *
+     * SESSIONLESS BY CONSTRUCTION: no `IUserSession` is consulted — the `$owner` is
+     * an ASSERTION by the trusted caller (the controller passes the session uid; a
+     * repair step derives it from durable job context, never from request input).
+     * This mirrors the `actingUserId` posture of {@see request()} / {@see resolveInjectable()}
+     * (design D-K) and lets a background job mint without an HTTP session.
+     *
+     * AUTHORIZATION IS THE CALLER'S: minting is not itself a guarded operation — the
+     * provider-catalogue validation and the organisation-administrator gate are
+     * request/authz concerns that live in {@see \OCA\OpenRegister\Controller\CredentialController}.
+     * This method takes an ALREADY-RESOLVED `$scope` + `$organisation` and trusts them.
+     *
+     * ATOMICITY: the metadata object and the vault secret are two stores with no shared
+     * transaction. When the vault write fails AFTER the object was saved we would be left
+     * with a metadata object that no secret backs — a credential that looks usable in the
+     * UI and fails closed at broker time with "no secret stored". Rather than ship that,
+     * the orphaned object is deleted and the original vault failure is rethrown, so a mint
+     * either yields a complete credential or yields nothing. A failure to delete the orphan
+     * is logged (secret-free) and does not mask the original error.
+     *
+     * The `$secret` NEVER reaches an OR object, a log line, or the return value — it is
+     * handed straight to the {@see CredentialStore} leaf and otherwise untouched
+     * (the CredentialStore contract).
+     *
+     * @param string             $name         The human-readable credential name (non-empty).
+     * @param string             $provider     The provider identifier (the CALLER validates it against the catalogue).
+     * @param string             $owner        The owning user's UID (asserted by the trusted caller; never request input).
+     * @param array<int, string> $allowedApps  The app ids permitted to use this credential (Guard 2 at broker time).
+     * @param string|null        $secret       The raw secret, or null/'' to mint metadata only (no vault write).
+     * @param string             $scope        The ALREADY-RESOLVED scope (`personal`|`organisation`); selects the vault owner.
+     * @param string|null        $organisation The ALREADY-GATED owning organisation UUID; required for the organisation scope.
+     *
+     * @return ObjectEntity The persisted credential entity (its `getUuid()` is the credential id / credentialRef).
+     *
+     * @throws \InvalidArgumentException When the name is empty, or an organisation-scoped mint carries no organisation.
+     * @throws Throwable                 When the object save or the vault write fails (the orphaned object is removed first).
+     *
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
+     */
+    public function mint(
+        string $name,
+        string $provider,
+        string $owner,
+        array $allowedApps=[],
+        ?string $secret=null,
+        string $scope=self::SCOPE_PERSONAL,
+        ?string $organisation=null
+    ): ObjectEntity {
+        $name = trim($name);
+        if ($name === '' || trim($provider) === '') {
+            throw new InvalidArgumentException(message: 'A credential requires a name and a provider');
+        }
+
+        $data = [
+            'name'        => $name,
+            'provider'    => $provider,
+            'owner'       => $owner,
+            'allowedApps' => array_values($allowedApps),
+            'createdAt'   => (new DateTimeImmutable())->format(DATE_ATOM),
+        ];
+
+        // Only an organisation-scoped credential carries scope/organisation — a personal
+        // credential's property bag stays byte-for-byte what it has always been (design D1).
+        if ($scope !== self::SCOPE_ORGANISATION) {
+            $scope = self::SCOPE_PERSONAL;
+        }
+
+        if ($scope === self::SCOPE_ORGANISATION) {
+            $organisation = trim((string) $organisation);
+            if ($organisation === '') {
+                throw new InvalidArgumentException(message: 'An organisation-scoped credential requires an organisation');
+            }
+
+            $data['scope']        = self::SCOPE_ORGANISATION;
+            $data['organisation'] = $organisation;
+        }
+
+        // Persist the credential-metadata object in system context. Mint is a trusted,
+        // caller-authorized operation ("authorization is the caller's" — the controller
+        // runs the provider-catalogue + organisation-admin gate; a repair-step migration
+        // is itself system-trusted), so the write MUST NOT be re-gated by RBAC here.
+        // Without `_rbac: false` a SESSIONLESS caller (an occ/repair migration folding an
+        // inline source secret into the broker) fails the create with NotAuthorizedException
+        // — the write ran as the anonymous principal. This mirrors the rollback delete
+        // below, which already bypasses RBAC for exactly this reason.
+        $saved = $this->objectService->saveObject(
+            object: $data,
+            register: self::REGISTER,
+            schema: self::SCHEMA,
+            _rbac: false,
+            _multitenancy: false
+        );
+
+        $uuid = (string) $saved->getUuid();
+        if ($secret === null || $secret === '') {
+            return $saved;
+        }
+
+        try {
+            $this->credentialStore->put($uuid, $secret, $scope);
+        } catch (Throwable $e) {
+            $this->discardOrphanedCredential(uuid: $uuid);
+            throw $e;
+        }
+
+        return $saved;
+    }//end mint()
+
+    /**
+     * Remove a credential metadata object whose vault write failed (mint rollback).
+     *
+     * Best-effort by design: the caller is already unwinding a vault failure and that
+     * error must reach it unmasked, so a delete failure is logged (secret-free) and
+     * swallowed. Worst case the orphan survives and fails closed at broker time.
+     *
+     * @param string $uuid The orphaned credential object's UUID.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/credential-broker/spec.md
+     */
+    private function discardOrphanedCredential(string $uuid): void
+    {
+        try {
+            $this->objectService->deleteObject(
+                uuid: $uuid,
+                register: self::REGISTER,
+                schema: self::SCHEMA,
+                _rbac: false
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                'Credential broker: failed to roll back credential {uuid} after its secret could not be stored',
+                ['uuid' => $uuid, 'exception' => $e]
+            );
+        }
+    }//end discardOrphanedCredential()
+
+    /**
      * Whether a resolved provider entry is inject-only (app-side injection, never proxied).
      *
      * @param array<string, mixed> $provider The catalogue provider entry.
      *
      * @return bool True when the provider is flagged `inject_only`.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function isInjectOnly(array $provider): bool
     {
@@ -300,25 +486,32 @@ class CredentialBrokerService
      *     exists (unconditionally — a session caller cannot impersonate via
      *     `actingUserId`); only a sessionless in-process caller may assert
      *     `actingUserId` (design D-K); no identity at all denies as before.
-     *   - `organisation`: admit only when a REAL session user is a member of the
-     *     credential's `organisation` (no `actingUserId` fallback — there is no
-     *     owner to fall back to, so an unauthenticated organisation call denies).
+     *   - `organisation`: admit when a REAL session user is a member of the
+     *     credential's `organisation`, OR — for a SESSIONLESS trusted in-process
+     *     caller (openregister#450) — when the asserted `actingOrganisationId`
+     *     matches the credential's `organisation`. The `actingUserId` fallback is
+     *     never consulted for the organisation branch (org scope is deliberately
+     *     decoupled from any one user's membership, ADR-064 Rule 4).
      *
      * The `allowedApps`, provider allow-rule, and host-lock guards then run for
      * BOTH scopes, unchanged, in {@see request()}.
      *
-     * @param string      $credentialId The `credential` object UUID.
-     * @param string|null $actingUserId Asserted user for sessionless in-process callers (personal branch only).
+     * @param string      $credentialId         The `credential` object UUID.
+     * @param string|null $actingUserId         Asserted user for sessionless in-process callers (personal branch only).
+     * @param string|null $actingOrganisationId Asserted organisation for sessionless in-process callers (organisation branch only).
      *
      * @return ObjectEntity The admitted credential entity.
      *
      * @throws CredentialAccessDeniedException When missing, unauthenticated, or not admitted.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
-    private function loadAdmittedCredential(string $credentialId, ?string $actingUserId=null): ObjectEntity
-    {
+    private function loadAdmittedCredential(
+        string $credentialId,
+        ?string $actingUserId=null,
+        ?string $actingOrganisationId=null
+    ): ObjectEntity {
         try {
             $credential = $this->objectService->find(
                 id: $credentialId,
@@ -336,7 +529,11 @@ class CredentialBrokerService
 
         $data = $credential->jsonSerialize();
         if ($this->scopeOf(data: $data) === self::SCOPE_ORGANISATION) {
-            $this->assertOrganisationMember(data: $data, credentialId: $credentialId);
+            $this->assertOrganisationMember(
+                data: $data,
+                credentialId: $credentialId,
+                actingOrganisationId: $actingOrganisationId
+            );
             return $credential;
         }
 
@@ -356,8 +553,8 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When unauthenticated or not owned.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertPersonalOwner(ObjectEntity $credential, string $credentialId, ?string $actingUserId): void
     {
@@ -372,32 +569,66 @@ class CredentialBrokerService
     }//end assertPersonalOwner()
 
     /**
-     * Organisation membership guard — a REAL session user must be a member of the org.
+     * Organisation membership guard — a session member OR a matching sessionless in-process assertion.
      *
-     * There is no owner to fall back to, so an organisation call REQUIRES a real
-     * user session: the sessionless `actingUserId` fallback is deliberately not
-     * consulted here, and no session denies (design D3). Membership is resolved
-     * through {@see OrganisationService::hasAccessToOrganisation()} (the current
-     * session user is a member of — or a Nextcloud admin over — the organisation).
+     * ADR-064 Rule 4 REQUIRES an infrastructure credential (a source/consumer secret) to be
+     * `organisation`-scoped, never `personal` — coupling it to one employee would break the
+     * integration the moment that employee leaves. But its trusted in-process consumers (an
+     * openconnector migration repair step, a background sync job) run with NO user session, so
+     * the original design D3 "no session denies" rule left org-scoped infrastructure credentials
+     * unresolvable (openregister#450). This guard therefore admits on TWO paths:
      *
-     * @param array<string, mixed> $data         The credential's serialised data.
-     * @param string               $credentialId The `credential` object UUID (for logging).
+     *   - Session present: the session is AUTHORITATIVE. Membership is resolved through
+     *     {@see OrganisationService::hasAccessToOrganisation()} (the session user is a member of —
+     *     or a Nextcloud admin over — the organisation), exactly as before. Any asserted
+     *     `actingOrganisationId` is IGNORED here, so a request-context caller can NEVER escalate
+     *     via the assertion (a session is proof of identity; the assertion is not).
+     *   - Sessionless: admit IFF a non-null `actingOrganisationId` EQUALS the credential's
+     *     `organisation`. This is the only new admit path. It is safe because the assertion is
+     *     settable only by trusted in-process code — request input never reaches it (the routed
+     *     {@see request()} passes null; the controller never reads it; {@see resolveInjectable()}
+     *     is not HTTP-routed). The match is a consistency guard so an org-A assertion cannot
+     *     resolve an org-B credential; resolution stays DECOUPLED from any individual user's
+     *     membership, which is the entire point of organisation scope (ADR-064 Rule 4). The
+     *     sessionless `actingUserId` fallback is deliberately NOT reused — org scope must not be
+     *     recoupled to a single user.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string               $credentialId         The `credential` object UUID (for logging).
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers only.
      *
      * @return void
      *
-     * @throws CredentialAccessDeniedException When sessionless or not a member.
+     * @throws CredentialAccessDeniedException When the org is malformed, the session user is not a member, or the
+     *                                         sessionless assertion is absent or does not match the credential organisation.
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#organisation-broker-guard
+     * @spec openspec/specs/credential-broker/spec.md
      */
-    private function assertOrganisationMember(array $data, string $credentialId): void
+    private function assertOrganisationMember(array $data, string $credentialId, ?string $actingOrganisationId=null): void
     {
-        if ($this->userSession->getUser() === null) {
-            $this->deny(reason: 'organisation credential requires a user session', credentialId: $credentialId);
+        $organisation = (string) ($data['organisation'] ?? '');
+        if ($organisation === '') {
+            $this->deny(reason: 'organisation credential has no organisation', credentialId: $credentialId);
         }
 
-        $organisation = (string) ($data['organisation'] ?? '');
-        if ($organisation === '' || $this->organisationService->hasAccessToOrganisation($organisation) === false) {
-            $this->deny(reason: 'caller is not a member of the credential organisation', credentialId: $credentialId);
+        // Session present: the session identity is authoritative and the asserted acting
+        // organisation is ignored — membership is resolved exactly as before.
+        if ($this->userSession->getUser() !== null) {
+            if ($this->organisationService->hasAccessToOrganisation($organisation) === false) {
+                $this->deny(reason: 'caller is not a member of the credential organisation', credentialId: $credentialId);
+            }
+
+            return;
+        }
+
+        // Sessionless (in-process by construction — request input never reaches
+        // actingOrganisationId). Admit only when the trusted caller asserts THIS
+        // credential's organisation; matching decouples resolution from any one user.
+        if ($actingOrganisationId === null || $actingOrganisationId !== $organisation) {
+            $this->deny(
+                reason: 'sessionless organisation resolution requires a matching acting organisation',
+                credentialId: $credentialId
+            );
         }
     }//end assertOrganisationMember()
 
@@ -408,7 +639,7 @@ class CredentialBrokerService
      *
      * @return string The scope (`personal`|`organisation`).
      *
-     * @spec openspec/changes/credential-broker-organisation-scope/specs/credential-broker/spec.md#credential-scope
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function scopeOf(array $data): string
     {
@@ -434,7 +665,7 @@ class CredentialBrokerService
      *
      * @return string|null The identity for the owner guard, or null when unauthenticated.
      *
-     * @spec openspec/changes/credential-doriath-leaf/specs/credential-broker/spec.md#background-acting-user-resolution
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveActingIdentity(?string $actingUserId): ?string
     {
@@ -461,7 +692,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the app is not allowed.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#app-manifest-declares-provider-usage
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertAppAllowed(array $data, string $appId, string $credentialId): void
     {
@@ -481,7 +712,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the provider is unknown.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveProvider(array $data, string $credentialId): array
     {
@@ -506,7 +737,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When no allow-rule matches.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function assertRuleAllowed(array $provider, string $method, string $matchPath, string $credentialId): void
     {
@@ -543,7 +774,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the resolved host does not match the base host.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function resolveAndLockUrl(array $provider, string $path, string $credentialId): string
     {
@@ -571,7 +802,7 @@ class CredentialBrokerService
      *
      * @return array<string, string> The final request headers with auth injected.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function injectAuth(array $provider, array $headers, string $secret): array
     {
@@ -610,7 +841,7 @@ class CredentialBrokerService
      *
      * @throws CredentialUpstreamException When the call fails at the transport level.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function performCall(string $method, string $url, array $headers, ?string $body, string $credentialId): array
     {
@@ -656,7 +887,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException When the path is empty, protocol-relative, or contains traversal.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#provider-catalogue-as-a-runtime-immutable-lib-file
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function normalisePath(string $path): string
     {
@@ -688,7 +919,7 @@ class CredentialBrokerService
      *
      * @throws CredentialAccessDeniedException Always.
      *
-     * @spec openspec/changes/credential-broker/specs/credential-broker/spec.md#credential-metadata-schema
+     * @spec openspec/specs/credential-broker/spec.md
      */
     private function deny(string $reason, string $credentialId): never
     {

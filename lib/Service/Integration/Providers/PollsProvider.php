@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-polls/tasks.md
+ * @spec openspec/specs/integration-polls/spec.md
  */
 
 declare(strict_types=1);
@@ -109,7 +109,7 @@ class PollsProvider extends AbstractIntegrationProvider
      *
      * @return array<int,array<string,mixed>>
      *
-     * @spec openspec/changes/integration-polls/tasks.md
+     * @spec openspec/specs/integration-polls/spec.md
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) AbstractIntegrationProvider::list() mandates
      * (register, schema, objectId, filters); $register and $schema are unused because Polls links

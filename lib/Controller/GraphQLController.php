@@ -20,8 +20,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
+ * @spec openspec/specs/graphql-api/spec.md
+ * @spec openspec/specs/graphql-api/spec.md
  *
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
  * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
@@ -86,7 +86,7 @@ class GraphQLController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-46
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-1
      */
@@ -147,7 +147,7 @@ class GraphQLController extends Controller
      * @NoCSRFRequired
      * @no-admin-idor-exempt No per-object resource: returns the static GraphiQL explorer HTML page; no data access.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-47
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-2
      */

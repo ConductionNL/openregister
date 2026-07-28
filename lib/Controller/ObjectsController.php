@@ -39,6 +39,7 @@ use OCA\OpenRegister\Exception\CustomValidationException;
 use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Exception\FolderAccessDeniedException;
 use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Exception\TranslationTargetConflictException;
 use OCA\OpenRegister\Exception\RegisterNotFoundException;
 use OCA\OpenRegister\Exception\SchemaNotFoundException;
 use OCA\OpenRegister\Exception\AppendOnlyException;
@@ -57,6 +58,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\Exception;
@@ -940,9 +942,13 @@ class ObjectsController extends Controller
         $results = $magicMapper->searchAcrossMultipleTables(query: $query, registerSchemaPairs: $pairs);
 
         // Redact write-only secrets before serialising (openregister#380, ocon#147): this
-        // direct-magic-mapper path bypasses renderEntity, so without this a non-admin read
-        // returns write-only fields in cleartext. redactWriteOnlyFromRows resolves each
-        // row's schema individually, so the cross-schema result set is handled correctly.
+        // direct-magic-mapper path bypasses renderEntity, so without this the read returns
+        // write-only fields in cleartext. redactWriteOnlyFromRows resolves each row's schema
+        // individually, so the cross-schema result set is handled correctly.
+        //
+        // `_rbac` is forwarded only to gate the property `authorization.read` strip. It does
+        // NOT gate the writeOnly strip (#460): `$query['_rbac']` is false for an ADMIN here,
+        // and an admin is not exempt from the writeOnly render boundary (#389).
         $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
         $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
@@ -1243,6 +1249,9 @@ class ObjectsController extends Controller
                     // This is the exact path the OpenConnector Source leak used: a plain
                     // list read (no _extend) hit this branch. Redact the raw entities with
                     // the same read-strip renderEntity applies, then serialize.
+                    // `$rbac` is `($isAdmin === false)` and gates ONLY the property
+                    // `authorization.read` strip — writeOnly strips unconditionally, admin
+                    // included (#389/#460).
                     $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                     $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $rbac);
 
@@ -2254,6 +2263,8 @@ class ObjectsController extends Controller
 
                         // Redact write-only secrets before serialising (openregister#380,
                         // ocon#147) — this direct-magic-mapper path bypasses renderEntity.
+                        // `_rbac` (false for an admin) gates only the property
+                        // `authorization.read` strip; writeOnly strips unconditionally (#460).
                         $renderHandler = \OC::$server->get(\OCA\OpenRegister\Service\Object\RenderObject::class);
                         $renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $query['_rbac'] ?? true);
 
@@ -2584,7 +2595,21 @@ class ObjectsController extends Controller
      * @suppressWarnings(PHPMD.NPathComplexity) Object creation requires many validation and processing steps
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
+     *
+     * BUG-RATE-1: this endpoint is `@PublicPage` so anonymous callers (e.g.
+     * public form submissions via CaseToken/FormLink) need throttling —
+     * that is what #[AnonRateLimit] is for (added for the public-create
+     * path, see commit 044faee7d). But Nextcloud's RateLimitingMiddleware
+     * applies an Anon-only limit to EVERY caller, authenticated or not,
+     * when no #[UserRateLimit] is present ("If only an AnonRateThrottle is
+     * specified that one will also be applied to logged-in users" —
+     * lib/private/AppFramework/Middleware/Security/RateLimitingMiddleware.php).
+     * Without this explicit, more generous authenticated-user limit, every
+     * logged-in API caller — including bulk imports/integrations and this
+     * app's own CI test suite — was capped at the same 30 requests/minute
+     * meant only for anonymous abuse prevention.
      */
+    #[UserRateLimit(limit: 300, period: 60)]
     #[AnonRateLimit(limit: 30, period: 60)]
     public function create(
         string $register,
@@ -2679,6 +2704,13 @@ class ObjectsController extends Controller
             // TODO: Unlock the object after saving using LockingHandler through ObjectService.
             // The unlockObject() method on the old ObjectEntityMapper is deprecated.
             // For now, skipping unlock to allow CRUD operations to complete.
+        } catch (TranslationTargetConflictException $exception) {
+            // Structured 400 per the exception's own documented contract
+            // (i18n-api-language-negotiation): a language-keyed body for a
+            // translatable property collided with X-Translation-Target-Language.
+            // Emitted here so the { "error": { "code": ... } } shape survives
+            // instead of being flattened by the generic validation handler.
+            return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
                        return new JSONResponse(data: $exception->getMessage(), statusCode: 400);
@@ -2878,6 +2910,13 @@ class ObjectsController extends Controller
         } catch (AppendOnlyException $exception) {
             // Reject update on append-only schema with HTTP 405.
             return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+        } catch (TranslationTargetConflictException $exception) {
+            // Structured 400 per the exception's own documented contract
+            // (i18n-api-language-negotiation): a language-keyed body for a
+            // translatable property collided with X-Translation-Target-Language.
+            // Emitted here so the { "error": { "code": ... } } shape survives
+            // instead of being flattened by the generic validation handler.
+            return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             return $objectService->handleValidationException(exception: $exception);
@@ -3085,6 +3124,13 @@ class ObjectsController extends Controller
         } catch (AppendOnlyException $exception) {
             // Reject patch on append-only schema with HTTP 405.
             return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+        } catch (TranslationTargetConflictException $exception) {
+            // Structured 400 per the exception's own documented contract
+            // (i18n-api-language-negotiation): a language-keyed body for a
+            // translatable property collided with X-Translation-Target-Language.
+            // Emitted here so the { "error": { "code": ... } } shape survives
+            // instead of being flattened by the generic validation handler.
+            return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
         } catch (ValidationException | CustomValidationException $exception) {
             // Handle validation errors.
             $this->logger->warning(
@@ -3226,6 +3272,13 @@ class ObjectsController extends Controller
         } catch (AppendOnlyException $exception) {
             // Reject post-patch on append-only schema with HTTP 405.
             return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
+        } catch (TranslationTargetConflictException $exception) {
+            // Structured 400 per the exception's own documented contract
+            // (i18n-api-language-negotiation): a language-keyed body for a
+            // translatable property collided with X-Translation-Target-Language.
+            // Emitted here so the { "error": { "code": ... } } shape survives
+            // instead of being flattened by the generic validation handler.
+            return new JSONResponse(data: $exception->toErrorBody(), statusCode: 400);
         } catch (ValidationException | CustomValidationException $exception) {
             return $objectService->handleValidationException(exception: $exception);
         } catch (\OCA\OpenRegister\Exception\HookStoppedException $exception) {
@@ -3897,7 +3950,7 @@ class ObjectsController extends Controller
      *
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
      * @spec openspec/archive/retrofit-annotate-openregister-2026-04-23/tasks.md
-     * @spec openspec/changes/export-pdf-format/specs/export-pdf-format/spec.md#pdf-format-is-wired-into-the-objects-and-register-export-endpoints
+     * @spec openspec/specs/export-pdf-format/spec.md
      */
     public function export(string $register, string $schema, ObjectService $objectService): DataDownloadResponse|JSONResponse
     {

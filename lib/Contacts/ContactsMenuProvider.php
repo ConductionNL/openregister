@@ -103,7 +103,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         ContactMatchingService $matchingService,
@@ -128,7 +128,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function process(IEntry $entry): void
     {
@@ -152,7 +152,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function doProcess(IEntry $entry): void
     {
@@ -198,7 +198,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
     {
@@ -238,7 +238,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function injectEntityActions(
         IEntry $entry,

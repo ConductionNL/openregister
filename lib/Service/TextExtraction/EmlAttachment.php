@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md
  *       "Each `EmlAttachment` MUST carry filename, MIME type, raw bytes, and inline / contentId metadata"
  */
 

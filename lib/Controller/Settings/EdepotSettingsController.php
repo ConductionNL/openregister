@@ -19,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
  */
 
 declare(strict_types=1);
@@ -81,7 +81,7 @@ class EdepotSettingsController extends Controller
      *
      * @return JSONResponse The current e-Depot configuration.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getEdepotSettings(): JSONResponse
     {
@@ -116,7 +116,7 @@ class EdepotSettingsController extends Controller
      *
      * @return JSONResponse The update result.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function updateEdepotSettings(): JSONResponse
     {
@@ -190,7 +190,7 @@ class EdepotSettingsController extends Controller
      *
      * @return JSONResponse The connection test result.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function testEdepotConnection(): JSONResponse
     {
@@ -229,7 +229,7 @@ class EdepotSettingsController extends Controller
      *
      * @return TransportInterface The transport.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-edepot-transfer/tasks.md#task-1
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     private function resolveTransport(string $type): TransportInterface
     {

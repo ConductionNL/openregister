@@ -30,7 +30,7 @@ namespace OCA\OpenRegister\Service\SchemaImport;
 /**
  * Options for a standards import.
  *
- * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+ * @spec openspec/specs/schema-import/spec.md
  */
 final class ImportOptions
 {
@@ -55,7 +55,7 @@ final class ImportOptions
      *
      * @return self The constructed options.
      *
-     * @spec openspec/changes/schema-import-standards/specs/schema-import/spec.md
+     * @spec openspec/specs/schema-import/spec.md
      */
     public static function fromArray(array $payload): self
     {
