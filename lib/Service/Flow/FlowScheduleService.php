@@ -197,8 +197,9 @@ class FlowScheduleService
     /**
      * Queue a run for a due flow and record that it fired.
      *
-     * @param string            $uuid The flow uuid.
-     * @param DateTimeInterface $now  The moment it fired.
+     * @param string            $uuid  The flow uuid.
+     * @param DateTimeInterface $now   The moment it fired.
+     * @param string|null       $owner The user the run is attributed to, if known.
      *
      * @return void
      */
