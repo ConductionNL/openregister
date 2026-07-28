@@ -1920,7 +1920,13 @@ class Schema extends Entity implements JsonSerializable
         // `handoffContract` is the ADR-051 provider-side binding block
         // (contract field → own property, per kind URI); its shape is
         // validated at save time by HandoffContractBindingValidator.
-        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract'];
+        // `importSource` is the schema-import provenance block (dialect,
+        // reference, snapshot version, baseline) written by
+        // SchemaImportService and read back by the reimport / update-from-
+        // source endpoint; without it in the allowlist the provenance is
+        // silently dropped on save and the entire update-from-source feature
+        // is dead (the schema reports "not imported from a standard").
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
 
         foreach ($configuration as $key => $value) {
             // Per-key isolation (#419): a bad VALUE for one config key must never

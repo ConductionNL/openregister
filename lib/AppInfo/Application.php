@@ -2817,6 +2817,50 @@ class Application extends App implements IBootstrap
                 );
             }
         );
+
+        // Self-dogfood the GET /api/health and /api/metrics routes at the
+        // generic AppHost controllers. appinfo/routes.php aliases these URLs
+        // to route names 'AppHost\Controller\GenericMetrics#index' /
+        // 'AppHost\Controller\GenericHealth#index' — NC's RouteParser turns
+        // that into the literal DI lookup key
+        // 'AppHost\Controller\GenericHealthController' (buildControllerName()
+        // appends 'Controller' to the route-name segment verbatim; it does
+        // NOT prefix the app namespace for a route name that already
+        // contains a backslash). Without an explicit binding under that
+        // exact key, \OC\AppFramework\App::main() failed to resolve the
+        // controller, was caught as a QueryException, and — because the
+        // string coincidentally contains '\Controller\' — misread as "a
+        // global route pointing at a disabled app", surfacing as a 503
+        // "App controller is not enabled" HTML error page instead of the
+        // health/metrics JSON contract (ADR-006). Every OTHER AppHost route
+        // (dashboard/preferences/settings) is bound this same way, per
+        // controller, by \OCA\OpenRegister\AppHost\Bootstrap for LEAF apps
+        // that call Bootstrap::register(); OpenRegister's own self-adoption
+        // never calls Bootstrap::register() and must bind these two
+        // controllers directly.
+        $context->registerService(
+            'AppHost\\Controller\\GenericHealthController',
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Controller\GenericHealthController(
+                    appName: self::APP_ID,
+                    request: $container->get('OCP\IRequest'),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    executor: $container->get(\OCA\OpenRegister\AppHost\Observability\HealthCheckExecutor::class)
+                );
+            }
+        );
+
+        $context->registerService(
+            'AppHost\\Controller\\GenericMetricsController',
+            function (ContainerInterface $container) {
+                return new \OCA\OpenRegister\AppHost\Controller\GenericMetricsController(
+                    appName: self::APP_ID,
+                    request: $container->get('OCP\IRequest'),
+                    manifestLoader: $container->get(\OCA\OpenRegister\AppHost\Observability\ManifestLoader::class),
+                    engine: $container->get(\OCA\OpenRegister\AppHost\Observability\MetricsEngine::class)
+                );
+            }
+        );
     }//end registerAppHostObservability()
 
     /**

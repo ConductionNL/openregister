@@ -235,7 +235,17 @@ class LanguageMiddleware extends Middleware
      */
     private function resolveSourceLanguageForResponse(): ?string
     {
-        $uuid = $this->request->getParam('uuid');
+        // The canonical object read/write routes bind the identifier to the
+        // `{id}` path segment (objects#show / #update / #patch); only a few
+        // secondary routes name it `{uuid}`. Read `id` first and fall back to
+        // `uuid` so the header is derived on the primary object endpoints —
+        // previously only `uuid` was read, so X-Source-Language was never
+        // emitted on the main object route (i18n-source-of-truth).
+        $uuid = $this->request->getParam('id');
+        if (is_string($uuid) === false || $uuid === '') {
+            $uuid = $this->request->getParam('uuid');
+        }
+
         if (is_string($uuid) === false || $uuid === '') {
             return null;
         }

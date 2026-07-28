@@ -329,6 +329,215 @@ class FlowEngineTest extends TestCase
         $this->assertStringContainsString('unbounded loop', $result['error']);
     }
 
+    public function testAPinnedStepIsNotExecutedAndItsOutputIsUsed(): void
+    {
+        // Pin the first step's output. The dispatcher must never run it, the log
+        // must mark it pinned, and the next step must see the pinned items.
+        $dispatcher = new RecordingDispatcher();
+        $pinned = [FlowItems::item(json: ['pinned' => true])];
+
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => $pinned]]
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // Only 'second' ran — 'first' was served from the pin.
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        $this->assertSame('pinned', $result['log'][0]['status']);
+        // The next step saw the pinned output, not a re-execution.
+        $this->assertTrue($dispatcher->seenItems['second'][0]['json']['pinned']);
+    }
+
+    public function testAFlowLevelPinIsUsedWhenTheRunSuppliesNone(): void
+    {
+        $flow = $this->linearFlow();
+        $flow['pins'] = ['first' => [FlowItems::item(json: ['source' => 'flow-pin'])]];
+
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->runFlow($flow, $dispatcher);
+
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        $this->assertSame('flow-pin', $dispatcher->seenItems['second'][0]['json']['source']);
+    }
+
+    public function testARunPinOverridesAFlowPin(): void
+    {
+        $flow = $this->linearFlow();
+        $flow['pins'] = ['first' => [FlowItems::item(json: ['source' => 'flow-pin'])]];
+
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->engine->run(
+            $flow,
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => [FlowItems::item(json: ['source' => 'run-pin'])]]]
+        );
+
+        // The run's pin wins over the flow's own.
+        $this->assertSame('run-pin', $dispatcher->seenItems['second'][0]['json']['source']);
+    }
+
+    public function testAPinnedStepThatWouldHaveFailedStillSucceeds(): void
+    {
+        // The whole point of a pin: skip the step that blows up (or hits a real
+        // API) and carry on with its stored output.
+        $dispatcher = new RecordingDispatcher(failOn: 'first');
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            ['pins' => ['first' => [FlowItems::item(json: ['ok' => true])]]]
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+    }
+
+    public function testPerItemRoutingSendsEachItemDownItsTaggedBranch(): void
+    {
+        // A router edge start -> [high, low], then a step off each. The router
+        // tags n>5 for 'high', the rest for 'low'. Each branch must see only its
+        // own items — this is what per-item routing means.
+        $router = new class extends RecordingDispatcher {
+            public function dispatch(array $step, array $items, array $context): array
+            {
+                $name = (string) ($step['id'] ?? '');
+                $this->dispatched[] = $name;
+                $this->seenItems[$name] = $items;
+
+                if ($name !== 'route') {
+                    return $items;
+                }
+
+                $out = [];
+                foreach ($items as $i => $item) {
+                    $n = (int) ($item['json']['n'] ?? 0);
+                    $out[] = FlowItems::item(
+                        json: $item['json'],
+                        binary: [],
+                        fromItemIndex: $i,
+                        output: ($n > 5 ? 'high' : 'low')
+                    );
+                }
+
+                return $out;
+            }
+        };
+
+        $flow = [
+            'id'    => 'route',
+            'nodes' => [['id' => 'start'], ['id' => 'high'], ['id' => 'low'], ['id' => 'hEnd'], ['id' => 'lEnd']],
+            'edges' => [
+                ['id' => 'route', 'from' => 'start', 'to' => ['high', 'low']],
+                ['id' => 'doHigh', 'from' => 'high', 'to' => 'hEnd'],
+                ['id' => 'doLow', 'from' => 'low', 'to' => 'lEnd'],
+            ],
+        ];
+
+        $seed = [
+            FlowItems::item(json: ['n' => 1]),
+            FlowItems::item(json: ['n' => 7]),
+            FlowItems::item(json: ['n' => 3]),
+        ];
+
+        $result = $this->engine->run(
+            $flow,
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $router,
+            [],
+            $seed
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // High branch saw only n=7; low branch saw n=1 and n=3.
+        $this->assertSame([7], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doHigh']));
+        $this->assertSame([1, 3], array_map(static fn (array $i): int => $i['json']['n'], $router->seenItems['doLow']));
+        // The routing tag does not linger on the items the branch step sees.
+        $this->assertArrayNotHasKey('output', $router->seenItems['doHigh'][0]);
+    }
+
+    public function testAnUntaggedSplitStillBroadcastsToEveryBranch(): void
+    {
+        // The no-regression guarantee: a fork whose items carry no output tag
+        // delivers every item to every branch, exactly as before per-item routing.
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->runFlow([
+            'id'    => 'fork',
+            'nodes' => [['id' => 'start'], ['id' => 'a'], ['id' => 'b'], ['id' => 'aEnd'], ['id' => 'bEnd']],
+            'edges' => [
+                ['id' => 'fork', 'from' => 'start', 'to' => ['a', 'b']],
+                ['id' => 'doA', 'from' => 'a', 'to' => 'aEnd'],
+                ['id' => 'doB', 'from' => 'b', 'to' => 'bEnd'],
+            ],
+        ], $dispatcher);
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        // Both branches saw the (single, untagged) item.
+        $this->assertCount(1, $dispatcher->seenItems['doA']);
+        $this->assertCount(1, $dispatcher->seenItems['doB']);
+    }
+
+    public function testRunFromHereStartsAtTheChosenNodeAndSkipsWhatIsBefore(): void
+    {
+        // A three-step line start -> middle -> end. Starting at 'middle' must
+        // run only the 'second' step (middle -> end); 'first' never runs.
+        $dispatcher = new RecordingDispatcher();
+        $seed = [FlowItems::item(json: ['from' => 'run-from-here'])];
+
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            [],
+            $seed,
+            'middle'
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        $this->assertSame(['second'], $dispatcher->dispatched);
+        // The chosen start's step saw the supplied seed, not a subject item.
+        $this->assertSame('run-from-here', $dispatcher->seenItems['second'][0]['json']['from']);
+    }
+
+    public function testRunFromAnUnknownNodeFailsLoudly(): void
+    {
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            new RecordingDispatcher(),
+            [],
+            null,
+            'no-such-node'
+        );
+
+        $this->assertSame(FlowEngine::STATUS_FAILED, $result['status']);
+    }
+
+    public function testAnEmptyStartAtIsIgnoredAndTheFlowRunsFromItsStart(): void
+    {
+        $dispatcher = new RecordingDispatcher();
+        $result = $this->engine->run(
+            $this->linearFlow(),
+            new MethodMarkingStore(false, 'marking'),
+            new FlowSubject(),
+            $dispatcher,
+            [],
+            null,
+            ''
+        );
+
+        $this->assertSame(FlowEngine::STATUS_COMPLETED, $result['status']);
+        $this->assertSame(['first', 'second'], $dispatcher->dispatched);
+    }
+
     public function testAStepCarriesItsOwnEdgeConfigToTheDispatcher(): void
     {
         $flow = $this->linearFlow();

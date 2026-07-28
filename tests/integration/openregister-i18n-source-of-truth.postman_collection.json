@@ -44,6 +44,37 @@
       "name": "Setup",
       "item": [
         {
+          "name": "Force inline translation projection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The translation sidecar (openregister_translations, incl. source_language) is",
+                  "// populated by an event-driven projection that defaults to a background job.",
+                  "// Newman runs against a live instance with no cron worker, so we flip the",
+                  "// documented `openregister/listenerDeferral` kill-switch to `inline` to restore",
+                  "// synchronous projection for read-your-writes assertions in this run.",
+                  "pm.test('Deferral kill-switch set to inline (200)', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregister/listenerDeferral",
+            "header": [
+              { "key": "OCS-APIRequest", "value": "true" },
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "value=inline"
+            }
+          }
+        },
+        {
           "name": "Create Register",
           "event": [
             {

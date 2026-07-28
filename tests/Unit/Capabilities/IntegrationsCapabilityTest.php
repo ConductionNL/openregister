@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Tests\Unit\Capabilities;
 use OCA\OpenRegister\Capabilities\IntegrationsCapability;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCP\App\IAppManager;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -160,6 +161,16 @@ class IntegrationsCapabilityTest extends TestCase
     }//end appManager()
 
     /**
+     * Build a leaf registry mock with an empty leaf catalogue.
+     *
+     * @return LeafRegistry
+     */
+    private function leafRegistry(): LeafRegistry
+    {
+        return $this->createMock(LeafRegistry::class);
+    }//end leafRegistry()
+
+    /**
      * The capability publishes the ADR-019 discovery shape.
      *
      * @return void
@@ -170,7 +181,8 @@ class IntegrationsCapabilityTest extends TestCase
             registry: $this->registryWith([new _CapStubProvider(id: 'files')]),
             userSession: $this->userSession(uid: 'alice'),
             groupManager: $this->groupManager(isAdmin: false),
-            appManager: $this->appManager(enabledApps: [])
+            appManager: $this->appManager(enabledApps: []),
+            leafRegistry: $this->leafRegistry()
         );
 
         $payload = $cap->getCapabilities();
@@ -194,7 +206,8 @@ class IntegrationsCapabilityTest extends TestCase
             registry: $this->registryWith([new _CapStubProvider(id: 'tags', requiredApp: null)]),
             userSession: $this->userSession(uid: 'alice'),
             groupManager: $this->groupManager(isAdmin: false),
-            appManager: $this->appManager(enabledApps: [])
+            appManager: $this->appManager(enabledApps: []),
+            leafRegistry: $this->leafRegistry()
         );
 
         $row = $cap->getCapabilities()['openregister']['integrations']['providers'][0];
@@ -222,7 +235,8 @@ class IntegrationsCapabilityTest extends TestCase
             userSession: $this->userSession(uid: 'alice'),
             groupManager: $this->groupManager(isAdmin: false),
             // Only `calendar` is installed; `deck` is not.
-            appManager: $this->appManager(enabledApps: ['calendar'])
+            appManager: $this->appManager(enabledApps: ['calendar']),
+            leafRegistry: $this->leafRegistry()
         );
 
         $rows = $cap->getCapabilities()['openregister']['integrations']['providers'];
@@ -248,7 +262,8 @@ class IntegrationsCapabilityTest extends TestCase
             registry: $this->registryWith([new _CapStubProvider(id: 'files')]),
             userSession: $this->userSession(uid: 'bob'),
             groupManager: $this->groupManager(isAdmin: false),
-            appManager: $this->appManager(enabledApps: [])
+            appManager: $this->appManager(enabledApps: []),
+            leafRegistry: $this->leafRegistry()
         );
 
         $row = $cap->getCapabilities()['openregister']['integrations']['providers'][0];
@@ -271,7 +286,8 @@ class IntegrationsCapabilityTest extends TestCase
             registry: $this->registryWith([new _CapStubProvider(id: 'files')]),
             userSession: $this->userSession(uid: 'admin'),
             groupManager: $this->groupManager(isAdmin: true),
-            appManager: $this->appManager(enabledApps: [])
+            appManager: $this->appManager(enabledApps: []),
+            leafRegistry: $this->leafRegistry()
         );
 
         $row = $cap->getCapabilities()['openregister']['integrations']['providers'][0];
