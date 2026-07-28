@@ -226,15 +226,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-		/**
 		 * The active report dashboard from the store, for display.
 		 *
 		 * @spec exclude UI plumbing — derived view state from the store

@@ -803,15 +803,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-		/**
 		 * Tab definitions for the AVG view header.
 		 *
 		 * @spec exclude UI plumbing — static tab list for display

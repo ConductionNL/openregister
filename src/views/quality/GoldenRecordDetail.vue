@@ -108,16 +108,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
-		/**
 		 * The object handed to the conflict-resolution modal, augmented with the
 		 * server-resolved `sources` (embedded or reverse-FK). The modal computes
 		 * per-attribute conflicts from `object.sources`; a reverse-FK master has

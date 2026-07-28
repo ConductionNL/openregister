@@ -25,7 +25,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcSelect } from '@nextcloud/vue'
 import { qualityStore } from '../../store/store.js'
 
@@ -57,16 +56,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
 		/**
 		 * @spec exclude UI plumbing — maps store registers to NcSelect options
 		 * @return {Array<object>}

@@ -113,16 +113,6 @@ export default {
 
 	computed: {
 		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
-		/**
 		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
 		 */
 		hasSelection() {

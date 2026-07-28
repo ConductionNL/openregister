@@ -70,7 +70,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
@@ -93,15 +92,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
 		/**
 		 * Report dashboards from the store, for list display.
 		 *
