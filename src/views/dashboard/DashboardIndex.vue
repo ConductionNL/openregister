@@ -11,6 +11,7 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 			:layout="dashboardLayout"
 			:loading="isLoading && !hasData"
 			:empty-label="t('openregister', 'No data available')"
+			:show-refresh="false"
 			@layout-change="onLayoutChange">
 			<!-- Header actions -->
 			<template #actions>
