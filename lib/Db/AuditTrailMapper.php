@@ -1403,6 +1403,76 @@ class AuditTrailMapper extends QBMapper
     }//end getDetailedStatistics()
 
     /**
+     * Get lifetime audit trail counts grouped by action
+     *
+     * Unlike getDetailedStatistics(), which windows the per-action counts to
+     * the last N hours, this returns lifetime counts so the audit-trail page
+     * statistics line up with the (unwindowed) audit-trail list beside them.
+     * Keys are singular to match the audit-trail REST surface; the windowed
+     * dashboard surface uses plural keys.
+     *
+     * @param int|null $registerId Optional register ID to filter by
+     * @param int|null $schemaId   Optional schema ID to filter by
+     *
+     * @return int[] Total plus a lifetime count per action. The total counts
+     *               every row, including rows whose action is outside the four
+     *               known ones.
+     *
+     * @psalm-return array{total: int, create: int, update: int,
+     *     delete: int, read: int}
+     */
+    public function getActionCounts(?int $registerId=null, ?int $schemaId=null): array
+    {
+        $counts = [
+            'create' => 0,
+            'update' => 0,
+            'delete' => 0,
+            'read'   => 0,
+        ];
+
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select(
+                'action',
+                $qb->createFunction('COUNT(*) as count')
+            )
+                ->from($this->getTableName())
+                ->groupBy('action');
+
+            // Add register filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+            if ($registerId !== null) {
+                $registerParam = $qb->createNamedParameter((string) $registerId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('register', $registerParam));
+            }
+
+            // Add schema filter if provided.
+            // Note: register and schema columns are VARCHAR(255), not BIGINT - they store ID values as strings.
+            if ($schemaId !== null) {
+                $schemaParam = $qb->createNamedParameter((string) $schemaId, IQueryBuilder::PARAM_STR);
+                $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
+            }
+
+            $results = $qb->executeQuery()->fetchAll();
+
+            $total = 0;
+            foreach ($results as $row) {
+                $count  = (int) $row['count'];
+                $total += $count;
+
+                $action = (string) ($row['action'] ?? '');
+                if (array_key_exists($action, $counts) === true) {
+                    $counts[$action] = $count;
+                }
+            }
+
+            return ['total' => $total] + $counts;
+        } catch (\Exception $e) {
+            return ['total' => 0] + $counts;
+        }//end try
+    }//end getActionCounts()
+
+    /**
      * Get action distribution data with percentages
      *
      * @param int|null $registerId Optional register ID to filter by
