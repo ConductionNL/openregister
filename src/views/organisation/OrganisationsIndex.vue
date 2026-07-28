@@ -5,326 +5,249 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ t('openregister', 'Organisations') }}
-				</h1>
-				<p>{{ t('openregister', 'Manage your organisations and switch between them') }}</p>
-			</div>
-
+		<CnIndexPage
+			ref="indexPage"
+			:title="t('openregister', 'Organisations')"
+			:description="t('openregister', 'Manage your organisations and switch between them')"
+			:show-title="true"
+			:objects="paginatedOrganisations"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:view-mode="organisationStore.viewMode"
+			:selectable="true"
+			:selected-ids="selectedOrganisations"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			:show-mass-delete="false"
+			show-view-toggle
+			:add-label="t('openregister', 'Create Organisation')"
+			row-key="uuid"
+			:empty-text="emptyContentName"
+			:row-class="getRowClass"
+			:refreshing="isRefreshing"
+			@add="createOrganisation"
+			@refresh="handleRefresh"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged"
+			@view-mode-change="organisationStore.setViewMode($event)"
+			@select="onSelect">
 			<!-- Active Organisation Status -->
-			<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
-				<div class="activeOrgInfo">
-					<span class="activeOrgLabel">{{ t('openregister', 'Active Organisation:') }}</span>
-					<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
-					<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
-						{{ t('openregister', 'Default') }}
-					</span>
+			<template #below-header>
+				<div v-if="organisationStore.userStats.active" class="activeOrgBanner">
+					<div class="activeOrgInfo">
+						<span class="activeOrgLabel">{{ t('openregister', 'Active Organisation:') }}</span>
+						<span class="activeOrgName">{{ organisationStore.userStats.active.name }}</span>
+						<span v-if="organisationStore.userStats.active.isDefault" class="defaultBadge">
+							{{ t('openregister', 'Default') }}
+						</span>
+					</div>
+					<NcButton v-if="organisationStore.userStats.total > 1"
+						type="secondary"
+						@click="showOrganisationSwitcher = true">
+						<template #icon>
+							<SwapHorizontal :size="20" />
+						</template>
+						{{ t('openregister', 'Switch Organisation') }}
+					</NcButton>
 				</div>
-				<NcButton v-if="organisationStore.userStats.total > 1"
-					type="secondary"
-					@click="showOrganisationSwitcher = true">
-					<template #icon>
-						<SwapHorizontal :size="20" />
-					</template>
-					{{ t('openregister', 'Switch Organisation') }}
-				</NcButton>
-			</div>
+			</template>
 
-			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {shown} of {total} organisations', { shown: paginatedOrganisations.length, total: organisationStore.userStats.total }) }}
-					</span>
-					<span v-if="selectedOrganisations.length > 0" class="viewIndicator">
-						{{ t('openregister', '({count} selected)', { count: selectedOrganisations.length }) }}
-					</span>
-				</div>
-				<div class="viewActions">
-					<div class="viewModeSwitchContainer">
-						<NcCheckboxRadioSwitch
-							v-model="organisationStore.viewMode"
-							v-tooltip="t('openregister', 'See organisations as cards')"
-							:button-variant="true"
-							value="cards"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							{{ t('openregister', 'Cards') }}
-						</NcCheckboxRadioSwitch>
-						<NcCheckboxRadioSwitch
-							v-model="organisationStore.viewMode"
-							v-tooltip="t('openregister', 'See organisations as a table')"
-							:button-variant="true"
-							value="table"
-							name="view_mode_radio"
-							type="radio"
-							button-variant-grouped="horizontal">
-							{{ t('openregister', 'Table') }}
-						</NcCheckboxRadioSwitch>
+			<!-- Custom action items in actions bar -->
+			<template #action-items>
+				<NcActionButton
+					close-after-click
+					@click="navigationStore.setModal('joinOrganisation')">
+					<template #icon>
+						<AccountPlus :size="20" />
+					</template>
+					{{ t('openregister', 'Add User to Organisation') }}
+				</NcActionButton>
+			</template>
+
+			<!-- Custom card template -->
+			<template #card="{ object }">
+				<div class="card" :class="{ 'active-org-card': isActiveOrganisation(object) }">
+					<div class="cardHeader">
+						<h2>
+							<OfficeBuilding :size="20" />
+							{{ object.name }}
+							<span v-if="object.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
+							<span v-if="isActiveOrganisation(object)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
+						</h2>
+						<NcActions :primary="true" :menu-name="t('openregister', 'Actions')">
+							<template #icon>
+								<DotsHorizontal :size="20" />
+							</template>
+							<NcActionButton close-after-click
+								@click="viewOrganisation(object)">
+								<template #icon>
+									<Eye :size="20" />
+								</template>
+								{{ t('openregister', 'View') }}
+							</NcActionButton>
+							<NcActionButton v-if="!isActiveOrganisation(object)"
+								close-after-click
+								@click="setActiveOrganisation(object.uuid)">
+								<template #icon>
+									<Check :size="20" />
+								</template>
+								{{ t('openregister', 'Set as Active') }}
+							</NcActionButton>
+							<NcActionButton v-if="canEditOrganisation(object)"
+								close-after-click
+								@click="editOrganisation(object)">
+								<template #icon>
+									<Pencil :size="20" />
+								</template>
+								{{ t('openregister', 'Edit') }}
+							</NcActionButton>
+							<NcActionButton v-if="object.website"
+								close-after-click
+								@click="goToOrganisation(object)">
+								<template #icon>
+									<OpenInNew :size="20" />
+								</template>
+								{{ t('openregister', 'Go to organisation') }}
+							</NcActionButton>
+							<NcActionButton
+								close-after-click
+								@click="openJoinModal(object)">
+								<template #icon>
+									<AccountMultiplePlus :size="20" />
+								</template>
+								{{ t('openregister', 'Add User') }}
+							</NcActionButton>
+							<NcActionButton v-if="canDeleteOrganisation(object)"
+								close-after-click
+								@click="organisationStore.setOrganisationItem(object); navigationStore.setModal('deleteOrganisation')">
+								<template #icon>
+									<TrashCanOutline :size="20" />
+								</template>
+								{{ t('openregister', 'Delete') }}
+							</NcActionButton>
+						</NcActions>
 					</div>
 
-					<NcActions
-						:force-name="true"
-						:inline="3"
-						:menu-name="t('openregister', 'Actions')">
-						<NcActionButton
-							:primary="true"
-							close-after-click
-							@click="createOrganisation">
-							<template #icon>
-								<Plus :size="20" />
-							</template>
-							{{ t('openregister', 'Create Organisation') }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="navigationStore.setModal('joinOrganisation')">
-							<template #icon>
-								<AccountPlus :size="20" />
-							</template>
-							{{ t('openregister', 'Add User to Organisation') }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="organisationStore.refreshOrganisationList()">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
-
-			<!-- Empty State -->
-			<NcEmptyContent v-if="!organisationStore.userStats.total"
-				:name="t('openregister', 'No organisations found')"
-				:description="t('openregister', 'You are not yet a member of any organisations.')">
-				<template #icon>
-					<OfficeBuilding :size="64" />
-				</template>
-			</NcEmptyContent>
-
-			<!-- Content -->
-			<div v-else>
-				<template v-if="organisationStore.viewMode === 'cards'">
-					<div class="cardGrid">
-						<div v-for="organisation in paginatedOrganisations"
-							:key="organisation.uuid"
-							class="card"
-							:class="{ 'active-org-card': isActiveOrganisation(organisation) }">
-							<div class="cardHeader">
-								<h2>
-									<OfficeBuilding :size="20" />
-									{{ organisation.name }}
-									<span v-if="organisation.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-									<span v-if="isActiveOrganisation(organisation)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
-								</h2>
-								<NcActions :primary="true" :menu-name="t('openregister', 'Actions')">
-									<template #icon>
-										<DotsHorizontal :size="20" />
-									</template>
-									<NcActionButton close-after-click
-										@click="viewOrganisation(organisation)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View') }}
-									</NcActionButton>
-									<NcActionButton v-if="!isActiveOrganisation(organisation)"
-										close-after-click
-										@click="setActiveOrganisation(organisation.uuid)">
-										<template #icon>
-											<Check :size="20" />
-										</template>
-										{{ t('openregister', 'Set as Active') }}
-									</NcActionButton>
-									<NcActionButton v-if="canEditOrganisation(organisation)"
-										close-after-click
-										@click="editOrganisation(organisation)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										{{ t('openregister', 'Edit') }}
-									</NcActionButton>
-									<NcActionButton v-if="organisation.website"
-										close-after-click
-										@click="goToOrganisation(organisation)">
-										<template #icon>
-											<OpenInNew :size="20" />
-										</template>
-										{{ t('openregister', 'Go to organisation') }}
-									</NcActionButton>
-									<NcActionButton
-										close-after-click
-										@click="openJoinModal(organisation)">
-										<template #icon>
-											<AccountMultiplePlus :size="20" />
-										</template>
-										{{ t('openregister', 'Add User') }}
-									</NcActionButton>
-									<NcActionButton v-if="canDeleteOrganisation(organisation)"
-										close-after-click
-										@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-										<template #icon>
-											<TrashCanOutline :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
+					<div class="organisationInfo">
+						<p v-if="object.description" class="description">
+							{{ object.description }}
+						</p>
+						<div class="organisationStats">
+							<div class="stat">
+								<span class="statLabel">{{ t('openregister', 'Members:') }}</span>
+								<span class="statValue">{{ object.users?.length || 0 }}</span>
 							</div>
-
-							<div class="organisationInfo">
-								<p v-if="organisation.description" class="description">
-									{{ organisation.description }}
-								</p>
-								<div class="organisationStats">
-									<div class="stat">
-										<span class="statLabel">{{ t('openregister', 'Members:') }}</span>
-										<span class="statValue">{{ organisation.users?.length || 0 }}</span>
-									</div>
-									<div class="stat">
-										<span class="statLabel">{{ t('openregister', 'Owner:') }}</span>
-										<span class="statValue">{{ organisation.owner || 'System' }}</span>
-									</div>
-									<div v-if="organisation.created" class="stat">
-										<span class="statLabel">{{ t('openregister', 'Created:') }}</span>
-										<span class="statValue">{{ formatDate(organisation.created) }}</span>
-									</div>
-								</div>
+							<div class="stat">
+								<span class="statLabel">{{ t('openregister', 'Owner:') }}</span>
+								<span class="statValue">{{ object.owner || 'System' }}</span>
+							</div>
+							<div v-if="object.created" class="stat">
+								<span class="statLabel">{{ t('openregister', 'Created:') }}</span>
+								<span class="statValue">{{ formatDate(object.created) }}</span>
 							</div>
 						</div>
 					</div>
-				</template>
-				<template v-else>
-					<div class="viewTableContainer">
-						<table class="viewTable">
-							<thead>
-								<tr>
-									<th class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="allSelected"
-											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
-									</th>
-									<th>{{ t('openregister', 'Name') }}</th>
-									<th>{{ t('openregister', 'Members') }}</th>
-									<th>{{ t('openregister', 'Owner') }}</th>
-									<th>{{ t('openregister', 'Status') }}</th>
-									<th>{{ t('openregister', 'Created') }}</th>
-									<th>{{ t('openregister', 'Updated') }}</th>
-									<th class="tableColumnActions">
-										{{ t('openregister', 'Actions') }}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr v-for="organisation in paginatedOrganisations"
-									:key="organisation.uuid"
-									class="viewTableRow"
-									:class="{
-										viewTableRowSelected: selectedOrganisations.includes(organisation.uuid),
-										'active-org-row': isActiveOrganisation(organisation)
-									}">
-									<td class="tableColumnCheckbox">
-										<NcCheckboxRadioSwitch
-											:checked="selectedOrganisations.includes(organisation.uuid)"
-											@update:checked="(checked) => toggleOrganisationSelection(organisation.uuid, checked)" />
-									</td>
-									<td class="tableColumnTitle">
-										<div class="titleContent">
-											<strong>{{ organisation.name }}</strong>
-											<div class="badges">
-												<span v-if="organisation.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
-												<span v-if="isActiveOrganisation(organisation)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
-											</div>
-											<span v-if="organisation.description" class="textDescription textEllipsis">{{ organisation.description }}</span>
-										</div>
-									</td>
-									<td>{{ organisation.users?.length || 0 }}</td>
-									<td>{{ organisation.owner || 'System' }}</td>
-									<td>
-										<span v-if="isActiveOrganisation(organisation)" class="statusActive">{{ t('openregister', 'Active') }}</span>
-										<span v-else class="statusInactive">{{ t('openregister', 'Inactive') }}</span>
-									</td>
-									<td>{{ organisation.created ? formatDate(organisation.created) : '-' }}</td>
-									<td>{{ organisation.updated ? formatDate(organisation.updated) : '-' }}</td>
-									<td class="tableColumnActions">
-										<NcActions :primary="false">
-											<template #icon>
-												<DotsHorizontal :size="20" />
-											</template>
-											<NcActionButton close-after-click
-												@click="viewOrganisation(organisation)">
-												<template #icon>
-													<Eye :size="20" />
-												</template>
-												{{ t('openregister', 'View') }}
-											</NcActionButton>
-											<NcActionButton v-if="!isActiveOrganisation(organisation)"
-												close-after-click
-												@click="setActiveOrganisation(organisation.uuid)">
-												<template #icon>
-													<Check :size="20" />
-												</template>
-												{{ t('openregister', 'Set as Active') }}
-											</NcActionButton>
-											<NcActionButton v-if="canEditOrganisation(organisation)"
-												close-after-click
-												@click="editOrganisation(organisation)">
-												<template #icon>
-													<Pencil :size="20" />
-												</template>
-												{{ t('openregister', 'Edit') }}
-											</NcActionButton>
-											<NcActionButton v-if="organisation.website"
-												close-after-click
-												@click="goToOrganisation(organisation)">
-												<template #icon>
-													<OpenInNew :size="20" />
-												</template>
-												{{ t('openregister', 'Go to organisation') }}
-											</NcActionButton>
-											<NcActionButton
-												close-after-click
-												@click="openJoinModal(organisation)">
-												<template #icon>
-													<AccountMultiplePlus :size="20" />
-												</template>
-												{{ t('openregister', 'Add User') }}
-											</NcActionButton>
-											<NcActionButton v-if="canDeleteOrganisation(organisation)"
-												close-after-click
-												@click="organisationStore.setOrganisationItem(organisation); navigationStore.setModal('deleteOrganisation')">
-												<template #icon>
-													<TrashCanOutline :size="20" />
-												</template>
-												{{ t('openregister', 'Delete') }}
-											</NcActionButton>
-										</NcActions>
-									</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
-				</template>
-			</div>
+				</div>
+			</template>
 
-			<!-- Pagination -->
-			<PaginationComponent
-				v-if="organisationStore.userStats.total > 0"
-				:current-page="organisationStore.pagination.page || 1"
-				:total-pages="Math.ceil(organisationStore.userStats.total / (organisationStore.pagination.limit || 20))"
-				:total-items="organisationStore.userStats.total"
-				:current-page-size="organisationStore.pagination.limit || 20"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
-		</div>
+			<!-- Custom column: name with badges -->
+			<template #column-name="{ row }">
+				<div class="titleContent">
+					<div class="titleWithBadges">
+						<strong>{{ row.name }}</strong>
+						<span v-if="row.isDefault" class="defaultBadge">{{ t('openregister', 'Default') }}</span>
+						<span v-if="isActiveOrganisation(row)" class="activeBadge">{{ t('openregister', 'Active') }}</span>
+					</div>
+					<span v-if="row.description" class="textDescription textEllipsis">{{ row.description }}</span>
+				</div>
+			</template>
+
+			<!-- Custom column: member count -->
+			<template #column-users="{ row }">
+				{{ row.users?.length || 0 }}
+			</template>
+
+			<!-- Custom column: owner -->
+			<template #column-owner="{ row }">
+				{{ row.owner || 'System' }}
+			</template>
+
+			<!-- Custom column: active/inactive status -->
+			<template #column-status="{ row }">
+				<span v-if="isActiveOrganisation(row)" class="statusActive">{{ t('openregister', 'Active') }}</span>
+				<span v-else class="statusInactive">{{ t('openregister', 'Inactive') }}</span>
+			</template>
+
+			<!-- Custom column: created date -->
+			<template #column-created="{ row }">
+				{{ row.created ? formatDate(row.created) : '-' }}
+			</template>
+
+			<!-- Custom column: updated date -->
+			<template #column-updated="{ row }">
+				{{ row.updated ? formatDate(row.updated) : '-' }}
+			</template>
+
+			<!-- Custom row actions for table view -->
+			<template #row-actions="{ row }">
+				<NcActions :primary="false">
+					<template #icon>
+						<DotsHorizontal :size="20" />
+					</template>
+					<NcActionButton close-after-click
+						@click="viewOrganisation(row)">
+						<template #icon>
+							<Eye :size="20" />
+						</template>
+						{{ t('openregister', 'View') }}
+					</NcActionButton>
+					<NcActionButton v-if="!isActiveOrganisation(row)"
+						close-after-click
+						@click="setActiveOrganisation(row.uuid)">
+						<template #icon>
+							<Check :size="20" />
+						</template>
+						{{ t('openregister', 'Set as Active') }}
+					</NcActionButton>
+					<NcActionButton v-if="canEditOrganisation(row)"
+						close-after-click
+						@click="editOrganisation(row)">
+						<template #icon>
+							<Pencil :size="20" />
+						</template>
+						{{ t('openregister', 'Edit') }}
+					</NcActionButton>
+					<NcActionButton v-if="row.website"
+						close-after-click
+						@click="goToOrganisation(row)">
+						<template #icon>
+							<OpenInNew :size="20" />
+						</template>
+						{{ t('openregister', 'Go to organisation') }}
+					</NcActionButton>
+					<NcActionButton
+						close-after-click
+						@click="openJoinModal(row)">
+						<template #icon>
+							<AccountMultiplePlus :size="20" />
+						</template>
+						{{ t('openregister', 'Add User') }}
+					</NcActionButton>
+					<NcActionButton v-if="canDeleteOrganisation(row)"
+						close-after-click
+						@click="organisationStore.setOrganisationItem(row); navigationStore.setModal('deleteOrganisation')">
+						<template #icon>
+							<TrashCanOutline :size="20" />
+						</template>
+						{{ t('openregister', 'Delete') }}
+					</NcActionButton>
+				</NcActions>
+			</template>
+		</CnIndexPage>
 
 		<!-- Organisation Switcher Modal -->
 		<SwitchOrganisationModal
@@ -339,20 +262,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 </template>
 
 <script>
-import { NcAppContent, NcEmptyContent, NcActions, NcActionButton, NcCheckboxRadioSwitch, NcButton } from '@nextcloud/vue'
+import { NcAppContent, NcActions, NcActionButton, NcButton } from '@nextcloud/vue'
+import { CnIndexPage } from '@conduction/nextcloud-vue'
 import OfficeBuilding from 'vue-material-design-icons/OfficeBuilding.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
 import AccountMultiplePlus from 'vue-material-design-icons/AccountMultiplePlus.vue'
 import SwapHorizontal from 'vue-material-design-icons/SwapHorizontal.vue'
-import Plus from 'vue-material-design-icons/Plus.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
 
-import PaginationComponent from '../../components/PaginationComponent.vue'
 import SwitchOrganisationModal from '../../modals/organisation/SwitchOrganisationModal.vue'
 import { reloadAppData } from '../../services/AppInitializationService.js'
 import Check from 'vue-material-design-icons/Check.vue'
@@ -361,9 +282,8 @@ import { showError, showSuccess } from '@nextcloud/dialogs'
 export default {
 	name: 'OrganisationsIndex',
 	components: {
-		NcCheckboxRadioSwitch,
 		NcAppContent,
-		NcEmptyContent,
+		CnIndexPage,
 		NcActions,
 		NcActionButton,
 		NcButton,
@@ -371,52 +291,75 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
-		Refresh,
 		AccountPlus,
 		AccountMultiplePlus,
 		SwapHorizontal,
-		Plus,
 		Eye,
 		OpenInNew,
 		Check,
-		PaginationComponent,
 		SwitchOrganisationModal,
 	},
 	data() {
 		return {
 			selectedOrganisations: [],
 			showOrganisationSwitcher: false,
+			isRefreshing: false,
 		}
 	},
 	computed: {
 		/**
-		 * Whether every organisation is selected.
+		 * Column definitions for the organisations table.
 		 *
-		 * @spec exclude UI plumbing — header-checkbox state; admin list contract owned by admin-list-views.
-		 * @return {boolean}
+		 * @spec exclude UI plumbing — static table column list for display.
+		 * @return {Array<object>}
 		 */
-		allSelected() {
-			return organisationStore.userStats.list.length > 0 && organisationStore.userStats.list.every(org => this.selectedOrganisations.includes(org.uuid))
+		tableColumns() {
+			return [
+				{ key: 'name', label: t('openregister', 'Name'), sortable: true },
+				{ key: 'users', label: t('openregister', 'Members') },
+				{ key: 'owner', label: t('openregister', 'Owner') },
+				{ key: 'status', label: t('openregister', 'Status') },
+				{ key: 'created', label: t('openregister', 'Created'), sortable: true },
+				{ key: 'updated', label: t('openregister', 'Updated'), sortable: true },
+			]
 		},
 		/**
-		 * Whether a partial selection exists (indeterminate state).
+		 * Pagination state derived from the organisation store, for display.
 		 *
-		 * @spec exclude UI plumbing — header-checkbox indeterminate state; admin list contract owned by admin-list-views.
-		 * @return {boolean}
+		 * @spec exclude UI plumbing — derived pagination view state; admin list contract owned by admin-list-views.
+		 * @return {object}
 		 */
-		someSelected() {
-			return this.selectedOrganisations.length > 0 && !this.allSelected
+		paginationData() {
+			const page = organisationStore.pagination.page || 1
+			const limit = organisationStore.pagination.limit || 20
+			const total = organisationStore.userStats.total || 0
+			const pages = Math.ceil(total / limit)
+			return { page, pages, total, limit }
 		},
 		/**
-		 * Current page slice of the organisation list.
+		 * Current page slice of the organisation list. The full list is loaded
+		 * client-side, so CnIndexPage (prop mode) does not slice — we slice here
+		 * so paging works.
 		 *
 		 * @spec exclude UI plumbing — client-side pagination computed; admin list contract owned by admin-list-views.
 		 * @return {Array}
 		 */
 		paginatedOrganisations() {
-			const start = ((organisationStore.pagination.page || 1) - 1) * (organisationStore.pagination.limit || 20)
-			const end = start + (organisationStore.pagination.limit || 20)
-			return organisationStore.userStats.list.slice(start, end)
+			const { page, limit } = this.paginationData
+			const start = (page - 1) * limit
+			return organisationStore.userStats.list.slice(start, start + limit)
+		},
+		/**
+		 * Empty-state title shown when the organisation list is empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
+		emptyContentName() {
+			if (!organisationStore.userStats.total) {
+				return t('openregister', 'No organisations found')
+			}
+			return t('openregister', 'Loading organisations...')
 		},
 	},
 	/**
@@ -437,6 +380,30 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Reload the organisation list from the store.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to the store.
+		 * @return {Promise<void>}
+		 */
+		async handleRefresh() {
+			this.isRefreshing = true
+			try {
+				await organisationStore.refreshOrganisationList()
+			} finally {
+				this.isRefreshing = false
+			}
+		},
+		/**
+		 * Compute the CSS row class marking the active organisation.
+		 *
+		 * @spec exclude UI plumbing — derived row-styling helper.
+		 * @param {object} organisation - organisation row
+		 * @return {string}
+		 */
+		getRowClass(organisation) {
+			return this.isActiveOrganisation(organisation) ? 'viewTableRow--active' : ''
+		},
 		/**
 		 * Whether an organisation is the active one.
 		 *
@@ -548,33 +515,14 @@ export default {
 			}
 		},
 		/**
-		 * Toggle selection state for every organisation.
-		 *
-		 * @spec exclude UI plumbing — bulk row-selection state; admin list contract owned by admin-list-views.
-		 * @param {boolean} checked - true selects all, false clears
-		 * @return {void}
-		 */
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedOrganisations = organisationStore.userStats.list.map(org => org.uuid)
-			} else {
-				this.selectedOrganisations = []
-			}
-		},
-		/**
-		 * Toggle selection for a single organisation row.
+		 * Track the selected organisation uuids for bulk actions.
 		 *
 		 * @spec exclude UI plumbing — row-selection state mutation; admin list contract owned by admin-list-views.
-		 * @param {string} orgUuid - organisation uuid
-		 * @param {boolean} checked - selected state
+		 * @param {Array} ids - selected organisation uuids
 		 * @return {void}
 		 */
-		toggleOrganisationSelection(orgUuid, checked) {
-			if (checked) {
-				this.selectedOrganisations.push(orgUuid)
-			} else {
-				this.selectedOrganisations = this.selectedOrganisations.filter(uuid => uuid !== orgUuid)
-			}
+		onSelect(ids) {
+			this.selectedOrganisations = ids
 		},
 		/**
 		 * Handle a page change from the paginator.
@@ -698,6 +646,18 @@ export default {
 </script>
 
 <style scoped lang="scss">
+/* Table row accent for the active organisation. Drawn with an inset box-shadow,
+   never border-left: a border adds layout width and shifts the row's cell
+   content sideways, while box-shadow paints inside the box. Matches
+   .cn-table-row--selected.
+
+   Skipped on a selected row so the library's .cn-table-row--selected accent
+   wins — scoping adds a [data-v-*] attribute, which would otherwise outweigh
+   the library's single-class rule. */
+:deep(.viewTableRow--active:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-success);
+}
+
 /* Active organisation banner */
 .activeOrgBanner {
 	background: var(--color-primary-light);
@@ -733,6 +693,7 @@ export default {
 	font-size: 11px;
 	font-weight: 600;
 	text-transform: uppercase;
+	white-space: nowrap;
 }
 
 .defaultBadge {
@@ -782,15 +743,13 @@ export default {
 	font-size: 12px;
 }
 
-/* Table styling */
-.active-org-row {
-	background: var(--color-success-light) !important;
-}
-
-.badges {
+/* Title with badges layout */
+.titleWithBadges {
 	display: flex;
-	gap: 4px;
-	margin-top: 4px;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	margin-bottom: 4px;
 }
 
 .statusActive {
