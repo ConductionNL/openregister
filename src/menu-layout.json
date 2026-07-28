@@ -11,9 +11,6 @@
 		"Tables": "DataGroup",
 		"Files": "DataGroup",
 
-		"Chat": "AiGroup",
-		"Agents": "AiGroup",
-
 		"Organisations": "IntegrationGroup",
 		"Applications": "IntegrationGroup",
 		"Sources": "IntegrationGroup",

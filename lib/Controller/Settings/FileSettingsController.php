@@ -415,8 +415,8 @@ class FileSettingsController extends Controller
         curl_exec($ch);
         $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
-
+        // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+        // CurlHandle object is freed when it goes out of scope.
         if ($curlError !== '') {
             return [
                 'success' => false,
@@ -466,8 +466,8 @@ class FileSettingsController extends Controller
             ]
         );
         $entitiesResponse = curl_exec($ch);
-        curl_close($ch);
-
+        // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+        // CurlHandle object is freed when it goes out of scope.
         if ($entitiesResponse !== false) {
             $entities = json_decode($entitiesResponse, true);
             if (is_array($entities) === true) {

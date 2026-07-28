@@ -38,7 +38,9 @@ test.describe('Per-leaf screenshot harness', () => {
 		//    going through the login form. NC accepts Basic auth and
 		//    sets the session cookie on the first authenticated page hit.
 		await page.goto(
-			`${baseURL}/index.php/apps/openregister/integrations/${REGISTER}/${SCHEMA}/${OBJECT_ID}`,
+			// HASH form — the router runs in hash mode (src/main.js); the
+			// path-form URL renders the dashboard instead of the integrations view.
+			`${baseURL}/index.php/apps/openregister/#/integrations/${REGISTER}/${SCHEMA}/${OBJECT_ID}`,
 		)
 		await page.waitForLoadState('networkidle')
 
