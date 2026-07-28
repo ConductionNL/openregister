@@ -376,8 +376,30 @@ class RelationsController extends Controller
                 continue;
             }
 
+            // Resolving the owning app's service is NOT part of the lookup, and
+            // failing to resolve it is not an error to report. An app that is
+            // absent or disabled makes Server::get() throw, and folding that
+            // into $errors put an `_errors` key on a response where every
+            // requested lookup actually succeeded — the opposite of the
+            // "silently skipped, never breaks the core response" contract above,
+            // and visible to every consumer that walks the envelope's top-level
+            // keys. Only a failure of an AVAILABLE service's own call is an
+            // error worth surfacing.
             try {
                 $service = \OCP\Server::get($spec['class']);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            // Server::get() does not always THROW when it cannot supply a
+            // service — it can hand back null. Calling the availability probe on
+            // that produced "Call to a member function isXAvailable() on null"
+            // for every leaf, which then landed in $errors.
+            if (is_object($service) === false) {
+                continue;
+            }
+
+            try {
                 if ($spec['available'] !== null && $service->{$spec['available']}() !== true) {
                     continue;
                 }

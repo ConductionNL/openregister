@@ -445,6 +445,11 @@ if (class_exists(\OCA\DAV\CardDAV\CardDavBackend::class) === false) {
         public function deleteCard(int $addressBookId, string $cardUri): void {}
         public function updateCard(int $addressBookId, string $cardUri, string $data): string { return ""; }
         public function getAddressBook(int $addressBookId): ?array { return null; }
+        // ContactService::getContactsForObject() calls this to resolve an
+        // addressbook uri for the deep link. It was missing from the stub, so
+        // the tests that mock it failed with MethodCannotBeConfiguredException
+        // rather than exercising the behaviour.
+        public function getAddressBookById(int $addressBookId): ?array { return null; }
         public function getAddressBooksForPrincipal(string $principal): array { return []; }
     }');
 }//end if

@@ -16,6 +16,7 @@ use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -39,12 +40,17 @@ class FlowRunControllerTest extends TestCase
         $this->runner    = $this->createMock(FlowRunService::class);
         $this->resolvers = $this->createMock(FlowResolverRegistry::class);
 
+        // FlowRunController gained an IUserSession dependency (it attributes a
+        // test/retry run to the caller); the constructor call here was never
+        // updated, so every test in this class died with an ArgumentCountError
+        // before reaching its assertions.
         $this->controller = new FlowRunController(
             'openregister',
             $this->request,
             $this->mapper,
             $this->runner,
-            $this->resolvers
+            $this->resolvers,
+            $this->createMock(IUserSession::class)
         );
     }
 
