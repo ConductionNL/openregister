@@ -63,9 +63,14 @@ class FlowScheduleServiceTest extends TestCase
         return $o;
     }
 
-    private function schedule(string $uuid, string $cron): ObjectEntity
+    private function schedule(string $uuid, string $cron, ?string $owner=null): ObjectEntity
     {
-        return $this->flow($uuid, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron]);
+        $flow = $this->flow($uuid, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron]);
+        if ($owner !== null) {
+            $flow->setOwner($owner);
+        }
+
+        return $flow;
     }
 
     public function testADueScheduledFlowFiresAndRecordsTheFire(): void
@@ -81,6 +86,25 @@ class FlowScheduleServiceTest extends TestCase
         $this->assertSame(['f1'], $fired);
         // A last-fire was recorded, so the next tick will not re-fire immediately.
         $this->assertArrayHasKey('flow_sched_last_f1', $this->store);
+    }
+
+    /**
+     * FAILING PATH (or#2158, fourth instance): a scheduled run has no session,
+     * so its owner must come from the flow object — the person who created and
+     * enabled it. Queued without one, `context['triggeredBy']` is null and every
+     * attribution-requiring node refuses; ObjectWriteNode returns "this flow run
+     * has no owner". Every natively-scheduled flow was silently unable to write.
+     *
+     * @return void
+     */
+    public function testAScheduledRunIsAttributedToTheFlowsOwner(): void
+    {
+        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *', 'alice')]);
+
+        $this->runs->expects($this->once())->method('queue')
+            ->with('f1', $this->anything(), 'schedule', $this->anything(), 'alice');
+
+        $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
     }
 
     public function testAFlowThatFiredRecentlyIsNotDueAgain(): void
