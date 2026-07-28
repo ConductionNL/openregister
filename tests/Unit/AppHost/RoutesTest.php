@@ -41,12 +41,14 @@ class RoutesTest extends TestCase
     {
         $names = $this->names(Routes::standard());
 
-        // Bit-compatible with the petstore reference skeleton.
+        // Bit-compatible with the petstore reference skeleton, plus the
+        // canonical ADR-066 `settings#update` write verb (PUT /api/settings).
         $this->assertSame(
             [
                 'dashboard#page',
                 'settings#index',
                 'settings#create',
+                'settings#update',
                 'settings#load',
                 'preferences#getPreference',
                 'preferences#setPreference',
@@ -57,6 +59,15 @@ class RoutesTest extends TestCase
             $names
         );
     }//end testCanonicalRouteNamesMatchPetstoreReference()
+
+    public function testSettingsUpdateRouteIsPutOnApiSettings(): void
+    {
+        $routes = Routes::standard()['routes'];
+        $update = array_values(array_filter($routes, static fn ($r) => $r['name'] === 'settings#update'))[0];
+
+        $this->assertSame('/api/settings', $update['url']);
+        $this->assertSame('PUT', $update['verb']);
+    }//end testSettingsUpdateRouteIsPutOnApiSettings()
 
     public function testCatchAllIsLastAndHasPathRequirement(): void
     {

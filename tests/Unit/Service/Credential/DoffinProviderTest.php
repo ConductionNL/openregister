@@ -119,12 +119,27 @@ class DoffinProviderTest extends TestCase
         // export-to-GitHub can run through the broker instead of holding the user's
         // PAT. Opening a PR is strictly less dangerous than the repo-write grants
         // already in the list, and it retires an app-held credential.
-        $this->assertCount(11, $github['allowRules']);
+        //
+        // 14 since 2026-07-27 (catalogue v1.7.0, ConductionNL/openregister#2165):
+        // three issue-workflow grants — `POST /repos/*\/issues/*\/labels`,
+        // `DELETE /repos/*\/issues/*\/labels/*` and `PATCH /repos/*\/issues/*`.
+        // A label write is how hydra's pipeline is COMMANDED, and nothing in the
+        // rules matched issue labels, so the broker refused it even with a valid
+        // PAT. All three are bounded to /issues/ and touch issue METADATA only —
+        // no repo, release or file-content write is reachable through them. The
+        // DELETE is the catalogue's first, and is separately sanctioned in
+        // ProviderCatalogueTest::SANCTIONED_DELETE_RULES.
+        $this->assertCount(14, $github['allowRules']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);
         $this->assertSame('Bearer {secret}', $gitlab['authScheme']['template']);
-        $this->assertCount(2, $gitlab['allowRules']);
+
+        // 3 since 2026-07-27 (v1.7.0): `PUT /projects/*\/issues/*` — GitLab's
+        // equivalent of the three GitHub grants above in ONE rule, because GitLab
+        // has no labels sub-resource: labels, state and assignee are fields of the
+        // issue, set with `add_labels` / `remove_labels` / `state_event`.
+        $this->assertCount(3, $gitlab['allowRules']);
     }
 
     /**

@@ -2319,6 +2319,24 @@ class Schema extends Entity implements JsonSerializable
         // a dedicated branch above that validates its shape, and
         // validateConfigurationArray re-throws instead of dropping it.
         self::WRITEONLY_PATHS_ANNOTATION,
+        // Federated configuration sharing (ADR pending): a schema opts its
+        // objects into the shared GitHub sharing engine by carrying either
+        // `true` or an `{id, topic, name}` refinement here. Without this entry
+        // setConfiguration() would silently drop the marker and the schema
+        // would never surface as a shareable type — the same or#460/#462-class
+        // trap the vocabulary exists to catch. Read by
+        // SchemaShareableConfigScanner.
+        'x-openregister-shareable',
+        // Declarative bound on what object data may reach an LLM: the
+        // per-schema allowlist Hermiq's AgentContextBuilder (and its JS twin
+        // src/utils/agentContext.js) reads to build an agent's context.
+        // Absent from this list, setConfiguration() silently DROPPED it, so
+        // every agent leaf on every schema fleet-wide resolved an EMPTY
+        // context — fail-closed, so never a leak, but the capability was
+        // wholly inert while schemas saved with HTTP 200 and no error. Same
+        // or#460/#462-class trap as `x-openregister-processing` and
+        // `x-openregister-contextchat` above. See or#2164.
+        'x-openregister-agent-context',
     ];
 
     /**

@@ -192,4 +192,66 @@ class SchemaAnnotationVocabularyTest extends TestCase
         // Valid vocabulary key should survive.
         $this->assertArrayHasKey('x-openregister-archival', $config);
     }
+
+    /**
+     * FAILING PATH (or#2164): `x-openregister-agent-context` MUST survive the
+     * round-trip.
+     *
+     * This is the FOURTH recurrence of the same defect class in this vocabulary
+     * (`x-openregister-processing`, `x-openregister-contextchat`,
+     * `x-openregister-shareable`, now this one). The key is READ by Hermiq's
+     * AgentContextBuilder — and by its JS twin `src/utils/agentContext.js` — to
+     * bound what object data may reach an LLM. While it was absent from
+     * ANNOTATION_VOCABULARY, setConfiguration() silently dropped it, so EVERY
+     * agent leaf on EVERY schema fleet-wide resolved an EMPTY context.
+     *
+     * The failure was invisible by construction: the schema saved with HTTP
+     * 200, the only signal was a log line, and because an absent allowlist
+     * means "expose nothing" the behaviour was fail-closed — no leak, just a
+     * capability that could never do anything.
+     *
+     * @spec openspec/changes/hydra-register-data-plane/specs/hydra-agent-context-allowlist/spec.md
+     */
+    public function testAgentContextAnnotationSurvivesRoundTrip(): void
+    {
+        $allowlist = ['findingId', 'severity', 'gate', 'rule', 'status'];
+
+        $this->schema->setConfiguration([
+            'x-openregister-agent-context' => $allowlist,
+        ]);
+
+        $config = $this->schema->getConfiguration();
+
+        $this->assertNotNull($config);
+        $this->assertArrayHasKey('x-openregister-agent-context', $config);
+        $this->assertSame($allowlist, $config['x-openregister-agent-context']);
+
+        // Not merely present — not reported as dropped either, since the drop
+        // list is the only runtime signal this failure ever produced.
+        $this->assertNotContains(
+            'x-openregister-agent-context',
+            $this->schema->consumeDroppedAnnotationKeys()
+        );
+    }
+
+    /**
+     * The refinement form (per-property constraints) must survive too — the
+     * allowlist accepts either a flat list of property names or a map carrying
+     * per-property bounds such as `maxLength`.
+     *
+     * @spec openspec/changes/hydra-register-data-plane/specs/hydra-agent-context-allowlist/spec.md
+     */
+    public function testAgentContextRefinementFormSurvivesRoundTrip(): void
+    {
+        $refined = ['description' => ['maxLength' => 500]];
+
+        $this->schema->setConfiguration([
+            'x-openregister-agent-context' => $refined,
+        ]);
+
+        $config = $this->schema->getConfiguration();
+
+        $this->assertArrayHasKey('x-openregister-agent-context', $config);
+        $this->assertSame($refined, $config['x-openregister-agent-context']);
+    }
 }//end class

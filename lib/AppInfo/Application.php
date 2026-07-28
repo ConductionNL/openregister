@@ -256,6 +256,7 @@ use OCA\OpenRegister\Mcp\AttributeToolScanner;
 use OCA\OpenRegister\Mcp\BuiltIn\RegistersToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemasToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\ObjectsToolProvider;
+use OCA\OpenRegister\Mcp\BuiltIn\FlowMcpToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\IntegrationsToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\SchemaDerivedToolProvider;
 use OCA\OpenRegister\Mcp\BuiltIn\AttributeToolProvider;
@@ -267,6 +268,7 @@ use OCA\OpenRegister\Service\Integration\BuiltinProviders\TagsProvider;
 use OCA\OpenRegister\Service\Integration\BuiltinProviders\TasksProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
 use OCA\OpenRegister\Service\Integration\PropertyReferenceTypeValidator;
 use OCA\OpenRegister\Service\Integration\PropertySemanticReferenceValidator;
 use OCA\OpenRegister\Service\Integration\Providers\BookmarksProvider;
@@ -1239,6 +1241,22 @@ class Application extends App implements IBootstrap
             }
         );
 
+        // LeafRegistry — the cross-app leaf catalogue (ADR-066). Collects the
+        // leaves sibling apps contribute through RegisterLeafProvidersEvent,
+        // lazily on first read, and lands their data providers on the shared
+        // IntegrationRegistry so existing per-object routing reaches them.
+        $context->registerService(
+            LeafRegistry::class,
+            function (ContainerInterface $container) {
+                return new LeafRegistry(
+                    eventDispatcher: $container->get(\OCP\EventDispatcher\IEventDispatcher::class),
+                    integrationRegistry: $container->get(IntegrationRegistry::class),
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    logger: $container->get('Psr\Log\LoggerInterface')
+                );
+            }
+        );
+
         $this->registerBuiltinIntegrationProviders(context: $context);
 
         // IntegrationsController — read-only API over the registry.
@@ -1287,7 +1305,8 @@ class Application extends App implements IBootstrap
                     registry: $container->get(IntegrationRegistry::class),
                     userSession: $container->get('OCP\IUserSession'),
                     groupManager: $container->get('OCP\IGroupManager'),
-                    appManager: $container->get('OCP\App\IAppManager')
+                    appManager: $container->get('OCP\App\IAppManager'),
+                    leafRegistry: $container->get(LeafRegistry::class)
                 );
             }
         );
@@ -2364,6 +2383,23 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
         );
 
+        // Flow resolution. OpenRegister resolves flows stored as its own objects
+        // (a `flows` register / `flow` schema by default), so a flow can live in
+        // OpenRegister itself and not only in a consuming app — contributed
+        // through the same resolver event.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
+            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+        );
+
+        // Federated configuration sharing. Any app declares its shareable config
+        // types (flows, registers, case types, themes …) through this event, the
+        // same idiom as flow nodes; OpenRegister contributes its own built-ins.
+        $context->registerEventListener(
+            \OCA\OpenRegister\Service\Config\RegisterShareableConfigTypesEvent::class,
+            \OCA\OpenRegister\Listener\ShareableConfigTypeRegistrationListener::class
+        );
+
         // Advertise the `openregister` OCM resource type in /ocm-provider discovery.
         $context->registerEventListener(
             \OCP\OCM\Events\ResourceTypeRegisterEvent::class,
@@ -2382,6 +2418,33 @@ class Application extends App implements IBootstrap
         // ObjectChangeListener for automatic object text extraction.
         $context->registerEventListener(ObjectCreatedEvent::class, ObjectChangeListener::class);
         $context->registerEventListener(ObjectUpdatedEvent::class, ObjectChangeListener::class);
+
+        // Object-lifecycle flow triggers: queue a run for every flow wired to a
+        // lifecycle event. Create / update / delete plus lock / unlock / revert /
+        // state-change — the last four were declared in the event catalog but had
+        // no listener firing them until now, so a flow could select them and never
+        // run.
+        $context->registerEventListener(ObjectCreatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectLockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectUnlockedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectRevertedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+        $context->registerEventListener(ObjectTransitionedEvent::class, \OCA\OpenRegister\Listener\FlowTriggerListener::class);
+
+        // Non-object native flow triggers: a file or a user is not an OpenRegister
+        // object, so its event rides on the run as a payload the worker seeds the
+        // first item from. A flow wired to file.created / user.created runs on
+        // these just as it does on object events.
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeWrittenEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Files\Events\Node\NodeDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\User\Events\UserCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\User\Events\UserDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareCreatedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\Share\Events\ShareDeletedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagAssignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
+        $context->registerEventListener(\OCP\SystemTag\TagUnassignedEvent::class, \OCA\OpenRegister\Listener\NativeFlowTriggerListener::class);
 
         // ToolRegistrationListener for agent function tools.
         $context->registerEventListener(ToolRegistrationEvent::class, ToolRegistrationListener::class);
@@ -2780,6 +2843,7 @@ class Application extends App implements IBootstrap
                     $container->get(SchemasToolProvider::class),
                     $container->get(ObjectsToolProvider::class),
                     $container->get(IntegrationsToolProvider::class),
+                    $container->get(FlowMcpToolProvider::class),
                 ];
 
                 // Preferred path: apps announce themselves with a listener,
@@ -3824,6 +3888,7 @@ class Application extends App implements IBootstrap
         // registry never touches a provider's wrapped service unless a
         // caller actually invokes that provider's CRUD path.
         $this->bootBuiltinIntegrationProviders(server: $server);
+        $this->bootLeafRegistry(server: $server);
         $this->bootObjectSourceProviders(server: $server);
         $this->bootFederation(server: $server);
 
@@ -4011,6 +4076,42 @@ class Application extends App implements IBootstrap
             }//end try
         }//end foreach
     }//end bootBuiltinIntegrationProviders()
+
+    /**
+     * Install the lazy leaf loader on the shared IntegrationRegistry.
+     *
+     * The loader is a closure that reads the LeafRegistry catalogue, which
+     * dispatches `RegisterLeafProvidersEvent` once and lands any data-provider
+     * leaves on the IntegrationRegistry. Installing it here (rather than
+     * dispatching now) keeps the collect-event LAZY: it fires only when
+     * something actually reads the registry or the leaf catalogue in a request
+     * (ADR-066). Guarded so a registry-less build still boots.
+     *
+     * @param mixed $server Server container (passed in from boot()).
+     *
+     * @return void
+     *
+     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+     */
+    private function bootLeafRegistry($server): void
+    {
+        try {
+            $integrationRegistry = $server->get(IntegrationRegistry::class);
+            $integrationRegistry->setLeafLoader(
+                static function () use ($server): void {
+                    // Reading the catalogue triggers LeafRegistry::ensureLoaded(),
+                    // which dispatches the event and calls addProvider() for each
+                    // data-provider leaf.
+                    $server->get(LeafRegistry::class)->getDescriptors();
+                }
+            );
+        } catch (\Throwable $e) {
+            // Registry binding not available — skip silently; the leaf catalogue
+            // simply stays empty on this build.
+            return;
+        }
+
+    }//end bootLeafRegistry()
 
     /**
      * Register the built-in object-source providers with the shared

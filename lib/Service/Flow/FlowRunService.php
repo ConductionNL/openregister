@@ -104,21 +104,59 @@ class FlowRunService
     }//end queue()
 
     /**
+     * Queue a fresh run that repeats a finished one.
+     *
+     * Retry NEVER re-executes the old run — that would repeat every side effect
+     * it already performed. It creates a NEW queued run against the same flow,
+     * subject and trigger, so the worker executes it from the start. The
+     * original is left exactly as it ended, as the record of what happened.
+     *
+     * Only a terminal run can be retried: a queued or running one is already on
+     * its way, and a suspended one resumes rather than restarts.
+     *
+     * @param FlowRun $run The run to repeat.
+     *
+     * @return FlowRun|null The new queued run, or null when the source is not terminal.
+     *
+     * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
+     */
+    public function retry(FlowRun $run): ?FlowRun
+    {
+        if ($run->isTerminal() === false) {
+            return null;
+        }
+
+        return $this->queue(
+            flowId: (string) $run->getFlowId(),
+            subject: [
+                'uuid'     => $run->getSubjectUuid(),
+                'register' => $run->getSubjectRegister(),
+                'schema'   => $run->getSubjectSchema(),
+            ],
+            trigger: 'retry',
+            context: ($run->getContext() ?? []),
+            user: $run->getTriggeredBy()
+        );
+
+    }//end retry()
+
+    /**
      * Execute (or continue) a run to its next stopping point.
      *
      * Called by the queue worker, never by a trigger. Returns the run in
      * whatever state the walk left it: terminal, or suspended and resumable.
      *
-     * @param FlowRun $run       The run to advance.
-     * @param array   $flow      The flow document.
-     * @param object  $subject   The object the run is about.
-     * @param array   $seedItems Items to start from; ignored when resuming.
+     * @param FlowRun     $run       The run to advance.
+     * @param array       $flow      The flow document.
+     * @param object      $subject   The object the run is about.
+     * @param array       $seedItems Items to start from; ignored when resuming.
+     * @param string|null $startAt   Node to start from (run-from-here); ignored when resuming.
      *
      * @return FlowRun The updated run.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
-    public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems=null): FlowRun
+    public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems=null, ?string $startAt=null): FlowRun
     {
         if ($run->isTerminal() === true) {
             // Re-executing a finished run would repeat every side effect it
@@ -132,16 +170,28 @@ class FlowRunService
         $this->mapper->update($run);
 
         $items = $seedItems;
+        $start = $startAt;
         if ($resuming === true) {
             // On resume the stored items win: they are what the run was
             // carrying when it paused. Re-seeding from the subject would throw
-            // away everything the earlier steps produced.
+            // away everything the earlier steps produced. A start node is a
+            // fresh-run concern too — the marking already holds where to resume.
             $items = ($run->getItems() ?? []);
+            $start = null;
         }
 
         $context            = ($run->getContext() ?? []);
         $context['runUuid'] = $run->getUuid();
         $context['resuming'] = $resuming;
+        // Carry the run's owner into the node context. Nodes read
+        // `context['triggeredBy']` to attribute what they do — ObjectWriteNode
+        // REFUSES to write without it, SubFlowNode propagates it to child runs,
+        // and Hermiq's agent node runs the turn as that user. Nothing else in
+        // lib/ ever wrote this key, so every trigger reached its nodes
+        // ownerless and only hand-injected contexts (tests, harnesses) worked.
+        // An explicit context value still wins, so a caller can attribute a run
+        // to someone other than whoever queued it. See or#2158.
+        $context['triggeredBy'] = ($context['triggeredBy'] ?? $run->getTriggeredBy());
 
         try {
             $result = $this->engine->run(
@@ -150,7 +200,8 @@ class FlowRunService
                 subject: $subject,
                 dispatcher: new RegistryStepDispatcher(registry: $this->registry),
                 context: $context,
-                items: $items
+                items: $items,
+                startAt: $start
             );
         } catch (Throwable $e) {
             // The engine itself failing (rather than a step) is not something
