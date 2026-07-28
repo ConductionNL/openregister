@@ -444,6 +444,7 @@ class QueryHandler
                 results: $results,
                 total: $total,
                 limit: $limit,
+                offset: $offset,
                 _rbac: $_rbac,
                 _multitenancy: $_multitenancy
             );

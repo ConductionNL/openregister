@@ -119,8 +119,13 @@ class Version1Date20260706101000 extends SimpleMigrationStep
         $indexName = 'idx_or_chunks_text_search_gin';
 
         try {
+            // Scope the existence probe to the current schema — pg_indexes is
+            // cluster-wide, so an unscoped match against another schema on the
+            // same PostgreSQL cluster would falsely skip CREATE INDEX and leave
+            // ranked keyword search silently unavailable in this schema
+            // (review #476 🟢 consistency with the sibling migration).
             $result = $this->connection->executeQuery(
-                'SELECT 1 FROM pg_indexes WHERE indexname = :idx',
+                'SELECT 1 FROM pg_indexes WHERE indexname = :idx AND schemaname = current_schema()',
                 ['idx' => $indexName]
             );
 

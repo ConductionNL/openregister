@@ -112,6 +112,11 @@ class ContentSearchHandler
      * @param int            $total         The metadata-match total already computed by the
      *                                      pre-change search path.
      * @param int            $limit         The page's `_limit` (0 = unlimited/count-only).
+     * @param int            $offset        The page's global `_offset` into the combined
+     *                                      metadata+chunk result stream. Required for
+     *                                      cross-page dedupe: without it every page re-appends
+     *                                      the same top-`CHUNK_CANDIDATE_LIMIT` chunk-only
+     *                                      owners once the metadata arm is exhausted.
      * @param bool           $_rbac         Whether to apply RBAC checks when resolving chunk-hit objects.
      * @param bool           $_multitenancy Whether to apply multitenancy filtering when resolving chunk-hit objects.
      *
@@ -135,6 +140,7 @@ class ContentSearchHandler
         array $results,
         int $total,
         int $limit,
+        int $offset=0,
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
@@ -195,12 +201,30 @@ class ContentSearchHandler
 
         $chunkOwnerUpperBound = count($distinctChunkOwners);
 
+        // Cross-page dedupe (review #476): the caller's global `_offset` lands
+        // AFTER `$total` metadata rows have already been served across earlier
+        // pages, so the chunk arm starts at logical position `offset - total`.
+        // Negative values (this page still overlaps the metadata arm) clamp to
+        // zero. Without this the same top-CHUNK_CANDIDATE_LIMIT chunk-only
+        // owners re-append on every page past the metadata tail — an object
+        // appended on page N reappeared on N+1, N+2, ...
+        $chunkOffset = max(0, ($offset - $total));
+
         $scope    = $this->resolveScope(query: $query);
         $appended = [];
         $room     = PHP_INT_MAX;
         if ($limit > 0) {
             $room = max(0, $limit - count($results));
         }
+
+        // Distinct chunk-owner counter used to skip the first `$chunkOffset`
+        // in-scope owners so that page N+1 continues where page N left off.
+        // Increments only after a hit fully resolves + passes scope; hits that
+        // fail either (unresolvable, out of scope, RBAC-denied, cross-tenant)
+        // are silent and do not consume a pagination slot — otherwise a page
+        // whose first N candidate owners are all out-of-scope would silently
+        // skip them again on the next page and return an empty result set.
+        $skippedInScopeOwners = 0;
 
         foreach ($chunkHits as $hit) {
             if (count($appended) >= $room) {
@@ -218,7 +242,16 @@ class ContentSearchHandler
                 continue;
             }
 
+            // Mark as seen up-front so multiple chunk rows for the same owner
+            // do not consume more than one pagination slot (and so the next
+            // resolveAndDedupeHit call filters them out).
             $seenUuids[$object->getUuid()] = true;
+
+            if ($skippedInScopeOwners < $chunkOffset) {
+                $skippedInScopeOwners++;
+                continue;
+            }
+
             $appended[] = $object;
         }//end foreach
 
@@ -326,6 +359,27 @@ class ContentSearchHandler
     /**
      * Extract the caller's register/schema scope from the search query, mirroring the
      * key-precedence chain {@see MagicMapper::getSimpleFacets()} already uses.
+     *
+     * SCOPE LIMITATION (documented per review #476 🟡 filter parity):
+     * only `register(s)` / `schema(s)` are honoured here. Any other filter the
+     * metadata arm applied (property filters, `_status`, `_created`/`_updated`
+     * date ranges, magic-column filters) is INTENTIONALLY DROPPED when appending
+     * chunk-only matches. This means an object the caller filtered out on a
+     * property predicate can resurface via a file-text match on the same query.
+     *
+     * This is a correctness/consistency gap, NOT a data leak — RBAC + multitenancy
+     * still pass through {@see MagicMapper::find()} on every appended row, so no
+     * caller ever sees an object it lacks read permission on. The chunk arm
+     * intentionally trades filter parity for the simpler resolve-then-append
+     * pipeline; threading arbitrary schema-property predicates onto the resolved
+     * ObjectEntity is a follow-up (would require re-applying the metadata-arm
+     * filter engine to individual objects post-resolve, or pre-filtering
+     * `$chunkHits` by owner via a batched `findMany()` — same batch-resolve
+     * refactor as {@see CHUNK_CANDIDATE_LIMIT}).
+     *
+     * Callers relying on filter parity should either omit `_content_search=true`
+     * or narrow their register/schema scope to keep the chunk arm's fan-out
+     * aligned with the metadata arm.
      *
      * @param array $query The search query.
      *
