@@ -125,7 +125,7 @@ class FlowScheduleService
                 continue;
             }
 
-            $this->fire(uuid: $uuid, now: $now);
+            $this->fire(uuid: $uuid, now: $now, owner: $flow->getOwner());
             $fired[] = $uuid;
         }//end foreach
 
@@ -202,13 +202,22 @@ class FlowScheduleService
      *
      * @return void
      */
-    private function fire(string $uuid, DateTimeInterface $now): void
+    private function fire(string $uuid, DateTimeInterface $now, ?string $owner=null): void
     {
+        // A scheduled run has no session, so the owner comes from the flow
+        // object itself — the person who created and enabled it. Without this
+        // the run is ownerless, context['triggeredBy'] is null, and every
+        // attribution-requiring node refuses: ObjectWriteNode returns "this
+        // flow run has no owner". That made every natively-scheduled flow
+        // silently incapable of writing anything. Fourth instance of the
+        // or#2158 defect class, after FlowMcpToolProvider::runFlow(),
+        // FlowRunService::execute() and FlowRunController::test().
         $this->runs->queue(
             flowId: $uuid,
             subject: [],
             trigger: 'schedule',
-            context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]]
+            context: ['payload' => ['flowId' => $uuid, 'scheduledAt' => $now->format(DATE_ATOM)]],
+            user: $owner
         );
 
         // Remember the fire time so the next occurrence is measured from here,
