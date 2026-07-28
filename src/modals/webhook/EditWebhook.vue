@@ -305,7 +305,7 @@ import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
+import { navigationStore, webhookStore } from '../../store/store.js'
 
 import {
 	NcButton,
@@ -836,30 +836,22 @@ export default {
 					configuration: this.webhookItem.configuration || {},
 				}
 
-				let response
-				if (this.webhookItem.id) {
-					// Update existing webhook.
-					response = await axios.put(
-						generateUrl(`/apps/openregister/api/webhooks/${this.webhookItem.id}`),
-						payload,
-					)
-				} else {
-					// Create new webhook.
-					response = await axios.post(
-						generateUrl('/apps/openregister/api/webhooks'),
-						payload,
-					)
+				const isUpdate = Boolean(this.webhookItem.id)
+				if (isUpdate) {
+					payload.id = this.webhookItem.id
 				}
 
-				if (response.data) {
+				// The store refreshes webhookStore.webhookList after persisting, so
+				// every mounted view picks the change up reactively — no page reload.
+				const { data } = await webhookStore.saveWebhook(payload)
+
+				if (data) {
 					showSuccess(
-						this.webhookItem.id
+						isUpdate
 							? t('openregister', 'Webhook updated successfully')
 							: t('openregister', 'Webhook created successfully'),
 					)
 					this.closeModal()
-					// Trigger page reload to refresh webhooks list.
-					window.location.reload()
 				}
 			} catch (error) {
 				console.error('Failed to save webhook:', error)
