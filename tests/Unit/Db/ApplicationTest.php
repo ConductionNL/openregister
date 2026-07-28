@@ -32,9 +32,13 @@ class ApplicationTest extends TestCase
         $this->assertSame('json', $fieldTypes['schemas']);
         $this->assertSame('string', $fieldTypes['owner']);
         $this->assertSame('boolean', $fieldTypes['active']);
-        $this->assertSame('integer', $fieldTypes['storage_quota']);
-        $this->assertSame('integer', $fieldTypes['bandwidth_quota']);
-        $this->assertSame('integer', $fieldTypes['request_quota']);
+        // Keyed by property name, not column name — Entity::setter() looks up
+        // $_fieldTypes[$property], so a snake_case key would skip the cast.
+        $this->assertSame('integer', $fieldTypes['storageQuota']);
+        $this->assertSame('integer', $fieldTypes['bandwidthQuota']);
+        $this->assertSame('integer', $fieldTypes['requestQuota']);
+        $this->assertSame('integer', $fieldTypes['userQuota']);
+        $this->assertSame('integer', $fieldTypes['groupQuota']);
         $this->assertSame('json', $fieldTypes['groups']);
         $this->assertSame('json', $fieldTypes['authorization']);
         $this->assertSame('datetime', $fieldTypes['created']);
@@ -56,6 +60,8 @@ class ApplicationTest extends TestCase
         $this->assertNull($this->application->getStorageQuota());
         $this->assertNull($this->application->getBandwidthQuota());
         $this->assertNull($this->application->getRequestQuota());
+        $this->assertNull($this->application->getUserQuota());
+        $this->assertNull($this->application->getGroupQuota());
         $this->assertSame([], $this->application->getGroups());
         $this->assertNull($this->application->getCreated());
         $this->assertNull($this->application->getUpdated());
@@ -365,6 +371,110 @@ class ApplicationTest extends TestCase
         $this->assertSame(['admins'], $this->application->getGroups());
     }
 
+    public function testHydrateNestedQuotaReachesTheColumns(): void
+    {
+        // The POST /api/applications payload shape.
+        $data = [
+            'name'  => 'Quota App',
+            'quota' => [
+                'storage'   => 128974848,
+                'bandwidth' => 478150656,
+                'requests'  => 789,
+                'users'     => 1000,
+                'groups'    => 2000,
+            ],
+        ];
+        $this->application->hydrate($data);
+
+        $this->assertSame(128974848, $this->application->getStorageQuota());
+        $this->assertSame(478150656, $this->application->getBandwidthQuota());
+        $this->assertSame(789, $this->application->getRequestQuota());
+        $this->assertSame(1000, $this->application->getUserQuota());
+        $this->assertSame(2000, $this->application->getGroupQuota());
+
+        // Every posted allocation round-trips through the response.
+        $this->assertSame($data['quota'], $this->application->jsonSerialize()['quota']);
+    }
+
+    // --- setQuota ---
+
+    public function testSetQuotaFromJsonString(): void
+    {
+        $this->application->setQuota('{"storage":1024,"bandwidth":2048,"requests":16,"users":4,"groups":8}');
+
+        $this->assertSame(1024, $this->application->getStorageQuota());
+        $this->assertSame(2048, $this->application->getBandwidthQuota());
+        $this->assertSame(16, $this->application->getRequestQuota());
+        $this->assertSame(4, $this->application->getUserQuota());
+        $this->assertSame(8, $this->application->getGroupQuota());
+    }
+
+    public function testSetQuotaCastsNumericStrings(): void
+    {
+        $this->application->setQuota(['storage' => '1024', 'requests' => '16']);
+
+        $this->assertSame(1024, $this->application->getStorageQuota());
+        $this->assertSame(16, $this->application->getRequestQuota());
+    }
+
+    public function testSetQuotaIgnoresAbsentAllocations(): void
+    {
+        $this->application->setStorageQuota(1024);
+        $this->application->setBandwidthQuota(2048);
+        $this->application->setUserQuota(4);
+
+        // A partial quota object must not wipe what it left out.
+        $this->application->setQuota(['requests' => 16]);
+
+        $this->assertSame(1024, $this->application->getStorageQuota());
+        $this->assertSame(2048, $this->application->getBandwidthQuota());
+        $this->assertSame(16, $this->application->getRequestQuota());
+        $this->assertSame(4, $this->application->getUserQuota());
+    }
+
+    public function testSetQuotaNullClearsEveryAllocation(): void
+    {
+        $this->application->setQuota(
+            [
+                'storage'   => 1024,
+                'bandwidth' => 2048,
+                'requests'  => 16,
+                'users'     => 4,
+                'groups'    => 8,
+            ]
+        );
+        $this->application->setQuota(null);
+
+        $this->assertNull($this->application->getStorageQuota());
+        $this->assertNull($this->application->getBandwidthQuota());
+        $this->assertNull($this->application->getRequestQuota());
+        $this->assertNull($this->application->getUserQuota());
+        $this->assertNull($this->application->getGroupQuota());
+    }
+
+    public function testSetQuotaTreatsNonNumericAsUnlimited(): void
+    {
+        $this->application->setStorageQuota(1024);
+        $this->application->setQuota(['storage' => 'unlimited', 'bandwidth' => null]);
+
+        $this->assertNull($this->application->getStorageQuota());
+        $this->assertNull($this->application->getBandwidthQuota());
+    }
+
+    public function testSetQuotaIgnoresInvalidJsonString(): void
+    {
+        $this->application->setQuota('not json');
+
+        $this->assertNull($this->application->getStorageQuota());
+        $this->assertNull($this->application->getBandwidthQuota());
+        $this->assertNull($this->application->getRequestQuota());
+    }
+
+    public function testSetQuotaReturnsSelfForChaining(): void
+    {
+        $this->assertSame($this->application, $this->application->setQuota(['storage' => 1]));
+    }
+
     // --- jsonSerialize ---
 
     public function testJsonSerializeStructure(): void
@@ -407,6 +517,8 @@ class ApplicationTest extends TestCase
         $this->application->setStorageQuota(1000);
         $this->application->setBandwidthQuota(2000);
         $this->application->setRequestQuota(500);
+        $this->application->setUserQuota(50);
+        $this->application->setGroupQuota(5);
 
         $json = $this->application->jsonSerialize();
         $quota = $json['quota'];
@@ -414,8 +526,25 @@ class ApplicationTest extends TestCase
         $this->assertSame(1000, $quota['storage']);
         $this->assertSame(2000, $quota['bandwidth']);
         $this->assertSame(500, $quota['requests']);
-        $this->assertNull($quota['users']);
-        $this->assertNull($quota['groups']);
+        $this->assertSame(50, $quota['users']);
+        $this->assertSame(5, $quota['groups']);
+    }
+
+    public function testJsonSerializeQuotaUnsetAllocationsAreUnlimited(): void
+    {
+        $quota = $this->application->jsonSerialize()['quota'];
+
+        // NULL = unlimited for every allocation, including users/groups.
+        $this->assertSame(
+            [
+                'storage'   => null,
+                'bandwidth' => null,
+                'requests'  => null,
+                'users'     => null,
+                'groups'    => null,
+            ],
+            $quota
+        );
     }
 
     public function testJsonSerializeUsageStructure(): void

@@ -64,6 +64,10 @@ use Symfony\Component\Uid\Uuid;
  * @method void setBandwidthQuota(?int $bandwidthQuota)
  * @method int|null getRequestQuota()
  * @method void setRequestQuota(?int $requestQuota)
+ * @method int|null getUserQuota()
+ * @method void setUserQuota(?int $userQuota)
+ * @method int|null getGroupQuota()
+ * @method void setGroupQuota(?int $groupQuota)
  * @method array|null getGroups()
  * @method self setGroups(?array $groups)
  * @method array|null getAuthorization()
@@ -184,6 +188,22 @@ class Application extends Entity implements JsonSerializable
     protected ?int $requestQuota = null;
 
     /**
+     * Maximum number of users allowed for this application
+     * NULL = unlimited users
+     *
+     * @var integer|null User quota
+     */
+    protected ?int $userQuota = null;
+
+    /**
+     * Maximum number of groups allowed for this application
+     * NULL = unlimited groups
+     *
+     * @var integer|null Group quota
+     */
+    protected ?int $groupQuota = null;
+
+    /**
      * Array of Nextcloud group IDs that have access to this application
      * Stored as simple array of group ID strings for efficiency
      *
@@ -237,9 +257,14 @@ class Application extends Entity implements JsonSerializable
         $this->addType(fieldName: 'schemas', type: 'json');
         $this->addType(fieldName: 'owner', type: 'string');
         $this->addType(fieldName: 'active', type: 'boolean');
-        $this->addType(fieldName: 'storage_quota', type: 'integer');
-        $this->addType(fieldName: 'bandwidth_quota', type: 'integer');
-        $this->addType(fieldName: 'request_quota', type: 'integer');
+        // Field types are keyed by PROPERTY name, not column name: Entity::setter()
+        // looks up $_fieldTypes[$property], so a snake_case key silently skips the
+        // cast and lets a BIGINT column come back from the driver as a string.
+        $this->addType(fieldName: 'storageQuota', type: 'integer');
+        $this->addType(fieldName: 'bandwidthQuota', type: 'integer');
+        $this->addType(fieldName: 'requestQuota', type: 'integer');
+        $this->addType(fieldName: 'userQuota', type: 'integer');
+        $this->addType(fieldName: 'groupQuota', type: 'integer');
         $this->addType(fieldName: 'groups', type: 'json');
         $this->addType(fieldName: 'authorization', type: 'json');
         $this->addType(fieldName: 'created', type: 'datetime');
@@ -526,6 +551,66 @@ class Application extends Entity implements JsonSerializable
     }//end setAuthorization()
 
     /**
+     * Set the quota allocations from the nested API structure
+     *
+     * The API exposes quota as one nested object (see self::getQuotaData())
+     * while the entity stores a column per allocation. Without this setter
+     * hydrate()'s generic set{Key} call resolves to a non-existent setQuota(),
+     * which Entity rejects and hydrate() swallows — silently dropping every
+     * quota posted to /api/applications.
+     *
+     * @param array|string|null $quota Nested quota structure or JSON string
+     *
+     * @return static Returns this application for method chaining
+     *
+     * @spec exclude Entity field-mapping boilerplate: unpacks the nested API
+     *     quota object onto the per-allocation columns. Quota enforcement is
+     *     the tenant-quotas capability's contract, not this setter's.
+     */
+    public function setQuota(array|string|null $quota): static
+    {
+        // Handle JSON string from the database or request body (type safety).
+        if (is_string($quota) === true) {
+            $decoded = json_decode($quota, true);
+            $quota   = null;
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
+                $quota = $decoded;
+            }
+        }
+
+        $setters = [
+            'storage'   => 'setStorageQuota',
+            'bandwidth' => 'setBandwidthQuota',
+            'requests'  => 'setRequestQuota',
+            'users'     => 'setUserQuota',
+            'groups'    => 'setGroupQuota',
+        ];
+
+        // An explicit null clears every allocation (NULL = unlimited).
+        if ($quota === null) {
+            $quota = array_fill_keys(array_keys($setters), null);
+        }
+
+        foreach ($setters as $key => $setter) {
+            // Only touch the allocations the caller actually sent, so a partial
+            // quota object cannot wipe the ones it left out.
+            if (array_key_exists($key, $quota) === false) {
+                continue;
+            }
+
+            // A non-numeric allocation means unlimited, same as an absent one.
+            $value = null;
+            if (is_numeric($quota[$key]) === true) {
+                $value = (int) $quota[$key];
+            }
+
+            $this->$setter($value);
+        }
+
+        return $this;
+    }//end setQuota()
+
+    /**
      * JSON serialization for API responses
      *
      * @return (array|bool|int|null|string)[]
@@ -669,9 +754,10 @@ class Application extends Entity implements JsonSerializable
     /**
      * Get quota data for JSON serialization.
      *
-     * Returns the quota allocation structure for storage, bandwidth, and requests.
+     * Returns the quota allocation structure for storage, bandwidth, requests,
+     * users, and groups. NULL means unlimited for every allocation.
      *
-     * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: null, groups: null}
+     * @return array{storage: int|null, bandwidth: int|null, requests: int|null, users: int|null, groups: int|null}
      */
     private function getQuotaData(): array
     {
@@ -679,10 +765,8 @@ class Application extends Entity implements JsonSerializable
             'storage'   => $this->storageQuota,
             'bandwidth' => $this->bandwidthQuota,
             'requests'  => $this->requestQuota,
-            'users'     => null,
-            // To be set via admin configuration.
-            'groups'    => null,
-            // To be set via admin configuration.
+            'users'     => $this->userQuota,
+            'groups'    => $this->groupQuota,
         ];
     }//end getQuotaData()
 
