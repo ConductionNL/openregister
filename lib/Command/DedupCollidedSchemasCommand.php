@@ -61,7 +61,6 @@ use Throwable;
  */
 class DedupCollidedSchemasCommand extends Command
 {
-
     /**
      * Constructor.
      *
@@ -73,7 +72,6 @@ class DedupCollidedSchemasCommand extends Command
 
     }//end __construct()
 
-
     /**
      * Configure the command.
      *
@@ -81,14 +79,30 @@ class DedupCollidedSchemasCommand extends Command
      */
     protected function configure(): void
     {
-        $this->setName('openregister:schemas:dedup')
-            ->setDescription('Split schemas shared by multiple registers so each register owns its own copy (#2150 backwards fix)')
-            ->addOption('apply', null, InputOption::VALUE_NONE, 'Actually write changes. Without this the command only reports.')
-            ->addOption('register', null, InputOption::VALUE_REQUIRED, 'Limit to a single register slug.')
-            ->addOption('schema', null, InputOption::VALUE_REQUIRED, 'Limit to a single schema id.');
+        $this->setName(name: 'openregister:schemas:dedup')
+            ->setDescription(
+                description: 'Split schemas shared by multiple registers so each register owns its own copy (#2150 backwards fix)'
+            )
+            ->addOption(
+                name: 'apply',
+                shortcut: null,
+                mode: InputOption::VALUE_NONE,
+                description: 'Actually write changes. Without this the command only reports.'
+            )
+            ->addOption(
+                name: 'register',
+                shortcut: null,
+                mode: InputOption::VALUE_REQUIRED,
+                description: 'Limit to a single register slug.'
+            )
+            ->addOption(
+                name: 'schema',
+                shortcut: null,
+                mode: InputOption::VALUE_REQUIRED,
+                description: 'Limit to a single schema id.'
+            );
 
     }//end configure()
-
 
     /**
      * Find every schema referenced by more than one register.
@@ -104,7 +118,7 @@ class DedupCollidedSchemasCommand extends Command
         // so containment is checked against both shapes. A LIKE/substring
         // match would be wrong here — '21' also matches '210' and '121',
         // which inflates the collision count dramatically.
-        $sql = 'SELECT s.id AS schema_id, s.slug AS schema_slug, s.application AS schema_app,
+        $sql    = 'SELECT s.id AS schema_id, s.slug AS schema_slug, s.application AS schema_app,
                        r.id AS register_id, r.slug AS register_slug, r.application AS register_app
                   FROM oc_openregister_schemas s
                   JOIN oc_openregister_registers r
@@ -143,7 +157,6 @@ class DedupCollidedSchemasCommand extends Command
 
     }//end findCollisions()
 
-
     /**
      * Pick the register that keeps the original schema row.
      *
@@ -169,7 +182,6 @@ class DedupCollidedSchemasCommand extends Command
 
     }//end pickOwner()
 
-
     /**
      * Clone a schema row, repoint the register at the clone, and move its table.
      *
@@ -193,7 +205,12 @@ class DedupCollidedSchemasCommand extends Command
         // register ends up owning a clone, or nothing changes.
         $this->db->beginTransaction();
         try {
-            $newId = $this->splitOneLocked($schemaId, $registerId, $registerApp, $newUuid);
+            $newId = $this->splitOneLocked(
+                schemaId: $schemaId,
+                registerId: $registerId,
+                registerApp: $registerApp,
+                newUuid: $newUuid
+            );
             $this->db->commit();
         } catch (Throwable $e) {
             $this->db->rollBack();
@@ -203,7 +220,6 @@ class DedupCollidedSchemasCommand extends Command
         return $newId;
 
     }//end splitOne()
-
 
     /**
      * Perform the split inside an open transaction.
@@ -231,7 +247,7 @@ class DedupCollidedSchemasCommand extends Command
         $newId = (int) $this->db->lastInsertId('oc_openregister_schemas');
 
         // 2. Repoint the register: replace the shared id with the clone, in
-        //    whichever shape (string or number) the array happens to use.
+        // whichever shape (string or number) the array happens to use.
         $this->db->executeStatement(
             // Every parameter is CAST explicitly: Postgres cannot infer the
             // type of a bare placeholder inside to_jsonb() and fails with
@@ -254,9 +270,9 @@ class DedupCollidedSchemasCommand extends Command
         );
 
         // 3. Object storage is already per register+schema, so the rows only
-        //    need the table to follow the new schema id — no row migration.
-        $old = 'oc_openregister_table_'.$registerId.'_'.$schemaId;
-        $new = 'oc_openregister_table_'.$registerId.'_'.$newId;
+        // need the table to follow the new schema id — no row migration.
+        $old    = 'oc_openregister_table_'.$registerId.'_'.$schemaId;
+        $new    = 'oc_openregister_table_'.$registerId.'_'.$newId;
         $exists = $this->db->executeQuery(
             'SELECT 1 FROM pg_tables WHERE schemaname = current_schema() AND tablename = :t',
             ['t' => $old]
@@ -278,8 +294,7 @@ class DedupCollidedSchemasCommand extends Command
 
         return $newId;
 
-    }//end splitOne()
-
+    }//end splitOneLocked()
 
     /**
      * Execute the command.
@@ -295,7 +310,7 @@ class DedupCollidedSchemasCommand extends Command
         $register = $input->getOption('register');
         $schema   = $input->getOption('schema');
 
-        $rows = $this->findCollisions($register, $schema);
+        $rows = $this->findCollisions(registerSlug: $register, schemaId: $schema);
         if (empty($rows) === true) {
             $output->writeln('<info>No collided schemas found.</info>');
             return 0;
@@ -314,7 +329,7 @@ class DedupCollidedSchemasCommand extends Command
         $split  = 0;
         $failed = 0;
         foreach ($groups as $schemaId => $group) {
-            $owner = $this->pickOwner($group);
+            $owner = $this->pickOwner(group: $group);
             $output->writeln(
                 sprintf(
                     "\nschema #%d <info>%s</info> (application=%s) — owner: register #%s %s",
@@ -338,7 +353,11 @@ class DedupCollidedSchemasCommand extends Command
                 }
 
                 try {
-                    $newId = $this->splitOne((int) $schemaId, (int) $row['register_id'], $row['register_app']);
+                    $newId = $this->splitOne(
+                        schemaId: (int) $schemaId,
+                        registerId: (int) $row['register_id'],
+                        registerApp: $row['register_app']
+                    );
                     $output->writeln(
                         sprintf('    <info>split</info> -> register #%s %s now owns schema #%d', $row['register_id'], $row['register_slug'], $newId)
                     );
@@ -350,11 +369,20 @@ class DedupCollidedSchemasCommand extends Command
             }//end foreach
         }//end foreach
 
-        $output->writeln(sprintf("\n%s %d register/schema pair(s); %d failure(s).", ($apply === true ? 'Split' : 'Would split'), $split, $failed));
+        $verb = 'Would split';
+        if ($apply === true) {
+            $verb = 'Split';
+        }
 
-        return ($failed === 0 ? 0 : 1);
+        $output->writeln(
+            sprintf("\n%s %d register/schema pair(s); %d failure(s).", $verb, $split, $failed)
+        );
+
+        if ($failed === 0) {
+            return 0;
+        }
+
+        return 1;
 
     }//end execute()
-
-
 }//end class
