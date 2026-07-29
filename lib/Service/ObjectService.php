@@ -1169,6 +1169,8 @@ class ObjectService
         );
 
         // Check permissions for CREATE or UPDATE operation.
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:context+uuid');
+
         $this->checkSavePermissions(
             uuid: $uuid,
             _rbac: $_rbac
@@ -1192,6 +1194,8 @@ class ObjectService
         $uuidWasNull = ($uuid === null);
 
         // Handle cascading relations while preserving context.
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions');
+
         [$object, $uuid] = $this->handleCascadingWithContextPreservation(
             object: $object,
             uuid: $uuid
