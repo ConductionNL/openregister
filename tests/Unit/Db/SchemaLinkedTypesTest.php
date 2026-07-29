@@ -103,8 +103,37 @@ class SchemaLinkedTypesTest extends TestCase
     }//end testSingleLegacyLinkedTypeAccepted()
 
     /**
-     * An unknown id (no legacy + no registry registration) is rejected
-     * with a clear error message that lists the accepted vocabulary.
+     * Invoke the private validateLinkedTypesValue() directly via reflection.
+     *
+     * `setConfiguration()` no longer lets a bad `linkedTypes` value escape as
+     * a thrown exception (see the class-level note below) — this seam exists
+     * so the validator's own rejection logic and message wording stay
+     * directly covered per the `@covers` annotation above.
+     *
+     * @param mixed $value The raw linkedTypes value to validate.
+     *
+     * @throws InvalidArgumentException Propagated from the validator.
+     *
+     * @return void
+     */
+    private function invokeValidateLinkedTypesValue(mixed $value): void
+    {
+        $method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
+        $method->setAccessible(true);
+        $method->invoke($this->schema, $value);
+    }//end invokeValidateLinkedTypesValue()
+
+    /**
+     * An unknown id (no legacy + no registry registration) is rejected by
+     * the validator with a clear error message that lists the accepted
+     * vocabulary.
+     *
+     * NOTE: as of the #419 per-key configuration isolation fix,
+     * `setConfiguration()` itself no longer lets this exception escape — it
+     * catches it, drops just the `linkedTypes` key, and keeps the rest of
+     * the configuration (see `testUnknownLinkedTypeDroppedNotThrown()` for
+     * that public-surface behaviour). This test exercises the validator
+     * directly via reflection so the rejection message itself stays covered.
      *
      * @return void
      */
@@ -113,7 +142,7 @@ class SchemaLinkedTypesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid linked type 'totally-not-a-real-thing'");
 
-        $this->schema->setConfiguration(['linkedTypes' => ['totally-not-a-real-thing']]);
+        $this->invokeValidateLinkedTypesValue(['totally-not-a-real-thing']);
     }//end testUnknownLinkedTypeRejected()
 
     /**
@@ -126,7 +155,7 @@ class SchemaLinkedTypesTest extends TestCase
     public function testUnknownLinkedTypeErrorListsValidValues(): void
     {
         try {
-            $this->schema->setConfiguration(['linkedTypes' => ['bogus']]);
+            $this->invokeValidateLinkedTypesValue(['bogus']);
             $this->fail('Expected InvalidArgumentException');
         } catch (InvalidArgumentException $e) {
             $message = $e->getMessage();
@@ -142,8 +171,36 @@ class SchemaLinkedTypesTest extends TestCase
     }//end testUnknownLinkedTypeErrorListsValidValues()
 
     /**
+     * Public-surface behaviour (#419): an unknown `linkedTypes` id no longer
+     * fails the whole `setConfiguration()` call — it is silently dropped
+     * (per-key isolation, so one bad key never loses the rest of the
+     * configuration on app import) and recorded for
+     * `consumeDroppedAnnotationKeys()` so the caller can log it.
+     *
+     * @return void
+     */
+    public function testUnknownLinkedTypeDroppedNotThrown(): void
+    {
+        $this->schema->setConfiguration(
+            [
+                'linkedTypes'     => ['totally-not-a-real-thing'],
+                'objectNameField' => 'name',
+            ]
+        );
+
+        $config = $this->schema->getConfiguration();
+        $this->assertIsArray($config);
+        $this->assertArrayNotHasKey('linkedTypes', $config, 'Invalid linkedTypes must be dropped, not persisted.');
+        $this->assertSame('name', $config['objectNameField'], 'Other keys must survive per-key isolation.');
+        $this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
+    }//end testUnknownLinkedTypeDroppedNotThrown()
+
+    /**
      * `linkedTypes` MUST be an array — strings and other scalars are
      * rejected at the configuration-validator layer.
+     *
+     * See {@see testUnknownLinkedTypeRejected()} for why this goes through
+     * the validator directly rather than `setConfiguration()`.
      *
      * @return void
      */
@@ -152,12 +209,15 @@ class SchemaLinkedTypesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("'linkedTypes' must be an array");
 
-        $this->schema->setConfiguration(['linkedTypes' => 'files']);
+        $this->invokeValidateLinkedTypesValue('files');
     }//end testLinkedTypesMustBeAnArray()
 
     /**
      * Each entry in the array MUST be a string. Numeric / boolean
      * payloads are rejected.
+     *
+     * See {@see testUnknownLinkedTypeRejected()} for why this goes through
+     * the validator directly rather than `setConfiguration()`.
      *
      * @return void
      */
@@ -166,7 +226,7 @@ class SchemaLinkedTypesTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("All values in 'linkedTypes' must be strings");
 
-        $this->schema->setConfiguration(['linkedTypes' => ['files', 42]]);
+        $this->invokeValidateLinkedTypesValue(['files', 42]);
     }//end testLinkedTypeEntriesMustBeStrings()
 
     /**
@@ -205,9 +265,13 @@ class SchemaLinkedTypesTest extends TestCase
     }//end testEmptyLinkedTypesArrayAccepted()
 
     /**
-     * Mixing legacy ids with one unknown id rejects the whole payload —
-     * partial-acceptance would let bogus values slip into stored
-     * configuration. Defence in depth.
+     * Mixing legacy ids with one unknown id rejects the whole `linkedTypes`
+     * array from the validator — partial-acceptance would let bogus values
+     * slip into stored configuration. Defence in depth.
+     *
+     * See {@see testUnknownLinkedTypeRejected()} for why this goes through
+     * the validator directly rather than `setConfiguration()` — the public
+     * surface drops the offending key instead of throwing (#419).
      *
      * @return void
      */
@@ -215,6 +279,6 @@ class SchemaLinkedTypesTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        $this->schema->setConfiguration(['linkedTypes' => ['files', 'bogus']]);
+        $this->invokeValidateLinkedTypesValue(['files', 'bogus']);
     }//end testMixedValidAndInvalidLinkedTypesRejected()
 }//end class

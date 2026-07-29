@@ -77,6 +77,9 @@ class Bootstrap
     private const GENERIC_SETTINGS_SECTION       = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
     private const GENERIC_DEEPLINK_LISTENER      = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
+    private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
+    private const REGISTER_CONFIG_RESOLVER       = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
+
     private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
     private const OBSERVABILITY_EXECUTOR        = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
     private const OBSERVABILITY_METRICS_ENGINE  = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
@@ -283,6 +286,37 @@ class Bootstrap
         };
         $context->registerService(self::GENERIC_ACTION_AUTH_SERVICE, $actionAuthFactory);
         $context->registerService($serviceNs.'\\ActionAuthService', $actionAuthFactory);
+
+        // ADR-066 settings-plane consumables. Appended AFTER the pre-existing
+        // registrations on purpose — the AppHost bootstrap load-order incident
+        // (listeners killed by a reorder) makes registration order here part of
+        // the contract: never reorder, only append. Both are lazy closures, so
+        // a disabled OpenRegister still never fatals NC bootstrap.
+        $settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
+            $class = self::GENERIC_SETTINGS_PLANE_SERVICE;
+            return new $class(
+                appId: $appId,
+                appConfig: $c->get('OCP\\IAppConfig'),
+                appManager: $c->get('OCP\\App\\IAppManager'),
+                container: $c,
+                groupManager: $c->get('OCP\\IGroupManager'),
+                userSession: $c->get('OCP\\IUserSession'),
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            );
+        };
+        $context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
+
+        $registerConfigResolverFactory = static function (ContainerInterface $c) use ($appId) {
+            $class = self::REGISTER_CONFIG_RESOLVER;
+            return new $class(
+                appId: $appId,
+                appManager: $c->get('OCP\\App\\IAppManager'),
+                container: $c,
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            );
+        };
+        $context->registerService(self::REGISTER_CONFIG_RESOLVER, $registerConfigResolverFactory);
+        $context->registerService($serviceNs.'\\RegisterConfigResolver', $registerConfigResolverFactory);
     }//end registerServices()
 
     /**

@@ -754,7 +754,7 @@ class ViewsController extends Controller
      *
      * @return JSONResponse JSON response with kanban board data or error
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
      */
     public function kanban(string $id): JSONResponse
     {
@@ -826,7 +826,7 @@ class ViewsController extends Controller
      *
      * @return JSONResponse JSON response with calendar range data or error
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
      */
     public function calendar(string $id): JSONResponse
     {

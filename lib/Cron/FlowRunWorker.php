@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Cron;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -69,23 +70,25 @@ class FlowRunWorker extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory    $time      Job scheduling clock.
-     * @param FlowRunMapper   $mapper    Reads and prunes runs.
-     * @param FlowRunService  $runner    Executes a run.
-     * @param IAppConfig      $appConfig Reads the retention setting.
-     * @param LoggerInterface $logger    The logger.
+     * @param ITimeFactory         $time      Job scheduling clock.
+     * @param FlowRunMapper        $mapper    Reads and prunes runs.
+     * @param FlowRunService       $runner    Executes a run.
+     * @param FlowResolverRegistry $resolvers Loads a run's flow and subject.
+     * @param IAppConfig           $appConfig Reads the retention setting.
+     * @param LoggerInterface      $logger    The logger.
      */
     public function __construct(
         ITimeFactory $time,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
+        private readonly \OCA\OpenRegister\Service\Flow\FlowResolverRegistry $resolvers,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(time: $time);
         // Every minute: a Wait step's resolution is bounded by this, and a
         // queued run should feel immediate to the person who triggered it.
-        $this->setInterval(interval: 60);
+        $this->setInterval(seconds: 60);
 
     }//end __construct()
 
@@ -128,14 +131,52 @@ class FlowRunWorker extends TimedJob
     private function advance(FlowRun $run): void
     {
         try {
-            // TODO(#2067): resolve the flow document and the subject object.
-            // Both arrive with the flow-document store; until then a claimed
-            // run is left for the next pass rather than being failed, so no
-            // run is lost between these two changes landing.
-            $this->logger->debug(
-                message: '[FlowRunWorker] Run awaiting the flow-document store',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'run' => $run->getUuid()]
-            );
+            $flow = $this->resolvers->resolveFlow((string) $run->getFlowId());
+            if ($flow === null) {
+                // No installed app owns this flow — it was deleted, or the app
+                // that stored it was removed. The run cannot proceed; fail it
+                // with a clear reason rather than leaving it queued forever.
+                $run->setStatus(FlowRun::STATUS_FAILED);
+                $run->setError(sprintf('No app provides flow "%s" (deleted, or its app removed?).', $run->getFlowId()));
+                $this->mapper->update($run);
+                return;
+            }
+
+            // A run may legitimately have no subject (a manual or webhook run
+            // seeded from its payload). Only resolve one when the run names it.
+            $subject = null;
+            if (trim((string) $run->getSubjectUuid()) !== '') {
+                $subject = $this->resolvers->resolveSubject(
+                    (string) $run->getSubjectUuid(),
+                    (string) $run->getSubjectRegister(),
+                    (string) $run->getSubjectSchema()
+                );
+
+                if ($subject === null) {
+                    $run->setStatus(FlowRun::STATUS_FAILED);
+                    $run->setError(sprintf('Subject "%s" no longer exists.', $run->getSubjectUuid()));
+                    $this->mapper->update($run);
+                    return;
+                }
+            }
+
+            // A subjectless run still needs an object to carry the marking; a
+            // bare holder does, since the marking store keeps the marking on the
+            // run itself ({@see FlowRunMarkingStore}). Such a run is seeded from
+            // its payload instead of an object: a non-object trigger (a file, a
+            // user) puts what it is about under `payload` on the run context, and
+            // that becomes the first item, so the flow reads a file's path or a
+            // user's id exactly as it would an object's fields.
+            $seed = null;
+            if ($subject === null) {
+                $subject = new \stdClass();
+                $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
+                if ($payload !== []) {
+                    $seed = [FlowItems::item(json: $payload)];
+                }
+            }
+
+            $this->runner->execute(run: $run, flow: $flow, subject: $subject, seedItems: $seed);
         } catch (Throwable $e) {
             $this->logger->error(
                 message: '[FlowRunWorker] Failed to advance a run',

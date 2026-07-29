@@ -60,8 +60,8 @@ class GenericSettingsControllerTest extends TestCase
 
     public function testCreateAndLoadAreFullAdminOnly(): void
     {
-        // create()/load() carry NO NoAdminRequired attribute → NC default full-admin gate.
-        foreach (['create', 'load'] as $method) {
+        // create()/update()/load() carry NO NoAdminRequired attribute → NC default full-admin gate.
+        foreach (['create', 'update', 'load'] as $method) {
             $rm    = new ReflectionMethod(GenericSettingsController::class, $method);
             $attrs = array_map(static fn ($a) => $a->getName(), $rm->getAttributes());
             $this->assertNotContains(

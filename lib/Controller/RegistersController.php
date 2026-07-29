@@ -485,34 +485,56 @@ class RegistersController extends Controller
      */
     public function show($id): JSONResponse
     {
-        $extend = $this->request->getParam(key: '_extend', default: []);
-        if (is_string($extend) === true) {
-            $extend = [$extend];
-        }
+        try {
+            $extend = $this->request->getParam(key: '_extend', default: []);
+            if (is_string($extend) === true) {
+                $extend = [$extend];
+            }
 
-        $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
+            $register = $this->registerService->find(id: $id, _extend: [], _multitenancy: false);
 
-        // Read-visibility guard (@PublicPage): an anonymous caller may only view
-        // a register whose RBAC authorization grants read access to the `public`
-        // group. Derived from server-side authorization rules, never from
-        // client-supplied parameters.
-        if ($this->isAnonymousRequest() === true
-            && $this->isPublicReadable(authorization: $register->getAuthorization()) === false
-        ) {
-            return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
-        }
+            // Read-visibility guard (@PublicPage): an anonymous caller may only view
+            // a register whose RBAC authorization grants read access to the `public`
+            // group. Derived from server-side authorization rules, never from
+            // client-supplied parameters.
+            if ($this->isAnonymousRequest() === true
+                && $this->isPublicReadable(authorization: $register->getAuthorization()) === false
+            ) {
+                return new JSONResponse(data: ['error' => 'Authentication required'], statusCode: 401);
+            }
 
-        $registerArr = $register->jsonSerialize();
-        // If '@self.stats' is requested, attach statistics to the register.
-        if (in_array('@self.stats', $extend, true) === true) {
-            $registerArr['stats'] = [
-                'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
-                'logs'    => $this->auditTrailMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
-                'files'   => [ 'total' => 0, 'size' => 0 ],
-            ];
-        }
+            $registerArr = $register->jsonSerialize();
+            // If '@self.stats' is requested, attach statistics to the register.
+            if (in_array('@self.stats', $extend, true) === true) {
+                $registerArr['stats'] = [
+                    'objects' => $this->objectEntityMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
+                    'logs'    => $this->auditTrailMapper->getStatistics(registerId: $registerArr['id'], schemaId: null),
+                    'files'   => [ 'total' => 0, 'size' => 0 ],
+                ];
+            }
 
-        return new JSONResponse(data: $registerArr);
+            return new JSONResponse(data: $registerArr);
+        } catch (DoesNotExistException $e) {
+            // Unknown id/uuid/slug — a clean 404 JSON error, not an uncaught
+            // exception falling through to Nextcloud's HTML error template
+            // (caught live via the openregister-register-resolver Newman
+            // collection: GET /api/registers/{unknown-slug} was returning a
+            // 500 HTML page instead of a JSON 404, mirroring the pattern
+            // SchemasController::show() already guards against).
+            return new JSONResponse(data: ['error' => 'Register not found'], statusCode: 404);
+        } catch (Exception $e) {
+            $this->logger->error(
+                message: '[RegistersController] Failed to retrieve register',
+                context: [
+                    'file'          => __FILE__,
+                    'line'          => __LINE__,
+                    'register_id'   => $id,
+                    'error_message' => $e->getMessage(),
+                ]
+            );
+
+            return new JSONResponse(data: ['error' => 'Failed to retrieve register: '.$e->getMessage()], statusCode: 500);
+        }//end try
     }//end show()
 
     /**

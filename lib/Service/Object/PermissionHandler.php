@@ -1958,6 +1958,22 @@ class PermissionHandler
      * Uses RegisterMapper::getFirstRegisterWithSchema() to find the register
      * that contains the given schema.
      *
+     * The register is loaded with multitenancy and RBAC scoping DISABLED. This
+     * is an authorization-policy lookup, not a tenant-scoped data read: we only
+     * need the register entity to read its authorization cascade so the caller
+     * can make a security decision. The sibling id lookup
+     * (getFirstRegisterWithSchema → getAllRegisterIdsWithSchema) is already
+     * unscoped and global by design, so re-applying the active-organisation
+     * filter here would make a legitimately-linked register unresolvable purely
+     * because the caller's active-organisation pointer differs from the
+     * register's organisation — throwing DoesNotExistException, which the catch
+     * below re-throws as AuthorizationUnresolvableException and FAIL-CLOSES,
+     * denying even open-schema access for a cross-org (or transient
+     * active-org-changed) session. Object-row multitenancy isolation is enforced
+     * separately on the data reads (organisation column filters + the RBAC
+     * handler's active-organisation condition), so resolving the register's
+     * policy unscoped here does NOT weaken tenant isolation.
+     *
      * @param Schema $schema The schema to find the register for.
      *
      * @return Register|null The parent register, or null if not found.
@@ -1973,7 +1989,7 @@ class PermissionHandler
                 return null;
             }
 
-            return $registerMapper->find($registerId);
+            return $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
         } catch (\Throwable $e) {
             // Fail-closed: this method logged but still returned null, and null here
             // means "schema belongs to no register" -> open. Logging a fail-open does
@@ -2027,8 +2043,14 @@ class PermissionHandler
 
         try {
             $registerMapper = $this->container->get(RegisterMapper::class);
-            $register       = $registerMapper->find($registerId);
-            $auth           = $register->getAuthorization();
+            // Multitenancy/RBAC scoping DISABLED: this loads the register purely to
+            // read its authorization + configuration policy for a security decision.
+            // Org-scoping this lookup would make a legitimate register unresolvable
+            // whenever the caller's active-organisation pointer differs from the
+            // register's organisation, fail-closing on legitimate access. Tenant
+            // isolation of object rows is enforced separately on the data reads.
+            $register = $registerMapper->find(id: $registerId, _rbac: false, _multitenancy: false);
+            $auth     = $register->getAuthorization();
 
             $this->cachedRegisterAuth[$registerId]   = $auth;
             $this->cachedRegisterConfig[$registerId] = $register->getConfiguration();
