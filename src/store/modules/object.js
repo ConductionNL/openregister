@@ -63,6 +63,53 @@ function openregisterObjectPlugin() {
 
 		actions: {
 			/**
+			 * Soft-delete several objects of the current register/schema in one action.
+			 *
+			 * Called by MassDeleteObject.vue and SearchIndex.vue. Those call sites
+			 * existed while this method did NOT, so `objectStore.massDeleteObject`
+			 * was undefined and the bulk-delete confirm button threw a TypeError
+			 * before any request was made — the modal simply never progressed.
+			 *
+			 * Delegates to the package store's `deleteObjects(type, ids)`, whose
+			 * `{ successfulIds, failedIds }` return shape is exactly what the
+			 * callers already destructure.
+			 *
+			 * @param {Array<string>} ids The object ids to delete.
+			 *
+			 * @return {Promise<{successfulIds: Array<string>, failedIds: Array<string>}>} Per-id outcome.
+			 *
+			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (deleteObjects); the delete contract is owned by the shared library, not this app.
+			 */
+			async massDeleteObject(ids = []) {
+				const type = getCurrentType(getActivePinia())
+				if (!type) {
+					throw new Error('Register and schema are required.')
+				}
+
+				// Normalise whatever the call sites hand over. They are not
+				// consistent: some map `selectedObjects` to `obj.id`, some pass the
+				// objects themselves, and an OpenRegister object carries its id both
+				// top-level and under `@self.id`. Anything falsy MUST be dropped —
+				// the package store's `_buildUrl(type, id)` appends `/${id}` only
+				// `if (id)`, so an undefined id silently produces a DELETE against
+				// the COLLECTION url (`/api/objects/27/116`) instead of one object.
+				// That is not a no-op: it is a 405 per selected row.
+				const resolved = (Array.isArray(ids) ? ids : [ids])
+					.map((entry) => {
+						if (entry === null || entry === undefined) return null
+						if (typeof entry === 'string' || typeof entry === 'number') return String(entry)
+						return entry.id ?? entry['@self']?.id ?? null
+					})
+					.filter((id) => id !== null && id !== '')
+
+				if (resolved.length === 0) {
+					throw new Error('No deletable object ids could be resolved from the selection.')
+				}
+
+				return await this.deleteObjects(type, resolved)
+			},
+
+			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
 			 * @param {object} [options] Fetch options: register, schema, limit, page, search
 			 *
