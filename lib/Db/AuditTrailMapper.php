@@ -1453,7 +1453,9 @@ class AuditTrailMapper extends QBMapper
                 $qb->andWhere($qb->expr()->eq('schema', $schemaParam));
             }
 
-            $results = $qb->executeQuery()->fetchAll();
+            $result  = $qb->executeQuery();
+            $results = $result->fetchAll();
+            $result->closeCursor();
 
             $total = 0;
             foreach ($results as $row) {
@@ -1468,6 +1470,17 @@ class AuditTrailMapper extends QBMapper
 
             return ['total' => $total] + $counts;
         } catch (\Exception $e) {
+            // Zeros are indistinguishable from an empty system in the UI, so the
+            // failure has to be traceable in the log.
+            $this->logger->error(
+                'Failed to count audit trails by action: '.$e->getMessage(),
+                [
+                    'exception'  => $e,
+                    'registerId' => $registerId,
+                    'schemaId'   => $schemaId,
+                ]
+            );
+
             return ['total' => 0] + $counts;
         }//end try
     }//end getActionCounts()

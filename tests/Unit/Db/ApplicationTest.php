@@ -463,11 +463,24 @@ class ApplicationTest extends TestCase
 
     public function testSetQuotaIgnoresInvalidJsonString(): void
     {
+        $this->application->setStorageQuota(1024);
+        $this->application->setBandwidthQuota(2048);
+        $this->application->setRequestQuota(16);
+
+        // An undecodable payload is a no-op, not a clear-all.
         $this->application->setQuota('not json');
 
-        $this->assertNull($this->application->getStorageQuota());
-        $this->assertNull($this->application->getBandwidthQuota());
-        $this->assertNull($this->application->getRequestQuota());
+        $this->assertSame(1024, $this->application->getStorageQuota());
+        $this->assertSame(2048, $this->application->getBandwidthQuota());
+        $this->assertSame(16, $this->application->getRequestQuota());
+    }
+
+    public function testSetQuotaFloorsNegativeAllocationsAtZero(): void
+    {
+        $this->application->setQuota(['users' => -5, 'storage' => '-1024']);
+
+        $this->assertSame(0, $this->application->getUserQuota());
+        $this->assertSame(0, $this->application->getStorageQuota());
     }
 
     public function testSetQuotaReturnsSelfForChaining(): void

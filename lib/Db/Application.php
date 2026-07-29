@@ -570,12 +570,15 @@ class Application extends Entity implements JsonSerializable
     public function setQuota(array|string|null $quota): static
     {
         // Handle JSON string from the database or request body (type safety).
+        // An undecodable string is a no-op: only an explicit null clears the
+        // allocations, so a malformed payload cannot wipe what is stored.
         if (is_string($quota) === true) {
             $decoded = json_decode($quota, true);
-            $quota   = null;
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded) === true) {
-                $quota = $decoded;
+            if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
+                return $this;
             }
+
+            $quota = $decoded;
         }
 
         $setters = [
@@ -599,9 +602,11 @@ class Application extends Entity implements JsonSerializable
             }
 
             // A non-numeric allocation means unlimited, same as an absent one.
+            // A negative allocation is meaningless, so it floors at zero
+            // (nothing allowed) rather than storing a value no check can honour.
             $value = null;
             if (is_numeric($quota[$key]) === true) {
-                $value = (int) $quota[$key];
+                $value = max(0, (int) $quota[$key]);
             }
 
             $this->$setter($value);
