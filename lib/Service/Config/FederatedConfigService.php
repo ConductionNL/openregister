@@ -186,6 +186,7 @@ class FederatedConfigService
      * @param string $path         The path within the repo for the bundle file.
      * @param string $credentialId The broker credential id custodying the GitHub token.
      * @param string $branch       The branch to publish onto.
+     * @param bool   $private      Whether a repo created on demand is private.
      *
      * @return array `{published: true, path, status}`.
      *

@@ -44,6 +44,17 @@ class FlowResolverRegistry
     private ?array $resolvers = null;
 
     /**
+     * Request-scoped memo of resolved flow documents, keyed by flow id.
+     *
+     * A miss is memoised as `null` just like a hit: "no app owns this flow" is
+     * an answer worth remembering, and it is the EXPENSIVE one — every resolver
+     * in the chain has to look and fail to produce it.
+     *
+     * @var array<string, array|null>
+     */
+    private array $flowMemo = [];
+
+    /**
      * Constructor.
      *
      * @param IEventDispatcher $dispatcher Dispatches the contribution event.
@@ -59,18 +70,35 @@ class FlowResolverRegistry
     /**
      * The flow document for an id, or null when no app owns it.
      *
+     * Memoised for the request. Resolution asks every registered resolver in
+     * turn, and each one that does not own the flow answers by looking the id
+     * up in its own register — so the cost is paid per resolver, per call, and
+     * an unowned flow pays the whole chain. `FlowTriggerService::fire()` calls
+     * this once per queued run and a save that cascades fires the same triggers
+     * again for each child, so the same id was being re-resolved several times
+     * inside one object write. Measured 2026-07-29: flow resolution was the
+     * bulk of the object-created dispatch, ~370-620ms per create.
+     *
      * @param string $flowId The flow id.
      *
      * @return array|null The flow document.
      *
      * @spec openspec/changes/or-flow-triggers/specs/flow-triggers/spec.md
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
      */
     public function resolveFlow(string $flowId): ?array
     {
+        if (array_key_exists($flowId, $this->flowMemo) === true) {
+            return $this->flowMemo[$flowId];
+        }
+
+        $this->flowMemo[$flowId] = null;
+
         foreach ($this->all() as $resolver) {
             try {
                 $flow = $resolver->resolveFlow($flowId);
                 if ($flow !== null) {
+                    $this->flowMemo[$flowId] = $flow;
                     return $flow;
                 }
             } catch (\Throwable $e) {

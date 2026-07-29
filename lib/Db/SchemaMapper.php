@@ -165,6 +165,26 @@ class SchemaMapper extends QBMapper
     private array $findCache = [];
 
     /**
+     * Read-attribution counters, keyed by "<mapper method>|<caller signature>".
+     *
+     * Only populated when {@see self::$perfTrace} is on. Static so the picture
+     * spans every mapper instance in the request.
+     *
+     * @var array<string, int>
+     */
+    private static array $perfCounts = [];
+
+    /**
+     * Whether read attribution is on: null until resolved, then a bool.
+     *
+     * Resolved once per process — reading app config per schema read would
+     * itself be one of the reads we are trying to count.
+     *
+     * @var boolean|null
+     */
+    private static ?bool $perfTrace = null;
+
+    /**
      * User session for current user
      *
      * Used to get current user context for RBAC and multi-tenancy.
@@ -226,6 +246,69 @@ class SchemaMapper extends QBMapper
     }//end __construct()
 
     /**
+     * Record one schema read against its caller, when attribution is enabled.
+     *
+     * A single object create was measured issuing 5,135 sequential scans of
+     * `oc_openregister_schemas` (2026-07-28). The count alone does not say
+     * which path is responsible, and the fix differs per path — a cache key
+     * that is too specific is a different repair from an uncached sibling
+     * method. This records `<mapper method>|<caller signature>` so the answer
+     * is measured rather than guessed.
+     *
+     * Off by default and gated on `openregister perf_trace_schema_reads`,
+     * resolved once per process: reading app config on every schema read would
+     * itself be one of the reads being counted.
+     *
+     * @param string $method The mapper method issuing the read.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+     */
+    private function traceRead(string $method): void
+    {
+        if (self::$perfTrace === null) {
+            self::$perfTrace = ($this->appConfig->getValueString('openregister', 'perf_trace_schema_reads', '') === '1');
+            if (self::$perfTrace === true) {
+                register_shutdown_function(
+                    static function (): void {
+                        if (empty(self::$perfCounts) === true) {
+                            return;
+                        }
+
+                        @file_put_contents(
+                            '/tmp/or-schema-reads.jsonl',
+                            json_encode(self::$perfCounts).PHP_EOL,
+                            (FILE_APPEND | LOCK_EX)
+                        );
+                        self::$perfCounts = [];
+                    }
+                );
+            }
+        }
+
+        if (self::$perfTrace === false) {
+            return;
+        }
+
+        // Four frames past this one is enough to name the responsible path
+        // without paying for a full backtrace on every read.
+        $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
+        $sig    = [];
+        foreach (array_slice($frames, 2, 4) as $frame) {
+            $sig[] = (($frame['class'] ?? '').($frame['type'] ?? '').($frame['function'] ?? '?'));
+        }
+
+        $key = $method.'|'.implode('<', $sig);
+        if (isset(self::$perfCounts[$key]) === false) {
+            self::$perfCounts[$key] = 0;
+        }
+
+        self::$perfCounts[$key]++;
+
+    }//end traceRead()
+
+    /**
      * Finds a schema by id, with optional extension for statistics
      *
      * This method automatically resolves schema extensions. If the schema has
@@ -274,6 +357,8 @@ class SchemaMapper extends QBMapper
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
         }
+
+        $this->traceRead(method: 'find');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -383,6 +468,8 @@ class SchemaMapper extends QBMapper
      */
     public function findByApplicationAndSlug(string $slug, string $application): ?Schema
     {
+        $this->traceRead(method: 'findByApplicationAndSlug');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas')
@@ -436,6 +523,8 @@ class SchemaMapper extends QBMapper
         if ($ids === []) {
             return null;
         }
+
+        $this->traceRead(method: 'findBySlugInIds');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -550,6 +639,8 @@ class SchemaMapper extends QBMapper
         // list exceeds that. This instance already holds 1,233 schemas, so the
         // registers-with-stats endpoint tripped it on every request. Chunk it.
         foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $this->traceRead(method: 'findMultipleOptimized');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from('openregister_schemas')
@@ -567,7 +658,7 @@ class SchemaMapper extends QBMapper
             }
 
             $result->closeCursor();
-        }
+        }//end foreach
 
         return $schemas;
     }//end findMultipleOptimized()
@@ -597,6 +688,8 @@ class SchemaMapper extends QBMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        $this->traceRead(method: 'findBySlug');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -664,6 +757,8 @@ class SchemaMapper extends QBMapper
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
         }
+
+        $this->traceRead(method: 'findAll');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -1677,6 +1772,8 @@ class SchemaMapper extends QBMapper
         $this->verifyOrganisationAccess(entity: $entity);
 
         // Fetch old entity directly without organisation filter for event comparison.
+        $this->traceRead(method: 'update');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas')
@@ -2457,6 +2554,8 @@ class SchemaMapper extends QBMapper
         // Get the raw schema data from database to see what properties it actually stores.
         // This is necessary because the resolved schema has merged properties.
         try {
+            $this->traceRead(method: 'getPropertySourceMetadata');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('properties')
                 ->from('openregister_schemas')
@@ -2643,6 +2742,8 @@ class SchemaMapper extends QBMapper
     private function loadSchema(string|int $identifier): Schema
     {
         try {
+            $this->traceRead(method: 'loadSchema');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from('openregister_schemas')
@@ -3781,6 +3882,8 @@ class SchemaMapper extends QBMapper
      */
     public function findNonSearchableIds(): array
     {
+        $this->traceRead(method: 'findNonSearchableIds');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_schemas')
@@ -3815,6 +3918,8 @@ class SchemaMapper extends QBMapper
      */
     public function findSearchableIds(): array
     {
+        $this->traceRead(method: 'findSearchableIds');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_schemas')

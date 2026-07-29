@@ -51,11 +51,12 @@ class FlowRunController extends Controller
     /**
      * Constructor.
      *
-     * @param string               $appName   The app id.
-     * @param IRequest             $request   The request.
-     * @param FlowRunMapper        $mapper    Reads runs.
-     * @param FlowRunService       $runner    Retries, requeues and runs.
-     * @param FlowResolverRegistry $resolvers Resolves a flow id to its document.
+     * @param string               $appName     The app id.
+     * @param IRequest             $request     The request.
+     * @param FlowRunMapper        $mapper      Reads runs.
+     * @param FlowRunService       $runner      Retries, requeues and runs.
+     * @param FlowResolverRegistry $resolvers   Resolves a flow id to its document.
+     * @param IUserSession         $userSession Attributes a retried run to the caller.
      */
     public function __construct(
         string $appName,
