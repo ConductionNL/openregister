@@ -163,6 +163,10 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
+		     the per-register uniqueness fix is preventive only, so pre-existing
+		     shared rows still need splitting. Reports only unless applied. -->
+		<command>OCA\OpenRegister\Command\DedupCollidedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>

@@ -108,6 +108,21 @@ class GenericSettingsController extends Controller
     }//end create()
 
     /**
+     * Update settings with the provided data — canonical ADR-066 write verb
+     * (`settings#update`, PUT /api/settings). Full admin required (no
+     * attribute). Same write path as {@see create()}, which remains for the
+     * fleet's legacy POST dialect.
+     *
+     * @return JSONResponse
+     *
+     * @spec openspec/changes/apphost-settings-plane/specs/apphost-settings-plane/spec.md — Requirement: Generic settings surface
+     */
+    public function update(): JSONResponse
+    {
+        return $this->create();
+    }//end update()
+
+    /**
      * Re-import the configuration from the app's register JSON. Full admin
      * required (no attribute). Forces a fresh import regardless of version.
      *
