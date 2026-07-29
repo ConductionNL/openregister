@@ -60,6 +60,47 @@ final class WritePhaseProbe
     private static array $phases = [];
 
     /**
+     * Absolute timestamps, in ms since the request began, keyed by label.
+     *
+     * @var array<string, float>
+     */
+    private static array $stamps = [];
+
+    /**
+     * Record how far into the request a named point was reached.
+     *
+     * Separate from {@see mark()} because these are ABSOLUTE offsets from
+     * `REQUEST_TIME_FLOAT`, not durations between marks: the question they
+     * answer is "how much of the request had already elapsed before our code
+     * ran at all", which is how the app-boot floor gets attributed instead of
+     * merely accepted.
+     *
+     * @param string $label The point being stamped.
+     *
+     * @return void
+     */
+    public static function stamp(string $label): void
+    {
+        if (self::$enabled === null) {
+            self::$enabled = @file_exists('/tmp/or-trace-write-phases');
+        }
+
+        if (self::$enabled === false) {
+            return;
+        }
+
+        $start = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
+        if ($start <= 0.0) {
+            return;
+        }
+
+        if (isset(self::$stamps[$label]) === false) {
+            self::$stamps[$label] = ((microtime(true) - $start) * 1000);
+        }
+
+    }//end stamp()
+
+    /**
      * Close the phase opened by the previous mark and open a new one.
      *
      * The FIRST mark in a save opens the timeline without recording anything;
@@ -111,6 +152,21 @@ final class WritePhaseProbe
         arsort(self::$phases);
         foreach (self::$phases as $name => $ms) {
             $line .= sprintf('  %s=%.0fms', $name, $ms);
+        }
+
+        $start = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
+        if ($start > 0.0) {
+            self::$stamps['flush'] = ((microtime(true) - $start) * 1000);
+        }
+
+        if (empty(self::$stamps) === false) {
+            asort(self::$stamps);
+            $line .= '  [at';
+            foreach (self::$stamps as $label => $ms) {
+                $line .= sprintf(' %s=%.0fms', $label, $ms);
+            }
+
+            $line .= ']';
         }
 
         if (function_exists('opcache_get_status') === true) {

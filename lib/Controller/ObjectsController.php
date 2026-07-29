@@ -2616,6 +2616,7 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.create.in');
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);

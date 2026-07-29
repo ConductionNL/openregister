@@ -413,6 +413,7 @@ class Application extends App implements IBootstrap
     public function register(IRegistrationContext $context): void
     {
         include_once __DIR__.'/../../vendor/autoload.php';
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.in');
 
         // Credential broker (credential-broker-service + credential-doriath-leaf):
         // bind the CredentialStore abstraction through the CredentialStoreResolver
@@ -3915,6 +3916,7 @@ class Application extends App implements IBootstrap
      */
     public function boot(IBootContext $context): void
     {
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.boot.in');
         // Dispatch the deep link registration event so consuming apps
         // (Procest, Pipelinq, etc.) can register their URL patterns.
         // DeepLinkRegistryService uses ContainerInterface for lazy mapper
@@ -3952,6 +3954,7 @@ class Application extends App implements IBootstrap
         // rejected with "violates the Content Security Policy". Adding
         // `worker-src 'self'` lets the same-origin SW register.
         $this->relaxCspForWebPushWorker(server: $server);
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.boot.out');
     }//end boot()
 
     /**
