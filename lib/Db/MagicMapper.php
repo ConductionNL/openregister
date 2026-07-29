@@ -5200,21 +5200,31 @@ class MagicMapper extends AbstractObjectMapper
      * It's useful for operations like lock/unlock where the caller doesn't know
      * which storage backend contains the object.
      *
-     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
-     * @param bool       $includeDeleted Whether to include deleted objects.
-     * @param bool       $_rbac          Whether to apply RBAC checks.
-     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     * @param string|int $identifier      Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted  Whether to include deleted objects.
+     * @param bool       $_rbac           Whether to apply RBAC checks.
+     * @param bool       $_multitenancy   Whether to apply multitenancy filtering.
+     * @param int|null   $registerIdScope Restrict the scan to one register's tables.
+     *                                    A caller that named a register has already
+     *                                    said where the object lives; widening the
+     *                                    search past it is never a correct answer,
+     *                                    and it is what makes this method cost
+     *                                    seconds. Null keeps the historic
+     *                                    everything-everywhere behaviour.
      *
      * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
      *               The found object with its register and schema context.
      *
      * @throws DoesNotExistException If object not found in any magic table.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
      */
     public function findAcrossAllMagicTables(
         string|int $identifier,
         bool $includeDeleted=false,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?int $registerIdScope=null
     ): array {
         $this->logger->debug(
             message: '[MagicMapper] findAcrossAllMagicTables: Starting search',
@@ -5227,6 +5237,26 @@ class MagicMapper extends AbstractObjectMapper
 
         // Live (non-orphaned) magic tables, keyed by unprefixed table name.
         $candidates = $this->getLiveMagicTables();
+
+        // A caller that named a register gets its tables ONLY. Scanning every
+        // register to answer "is this uuid one of mine?" is both wrong (another
+        // register's object is not an answer to that question) and ruinous: the
+        // union carries one branch per magic table, and on an instance with
+        // 2,728 of them that is 690 KB of SQL costing ~3.4s to PLAN before a
+        // single row is read. Measured 2026-07-29: this fallback, reached once
+        // per object create through the flow-resolver registry, was ~1.9s of a
+        // ~3.0s create — every resolver that does NOT own a flow paid a full
+        // instance-wide scan to say so.
+        if ($registerIdScope !== null) {
+            $scoped = [];
+            foreach ($candidates as $tableName => $meta) {
+                if ((int) $meta['registerId'] === $registerIdScope) {
+                    $scoped[$tableName] = $meta;
+                }
+            }
+
+            $candidates = $scoped;
+        }
 
         $this->logger->debug(
             message: '[MagicMapper] findAcrossAllMagicTables: Found magic tables',
@@ -8162,11 +8192,20 @@ class MagicMapper extends AbstractObjectMapper
             return $entity;
         }
 
+        // A register WITHOUT a schema still bounds the search: only that
+        // register's magic tables can hold the object. Passing it turns an
+        // instance-wide union into a handful of branches.
+        $scopeRegisterId = null;
+        if ($register !== null && $register->getId() !== null) {
+            $scopeRegisterId = (int) $register->getId();
+        }
+
         $result = $this->findAcrossAllMagicTables(
             identifier: $identifier,
             includeDeleted: $includeDeleted,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            registerIdScope: $scopeRegisterId
         );
         $result['object']->setSource('orm');
         return $result['object'];
@@ -8178,10 +8217,11 @@ class MagicMapper extends AbstractObjectMapper
      * Searches all magic tables to find an object by its identifier without
      * requiring register/schema context.
      *
-     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
-     * @param bool       $includeDeleted Whether to include deleted objects.
-     * @param bool       $_rbac          Whether to apply RBAC checks.
-     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     * @param string|int $identifier      Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted  Whether to include deleted objects.
+     * @param bool       $_rbac           Whether to apply RBAC checks.
+     * @param bool       $_multitenancy   Whether to apply multitenancy filtering.
+     * @param int|null   $registerIdScope Restrict the scan to one register's tables.
      *
      * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
      *
@@ -8195,13 +8235,15 @@ class MagicMapper extends AbstractObjectMapper
         // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
         bool $_rbac=true,
         // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?int $registerIdScope=null
     ): array {
         return $this->findAcrossAllMagicTables(
             identifier: $identifier,
             includeDeleted: $includeDeleted,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            registerIdScope: $registerIdScope
         );
     }//end findAcrossAllSources()
 
@@ -8380,7 +8422,9 @@ class MagicMapper extends AbstractObjectMapper
             throw new Exception('Cannot insert object without register and schema context');
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
         $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
 
         $this->logger->debug(
             message: '[MagicMapper] Dispatching ObjectCreatedEvent',
@@ -8390,10 +8434,90 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        if ($this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
 
         return $insertedEntity;
     }//end insert()
+
+    /**
+     * Hand the created-event off to a background job instead of dispatching it inline.
+     *
+     * `ObjectCreatedEvent` has roughly two dozen listeners across the fleet, and
+     * dispatched inline the caller waits for all of them. Measured 2026-07-29,
+     * that dispatch was 234-501 ms of a ~530 ms create, against a 76 ms insert.
+     * None of it is needed to tell the caller its object was saved.
+     *
+     * OPT-IN, and deliberately so. Deferring changes an observable contract: a
+     * 2xx stops meaning "and every side effect has been applied". A synchronous
+     * flow (`executionMode: sync`) in particular exists precisely so its effects
+     * land before the save returns, and deferring would silently break that
+     * promise. So this stays off until an instance decides it wants the trade,
+     * via `occ config:app:set openregister defer_object_events --value=1`.
+     *
+     * Returns false — meaning "dispatch it inline yourself" — whenever the
+     * deferral cannot be set up, so a misconfiguration degrades to the current
+     * behaviour rather than to silently losing every event.
+     *
+     * @param ObjectEntity  $entity   The object just inserted.
+     * @param Register|null $register Its register.
+     * @param Schema|null   $schema   Its schema.
+     *
+     * @return boolean True when the event was queued and must NOT be dispatched inline.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+     */
+    private function dispatchCreatedDeferred(
+        ObjectEntity $entity,
+        ?Register $register,
+        ?Schema $schema
+    ): bool {
+        if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+            return false;
+        }
+
+        $uuid = (string) $entity->getUuid();
+        if ($uuid === '') {
+            // Without an identifier the job cannot re-read the object, so there
+            // is nothing to defer TO. Dispatch inline.
+            return false;
+        }
+
+        try {
+            $jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
+            $jobList->add(
+                \OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+                [
+                    'uuid'       => $uuid,
+                    'registerId' => (int) ($register?->getId() ?? 0),
+                    'schemaId'   => (int) ($schema?->getId() ?? 0),
+                    'action'     => 'created',
+                    // The acting user travels WITH the job. A background job has
+                    // no session, and OpenRegister reads are organisation-filtered
+                    // against the session user, so a listener that asks "are there
+                    // active subscriptions?" from an unauthenticated context is
+                    // told "no" and silently does nothing. Verified 2026-07-29:
+                    // without this the deferred dispatch ran clean, logged nothing,
+                    // and produced ZERO CloudEvents where the inline path produced
+                    // one — a perfectly green no-op.
+                    'user'       => ($this->userSession->getUser()?->getUID() ?? ''),
+                ]
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[MagicMapper] Could not queue a deferred object event; dispatching inline instead: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            return false;
+        }//end try
+
+    }//end dispatchCreatedDeferred()
 
     /**
      * Update an existing object entity with event dispatching.

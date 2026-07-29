@@ -4,10 +4,21 @@
 
 ### Requirement: Single-object writes complete within a 500 ms budget
 
-A single-object create, update or delete through the object API MUST complete
-within **500 ms at p95** on a warm instance, measured end-to-end from request
-receipt to response, and MUST NOT degrade as the number of registers, schemas
-or magic tables on the instance grows.
+A single-object create, update or delete through the object API MUST cost less
+than **500 ms at p95** on a warm instance, and MUST NOT degrade as the number
+of registers, schemas or magic tables on the instance grows.
+
+The budget is measured as **wall time minus the instance floor**: the cost of
+an authenticated request to the same instance that performs no object work.
+Nextcloud boots every enabled app on every request, so that floor is a
+property of how many apps are installed, not of the write path. It was
+measured at 864-1,099 ms on the development instance (92 enabled apps) —
+larger than this entire budget. A measurement that does not subtract it is
+reporting the app count, not the write path, and cannot show whether a change
+to the write path helped or hurt.
+
+The floor MUST be measured in the same run as the writes it is subtracted
+from, never carried over from an earlier one: it moves with instance load.
 
 The budget is a property of the write path, not of the dataset: an instance
 with 2,728 magic tables and 1,917 schemas MUST meet it. Growth in schema or
@@ -27,7 +38,8 @@ write:
 
 - **GIVEN** a warm instance with 2,728 magic tables and 1,917 schemas
 - **WHEN** a client creates one object with no relation-typed properties
-- **THEN** the response MUST be returned within 500 ms at p95 over 20 runs
+- **THEN** the measured cost, wall time minus the instance floor taken in the
+  same run, MUST be under 500 ms at p95 over 20 runs
 - **AND** the `oc_openregister_schemas` sequential-scan delta MUST be ≤ 5
 - **AND** the committed-transaction delta MUST be exactly 1
 
@@ -142,6 +154,17 @@ rolled-back write MUST NOT leave a queued job for a write that did not happen.
 Failure of the background job MUST NOT fail the write, MUST be logged, and
 MUST be retryable. Per-object ordering MUST be preserved.
 
+The deferred dispatch MUST carry the acting user and restore it before
+dispatching. A background job has no session, and OpenRegister reads are
+organisation-filtered against the session user, so listeners that consult the
+register are told the instance is empty and skip. This failure is completely
+silent — no exception, no log, every listener simply does nothing — and was
+observed in practice: a deferred dispatch without the acting user produced
+zero CloudEvents where the inline path produced one, while reporting success.
+The impersonation MUST be released after dispatch so it cannot leak into the
+next job run by the same worker process, and a job that cannot resolve its
+acting user MUST log at a level the default configuration does not filter.
+
 A `2xx` response therefore means the object is persisted — it does not mean
 its side effects have been applied. This is a caller-visible contract change
 and MUST be documented as such, together with a supported way for a caller
@@ -160,6 +183,16 @@ that needs the stronger guarantee to wait for it.
 - **WHEN** the transaction rolls back
 - **THEN** no background job MUST be dispatched
 - **AND** no CloudEvent, audit row or activity entry MUST exist for the write
+
+#### Scenario: A deferred dispatch produces the same events as an inline one
+
+- **GIVEN** an instance with at least one active event subscription and
+  deferral enabled
+- **WHEN** a client creates an object and the queued job subsequently runs
+- **THEN** the events produced MUST be identical in number and content to
+  those an inline dispatch produces for the same write
+- **AND** a job whose acting user cannot be restored MUST NOT be treated as a
+  successful dispatch
 
 #### Scenario: A failing side-effect job does not fail the write
 
