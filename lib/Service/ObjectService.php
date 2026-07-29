@@ -679,9 +679,18 @@ class ObjectService
                     throw $e;
                 }
 
+                // Keep the caller's REGISTER while dropping only the schema.
+                // This fallback exists for a stale-or-sibling SCHEMA inside a
+                // register the caller correctly named — not for "look everywhere".
+                // Dropping the register too turned every legitimate miss into an
+                // instance-wide union across all 2,728 magic tables: 690 KB of
+                // SQL, ~3.4s of PLANNING alone. Measured 2026-07-29, that single
+                // widened fallback was ~1.9s of a ~3.0s object create, because
+                // the flow-resolver registry asks every resolver in turn and each
+                // non-owning one answered "not mine" the expensive way.
                 $object = $this->getHandler->find(
                     id: $id,
-                    register: null,
+                    register: $callRegister,
                     schema: null,
                     _extend: $_extend,
                     files: $files,
@@ -1145,6 +1154,8 @@ class ObjectService
         // stale "accessible" verdict from an earlier write.
         $this->fileService->resetFolderAccessRevalidationCache();
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('start');
+
         // Set register/schema context.
         $this->setContextFromParameters(
             register: $register,
@@ -1246,8 +1257,11 @@ class ObjectService
             );
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('prepare+cascade');
+
         // Validate if hard validation is enabled.
         $this->validateObjectIfRequired(object: $object);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('validate');
 
         // Wave-12 Fix 1: enforce JSON-Schema `readOnly: true` on UPDATE.
         // Skipped on CREATE (no prior value to violate). Loads the existing
@@ -1260,6 +1274,8 @@ class ObjectService
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
         $this->saveHandler->clearAllCaches();
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder');
 
         // Delegate to SaveObject handler for actual save operation.
         $savedObject = $this->saveHandler->saveObject(
@@ -1316,8 +1332,10 @@ class ObjectService
         // avoids cluttering the Files tree with an empty folder per object and
         // avoids binding system/seed-created objects to a folder a later editor
         // can't access (the folder_access_denied case).
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('persist+events');
+
         // Render and return the saved object.
-        return $this->renderHandler->renderEntity(
+        $renderedObject = $this->renderHandler->renderEntity(
             entity: $savedObject,
             _extend: $extend ?? [],
             registers: null,
@@ -1325,6 +1343,10 @@ class ObjectService
             _rbac: $_rbac,
             _multitenancy: $_multitenancy
         );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('render');
+        \OCA\OpenRegister\Service\WritePhaseProbe::flush();
+
+        return $renderedObject;
     }//end saveObject()
 
     /**
