@@ -1545,6 +1545,14 @@ class SettingsControllerTest extends TestCase
             private array $rows;
 
             /**
+             * Cursor position for fetch() — mirrors a real IResult, which
+             * hands back rows one at a time and `false` once exhausted.
+             *
+             * @var int
+             */
+            private int $cursor = 0;
+
+            /**
              * Constructor.
              *
              * @param array $rows Rows to return.
@@ -1565,15 +1573,24 @@ class SettingsControllerTest extends TestCase
             }
 
             /**
-             * Fetch one row.
+             * Fetch one row, advancing the internal cursor.
+             *
+             * The controller iterates results via `fetch()` in a while loop
+             * (NC 32 compat — fetchAllAssociative() is not on every
+             * supported server's IResult), so this stub must behave like a
+             * real cursor: return the next row, or `false` once exhausted.
              *
              * @param int $fetchMode Fetch mode.
              *
-             * @return mixed False (no rows).
+             * @return mixed The next row, or false when exhausted.
              */
             public function fetch(int $fetchMode = \PDO::FETCH_ASSOC)
             {
-                return false;
+                if ($this->cursor >= count($this->rows)) {
+                    return false;
+                }
+
+                return $this->rows[$this->cursor++];
             }
 
             /**

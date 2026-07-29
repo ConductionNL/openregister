@@ -1722,6 +1722,48 @@ class ValidateObject
             }//end if
         }//end if
 
+        // Translatable properties accept EITHER the scalar value (source-language
+        // / legacy write, or the X-Translation-Target-Language wrap path) OR a
+        // language-keyed object like {"nl": "Welkom", "en": "Welcome"}. The scalar
+        // branch is validated by the original (null-widened) property schema; the
+        // language-map branch validates every inner language value against that
+        // same scalar schema via additionalProperties. Without this widening a
+        // language-keyed write body is rejected by plain type validation (object
+        // vs string) BEFORE TranslationHandler::normalizeTranslationsForSave() can
+        // split it into per-language translation rows — which broke the entire
+        // i18n write path (see i18n-api-language-negotiation / i18n-source-of-truth).
+        if (property_exists($schemaObject, 'properties') === true
+            && is_object($schemaObject->properties) === true
+        ) {
+            foreach ($schemaObject->properties as $propertyName => $propertySchema) {
+                if (is_object($propertySchema) === false) {
+                    continue;
+                }
+
+                if (($propertySchema->translatable ?? null) !== true) {
+                    continue;
+                }
+
+                // Scalar branch: the property schema minus the custom marker.
+                $valueSchema = json_decode(json_encode($propertySchema));
+                unset($valueSchema->translatable);
+
+                // Language-map branch: an object whose every value matches the
+                // scalar schema (so language values are still type-checked).
+                $languageObjectSchema = (object) [
+                    'type'                 => 'object',
+                    'additionalProperties' => json_decode(json_encode($valueSchema)),
+                ];
+
+                $schemaObject->properties->$propertyName = (object) [
+                    'anyOf' => [
+                        $valueSchema,
+                        $languageObjectSchema,
+                    ],
+                ];
+            }//end foreach
+        }//end if
+
         return [
             'schemaObject' => $schemaObject,
             'computed'     => $computedProperties,

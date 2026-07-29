@@ -245,6 +245,59 @@ class SourceMapper extends QBMapper
     }//end findBySyncEnabled()
 
     /**
+     * Load a Source by id or uuid for a trusted, code-initiated system lookup —
+     * intentionally WITHOUT RBAC verification and WITHOUT the organisation filter.
+     *
+     * A `Source` is shared infrastructure config (a database connection), not
+     * tenant-owned data. Its ONLY current caller,
+     * `DbalObjectSourceProvider::resolveSource()`, resolves the `sourceId`
+     * named in an already-authorized schema's `x-openregister-object-source`
+     * config — `ObjectService::paginateObjectSource()` enforces the schema's
+     * own read RBAC (`checkPermission()`) BEFORE the provider (and therefore
+     * this lookup) ever runs. Filtering this row by the caller's active
+     * organisation adds no isolation — the caller never sees the Source row
+     * itself, only the objects it serves for a schema they were already
+     * cleared to read — and instead breaks every dbal-backed schema whose
+     * Source is configured in a different organisation than the reader's
+     * active one, most visibly under `saasMode: true` where admin override is
+     * unconditionally disabled (openregister#2089: `resolveSource()` returned
+     * null and every downstream find/count on the schema silently emptied,
+     * logged only as a warning).
+     *
+     * Mirrors the same rationale as {@see findBySyncEnabled()} (system-actor
+     * lookup, no tenant scoping) rather than the SystemOperationContext RBAC
+     * bypass: this method skips the ORGANISATION FILTER on the Source row
+     * itself, a query-builder concern `SystemOperationContext` does not touch.
+     *
+     * SECURITY: this method MUST NOT be exposed to any caller that has not
+     * already authorized the request at the schema/object level, and MUST
+     * NOT be used to serve Source data (credentials, connection config)
+     * directly to a client — only to locate the row so its provider can serve
+     * the schema's own RBAC-gated objects.
+     *
+     * @param string $sourceId The Source id (digits) or uuid.
+     *
+     * @return Source|null The source, or null when not found.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
+     */
+    public function findForSystem(string $sourceId): ?Source
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')->from('openregister_sources');
+
+        if (ctype_digit($sourceId) === true) {
+            $qb->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $sourceId, IQueryBuilder::PARAM_INT)));
+        } else {
+            $qb->where($qb->expr()->eq('uuid', $qb->createNamedParameter($sourceId)));
+        }
+
+        return $this->findEntity(query: $qb);
+    }//end findForSystem()
+
+    /**
      * Insert a new source
      *
      * @param Entity $entity Source entity to insert

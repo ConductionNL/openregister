@@ -575,10 +575,18 @@ class UserService
 
             $query = $this->db->getQueryBuilder();
 
-            $query->select('s.size')
-                ->from('storages', 's')
-                ->join('s', 'mounts', 'm', $query->expr()->eq('s.id', 'm.storage_id'))
+            // Used space lives in oc_filecache.size for the storage root (path = ''),
+            // NOT in oc_storages (which has no size column). Join the file cache to the
+            // user's home mount on the numeric storage id: oc_filecache.storage and
+            // oc_mounts.storage_id are both BIGINT, so this avoids the
+            // "operator does not exist: character varying = bigint" error that a
+            // storages.id (varchar) = mounts.storage_id (bigint) join throws on PostgreSQL.
+            $query->select('f.size')
+                ->from('filecache', 'f')
+                ->innerJoin('f', 'mounts', 'm', $query->expr()->eq('f.storage', 'm.storage_id'))
                 ->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
+                ->andWhere($query->expr()->eq('f.path', $query->createNamedParameter('')))
+                ->andWhere($query->expr()->eq('m.mount_point', $query->createNamedParameter('/'.$userId.'/')))
                 ->setMaxResults(1);
 
             $result = $query->execute();
@@ -594,7 +602,12 @@ class UserService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return 0;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // This is a best-effort, memory-safe helper: any failure (a DB error, a
+            // driver-level Error, or a misconfigured query builder) must degrade to 0
+            // rather than propagate — the contract is "the used space, or 0 if it cannot
+            // be determined safely". Catching \Throwable (not just \Exception) keeps a
+            // stray \Error from escaping into the caller and turning a quota lookup into a 500.
             $this->logger->warning(
                 message: '[UserService] Memory-safe quota calculation failed for user: '.$userId,
                 context: [

@@ -233,7 +233,10 @@ class PhotoLinkServiceTest extends TestCase
         $this->assertCount(1, $rows);
         $this->assertSame(42, $rows[0]['albumId']);
         $this->assertSame('Holiday', $rows[0]['albumName']);
-        $this->assertStringContainsString('albums/42', $rows[0]['url']);
+        // NC Photos routes albums by NAME, not the numeric id — verified live
+        // (see PhotoLinkService::albumDeepLink()): `/albums/{id}` opens an
+        // empty placeholder album, `/albums/{name}` opens the real one.
+        $this->assertStringContainsString('albums/Holiday', $rows[0]['url']);
     }//end testGetLinkedAlbumsReturnsRowsWithDeepLink()
 
     public function testGetLinkedAlbumsEmpty(): void

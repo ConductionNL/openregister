@@ -46,7 +46,9 @@ async function selectFirstRegisterAndSchema(page: Page): Promise<boolean> {
 test.describe('mdm-survivorship-override — visual baselines', () => {
 	// MdmConflictResolutionModal — opened from a master entity's golden record.
 	test('MdmConflictResolutionModal', async ({ page }) => {
-		await page.goto(`${APP}/#/masterEntities`, { waitUntil: 'domcontentloaded' })
+		// Manifest route is kebab-case '/master-entities' (src/manifest.json);
+		// '#/masterEntities' hits the catch-all and redirects to the dashboard.
+		await page.goto(`${APP}/#/master-entities`, { waitUntil: 'domcontentloaded' })
 		await dismissSupportDialog(page)
 		await waitForContentReady(page)
 

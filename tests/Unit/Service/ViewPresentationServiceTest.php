@@ -15,7 +15,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use Psr\Log\LoggerInterface;
  * @category Test
  * @package  OCA\OpenRegister\Tests\Unit\Service
  *
- * @spec openspec/changes/object-views-kanban-calendar/design.md
+ * @spec openspec/specs/saved-search-views/spec.md
  */
 class ViewPresentationServiceTest extends TestCase
 {
