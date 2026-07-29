@@ -62,6 +62,16 @@ final class FlowItems
     public const PAIRED_ITEM = 'pairedItem';
 
     /**
+     * The key naming which output branch an item is routed to.
+     *
+     * Optional and usually absent: only a routing node ({@see Nodes\RouterNode})
+     * sets it, and the engine strips it once it has distributed the item, so it
+     * never lingers on an item a downstream step sees. An item without it is
+     * broadcast to every output, which is the ordinary behaviour.
+     */
+    public const OUTPUT = 'output';
+
+    /**
      * Coerce whatever a step returned into a well-formed item list.
      *
      * Steps are written by consuming apps, so the engine cannot assume the
@@ -105,7 +115,8 @@ final class FlowItems
                 $items[] = self::item(
                     json: (array) ($member[self::JSON] ?? $member),
                     binary: (array) ($member[self::BINARY] ?? []),
-                    fromItemIndex: self::pairedIndex(member: $member, fallback: ($fromItemIndex ?? $index))
+                    fromItemIndex: self::pairedIndex(member: $member, fallback: ($fromItemIndex ?? $index)),
+                    output: self::outputOf(member: $member)
                 );
             }
 
@@ -117,7 +128,8 @@ final class FlowItems
             self::item(
                 json: (array) ($value[self::JSON] ?? $value),
                 binary: (array) ($value[self::BINARY] ?? []),
-                fromItemIndex: self::pairedIndex(member: $value, fallback: $fromItemIndex)
+                fromItemIndex: self::pairedIndex(member: $value, fallback: $fromItemIndex),
+                output: self::outputOf(member: $value)
             ),
         ];
 
@@ -126,28 +138,57 @@ final class FlowItems
     /**
      * Build one well-formed item.
      *
-     * @param array    $json          The record.
-     * @param array    $binary        File attachments, keyed by name.
-     * @param int|null $fromItemIndex Input item this came from, when known.
+     * @param array       $json          The record.
+     * @param array       $binary        File attachments, keyed by name.
+     * @param int|null    $fromItemIndex Input item this came from, when known.
+     * @param string|null $output        The output branch this item routes to, when set.
      *
      * @return array<string, mixed> The item.
      *
      * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
      */
-    public static function item(array $json, array $binary=[], ?int $fromItemIndex=null): array
+    public static function item(array $json, array $binary=[], ?int $fromItemIndex=null, ?string $output=null): array
     {
         $paired = null;
         if ($fromItemIndex !== null) {
             $paired = ['item' => $fromItemIndex];
         }
 
-        return [
+        $item = [
             self::JSON        => $json,
             self::BINARY      => $binary,
             self::PAIRED_ITEM => $paired,
         ];
 
+        // The output tag is added only when set, so an ordinary item keeps its
+        // exact three-key shape and nothing downstream has to know about routing.
+        if ($output !== null && $output !== '') {
+            $item[self::OUTPUT] = $output;
+        }
+
+        return $item;
+
     }//end item()
+
+    /**
+     * Read a member's output tag, if it carries one.
+     *
+     * @param array $member A returned item.
+     *
+     * @return string|null The output branch, or null when the item is unrouted.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    public static function outputOf(array $member): ?string
+    {
+        $output = ($member[self::OUTPUT] ?? null);
+        if (is_string($output) === true && $output !== '') {
+            return $output;
+        }
+
+        return null;
+
+    }//end outputOf()
 
     /**
      * Seed a run's item list from the object it is about.

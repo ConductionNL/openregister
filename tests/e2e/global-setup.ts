@@ -51,22 +51,42 @@ function ensureBundleBuilt(): void {
 	execSync('npm run build', { cwd: APP_ROOT, stdio: 'inherit' })
 }
 
+/**
+ * Poll status.php until the instance is genuinely serviceable, rather than
+ * probing once. A single probe cannot distinguish "healthy" from the two
+ * states that produce a whole suite of misleading assertion failures:
+ *
+ *  - `needsDbUpgrade: true` — the app-bump trap; every page 503s.
+ *  - `maintenance: true`    — a concurrent occ upgrade is running.
+ *
+ * Both were observed on 2026-07-27 and turned an entire run into ~25
+ * `page.goto` timeouts with ZERO assertion failures. Fail LOUD with the
+ * offending payload instead. Ported from the docudesk/larpingapp pattern
+ * (ADR-074 runbook invariants).
+ */
 async function ensureNextcloudReachable(baseURL: string): Promise<void> {
+	const deadline = Date.now() + Number(process.env.E2E_HEALTH_TIMEOUT_MS ?? 600_000)
 	const ctx = await request.newContext()
+	let last = 'no response'
 	try {
-		const res = await ctx.get(`${baseURL}/status.php`, { failOnStatusCode: false })
-		if (!res.ok()) {
-			throw new Error(
-				`Nextcloud status.php returned ${res.status()} at ${baseURL}. ` +
-				'Make sure the docker container is running and reachable.',
-			)
+		while (Date.now() < deadline) {
+			const res = await ctx.get(`${baseURL}/status.php`, { failOnStatusCode: false })
+				.catch(() => null)
+			if (res?.ok()) {
+				const body = await res.json().catch(() => ({}))
+				if (body?.installed === true && body.maintenance === false && body.needsDbUpgrade === false) {
+					return
+				}
+				last = JSON.stringify(body)
+			} else {
+				last = `HTTP ${res?.status() ?? 'unreachable'}`
+			}
+			await new Promise((r) => setTimeout(r, 5_000))
 		}
-		const body = await res.json().catch(() => ({}))
-		if (!body || body.installed !== true) {
-			throw new Error(
-				`Nextcloud at ${baseURL} is not installed (status.php = ${JSON.stringify(body)}).`,
-			)
-		}
+		throw new Error(
+			`Nextcloud at ${baseURL} did not become healthy (last: ${last}). `
+			+ 'Check for a concurrent deploy / occ upgrade, or a missing custom_apps bind mount.',
+		)
 	} finally {
 		await ctx.dispose()
 	}
@@ -90,7 +110,18 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
 	// Hit the login form so the CSRF token + session passphrase land in
 	// the browser jar.
-	await page.goto('/index.php/login')
+	// Retry the initial load: on a cold container the first request compiles
+	// opcache and can take >30s, which is the single most common cause of a
+	// setup-level failure that looks like an app outage.
+	for (let attempt = 1; ; attempt++) {
+		try {
+			await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
+			break
+		} catch (err) {
+			if (attempt >= 3) throw err
+			console.log(`[playwright globalSetup] login page load failed (attempt ${attempt}/3), retrying…`)
+		}
+	}
 	await page.locator('input[name="user"]').fill(username)
 	await page.locator('input[name="password"]').fill(password)
 	// Arm the post-login navigation wait BEFORE submitting the form.

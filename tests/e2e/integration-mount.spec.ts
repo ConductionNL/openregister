@@ -127,15 +127,13 @@ async function openObjectDetail(
 	baseURL: string,
 	triple: { register: string, schema: string, objectId: string },
 ): Promise<string[]> {
-	// vue-router runs in history mode (see src/main.js routesFromManifest);
-	// a `#/objects/...` hash URL is ignored as a fragment, leaving us on the
-	// dashboard. Use the history-mode path so the SPA dispatches `objectDetail`
-	// (route name in the manifest) to ObjectsIndex and its param-watch primes
-	// the object store. The PHP route serving this is `ui#objectDetail` (see
-	// openregister#1962 fix renaming the deep-link from the duplicate
-	// `ui#objects`).
+	// vue-router runs in HASH mode (src/main.js, since the #133 fix). A
+	// path-form deep-link is rewritten by the hash router to `.../objects#/`
+	// and renders the dashboard — verified empirically 2026-07-27. The hash
+	// URL dispatches `objectDetail` (route name in the manifest) to
+	// ObjectsIndex and its param-watch primes the object store.
 	await page.goto(
-		`${baseURL}/index.php/apps/openregister/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
+		`${baseURL}/index.php/apps/openregister/#/objects/${triple.register}/${triple.schema}/${triple.objectId}`,
 	)
 	await page.waitForLoadState('networkidle')
 

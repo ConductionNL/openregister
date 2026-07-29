@@ -122,6 +122,17 @@ class SearchQueryHandler
      * multi-schema (array) or absent schema, or any resolution failure, yields
      * false so the legacy magic-table behaviour is preserved.
      *
+     * This is a SYSTEM-level structural lookup (does the schema declare an
+     * object-source?), used only to decide how query params are parsed — it
+     * returns no schema data to the caller, so it MUST bypass RBAC and
+     * multitenancy. Otherwise, when saasMode is active and the schema lives in
+     * a different organisation than the caller's active org, the tenant-scoped
+     * find() cannot see it, this returns false, and snake_case column filters
+     * (e.g. `app_id`) are wrongly dot-un-mangled — silently emptying every
+     * per-object filter on a cross-org DBAL register. The actual data read is
+     * still RBAC/tenant-checked downstream in paginateObjectSource() (mirrors
+     * the object-source Source lookup, openregister#2089).
+     *
      * @param int|string|array|null $schema The schema id/slug (single value only).
      *
      * @return bool True when the schema declares an x-openregister-object-source.
@@ -133,7 +144,7 @@ class SearchQueryHandler
         }
 
         try {
-            $entity = $this->schemaMapper->find(id: $schema);
+            $entity = $this->schemaMapper->find(id: $schema, _rbac: false, _multitenancy: false);
         } catch (\Throwable $e) {
             return false;
         }

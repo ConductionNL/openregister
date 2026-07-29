@@ -150,12 +150,22 @@ class FlowNodeRegistry
     {
         $palette = [];
         foreach ($this->all(scope: $scope) as $id => $node) {
-            $palette[] = [
-                'id'          => $id,
-                'displayName' => $node->getDisplayName(),
-                'description' => $node->getDescription(),
-                'icon'        => $node->getIcon(),
-            ];
+            try {
+                $palette[] = [
+                    'id'          => $id,
+                    'displayName' => $node->getDisplayName(),
+                    'description' => $node->getDescription(),
+                    'icon'        => $node->getIcon(),
+                ];
+            } catch (\Throwable $e) {
+                // One node whose metadata throws (a missing icon, a broken
+                // translation) must not blank the whole palette — the author
+                // would lose every node, not just the bad one.
+                $this->logger->warning(
+                    message: '[FlowNodeRegistry] Skipping a node whose palette metadata failed: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'type' => $id]
+                );
+            }//end try
         }
 
         return $palette;

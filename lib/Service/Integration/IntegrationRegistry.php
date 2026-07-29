@@ -78,6 +78,26 @@ class IntegrationRegistry
     private array $pageWidgets = [];
 
     /**
+     * Optional lazy loader that collects sibling-app leaf providers.
+     *
+     * Set by `Application::boot()` to a closure that reads the `LeafRegistry`
+     * catalogue. Invoked once, on the first registry READ, so a data-provider
+     * leaf contributed through `RegisterLeafProvidersEvent` lands in
+     * `$providers` before `ObjectIntegrationsController` resolves it — without
+     * eagerly dispatching the collect-event when nothing reads the registry.
+     *
+     * @var (callable():void)|null
+     */
+    private $leafLoader = null;
+
+    /**
+     * Whether the lazy leaf loader has already run this request.
+     *
+     * @var boolean
+     */
+    private bool $leavesLoaded = false;
+
+    /**
      * Constructor.
      *
      * @param LoggerInterface $logger Logger for collision and config warnings.
@@ -88,6 +108,55 @@ class IntegrationRegistry
         private LoggerInterface $logger,
     ) {
     }//end __construct()
+
+    /**
+     * Install the lazy leaf loader.
+     *
+     * The loader is a closure that collects sibling-app leaf providers into this
+     * registry (via `addProvider()`); it runs at most once, on the first read.
+     * Kept as a settable hook rather than a constructor dependency to avoid a
+     * `LeafRegistry` <-> `IntegrationRegistry` circular construction.
+     *
+     * @param callable $loader Zero-arg loader closure.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/app-leaf-provider-registration/specs/leaf-provider-registration/spec.md
+     */
+    public function setLeafLoader(callable $loader): void
+    {
+        $this->leafLoader = $loader;
+
+    }//end setLeafLoader()
+
+    /**
+     * Run the lazy leaf loader once, on the first registry read.
+     *
+     * The `$leavesLoaded` flag is set BEFORE invoking the loader so the loader's
+     * own `addProvider()` writes cannot re-enter this method into a loop. A
+     * throwing loader is swallowed — sibling-app discovery must never break the
+     * built-in registry.
+     *
+     * @return void
+     */
+    private function ensureLeavesLoaded(): void
+    {
+        if ($this->leavesLoaded === true || $this->leafLoader === null) {
+            return;
+        }
+
+        $this->leavesLoaded = true;
+
+        try {
+            ($this->leafLoader)();
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                '[IntegrationRegistry] leaf loader failed: {message}',
+                ['message' => $e->getMessage(), 'exception' => $e]
+            );
+        }
+
+    }//end ensureLeavesLoaded()
 
     /**
      * Register a provider with the registry.
@@ -176,6 +245,7 @@ class IntegrationRegistry
      */
     public function list(): array
     {
+        $this->ensureLeavesLoaded();
         return array_values($this->providers);
     }//end list()
 
@@ -192,6 +262,7 @@ class IntegrationRegistry
      */
     public function listIds(): array
     {
+        $this->ensureLeavesLoaded();
         return array_keys($this->providers);
     }//end listIds()
 
@@ -206,6 +277,7 @@ class IntegrationRegistry
      */
     public function get(string $id): ?IntegrationProvider
     {
+        $this->ensureLeavesLoaded();
         return $this->providers[$id] ?? null;
     }//end get()
 
@@ -222,6 +294,7 @@ class IntegrationRegistry
      */
     public function isValidIntegrationId(string $id): bool
     {
+        $this->ensureLeavesLoaded();
         return isset($this->providers[$id]);
     }//end isValidIntegrationId()
 
@@ -322,6 +395,7 @@ class IntegrationRegistry
      */
     public function getEnabled(): array
     {
+        $this->ensureLeavesLoaded();
         $enabled = [];
         foreach ($this->providers as $provider) {
             if ($provider->isEnabled() === true) {

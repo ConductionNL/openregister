@@ -366,8 +366,8 @@ class LlmSettingsController extends Controller
             $response  = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
-
+            // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+            // CurlHandle object is freed when it goes out of scope.
             if ($curlError !== '') {
                 return new JSONResponse(
                     data: [

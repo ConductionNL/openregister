@@ -4167,7 +4167,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "/var/www/html/custom_apps/openregister/tests/integration/test-import.csv"
+                  "src": "test-import.csv"
                 },
                 {
                   "key": "schema",
@@ -4230,7 +4230,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "/var/www/html/custom_apps/openregister/tests/integration/test-import.csv"
+                  "src": "test-import.csv"
                 },
                 {
                   "key": "schema",
