@@ -1288,13 +1288,15 @@ class FileService
      *
      * Delegates to UpdateFileHandler for single-responsibility file update operations.
      *
-     * @param string|int        $filePath The path (from root) where to save the file,
-     *                                    including filename and extension, or file ID.
-     * @param mixed             $content  Optional content of the file.
-     *                                    If null, only metadata like tags will be updated.
-     * @param array             $tags     Optional array of tags to attach to the file
-     *                                    (excluding object tags which are preserved).
-     * @param ObjectEntity|null $object   Optional object entity to search in object folder first.
+     * @param string|int           $filePath The path (from root) where to save the file,
+     *                                       including filename and extension, or file ID.
+     * @param string|resource|null $content  Optional content of the file: a byte string, or a
+     *                                       readable stream resource (streamed straight to storage
+     *                                       via OCP\Files\File::putContent()).
+     *                                       If null, only metadata like tags will be updated.
+     * @param array                $tags     Optional array of tags to attach to the file
+     *                                       (excluding object tags which are preserved).
+     * @param ObjectEntity|null    $object   Optional object entity to search in object folder first.
      *
      * @throws Exception If the file doesn't exist or if file operations fail.
      *

@@ -179,10 +179,12 @@ class UpdateFileHandler
      * This method updates the content and/or tags of an existing file. When updating tags,
      * it preserves any existing 'object:' tags while replacing other user-defined tags.
      *
-     * @param string|int        $filePath The path or file ID.
-     * @param mixed             $content  Optional content of the file.
-     * @param array             $tags     Optional array of tags.
-     * @param ObjectEntity|null $object   Optional object entity.
+     * @param string|int           $filePath The path or file ID.
+     * @param string|resource|null $content  Optional content of the file: a byte string, a readable
+     *                                       stream resource (streamed straight to storage), or null
+     *                                       to update only metadata/tags.
+     * @param array                $tags     Optional array of tags.
+     * @param ObjectEntity|null    $object   Optional object entity.
      *
      * @return File The updated file.
      *
