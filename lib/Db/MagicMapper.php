@@ -5250,7 +5250,7 @@ class MagicMapper extends AbstractObjectMapper
         if ($registerIdScope !== null) {
             $scoped = [];
             foreach ($candidates as $tableName => $meta) {
-                if ((int) ($meta['registerId'] ?? -1) === $registerIdScope) {
+                if ((int) $meta['registerId'] === $registerIdScope) {
                     $scoped[$tableName] = $meta;
                 }
             }
@@ -8434,11 +8434,90 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        if ($this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        }
+
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
 
         return $insertedEntity;
     }//end insert()
+
+    /**
+     * Hand the created-event off to a background job instead of dispatching it inline.
+     *
+     * `ObjectCreatedEvent` has roughly two dozen listeners across the fleet, and
+     * dispatched inline the caller waits for all of them. Measured 2026-07-29,
+     * that dispatch was 234-501 ms of a ~530 ms create, against a 76 ms insert.
+     * None of it is needed to tell the caller its object was saved.
+     *
+     * OPT-IN, and deliberately so. Deferring changes an observable contract: a
+     * 2xx stops meaning "and every side effect has been applied". A synchronous
+     * flow (`executionMode: sync`) in particular exists precisely so its effects
+     * land before the save returns, and deferring would silently break that
+     * promise. So this stays off until an instance decides it wants the trade,
+     * via `occ config:app:set openregister defer_object_events --value=1`.
+     *
+     * Returns false — meaning "dispatch it inline yourself" — whenever the
+     * deferral cannot be set up, so a misconfiguration degrades to the current
+     * behaviour rather than to silently losing every event.
+     *
+     * @param ObjectEntity  $entity   The object just inserted.
+     * @param Register|null $register Its register.
+     * @param Schema|null   $schema   Its schema.
+     *
+     * @return boolean True when the event was queued and must NOT be dispatched inline.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+     */
+    private function dispatchCreatedDeferred(
+        ObjectEntity $entity,
+        ?Register $register,
+        ?Schema $schema
+    ): bool {
+        if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+            return false;
+        }
+
+        $uuid = (string) $entity->getUuid();
+        if ($uuid === '') {
+            // Without an identifier the job cannot re-read the object, so there
+            // is nothing to defer TO. Dispatch inline.
+            return false;
+        }
+
+        try {
+            $jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
+            $jobList->add(
+                \OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+                [
+                    'uuid'       => $uuid,
+                    'registerId' => (int) ($register?->getId() ?? 0),
+                    'schemaId'   => (int) ($schema?->getId() ?? 0),
+                    'action'     => 'created',
+                    // The acting user travels WITH the job. A background job has
+                    // no session, and OpenRegister reads are organisation-filtered
+                    // against the session user, so a listener that asks "are there
+                    // active subscriptions?" from an unauthenticated context is
+                    // told "no" and silently does nothing. Verified 2026-07-29:
+                    // without this the deferred dispatch ran clean, logged nothing,
+                    // and produced ZERO CloudEvents where the inline path produced
+                    // one — a perfectly green no-op.
+                    'user'       => ($this->userSession->getUser()?->getUID() ?? ''),
+                ]
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[MagicMapper] Could not queue a deferred object event; dispatching inline instead: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            return false;
+        }//end try
+
+    }//end dispatchCreatedDeferred()
 
     /**
      * Update an existing object entity with event dispatching.
