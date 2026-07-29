@@ -12,7 +12,10 @@ on:
 
 jobs:
   triage:
-    uses: ConductionNL/.github/.github/workflows/issue-triage.yml@feature/openspec-project-sync
+    # `@main`, not `@feature/openspec-project-sync` — that branch no longer
+    # exists on ConductionNL/.github, so this reference was unresolvable and the
+    # triage workflow never ran.
+    uses: ConductionNL/.github/.github/workflows/issue-triage.yml@main
     with:
       app-name: openregister
       backlog-existing: ${{ github.event_name == 'workflow_dispatch' && inputs.backlog-existing || false }}
