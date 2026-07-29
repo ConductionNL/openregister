@@ -208,7 +208,7 @@ webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 
 // Force @nextcloud/dialogs to resolve from this app's node_modules,
 // preventing the nextcloud-vue submodule's nested deps (Vue 3) from leaking in.
-webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
 
 // The base config sets `output.clean: true`, which wipes js/ on every build.
 // The Web Push Service Worker + opt-in client (openregister-push-client.js /

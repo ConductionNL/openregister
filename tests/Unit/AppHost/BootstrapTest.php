@@ -103,6 +103,48 @@ class BootstrapTest extends TestCase
         );
     }//end testRegistrationIsLazyAndDoesNotAutoloadGenerics()
 
+    public function testRegistersSettingsPlaneConsumables(): void
+    {
+        // ADR-066 settings plane: the generic settings service + register
+        // config resolver are registered (appended AFTER the pre-existing
+        // registrations — load-order contract) under both the generic name
+        // and, for the resolver, the leaf's conventional service name.
+        $context = new RecordingRegistrationContext();
+        Bootstrap::register($context, 'petstore', ['namespace' => 'OCA\\PetStore']);
+        $services = $context->services;
+
+        $this->assertContains('OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService', $services);
+        $this->assertContains('OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver', $services);
+        $this->assertContains('OCA\\PetStore\\Service\\RegisterConfigResolver', $services);
+
+        // Pre-existing registrations must still be present and precede the new
+        // ones (append-only — the Bootstrap load-order incident contract).
+        $settingsShim = array_search('OCA\\PetStore\\Service\\SettingsService', $services, true);
+        $plane        = array_search('OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService', $services, true);
+        $this->assertNotFalse($settingsShim);
+        $this->assertNotFalse($plane);
+        $this->assertLessThan($plane, $settingsShim, 'new settings-plane registrations must be appended, never reordered before existing ones');
+    }//end testRegistersSettingsPlaneConsumables()
+
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     */
+    public function testSettingsPlaneRegistrationIsLazy(): void
+    {
+        $context = new RecordingRegistrationContext();
+        Bootstrap::register($context, 'petstore');
+
+        $this->assertFalse(
+            class_exists('OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService', false),
+            'registering must not autoload the generic settings-plane service (lazy alias)'
+        );
+        $this->assertFalse(
+            class_exists('OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver', false),
+            'registering must not autoload the register config resolver (lazy alias)'
+        );
+    }//end testSettingsPlaneRegistrationIsLazy()
+
     public function testObservabilityOptOutSkipsHealthMetrics(): void
     {
         $context = new RecordingRegistrationContext();

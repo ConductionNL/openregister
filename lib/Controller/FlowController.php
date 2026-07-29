@@ -28,9 +28,11 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\WorkflowEngine\IManager;
 
 /**
  * Read endpoints backing the visual flow builder.
@@ -43,11 +45,13 @@ class FlowController extends Controller
      * @param string              $appName      App id.
      * @param IRequest            $request      HTTP request.
      * @param EventCatalogService $eventCatalog The flow trigger catalog.
+     * @param FlowNodeRegistry    $nodes        The registered flow-step types.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly EventCatalogService $eventCatalog,
+        private readonly FlowNodeRegistry $nodes,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -73,4 +77,43 @@ class FlowController extends Controller
             ]
         );
     }//end eventCatalog()
+
+    /**
+     * Return the flow NODE catalog — the step types a flow may use.
+     *
+     * The trigger catalog above answers "what can start a flow"; this answers
+     * "what can a flow do", which had no HTTP surface at all. A flow is authored
+     * as an object whose `edges[].type` names a registered node, so without this
+     * a builder has to hardcode the list — and that list goes stale silently the
+     * moment an app contributes a leaf, because an unknown type only surfaces
+     * when the flow RUNS (FlowNodeRegistry::get() throws). Apps really do
+     * contribute: openconnector ships source-call and synchronization-run,
+     * hermiq ships agent-step.
+     *
+     * Scope-filtered, so a non-administrator is never offered a step they could
+     * not run. Every node implements `isAvailableForScope()` already.
+     *
+     * @return JSONResponse `{ results: [{id,displayName,description,icon}], total }`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+     */
+    public function nodeCatalog(): JSONResponse
+    {
+        $scope = IManager::SCOPE_ADMIN;
+        if ($this->request->getParam('scope') === 'user') {
+            $scope = IManager::SCOPE_USER;
+        }
+
+        $results = $this->nodes->palette(scope: $scope);
+
+        return new JSONResponse(
+            [
+                'results' => $results,
+                'total'   => count($results),
+            ]
+        );
+    }//end nodeCatalog()
 }//end class

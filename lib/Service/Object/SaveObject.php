@@ -3315,7 +3315,9 @@ class SaveObject
 
         // Save the object to database FIRST (so it gets an ID).
         // Use MagicMapper to route to MagicMapper when magic mapping is enabled.
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:pre-insert');
         $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
         // Update the name cache with the saved object's name.
         // This ensures the name is available for subsequent operations and relation resolution.
@@ -3332,11 +3334,13 @@ class SaveObject
             register: $register,
             schema: $schema
         );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
         // Create audit trail if not in silent mode.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {
             $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
             $savedEntity->setLastLog($log->jsonSerialize());
+            \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
         }
 
         // Update inverse relations on related objects (bidirectional relationship management).
@@ -3346,6 +3350,7 @@ class SaveObject
         // This optimization significantly improves performance when creating many sub-objects.
         if ($silent === false) {
             $this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
+            \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
         }
 
         return $savedEntity;

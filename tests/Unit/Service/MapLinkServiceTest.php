@@ -234,7 +234,9 @@ class MapLinkServiceTest extends TestCase
         $this->assertSame(42, $rows[0]['favoriteId']);
         $this->assertSame('Office', $rows[0]['name']);
         $this->assertSame('Work', $rows[0]['category']);
-        $this->assertStringContainsString('m=42', $rows[0]['url']);
+        // poiDeepLink() deep-links to the map coordinates (#map=16/lat/lng),
+        // not a marker-specific fragment — see MapLinkService::poiDeepLink().
+        $this->assertStringContainsString('#map=16/52.37/4.89', $rows[0]['url']);
     }//end testGetLinkedPoisReturnsRowsWithDeepLink()
 
     public function testGetLinkedPoisEmpty(): void

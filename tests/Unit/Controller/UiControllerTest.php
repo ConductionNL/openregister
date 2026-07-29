@@ -52,7 +52,9 @@ class UiControllerTest extends TestCase
             'organisation'     => ['organisation'],
             'objects'          => ['objects'],
             'tables'           => ['tables'],
-            'chat'             => ['chat'],
+            // NOTE: 'chat' removed — UiController never had a chat() SPA
+            // route; `chat#*` in appinfo/routes.php are API-only endpoints
+            // (ChatController), not a TemplateResponse page.
             'configurations'   => ['configurations'],
             'deleted'          => ['deleted'],
             'auditTrail'       => ['auditTrail'],

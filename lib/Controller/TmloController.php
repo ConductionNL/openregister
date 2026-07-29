@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\TmloService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -108,6 +109,11 @@ class TmloController extends Controller
             $response = new DataResponse($xml, Http::STATUS_OK);
             $response->addHeader('Content-Type', 'application/xml; charset=UTF-8');
             return $response;
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                ['error' => 'Register or schema not found'],
+                Http::STATUS_NOT_FOUND
+            );
         } catch (InvalidArgumentException $e) {
             return new JSONResponse(
                 ['error' => $e->getMessage()],
@@ -165,6 +171,11 @@ class TmloController extends Controller
             $response = new DataResponse($xml, Http::STATUS_OK);
             $response->addHeader('Content-Type', 'application/xml; charset=UTF-8');
             return $response;
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                ['error' => 'Register or schema not found'],
+                Http::STATUS_NOT_FOUND
+            );
         } catch (Exception $e) {
             $this->logger->error('MDTO batch export failed: '.$e->getMessage(), ['exception' => $e]);
             return new JSONResponse(
@@ -224,6 +235,13 @@ class TmloController extends Controller
             }
 
             return new JSONResponse($counts, Http::STATUS_OK);
+        } catch (DoesNotExistException $e) {
+            // Unknown register/schema slug or id: return a clean 404 instead of
+            // leaking the internal DBAL SQL through the generic 500 handler.
+            return new JSONResponse(
+                ['error' => 'Register or schema not found'],
+                Http::STATUS_NOT_FOUND
+            );
         } catch (Exception $e) {
             $this->logger->error('TMLO summary failed: '.$e->getMessage(), ['exception' => $e]);
             return new JSONResponse(
