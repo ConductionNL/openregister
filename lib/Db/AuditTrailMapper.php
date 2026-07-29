@@ -649,13 +649,21 @@ class AuditTrailMapper extends QBMapper
             }
         }
 
+        $qb       = $this->db->getQueryBuilder();
+        $platform = $this->db->getDatabasePlatform();
+
         $fieldTypes = $chunk[0]->getFieldTypes();
         $columns    = [];
         foreach ($properties as $property) {
-            $columns[] = $chunk[0]->propertyToColumn($property);
+            // `user` is a reserved word in PostgreSQL (it doubles as the
+            // CURRENT_USER function) — an unquoted `user` column in an
+            // INSERT column list raises SQLSTATE 42601 ("syntax error at
+            // or near \"user\""). The QueryBuilder-based single-row insert
+            // path quotes identifiers automatically; this hand-built
+            // multi-row INSERT must do the same for every column.
+            $columns[] = $platform->quoteIdentifier($chunk[0]->propertyToColumn($property));
         }
 
-        $qb        = $this->db->getQueryBuilder();
         $tableName = $qb->getTableName($this->getTableName());
 
         $valuesClauses = [];

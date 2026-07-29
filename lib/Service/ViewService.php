@@ -178,7 +178,7 @@ class ViewService
      * @throws Exception If view creation fails (database error, validation error, etc.)
      * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function create(
@@ -241,7 +241,7 @@ class ViewService
      * @throws Exception If update fails
      * @throws InvalidArgumentException If the presentation config cannot render (REQ-VIEW-PRES-01)
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      * @spec openspec/changes/retrofit-2026-05-24-b-svc-urn-sec-edepot-view/tasks.md#task-8
      */
     public function update(
@@ -354,7 +354,7 @@ class ViewService
      *
      * @throws InvalidArgumentException If the presentation cannot render
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     private function validatePresentationConfig(?array $presentation, array $query): void
     {
@@ -417,7 +417,7 @@ class ViewService
      * @throws InvalidArgumentException If no schema is configured, the schema can't be
      *                                   resolved, or the field is not one of its properties
      *
-     * @spec openspec/changes/object-views-kanban-calendar/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
      */
     private function assertFieldExistsOnViewSchema(string $field, array $query, string $label): void
     {

@@ -27,8 +27,9 @@ import * as path from 'path'
 import { makeRunId, twoPropertySchema } from '../_fixtures'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
-// Deployed manifest-v2 shell uses PATH routing, not hash routing.
-const SCHEMAS_ROUTE = '/index.php/apps/openregister/schemas'
+// HASH form — the router runs in hash mode (src/main.js); the path-form URL
+// renders the dashboard instead of the schemas page.
+const SCHEMAS_ROUTE = '/index.php/apps/openregister/#/schemas'
 const API = '/index.php/apps/openregister/api'
 
 const RUN_ID = makeRunId()

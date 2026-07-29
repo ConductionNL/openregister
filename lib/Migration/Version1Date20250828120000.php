@@ -24,8 +24,6 @@ namespace OCA\OpenRegister\Migration;
 
 use Closure;
 use OCP\DB\ISchemaWrapper;
-use OCP\IConfig;
-use OCP\IDBConnection;
 use OCP\Migration\IOutput;
 use OCP\Migration\SimpleMigrationStep;
 
@@ -36,22 +34,33 @@ use OCP\Migration\SimpleMigrationStep;
  * by adding proper indexes on frequently queried columns and composite indexes
  * for common filter combinations.
  *
+ * All indexes (single-column and composite) are added exclusively through the
+ * Doctrine DBAL schema-diff API (`$table->addIndex()`). An earlier revision of
+ * this migration created the composite indexes via raw `CREATE INDEX` SQL
+ * (`$connection->executeStatement()`) executed directly inside `changeSchema()`.
+ * That is unsafe: on a fresh install Nextcloud's `Installer` runs
+ * `MigrationService::migrate('latest', schemaOnly: true)`, which batches every
+ * pending migration's `changeSchema()` call and applies the combined schema
+ * diff in a single `migrateToSchema()` call at the very end. Raw SQL executed
+ * mid-batch runs before `openregister_objects` (created by an earlier
+ * migration) physically exists yet, so PostgreSQL fails every statement with
+ * "relation \"oc_openregister_objects\" does not exist" — silently, because
+ * the failure was caught, so a fresh NC32 install ended up with none of the
+ * composite indexes below. The raw SQL also used MySQL-only column
+ * prefix-length syntax (`register(20)`), which is invalid on PostgreSQL/SQLite
+ * regardless of timing. Routing everything through `addIndex()` keeps the
+ * change part of the deferred schema diff (safe for both the batched
+ * schema-only install path and the per-step upgrade path) and portable across
+ * all three supported database platforms.
+ *
  * @package OCA\OpenRegister\Migration
+ *
+ * @spec exclude Bug-fix to a pre-existing migration's index-creation mechanism (raw SQL ->
+ *       DBAL addIndex()); no new schema or behavior, restores stable32 CI (fixes silent
+ *       "relation does not exist" errors on every fresh install).
  */
 class Version1Date20250828120000 extends SimpleMigrationStep
 {
-    /**
-     * Constructor.
-     *
-     * @param IDBConnection $connection The database connection
-     * @param IConfig       $config     The configuration interface
-     */
-    public function __construct(
-        private readonly IDBConnection $connection,
-        private readonly IConfig $config,
-    ) {
-    }//end __construct()
-
     /**
      * Apply database schema changes for faceting performance.
      *
@@ -64,6 +73,8 @@ class Version1Date20250828120000 extends SimpleMigrationStep
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Database migration requires checking many index conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Database migration requires many index definitions
+     *
+     * @spec exclude See class-level note — index-creation mechanism fix only.
      */
     public function changeSchema(IOutput $output, Closure $schemaClosure, array $options): ?ISchemaWrapper
     {
@@ -99,11 +110,12 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         }
 
         // 2. Critical composite indexes for common filter combinations.
-        // Note: Using raw SQL for composite indexes to handle MySQL key length limits.
-        $connection  = $this->connection;
-        $tablePrefix = $this->config->getSystemValue('dbtableprefix', 'oc_');
-        $tableName   = $tablePrefix.'openregister_objects';
-
+        // Note: no column length prefixes (e.g. MySQL's `register(20)`) — those are
+        // MySQL-only syntax, invalid on PostgreSQL/SQLite, and DBAL's addIndex() schema
+        // diff has no portable way to express them. `register`/`schema`/`organisation`
+        // are VARCHAR(255); combined with MySQL 8.0's default DYNAMIC row format
+        // (3072-byte index key limit, vs. the legacy 767-byte limit), a full-column
+        // composite index comfortably fits, so dropping the prefix is safe.
         $compositeIndexes = [
             // For base filtering (published state).
             // Note: Removed 'deleted' column from all composite indexes because it's JSON type
@@ -112,17 +124,17 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             // 'objects_lifecycle_idx'               => ['deleted', 'published', 'depublished'],.
             'objects_published_depublished_idx'     => ['published', 'depublished'],
 
-            // For register/schema filtering with lifecycle (with length prefixes for text columns).
-            // 'objects_register_schema_deleted_idx' => ['register(20)', 'schema(20)', 'deleted'],
-            // 'objects_register_lifecycle_idx'      => ['register(20)', 'deleted', 'published'],
-            // 'objects_schema_lifecycle_idx'        => ['schema(20)', 'deleted', 'published'],.
-            'objects_register_schema_published_idx' => ['register(20)', 'schema(20)', 'published'],
-            'objects_register_published_idx'        => ['register(20)', 'published'],
-            'objects_schema_published_idx'          => ['schema(20)', 'published'],
+            // For register/schema filtering with lifecycle.
+            // 'objects_register_schema_deleted_idx' => ['register', 'schema', 'deleted'],
+            // 'objects_register_lifecycle_idx'      => ['register', 'deleted', 'published'],
+            // 'objects_schema_lifecycle_idx'        => ['schema', 'deleted', 'published'],.
+            'objects_register_schema_published_idx' => ['register', 'schema', 'published'],
+            'objects_register_published_idx'        => ['register', 'published'],
+            'objects_schema_published_idx'          => ['schema', 'published'],
 
-            // For organisation-based filtering (with length prefix for text column).
-            // 'objects_org_lifecycle_idx'           => ['organisation(20)', 'deleted', 'published'],.
-            'objects_org_published_idx'             => ['organisation(20)', 'published'],
+            // For organisation-based filtering.
+            // 'objects_org_lifecycle_idx'           => ['organisation', 'deleted', 'published'],.
+            'objects_org_published_idx'             => ['organisation', 'published'],
 
             // For date range queries on faceting.
             // 'objects_created_deleted_idx'         => ['created', 'deleted'],
@@ -132,21 +144,14 @@ class Version1Date20250828120000 extends SimpleMigrationStep
         ];
 
         foreach ($compositeIndexes as $indexName => $columns) {
-            // Check if index already exists.
+            // Check if index already exists (covers installs upgrading from a version
+            // that created it, successfully or not, via the old raw-SQL path).
             if ($table->hasIndex($indexName) === true) {
                 continue;
             }
 
-            // Check all base columns exist (without length prefixes).
-            $baseColumns = array_map(
-                function ($col) {
-                    return preg_replace('/\(\d+\)/', '', $col);
-                },
-                $columns
-            );
-
             $allColumnsExist = true;
-            foreach ($baseColumns as $column) {
+            foreach ($columns as $column) {
                 if ($table->hasColumn($column) === false) {
                     $allColumnsExist = false;
                     break;
@@ -154,13 +159,8 @@ class Version1Date20250828120000 extends SimpleMigrationStep
             }
 
             if ($allColumnsExist === true) {
-                try {
-                    $sql = "CREATE INDEX {$indexName} ON {$tableName} (".implode(', ', $columns).")";
-                    $connection->executeStatement($sql);
-                    $output->info("Added composite index {$indexName} on columns: ".implode(', ', $columns));
-                } catch (\Exception $e) {
-                    $output->info("Failed to create index {$indexName}: ".$e->getMessage());
-                }
+                $table->addIndex($columns, $indexName);
+                $output->info(message: "Added composite index {$indexName} on columns: ".implode(', ', $columns));
             }
         }//end foreach
 

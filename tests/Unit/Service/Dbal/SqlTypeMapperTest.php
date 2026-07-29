@@ -80,8 +80,12 @@ class SqlTypeMapperTest extends TestCase
             'datetimetz'           => [Types::DATETIMETZ_MUTABLE, 'string', 'date-time'],
             'datetimetz_immutable' => [Types::DATETIMETZ_IMMUTABLE, 'string', 'date-time'],
             'json'                 => [Types::JSON, 'object', null],
-            'binary'               => [Types::BINARY, 'string', 'binary'],
-            'blob'                 => [Types::BLOB, 'string', 'binary'],
+            // BINARY/BLOB map to plain string with NO format: 'binary' is not
+            // a JSON-Schema format OR's PropertyValidatorHandler accepts, so
+            // SqlTypeMapper deliberately omits it (bytea columns would
+            // otherwise fail their own generated schema's validation).
+            'binary'               => [Types::BINARY, 'string', null],
+            'blob'                 => [Types::BLOB, 'string', null],
             'simple_array'         => [Types::SIMPLE_ARRAY, 'array', null],
             'array'                => [Types::ARRAY, 'array', null],
         ];

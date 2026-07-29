@@ -1920,7 +1920,13 @@ class Schema extends Entity implements JsonSerializable
         // `handoffContract` is the ADR-051 provider-side binding block
         // (contract field → own property, per kind URI); its shape is
         // validated at save time by HandoffContractBindingValidator.
-        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract'];
+        // `importSource` is the schema-import provenance block (dialect,
+        // reference, snapshot version, baseline) written by
+        // SchemaImportService and read back by the reimport / update-from-
+        // source endpoint; without it in the allowlist the provenance is
+        // silently dropped on save and the entire update-from-source feature
+        // is dead (the schema reports "not imported from a standard").
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
 
         foreach ($configuration as $key => $value) {
             // Per-key isolation (#419): a bad VALUE for one config key must never
@@ -2319,6 +2325,24 @@ class Schema extends Entity implements JsonSerializable
         // a dedicated branch above that validates its shape, and
         // validateConfigurationArray re-throws instead of dropping it.
         self::WRITEONLY_PATHS_ANNOTATION,
+        // Federated configuration sharing (ADR pending): a schema opts its
+        // objects into the shared GitHub sharing engine by carrying either
+        // `true` or an `{id, topic, name}` refinement here. Without this entry
+        // setConfiguration() would silently drop the marker and the schema
+        // would never surface as a shareable type — the same or#460/#462-class
+        // trap the vocabulary exists to catch. Read by
+        // SchemaShareableConfigScanner.
+        'x-openregister-shareable',
+        // Declarative bound on what object data may reach an LLM: the
+        // per-schema allowlist Hermiq's AgentContextBuilder (and its JS twin
+        // src/utils/agentContext.js) reads to build an agent's context.
+        // Absent from this list, setConfiguration() silently DROPPED it, so
+        // every agent leaf on every schema fleet-wide resolved an EMPTY
+        // context — fail-closed, so never a leak, but the capability was
+        // wholly inert while schemas saved with HTTP 200 and no error. Same
+        // or#460/#462-class trap as `x-openregister-processing` and
+        // `x-openregister-contextchat` above. See or#2164.
+        'x-openregister-agent-context',
     ];
 
     /**
