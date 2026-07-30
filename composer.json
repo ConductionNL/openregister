@@ -21,7 +21,7 @@
 		},
 		{
 			"type": "vcs",
-			"url": "https://codeberg.org/Conduction/sapp"
+			"url": "https://github.com/ConductionNL/sapp"
 		}
 	],
 	"scripts": {

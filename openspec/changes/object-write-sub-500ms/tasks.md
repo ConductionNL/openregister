@@ -1,11 +1,84 @@
 # Tasks — Object writes under 500 ms
 
+## Results (2026-07-29) — BUDGET MET
+
+Measured with `tests/perf/object-create.sh` on `larpingapp/character`.
+
+| | baseline | now |
+|---|---|---|
+| **wall, p95** | ~13,700 ms | **469 ms** ✅ |
+| wall, median | 13,688 ms | 385 ms |
+| write path (wall − floor) | ~12,800 ms | 93 ms median / 177 ms p95 |
+| schema sequential scans | 3,019 | 23–36 |
+| event dispatch in-request | 1,900 ms | 6–8 ms |
+| DB insert | 76 ms | 76 ms — never the problem |
+
+Configuration required to hit it: an **app token** (not the account password),
+`defer_object_events=1`, and PHP JIT disabled (Conduction/.github#75). With
+deferral off the p95 is 650 ms.
+
+### ⚠️ Correction: my first floor analysis was wrong
+
+An earlier revision of this document claimed the instance floor was 864–1,099
+ms of Nextcloud booting 92 apps, and concluded that wall-clock under 500 ms was
+unreachable. **That was a measurement artefact of my own benchmark.**
+
+Every sample authenticated with HTTP Basic auth carrying the *account
+password*, and Nextcloud bcrypt-verifies that on **every request**. Same
+endpoint, same instance, back to back:
+
+| credential | median |
+|---|---|
+| account password | 1,058 ms |
+| app token | 456 ms |
+
+**~600 ms per request was password hashing, not app boot.** No real client
+authenticates that way — browsers carry a session cookie, integrations use app
+tokens — so the benchmark was measuring bcrypt and attributing it to Nextcloud.
+
+The true floor is ~240–290 ms. App boot is real but roughly a third of what I
+claimed, and the conclusion drawn from it ("not reachable without disabling
+apps") was wrong. The harness now warns when `NC_AUTH` looks like a password.
+
+Lesson worth keeping: a floor that is *assumed structural* deserves the same
+attribution discipline as the code under test. I disabled apps, checked
+opcache, checked APCu and measured a per-app slope — all real work, all
+answering the wrong question, because the instrument itself was never
+questioned.
+
+### What actually cost the time
+
+Not what the proposal predicted. The proposal blamed schema resolution, the
+2,728-branch union, and the transaction count. The first two were real but
+their *causes* were elsewhere, and both were in the event-dispatch path rather
+than in storage:
+
+1. **96 % of all schema reads came from DocuDesk**, not OpenRegister. Its
+   `EnrichmentRunner` listens on object-created and, to answer the boolean
+   "is enrichment enabled", called `getAllSettings()` — the admin-settings
+   payload, which walks every register and every schema. 1,471 `find()` calls
+   per create, on 1,471 *distinct* schemas, so no cache could have helped.
+   Fixed in docudesk `0495b9ec`.
+
+2. **The 2,728-table union was reached through a widened fallback.**
+   `ObjectService::find()` retries on a miss and was dropping the caller's
+   register as well as its schema, so a legitimate "not in this register"
+   answer was produced by scanning the whole instance. The flow-resolver
+   registry asks every resolver in turn, and each non-owning one paid that
+   scan to say "not mine".
+
+3. **The remaining cost was ~22 event listeners**, not the insert. The insert
+   is 76 ms; the dispatch was 234–501 ms.
+
+Task 7 (one transaction) is still open and still worth doing — the commit
+count is 132 per create, down from 12,541 but nowhere near 1.
+
 Ordered by measured payoff. Each task states the number it must move and how
 that number is read, so "done" is a measurement rather than an opinion.
 
 ## Measurement harness (do this first, it gates everything else)
 
-- [ ] **Task 0 — a repeatable benchmark.**
+- [x] **Task 0 — a repeatable benchmark.**
       `tests/perf/object-create.sh`: warms the instance, then times N creates
       against a fixed register/schema, capturing per-run wall time plus the
       counter deltas used throughout this change:
@@ -31,7 +104,7 @@ that number is read, so "done" is a measurement rather than an opinion.
 
 ## Schema resolution — the largest single cost
 
-- [ ] **Task 1 — attribute the 5,135 `find()` calls.**
+- [x] **Task 1 — attribute the 5,135 `find()` calls.**
       Add a counter + sampled backtrace behind an app-config flag
       (`perf_trace_schema_reads`), run one create, and produce a call-site
       histogram. The fix depends entirely on which of these it is:
@@ -69,11 +142,17 @@ that number is read, so "done" is a measurement rather than an opinion.
 
 ## Reference resolution — the 4-second query
 
-- [ ] **Task 5 — resolve typed relations against their declared schema.**
-      When a property declares `$ref` / a target schema id, resolve the
-      reference against **that** schema's magic table only. `character`'s six
-      relation properties all declare theirs. One branch instead of 2,728
-      turns a 3.4 s plan into a sub-millisecond index probe.
+- [x] **Task 5 — stop reaching the instance-wide fan-out from the write path.**
+      SOLVED, but not by the mechanism written here. The fan-out was not being
+      reached through untyped relation properties at all — it was reached
+      through `ObjectService::find()`'s cross-schema fallback, which dropped
+      the caller's REGISTER along with its schema on a miss. It now keeps the
+      register, and `MagicMapper` accepts a `registerIdScope` that filters
+      candidate tables. One create now issues no instance-wide union.
+
+      The originally-specified work — resolving a `$ref` property against its
+      declared schema's table — is still worth doing for read paths, and is
+      NOT done. It is folded into task 6.
 
 - [ ] **Task 6 — replace the global fan-out with an index table.**
       For genuinely untyped references, `oc_openregister_object_index
@@ -92,7 +171,7 @@ that number is read, so "done" is a measurement rather than an opinion.
       committed multi-step write left orphaned schema rows behind when a later
       step failed (fixed in the schema-dedup command by the same means).
 
-- [ ] **Task 8 — move post-write work behind the commit.**
+- [x] **Task 8 — move post-write work behind the commit.**
       CloudEvent fan-out, audit-trail hash sealing, notification history and
       `oc_activity` writes move into a `QueuedJob` dispatched after commit.
       Requirements:
@@ -101,6 +180,21 @@ that number is read, so "done" is a measurement rather than an opinion.
         did not happen);
       - failure of the job never fails the write;
       - ordering per object is preserved.
+
+      DONE for `ObjectCreatedEvent`, opt-in via `defer_object_events`, off by
+      default (a `sync` flow's whole point is that its effects land before the
+      save returns, so this cannot be flipped on for everyone by fiat).
+
+      ⚠️ **The job MUST carry the acting user.** The first version did not, and
+      it was a flawless no-op: the job ran, threw nothing, logged nothing, and
+      produced ZERO CloudEvents where the inline path produced one. A
+      background job has no session, and OpenRegister reads are
+      organisation-filtered against the session user, so every listener that
+      consults the register saw an empty instance and skipped. Deferring side
+      effects without carrying identity does not move the work — it deletes it.
+      Verified after the fix: 1 CloudEvent, matching inline.
+
+      Still to defer: update and delete events, audit sealing, activity.
 
 - [ ] **Task 9 — specify the new consistency contract.**
       A 201 now means "persisted", not "persisted and fanned out". State it in
