@@ -296,7 +296,7 @@
 			"children": [
 				{ "id": "Registers", "label": "Registers", "icon": "DatabaseOutline", "route": "registers", "order": 20 },
 				{ "id": "Schemas", "label": "Schemas", "icon": "FileTreeOutline", "route": "schemas", "order": 30 },
-				{ "id": "Templates", "label": "Templates", "icon": "FileOutline", "route": "templates", "order": 40 },
+				{ "id": "Templates", "label": "Templates", "icon": "FileReplaceOutline", "route": "templates", "order": 40 },
 				{ "id": "Tables", "label": "Search / views", "icon": "Magnify", "route": "tables", "order": 50 },
 				{ "id": "Files", "label": "Files", "icon": "FileDocumentMultipleOutline", "route": "files", "order": 60 }
 			]
@@ -310,7 +310,7 @@
 			"children": [
 				{ "id": "Organisations", "label": "Organisations", "icon": "OfficeBuildingOutline", "route": "organisation", "order": 91 },
 				{ "id": "Applications", "label": "Applications", "icon": "ApplicationOutline", "route": "applications", "order": 92 },
-				{ "id": "Sources", "label": "Data sources", "icon": "DatabaseArrowRightOutline", "route": "sources", "order": 93 },
+				{ "id": "Sources", "label": "Data sources", "icon": "DatabaseOutline", "route": "sources", "order": 93 },
 				{ "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "endpoints", "order": 94 },
 				{ "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "webhooks", "order": 95 }
 			]
@@ -318,13 +318,13 @@
 		{
 			"id": "AdministrationGroup",
 			"label": "Administration",
-			"icon": "CogOutline",
+			"icon": "ShieldAccountOutline",
 			"section": "main",
 			"order": 100,
 			"children": [
 				{ "id": "Configurations", "label": "Configurations", "icon": "CogOutline", "route": "configurations", "order": 94 },
 				{ "id": "Entities", "label": "Entities", "icon": "AccountOutline", "route": "entities", "order": 95 },
-				{ "id": "Avg", "label": "AVG / Verwerkingsregister", "icon": "ShieldLockOutline", "route": "avg", "order": 100 },
+				{ "id": "Avg", "label": "AVG / Verwerkingsregister", "icon": "DatabaseOutline", "route": "avg", "order": 100 },
 				{ "id": "Reports", "label": "Reports", "icon": "ChartBoxOutline", "route": "reports", "order": 101 }
 			]
 		},
@@ -336,28 +336,28 @@
 			"order": 110,
 			"children": [
 				{ "id": "Deleted", "label": "Deleted", "icon": "DeleteRestore", "route": "deleted", "order": 96 },
-				{ "id": "AuditTrails", "label": "Audit Trails", "icon": "TextBoxOutline", "route": "audit-trails", "order": 97 },
-				{ "id": "SearchTrails", "label": "Search Trails", "icon": "MagnifyPlus", "route": "search-trails", "order": 98 }
+				{ "id": "AuditTrails", "label": "Audit Trails", "icon": "History", "route": "audit-trails", "order": 97 },
+				{ "id": "SearchTrails", "label": "Search Trails", "icon": "Magnify", "route": "search-trails", "order": 98 }
 			]
 		},
 		{
 			"id": "DataQualityGroup",
 			"label": "Data quality",
-			"icon": "ChartBoxOutline",
+			"icon": "ClipboardPulseOutline",
 			"section": "main",
 			"order": 120,
 			"children": [
-				{ "id": "Quality", "label": "Data Quality", "icon": "ChartBoxOutline", "route": "quality", "order": 10 },
+				{ "id": "Quality", "label": "Data Quality", "icon": "ClipboardPulseOutline", "route": "quality", "order": 10 },
 				{ "id": "Duplicates", "label": "Duplicate Candidates", "icon": "ContentDuplicate", "route": "duplicates", "order": 20 },
 				{ "id": "MasterEntities", "label": "Master entities", "icon": "AccountMultipleOutline", "route": "masterEntities", "order": 30 },
-				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "Webhook", "route": "queueHealth", "order": 40 },
+				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "TrayFull", "route": "queueHealth", "order": 40 },
 				{ "id": "MergeOperations", "label": "Merge Operations", "icon": "Merge", "route": "mergeOperations", "order": 50 }
 			]
 		},
 		{
 			"id": "Documentation",
 			"label": "Documentation",
-			"icon": "InformationOutline",
+			"icon": "BookOpenVariantOutline",
 			"href": "https://openregister.conduction.nl",
 			"section": "footer",
 			"order": 1

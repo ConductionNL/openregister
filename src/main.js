@@ -18,38 +18,10 @@ import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import registry from './registry.js'
-
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import appIcons from './icons.js'
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
-import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
-import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
-import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
-import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
-import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
-import Webhook from 'vue-material-design-icons/Webhook.vue'
-import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
-import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import Api from 'vue-material-design-icons/Api.vue'
-import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
-import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
-import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import Merge from 'vue-material-design-icons/Merge.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -90,37 +62,7 @@ try {
 	console.error('[main] xwiki registry guard failed', e)
 }
 
-registerIcons({
-	AccountGroupOutline,
-	FileDocumentOutline,
-	Cog,
-	CogOutline,
-	// Navigation icons (manifest menu items resolve these by name)
-	MessageTextOutline,
-	DatabaseOutline,
-	FileTreeOutline,
-	FileOutline,
-	Magnify,
-	FileDocumentMultipleOutline,
-	RobotOutline,
-	InformationOutline,
-	MapMarkerPath,
-	OfficeBuildingOutline,
-	ApplicationOutline,
-	DatabaseArrowRightOutline,
-	AccountOutline,
-	DeleteRestore,
-	TextBoxOutline,
-	MagnifyPlus,
-	Webhook,
-	ShieldLockOutline,
-	ChartBoxOutline,
-	Api,
-	ViewDashboardOutline,
-	ContentDuplicate,
-	AccountMultipleOutline,
-	Merge,
-})
+registerIcons(appIcons)
 
 Vue.mixin({ methods: { t, n } })
 
