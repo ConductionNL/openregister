@@ -1176,6 +1176,8 @@ class ObjectService
             _rbac: $_rbac
         );
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
+
         // Reject updates to transferred objects (archiefstatus = overgebracht).
         if ($uuid !== null) {
             $this->rejectIfTransferred(uuid: $uuid);
@@ -1272,8 +1274,12 @@ class ObjectService
         // object exactly once so the check is data-driven, not metadata-only.
         $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
+
         // Ensure folder exists for the object.
         $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
 
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
@@ -1441,8 +1447,20 @@ class ObjectService
         }
 
         // UUID provided - check if object exists to determine CREATE vs UPDATE.
+        //
+        // Scope the lookup to the register and schema being written to. Left
+        // unscoped, this resolved the UUID by UNION-ing every magic table on the
+        // instance. It was also the wrong question: the permission being checked
+        // is "may I write THIS object in THIS schema", so an object of the same
+        // UUID living in another register/schema must not supply the owner the
+        // check is made against. Not finding it here means the same thing it has
+        // always meant — treat the write as a create with a caller-chosen UUID.
         try {
-            $existingObject = $this->objectMapper->find($uuid);
+            $existingObject = $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema
+            );
             // This is an UPDATE operation.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -1725,7 +1743,16 @@ class ObjectService
         if ($uuid !== null) {
             // For existing objects or objects with specific UUIDs, check if folder needs to be created.
             try {
-                $existingObject = $this->objectMapper->find($uuid);
+                // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
+                // we are on the save path with both register and schema already
+                // resolved, so there is no reason to fall back to the
+                // cross-table search (openregister#1520). Unscoped, this was the
+                // third full-instance UUID resolution in a single update.
+                $existingObject = $this->objectMapper->find(
+                    $uuid,
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema
+                );
                 $folder         = $existingObject->getFolder();
 
                 // The `_folder` column is `varchar(255)` — every populated
@@ -1996,10 +2023,14 @@ class ObjectService
     private function rejectIfTransferred(string $uuid): void
     {
         try {
+            // Scoped to the register and schema currently in context: the only
+            // object whose transfer status can block this write is the one being
+            // written. Unscoped, this UNION-ed every magic table on the instance
+            // — the second such lookup in the same phase, on the same UUID.
             $object = $this->objectMapper->find(
                 identifier: $uuid,
-                register: null,
-                schema: null,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
                 includeDeleted: true
             );
 

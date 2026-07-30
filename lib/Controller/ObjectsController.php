@@ -2786,6 +2786,8 @@ class ObjectsController extends Controller
         string $id,
         ObjectService $objectService
     ): JSONResponse {
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.in');
+
         try {
             // Resolve slugs to numeric IDs consistently.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
@@ -2826,12 +2828,20 @@ class ObjectsController extends Controller
         // Check if the object exists and can be updated (silent read - no audit trail).
         // @todo shouldn't this be part of the object service?
         try {
+            // Scope the lookup to the register and schema the URL named. Passing
+            // null here made this an UNSCOPED lookup, which resolves a UUID by
+            // UNION-ing every magic table on the instance (2,728 of them on the
+            // development instance) — the single largest cost in an update, and
+            // pure waste: the check immediately below asserts the object is in
+            // this exact register and schema anyway. A UUID belonging to another
+            // scope now raises DoesNotExistException and returns the same 404 it
+            // would have got from that check.
             $existingObject = $this->objectService->findSilent(
                 id: $id,
                 _extend: [],
                 files: false,
-                register: null,
-                schema: null,
+                register: $resolved['register'],
+                schema: $resolved['schema'],
                 _rbac: $rbac,
                 _multitenancy: $multi
             );
@@ -2903,9 +2913,20 @@ class ObjectsController extends Controller
                 uploadedFiles: $uploadedFilesValue
             );
 
-            // Unlock the object after saving.
+            // Unlock the object after saving — but only if it is actually locked.
+            //
+            // unlock() must resolve the identifier back to its register/schema
+            // before it can do anything, and unscoped that is a scan across every
+            // magic table on the instance. It then returns immediately when the
+            // object holds no lock (LockHandler::unlock, the openregister#195
+            // idempotence branch), which is the normal case for this defensive
+            // post-save unlock. We already hold the saved entity, so the "is it
+            // locked" question is free here and the scan is pure waste — measured
+            // at ~780 ms of a ~1.3 s update.
             try {
-                $this->objectService->unlockObject($objectEntity->getUuid());
+                if ($objectEntity->isLocked() === true) {
+                    $this->objectService->unlockObject($objectEntity->getUuid());
+                }
             } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
                 // NOTE: must be the global \Exception — the unqualified `Exception`
@@ -2914,8 +2935,14 @@ class ObjectsController extends Controller
                 // surfaced as a spurious 403. See openregister#195.
             }
 
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.unlocked');
+
             // Return the successfully saved object directly.
-            return new JSONResponse(data: $objectEntity->jsonSerialize());
+            $body = $objectEntity->jsonSerialize();
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.update.out');
+
+            return new JSONResponse(data: $body);
         } catch (AppendOnlyException $exception) {
             // Reject update on append-only schema with HTTP 405.
             return new JSONResponse(data: $exception->toResponseBody(), statusCode: Http::STATUS_METHOD_NOT_ALLOWED);
@@ -3107,9 +3134,20 @@ class ObjectsController extends Controller
                     ]
                     );
 
-            // Unlock the object after saving.
+            // Unlock the object after saving — but only if it is actually locked.
+            //
+            // unlock() must resolve the identifier back to its register/schema
+            // before it can do anything, and unscoped that is a scan across every
+            // magic table on the instance. It then returns immediately when the
+            // object holds no lock (LockHandler::unlock, the openregister#195
+            // idempotence branch), which is the normal case for this defensive
+            // post-save unlock. We already hold the saved entity, so the "is it
+            // locked" question is free here and the scan is pure waste — measured
+            // at ~780 ms of a ~1.3 s update.
             try {
-                $this->objectService->unlockObject($objectEntity->getUuid());
+                if ($objectEntity->isLocked() === true) {
+                    $this->objectService->unlockObject($objectEntity->getUuid());
+                }
             } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful (e.g., magic table objects).
                 $this->logger->debug(
@@ -3270,9 +3308,20 @@ class ObjectsController extends Controller
                 uploadedFiles: $uploadedFilesValue
             );
 
-            // Unlock the object after saving.
+            // Unlock the object after saving — but only if it is actually locked.
+            //
+            // unlock() must resolve the identifier back to its register/schema
+            // before it can do anything, and unscoped that is a scan across every
+            // magic table on the instance. It then returns immediately when the
+            // object holds no lock (LockHandler::unlock, the openregister#195
+            // idempotence branch), which is the normal case for this defensive
+            // post-save unlock. We already hold the saved entity, so the "is it
+            // locked" question is free here and the scan is pure waste — measured
+            // at ~780 ms of a ~1.3 s update.
             try {
-                $this->objectService->unlockObject($objectEntity->getUuid());
+                if ($objectEntity->isLocked() === true) {
+                    $this->objectService->unlockObject($objectEntity->getUuid());
+                }
             } catch (\Exception $e) {
                 // Ignore unlock errors since the update was successful.
             }
@@ -3329,6 +3378,8 @@ class ObjectsController extends Controller
      */
     public function destroy(string $id, string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.destroy.in');
+
         try {
             // Set the register and schema context for ObjectService.
             $objectService->setRegister(register: $register);
@@ -3342,7 +3393,20 @@ class ObjectsController extends Controller
             // If admin, _multitenancy: disable multitenancy.
             // Use ObjectService to delete the object (includes RBAC permission checks,
             // persist: audit trail, silent: and soft delete).
-            $deleteResult = $objectService->deleteObject(uuid: $id, _rbac: $rbac, _multitenancy: $multi);
+            //
+            // Pass the scope EXPLICITLY. deleteObject() decides whether to scope
+            // its lookup from its own arguments ($hasScope), not from the
+            // register/schema set on the service above — so omitting them here
+            // resolved the UUID by UNION-ing every magic table on the instance.
+            // It also meant the URL's scope was never enforced: an object could
+            // be deleted through a register/schema it does not belong to.
+            $deleteResult = $objectService->deleteObject(
+                uuid: $id,
+                register: $register,
+                schema: $schema,
+                _rbac: $rbac,
+                _multitenancy: $multi
+            );
 
             if ($deleteResult === false) {
                 // If delete operation failed, return error.
