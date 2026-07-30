@@ -41,6 +41,15 @@ use Throwable;
  * Uses HTTP 409 Conflict: the request could not be completed because of a
  * conflict with the current state of the resource (RFC 9110 §15.5.10).
  *
+ * ⚠️ NOT A LOCK — see openregister#2212. The guard that raises this sits
+ * between the existence lookup and the write, which are two separate
+ * operations. Under CONCURRENT claims several callers can all pass the lookup
+ * before any of them writes, and several receive 201. A sequential second
+ * create is correctly refused; simultaneous ones are not serialised. Do not
+ * rely on this for mutual exclusion until the arbitration moves into the
+ * database (a real INSERT against the `_uuid` unique constraint, or a
+ * transaction around check-and-write).
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *

@@ -2916,6 +2916,15 @@ class SaveObject
                 // upsert is silent, so there is no way to discover from the code
                 // which callers depend on it. Flipping the default would change
                 // behaviour fleet-wide with no way to enumerate the blast radius.
+                //
+                // ⚠️ THIS IS NOT A LOCK — openregister#2212. This check and the
+                // write below are two separate operations, so N concurrent
+                // callers can all reach here having found nothing and all
+                // proceed. Measured: 10 simultaneous claims on one identifier
+                // returned 201 six times. It narrows the window; it does not
+                // close it. Closing it means letting the database arbitrate — a
+                // real INSERT against the `_uuid` unique constraint, translated
+                // into this exception.
                 if ($failIfExists === true) {
                     $this->logger->debug(
                         message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
