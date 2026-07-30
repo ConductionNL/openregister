@@ -18,7 +18,7 @@
  * Pattern reference: ADR-030 (hydra/openspec/architecture/).
  */
 
-import { chromium, request, type FullConfig } from '@playwright/test'
+import { chromium, expect, request, type FullConfig } from '@playwright/test'
 import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
@@ -159,8 +159,8 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			throw err
 		}
 	}
-	// Then confirm an authenticated page rendered (header on a non-login page).
-	await page.waitForSelector('#header, header.header', { timeout: 20_000 })
+	// Check the URL FIRST: it is the cheaper and far more diagnostic assertion,
+	// and it does not depend on any element having rendered yet.
 	const currentUrl = page.url()
 	if (/\/login(\?|$|\/)/.test(currentUrl)) {
 		throw new Error(
@@ -168,6 +168,23 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 			+ 'Check NC_ADMIN_USER / NC_ADMIN_PASS (defaults admin/admin).',
 		)
 	}
+
+	// Then confirm an authenticated page actually rendered.
+	//
+	// `waitForSelector` used to be here and timed out while REPORTING the header
+	// as visible:
+	//
+	//   waiting for locator('#header, header.header') to be visible
+	//     - locator resolved to visible <header id="header">…</header>
+	//
+	// That contradiction is a navigation race: the post-login redirect
+	// invalidates the handle mid-check, so the wait keeps retrying a stale one
+	// until it expires. `expect().toBeVisible()` re-resolves the locator on every
+	// poll, so a redirect costs it one poll instead of the whole budget. Settle
+	// the navigation first — `domcontentloaded`, never `networkidle`, which never
+	// fires on Nextcloud because of its notification poll (ADR-074 rule 4).
+	await page.waitForLoadState('domcontentloaded')
+	await expect(page.locator('#header, header.header').first()).toBeVisible({ timeout: 20_000 })
 
 	await context.storageState({ path: STORAGE_STATE })
 	await browser.close()
