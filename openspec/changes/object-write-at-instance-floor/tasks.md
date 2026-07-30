@@ -69,6 +69,21 @@ work, so the ABSOLUTE numbers are badly inflated — the ratios are the finding:
 Search is free — it never leaves the floor. Update costs **15×** a create and
 delete **6×**.
 
+⚠️ **CORRECTION (same day): the statement COUNTS below are unreliable.** They
+were taken from every statement on the request's PostgreSQL backend within a
+time window. A backend is a **pooled connection** — it serves consecutive
+requests — so the window sweeps in unrelated traffic. Tight enough for a ~500 ms
+create; useless for an update that took 30 s under host load 21-62. Checking the
+same capture, 24 distinct backends issued probes during it.
+
+The WALL-CLOCK ratios (update 15x a create, delete 6x, search free) come from
+timing individual HTTP requests and are unaffected. The direction of the finding
+holds. The specific counts do not — treat them as indicative.
+
+Correct method: bracket on a marker the request emits in its own SQL, or add a
+per-request id to `log_line_prefix`, or count from inside PHP where "this
+request" is unambiguous.
+
 Statement counts, which do NOT inflate with load (PostgreSQL statement log,
 scoped to the request's backend and window):
 
