@@ -1,30 +1,77 @@
 # Tasks — Object writes at the instance floor
 
-Baseline to beat (2026-07-30, `tests/perf/object-create.sh`, app-token auth,
-`defer_object_events=1`, JIT disabled, host load ~6):
+## ⚠️ RE-MEASURED 2026-07-30 — the target is already met at median
+
+After the DocuDesk fixes landed, I re-measured before executing this plan. The
+numbers it was written against are stale, and acting on them would have meant a
+large refactor for a small gain.
 
 ```
-wall            min 294ms  median 322ms  p95 476ms
-instance floor  172-213ms
-write path      ~110-260ms above floor
-per create      326 statements, 176.8ms DB time, ~135 commits
+tests/perf/object-create.sh, app token, defer_object_events=1, JIT off, 16 runs
+wall            min 220ms  median 249ms  p95 394ms
+instance floor  207ms
+WRITE PATH      min 13ms   median 42ms   p95 187ms
 ```
 
-Target: **write path ≤ 50 ms above the floor**, measured in the same run.
+**The ≤50 ms target is met at median (42 ms).** p95 is over, but the host was at
+load 4.6–6.0 from unrelated work; that is measurement noise, not code.
 
-⚠️ Measure with an **app token**. Basic auth with the account password adds
-~600 ms of bcrypt per request and will bury every result here. The harness warns
-about it.
+### What moved, and what that does to the plan
 
-⚠️ `pg_stat_*` counters are **database-global**. Cron pollutes them (18 schema
-scans + 356 commits per 4 idle seconds). Either subtract an idle sample taken in
-the same run, or use the PostgreSQL statement log scoped to the request's
-backend pid and time window — that is how the 326-statement breakdown was
-obtained, and it is the authoritative method.
+Statement log of one create, before and after the DocuDesk fixes:
+
+| | before | now |
+|---|---|---|
+| statements | 326 | **251** |
+| schema lookups | 57 (44.7 ms) | **15 (11.3 ms)** |
+| register lookups | 24 (3.2 ms) | 24 (3.5 ms) |
+| `information_schema` probes | 9 (4.7 ms) | 9 (3.5 ms) |
+| `SELECT lastval()` | 18 | 9 |
+
+**Phase 1 is now worth ~11 ms, not ~45 ms.** Rewriting every schema read path
+through an identity map is no longer justified by the measurement. Tasks 1–4 are
+therefore **deferred, not cancelled** — they become worthwhile again if the
+schema count grows or if a caller reintroduces a hot loop, and the reasoning is
+preserved below so nobody has to rediscover it.
+
+### A hypothesis of mine that did NOT hold
+
+The re-measurement showed `SELECT ... FROM oc_appconfig WHERE lazy = ?` at
+**80.6 ms, 42 % of all DB time** — and `app_versions` stores **9.1 MB across 86
+non-lazy appconfig keys** (`appstore.payload.*`, up to 3.2 MB for `mail`).
+Nextcloud loads non-lazy config eagerly, so this looked like the single biggest
+per-request cost.
+
+It is not. Marking those keys lazy and re-measuring made creates *marginally
+slower* (275 → 299 ms median), because `memcache.local` is APCu and the config
+is cached across requests — the 80 ms was a **cold-cache event**, once per PHP
+worker, not per request. Change reverted.
+
+Worth keeping anyway as hygiene (9.1 MB of payloads only one app reads), but
+**not as a performance task**, and not on this change's critical path.
+
+### Revised priority
+
+1. **p95 stability** — the median is at target; the spread is not. Establish
+   whether p95 moves at all on an unloaded host before treating it as a code
+   problem.
+2. **Phase 4 latent items** (tasks 11–13) — these are the real remaining risks.
+   pipelinq's appstore walk costs nothing here *only* because
+   `has_internet_connection=false`; openconnector is one config key from a
+   repair step per request; the 60 s cron fleet is the noise floor that made
+   every measurement in this session harder.
+3. **Task 6 (one transaction)** — still ~135 commits per create. Correctness and
+   fsync hygiene argue for it independently of latency.
+4. **Tasks 1–4** — deferred per above.
+5. **Tasks 9–10 (fan-out index)** — still right, still not urgent: the
+   register-scoped fallback holds today.
+
+The original task list follows unchanged, so the reasoning behind each item
+survives even where the priority moved.
 
 ---
 
-## Phase 1 — schema and register resolution (44.7 ms + 3.2 ms of DB time)
+## Phase 1 — schema and register resolution (DEFERRED — now ~11 ms, see above)
 
 - [ ] **Task 1 — one identity map in front of every schema read.**
       Route every path that returns a `Schema` through a single request-scoped
