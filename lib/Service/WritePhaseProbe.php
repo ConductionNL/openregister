@@ -60,6 +60,13 @@ final class WritePhaseProbe
     private static array $counts = [];
 
     /**
+     * Whether the shutdown flush has been armed for this request.
+     *
+     * @var boolean
+     */
+    private static bool $armed = false;
+
+    /**
      * Accumulated milliseconds per phase name.
      *
      * @var array<string, float>
@@ -72,6 +79,32 @@ final class WritePhaseProbe
      * @var array<string, float>
      */
     private static array $stamps = [];
+
+    /**
+     * Arm a one-shot flush at request shutdown.
+     *
+     * The write path calls flush() explicitly. Read paths had no such call, so
+     * search and single-read produced no counts at all and were effectively
+     * unmeasured. Registering the flush on first use covers every path without
+     * threading a flush() call through each controller — and a controller that
+     * is added later gets it for free.
+     *
+     * @return void
+     */
+    private static function arm(): void
+    {
+        if (self::$armed === true) {
+            return;
+        }
+
+        self::$armed = true;
+        register_shutdown_function(
+            static function (): void {
+                self::flush();
+            }
+        );
+
+    }//end arm()
 
     /**
      * Count one occurrence of a named event in THIS request.
@@ -101,6 +134,8 @@ final class WritePhaseProbe
         if (self::$enabled === false) {
             return;
         }
+
+        self::arm();
 
         if (isset(self::$counts[$event]) === false) {
             self::$counts[$event] = 0;
@@ -132,6 +167,8 @@ final class WritePhaseProbe
         if (self::$enabled === false) {
             return;
         }
+
+        self::arm();
 
         $start = (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? 0);
         if ($start <= 0.0) {
@@ -187,7 +224,18 @@ final class WritePhaseProbe
      */
     public static function flush(): void
     {
-        if (self::$enabled !== true || empty(self::$phases) === true) {
+        // Emit when there is ANYTHING to say. Requiring phases meant read paths
+        // — which produce stamps and counts but no phase marks — flushed
+        // nothing, which is exactly why search and single-read looked
+        // unmeasurable.
+        if (self::$enabled !== true) {
+            return;
+        }
+
+        if (empty(self::$phases) === true
+            && empty(self::$counts) === true
+            && empty(self::$stamps) === true
+        ) {
             return;
         }
 
