@@ -37,11 +37,13 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use stdClass;
 use Throwable;
 
 /**
@@ -68,6 +70,18 @@ class FlowRunWorker extends TimedJob
     private const DEFAULT_RETENTION_DAYS = 30;
 
     /**
+     * How long a run may sit in `running` before it counts as abandoned.
+     *
+     * A run executes synchronously inside ONE worker pass, so a pass that is
+     * still going has touched its row far more recently than this. Fifteen
+     * minutes is therefore generous rather than tight — it exists to be
+     * unambiguous, not to be quick.
+     *
+     * @var int
+     */
+    private const DEFAULT_STALE_MINUTES = 15;
+
+    /**
      * Constructor.
      *
      * @param ITimeFactory         $time      Job scheduling clock.
@@ -81,7 +95,7 @@ class FlowRunWorker extends TimedJob
         ITimeFactory $time,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
-        private readonly \OCA\OpenRegister\Service\Flow\FlowResolverRegistry $resolvers,
+        private readonly FlowResolverRegistry $resolvers,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
@@ -107,6 +121,8 @@ class FlowRunWorker extends TimedJob
     {
         $now = new DateTime();
 
+        $this->reapStale(now: $now);
+
         foreach ($this->mapper->findQueued(limit: self::BATCH) as $run) {
             $this->advance(run: $run);
         }
@@ -120,11 +136,76 @@ class FlowRunWorker extends TimedJob
     }//end run()
 
     /**
+     * Fail runs abandoned in `running` by a pass that never came back.
+     *
+     * FAILED, not requeued. A run that died mid-walk may already have written
+     * an object, sent a mail, or called a webhook; restarting it would repeat
+     * those silently. The existing retry endpoint turns it back into a run when
+     * a person decides that is right — which is exactly the kind of decision
+     * that should not be made by a cron job.
+     *
+     * Left alone, such a row is unreachable: the worker reads only `queued` and
+     * due `suspended` runs, so nothing ever touches it again, and every surface
+     * that shows live runs shows it as running forever.
+     *
+     * @param DateTime $now The current time.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+     */
+    private function reapStale(DateTime $now): void
+    {
+        $minutes = (int) $this->appConfig->getValueString(
+            'openregister',
+            'flow_run_stale_minutes',
+            (string) self::DEFAULT_STALE_MINUTES
+        );
+
+        if ($minutes <= 0) {
+            // An operator who runs very long single steps can switch the reaper
+            // off rather than have it fail work that is still going.
+            return;
+        }
+
+        $cutoff = (clone $now)->modify('-'.$minutes.' minutes');
+
+        foreach ($this->mapper->findStale(before: $cutoff, limit: self::BATCH) as $run) {
+            $run->setStatus(FlowRun::STATUS_FAILED);
+            $run->setError(
+                sprintf(
+                    'Abandoned: no worker pass has touched this run for over %d minutes, '
+                    .'so the pass that started it did not finish (a fatal, a timeout or a restart). '
+                    .'Retry it to run it again from the start.',
+                    $minutes
+                )
+            );
+            $run->setUpdated($now);
+            $this->mapper->update($run);
+
+            $this->logger->warning(
+                message: '[FlowRunWorker] Failed a run abandoned in `running`',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'run'  => $run->getUuid(),
+                    'flow' => $run->getFlowId(),
+                ]
+            );
+        }//end foreach
+
+    }//end reapStale()
+
+    /**
      * Advance one run, never letting its failure stop the batch.
      *
      * @param FlowRun $run The run.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is a pure value
+     * constructor with no state to inject; a factory collaborator would add a
+     * dependency to say the same thing.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
@@ -169,7 +250,7 @@ class FlowRunWorker extends TimedJob
             // user's id exactly as it would an object's fields.
             $seed = null;
             if ($subject === null) {
-                $subject = new \stdClass();
+                $subject = new stdClass();
                 $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
                 if ($payload !== []) {
                     $seed = [FlowItems::item(json: $payload)];
