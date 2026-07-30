@@ -53,6 +53,13 @@ final class WritePhaseProbe
     private static ?float $last = null;
 
     /**
+     * Per-request event counts, keyed by event name.
+     *
+     * @var array<string, integer>
+     */
+    private static array $counts = [];
+
+    /**
      * Accumulated milliseconds per phase name.
      *
      * @var array<string, float>
@@ -79,6 +86,44 @@ final class WritePhaseProbe
      *
      * @return void
      */
+
+    /**
+     * Count one occurrence of a named event in THIS request.
+     *
+     * Exists because counting from the PostgreSQL statement log is not
+     * per-request: a backend is a pooled connection serving consecutive
+     * requests, so bracketing by wall-clock sweeps in unrelated traffic. That
+     * invalidated a set of counts published on 2026-07-30 — an update measured
+     * at 30s under load had a window wide enough to capture 24 other backends'
+     * work. Counting here makes "this request" unambiguous.
+     *
+     * Gated on the same file flag as the phase timer, so it costs one
+     * `file_exists` per process when off.
+     *
+     * @param string $event The thing being counted.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-write-at-instance-floor/specs/object-write-performance/spec.md
+     */
+    public static function count(string $event): void
+    {
+        if (self::$enabled === null) {
+            self::$enabled = @file_exists('/tmp/or-trace-write-phases');
+        }
+
+        if (self::$enabled === false) {
+            return;
+        }
+
+        if (isset(self::$counts[$event]) === false) {
+            self::$counts[$event] = 0;
+        }
+
+        self::$counts[$event]++;
+
+    }//end count()
+
     public static function stamp(string $label): void
     {
         if (self::$enabled === null) {
@@ -185,9 +230,20 @@ final class WritePhaseProbe
             }
         }
 
+        if (empty(self::$counts) === false) {
+            arsort(self::$counts);
+            $line .= '  [counts';
+            foreach (self::$counts as $event => $n) {
+                $line .= sprintf(' %s=%d', $event, $n);
+            }
+
+            $line .= ']';
+        }
+
         @file_put_contents('/tmp/or-write-phases.log', $line.PHP_EOL, (FILE_APPEND | LOCK_EX));
 
         self::$phases = [];
+        self::$counts = [];
         self::$last   = null;
 
     }//end flush()

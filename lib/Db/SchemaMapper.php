@@ -359,6 +359,7 @@ class SchemaMapper extends QBMapper
         }
 
         $this->traceRead(method: 'find');
+        \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
 
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')

@@ -69,6 +69,30 @@ work, so the ABSOLUTE numbers are badly inflated — the ratios are the finding:
 Search is free — it never leaves the floor. Update costs **15×** a create and
 delete **6×**.
 
+### ✅ TRUSTWORTHY per-request counts (measured from inside PHP)
+
+`WritePhaseProbe::count()` counts inside the request, so "this request" is
+unambiguous — no pooling confound. These supersede every statement-log count in
+this document:
+
+| operation | schema DB reads | tableExists probes | full table enumerations |
+|---|---|---|---|
+| create | 6 | 3 | 0 |
+| **update** | **13** | **7** | **1** |
+| **delete** | **12** | **7** | **1** |
+
+So update/delete do roughly **2× a create's** schema reads and each performs one
+full 2,728-table enumeration that a create does not. That is a real gap and
+worth closing — and it is far more modest than the 51-vs-15 the pooled log
+suggested. The wall-clock ratios (15× / 6×) still stand and are not explained by
+these counts alone, which points at PHP-side work rather than round trips.
+
+The magic-table memoisation holds it at **1** enumeration per request, which is
+the floor without sharing mapper instances.
+
+⚠️ read and search produce no counts: `WritePhaseProbe::flush()` is only reached
+from the write path. Instrumenting the read path is open work.
+
 ⚠️ **CORRECTION (same day): the statement COUNTS below are unreliable.** They
 were taken from every statement on the request's PostgreSQL backend within a
 time window. A backend is a **pooled connection** — it serves consecutive
