@@ -1,200 +1,136 @@
 <script setup>
-import { translate as t, translatePlural as n } from '@nextcloud/l10n'
+import { translate as t } from '@nextcloud/l10n'
 import { auditTrailStore, navigationStore } from '../../store/store.js'
 import formatBytes from '../../services/formatBytes.js'
 </script>
 
 <template>
 	<NcAppContent>
-		<div class="viewContainer">
-			<!-- Header -->
-			<div class="viewHeader">
-				<h1 class="viewHeaderTitleIndented">
-					{{ t('openregister', 'Audit Trails') }}
-				</h1>
-				<p>{{ t('openregister', 'View and analyze system audit trails with advanced filtering capabilities') }}</p>
-			</div>
+		<CnIndexPage
+			ref="indexPage"
+			:title="t('openregister', 'Audit Trails')"
+			:description="t('openregister', 'View and analyze system audit trails with advanced filtering capabilities')"
+			:show-title="true"
+			:objects="paginatedAuditTrails"
+			:columns="tableColumns"
+			:pagination="paginationData"
+			:loading="auditTrailStore.auditTrailLoading"
+			view-mode="table"
+			:available-view-modes="['table']"
+			:show-view-toggle="false"
+			:selectable="true"
+			:selected-ids="selectedAuditTrails"
+			:show-add="false"
+			:show-form-dialog="false"
+			:show-view-action="false"
+			:show-edit-action="false"
+			:show-copy-action="false"
+			:show-delete-action="false"
+			:show-mass-import="false"
+			:show-mass-export="false"
+			:show-mass-copy="false"
+			show-mass-delete
+			:name-formatter="auditTrailName"
+			row-key="id"
+			:row-class="getRowClass"
+			:refreshing="isRefreshing"
+			@refresh="handleRefresh"
+			@page-changed="onPageChanged"
+			@page-size-changed="onPageSizeChanged"
+			@select="onSelect"
+			@mass-delete="handleMassDelete">
+			<!-- Export covers the current filter set rather than the row selection,
+			     so it stays a custom entry instead of the built-in mass export. -->
+			<template #action-items>
+				<NcActionButton close-after-click @click="exportAuditTrails">
+					<template #icon>
+						<Download :size="20" />
+					</template>
+					{{ t('openregister', 'Export') }}
+				</NcActionButton>
+			</template>
 
-			<!-- Actions Bar -->
-			<div class="viewActionsBar">
-				<div class="viewInfo">
-					<!-- Display pagination info: showing current page items out of total items -->
-					<span class="viewTotalCount">
-						{{ t('openregister', 'Showing {showing} of {total} audit trail entries', { showing: paginatedAuditTrails.length, total: auditTrailStore.auditTrailPagination.total || 0 }) }}
-					</span>
-					<span v-if="hasActiveFilters" class="viewIndicator">
-						({{ t('openregister', 'Filtered') }})
-					</span>
-					<span v-if="selectedAuditTrails.length > 0" class="viewIndicator">
-						({{ t('openregister', '{count} selected', { count: selectedAuditTrails.length }) }})
-					</span>
-				</div>
-				<div class="viewActions">
-					<NcActions
-						:force-name="true"
-						:inline="selectedAuditTrails.length > 0 ? 3 : 2"
-						menu-name="Actions">
-						<NcActionButton
-							v-if="selectedAuditTrails.length > 0"
-							type="error"
-							close-after-click
-							@click="bulkDeleteAuditTrails">
-							<template #icon>
-								<Delete :size="20" />
-							</template>
-							{{ t('openregister', 'Delete ({count})', { count: selectedAuditTrails.length }) }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="exportAuditTrails">
-							<template #icon>
-								<Download :size="20" />
-							</template>
-							{{ t('openregister', 'Export') }}
-						</NcActionButton>
-						<NcActionButton
-							close-after-click
-							@click="refreshAuditTrails">
-							<template #icon>
-								<Refresh :size="20" />
-							</template>
-							{{ t('openregister', 'Refresh') }}
-						</NcActionButton>
-					</NcActions>
-				</div>
-			</div>
+			<template #column-action="{ row }">
+				<CnStatusBadge
+					:label="row.action ? row.action.toUpperCase() : t('openregister', 'NO ACTION')"
+					:color-map="actionColorMap"
+					solid>
+					<template #icon>
+						<Plus v-if="row.action === 'create'" :size="16" />
+						<Pencil v-else-if="row.action === 'update'" :size="16" />
+						<Delete v-else-if="row.action === 'delete'" :size="16" />
+						<Eye v-else-if="row.action === 'read'" :size="16" />
+					</template>
+				</CnStatusBadge>
+			</template>
 
-			<!-- Audit Trails Table -->
-			<div v-if="auditTrailStore.auditTrailLoading" class="viewLoading">
-				<NcLoadingIcon :size="64" />
-				<p>{{ t('openregister', 'Loading audit trails...') }}</p>
-			</div>
+			<template #column-created="{ row }">
+				<NcDateTime :timestamp="new Date(row.created)" :ignore-seconds="false" />
+			</template>
 
-			<NcEmptyContent v-else-if="!auditTrailStore.auditTrailList.length"
-				:name="t('openregister', 'No audit trail entries found')"
-				:description="t('openregister', 'There are no audit trail entries matching your current filters.')">
-				<template #icon>
-					<TextBoxOutline />
-				</template>
-			</NcEmptyContent>
+			<template #column-object="{ row }">
+				{{ row.object || '-' }}
+			</template>
 
-			<div v-else class="viewTableContainer">
-				<table class="viewTable auditTrailsTable">
-					<thead>
-						<tr>
-							<th class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="allSelected"
-									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
-							</th>
-							<th class="actionColumn">
-								{{ t('openregister', 'Action') }}
-							</th>
-							<th class="timestampColumn">
-								{{ t('openregister', 'Timestamp') }}
-							</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'Object ID') }}
-							</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'Register ID') }}
-							</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'User') }}
-							</th>
-							<th class="tableColumnConstrained">
-								{{ t('openregister', 'Schema ID') }}
-							</th>
-							<th class="sizeColumn">
-								{{ t('openregister', 'Size') }}
-							</th>
-							<th class="tableColumnActions">
-								{{ t('openregister', 'Actions') }}
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr v-for="auditTrail in paginatedAuditTrails"
-							:key="auditTrail.id"
-							class="viewTableRow auditTrailRow"
-							:class="`action-${auditTrail.action}`">
-							<td class="tableColumnCheckbox">
-								<NcCheckboxRadioSwitch
-									:checked="selectedAuditTrails.includes(auditTrail.id)"
-									@update:checked="(checked) => toggleAuditTrailSelection(auditTrail.id, checked)" />
-							</td>
-							<td class="actionColumn">
-								<span class="actionBadge" :class="`action-${auditTrail.action}`">
-									<Plus v-if="auditTrail.action === 'create'" :size="16" />
-									<Pencil v-else-if="auditTrail.action === 'update'" :size="16" />
-									<Delete v-else-if="auditTrail.action === 'delete'" :size="16" />
-									<Eye v-else-if="auditTrail.action === 'read'" :size="16" />
-									{{ auditTrail.action ? auditTrail.action.toUpperCase() : 'NO ACTION' }}
-								</span>
-							</td>
-							<td class="timestampColumn">
-								<NcDateTime :timestamp="new Date(auditTrail.created)" :ignore-seconds="false" />
-							</td>
-							<td class="tableColumnConstrained">
-								{{ auditTrail.object || '-' }}
-							</td>
-							<td class="tableColumnConstrained">
-								{{ auditTrail.register || '-' }}
-							</td>
-							<td class="tableColumnConstrained">
-								{{ auditTrail.userName || auditTrail.user || '-' }}
-							</td>
-							<td class="tableColumnConstrained">
-								{{ auditTrail.schema || '-' }}
-							</td>
-							<td class="sizeColumn">
-								{{ formatBytes(auditTrail.size) }}
-							</td>
-							<td class="tableColumnActions">
-								<NcActions>
-									<NcActionButton close-after-click @click="viewDetails(auditTrail)">
-										<template #icon>
-											<Eye :size="20" />
-										</template>
-										{{ t('openregister', 'View Details') }}
-									</NcActionButton>
-									<NcActionButton v-if="hasChanges(auditTrail)" close-after-click @click="viewChanges(auditTrail)">
-										<template #icon>
-											<CompareHorizontal :size="20" />
-										</template>
-										{{ t('openregister', 'View Changes') }}
-									</NcActionButton>
-									<NcActionButton close-after-click @click="copyData(auditTrail)">
-										<template #icon>
-											<Check v-if="copyStates[auditTrail.id]" :size="20" class="copySuccessIcon" />
-											<ContentCopy v-else :size="20" />
-										</template>
-										{{ copyStates[auditTrail.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
-									</NcActionButton>
-									<NcActionButton close-after-click class="deleteAction" @click="deleteAuditTrail(auditTrail)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-										{{ t('openregister', 'Delete') }}
-									</NcActionButton>
-								</NcActions>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<template #column-register="{ row }">
+				{{ row.register || '-' }}
+			</template>
 
-			<!-- Pagination -->
-			<PaginationComponent
-				:current-page="auditTrailStore.auditTrailPagination.page || 1"
-				:total-pages="auditTrailStore.auditTrailPagination.pages || 1"
-				:total-items="auditTrailStore.auditTrailPagination.total || 0"
-				:current-page-size="auditTrailStore.auditTrailPagination.limit || 50"
-				:min-items-to-show="10"
-				@page-changed="onPageChanged"
-				@page-size-changed="onPageSizeChanged" />
-		</div>
+			<template #column-userName="{ row }">
+				{{ row.userName || row.user || '-' }}
+			</template>
+
+			<template #column-schema="{ row }">
+				{{ row.schema || '-' }}
+			</template>
+
+			<template #column-size="{ row }">
+				{{ formatBytes(row.size) }}
+			</template>
+
+			<template #row-actions="{ row }">
+				<NcActions>
+					<template #icon>
+						<DotsHorizontal :size="20" />
+					</template>
+					<NcActionButton close-after-click @click="viewDetails(row)">
+						<template #icon>
+							<Eye :size="20" />
+						</template>
+						{{ t('openregister', 'View Details') }}
+					</NcActionButton>
+					<NcActionButton v-if="hasChanges(row)" close-after-click @click="viewChanges(row)">
+						<template #icon>
+							<CompareHorizontal :size="20" />
+						</template>
+						{{ t('openregister', 'View Changes') }}
+					</NcActionButton>
+					<NcActionButton close-after-click @click="copyData(row)">
+						<template #icon>
+							<Check v-if="copyStates[row.id]" :size="20" class="copySuccessIcon" />
+							<ContentCopy v-else :size="20" />
+						</template>
+						{{ copyStates[row.id] ? t('openregister', 'Copied!') : t('openregister', 'Copy Data') }}
+					</NcActionButton>
+					<NcActionButton close-after-click @click="deleteAuditTrail(row)">
+						<template #icon>
+							<Delete :size="20" />
+						</template>
+						{{ t('openregister', 'Delete') }}
+					</NcActionButton>
+				</NcActions>
+			</template>
+
+			<template #empty>
+				<NcEmptyContent
+					:name="t('openregister', 'No audit trail entries found')"
+					:description="t('openregister', 'There are no audit trail entries matching your current filters.')">
+					<template #icon>
+						<TextBoxOutline />
+					</template>
+				</NcEmptyContent>
+			</template>
+		</CnIndexPage>
 	</NcAppContent>
 </template>
 
@@ -205,64 +141,93 @@ import formatBytes from '../../services/formatBytes.js'
 import {
 	NcAppContent,
 	NcEmptyContent,
-	NcLoadingIcon,
 	NcActions,
 	NcActionButton,
 	NcDateTime,
-	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
+import { CnIndexPage, CnStatusBadge } from '@conduction/nextcloud-vue'
+import { showError, showSuccess } from '@nextcloud/dialogs'
 import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
 import Download from 'vue-material-design-icons/Download.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
-import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import CompareHorizontal from 'vue-material-design-icons/CompareHorizontal.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
-
-import PaginationComponent from '../../components/PaginationComponent.vue'
+import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 
 export default {
 	name: 'AuditTrailIndex',
 	components: {
 		NcAppContent,
 		NcEmptyContent,
-		NcLoadingIcon,
 		NcActions,
 		NcActionButton,
 		NcDateTime,
-		NcCheckboxRadioSwitch,
+		CnIndexPage,
+		CnStatusBadge,
 		TextBoxOutline,
 		Download,
 		Delete,
-		Refresh,
 		Eye,
 		Plus,
 		Pencil,
 		CompareHorizontal,
 		ContentCopy,
 		Check,
-		PaginationComponent,
+		DotsHorizontal,
 	},
 	data() {
 		return {
-			itemsPerPage: 50,
 			copyStates: {}, // Track copy state for each audit trail
 			selectedAuditTrails: [],
+			isRefreshing: false,
+			// Keys are matched case-insensitively against the badge label, so
+			// namespaced actions (file.renamed, referential_integrity.*) fall
+			// through to the neutral 'default' variant.
+			actionColorMap: {
+				create: 'success',
+				update: 'warning',
+				delete: 'error',
+				read: 'info',
+			},
 		}
 	},
 	computed: {
 		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+		 * Column definitions for the audit trail table.
+		 *
+		 * @spec exclude UI plumbing — static table column list for display.
+		 * @return {Array<object>}
 		 */
-		hasActiveFilters() {
-			return Object.keys(auditTrailStore.auditTrailFilters || {}).some(key =>
-				auditTrailStore.auditTrailFilters[key] !== null
-				&& auditTrailStore.auditTrailFilters[key] !== undefined
-				&& auditTrailStore.auditTrailFilters[key] !== '',
-			)
+		tableColumns() {
+			return [
+				{ key: 'action', label: t('openregister', 'Action'), width: '100px' },
+				{ key: 'created', label: t('openregister', 'Timestamp'), width: '180px' },
+				{ key: 'object', label: t('openregister', 'Object ID'), class: 'cn-table-col--constrained' },
+				{ key: 'register', label: t('openregister', 'Register ID'), class: 'cn-table-col--constrained' },
+				{ key: 'userName', label: t('openregister', 'User'), class: 'cn-table-col--constrained' },
+				{ key: 'schema', label: t('openregister', 'Schema ID'), class: 'cn-table-col--constrained' },
+				{ key: 'size', label: t('openregister', 'Size'), width: '100px' },
+			]
+		},
+		/**
+		 * Pagination state for CnIndexPage. The API paginates server-side, so the
+		 * store values are passed straight through without slicing.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state.
+		 * @return {object}
+		 */
+		paginationData() {
+			const pagination = auditTrailStore.auditTrailPagination
+			return {
+				page: pagination.page || 1,
+				pages: pagination.pages || 1,
+				total: pagination.total || 0,
+				limit: pagination.limit || 50,
+			}
 		},
 		/**
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
@@ -275,18 +240,6 @@ export default {
 				console.error('Error accessing auditTrailList:', error)
 				return []
 			}
-		},
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		allSelected() {
-			return this.paginatedAuditTrails.length > 0 && this.paginatedAuditTrails.every(auditTrail => this.selectedAuditTrails.includes(auditTrail.id))
-		},
-		/**
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		someSelected() {
-			return this.selectedAuditTrails.length > 0 && !this.allSelected
 		},
 	},
 	watch: {
@@ -349,7 +302,7 @@ export default {
 				await auditTrailStore.refreshAuditTrailList()
 			} catch (error) {
 				console.error('Error loading audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error loading audit trails'))
+				showError(t('openregister', 'Error loading audit trails'))
 			}
 		},
 		/**
@@ -373,6 +326,55 @@ export default {
 		 */
 		handleExport(options) {
 			this.exportFilteredAuditTrails(options)
+		},
+		/**
+		 * Reload the audit trail list from the store, driving the refresh spinner.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to the store.
+		 * @return {Promise<void>}
+		 */
+		async handleRefresh() {
+			this.isRefreshing = true
+			try {
+				await this.loadAuditTrails()
+			} finally {
+				this.isRefreshing = false
+			}
+		},
+		/**
+		 * Compute the CSS row class carrying the side accent. Keyed on the badge
+		 * variant rather than the action name so the accent always matches the
+		 * Action badge, and so dotted actions (file.renamed,
+		 * referential_integrity.*) can't produce a two-token class name.
+		 *
+		 * @spec exclude UI plumbing — derived row-styling helper.
+		 * @param {object} auditTrail - audit trail row
+		 * @return {string}
+		 */
+		getRowClass(auditTrail) {
+			const variant = this.actionColorMap[String(auditTrail.action || '').toLowerCase()]
+			return variant ? `auditTrailRow--${variant}` : ''
+		},
+		/**
+		 * Track the selected audit trail ids for mass actions.
+		 *
+		 * @spec exclude UI plumbing — row-selection state mutation.
+		 * @param {Array} ids - selected audit trail ids
+		 * @return {void}
+		 */
+		onSelect(ids) {
+			this.selectedAuditTrails = ids
+		},
+		/**
+		 * Label an audit trail in the mass-delete dialog. Entries have no title
+		 * field, so the id is the only stable identifier to show.
+		 *
+		 * @spec exclude UI plumbing — display formatter for the mass-action dialog.
+		 * @param {object} auditTrail - audit trail row
+		 * @return {string}
+		 */
+		auditTrailName(auditTrail) {
+			return t('openregister', 'Audit trail #{id}', { id: auditTrail.id })
 		},
 		/**
 		 * View detailed information for an audit trail entry
@@ -415,7 +417,7 @@ export default {
 				this.$set(this.copyStates, auditTrail.id, true)
 
 				// Show success notification with enhanced styling
-				OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
+				showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
 
 				// Reset copy state after 2 seconds
 				setTimeout(() => {
@@ -436,7 +438,7 @@ export default {
 					// Set successful copy state for fallback method too
 					this.$set(this.copyStates, auditTrail.id, true)
 
-					OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
+					showSuccess(t('openregister', 'Audit trail data copied to clipboard'))
 
 					// Reset copy state after 2 seconds
 					setTimeout(() => {
@@ -445,7 +447,7 @@ export default {
 
 				} catch (fallbackError) {
 					console.error('Fallback copy failed:', fallbackError)
-					OC.Notification.showError(this.t('openregister', 'Failed to copy data to clipboard'))
+					showError(t('openregister', 'Failed to copy data to clipboard'))
 				}
 			}
 		},
@@ -473,9 +475,11 @@ export default {
 				params.append('includeChanges', options.includeChanges || false)
 				params.append('includeMetadata', options.includeMetadata || false)
 
-				// Add current filters
-				if (auditTrailStore.filters) {
-					Object.entries(auditTrailStore.filters).forEach(([key, value]) => {
+				// Add current filters. The state field is auditTrailFilters — reading
+				// `filters` silently dropped every active filter, including the
+				// dateFrom/dateTo range the compliance export requires.
+				if (auditTrailStore.auditTrailFilters) {
+					Object.entries(auditTrailStore.auditTrailFilters).forEach(([key, value]) => {
 						if (value !== null && value !== undefined && value !== '') {
 							params.append(key, value)
 						}
@@ -498,13 +502,13 @@ export default {
 					window.URL.revokeObjectURL(url)
 					document.body.removeChild(a)
 
-					OC.Notification.showSuccess(this.t('openregister', 'Export completed successfully'))
+					showSuccess(t('openregister', 'Export completed successfully'))
 				} else {
 					throw new Error(result.error || 'Export failed')
 				}
 			} catch (error) {
 				console.error('Error exporting audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Export failed: {error}', { error: error.message }))
+				showError(t('openregister', 'Export failed: {error}', { error: error.message }))
 			}
 		},
 		/**
@@ -607,67 +611,41 @@ export default {
 				return false
 			}
 		},
-		formatBytes,
 		/**
-		 * @param checked
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		toggleSelectAll(checked) {
-			if (checked) {
-				this.selectedAuditTrails = this.paginatedAuditTrails.map(auditTrail => auditTrail.id)
-			} else {
-				this.selectedAuditTrails = []
-			}
-		},
-		/**
-		 * @param id
-		 * @param checked
-		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
-		 */
-		toggleAuditTrailSelection(id, checked) {
-			if (checked) {
-				this.selectedAuditTrails.push(id)
-			} else {
-				this.selectedAuditTrails = this.selectedAuditTrails.filter(i => i !== id)
-			}
-		},
-		/**
-		 * Delete selected audit trails using bulk operation
+		 * Delete the audit trails confirmed in the mass-delete dialog. The dialog
+		 * lets the user drop individual rows, so the emitted ids win over the
+		 * current selection.
+		 * @param {Array} ids - Audit trail ids confirmed for deletion
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
-		async bulkDeleteAuditTrails() {
-			if (this.selectedAuditTrails.length === 0) return
-
-			if (!confirm(this.t('openregister', 'Are you sure you want to delete the selected audit trails? This action cannot be undone.'))) {
-				return
-			}
-
+		async handleMassDelete(ids) {
 			try {
 				// Make the API request to delete selected audit trails
 				const response = await fetch('/index.php/apps/openregister/api/audit-trails/bulk-delete', {
 					method: 'DELETE',
 					headers: {
 						'Content-Type': 'application/json',
+						requesttoken: OC.requestToken,
 					},
-					body: JSON.stringify({ ids: this.selectedAuditTrails }),
+					body: JSON.stringify({ ids }),
 				})
 
 				const result = await response.json()
 
-				if (result.success) {
-					OC.Notification.showSuccess(result.message || this.t('openregister', 'Selected audit trails deleted successfully'))
-					// Clear selection
-					this.selectedAuditTrails = []
-					// Refresh the list
-					await this.loadAuditTrails()
-				} else {
+				if (!result.success) {
 					throw new Error(result.error || 'Deletion failed')
 				}
+
+				this.$refs.indexPage.setMassDeleteResult({ success: true })
+				// Clear selection
+				this.selectedAuditTrails = []
+				// Refresh the list
+				await this.loadAuditTrails()
 			} catch (error) {
 				console.error('Error deleting audit trails:', error)
-				OC.Notification.showError(this.t('openregister', 'Error deleting audit trails: {error}', { error: error.message }))
+				this.$refs.indexPage.setMassDeleteResult({ success: false, error: error.message })
 			}
 		},
 	},
@@ -675,81 +653,30 @@ export default {
 </script>
 
 <style scoped>
-/* Specific column widths for audit trail table */
-.actionColumn {
-	width: 100px;
+/* Row accent, keyed on the CnStatusBadge variant that getRowClass resolves from
+   actionColorMap — so the accent colour is always the Action badge's colour.
+
+   Drawn with an inset box-shadow, never border-left: a border adds layout width
+   and shifts the row's cell content sideways, while box-shadow paints inside the
+   box.
+
+   Skipped on a selected row so the library's .cn-table-row--selected accent
+   wins — scoping adds a [data-v-*] attribute, which would otherwise outweigh
+   the library's single-class rule. */
+:deep(.auditTrailRow--success:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-success);
 }
 
-.timestampColumn {
-	width: 180px;
+:deep(.auditTrailRow--warning:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-warning);
 }
 
-.sizeColumn {
-	width: 100px;
+:deep(.auditTrailRow--error:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-error);
 }
 
-/* Action-specific row styling */
-.viewTableRow.action-create {
-	border-left: 4px solid var(--color-info);
-}
-
-.viewTableRow.action-update {
-	border-left: 4px solid var(--color-warning);
-}
-
-.viewTableRow.action-delete {
-	border-left: 4px solid var(--color-error);
-}
-
-.viewTableRow.action-read {
-	border-left: 4px solid var(--color-text-maxcontrast);
-}
-
-/* Action badge styling */
-.actionBadge {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 4px 8px;
-	border-radius: 12px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	color: white;
-	background: var(--color-text-maxcontrast);
-}
-
-.actionBadge.action-create {
-	background: var(--color-success);
-	color: white;
-}
-
-.actionBadge.action-update {
-	background: var(--color-warning);
-	color: white;
-}
-
-.actionBadge.action-delete {
-	background: var(--color-error);
-	color: white;
-}
-
-.actionBadge.action-read {
-	background: var(--color-info);
-	color: white;
-}
-
-/* Component-specific styling */
-:deep(.v-select) {
-	margin-bottom: 8px;
-}
-
-:deep(.deleteAction) {
-	color: var(--color-error) !important;
-}
-
-:deep(.deleteAction:hover) {
-	background-color: var(--color-error) !important;
-	color: var(--color-main-background) !important;
+:deep(.auditTrailRow--info:not(.cn-table-row--selected)) {
+	box-shadow: inset 3px 0 0 0 var(--color-info);
 }
 
 .copySuccessIcon {
