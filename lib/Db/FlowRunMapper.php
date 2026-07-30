@@ -218,6 +218,47 @@ class FlowRunMapper extends QBMapper
     }//end findDue()
 
     /**
+     * Runs left in `running` by a worker pass that never came back.
+     *
+     * `execute()` sets `running` and clears it when the walk returns. A pass
+     * that dies instead — a fatal, a PHP timeout, an OOM, a container
+     * restart — never clears it, and no `catch` can help because the process
+     * is gone. The row then sits in `running` forever: the worker will not
+     * pick it up (it only reads `queued` and due `suspended` runs), so it is
+     * not just stale, it is unreachable.
+     *
+     * That was invisible while nothing read `running`. It stops being
+     * invisible the moment a dashboard widget shows live runs — 68 such rows
+     * existed on one dev instance, the oldest two days old, and every one of
+     * them would have read as "running right now".
+     *
+     * @param DateTime $before Runs not touched since this moment are stale.
+     * @param integer  $limit  Maximum runs to reap in one pass.
+     *
+     * @return array<int, FlowRun> The abandoned runs.
+     *
+     * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+     */
+    public function findStale(DateTime $before, int $limit=25): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_RUNNING)))
+            ->andWhere(
+                $qb->expr()->lt(
+                    'updated',
+                    $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+                )
+            )
+            ->orderBy('updated', 'ASC')
+            ->setMaxResults($limit);
+
+        return $this->findEntities(query: $qb);
+
+    }//end findStale()
+
+    /**
      * Runs waiting in the queue to start.
      *
      * @param integer $limit Maximum runs to claim in one pass.
