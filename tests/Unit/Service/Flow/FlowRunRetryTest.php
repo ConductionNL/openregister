@@ -15,6 +15,7 @@ use OCA\OpenRegister\Service\Flow\FlowEngine;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 
 class FlowRunRetryTest extends TestCase
@@ -32,8 +33,21 @@ class FlowRunRetryTest extends TestCase
             $this->mapper,
             $this->createMock(FlowEngine::class),
             $this->createMock(FlowNodeRegistry::class),
-            new NullLogger()
+            new NullLogger(),
+            $this->noOrganisationContainer()
         );
+    }
+
+    /**
+     * A container that has no OrganisationService — the cron/unit case, where a
+     * queued run is recorded with no organisation rather than a guessed one.
+     */
+    private function noOrganisationContainer(): ContainerInterface
+    {
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willThrowException(new \RuntimeException('not available'));
+
+        return $container;
     }
 
     private function terminalRun(): FlowRun

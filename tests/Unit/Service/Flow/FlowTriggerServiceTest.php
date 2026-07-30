@@ -84,11 +84,17 @@ class FlowTriggerServiceTest extends TestCase
             return $r;
         });
 
+        // No OrganisationService in the container — a run queued with no session
+        // is recorded unattributed rather than guessed at.
+        $container = $this->createMock(\Psr\Container\ContainerInterface::class);
+        $container->method('get')->willThrowException(new \RuntimeException('not available'));
+
         $runner = new FlowRunService(
             $mapper,
             $this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class),
             $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
-            new \Psr\Log\NullLogger()
+            new \Psr\Log\NullLogger(),
+            $container
         );
 
         $service = new FlowTriggerService($registry, $runner, new \Psr\Log\NullLogger());
