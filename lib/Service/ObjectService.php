@@ -1084,7 +1084,8 @@ class ObjectService
      *
      * @return ObjectEntity The saved object.
      *
-     * @throws Exception If there is an error during save.
+     * @throws Exception If there is an error during save
+     * @throws \OCA\OpenRegister\Exception\ObjectExistsException When $failIfExists is true and the identifier is already taken.
      */
 
     /**
@@ -1118,6 +1119,7 @@ class ObjectService
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
+     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
      *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
      *                                                Defaults to null → `IUserSession::getUser()` resolution.
      *                                                Non-HTTP callers (cron, import pipelines, event listeners)
@@ -1146,7 +1148,8 @@ class ObjectService
         bool $_multitenancy=true,
         bool $silent=false,
         ?array $uploadedFiles=null,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Bound the folder-access revalidation cache to this single save call
         // (not the whole FileService/request lifetime), so a cascade save that
@@ -1300,7 +1303,8 @@ class ObjectService
             silent: $silent,
             _validation: true,
             uploadedFiles: $uploadedFiles,
-            currentUser: $currentUser
+            currentUser: $currentUser,
+            failIfExists: $failIfExists
         );
 
         // Invalidate contact matching cache for objects with email properties.

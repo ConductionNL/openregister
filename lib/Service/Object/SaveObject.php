@@ -61,6 +61,7 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -2759,10 +2760,12 @@ class SaveObject
      * @param bool                     $_validation   Whether to validate the object (default: true).
      * @param array|null               $uploadedFiles Uploaded files array (optional).
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
+     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false).
      *
      * @return ObjectEntity The saved object entity.
      *
      * @throws Exception If there is an error during save.
+     * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
@@ -2781,7 +2784,8 @@ class SaveObject
         bool $silent=false,
         bool $_validation=true,
         ?array $uploadedFiles=null,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Extract UUID and @self metadata from data.
         [$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2896,6 +2900,39 @@ class SaveObject
             );
 
             if ($existingObject !== null) {
+                // INSERT-ONLY GUARD (openregister#2210).
+                //
+                // The default below is an upsert: an existing identifier is
+                // updated, silently and successfully. That is correct for the
+                // overwhelming majority of callers and is untouched.
+                //
+                // It is wrong for a caller that is CLAIMING something — a lock,
+                // a slot, a lease, a queue position. There "it already existed"
+                // is the entire answer, and swallowing it means two callers both
+                // believe they won and the loser is never told. Such a caller
+                // opts in with $failIfExists and gets a 409 instead.
+                //
+                // Deliberately opt-in rather than the default: the current
+                // upsert is silent, so there is no way to discover from the code
+                // which callers depend on it. Flipping the default would change
+                // behaviour fleet-wide with no way to enumerate the blast radius.
+                if ($failIfExists === true) {
+                    $this->logger->debug(
+                        message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
+                        context: [
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
+                            'uuid'     => $uuid,
+                            'objectId' => $existingObject->getId(),
+                        ]
+                    );
+
+                    throw new ObjectExistsException(
+                        message: sprintf('An object with identifier "%s" already exists.', (string) $uuid),
+                        uuid: (string) $uuid
+                    );
+                }
+
                 $this->logger->debug(
                     message: '[SaveObject] Existing object found, proceeding with UPDATE',
                     context: [
