@@ -1110,6 +1110,12 @@ class ObjectsController extends Controller
      */
     public function index(string $register, string $schema, ObjectService $objectService): JSONResponse
     {
+        // Read paths were unmeasured: WritePhaseProbe::flush() is only reached
+        // from the write path, so search and single-read reported no
+        // per-request counts at all. Stamp + flush here so the same in-PHP
+        // counters that made the write numbers trustworthy cover reads too.
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.index.in');
+
         // Check if multiple schemas are requested via query parameters.
         $params         = $this->request->getParams();
         $schemasParam   = $params['schemas'] ?? null;
@@ -2400,6 +2406,8 @@ class ObjectsController extends Controller
         string $schema,
         ObjectService $objectService
     ): JSONResponse {
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('ctrl.show.in');
+
         try {
             // Resolve slugs to numeric IDs consistently and get register/schema entities.
             $resolved = $this->resolveRegisterSchemaIds(register: $register, schema: $schema, objectService: $objectService);
