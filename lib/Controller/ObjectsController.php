@@ -2681,6 +2681,18 @@ class ObjectsController extends Controller
         // Extract uploaded files from multipart/form-data using Request object.
         $uploadedFiles = $this->extractAllUploadedFiles();
 
+        // INSERT-ONLY opt-in (openregister#2210). `_failIfExists=true` turns this
+        // create from an upsert into a strict insert: an identifier that is
+        // already taken returns 409 instead of silently overwriting.
+        //
+        // Read from the raw request, not from $object — the body filter above
+        // strips `_`-prefixed keys, which is exactly the convention for control
+        // parameters that must not be persisted onto the object itself.
+        $failIfExists = filter_var(
+            $this->request->getParam('_failIfExists', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
         // Determine RBAC and multitenancy settings based on admin status.
         $isAdmin = $this->isCurrentUserAdmin();
         $rbac    = !$isAdmin;
@@ -2707,7 +2719,8 @@ class ObjectsController extends Controller
                 _rbac: $rbac,
                 _multitenancy: true,
                 uuid: null,
-                uploadedFiles: $uploadedFilesValue
+                uploadedFiles: $uploadedFilesValue,
+                failIfExists: $failIfExists
             );
 
             // TODO: Unlock the object after saving using LockingHandler through ObjectService.
@@ -2736,6 +2749,19 @@ class ObjectsController extends Controller
             // MUST be caught before generic \Exception to avoid being absorbed as a 403 with
             // a non-structured body. See the `self-folder-access-control` capability spec.
             return $this->folderAccessDeniedResponse(exception: $exception);
+        } catch (\OCA\OpenRegister\Exception\ObjectExistsException $exception) {
+            // MUST be caught before the generic \Exception below, which flattens
+            // everything to 403. A losing claim reported as "forbidden" is
+            // indistinguishable from a permissions problem, and the caller cannot
+            // tell it simply lost a race — which is the entire point of asking
+            // for insert-only semantics.
+            return new JSONResponse(
+                data: [
+                    'error' => $exception->getMessage(),
+                    'uuid'  => $exception->getUuid(),
+                ],
+                statusCode: 409
+            );
         } catch (\Exception $exception) {
             // Handle all other exceptions (including RBAC permission errors).
             // Sanitized external-write failures carry their own 4xx status
