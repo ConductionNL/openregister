@@ -192,6 +192,11 @@ class ObjectWriteNode implements IFlowNode
      * answer, and overwriting it means two flow runs both believe they won
      * while the loser is never told. See openregister#2210.
      *
+     * ⚠️ NOT YET SAFE FOR MUTUAL EXCLUSION — openregister#2212. The underlying
+     * guard is a check followed by a write, so concurrent flow runs can all
+     * pass the check and several succeed. It refuses a sequential duplicate
+     * correctly; it does not serialise simultaneous ones.
+     *
      * @var string
      */
     private const ON_CONFLICT_FAIL = 'fail';
