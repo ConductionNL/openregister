@@ -74,20 +74,6 @@ final class WritePhaseProbe
     private static array $stamps = [];
 
     /**
-     * Record how far into the request a named point was reached.
-     *
-     * Separate from {@see mark()} because these are ABSOLUTE offsets from
-     * `REQUEST_TIME_FLOAT`, not durations between marks: the question they
-     * answer is "how much of the request had already elapsed before our code
-     * ran at all", which is how the app-boot floor gets attributed instead of
-     * merely accepted.
-     *
-     * @param string $label The point being stamped.
-     *
-     * @return void
-     */
-
-    /**
      * Count one occurrence of a named event in THIS request.
      *
      * Exists because counting from the PostgreSQL statement log is not
@@ -124,6 +110,19 @@ final class WritePhaseProbe
 
     }//end count()
 
+    /**
+     * Record how far into the request a named point was reached.
+     *
+     * Separate from {@see mark()} because these are ABSOLUTE offsets from
+     * `REQUEST_TIME_FLOAT`, not durations between marks: the question they
+     * answer is "how much of the request had already elapsed before our code
+     * ran at all", which is how the app-boot floor gets attributed instead of
+     * merely accepted.
+     *
+     * @param string $label The point being stamped.
+     *
+     * @return void
+     */
     public static function stamp(string $label): void
     {
         if (self::$enabled === null) {
