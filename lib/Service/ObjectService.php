@@ -1894,8 +1894,12 @@ class ObjectService
             $this->setSchema(schema: $schema);
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
 
         // Reject DELETE operations on append-only schemas.
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
@@ -1944,6 +1948,8 @@ class ObjectService
                 $this->setSchema(schema: $objectToDelete->getSchema());
             }
 
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+
             // Check user has permission to delete this specific object.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -1953,6 +1959,8 @@ class ObjectService
                 _rbac: $_rbac,
                 object: $objectToDelete
             );
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Scoped lookup is authoritative: if the caller asked for a
             // specific (register, schema) and the UUID is not in that scope,
