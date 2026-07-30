@@ -1,34 +1,50 @@
 # Tasks — Object writes under 500 ms
 
-## Results so far (2026-07-29)
+## Results (2026-07-29) — BUDGET MET
 
-Measured with `tests/perf/object-create.sh` on `larpingapp/character`, same
-two-field payload throughout.
+Measured with `tests/perf/object-create.sh` on `larpingapp/character`.
 
 | | baseline | now |
 |---|---|---|
-| wall, median | 13,688 ms | 1,282 ms |
-| **write path** (wall − instance floor) | ~12,800 ms | **183 ms median / 300 ms p95** |
-| schema sequential scans per create | 3,019 | 23–36 |
-| event dispatch inside the create | 1,900 ms | 6–8 ms (deferred) |
-| DB insert | 76 ms | 76 ms (never the problem) |
+| **wall, p95** | ~13,700 ms | **469 ms** ✅ |
+| wall, median | 13,688 ms | 385 ms |
+| write path (wall − floor) | ~12,800 ms | 93 ms median / 177 ms p95 |
+| schema sequential scans | 3,019 | 23–36 |
+| event dispatch in-request | 1,900 ms | 6–8 ms |
+| DB insert | 76 ms | 76 ms — never the problem |
 
-**The write path is inside the 500 ms budget. Wall-clock is not, and the gap
-is not the write path.**
+Configuration required to hit it: an **app token** (not the account password),
+`defer_object_events=1`, and PHP JIT disabled (Conduction/.github#75). With
+deferral off the p95 is 650 ms.
 
-An authenticated Nextcloud request that does *no object work at all*
-(`/ocs/v2.php/cloud/capabilities`) costs **864–1,099 ms** on this instance.
-Nextcloud boots every enabled app on every request, and this instance has 92
-enabled. That floor is larger than the entire budget, so no amount of work
-here can bring wall-clock under 500 ms. It is PHP-side, not database: sampling
-`pg_stat_activity` across boot-only requests showed almost no queries, and
-opcache is healthy (3,395 cached scripts of 16,229 keys, 0 OOM restarts, 0
-hash restarts, 91 % hit rate) — so it is not cache thrashing either.
+### ⚠️ Correction: my first floor analysis was wrong
 
-**Consequence for the requirement:** the 500 ms budget must be stated against
-the write path's own cost, with the instance floor measured and subtracted.
-The harness does this and reports both. Judging wall time alone measures how
-many apps the machine has installed.
+An earlier revision of this document claimed the instance floor was 864–1,099
+ms of Nextcloud booting 92 apps, and concluded that wall-clock under 500 ms was
+unreachable. **That was a measurement artefact of my own benchmark.**
+
+Every sample authenticated with HTTP Basic auth carrying the *account
+password*, and Nextcloud bcrypt-verifies that on **every request**. Same
+endpoint, same instance, back to back:
+
+| credential | median |
+|---|---|
+| account password | 1,058 ms |
+| app token | 456 ms |
+
+**~600 ms per request was password hashing, not app boot.** No real client
+authenticates that way — browsers carry a session cookie, integrations use app
+tokens — so the benchmark was measuring bcrypt and attributing it to Nextcloud.
+
+The true floor is ~240–290 ms. App boot is real but roughly a third of what I
+claimed, and the conclusion drawn from it ("not reachable without disabling
+apps") was wrong. The harness now warns when `NC_AUTH` looks like a password.
+
+Lesson worth keeping: a floor that is *assumed structural* deserves the same
+attribution discipline as the code under test. I disabled apps, checked
+opcache, checked APCu and measured a per-app slope — all real work, all
+answering the wrong question, because the instrument itself was never
+questioned.
 
 ### What actually cost the time
 

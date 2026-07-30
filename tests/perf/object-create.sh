@@ -26,6 +26,19 @@
 # Environment:
 #   NC_URL      default http://localhost:8080
 #   NC_AUTH     default admin:admin
+#
+#     ⚠️ USE AN APP TOKEN, NOT THE ACCOUNT PASSWORD.
+#     Nextcloud bcrypt-verifies a Basic-auth password on EVERY request. Measured
+#     2026-07-29 on the same endpoint: account password median 1,058ms, app
+#     token median 456ms — ~600ms of pure hashing per request. No real client
+#     authenticates that way (browsers carry a session cookie, integrations use
+#     app tokens), so benchmarking with the password measures bcrypt, not the
+#     write path, and buries every improvement you are trying to see.
+#
+#       TOKEN=$(docker exec -u www-data -e OC_PASS=<pw> nextcloud \
+#                 php occ user:add-app-password admin --password-from-env \
+#                 | grep -oE '[A-Za-z0-9]{29,}')
+#       NC_AUTH="admin:$TOKEN" tests/perf/object-create.sh
 #   PG_CONTAINER default conduction-postgres
 #   PG_USER     default oc_admin
 #   PG_DB       default nextcloud
@@ -135,6 +148,15 @@ measure_floor() {
     done
     awk -v t="$total" -v n="$n" 'BEGIN{printf "%.0f", (t/n)*1000}'
 }
+
+# A password-shaped credential is almost certainly the account password, which
+# makes every sample ~600ms of bcrypt. Warn rather than refuse — the caller may
+# genuinely want to measure that path.
+case "${NC_AUTH#*:}" in
+    *[!A-Za-z0-9]*|"") ;;
+    *) [ "${#NC_AUTH}" -lt 40 ] && echo "[perf] WARNING: NC_AUTH looks like an account password, not an app token." \
+        && echo "[perf]          Expect ~600ms/request of bcrypt on top of everything measured here." ;;
+esac
 
 echo "[perf] endpoint : $ENDPOINT"
 echo "[perf] runs     : $RUNS (plus 2 warm-up, discarded)"

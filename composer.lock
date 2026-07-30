@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1ffcd5da6eb2511608c8efc07f3f1be2",
+    "content-hash": "72696fc0f53b246c09d535200d2d0fea",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -309,8 +309,14 @@
             "version": "dev-feat/chained-filter-text-replace",
             "source": {
                 "type": "git",
-                "url": "https://codeberg.org/Conduction/sapp",
+                "url": "git@github.com:ConductionNL/sapp.git",
                 "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/5c406e91254d6936f44372db35f1cc15e5a06c56",
+                "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56",
+                "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
@@ -339,7 +345,7 @@
                 "sign",
                 "signature"
             ],
-            "time": "2026-06-16T13:52:30+00:00"
+            "time": "2026-07-09T14:51:10+00:00"
         },
         {
             "name": "dompdf/dompdf",
@@ -13349,9 +13355,9 @@
     "platform": {
         "php": "^8.3"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.3"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

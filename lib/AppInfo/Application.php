@@ -647,6 +647,7 @@ class Application extends App implements IBootstrap
         $context->registerDashboardWidget(
             \OCA\OpenRegister\Dashboard\IntegrationDashboardWidget::class
         );
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('or.register.out');
     }//end register()
 
     /**

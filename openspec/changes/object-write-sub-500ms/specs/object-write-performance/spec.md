@@ -8,17 +8,25 @@ A single-object create, update or delete through the object API MUST cost less
 than **500 ms at p95** on a warm instance, and MUST NOT degrade as the number
 of registers, schemas or magic tables on the instance grows.
 
-The budget is measured as **wall time minus the instance floor**: the cost of
-an authenticated request to the same instance that performs no object work.
-Nextcloud boots every enabled app on every request, so that floor is a
-property of how many apps are installed, not of the write path. It was
-measured at 864-1,099 ms on the development instance (92 enabled apps) —
-larger than this entire budget. A measurement that does not subtract it is
-reporting the app count, not the write path, and cannot show whether a change
-to the write path helped or hurt.
+Measurement MUST authenticate the way a real client does — a session cookie or
+an app token — and MUST NOT use HTTP Basic auth carrying the account password.
+Nextcloud bcrypt-verifies a Basic-auth password on every request: measured
+2026-07-29 on the same endpoint and instance, an account password cost a 1,058
+ms median against 456 ms for an app token. **~600 ms per request of pure
+password hashing**, which no real client pays and which dwarfs the budget. A
+benchmark that uses the account password is measuring bcrypt and attributing
+it to the application.
 
-The floor MUST be measured in the same run as the writes it is subtracted
-from, never carried over from an earlier one: it moves with instance load.
+The budget SHOULD additionally be reported as **wall time minus the instance
+floor** — the cost of an authenticated request performing no object work —
+because Nextcloud boots every enabled app on every request and that cost
+belongs to the instance rather than the write path. The floor MUST be measured
+in the same run as the writes it is subtracted from, never carried over: it
+moves with instance load. On the development instance (92 enabled apps) it is
+~240-290 ms when measured with a token.
+
+Both numbers MUST be reported. The wall figure is what a caller experiences;
+the floor-subtracted figure is what a change to this code can actually move.
 
 The budget is a property of the write path, not of the dataset: an instance
 with 2,728 magic tables and 1,917 schemas MUST meet it. Growth in schema or
@@ -37,9 +45,9 @@ write:
 #### Scenario: A create with no relations stays inside the budget
 
 - **GIVEN** a warm instance with 2,728 magic tables and 1,917 schemas
+- **AND** the client authenticates with an app token, not an account password
 - **WHEN** a client creates one object with no relation-typed properties
-- **THEN** the measured cost, wall time minus the instance floor taken in the
-  same run, MUST be under 500 ms at p95 over 20 runs
+- **THEN** the wall time MUST be under 500 ms at p95 over 20 runs
 - **AND** the `oc_openregister_schemas` sequential-scan delta MUST be ≤ 5
 - **AND** the committed-transaction delta MUST be exactly 1
 
@@ -218,6 +226,15 @@ to 99.1 s on identical payloads, so a single timing is not evidence.
 - **WHEN** a change raises the per-write schema sequential-scan delta above 5
 - **THEN** the gate MUST fail
 - **AND** MUST report the observed delta against its bound
+
+#### Scenario: The benchmark rejects an unrepresentative credential
+
+- **GIVEN** a benchmark configured with HTTP Basic auth carrying an account
+  password
+- **WHEN** it runs
+- **THEN** it MUST warn that roughly 600 ms per request of bcrypt is being
+  measured on top of the application
+- **AND** the resulting figures MUST NOT be reported as the application's cost
 
 #### Scenario: The gate reports a distribution, not one sample
 
