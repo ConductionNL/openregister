@@ -101,6 +101,89 @@ class FlowRunMapper extends QBMapper
     }//end findAllRuns()
 
     /**
+     * The runs that are still going, newest first.
+     *
+     * "Still going" is every NON-terminal status — `queued` (about to start),
+     * `running` (executing now) and `suspended` (mid-graph, waiting on a timer
+     * or a child run). A dashboard that showed only `running` would be empty
+     * almost all of the time: a run holds that status for the duration of one
+     * worker pass, while `queued` and `suspended` are where a run actually
+     * spends its wall-clock.
+     *
+     * Scoping is STRICT: pass an organisation and only that organisation's runs
+     * come back. A run recorded before runs carried an organisation (or queued
+     * with no session to attribute it to) has none, and is therefore returned
+     * to nobody — deliberately, since this feeds a widget every app renders to
+     * every user, and guessing a tenant for an unattributed run would leak one
+     * tenant's activity into another's dashboard.
+     *
+     * @param string|null $organisation Restrict to one organisation uuid.
+     * @param integer     $limit        Page size.
+     *
+     * @return array<int, FlowRun> The non-terminal runs.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    public function findActive(?string $organisation=null, int $limit=25): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            )
+            ->orderBy('id', 'DESC')
+            ->setMaxResults($limit);
+
+        if ($organisation !== null && $organisation !== '') {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+        }
+
+        return $this->findEntities(query: $qb);
+
+    }//end findActive()
+
+    /**
+     * How many runs are still going, for one organisation.
+     *
+     * Separate from {@see findActive} because a widget shows a bounded list but
+     * an honest total — "3 of 47 running" needs the 47, and paging the whole
+     * set to count it would be absurd.
+     *
+     * @param string|null $organisation Restrict to one organisation uuid.
+     *
+     * @return integer The number of non-terminal runs.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    public function countActive(?string $organisation=null): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->createFunction('COUNT(*) AS `total`'))
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if ($organisation !== null && $organisation !== '') {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+        }
+
+        $result = $qb->executeQuery();
+        $total  = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $total;
+
+    }//end countActive()
+
+    /**
      * Suspended runs that are due to resume.
      *
      * A run with no `resume_at` is waiting on something other than a clock — a
