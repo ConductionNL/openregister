@@ -50,6 +50,54 @@ worker, not per request. Change reverted.
 Worth keeping anyway as hygiene (9.1 MB of payloads only one app reads), but
 **not as a performance task**, and not on this change's critical path.
 
+### ⚠️ CRUD MEASURED 2026-07-30 — this REVERSES the Phase 1 deferral
+
+I had only ever measured creates. Measuring the rest of the object API changes
+the conclusion above.
+
+`tests/perf/object-crud.sh`, 5 runs each. Host load was 61.7 from unrelated
+work, so the ABSOLUTE numbers are badly inflated — the ratios are the finding:
+
+| operation | wall median | minus floor |
+|---|---|---|
+| create | 1,477 ms | 525 ms |
+| read (one) | 1,447 ms | 495 ms |
+| search (list, limit 20) | 659 ms | **0 ms** |
+| **update** | 9,080 ms | **8,128 ms** |
+| **delete** | 4,243 ms | **3,291 ms** |
+
+Search is free — it never leaves the floor. Update costs **15×** a create and
+delete **6×**.
+
+Statement counts, which do NOT inflate with load (PostgreSQL statement log,
+scoped to the request's backend and window):
+
+| | statements | DB time |
+|---|---|---|
+| create | 251 | 194 ms |
+| **update** | **716** | **2,672 ms** |
+| **delete** | **595** | **1,781 ms** |
+
+And the shape is the same in both:
+
+| statements | update | delete | create |
+|---|---|---|---|
+| register lookups | 66 | 64 | 24 |
+| schema lookups (`uuid OR LOWER(slug) OR id`) | 51 | 51 | 15 |
+| schema lookups (slug + id IN) | 42 | 42 | 9 |
+| `information_schema.tables` probes | 27 | 27 | 9 |
+| `getLiveMagicTables()` (lists ALL 2,728 tables) | **12** | — | ~3 |
+
+**So Phase 1 is NOT worth ~11 ms — that was the create-only figure.** On an
+update it is 117 register+schema resolutions and 12 full magic-table
+enumerations. Tasks 1–4 and task 5 move back to the TOP of the list, and task 3
+(the register map) matters more than task 1, because registers are re-resolved
+more often than schemas.
+
+The general lesson is mine to own: I measured one operation, generalised from
+it, and deferred the fix that the other operations most needed. The budget in
+the spec is per-operation for a reason.
+
 ### Revised priority
 
 1. **p95 stability** — the median is at target; the spread is not. Establish
@@ -62,7 +110,8 @@ Worth keeping anyway as hygiene (9.1 MB of payloads only one app reads), but
    every measurement in this session harder.
 3. **Task 6 (one transaction)** — still ~135 commits per create. Correctness and
    fsync hygiene argue for it independently of latency.
-4. **Tasks 1–4** — deferred per above.
+4. **Tasks 1–5 — NO LONGER DEFERRED.** The CRUD measurement above reverses
+   that call: they are the dominant cost of update and delete.
 5. **Tasks 9–10 (fan-out index)** — still right, still not urgent: the
    register-scoped fallback holds today.
 

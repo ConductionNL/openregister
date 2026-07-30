@@ -192,6 +192,31 @@ class MagicMapper extends AbstractObjectMapper
     private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
 
     /**
+     * Request-scoped memo for {@see checkTableExistsInDatabase()}.
+     *
+     * Whether a magic table exists changes only when a register/schema pair is
+     * created or dropped, which cannot happen concurrently with the request that
+     * asks. Measured 2026-07-30: an object UPDATE issued 27
+     * `information_schema.tables` probes and a DELETE 27, against 9 for a
+     * create — all asking the same handful of questions repeatedly.
+     *
+     * @var array<string, boolean>
+     */
+    private array $tableExistsMemo = [];
+
+    /**
+     * Request-scoped memo for {@see getLiveMagicTables()}.
+     *
+     * That method lists EVERY magic table from `information_schema` and then
+     * fetches the full register and schema id lists to discard orphans — on this
+     * instance, 2,728 tables. Measured 2026-07-30: an object UPDATE called it 12
+     * times, ~60ms of the request, for an answer that cannot change mid-request.
+     *
+     * @var array<string, array<string, mixed>>|null
+     */
+    private ?array $liveMagicTablesMemo = null;
+
+    /**
      * Cache timeout for table existence checks (5 minutes)
      *
      * @internal Used by MagicTableHandler
@@ -1878,6 +1903,33 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function checkTableExistsInDatabase(string $tableName): bool
     {
+        if (isset($this->tableExistsMemo[$tableName]) === true) {
+            return $this->tableExistsMemo[$tableName];
+        }
+
+        $exists = $this->probeTableExistsInDatabase(tableName: $tableName);
+
+        // Only a POSITIVE answer is memoised. A negative one can legitimately
+        // become positive within the request — ensureTableExists() creates the
+        // table and then writes to it — and caching "no" would make that write
+        // fail against a table that now exists.
+        if ($exists === true) {
+            $this->tableExistsMemo[$tableName] = true;
+        }
+
+        return $exists;
+
+    }//end checkTableExistsInDatabase()
+
+    /**
+     * Ask the database whether a table exists, without memoisation.
+     *
+     * @param string $tableName The table name to check.
+     *
+     * @return boolean True if the table exists.
+     */
+    private function probeTableExistsInDatabase(string $tableName): bool
+    {
         try {
             // Check if table exists in information_schema.
             // NOTE: We use raw SQL here because information_schema is a system table.
@@ -1915,7 +1967,7 @@ class MagicMapper extends AbstractObjectMapper
 
             return false;
         }//end try
-    }//end checkTableExistsInDatabase()
+    }//end probeTableExistsInDatabase()
 
     /**
      * Invalidate table cache for specific register+schema
@@ -1976,6 +2028,11 @@ class MagicMapper extends AbstractObjectMapper
 
         // Create table with columns.
         $this->createTable(tableName: $tableName, columns: $columns);
+
+        // A new table invalidates both request-scoped memos: the existence memo
+        // may hold a stale "no" for this name, and the live-table enumeration no
+        // longer lists everything.
+        $this->invalidateTableMemos();
 
         // Create indexes for performance.
         $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
@@ -5450,6 +5507,39 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function getLiveMagicTables(): array
     {
+        if ($this->liveMagicTablesMemo !== null) {
+            return $this->liveMagicTablesMemo;
+        }
+
+        $this->liveMagicTablesMemo = $this->loadLiveMagicTables();
+
+        return $this->liveMagicTablesMemo;
+
+    }//end getLiveMagicTables()
+
+    /**
+     * Drop the request-scoped table memos.
+     *
+     * Called whenever a magic table is created, so a write that follows a table
+     * creation in the same request sees the new table rather than a cached
+     * "does not exist" / stale enumeration.
+     *
+     * @return void
+     */
+    private function invalidateTableMemos(): void
+    {
+        $this->tableExistsMemo     = [];
+        $this->liveMagicTablesMemo = null;
+
+    }//end invalidateTableMemos()
+
+    /**
+     * Enumerate the live magic tables from the database, without memoisation.
+     *
+     * @return array<string, array<string, mixed>> Live tables keyed by unprefixed name.
+     */
+    private function loadLiveMagicTables(): array
+    {
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
@@ -5495,7 +5585,7 @@ class MagicMapper extends AbstractObjectMapper
         }//end foreach
 
         return $liveTables;
-    }//end getLiveMagicTables()
+    }//end loadLiveMagicTables()
 
     /**
      * Locate which magic table in a chunk holds an identifier (phase 1 of the scan).
