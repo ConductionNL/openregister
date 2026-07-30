@@ -1931,6 +1931,8 @@ class MagicMapper extends AbstractObjectMapper
     private function probeTableExistsInDatabase(string $tableName): bool
     {
         try {
+            \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'tableExists.probe');
+
             // Check if table exists in information_schema.
             // NOTE: We use raw SQL here because information_schema is a system table.
             $fullTableName = $this->getFullTableName(tableName: $tableName);
@@ -5540,6 +5542,8 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function loadLiveMagicTables(): array
     {
+        \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'magicTables.enumerate');
+
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
