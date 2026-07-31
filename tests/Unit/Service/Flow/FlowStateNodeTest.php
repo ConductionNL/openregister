@@ -88,9 +88,51 @@ final class FlowStateNodeTest extends TestCase
 
         self::assertTrue(condition: $out[0]['json']['claimed']);
         self::assertSame(expected: 1, actual: $out[0]['json']['slot']);
-        self::assertSame(expected: ['1' => 'issue-42'], actual: $state->get(key: 'slots'));
+
+        // Every slot up to capacity is present, so a reader can say "1 of 3
+        // taken" without being told the capacity separately.
+        $slots = $state->get(key: 'slots');
+        self::assertSame(expected: [1, 2, 3], actual: array_keys($slots));
+        self::assertSame(expected: 'issue-42', actual: $slots['1']['holder']);
+        self::assertNotEmpty(actual: $slots['1']['since']);
+        self::assertNull(actual: $slots['2']);
+        self::assertNull(actual: $slots['3']);
 
     }//end testClaimTakesTheFirstFreeSlot()
+
+
+    /**
+     * `record` copies named item fields onto the slot, so "what is running"
+     * is answerable from the state alone.
+     *
+     * A named field the item does not carry is recorded as null rather than
+     * omitted, so every slot has the same shape and a table renders evenly.
+     *
+     * @return void
+     */
+    public function testClaimRecordsTheNamedItemFields(): void
+    {
+        $state = new FlowStateHandle();
+
+        $this->node->execute(
+            items: $this->items(json: ['holder' => 'issue-42', 'stage' => 'builder', 'repo' => 'ConductionNL/hydra']),
+            config: [
+                'operation' => 'claim',
+                'slots'     => 'slots',
+                'capacity'  => 2,
+                'record'    => ['stage', 'repo', 'absent'],
+            ],
+            context: $this->ctx(handle: $state)
+        );
+
+        $slot = $state->get(key: 'slots')['1'];
+
+        self::assertSame(expected: 'builder', actual: $slot['stage']);
+        self::assertSame(expected: 'ConductionNL/hydra', actual: $slot['repo']);
+        self::assertArrayHasKey(key: 'absent', array: $slot);
+        self::assertNull(actual: $slot['absent']);
+
+    }//end testClaimRecordsTheNamedItemFields()
 
     /**
      * A second claim takes the NEXT slot, not the same one.
@@ -108,7 +150,16 @@ final class FlowStateNodeTest extends TestCase
         );
 
         self::assertSame(expected: 2, actual: $out[0]['json']['slot']);
-        self::assertSame(expected: ['1' => 'issue-1', '2' => 'issue-2'], actual: $state->get(key: 'slots'));
+
+        // Slot 1 was written by an older revision as a bare holder string. It
+        // is carried forward into the record shape rather than dropped, so a
+        // flow mid-run when this changed does not lose what it was holding —
+        // with a null `since`, because that moment was never recorded.
+        $slots = $state->get(key: 'slots');
+        self::assertSame(expected: 'issue-1', actual: $slots['1']['holder']);
+        self::assertNull(actual: $slots['1']['since']);
+        self::assertSame(expected: 'issue-2', actual: $slots['2']['holder']);
+        self::assertNull(actual: $slots['3']);
 
     }//end testASecondClaimTakesTheNextSlot()
 
@@ -133,9 +184,43 @@ final class FlowStateNodeTest extends TestCase
 
         self::assertFalse(condition: $out[0]['json']['claimed']);
         self::assertNull(actual: $out[0]['json']['slot']);
-        self::assertSame(expected: ['1' => 'a', '2' => 'b'], actual: $state->get(key: 'slots'));
+
+        // Nobody was evicted. Both slots still name their holder — normalised
+        // into the record shape, which is the only change a refused claim makes.
+        $slots = $state->get(key: 'slots');
+        self::assertSame(expected: [1, 2], actual: array_keys($slots));
+        self::assertSame(expected: 'a', actual: $slots['1']['holder']);
+        self::assertSame(expected: 'b', actual: $slots['2']['holder']);
 
     }//end testAtCapacityTheClaimIsRefused()
+
+
+    /**
+     * A slot occupied ABOVE a capacity the operator has just lowered survives.
+     *
+     * Dropping it would free a slot somebody is still holding, letting the flow
+     * exceed the new cap immediately — the opposite of what lowering it means.
+     * It disappears when its holder releases it.
+     *
+     * @return void
+     */
+    public function testASlotAboveALoweredCapacityIsKeptUntilReleased(): void
+    {
+        $state = new FlowStateHandle(values: ['slots' => ['1' => 'a', '2' => 'b', '3' => 'c']]);
+
+        $out = $this->node->execute(
+            items: $this->items(json: ['holder' => 'd']),
+            config: ['operation' => 'claim', 'slots' => 'slots', 'capacity' => 2],
+            context: $this->ctx(handle: $state)
+        );
+
+        self::assertFalse(condition: $out[0]['json']['claimed']);
+
+        $slots = $state->get(key: 'slots');
+        self::assertArrayHasKey(key: '3', array: $slots);
+        self::assertSame(expected: 'c', actual: $slots['3']['holder']);
+
+    }//end testASlotAboveALoweredCapacityIsKeptUntilReleased()
 
     /**
      * A released slot becomes claimable again.
