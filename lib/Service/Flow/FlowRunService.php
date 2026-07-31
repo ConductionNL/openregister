@@ -151,6 +151,25 @@ class FlowRunService
     }//end queue()
 
     /**
+     * Whether a flow already has a run that has not finished.
+     *
+     * Exposed for the SCHEDULER, which must not start tick N+1 of a flow while
+     * tick N is still going: a scheduled flow can outlive its own interval, and
+     * two concurrent runs of one flow race on whatever that flow is
+     * bookkeeping. See FlowRunMapper::hasActiveRun() for why "not finished"
+     * includes `suspended` and `queued`, not just `running`.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return boolean True when a non-terminal run exists for this flow.
+     */
+    public function hasActiveRun(string $flowId): bool
+    {
+        return $this->mapper->hasActiveRun(flowId: $flowId);
+
+    }//end hasActiveRun()
+
+    /**
      * Queue a fresh run that repeats a finished one.
      *
      * Retry NEVER re-executes the old run — that would repeat every side effect
@@ -167,6 +186,7 @@ class FlowRunService
      *
      * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
      */
+
     public function retry(FlowRun $run): ?FlowRun
     {
         if ($run->isTerminal() === false) {
