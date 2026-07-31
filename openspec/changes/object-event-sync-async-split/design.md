@@ -191,6 +191,99 @@ rather than a blanket suppression. Verification is by exit code: a deliberately
 violating listener must make `run-hydra-gates.sh` exit non-zero. A FAIL line on
 stdout is not evidence.
 
+### D6. Filtered subscription is declared at the registration site
+
+This resolves **Open Question 2 of the hydra sibling change**
+(`object-event-sync-async-split`, design.md), which asked where a listener's
+register/schema interest is declared and deferred the answer to OpenRegister,
+which owns the dispatcher.
+
+**Decision: at the registration site, as named arguments on a helper that
+replaces `$context->registerEventListener()`.**
+
+```php
+\OCA\OpenRegister\Event\ObjectEventSubscription::register(
+    context:   $context,
+    event:     ObjectCreatedEvent::class,
+    listener:  BezwaarLifecycleListener::class,
+    registers: ['procest'],
+    schemas:   ['bezwaar', 'objection', 'hearingSession'],
+);
+```
+
+The three options were the registration-site argument, a manifest block, and a
+PHP attribute on the listener class. The registration site wins on four
+grounds, in order of weight:
+
+1. **The declaration must be readable without loading the class.** The whole
+   point is to avoid constructing an uninterested listener. A class attribute
+   is only readable via reflection, and reflecting a class requires autoloading
+   it — which pulls in exactly the file the mechanism exists to avoid touching.
+   Reflection on 84 listeners per request would also cost more than the ~1.4 ms
+   of handler bodies it saves. The attribute option is not merely less tidy; it
+   is self-defeating.
+2. **Interest is per registration, not per class.** A listener is routinely
+   registered on several events, and its interest can differ between them —
+   `HookListener` is the in-tree example, registered on both the `*ing` and
+   `*ed` halves with different obligations. A class-level attribute can only
+   state one interest for all of them.
+3. **It keeps one source of truth next to the thing it modifies.** A manifest
+   block would put the event name in `Application.php` and the filter in JSON,
+   so a listener could be re-registered on a new event and silently keep a
+   stale filter. Gate 61 already reads the registration site to find the event
+   name; the filter being on the same line is what makes it mechanically
+   checkable. The fleet has been burned by exactly this split before — a
+   manifest `widgetKey` that referred to nothing.
+4. **It degrades to today's behaviour by omission.** `registers`/`schemas`
+   default to `null`, meaning "all". A leaf that adopts the helper without
+   declaring anything behaves precisely as its global registration did, so the
+   migration is opt-in per listener and reversible per line.
+
+Rejected specifically: **a manifest block**, because the leaf apps that would
+carry it (`procest`, `pipelinq`, …) declare listeners in PHP and would gain a
+second, non-co-located place to get out of sync; and **a class attribute**, for
+reason 1 above.
+
+**Dispatcher shape.** One shared `ObjectEventProxyListener` is registered per
+event class, idempotently, by the first `register()` call in the process. It
+resolves the written object's register/schema ids off the `ObjectEntity` once
+per dispatch and invokes only the matching subscriptions. It resolves listeners
+from the **server** container, which is not a compromise but an exact match for
+what Nextcloud already does — `EventDispatcher::addServiceListener()` hands its
+own container to `ServiceEventListener` regardless of which app registered the
+listener (`ServiceEventListener.php` even carries a TODO saying so).
+
+**Slug↔id is the load-bearing cost.** Apps declare slugs; `ObjectEntity`
+carries ids. Neither `oc_openregister_registers` nor `oc_openregister_schemas`
+has an index on `slug`, so each resolution is a sequential scan — measured
+1,137 us for the two of them on an instance with 1,931 schemas. Resolving per
+dispatch would make the filter cost more than the handlers it skips, i.e. a net
+loss. It is therefore resolved **once per request** for every slug declared by
+every app in one bounded `IN` query per table, and that result is additionally
+held in the local (APCu) cache for 60 s. Warm, the whole filter costs ~40–52 us
+of map read plus ~49–80 us per dispatch. The 60 s TTL is the price: a schema
+created in the last minute is matched one cache generation late. Registers and
+schemas are configuration, not traffic, so that trade is deliberate.
+
+**What changes about dispatch semantics, stated rather than hidden.**
+Subscriptions run in declaration order among themselves but occupy the proxy's
+single slot in the dispatcher rather than their original positions, so relative
+order against *other* apps' listeners changes. That is safe for the `*ed`
+post-events this mechanism targets, which expose neither `setObject()` nor a
+veto, so no downstream listener can observe the reordering — and it is why the
+helper deliberately exposes no `priority` parameter. Exceptions thrown by a
+handler propagate, exactly as Symfony's dispatcher already lets them; an
+unresolvable listener is logged and skipped, exactly as
+`ServiceEventListener`'s `QueryException` branch does.
+
+**Kill switch.** `occ config:app:set openregister objectEventFilter --value
+off` makes the proxy invoke every subscription unconditionally, which is
+byte-for-byte today's behaviour and is also the A/B knob. Note that the value
+is read through NC's app config, whose local cache is APCu and therefore
+**per-SAPI**: a value written by `occ` is not visible to the web workers
+immediately. Any measurement that toggles it must poll for the flag to actually
+have flipped rather than assume it.
+
 ## Risks / Trade-offs
 
 - **Deferred delete-path work vs re-created UUIDs.** → Every deferred delete
