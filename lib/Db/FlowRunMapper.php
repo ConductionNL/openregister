@@ -101,6 +101,137 @@ class FlowRunMapper extends QBMapper
     }//end findAllRuns()
 
     /**
+     * The runs that are still going, newest first.
+     *
+     * "Still going" is every NON-terminal status — `queued` (about to start),
+     * `running` (executing now) and `suspended` (mid-graph, waiting on a timer
+     * or a child run). A dashboard that showed only `running` would be empty
+     * almost all of the time: a run holds that status for the duration of one
+     * worker pass, while `queued` and `suspended` are where a run actually
+     * spends its wall-clock.
+     *
+     * Scoping is STRICT: pass an organisation and only that organisation's runs
+     * come back. A run recorded before runs carried an organisation (or queued
+     * with no session to attribute it to) has none, and is therefore returned
+     * to nobody — deliberately, since this feeds a widget every app renders to
+     * every user, and guessing a tenant for an unattributed run would leak one
+     * tenant's activity into another's dashboard.
+     *
+     * @param string|null $organisation Restrict to one organisation uuid.
+     * @param integer     $limit        Page size.
+     *
+     * @return array<int, FlowRun> The non-terminal runs.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    public function findActive(?string $organisation=null, int $limit=25): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            )
+            ->orderBy('id', 'DESC')
+            ->setMaxResults($limit);
+
+        if ($organisation !== null && $organisation !== '') {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+        }
+
+        return $this->findEntities(query: $qb);
+
+    }//end findActive()
+
+    /**
+     * Whether one flow already has a run that has not finished.
+     *
+     * A SCHEDULED flow can be slower than its own interval — a hydra-shaped
+     * pipeline poll easily outlives five minutes — and `fireDueFlows()` has no
+     * overlap guard of its own, so tick N+1 would start while tick N is still
+     * going. Two runs of the same flow then race on whatever that flow is
+     * bookkeeping.
+     *
+     * This is the query that lets the scheduler refuse to do that. It is
+     * deliberately the same NON-terminal definition {@see findActive} uses:
+     * `queued`, `running` and `suspended` all mean "still going". A guard that
+     * only looked at `running` would let a suspended run be overlapped, which
+     * is precisely the long-lived state a slow flow spends its time in.
+     *
+     * Cheap on purpose — a count with a limit, not a fetch. The scheduler asks
+     * this once per due flow on every cron tick.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return boolean True when a non-terminal run exists for this flow.
+     */
+    public function hasActiveRun(string $flowId): bool
+    {
+        if (trim($flowId) === '') {
+            return false;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return $row !== false;
+
+    }//end hasActiveRun()
+
+    /**
+     * How many runs are still going, for one organisation.
+     *
+     * Separate from {@see findActive} because a widget shows a bounded list but
+     * an honest total — "3 of 47 running" needs the 47, and paging the whole
+     * set to count it would be absurd.
+     *
+     * @param string|null $organisation Restrict to one organisation uuid.
+     *
+     * @return integer The number of non-terminal runs.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    public function countActive(?string $organisation=null): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->createFunction('COUNT(*) AS `total`'))
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if ($organisation !== null && $organisation !== '') {
+            $qb->andWhere($qb->expr()->eq('organisation', $qb->createNamedParameter($organisation)));
+        }
+
+        $result = $qb->executeQuery();
+        $total  = (int) $result->fetchOne();
+        $result->closeCursor();
+
+        return $total;
+
+    }//end countActive()
+
+    /**
      * Suspended runs that are due to resume.
      *
      * A run with no `resume_at` is waiting on something other than a clock — a
@@ -133,6 +264,47 @@ class FlowRunMapper extends QBMapper
         return $this->findEntities(query: $qb);
 
     }//end findDue()
+
+    /**
+     * Runs left in `running` by a worker pass that never came back.
+     *
+     * `execute()` sets `running` and clears it when the walk returns. A pass
+     * that dies instead — a fatal, a PHP timeout, an OOM, a container
+     * restart — never clears it, and no `catch` can help because the process
+     * is gone. The row then sits in `running` forever: the worker will not
+     * pick it up (it only reads `queued` and due `suspended` runs), so it is
+     * not just stale, it is unreachable.
+     *
+     * That was invisible while nothing read `running`. It stops being
+     * invisible the moment a dashboard widget shows live runs — 68 such rows
+     * existed on one dev instance, the oldest two days old, and every one of
+     * them would have read as "running right now".
+     *
+     * @param DateTime $before Runs not touched since this moment are stale.
+     * @param integer  $limit  Maximum runs to reap in one pass.
+     *
+     * @return array<int, FlowRun> The abandoned runs.
+     *
+     * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+     */
+    public function findStale(DateTime $before, int $limit=25): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('status', $qb->createNamedParameter(FlowRun::STATUS_RUNNING)))
+            ->andWhere(
+                $qb->expr()->lt(
+                    'updated',
+                    $qb->createNamedParameter($before, IQueryBuilder::PARAM_DATETIME_MUTABLE)
+                )
+            )
+            ->orderBy('updated', 'ASC')
+            ->setMaxResults($limit);
+
+        return $this->findEntities(query: $qb);
+
+    }//end findStale()
 
     /**
      * Runs waiting in the queue to start.

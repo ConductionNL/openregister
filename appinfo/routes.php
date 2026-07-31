@@ -1239,6 +1239,12 @@ return [
 
 		// Flow-run tooling (or-flow-tooling): history, inspection, retry.
 		['name' => 'flowRun#index', 'url' => '/api/flow-runs', 'verb' => 'GET'],
+		// Live runs for the caller's organisation (or-flow-active-runs) — the read
+		// behind the shared "running flows" widget. MUST stay above the `{uuid}`
+		// route: that pattern also matches the literal `active`, and Nextcloud
+		// resolves routes in declaration order, so a later registration would be
+		// answered by `show('active')` → 404 for every request.
+		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
 		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
 		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
 		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.

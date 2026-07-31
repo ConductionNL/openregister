@@ -174,6 +174,41 @@ class ObjectWriteNode implements IFlowNode
     private const ON_NO_MATCH = [self::ON_NO_MATCH_ERROR, self::ON_NO_MATCH_SKIP];
 
     /**
+     * A create whose identifier is already taken overwrites it (the default).
+     *
+     * This is `saveObject()`'s long-standing upsert behaviour and stays the
+     * default: it is silent, so there is no way to enumerate which existing
+     * flows depend on it.
+     *
+     * @var string
+     */
+    private const ON_CONFLICT_OVERWRITE = 'overwrite';
+
+    /**
+     * A create whose identifier is already taken FAILS the item.
+     *
+     * Opt in with `onConflict: fail` when the write is a CLAIM — a lock, a
+     * slot, a lease, a queue position. There, "it already existed" is the whole
+     * answer, and overwriting it means two flow runs both believe they won
+     * while the loser is never told. See openregister#2210.
+     *
+     * ⚠️ NOT YET SAFE FOR MUTUAL EXCLUSION — openregister#2212. The underlying
+     * guard is a check followed by a write, so concurrent flow runs can all
+     * pass the check and several succeed. It refuses a sequential duplicate
+     * correctly; it does not serialise simultaneous ones.
+     *
+     * @var string
+     */
+    private const ON_CONFLICT_FAIL = 'fail';
+
+    /**
+     * Accepted `onConflict` values.
+     *
+     * @var string[]
+     */
+    private const ON_CONFLICT = [self::ON_CONFLICT_OVERWRITE, self::ON_CONFLICT_FAIL];
+
+    /**
      * Writes one step execution may perform when it declares no `maxWrites`.
      *
      * Matches `FlowEngine::MAX_TRANSITIONS`'s order of magnitude so the two
@@ -405,12 +440,13 @@ class ObjectWriteNode implements IFlowNode
         $register  = $this->resolveRegister(config: $config);
         $schema    = $this->resolveSchema(config: $config, register: $register);
 
-        $pairs     = $this->matchPairs(config: $config);
-        $fields    = (array) ($config['fields'] ?? []);
-        $onMissing = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
-        $onNoMatch = $this->optionFrom(config: $config, key: 'onNoMatch', allowed: self::ON_NO_MATCH, default: self::ON_NO_MATCH_ERROR);
-        $replace   = (($config['replace'] ?? false) === true);
-        $cap       = $this->writeCap(config: $config);
+        $pairs      = $this->matchPairs(config: $config);
+        $fields     = (array) ($config['fields'] ?? []);
+        $onMissing  = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
+        $onNoMatch  = $this->optionFrom(config: $config, key: 'onNoMatch', allowed: self::ON_NO_MATCH, default: self::ON_NO_MATCH_ERROR);
+        $onConflict = $this->optionFrom(config: $config, key: 'onConflict', allowed: self::ON_CONFLICT, default: self::ON_CONFLICT_OVERWRITE);
+        $replace    = (($config['replace'] ?? false) === true);
+        $cap        = $this->writeCap(config: $config);
 
         $writes = 0;
         $out    = [];
@@ -453,7 +489,8 @@ class ObjectWriteNode implements IFlowNode
                 register: $register,
                 schema: $schema,
                 owner: $owner,
-                replace: $replace
+                replace: $replace,
+                onConflict: $onConflict
             );
             $writes++;
 
@@ -551,12 +588,13 @@ class ObjectWriteNode implements IFlowNode
      * update-side write goes through `patchObject()` unless the author asked for
      * `replace: true`, which is the only way to reach PUT semantics from a flow.
      *
-     * @param array             $payload  The templated field payload.
-     * @param ObjectEntity|null $matched  The matched object, when there is one.
-     * @param Register          $register The resolved register.
-     * @param Schema            $schema   The resolved schema.
-     * @param IUser             $owner    The run owner, as the acting user.
-     * @param bool              $replace  Whether to replace rather than patch.
+     * @param array             $payload    The templated field payload.
+     * @param ObjectEntity|null $matched    The matched object, when there is one.
+     * @param Register          $register   The resolved register.
+     * @param Schema            $schema     The resolved schema.
+     * @param IUser             $owner      The run owner, as the acting user.
+     * @param bool              $replace    Whether to replace rather than patch.
+     * @param string            $onConflict What to do when a create's identifier is already taken.
      *
      * @return ObjectEntity The written object.
      */
@@ -566,14 +604,20 @@ class ObjectWriteNode implements IFlowNode
         Register $register,
         Schema $schema,
         IUser $owner,
-        bool $replace
+        bool $replace,
+        string $onConflict=self::ON_CONFLICT_OVERWRITE
     ): ObjectEntity {
         if ($matched === null) {
+            // `matched === null` means the node's own lookup found nothing —
+            // but that lookup and this write are two separate calls, so another
+            // flow run can land in between. Passing failIfExists through is what
+            // closes that window: the database, not the node, arbitrates.
             return $this->objects->saveObject(
                 object: $payload,
                 register: $register,
                 schema: $schema,
-                currentUser: $owner
+                currentUser: $owner,
+                failIfExists: ($onConflict === self::ON_CONFLICT_FAIL)
             );
         }
 

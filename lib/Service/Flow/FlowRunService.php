@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -46,19 +47,61 @@ class FlowRunService
     /**
      * Constructor.
      *
-     * @param FlowRunMapper    $mapper   Persists runs.
-     * @param FlowEngine       $engine   Walks the graph.
-     * @param FlowNodeRegistry $registry Resolves step types.
-     * @param LoggerInterface  $logger   The logger.
+     * @param FlowRunMapper      $mapper    Persists runs.
+     * @param FlowEngine         $engine    Walks the graph.
+     * @param FlowNodeRegistry   $registry  Resolves step types.
+     * @param LoggerInterface    $logger    The logger.
+     * @param ContainerInterface $container Lazily resolves OrganisationService.
      */
     public function __construct(
         private readonly FlowRunMapper $mapper,
         private readonly FlowEngine $engine,
         private readonly FlowNodeRegistry $registry,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ContainerInterface $container
     ) {
 
     }//end __construct()
+
+    /**
+     * The organisation to attribute a run to, or null when there is none.
+     *
+     * A run is queued from wherever the trigger fired: a request (there is a
+     * session, so there is an active organisation), or a cron pass (there is
+     * not). Only the first can be attributed, and an unattributed run is
+     * recorded as such rather than guessed at — the active-runs surface scopes
+     * strictly by this value, so a wrong guess would put one tenant's runs on
+     * another's dashboard.
+     *
+     * `OrganisationService` is resolved lazily through the container, not
+     * constructor-injected: `FlowRunService` is what the cron worker builds on
+     * every pass, and it must not drag the whole organisation/RBAC graph into
+     * that path to write a column it usually cannot fill anyway.
+     *
+     * @return string|null The active organisation uuid, or null.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    private function activeOrganisation(): ?string
+    {
+        try {
+            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+            $uuid = $organisationService->getActiveOrganisation()?->getUuid();
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                message: '[FlowRunService] Could not resolve the active organisation for a run: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return null;
+        }
+
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        return (string) $uuid;
+
+    }//end activeOrganisation()
 
     /**
      * Queue a run without executing it.
@@ -96,12 +139,35 @@ class FlowRunService
         $run->setSubjectRegister(($subject['register'] ?? null));
         $run->setSubjectSchema(($subject['schema'] ?? null));
         $run->setTriggeredBy($user);
+        // Attribute the run to the caller's organisation so the active-runs
+        // surface can scope by tenant. Null when queued off a request (cron) —
+        // see activeOrganisation().
+        $run->setOrganisation($this->activeOrganisation());
         $run->setCreated(new DateTime());
         $run->setUpdated(new DateTime());
 
         return $this->mapper->insert($run);
 
     }//end queue()
+
+    /**
+     * Whether a flow already has a run that has not finished.
+     *
+     * Exposed for the SCHEDULER, which must not start tick N+1 of a flow while
+     * tick N is still going: a scheduled flow can outlive its own interval, and
+     * two concurrent runs of one flow race on whatever that flow is
+     * bookkeeping. See FlowRunMapper::hasActiveRun() for why "not finished"
+     * includes `suspended` and `queued`, not just `running`.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return boolean True when a non-terminal run exists for this flow.
+     */
+    public function hasActiveRun(string $flowId): bool
+    {
+        return $this->mapper->hasActiveRun(flowId: $flowId);
+
+    }//end hasActiveRun()
 
     /**
      * Queue a fresh run that repeats a finished one.
@@ -120,6 +186,7 @@ class FlowRunService
      *
      * @spec openspec/changes/or-flow-tooling/specs/flow-tooling/spec.md
      */
+
     public function retry(FlowRun $run): ?FlowRun
     {
         if ($run->isTerminal() === false) {
@@ -155,6 +222,10 @@ class FlowRunService
      * @return FlowRun The updated run.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) FlowToken::fromArray is a stateless
+     * rehydrator for a value object; injecting a factory to call it would add a
+     * dependency without removing any coupling.
      */
     public function execute(FlowRun $run, array $flow, object $subject, ?array $seedItems=null, ?string $startAt=null): FlowRun
     {

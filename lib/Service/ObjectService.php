@@ -1084,7 +1084,8 @@ class ObjectService
      *
      * @return ObjectEntity The saved object.
      *
-     * @throws Exception If there is an error during save.
+     * @throws Exception If there is an error during save
+     * @throws \OCA\OpenRegister\Exception\ObjectExistsException When $failIfExists is true and the identifier is already taken.
      */
 
     /**
@@ -1118,6 +1119,7 @@ class ObjectService
      * @param bool                     $silent        Whether to skip audit trail creation and events (default: false)
      * @param array|null               $uploadedFiles Uploaded files from multipart/form-data (optional)
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks
+     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false = upsert)
      *                                                (forwarded to `ensureObjectFolder` → `assertObjectFolderAccessible`).
      *                                                Defaults to null → `IUserSession::getUser()` resolution.
      *                                                Non-HTTP callers (cron, import pipelines, event listeners)
@@ -1146,7 +1148,8 @@ class ObjectService
         bool $_multitenancy=true,
         bool $silent=false,
         ?array $uploadedFiles=null,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Bound the folder-access revalidation cache to this single save call
         // (not the whole FileService/request lifetime), so a cascade save that
@@ -1175,6 +1178,8 @@ class ObjectService
             uuid: $uuid,
             _rbac: $_rbac
         );
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('pc:permissions.check');
 
         // Reject updates to transferred objects (archiefstatus = overgebracht).
         if ($uuid !== null) {
@@ -1272,8 +1277,12 @@ class ObjectService
         // object exactly once so the check is data-driven, not metadata-only.
         $this->enforceReadOnlyOnUpdate(object: $object, uuid: $uuid);
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.readonly');
+
         // Ensure folder exists for the object.
         $folderId = $this->ensureObjectFolder(uuid: $uuid, currentUser: $currentUser);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('folder.ensure');
 
         // Clear request-scoped caches before starting a new top-level save operation.
         // This ensures cascade operations benefit from caching while avoiding stale data.
@@ -1294,7 +1303,8 @@ class ObjectService
             silent: $silent,
             _validation: true,
             uploadedFiles: $uploadedFiles,
-            currentUser: $currentUser
+            currentUser: $currentUser,
+            failIfExists: $failIfExists
         );
 
         // Invalidate contact matching cache for objects with email properties.
@@ -1441,8 +1451,20 @@ class ObjectService
         }
 
         // UUID provided - check if object exists to determine CREATE vs UPDATE.
+        //
+        // Scope the lookup to the register and schema being written to. Left
+        // unscoped, this resolved the UUID by UNION-ing every magic table on the
+        // instance. It was also the wrong question: the permission being checked
+        // is "may I write THIS object in THIS schema", so an object of the same
+        // UUID living in another register/schema must not supply the owner the
+        // check is made against. Not finding it here means the same thing it has
+        // always meant — treat the write as a create with a caller-chosen UUID.
         try {
-            $existingObject = $this->objectMapper->find($uuid);
+            $existingObject = $this->objectMapper->find(
+                identifier: $uuid,
+                register: $this->currentRegister,
+                schema: $this->currentSchema
+            );
             // This is an UPDATE operation.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -1725,7 +1747,16 @@ class ObjectService
         if ($uuid !== null) {
             // For existing objects or objects with specific UUIDs, check if folder needs to be created.
             try {
-                $existingObject = $this->objectMapper->find($uuid);
+                // Scoped for the same reason enforceReadOnlyOnUpdate() above is:
+                // we are on the save path with both register and schema already
+                // resolved, so there is no reason to fall back to the
+                // cross-table search (openregister#1520). Unscoped, this was the
+                // third full-instance UUID resolution in a single update.
+                $existingObject = $this->objectMapper->find(
+                    $uuid,
+                    register: $this->currentRegister,
+                    schema: $this->currentSchema
+                );
                 $folder         = $existingObject->getFolder();
 
                 // The `_folder` column is `varchar(255)` — every populated
@@ -1867,8 +1898,12 @@ class ObjectService
             $this->setSchema(schema: $schema);
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.scope');
+
         // Reject deletion of transferred objects (archiefstatus = overgebracht).
         $this->rejectIfTransferred(uuid: $uuid);
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.transferred');
 
         // Reject DELETE operations on append-only schemas.
         if ($this->currentSchema !== null && $this->currentSchema->isAppendOnly() === true) {
@@ -1917,6 +1952,8 @@ class ObjectService
                 $this->setSchema(schema: $objectToDelete->getSchema());
             }
 
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.found');
+
             // Check user has permission to delete this specific object.
             $this->checkPermission(
                 schema: $this->currentSchema,
@@ -1926,6 +1963,8 @@ class ObjectService
                 _rbac: $_rbac,
                 object: $objectToDelete
             );
+
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.permitted');
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             // Scoped lookup is authoritative: if the caller asked for a
             // specific (register, schema) and the UUID is not in that scope,
@@ -1996,10 +2035,14 @@ class ObjectService
     private function rejectIfTransferred(string $uuid): void
     {
         try {
+            // Scoped to the register and schema currently in context: the only
+            // object whose transfer status can block this write is the one being
+            // written. Unscoped, this UNION-ed every magic table on the instance
+            // — the second such lookup in the same phase, on the same UUID.
             $object = $this->objectMapper->find(
                 identifier: $uuid,
-                register: null,
-                schema: null,
+                register: $this->currentRegister,
+                schema: $this->currentSchema,
                 includeDeleted: true
             );
 

@@ -33,6 +33,7 @@ use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
@@ -51,12 +52,13 @@ class FlowRunController extends Controller
     /**
      * Constructor.
      *
-     * @param string               $appName     The app id.
-     * @param IRequest             $request     The request.
-     * @param FlowRunMapper        $mapper      Reads runs.
-     * @param FlowRunService       $runner      Retries, requeues and runs.
-     * @param FlowResolverRegistry $resolvers   Resolves a flow id to its document.
-     * @param IUserSession         $userSession Attributes a retried run to the caller.
+     * @param string               $appName             The app id.
+     * @param IRequest             $request             The request.
+     * @param FlowRunMapper        $mapper              Reads runs.
+     * @param FlowRunService       $runner              Retries, requeues and runs.
+     * @param FlowResolverRegistry $resolvers           Resolves a flow id to its document.
+     * @param IUserSession         $userSession         Attributes a retried run to the caller.
+     * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
      */
     public function __construct(
         string $appName,
@@ -64,7 +66,8 @@ class FlowRunController extends Controller
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
         private readonly FlowResolverRegistry $resolvers,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly OrganisationService $organisationService
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -115,6 +118,164 @@ class FlowRunController extends Controller
         );
 
     }//end index()
+
+    /**
+     * The runs that are still going, for the caller's organisation.
+     *
+     * This is the read behind the shared "running flows" widget every app can
+     * place on a dashboard, so it is deliberately narrow: non-terminal runs
+     * only, newest first, a bounded list plus an honest total, and each run
+     * carrying the flow's NAME rather than only its id — a uuid on a dashboard
+     * tells a person nothing.
+     *
+     * Scoping is strict (see FlowRunMapper::findActive): a caller with no
+     * resolvable organisation gets an empty list rather than everybody's runs.
+     * The full history surface (`index`) is unchanged and still unscoped —
+     * this endpoint exists precisely so that widening visibility of run
+     * activity to every user of every app does not widen it across tenants.
+     *
+     * @return JSONResponse `{results, total, limit}` — the live runs.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function active(): JSONResponse
+    {
+        $limit        = min(50, max(1, (int) $this->request->getParam('limit', 10)));
+        $organisation = $this->activeOrganisation();
+
+        if ($organisation === null) {
+            return new JSONResponse(['results' => [], 'total' => 0, 'limit' => $limit]);
+        }
+
+        $runs  = $this->mapper->findActive(organisation: $organisation, limit: $limit);
+        $total = $this->mapper->countActive(organisation: $organisation);
+
+        return new JSONResponse(
+            [
+                'results' => array_map(fn (FlowRun $run): array => $this->summarise(run: $run), $runs),
+                'total'   => $total,
+                'limit'   => $limit,
+            ]
+        );
+
+    }//end active()
+
+    /**
+     * The caller's active organisation uuid, or null when none resolves.
+     *
+     * @return string|null The organisation uuid.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    private function activeOrganisation(): ?string
+    {
+        $uuid = $this->organisationService->getActiveOrganisation()?->getUuid();
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        return (string) $uuid;
+
+    }//end activeOrganisation()
+
+    /**
+     * A run reduced to what a dashboard row needs.
+     *
+     * The full `jsonSerialize()` carries the marking, the items and the whole
+     * step log — kilobytes per run that a list view never renders, and items
+     * can hold the record data itself. Summarising keeps the widget's payload
+     * proportional to what it shows, and keeps run *contents* on the
+     * single-run endpoint where a caller asks for one run explicitly.
+     *
+     * @param FlowRun $run The run to summarise.
+     *
+     * @return array<string, mixed> The row shape.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    private function summarise(FlowRun $run): array
+    {
+        $flowId  = (string) $run->getFlowId();
+        $created = $run->getCreated();
+
+        return [
+            'uuid'      => $run->getUuid(),
+            'flowId'    => $flowId,
+            'flowName'  => $this->flowName(flowId: $flowId),
+            'status'    => $run->getStatus(),
+            'trigger'   => $run->getTrigger(),
+            'startedBy' => $run->getTriggeredBy(),
+            'subject'   => [
+                'uuid'     => $run->getSubjectUuid(),
+                'register' => $run->getSubjectRegister(),
+                'schema'   => $run->getSubjectSchema(),
+            ],
+            'step'      => $this->currentStep(run: $run),
+            'resumeAt'  => $run->getResumeAt()?->format('c'),
+            'created'   => $created?->format('c'),
+            'updated'   => $run->getUpdated()?->format('c'),
+        ];
+
+    }//end summarise()
+
+    /**
+     * The flow's human name, falling back to its id.
+     *
+     * Resolution is memoised per flow id by FlowResolverRegistry, so a list of
+     * runs over a handful of flows costs one resolve per DISTINCT flow rather
+     * than one per row. A flow whose owning app is disabled no longer resolves;
+     * the id is returned so the row still identifies something.
+     *
+     * @param string $flowId The flow id.
+     *
+     * @return string The name, or the id.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    private function flowName(string $flowId): string
+    {
+        $flow = $this->resolvers->resolveFlow(flowId: $flowId);
+        $name = trim((string) ($flow['name'] ?? ''));
+
+        if ($name === '') {
+            return $flowId;
+        }
+
+        return $name;
+
+    }//end flowName()
+
+    /**
+     * Where the run currently is, as a step label — or null when unknown.
+     *
+     * The marking is the Petri net's token placement: the places that hold a
+     * token are the steps the run sits on right now. That is the one piece of
+     * "what is it doing" a person can read off a live run, so it is worth the
+     * one line it takes to surface.
+     *
+     * @param FlowRun $run The run.
+     *
+     * @return string|null The step name(s), comma-joined.
+     *
+     * @spec openspec/changes/or-flow-active-runs/specs/flow-active-runs/spec.md
+     */
+    private function currentStep(FlowRun $run): ?string
+    {
+        $marking = $run->getMarking();
+        if (is_array($marking) === false || $marking === []) {
+            return null;
+        }
+
+        $places = array_keys($marking);
+
+        return implode(', ', array_map(static fn ($place): string => (string) $place, $places));
+
+    }//end currentStep()
 
     /**
      * One run in full — its log, items, context and error.
@@ -197,6 +358,10 @@ class FlowRunController extends Controller
      * @NoCSRFRequired
      *
      * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::normalise is a pure
+     * value-normaliser with no state to inject; wrapping it in a collaborator
+     * would add a constructor dependency to say the same thing.
      */
     #[NoAdminRequired]
     #[NoCSRFRequired]
