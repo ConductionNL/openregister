@@ -895,18 +895,41 @@ class CredentialBrokerService
             $this->deny(reason: 'path must be a single-slash-rooted relative path', credentialId: '');
         }
 
-        // Single-decode, then reject any traversal in the decoded form.
+        // Single-decode, then reject traversal in the decoded form.
         $decoded = rawurldecode($path);
-        if (str_contains($decoded, '..') === true) {
-            $this->deny(reason: 'path contains traversal', credentialId: '');
-        }
 
-        $queryPos = strpos($decoded, '?');
+        $queryPos  = strpos($decoded, '?');
+        $matchPath = $decoded;
         if ($queryPos !== false) {
-            return substr($decoded, 0, $queryPos);
+            $matchPath = substr($decoded, 0, $queryPos);
         }
 
-        return $decoded;
+        // Traversal is a path SEGMENT equal to `..`, not the substring `..`
+        // appearing anywhere.
+        //
+        // The substring test rejected legitimate paths whose segments merely
+        // contain dots — GitHub's diff endpoint is `/repos/{o}/{r}/compare/
+        // {base}...{head}`, so EVERY commit comparison was denied as traversal.
+        // That is not a cosmetic refusal: `hydra-flows-first-port` task 2.5
+        // makes "diff the produced tree against the base before moving the ref"
+        // a mandatory rail on the commit-by-API path, precisely because
+        // `base_tree` overwrites rather than merges and a tree built against a
+        // moved base silently reverts files while producing a clean-looking
+        // commit. The rail could not be built at all while this guard stood.
+        //
+        // The security property is unchanged, and is checked both ways in the
+        // tests: `/a/../b` and `/a/%2e%2e/b` are still denied, because a
+        // traversal always presents as a segment that IS `..` once decoded.
+        // A segment like `..b`, `a..b` or `...` is a literal name and never
+        // walks anywhere. Double-encoding is unaffected: `%252e%252e` single-
+        // decodes to `%2e%2e`, which is not `..`, exactly as before.
+        foreach (explode('/', $matchPath) as $segment) {
+            if ($segment === '..') {
+                $this->deny(reason: 'path contains traversal', credentialId: '');
+            }
+        }
+
+        return $matchPath;
     }//end normalisePath()
 
     /**
