@@ -149,7 +149,20 @@ class DoffinProviderTest extends TestCase
         // Narrower than the refs rule it sits beside: it can only merge a pull
         // request's OWN base into its OWN head, so unlike
         // `PATCH /repos/*\/git/refs/*` it cannot move an arbitrary ref.
-        $this->assertCount(16, $github['allowRules']);
+        // 17 since 2026-07-31: `POST /repos/*\/actions/workflows/*\/dispatches`,
+        // the STAGE DISPATCH grant (hydra-flows-first-port). The most
+        // consequential rule in the list, and worth naming as such: it lets the
+        // credential execute arbitrary workflow code in the repository.
+        //
+        // It exists because the port ran out of ways to give a build stage a
+        // filesystem — a governed agent turn has Bash/Read/Write/Edit stripped
+        // and its sidecar is read_only with no checkout, so the builder,
+        // reviewer and security stages had no expression at all.
+        //
+        // Bounded by what it CANNOT do: it cannot create or edit a workflow
+        // (that needs contents write to .github/workflows), so it only runs what
+        // is already reviewed and merged.
+        $this->assertCount(17, $github['allowRules']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);
