@@ -123,16 +123,45 @@ class StopNode implements IFlowNode
     /**
      * End the run.
      *
-     * @param array $items   The input items (unused — the run ends).
+     * Ends the run when it receives items. An EMPTY item list means this
+     * branch was not taken, and the node passes through instead — see the
+     * comment in the body for why that distinction is load-bearing.
+     *
+     * @param array $items   The input items — empty means "this branch was not taken".
      * @param array $config  The step configuration.
      * @param array $context Run-level metadata.
      *
-     * @return array Never returns normally.
+     * @return array The empty item list, when there was nothing to stop for.
      *
-     * @throws FlowStop Always — this is how the node ends the run.
+     * @throws FlowStop When items reached it — this is how the node ends the run.
      */
     public function execute(array $items, array $config, array $context): array
     {
+        // A stop that received NOTHING is a branch that was not taken.
+        //
+        // `FlowEngine::advanceItems()` marks every place on a firing
+        // transition's `to` list and then distributes items to them by output
+        // tag — so after a route, the branch the router did NOT choose is
+        // marked and holds zero items. Its steps still fire. For an item-driven
+        // node that is harmless (zero items, zero work; `SourceCallNode` even
+        // short-circuits explicitly). For a stop it was not: the node threw
+        // regardless, so a graph with a refusal stop on each guard branch ended
+        // its run on a guard that had not tripped.
+        //
+        // Measured on hydra's commit-by-API flow: every step through
+        // `move-ref` completed, the branch ref genuinely moved on GitHub — and
+        // the run reported `failed` with "the branch tip moved while the commit
+        // was being built". The opposite of what happened, and the failure the
+        // rail exists to report is exactly the one it falsely claimed. A caller
+        // reading the run status would roll back a commit that was correct.
+        //
+        // Refusing on an empty branch also cannot be what an author meant: they
+        // wrote the stop to describe a condition, and no items reaching it means
+        // the condition did not select anything.
+        if ($items === []) {
+            return [];
+        }
+
         $isError = (($config['error'] ?? false) === true);
         $message = trim((string) ($config['message'] ?? ''));
         if ($message === '') {
