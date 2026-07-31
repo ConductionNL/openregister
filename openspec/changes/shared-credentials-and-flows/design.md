@@ -1,0 +1,260 @@
+## Context
+
+Two things need sharing, and they are enforced in **two different planes** —
+which is the single most important fact about this change.
+
+**Credentials** are already access-controlled *per object*, inside
+`CredentialBrokerService`'s four fail-closed guards (ADR-004 Rule 4). Guard 1
+reads the credential object's own `scope` / `organisation` data and its `owner`
+system field, and dispatches: `personal` → `assertPersonalOwner()` (strict
+equality), `organisation` → `assertOrganisationMember()`. A brokered credential
+is deliberately **not** read through the object RBAC path — the broker loads it
+with `_rbac: false` and substitutes its own, stricter chain.
+
+**Flows** are ordinary OR objects, so their visibility is decided by
+`PermissionHandler::checkPermission()`, evaluating the *schema's* `authorization`
+block. Critically, that evaluation already receives the specific `ObjectEntity`
+and already supports:
+
+- bare `user:<uid>` overrides (`matchesUserOverride()`), honoured by
+  `PermissionHandler`'s single-object verdict **and** all three list emitters;
+- conditional rules `{ "group": …, "match": {…} }` and the user form
+  `{ "user": "<uid>", "match": {…} }` — the code's own comment calls this
+  "User-level override (delegation)";
+- `match` clauses evaluated by the shared `ConditionMatcher` (ADR-011: the one
+  PHP-side matcher; do not reimplement), with dynamic values `$userId` / `$user`
+  / `$user.uid` / `$user.groups` / `$organisation` / `$now`.
+
+So per-user and per-group *principals* already exist in RBAC. What does not
+exist is a way to bind a grant to **one object** without writing into the schema.
+
+### The constraint that decides the design
+
+`MagicRbacHandler` documents the contract in its own class docblock: there are
+two enforcement paths — SQL emission for list endpoints, and the PHP-side verdict
+for single-object reads — and **"new conditional operators or dynamic variables
+MUST be added to ConditionMatcher / OperatorEvaluator, not re-implemented here."**
+The codebase has been bitten twice by these two paths disagreeing: the `$now`
+format was normalised to `Y-m-d H:i:s` specifically so "list and find endpoints
+produce identical verdicts", and `unwrapResolvedRelation()` exists because a
+resolved relation "would flip from allow to deny … (list-vs-find drift)".
+
+Any new operator therefore costs two implementations that must agree, and
+divergence is a silent access-control bug — over-filtering hides objects, and
+under-filtering leaks them.
+
+## Goals / Non-Goals
+
+**Goals:**
+
+- Share a brokered credential with named users and groups, granting **use** of
+  it and never disclosure of the secret.
+- Share a flow with named users and groups, distinguishing `read` from `run`,
+  without granting `edit`.
+- Keep organisation scope working exactly as it does now; the share list is an
+  additional, narrower grant.
+- Let a flow declare whose credentials a run resolves as — the runner's own
+  (default) or the owner's, lent — and record which was used.
+- One access decision per plane. No second, parallel authorisation system, and
+  nothing a client evaluates for itself (ADR-006 Rules 1 and 3).
+
+**Non-Goals:**
+
+- Federated / cross-instance sharing.
+- Per-node credential overrides inside a flow (the declaration is per flow).
+- Sharing that crosses a tenant boundary. A share narrows access *within* what
+  the organisation already permits; the organisation UUID stays the only tenant
+  key (ADR-002 Rule 1).
+- Changing how secrets are stored, or adding any path that returns one.
+
+## Decisions
+
+### D1 — The share list lives on the OBJECT, not in the schema's authorization block
+
+`sharedWith[]` becomes a property of the credential and flow objects:
+
+```json
+"sharedWith": [
+  { "type": "user",  "id": "alice", "permission": "run" },
+  { "type": "group", "id": "finance", "permission": "read" }
+]
+```
+
+**Alternative considered and rejected:** express each share as a schema
+authorization rule narrowed to one object —
+`{ "user": "alice", "match": { "id": "<flow-uuid>" } }`. This is *already
+supported on every path today* and would need no new operator, which makes it
+genuinely tempting. Rejected because the schema is the wrong home for
+user-authored data:
+
+- **A register re-import would destroy every share.** Schema changes are applied
+  by register import, and this repo has the scars: an `importFromApp(force: false)`
+  advances the version *without applying*, and union-merging a register conflict
+  silently drops modifications. User shares living in a schema would be at the
+  mercy of the next import.
+- **Every share in the instance would contend on one JSON document.** Concurrent
+  grants by different owners would last-write-wins each other.
+- **It inverts ownership.** The schema `authorization` block is an admin surface;
+  end users granting each other access must not be writing to it.
+
+Object-side storage keeps a share next to the thing shared, versioned with it,
+and revocable by its owner alone.
+
+### D2 — One new match operator, implemented on both enforcement paths
+
+The existing operator vocabulary cannot express a share check. `operatorIn()` is
+`in_array($objectValue, $operand, true)` — it tests *object value ∈ literal
+list*. A share test is the **reverse**: *acting principal ∈ object's array*.
+Both plausible spellings fail today:
+
+- `{"match": {"sharedWith": "$userId"}}` compares an array to a string → deny.
+- `{"match": {"sharedWith": {"$in": ["$userId"]}}}` calls
+  `in_array(array, [uid])` → deny.
+
+So this change adds an operator meaning "the object's array-valued property
+contains the resolved value", added to `OperatorEvaluator` (PHP verdict path,
+per the ADR-011 contract) **and** to `MagicRbacHandler`'s SQL emitter, because
+list endpoints go through the SQL path and the two must return identical
+verdicts.
+
+Group shares then need no second mechanism: `$user.groups` already resolves to
+the user's group ids, so a group grant is the same operator with an
+array-to-array intersection.
+
+**This is the highest-risk item in the change** and the reason the flow half is
+harder than the credential half. It is mitigated by D6.
+
+### D3 — Credentials extend the broker's guard chain, NOT the RBAC path
+
+Guard 1 gains a third branch, after the existing two, reading the same
+`sharedWith[]` shape. It does **not** route through `ConditionMatcher`.
+
+**Rationale.** The broker deliberately bypasses object RBAC (`_rbac: false`) and
+substitutes a stricter chain; that chain *is* the credential security boundary
+(ADR-004 Rule 4). Re-routing credential access through the generic RBAC
+evaluator to reuse D2's operator would weaken a security-critical boundary to
+save code, and would make the broker's verdict depend on schema configuration
+that an admin can edit. Two enforcement points is the correct answer here, not
+duplication to be eliminated.
+
+The consequence is that `sharedWith[]` is one *data shape* with two readers. The
+shape is therefore specified once, and both readers get tests proving they agree
+on the same fixtures.
+
+### D4 — `credentialIdentity` on the flow: `runner` (default) or `owner`
+
+- `runner` — resolve credentials as the user who triggered the run. Default,
+  and the safe one: a recipient can run the flow with their own credentials.
+- `owner` — resolve as the flow owner regardless of who triggered it. The flow
+  *lends* the owner's credential.
+
+Enforcement:
+
+- **Only the flow owner may set or change it.** A share recipient never gets
+  `edit`, so a recipient cannot flip a `runner` flow to `owner`.
+- **It never enables disclosure.** Resolution still goes through the broker, and
+  the routed broker path never returns a plaintext secret; `owner` mode grants
+  the *use* of the credential, not sight of it.
+- **The run records the identity actually used**, so a lent-credential call is
+  attributable after the fact.
+
+`FlowRun` already carries `triggeredBy` and `organisation`; the resolved
+credential identity is a third, separate field — conflating it with
+`triggeredBy` would destroy exactly the distinction that makes `owner` mode
+auditable.
+
+### D5 — Run-time resolution uses the existing sessionless in-process assertions
+
+`FlowRunWorker` executes runs from cron with **no user session**. The broker
+already has the mechanism: `actingUserId` (personal) and `actingOrganisationId`
+(organisation), honoured only when no session exists and documented as settable
+only by trusted in-process code — request input never reaches them.
+
+So run-time resolution passes the identity D4 selected as `actingUserId`. No new
+trust mechanism is introduced; the existing one is threaded from a new source.
+
+**The invariant this depends on:** those assertions must stay unreachable from
+request input. `owner` mode makes forging one more attractive, so the spec states
+it as a requirement and the tests assert the HTTP-routed path cannot set it.
+
+Apps that contribute flow nodes (hermiq's agent step is the live example, calling
+`resolveInjectable($credentialId, APP_ID, $uid)`) read the identity from the run
+rather than assuming the triggering user. hermiq's `CredentialScopeResolver`
+gains shared credentials as a *candidate* — it is a selector whose every answer
+is re-validated by the broker's guards, so it cannot widen access by itself.
+
+### D6 — Verdict-parity tests are part of the change, not follow-up
+
+Because D2 has two implementations, the change includes a test matrix that runs
+the **same fixtures** through the single-object path and the list path and
+asserts identical verdicts, for: owner, org member, non-member, shared user,
+member of a shared group, revoked share, anonymous, and a malformed
+`sharedWith[]` entry.
+
+This is the mitigation for the divergence class that has already produced two
+fixes in this file. A share that is honoured on find but dropped on list looks
+like an empty page; the reverse leaks an object.
+
+## Risks / Trade-offs
+
+- **[PHP/SQL operator divergence silently mis-authorises]** → D6's parity matrix
+  over one fixture set; the operator is added in `OperatorEvaluator` per the
+  documented ADR-011 contract rather than inline in the SQL class.
+
+- **[`owner` mode is a real privilege delegation]** → owner-only writable; no
+  disclosure path; the resolved identity recorded on every run; the sessionless
+  assertion stays unreachable from request input, with a test asserting the
+  routed path cannot set it.
+
+- **[A share becomes an accidental tenant bypass]** → tenancy is evaluated
+  first and independently; a share can only narrow within an organisation, never
+  admit across one. Explicit scenario, and no group is ever consulted as a
+  tenant key (ADR-002 Rule 1).
+
+- **[Adding a branch to a security-critical guard chain]** → the branch is
+  ordered *after* the existing two, changes no existing verdict, and keeps
+  fail-closed behaviour; ADR-004 Rule 4's enumeration is amended so the
+  documented chain matches the code.
+
+- **[Register/schema changes not applied]** → `sharedWith[]` and the flow
+  property arrive via a **forced** register import; a non-forced import advances
+  the version without applying it, which would leave the property absent while
+  the code assumes it.
+
+- **[Two readers of one shape drift apart]** → the shape is specified once and
+  both readers are tested against the same fixtures (D3).
+
+- **[Sharing invites "share the secret too"]** → out of scope by construction:
+  no new path returns a secret, and the use-not-disclosure boundary is a stated
+  requirement rather than an implementation detail.
+
+## Migration Plan
+
+1. Add `sharedWith[]` + the flow's `credentialIdentity` to the register JSONs;
+   apply with a **forced** import. Both are optional, so existing objects stay
+   valid and unshared.
+2. Add the operator to `OperatorEvaluator` + the SQL emitter, with the D6 parity
+   matrix, before anything consumes it.
+3. Add the broker's Guard 1 branch (credentials shareable).
+4. Add the flow read/run grants and the migration for the run's resolved
+   identity field.
+5. Thread run-time identity resolution; default `runner` preserves today's
+   behaviour exactly.
+6. Leaf UIs (doriath, hermiq) as separate changes once the API is live.
+
+**Rollback:** every element is additive and defaults to current behaviour — an
+absent `sharedWith[]` denies as before, and an absent `credentialIdentity`
+resolves as `runner`, which is what happens today.
+
+## Open Questions
+
+- **Operator name.** `$contains` reads naturally but invites confusion with
+  substring matching; `$anyOf` / `$includes` are alternatives. Needs a decision
+  before the operator is added, since it becomes part of the RBAC vocabulary and
+  the SQL emitter's contract.
+- **Permission verbs on a credential share.** `use` is clearly needed. Is
+  `read` (see that the credential exists, in order to pick it in a UI) a
+  separate verb, or implied by `use`?
+- **Whether a flow share should imply access to the flow's run history.** A run
+  log can contain subject data the recipient may not otherwise be entitled to,
+  so this is a data-exposure decision rather than a convenience one.
