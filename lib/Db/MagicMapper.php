@@ -47,7 +47,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCP\AppFramework\Db\Entity;
+use OCP\DB\Exception as DbException;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -3364,10 +3366,11 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Save single object to register+schema-specific table
      *
-     * @param array    $objectData The object data to save
-     * @param Register $register   The register context
-     * @param Schema   $schema     The schema for validation and table selection
-     * @param string   $tableName  The table name to save to
+     * @param array    $objectData   The object data to save
+     * @param Register $register     The register context
+     * @param Schema   $schema       The schema for validation and table selection
+     * @param string   $tableName    The table name to save to
+     * @param bool     $failIfExists Insert-only: refuse instead of updating when the identifier is taken
      *
      * @throws Exception If save operation fails
      *
@@ -3377,7 +3380,8 @@ class MagicMapper extends AbstractObjectMapper
         array $objectData,
         Register $register,
         Schema $schema,
-        string $tableName
+        string $tableName,
+        bool $failIfExists=false
     ): string {
         // Prepare object data for table storage with register+schema context.
         $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
@@ -3402,8 +3406,54 @@ class MagicMapper extends AbstractObjectMapper
             $existingObject = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
 
             if ($existingObject === null) {
-                // Insert new object.
-                $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                // CONCURRENCY (openregister#2212). The lookup above and this
+                // insert are two operations, so N concurrent writers can all
+                // find nothing and all arrive here. Measured before this
+                // change: 12 simultaneous claims on one identifier produced up
+                // to 3 audit `create` entries against a single surviving row,
+                // each caller told 201 — writes lost, silently.
+                //
+                // The fix is not a better check. It is to let the DATABASE
+                // arbitrate: the `_uuid` unique constraint already exists, so
+                // exactly one INSERT can win. Catching its violation by reason
+                // (rather than emitting dialect-specific ON CONFLICT SQL) keeps
+                // this portable across the MySQL and PostgreSQL backends and
+                // matches the pattern already used in
+                // NotificationDedupeStateMapper and NotificationDispatchLogMapper.
+                try {
+                    $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                } catch (DbException $e) {
+                    if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+                        throw $e;
+                    }
+
+                    // Someone else won the race for this identifier.
+                    if ($failIfExists === true) {
+                        // The caller asked to CLAIM. Losing is the answer, and
+                        // it must be reported rather than absorbed.
+                        throw new ObjectExistsException(
+                            message: sprintf('An object with identifier "%s" already exists.', $uuid),
+                            uuid: $uuid
+                        );
+                    }
+
+                    // Upsert intent: fall through to the update the outer
+                    // lookup would have chosen had it run a moment later. The
+                    // caller's data still lands, which is the behaviour every
+                    // existing caller depends on.
+                    $this->logger->debug(
+                        message: '[MagicMapper] Insert lost a race; applying as update',
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'uuid'      => $uuid,
+                            'tableName' => $tableName,
+                        ]
+                    );
+                    $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+                    return $uuid;
+                }//end try
+
                 $this->logger->debug(
                     message: '[MagicMapper] Inserted object in register+schema table',
                     context: [
@@ -3414,6 +3464,30 @@ class MagicMapper extends AbstractObjectMapper
                     ]
                 );
                 return $uuid;
+            }//end if
+
+            // THE ACTUAL LOST-UPDATE PATH (openregister#2212).
+            //
+            // The caller reached this method because the SERVICE-level lookup
+            // in SaveObject found nothing — so the operation is labelled a
+            // create, and the audit trail records `create`. By the time we look
+            // again here, a concurrent writer has landed the row, and without
+            // this guard we quietly UPDATE it instead: the caller's data
+            // overwrites the winner's, the response is 201, and the audit says
+            // `create`. Measured before this guard: 12 simultaneous claims
+            // produced up to 8 such "creates" against a single `_id`.
+            //
+            // This is not the same case as the constraint violation handled
+            // above. That one fires when two INSERTs truly collide; this one
+            // fires when the second writer's lookup is late enough to see the
+            // first writer's row and quietly downgrade to an update. The second
+            // case is the common one, which is why guarding only the first
+            // changed nothing.
+            if ($failIfExists === true) {
+                throw new ObjectExistsException(
+                    message: sprintf('An object with identifier "%s" already exists.', $uuid),
+                    uuid: $uuid
+                );
             }
 
             // Update existing object.
@@ -6466,6 +6540,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param Register     $register       The register context.
      * @param Schema       $schema         The schema context.
      * @param bool         $dispatchEvents Whether to dispatch events.
+     * @param bool         $failIfExists   Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @throws Exception If insertion fails.
      *
@@ -6475,7 +6550,8 @@ class MagicMapper extends AbstractObjectMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        bool $dispatchEvents=true
+        bool $dispatchEvents=true,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Dispatch creating event (pre-save hook).
         if ($dispatchEvents === true) {
@@ -6537,7 +6613,8 @@ class MagicMapper extends AbstractObjectMapper
             objectData: $objectArray,
             register: $register,
             schema: $schema,
-            tableName: $tableName
+            tableName: $tableName,
+            failIfExists: $failIfExists
         );
 
         // Update entity UUID if it was generated.
@@ -8494,15 +8571,16 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Insert a new object entity with event dispatching.
      *
-     * @param Entity        $entity   Entity to insert.
-     * @param Register|null $register Optional register for routing.
-     * @param Schema|null   $schema   Optional schema for routing.
+     * @param Entity        $entity       Entity to insert.
+     * @param Register|null $register     Optional register for routing.
+     * @param Schema|null   $schema       Optional schema for routing.
+     * @param bool          $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @return ObjectEntity Inserted entity.
      *
      * @throws Exception If insertion fails.
      */
-    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
+    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null, bool $failIfExists=false): Entity
     {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
@@ -8517,7 +8595,7 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
-        $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+        $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
 
         $this->logger->debug(
