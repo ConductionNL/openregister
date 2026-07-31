@@ -358,4 +358,83 @@ final class ObjectReadNodeTest extends TestCase
         $this->node->validateConfig($this->config(['filters' => 'holder=me']));
 
     }//end testMalformedFiltersAreRefused()
+    /**
+     * `fanOut` emits ONE ITEM PER OBJECT, carrying the incoming record with it.
+     *
+     * This is what lets the rest of the engine act on the results. Every other
+     * node works per item, and nothing expands a list inside an item's json back
+     * into items — `openregister.loop` batches the items on the walk, not the
+     * entries of a field. With the list shape a reaper's delete step sees one
+     * item whose `uuid` is not a field, and fails with "the match value for
+     * uuid could not be resolved from the item".
+     *
+     * @return void
+     */
+    public function testFanOutEmitsOneItemPerObject(): void
+    {
+        $this->objects->method('findAll')->willReturn(
+            [$this->entity('uuid-1', ['holder' => 'a']), $this->entity('uuid-2', ['holder' => 'b'])]
+        );
+
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+            $this->config(['fanOut' => true]),
+            $this->ownedContext
+        );
+
+        $this->assertCount(2, $out);
+        $this->assertSame(['uuid-1', 'uuid-2'], array_column(array_column($out, 'json'), 'uuid'));
+        $this->assertSame(['a', 'b'], array_column(array_column($out, 'json'), 'holder'));
+
+        // What the run was carrying comes along on every fanned-out item.
+        $this->assertSame('ConductionNL/hydra', $out[0]['json']['repo']);
+        $this->assertSame('ConductionNL/hydra', $out[1]['json']['repo']);
+    }
+
+    /**
+     * Fanning out over NO matches ends the branch rather than erroring.
+     *
+     * "Nothing to reap" is the ordinary case, and it is the same contract
+     * `openregister.loop` has for an empty input.
+     *
+     * @return void
+     */
+    public function testFanOutOverNoMatchesEndsTheBranch(): void
+    {
+        $this->objects->method('findAll')->willReturn([]);
+
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+            $this->config(['fanOut' => true]),
+            $this->ownedContext
+        );
+
+        $this->assertSame([], $out);
+    }
+
+    /**
+     * WITHOUT `fanOut`, the list shape is unchanged.
+     *
+     * It stays the default because it is right for the other half of the uses —
+     * "how many are there", "is there any" — where fanning out would turn one
+     * decision into N.
+     *
+     * @return void
+     */
+    public function testWithoutFanOutTheListShapeIsUnchanged(): void
+    {
+        $this->objects->method('findAll')->willReturn(
+            [$this->entity('uuid-1', ['holder' => 'a']), $this->entity('uuid-2', ['holder' => 'b'])]
+        );
+
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['repo' => 'ConductionNL/hydra'])],
+            $this->config(),
+            $this->ownedContext
+        );
+
+        $this->assertCount(1, $out);
+        $this->assertCount(2, $out[0]['json']['objects']);
+    }
+
 }//end class
