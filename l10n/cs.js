@@ -2205,7 +2205,7 @@ OC.L10N.register(
     "Use Large Language Model features" : "Používat funkce velkých jazykových modelů",
     "Use SolrCloud with Zookeeper for distributed search" : "Použít SolrCloud se Zookeeperem pro distribuované vyhledávání",
     "Use the built-in OpenAnonymiser (recommended)" : "Použít vestavěný OpenAnonymiser (doporučeno)",
-    "Used by" : "Používá",
+    "Used by" : "Používáno v",
     "Used By Collections" : "Používáno kolekcemi",
     "User" : "Uživatel",
     "User Agent Statistics" : "Statistiky uživatelských agentů",

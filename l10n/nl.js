@@ -1653,7 +1653,7 @@ OC.L10N.register(
     "Review the selected objects below. You can remove any objects you don't want to permanently delete by clicking the remove button. This action cannot be undone." : "Controleer de geselecteerde objecten hieronder. Je kunt objecten die je niet definitief wilt verwijderen weghalen met de verwijderknop. Deze actie kan niet ongedaan worden gemaakt.",
     "Review the selected objects below. You can remove any objects you don't want to restore by clicking the remove button. Objects will be restored to their original location." : "Controleer de geselecteerde objecten hieronder. Je kunt objecten die je niet wilt herstellen weghalen met de verwijderknop. Objecten worden teruggezet op hun oorspronkelijke locatie.",
     "Revoke" : "Intrekken",
-    "Right" : "Rechts",
+    "Right" : "Recht",
     "Risk Level" : "Risiconiveau",
     "Risk level" : "Risiconiveau",
     "Roles updated successfully" : "Roles bijgewerkt succesvol",
