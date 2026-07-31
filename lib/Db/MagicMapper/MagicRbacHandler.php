@@ -40,19 +40,20 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Db\MagicMapper;
 
-use DateTime;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IDBConnection;
 use OCP\IUserSession;
 use OCP\IGroupManager;
 use OCP\IUserManager;
 use OCP\IAppConfig;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * RBAC (Role-Based Access Control) handler for MagicMapper dynamic tables
@@ -96,11 +97,13 @@ class MagicRbacHandler
     private const IMPOSSIBLE_SQL_CONDITION = '1 = 0';
 
     /**
-     * Cached active organisation UUID
+     * Memoised database-platform verdict for `$contains` SQL emission.
      *
-     * @var string|null
+     * Null until first resolved; the platform cannot change within a request.
+     *
+     * @var boolean|null
      */
-    private ?string $cachedActiveOrg = null;
+    private ?bool $isPostgresCache = null;
 
     /**
      * Constructor for MagicRbacHandler
@@ -567,70 +570,34 @@ class MagicRbacHandler
     }//end impossibleCondition()
 
     /**
-     * Resolve dynamic variable values in match conditions
+     * Resolve dynamic variable values in match conditions.
      *
-     * Supports special variables:
-     * - $organisation: Current user's active organisation UUID
-     * - $userId: Current user's ID
-     * - $now: Current datetime in SQL format (Y-m-d H:i:s)
+     * DELEGATES to the shared {@see ConditionMatcher::resolveToken()} — the same
+     * resolver the single-object verdict path uses — so the SQL emitter and the
+     * PHP verdict cannot disagree about what a token means.
      *
-     * @param mixed $value The value to resolve
+     * This method previously held its OWN copy that recognised only the bare
+     * tokens (`$organisation`, `$activeOrganisation`, `$userId`, `$user`, `$now`)
+     * and passed every DOTTED form through as a literal string. So a rule using
+     * `$user.groups` resolved to the user's groups on `find` and compared against
+     * the literal `'$user.groups'` on `list` — granting on one path and denying on
+     * the other. That is the divergence class ADR-011 exists to prevent and which
+     * already forced two fixes in this file (`$now`'s format,
+     * `unwrapResolvedRelation()`).
      *
-     * @return mixed The resolved value, or null if variable cannot be resolved
+     * Supports, via the shared resolver: `$organisation`, `$activeOrganisation`,
+     * `$organisation.<prop>`, `$userId`, `$user`, `$user.<prop>` (including
+     * `$user.groups`, which resolves to an ARRAY — see the array guard in the
+     * comparison emitter), and `$now`.
+     *
+     * @param mixed $value The value to resolve.
+     *
+     * @return mixed The resolved value, or null if the variable cannot be resolved.
      */
     private function resolveDynamicValue(mixed $value): mixed
     {
-        if (is_string($value) === false) {
-            return $value;
-        }
-
-        // Check for $organisation variable.
-        if ($value === '$organisation' || $value === '$activeOrganisation') {
-            return $this->getActiveOrganisationUuid();
-        }
-
-        // Check for $userId variable.
-        if ($value === '$userId' || $value === '$user') {
-            return $this->userSession->getUser()?->getUID();
-        }
-
-        // Check for $now variable.
-        if ($value === '$now') {
-            return (new DateTime())->format('Y-m-d H:i:s');
-        }
-
-        return $value;
+        return $this->conditionMatcher->resolveDynamicValue(value: $value);
     }//end resolveDynamicValue()
-
-    /**
-     * Get the current user's active organisation UUID
-     *
-     * @return string|null The active organisation UUID or null
-     */
-    private function getActiveOrganisationUuid(): ?string
-    {
-        // Return cached value if available.
-        if ($this->cachedActiveOrg !== null) {
-            return $this->cachedActiveOrg;
-        }
-
-        try {
-            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
-            $activeOrg           = $organisationService->getActiveOrganisation();
-
-            if ($activeOrg !== null) {
-                $this->cachedActiveOrg = $activeOrg->getUuid();
-                return $this->cachedActiveOrg;
-            }
-        } catch (\Exception $e) {
-            $this->logger->debug(
-                message: '[MagicRbacHandler] Could not get active organisation',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-        }
-
-        return null;
-    }//end getActiveOrganisationUuid()
 
     /**
      * Build SQL condition for a single property match
@@ -743,6 +710,23 @@ class MagicRbacHandler
             return $arrayResult;
         }
 
+        // Array-membership operator ($contains). The QueryBuilder cannot express
+        // JSON-array containment on either platform, so this is emitted as a raw
+        // fragment through createFunction() — built by the SAME method the
+        // raw-SQL emitter uses, so the two list paths cannot drift apart.
+        if ($operator === '$contains') {
+            $fragment = $this->buildContainsOperatorConditionSql(
+                columnName: "t.{$columnName}",
+                operator: $operator,
+                operand: $operand
+            );
+            if ($fragment === null) {
+                return null;
+            }
+
+            return $qb->createFunction($fragment);
+        }
+
         // Existence operator ($exists).
         if ($operator === '$exists') {
             if ($operand === true) {
@@ -791,6 +775,19 @@ class MagicRbacHandler
 
         // Resolve dynamic variables in the operand (e.g. "$now" → current datetime).
         $resolvedOperand = $this->resolveDynamicValue(value: $operand);
+
+        // Fail closed on an ARRAY operand. Now that resolution is delegated to the
+        // shared matcher, a token like `$user.groups` resolves to an array — and a
+        // scalar comparison cannot express that. Emitting it anyway would stringify
+        // the array to "Array" and compare against that literal, which is a
+        // silent, wrong verdict rather than a refusal.
+        if (is_array($resolvedOperand) === true) {
+            $this->logger->warning(
+                message: '[MagicRbacHandler] Array operand for a scalar comparison operator — emitting an impossible predicate',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+            );
+            return $this->impossibleCondition(qb: $qb);
+        }
 
         $method = $comparisonMap[$operator];
         return $qb->expr()->{$method}("t.{$columnName}", $qb->createNamedParameter($resolvedOperand));
@@ -1290,6 +1287,17 @@ class MagicRbacHandler
             return $arrayResult;
         }
 
+        // Array-membership operator ($contains) — the object's array must contain
+        // the resolved value. Mirrors OperatorEvaluator::operatorContains().
+        $containsResult = $this->buildContainsOperatorConditionSql(
+            columnName: $columnName,
+            operator: $operator,
+            operand: $operand
+        );
+        if ($containsResult !== null) {
+            return $containsResult;
+        }
+
         // Existence operator ($exists).
         if ($operator === '$exists') {
             if ($operand === true) {
@@ -1338,6 +1346,17 @@ class MagicRbacHandler
             return self::IMPOSSIBLE_SQL_CONDITION;
         }
 
+        // Fail closed on an ARRAY operand — see the QueryBuilder emitter's note:
+        // a resolved `$user.groups` cannot be expressed as a scalar comparison,
+        // and quoting it would compare against the literal string "Array".
+        if (is_array($resolvedOperand) === true) {
+            $this->logger->warning(
+                message: '[MagicRbacHandler] Array operand for a scalar comparison operator — emitting an impossible predicate',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'operator' => $operator]
+            );
+            return self::IMPOSSIBLE_SQL_CONDITION;
+        }
+
         $quotedValue = $this->quoteValue(value: $resolvedOperand);
         return "{$columnName} {$sqlOperator} {$quotedValue}";
     }//end buildComparisonOperatorConditionSql()
@@ -1370,6 +1389,124 @@ class MagicRbacHandler
 
         return null;
     }//end buildArrayOperatorConditionSql()
+
+    /**
+     * Build a `$contains` condition as raw SQL: the column's JSON array must contain the operand.
+     *
+     * The row-level counterpart of {@see \OCA\OpenRegister\Service\OperatorEvaluator}'s
+     * `$contains`. Both MUST agree — a share honoured on `find` but dropped on
+     * `list` reads as an empty page, and the reverse leaks an object.
+     *
+     * Platform-branched, following ReferentialIntegrityService's precedent
+     * (`::jsonb @> to_jsonb(?::text)` on PostgreSQL, `JSON_CONTAINS(col,
+     * JSON_QUOTE(?))` on MariaDB) — the QueryBuilder cannot express either.
+     * `COALESCE(col, '[]')` makes a NULL column contain nothing, matching the PHP
+     * side's "a null or non-array property contains nothing".
+     *
+     * An array-valued operand becomes an OR of containments (ANY-intersection),
+     * so `$user.groups` matches when the column lists any one of them. An empty
+     * or null operand emits the IMPOSSIBLE predicate rather than being dropped:
+     * a dropped condition would leave the rule satisfied by everything else and
+     * fail OPEN.
+     *
+     * @param string $columnName Column name (already qualified/quoted by the caller).
+     * @param string $operator   Operator string.
+     * @param mixed  $operand    Value(s) that must appear in the column's array.
+     *
+     * @return string|null SQL expression, or null when this is not a `$contains`.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/flow-sharing/spec.md#requirement-the-single-object-and-list-access-decisions-agree
+     */
+    private function buildContainsOperatorConditionSql(string $columnName, string $operator, mixed $operand): ?string
+    {
+        if ($operator !== '$contains') {
+            return null;
+        }
+
+        $resolved = $this->resolveDynamicValue(value: $operand);
+
+        // Fail closed when a dynamic variable resolves to null, exactly as the
+        // comparison emitter does — never drop the condition.
+        if ($resolved === null) {
+            return self::IMPOSSIBLE_SQL_CONDITION;
+        }
+
+        $candidates = [$resolved];
+        if (is_array($resolved) === true) {
+            $candidates = array_values(array_filter($resolved, static fn($val) => $val !== null));
+        }
+
+        if (empty($candidates) === true) {
+            return self::IMPOSSIBLE_SQL_CONDITION;
+        }
+
+        $orParts = [];
+        foreach ($candidates as $candidate) {
+            $orParts[] = $this->containsPredicateSql(columnName: $columnName, candidate: $candidate);
+        }
+
+        if (count($orParts) === 1) {
+            return $orParts[0];
+        }
+
+        return '('.implode(' OR ', $orParts).')';
+    }//end buildContainsOperatorConditionSql()
+
+    /**
+     * One platform-appropriate JSON-array containment predicate.
+     *
+     * @param string $columnName Column reference.
+     * @param mixed  $candidate  Single value that must appear in the array.
+     *
+     * @return string SQL predicate.
+     */
+    private function containsPredicateSql(string $columnName, mixed $candidate): string
+    {
+        $quoted = $this->quoteValue(value: (string) $candidate);
+
+        if ($this->isPostgres() === true) {
+            return "COALESCE({$columnName}, '[]')::jsonb @> to_jsonb({$quoted}::text)";
+        }
+
+        return "JSON_CONTAINS(COALESCE({$columnName}, '[]'), JSON_QUOTE({$quoted}))";
+    }//end containsPredicateSql()
+
+    /**
+     * Whether the connected database is PostgreSQL.
+     *
+     * Resolved lazily through the container: this class is constructed on paths
+     * that do not need a connection, and adding one to the constructor would
+     * change its DI signature for every caller. Mirrors
+     * ReferentialIntegrityService's null-safe `get_debug_type()` detection, which
+     * also tolerates a mocked connection returning null in unit tests.
+     *
+     * Defaults to MariaDB syntax when the platform cannot be determined. That is
+     * the conservative direction for a security filter: an unparseable predicate
+     * errors the query rather than silently matching every row.
+     *
+     * @return bool True when the platform is PostgreSQL.
+     */
+    private function isPostgres(): bool
+    {
+        if ($this->isPostgresCache !== null) {
+            return $this->isPostgresCache;
+        }
+
+        try {
+            $connection = $this->container->get(IDBConnection::class);
+            $platform   = $connection->getDatabasePlatform();
+
+            $this->isPostgresCache = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[MagicRbacHandler] Could not determine the database platform for $contains — defaulting to MariaDB syntax',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'exception' => $e->getMessage()]
+            );
+            $this->isPostgresCache = false;
+        }
+
+        return $this->isPostgresCache;
+    }//end isPostgres()
 
     /**
      * Quote a value for safe use in raw SQL.

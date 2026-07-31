@@ -282,8 +282,21 @@ class ConditionMatcher
      * @param mixed $value The value to resolve
      *
      * @return mixed The resolved value, or null if variable cannot be resolved
+     *
+     * PUBLIC because it is the ONE token resolver for the whole RBAC stack.
+     * `MagicRbacHandler`'s SQL emitters kept their own copy that recognised only
+     * the BARE tokens and passed every dotted form through as a literal string —
+     * so a rule using `$user.groups` resolved to the user's groups on the
+     * single-object path and compared against the literal `'$user.groups'` on the
+     * list path, granting on one and denying on the other. That is the same
+     * list-vs-find divergence class that already forced the `$now` format
+     * alignment and `unwrapResolvedRelation()`, and what ADR-011 exists to
+     * prevent. Callers MUST treat a null result as deny; the SQL emitter emits an
+     * impossible predicate rather than dropping the condition.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/flow-sharing/spec.md#requirement-the-single-object-and-list-access-decisions-agree
      */
-    private function resolveDynamicValue(mixed $value): mixed
+    public function resolveDynamicValue(mixed $value): mixed
     {
         // For operator arrays, resolve dynamic values inside operands.
         if (is_array($value) === true) {
@@ -299,7 +312,7 @@ class ConditionMatcher
             return $value;
         }
 
-        // Check for $organisation variable (bare and dotted forms).
+        // $organisation (bare and dotted forms).
         if ($value === '$organisation' || $value === '$activeOrganisation') {
             return $this->getActiveOrganisationUuid();
         }
@@ -311,7 +324,7 @@ class ConditionMatcher
             return $this->resolveOrganisationDotProperty(property: $property, originalToken: $value);
         }
 
-        // Check for $userId variable (bare and dotted forms).
+        // $userId / $user (bare and dotted forms).
         if ($value === '$userId' || $value === '$user') {
             return $this->userSession->getUser()?->getUID();
         }
@@ -321,11 +334,9 @@ class ConditionMatcher
             return $this->resolveUserDotProperty(property: $property, originalToken: $value);
         }
 
-        // Check for $now variable.
-        // MUST match MagicRbacHandler's SQL-path format (Y-m-d H:i:s) so that
-        // list and find endpoints produce identical verdicts for text-column
-        // date comparisons. Previously used 'c' (ISO 8601 with "T" separator),
-        // which caused divergence against columns storing dates in SQL format.
+        // $now — MUST stay 'Y-m-d H:i:s' to match the SQL path, which compares
+        // text/JSON-stored dates lexicographically. ISO 8601's "T" separator once
+        // made list and find disagree.
         if ($value === '$now') {
             return (new DateTime())->format('Y-m-d H:i:s');
         }
