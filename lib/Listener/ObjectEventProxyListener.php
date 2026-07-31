@@ -296,8 +296,16 @@ final class ObjectEventProxyListener implements IEventListener
     /**
      * Whether any declared token resolves to the given id.
      *
-     * A token that is the id itself short-circuits without touching the
-     * database at all; a slug is answered from the per-request map.
+     * Tokens are classified, not tried both ways. An all-digit token is an
+     * **id**: it is compared directly and never resolved as a slug. Anything
+     * else is a **slug**: it is answered from the per-request map and never
+     * compared as an id.
+     *
+     * The classification is the load-bearing half of the numeric-declaration
+     * fix. Keeping ids out of the slug path is not an optimisation — a numeric
+     * token resolved as a slug matches no row, so the subscription would never
+     * fire and the listener would be silently dead. That failure is strictly
+     * worse than the `TypeError` it replaced, because a 500 is at least loud.
      *
      * @param array<int,string> $tokens   Declared slugs and/or ids.
      * @param string            $id       The written object's register/schema id.
@@ -307,15 +315,27 @@ final class ObjectEventProxyListener implements IEventListener
      */
     private function tokensMatch(array $tokens, string $id, bool $isSchema): bool
     {
+        $slugs = [];
         foreach ($tokens as $token) {
-            if ($token === $id) {
-                return true;
+            $token = (string) $token;
+            if (ObjectEventSubscription::isIdToken($token) === true) {
+                if ($token === $id) {
+                    return true;
+                }
+
+                continue;
             }
+
+            $slugs[] = $token;
+        }
+
+        if ($slugs === []) {
+            return false;
         }
 
         $map = $this->tokenMap(isSchema: $isSchema);
-        foreach ($tokens as $token) {
-            if (in_array($id, ($map[strtolower($token)] ?? []), true) === true) {
+        foreach ($slugs as $slug) {
+            if (in_array($id, ($map[strtolower($slug)] ?? []), true) === true) {
                 return true;
             }
         }
@@ -540,8 +560,9 @@ final class ObjectEventProxyListener implements IEventListener
         }
 
         $line = sprintf(
-            "%s proxy dispatches=%d invoked=%d skipped=%d proxyUs=%.1f mapUs=%.1f steadyPerDispatchUs=%.1f listenerUs=%.1f\n",
+            "%s proxy subscriptions=%d dispatches=%d invoked=%d skipped=%d proxyUs=%.1f mapUs=%.1f steadyPerDispatchUs=%.1f listenerUs=%.1f\n",
             date('H:i:s'),
+            ObjectEventSubscription::subscriptionCount(),
             (int) $this->trace['dispatch'],
             (int) $this->trace['invoked'],
             (int) $this->trace['skipped'],
