@@ -140,7 +140,16 @@ class DoffinProviderTest extends TestCase
         // unreliable as a statement of capability, which is worse than an
         // explicit grant. Naming it keeps merge authority reviewable,
         // greppable and revocable in one place.
-        $this->assertCount(15, $github['allowRules']);
+        // 16 since 2026-07-31: `PUT /repos/*\/pulls/*\/update-branch`, the
+        // pre-merge step (hydra-flows-first-port task 2.2). The task asked
+        // whether pre-merge should resolve LOCALLY and land a fresh commit or
+        // let the FORGE do it; the forge won, because resolving locally needs a
+        // working tree and the flow plane has none — the sidecar that runs an
+        // agent step is read_only, mounts nothing and holds no checkout.
+        // Narrower than the refs rule it sits beside: it can only merge a pull
+        // request's OWN base into its OWN head, so unlike
+        // `PATCH /repos/*\/git/refs/*` it cannot move an arbitrary ref.
+        $this->assertCount(16, $github['allowRules']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);
