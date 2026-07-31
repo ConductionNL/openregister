@@ -56,7 +56,6 @@ final class FlowValueTemplate
      */
     private const WHOLE = '/^\{\{\s*([A-Za-z0-9_@.]+)\s*\}\}$/';
 
-
     /**
      * Render a value — scalar, list or map — against an item's record.
      *
@@ -99,7 +98,6 @@ final class FlowValueTemplate
         );
 
     }//end render()
-
 
     /**
      * The value at a dotted path, or null when the path is absent.
