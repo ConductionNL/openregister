@@ -20,6 +20,8 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use DateTime;
+use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
@@ -335,6 +337,22 @@ class FlowStateNode implements IFlowNode
      * cap — which is why this reports rather than throws: the flow author
      * decides whether "no capacity" means wait, stop or escalate.
      *
+     * WHAT A SLOT HOLDS, AND WHY IT IS A RECORD
+     * -----------------------------------------
+     * An occupied slot holds `{holder, since, …}` rather than a bare holder
+     * string, and every slot from 1 to `capacity` is present — a free one as
+     * `null`. Both are so `GET /api/flow/{flowId}/state` is answerable on its
+     * own: "what is running right now, and since when" needs a timestamp, and
+     * "slot 3 of 10 is free" needs slot 3 to EXIST. The previous shape stored a
+     * scalar and omitted unclaimed slots entirely, so a reader could not tell an
+     * empty slot from one outside the cap, and had to be told the capacity
+     * separately — which is the cap living in two places again.
+     *
+     * `record` names item fields to copy onto the slot, so a caller decides what
+     * "what is running" means for its own flow (hydra: stage, repo, issue).
+     * A named field the item does not carry is recorded as null rather than
+     * skipped, so the shape is the same for every slot.
+     *
      * @param FlowStateHandle $state  The state handle.
      * @param array           $config The step's configuration.
      * @param array           $json   The item's json.
@@ -347,7 +365,7 @@ class FlowStateNode implements IFlowNode
         $capacity = (int) $config['capacity'];
         $holder   = (string) ($json[(string) ($config['holder'] ?? 'holder')] ?? '');
 
-        $slots = (array) $state->get($slotsKey, []);
+        $slots = $this->slotTable(stored: (array) $state->get($slotsKey, []), capacity: $capacity);
 
         // A slot is free when it holds nothing. Slots are numbered from 1 so
         // the value reads naturally in a dashboard ("slot 3 of 10").
@@ -357,9 +375,21 @@ class FlowStateNode implements IFlowNode
                 continue;
             }
 
-            $held = true;
+            $held = [
+                'holder' => null,
+                'since'  => (new DateTime())->format(DateTimeInterface::ATOM),
+            ];
             if ($holder !== '') {
-                $held = $holder;
+                $held['holder'] = $holder;
+            }
+
+            foreach ((array) ($config['record'] ?? []) as $field) {
+                $field = (string) $field;
+                if ($field === '' || $field === 'holder' || $field === 'since') {
+                    continue;
+                }
+
+                $held[$field] = ($json[$field] ?? null);
             }
 
             $slots[$slot] = $held;
@@ -369,7 +399,12 @@ class FlowStateNode implements IFlowNode
             $json['slot']    = $n;
 
             return $json;
-        }
+        }//end for
+
+        // Persist even when nothing was claimed: the table may have just been
+        // materialised to full capacity for the first time, and a dashboard
+        // reading "0 of 10 free" is more useful than one reading nothing at all.
+        $state->set($slotsKey, $slots);
 
         $json['claimed'] = false;
         $json['slot']    = null;
@@ -377,6 +412,73 @@ class FlowStateNode implements IFlowNode
         return $json;
 
     }//end doClaim()
+
+    /**
+     * The slot table as stored, normalised to every slot from 1 to capacity.
+     *
+     * Free slots are `null` and present. Values written by an older revision —
+     * a bare holder string, or `true` — are carried forward into the record
+     * shape rather than dropped, so a flow that was mid-run when this changed
+     * does not lose track of what it was holding.
+     *
+     * @param array $stored   The stored table.
+     * @param int   $capacity The configured capacity.
+     *
+     * @return array<string, array|null> The normalised table.
+     */
+    private function slotTable(array $stored, int $capacity): array
+    {
+        $table = [];
+        for ($n = 1; $n <= $capacity; $n++) {
+            $slot  = (string) $n;
+            $value = ($stored[$slot] ?? null);
+
+            if ($value === null) {
+                $table[$slot] = null;
+                continue;
+            }
+
+            $table[$slot] = $this->slotRecord(value: $value);
+        }//end for
+
+        // A slot beyond the current capacity is still OCCUPIED by somebody, and
+        // dropping it would let the flow exceed a cap the operator has just
+        // lowered. Kept until it is released.
+        foreach ($stored as $slot => $value) {
+            if (array_key_exists((string) $slot, $table) === false && $value !== null) {
+                $table[(string) $slot] = $this->slotRecord(value: $value);
+            }
+        }
+
+        return $table;
+
+    }//end slotTable()
+
+    /**
+     * One stored slot value as a record.
+     *
+     * An array is already in shape. A scalar is what an older revision wrote —
+     * the holder string, or `true` when the claim named no holder — and becomes
+     * a record with a null `since`, because that moment was never recorded.
+     *
+     * @param mixed $value The stored value.
+     *
+     * @return array The record.
+     */
+    private function slotRecord(mixed $value): array
+    {
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        $holder = null;
+        if ($value !== true) {
+            $holder = (string) $value;
+        }
+
+        return ['holder' => $holder, 'since' => null];
+
+    }//end slotRecord()
 
     /**
      * Give a held slot back.
@@ -404,11 +506,24 @@ class FlowStateNode implements IFlowNode
             return $json;
         }
 
+        // By holder. This reads INTO the slot record rather than comparing the
+        // slot's value, which is what a bare `array_search($holder, $slots)`
+        // did — correct only while a slot held the holder string itself. Now a
+        // slot holds `{holder, since, …}`, so a value comparison would never
+        // match and a crashed stage's slot would leak forever.
         $holder = (string) ($json[(string) ($config['holder'] ?? 'holder')] ?? '');
         if ($holder !== '') {
-            $found = array_search($holder, $slots, true);
-            if ($found !== false) {
-                $slots[(string) $found] = null;
+            foreach ($slots as $key => $value) {
+                $held = $value;
+                if (is_array($value) === true) {
+                    $held = ($value['holder'] ?? null);
+                }
+
+                if ($held === null || $held === true || (string) $held !== $holder) {
+                    continue;
+                }
+
+                $slots[(string) $key] = null;
                 $state->set($slotsKey, $slots);
                 $json['released'] = true;
 

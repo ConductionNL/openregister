@@ -175,4 +175,80 @@ class FlowControllerTest extends TestCase
         $this->assertSame(0, $data['total']);
 
     }//end testNodeCatalogHandlesAnEmptyRegistry()
+    /**
+     * `?list=slots` serves the slot table as rows a manifest table can render.
+     *
+     * The state's natural shape and a table's required shape genuinely differ:
+     * a slot table is keyed by slot number so a claim is one lookup, while a
+     * manifest `object-table` needs an array at its responsePath.
+     *
+     * @return void
+     */
+    public function testStateCanServeOneKeyAsAList(): void
+    {
+        $state = new \OCA\OpenRegister\Db\FlowState();
+        $state->setFlowId('flow-1');
+        $state->setState(
+            [
+                'slots' => [
+                    '1' => ['holder' => 'issue-7', 'since' => '2026-07-31T10:00:00+00:00', 'stage' => 'builder'],
+                    '2' => null,
+                ],
+            ]
+        );
+
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->method('findByFlow')->willReturn($state);
+
+        $this->request->method('getParam')->willReturn('slots');
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper
+        );
+
+        $data = $controller->state(flowId: 'flow-1')->getData();
+
+        $this->assertSame('slots', $data['key']);
+        $this->assertSame(2, $data['total']);
+        $this->assertSame('issue-7', $data['results'][0]['holder']);
+        $this->assertSame('builder', $data['results'][0]['stage']);
+
+        // A FREE slot is a row, not an omission. A table that drops empty slots
+        // reads as a smaller pool rather than an idle one.
+        $this->assertSame(2, $data['results'][1]['slot']);
+        $this->assertArrayNotHasKey('holder', $data['results'][1]);
+
+    }//end testStateCanServeOneKeyAsAList()
+
+
+    /**
+     * Without `?list=`, the payload is unchanged — no `results`, no `total`.
+     *
+     * @return void
+     */
+    public function testStateWithoutListIsUnchanged(): void
+    {
+        $mapper = $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class);
+        $mapper->method('findByFlow')->willReturn(null);
+
+        $this->request->method('getParam')->willReturn('');
+
+        $controller = new FlowController(
+            'openregister',
+            $this->request,
+            $this->createMock(EventCatalogService::class),
+            $this->nodes,
+            $mapper
+        );
+
+        $data = $controller->state(flowId: 'flow-1')->getData();
+
+        $this->assertSame([], $data['state']);
+        $this->assertArrayNotHasKey('results', $data);
+
+    }//end testStateWithoutListIsUnchanged()
 }//end class
