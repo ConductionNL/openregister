@@ -124,4 +124,48 @@ class SetFieldsNodeTest extends TestCase
         $this->node->validateConfig(['set' => ['a' => 1]]);
         $this->addToAssertionCount(1);
     }
+
+
+    /**
+     * `set` values are rendered against the item, not stored verbatim.
+     *
+     * Before this, the one node whose entire job is setting fields was the only
+     * one that could not refer to the item it was setting them on: `{{retries}}`
+     * was stored as the literal seven characters. It is also the reference
+     * implementation other node authors copy, so the gap propagated.
+     *
+     * @return void
+     */
+    public function testSetValuesAreRenderedFromTheItem(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['repo' => 'ConductionNL/hydra', 'retries' => 2])],
+            ['set' => ['label' => 'retry {{retries}} on {{repo}}', 'count' => '{{retries}}']],
+            []
+        );
+
+        $this->assertSame('retry 2 on ConductionNL/hydra', $out[0]['json']['label']);
+
+        // A whole placeholder keeps its type — a counter must stay a number,
+        // or every downstream `<` comparison becomes a string comparison.
+        $this->assertSame(2, $out[0]['json']['count']);
+    }
+
+    /**
+     * A literal with no placeholder is untouched.
+     *
+     * @return void
+     */
+    public function testALiteralValueIsUnchanged(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: [])],
+            ['set' => ['stage' => 'builder', 'max' => 3]],
+            []
+        );
+
+        $this->assertSame('builder', $out[0]['json']['stage']);
+        $this->assertSame(3, $out[0]['json']['max']);
+    }
+
 }

@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -184,8 +185,20 @@ class SetFieldsNode implements IFlowNode
                 $json = [];
             }
 
+            // Values are rendered against the item, the way every other node
+            // resolves its authored config — `source-call` its endpoint and
+            // body, `agent-step` its prompt, `object-write` its fields.
+            //
+            // This node could previously only write CONSTANTS: `{{retries}}`
+            // was stored as the literal seven characters. That makes the one
+            // node whose entire job is setting fields the only one that cannot
+            // refer to the item it is setting them on — and it is also the
+            // reference implementation other node authors copy.
+            //
+            // A value that is exactly one placeholder keeps its TYPE, so a
+            // counter stays a number and a list stays a list.
             foreach ($set as $field => $value) {
-                $json[(string) $field] = $value;
+                $json[(string) $field] = FlowValueTemplate::render(value: $value, json: $json);
             }
 
             // Provenance: this item's own index, one in and one out, so the

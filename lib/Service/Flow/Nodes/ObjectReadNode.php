@@ -65,6 +65,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
@@ -258,7 +259,7 @@ class ObjectReadNode implements IFlowNode
         $out = [];
         foreach ($items as $index => $item) {
             $json    = (array) ($item[FlowItems::JSON] ?? []);
-            $filters = $this->renderFilters(filters: (array) ($config['filters'] ?? []), json: $json);
+            $filters = (array) FlowValueTemplate::render(value: (array) ($config['filters'] ?? []), json: $json);
 
             $records = $this->read(
                 register: $register,
@@ -315,87 +316,6 @@ class ObjectReadNode implements IFlowNode
         return $out;
 
     }//end execute()
-
-    /**
-     * Substitute `{{dotted.path}}` placeholders in the filter values.
-     *
-     * Deliberately its own small renderer rather than a shared one: OpenConnector
-     * owns `FlowTemplate`, and reaching across an app boundary for it would make
-     * OpenRegister's own node depend on an app that may not be installed.
-     * `ObjectWriteNode` resolves its `fields` with a private renderer for the
-     * same reason.
-     *
-     * A value that is EXACTLY one placeholder keeps the resolved value's type,
-     * so a numeric id stays a number and a list stays a list — a filter is
-     * compared, and `"7"` and `7` are not the same comparison. Anything else is
-     * substituted inline and stringified. A non-string passes through untouched,
-     * so a literal filter can be authored directly.
-     *
-     * @param array $filters The configured filters.
-     * @param array $json    The item's record.
-     *
-     * @return array The rendered filters.
-     */
-    private function renderFilters(array $filters, array $json): array
-    {
-        $rendered = [];
-        foreach ($filters as $key => $value) {
-            if (is_array($value) === true) {
-                $rendered[(string) $key] = $this->renderFilters(filters: $value, json: $json);
-                continue;
-            }
-
-            if (is_string($value) === false) {
-                $rendered[(string) $key] = $value;
-                continue;
-            }
-
-            $whole = [];
-            if (preg_match('/^\{\{\s*([A-Za-z0-9_@.]+)\s*\}\}$/', $value, $whole) === 1) {
-                $rendered[(string) $key] = $this->valueAt(path: $whole[1], json: $json);
-                continue;
-            }
-
-            $rendered[(string) $key] = (string) preg_replace_callback(
-                '/\{\{\s*([A-Za-z0-9_@.]+)\s*\}\}/',
-                function (array $matches) use ($json): string {
-                    $resolved = $this->valueAt(path: $matches[1], json: $json);
-                    if (is_array($resolved) === true) {
-                        return (string) json_encode($resolved);
-                    }
-
-                    return (string) $resolved;
-                },
-                $value
-            );
-        }//end foreach
-
-        return $rendered;
-
-    }//end renderFilters()
-
-    /**
-     * The value at a dotted path in the item's record, or null.
-     *
-     * @param string $path The dotted path.
-     * @param array  $json The item's record.
-     *
-     * @return mixed The value, or null when the path is absent.
-     */
-    private function valueAt(string $path, array $json): mixed
-    {
-        $cursor = $json;
-        foreach (explode('.', $path) as $segment) {
-            if (is_array($cursor) === false || array_key_exists($segment, $cursor) === false) {
-                return null;
-            }
-
-            $cursor = $cursor[$segment];
-        }
-
-        return $cursor;
-
-    }//end valueAt()
 
     /**
      * Perform one read as the run owner.
