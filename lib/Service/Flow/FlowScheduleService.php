@@ -125,6 +125,36 @@ class FlowScheduleService
                 continue;
             }
 
+            // SINGLETON: never overlap a flow with itself.
+            //
+            // A scheduled flow can be slower than its own interval — a pipeline
+            // poll on a five-minute cron easily is — and without this guard
+            // tick N+1 starts while tick N is still going. Two runs of one flow
+            // then race on whatever that flow is bookkeeping, which is exactly
+            // the failure openregister#2212 documented at the object layer.
+            //
+            // This is the property that makes the shell orchestrator being
+            // replaced safe today: `hydra-supervisor.sh` holds an exclusive
+            // flock, so exactly one supervisor exists and its check-then-write
+            // slot bookkeeping never races because nothing runs beside it. A
+            // scheduled flow gets the same guarantee here, and with it most
+            // flow state needs no locking at all.
+            //
+            // The last-fire marker is deliberately NOT advanced when we skip:
+            // the flow stays due, so it starts on the first tick after the
+            // previous run finishes rather than waiting a whole extra interval.
+            if ($this->runs->hasActiveRun(flowId: $uuid) === true) {
+                $this->logger->info(
+                    message: '[FlowSchedule] Skipping due flow — previous run has not finished',
+                    context: [
+                        'file' => __FILE__,
+                        'line' => __LINE__,
+                        'flow' => $uuid,
+                    ]
+                );
+                continue;
+            }
+
             $this->fire(uuid: $uuid, now: $now, owner: $flow->getOwner());
             $fired[] = $uuid;
         }//end foreach
