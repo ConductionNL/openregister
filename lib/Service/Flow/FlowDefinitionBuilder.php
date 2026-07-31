@@ -115,8 +115,38 @@ class FlowDefinitionBuilder
                 );
             }
 
+            // A node is a PLACE and carries no behaviour. The step is the EDGE:
+            // `FlowEngine::stepFor()` resolves a transition to the matching entry
+            // in `edges[]` and `RegistryStepDispatcher::dispatch()` reads `type`
+            // and `config` off that edge.
+            //
+            // So `type` on a node is not merely redundant — it is the entire
+            // behaviour of the flow, put where nothing looks. Accepting it means
+            // every transition becomes a pass-through (dispatch() returns items
+            // untouched when `type` is empty) and the run reports COMPLETED: no
+            // error, no warning, nothing in the trace, and an output key that is
+            // simply absent. That is indistinguishable from a flow whose steps
+            // all genuinely had nothing to do.
+            //
+            // Three graphs in the fleet were authored this way and none of them
+            // failed anywhere — one had shipped as a completed task, and one had
+            // unit tests that asserted on `nodes[].type` and therefore passed
+            // (or#2226). Node-shaped authoring is the natural mistake, because
+            // that is how a graph editor presents a flow. Refusing here is what
+            // turns "runs and does nothing" into a message naming the node.
+            if (array_key_exists('type', $node) === true || array_key_exists('config', $node) === true) {
+                throw new InvalidArgumentException(
+                    message: sprintf(
+                        'Flow node "%s" carries "type"/"config", which the engine never reads — a node is a '
+                        .'place. Move the step onto the edge that leaves it: an edge takes "type" and "config" '
+                        .'and is what actually runs.',
+                        $id
+                    )
+                );
+            }
+
             $places[] = $id;
-        }
+        }//end foreach
 
         return $places;
 
