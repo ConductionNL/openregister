@@ -174,6 +174,29 @@ class MagicMapper extends AbstractObjectMapper
     private const METADATA_PREFIX = '_';
 
     /**
+     * Whether the last single-object write INSERTED or UPDATED.
+     *
+     * The mapper is the only layer that knows. `SaveObject` performs its own
+     * existence lookup and labels the operation from that — but the mapper then
+     * looks again, and between the two lookups a concurrent writer can land the
+     * row, so the mapper takes the UPDATE branch on an operation the service
+     * has already called a create. The audit trail then records `create` for a
+     * write that updated somebody else's row.
+     *
+     * Measured while debugging #2212: three audit `create` entries against a
+     * single `_id` that was inserted once. The audit trail said three objects
+     * were created; one was.
+     *
+     * Read it with {@see getLastWriteAction()} immediately after the write.
+     * Per-request state on a per-request service, in the same spirit as the
+     * `lastRun*` fields elsewhere in the fleet — it is a report of what just
+     * happened, not a cache.
+     *
+     * @var string One of `create` or `update`; empty before any write.
+     */
+    private string $lastWriteAction = '';
+
+    /**
      * Number of magic tables probed per UNION ALL query in the locate phase.
      *
      * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -3451,6 +3474,7 @@ class MagicMapper extends AbstractObjectMapper
                         ]
                     );
                     $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+                    $this->lastWriteAction = 'update';
                     return $uuid;
                 }//end try
 
@@ -3463,6 +3487,7 @@ class MagicMapper extends AbstractObjectMapper
                         'tableName' => $tableName,
                     ]
                 );
+                $this->lastWriteAction = 'create';
                 return $uuid;
             }//end if
 
@@ -3492,6 +3517,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // Update existing object.
             $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+            $this->lastWriteAction = 'update';
             $this->logger->debug(
                 message: '[MagicMapper] Updated object in register+schema table',
                 context: [
@@ -3517,6 +3543,25 @@ class MagicMapper extends AbstractObjectMapper
             throw $e;
         }//end try
     }//end saveObjectToRegisterSchemaTable()
+
+    /**
+     * What the last single-object write actually did.
+     *
+     * `create` or `update` — as decided by THIS layer's lookup, which is the
+     * one that ran last and therefore the one that matches the row. A caller
+     * that labelled the operation from its own earlier lookup should prefer
+     * this for anything it records, because between the two lookups a
+     * concurrent writer can turn a create into an update.
+     *
+     * Empty before any write in this request.
+     *
+     * @return string `create`, `update`, or ''.
+     */
+    public function getLastWriteAction(): string
+    {
+        return $this->lastWriteAction;
+
+    }//end getLastWriteAction()
 
     /**
      * Prepare object data for storage in register+schema table
@@ -6636,16 +6681,43 @@ class MagicMapper extends AbstractObjectMapper
                 _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: manually set ID if re-fetch fails.
-            $this->logger->warning(
-                message: '[MagicMapper] Failed to re-fetch inserted entity, using fallback',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            // The filtered read could not see the row. That has two very
+            // different causes and they must not share an outcome.
+            //
+            // The row IS there, and only the hydrating read could not reach it
+            // (scoping, an org/owner context still being established). Degraded
+            // but honest: the write landed, so return the in-memory entity with
+            // the id the row actually has.
+            //
+            // The row is NOT there. The write did not land, and returning the
+            // in-memory entity says it did — with a null id, to a caller that
+            // has no way to tell. That is the shape of a lost write reported as
+            // a success, which is exactly what #2212 turned out to be. It now
+            // throws.
             $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-            if ($row !== null) {
-                $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
+            if ($row === null) {
+                $this->logger->error(
+                    message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'uuid'      => $uuid,
+                        'tableName' => $tableName,
+                    ]
+                );
+
+                throw new Exception(
+                    sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
+                );
             }
 
+            $this->logger->warning(
+                message: '[MagicMapper] Could not re-fetch the inserted entity through the filtered read; '
+                    .'the row exists, so the raw id is used',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
             $insertedEntity = $entity;
         }//end try
 

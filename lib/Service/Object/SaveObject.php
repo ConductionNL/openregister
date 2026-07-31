@@ -3393,8 +3393,32 @@ class SaveObject
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
         // Create audit trail if not in silent mode.
+        //
+        // The ACTION comes from the mapper, not from this method's name. We got
+        // here because the service-level existence lookup found nothing — but
+        // the mapper looks again, and between the two lookups a concurrent
+        // writer can land the row, so the mapper may have taken its UPDATE
+        // branch on what we are calling a create.
+        //
+        // Recording `create` regardless is how three audit `create` entries
+        // ended up against a single `_id` that was inserted once (#2212/#2217):
+        // the audit trail said three objects were created, and one was. The
+        // mapper's lookup ran last and therefore matches the row, so it is the
+        // one to believe. `old: null` is kept for a genuine create — there is
+        // no previous version to diff against — while an update is recorded as
+        // an update rather than as a second birth.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            $action = $this->unifiedObjectMapper->getLastWriteAction();
+            if ($action === 'update') {
+                $log = $this->auditTrailMapper->createAuditTrail(
+                    old: null,
+                    new: $savedEntity,
+                    action: 'update'
+                );
+            } else {
+                $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            }
+
             $savedEntity->setLastLog($log->jsonSerialize());
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
         }
