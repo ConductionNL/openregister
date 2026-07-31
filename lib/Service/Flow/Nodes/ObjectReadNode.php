@@ -29,6 +29,17 @@
  * and "the read did not happen" are different answers, and a reaper that reads
  * the second as the first quietly stops reaping.
  *
+ * TWO OUTPUT SHAPES, AND THE DEFAULT IS THE NARROWER ONE
+ * ------------------------------------------------------
+ * By default the matches land as a LIST under `output`, which is right for
+ * "how many are there" and "is there any" — questions that are one decision.
+ * With `fanOut: true` the step emits ONE ITEM PER OBJECT instead, which is what
+ * lets the rest of the engine act on them: every other node works per item, and
+ * nothing expands a list inside an item's json back into items
+ * (`openregister.loop` batches the items on the walk, not the entries of a
+ * field). A reaper needs the second shape, and with the first its delete step
+ * fails with "the match value for uuid could not be resolved from the item".
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -249,7 +260,7 @@ class ObjectReadNode implements IFlowNode
             $json    = (array) ($item[FlowItems::JSON] ?? []);
             $filters = $this->renderFilters(filters: (array) ($config['filters'] ?? []), json: $json);
 
-            $json[$outKey] = $this->read(
+            $records = $this->read(
                 register: $register,
                 schema: $schema,
                 filters: $filters,
@@ -257,9 +268,46 @@ class ObjectReadNode implements IFlowNode
                 owner: $owner
             );
 
+            $binary = (array) ($item[FlowItems::BINARY] ?? []);
+
+            // FAN-OUT: one item per object, rather than one item holding a list.
+            //
+            // This exists because the list form does not COMPOSE. Every other
+            // node in the engine acts per item, and nothing expands a list
+            // inside an item's json back into items — `openregister.loop`
+            // batches the items on the walk, not the entries of a field. So a
+            // read that returns `{objects: [...]}` can be counted and branched
+            // on, and cannot be acted on one row at a time.
+            //
+            // Which is the motivating case. A reaper reads stale locks and then
+            // DELETES each one; with the list form its delete step sees one item
+            // whose `uuid` is not a field, and fails with "the match value for
+            // uuid could not be resolved from the item". Measured while building
+            // it.
+            //
+            // The list stays the DEFAULT because it is the right shape for the
+            // other half of the uses — "how many are there", "is there any" —
+            // where fanning out would turn one decision into N.
+            if (($config['fanOut'] ?? false) === true) {
+                foreach ($records as $record) {
+                    $out[] = FlowItems::item(
+                        json: array_merge($json, $record),
+                        binary: $binary,
+                        fromItemIndex: (int) $index
+                    );
+                }
+
+                // No matches means no items, which ends the branch — the same
+                // contract `openregister.loop` has for an empty input. It is
+                // not an error: "nothing to reap" is the ordinary case.
+                continue;
+            }
+
+            $json[$outKey] = $records;
+
             $out[] = FlowItems::item(
                 json: $json,
-                binary: (array) ($item[FlowItems::BINARY] ?? []),
+                binary: $binary,
                 fromItemIndex: (int) $index
             );
         }//end foreach
