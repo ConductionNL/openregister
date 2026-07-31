@@ -246,6 +246,43 @@ like an empty page; the reverse leaks an object.
 absent `sharedWith[]` denies as before, and an absent `credentialIdentity`
 resolves as `runner`, which is what happens today.
 
+### D7 — A flow share does NOT carry the flow's run history
+
+A recipient sees the flow definition, may trigger it if granted `run`, and sees
+**their own** runs. Runs triggered by the owner or by other recipients stay
+invisible to them.
+
+**Rationale.** A run log records the subject data the flow touched — records,
+fields, errors — so bundling history into a share would turn every share into a
+data-exposure decision the sharer did not knowingly make. Keeping history private
+means no share can become such a path.
+
+This is the conservative direction on purpose: widening later (a per-flow
+`runHistory` declaration, or sharing history outright) is additive and needs no
+migration, whereas narrowing after recipients have seen other people's run data
+cannot un-disclose it.
+
+**Alternatives considered:** full history (most useful for a genuinely shared
+team automation, rejected because the subject data follows the share silently);
+and a third owner-only declaration alongside `credentialIdentity` (rejected for
+now as another security control to build, document and test for a benefit nobody
+has asked for yet — the door stays open).
+
+### D8 — Only the owner grants and revokes
+
+Share management is owner-only for both credentials and flows. Nextcloud admins
+retain the global bypass they already have; no organisation-admin path is added.
+
+**Rationale.** It matches the broker's existing owner-centric model
+(`assertPersonalOwner()` is strict owner equality) and keeps the share API's
+authorisation identical to the object's. An org-admin revocation path would need
+an org-admin role check the share API does not currently have, and adding a
+second principal who can alter a security-relevant list is not free.
+
+**Consequence to accept:** offboarding a departing employee's shares means
+acting as that user or as a Nextcloud admin. If that becomes painful, an
+org-admin path is additive.
+
 ## Open Questions
 
 - **Operator name.** `$contains` reads naturally but invites confusion with
@@ -255,6 +292,3 @@ resolves as `runner`, which is what happens today.
 - **Permission verbs on a credential share.** `use` is clearly needed. Is
   `read` (see that the credential exists, in order to pick it in a UI) a
   separate verb, or implied by `use`?
-- **Whether a flow share should imply access to the flow's run history.** A run
-  log can contain subject data the recipient may not otherwise be entitled to,
-  so this is a data-exposure decision rather than a convenience one.

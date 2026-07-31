@@ -71,6 +71,39 @@ exposes one they are not.
 - **THEN** the flow is absent from that principal's list result
 - **AND** their direct read is denied
 
+### Requirement: A flow share does not carry the flow's run history
+
+A share SHALL NOT grant access to runs the recipient did not trigger. A recipient
+SHALL see the flow definition, MAY trigger it when granted `run`, and SHALL see
+their own runs; runs triggered by the owner or by other recipients SHALL remain
+invisible to them.
+
+A run log records the subject data the flow touched, so a share SHALL NOT become
+a path to data the recipient is not otherwise entitled to.
+
+#### Scenario: Recipient sees only their own runs
+
+- **WHEN** a share recipient with `run` permission requests the run history of a shared flow
+- **THEN** runs they triggered are returned
+- **AND** runs triggered by the owner or by other recipients are absent
+
+#### Scenario: Owner still sees every run
+
+- **WHEN** the flow's owner requests the run history
+- **THEN** all runs of that flow are returned, whoever triggered them
+
+### Requirement: Only the owner grants and revokes a share
+
+Granting and revoking SHALL be restricted to the object's owner for both flows
+and credentials. No organisation-admin path SHALL be introduced; Nextcloud
+administrators retain the global bypass they already hold.
+
+#### Scenario: A non-owner cannot revoke
+
+- **WHEN** a user who is not the owner attempts to remove a principal from `sharedWith[]`
+- **THEN** the request is refused
+- **AND** `sharedWith[]` is unchanged
+
 ### Requirement: A flow declares whose credentials its runs resolve as
 
 A flow SHALL support a `credentialIdentity` declaration with exactly two values:

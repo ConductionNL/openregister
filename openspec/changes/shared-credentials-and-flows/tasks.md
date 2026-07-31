@@ -2,7 +2,8 @@
 
 - [ ] 1.1 Name the new match operator (`$contains` / `$anyOf` / `$includes`) — it becomes part of the RBAC vocabulary and the SQL emitter's contract, so it cannot be renamed cheaply later (design Open Questions)
 - [ ] 1.2 Decide whether a credential share needs a `read` verb distinct from `use` (a UI must list a credential to let someone pick it)
-- [ ] 1.3 Decide whether a flow share grants access to that flow's run history — a run log can carry subject data the recipient is not otherwise entitled to
+- [x] 1.3 DECIDED: a flow share does NOT carry run history — recipients see only their own runs (design D7)
+- [x] 1.4 DECIDED: granting and revoking is owner-only; no organisation-admin path (design D8)
 
 ## 2. The share-check operator, on both enforcement paths
 
@@ -43,6 +44,8 @@
 - [ ] 6.3 Ensure a share never grants `edit` — definition, `sharedWith[]`, and `credentialIdentity` all stay owner-only
 - [ ] 6.4 Owner-only grant / revoke endpoints for flow shares, plus "flows shared with me"
 - [ ] 6.5 Test the revocation path on BOTH read and list, since they are separate implementations
+- [ ] 6.6 Scope run history to the requester for a share recipient — they see their own runs only, never the owner's or another recipient's (design D7)
+- [ ] 6.7 Test that a non-owner cannot grant or revoke (design D8)
 
 ## 7. Credential identity on a run
 
