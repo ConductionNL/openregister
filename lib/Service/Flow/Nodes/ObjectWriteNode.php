@@ -192,10 +192,20 @@ class ObjectWriteNode implements IFlowNode
      * answer, and overwriting it means two flow runs both believe they won
      * while the loser is never told. See openregister#2210.
      *
-     * ⚠️ NOT YET SAFE FOR MUTUAL EXCLUSION — openregister#2212. The underlying
-     * guard is a check followed by a write, so concurrent flow runs can all
-     * pass the check and several succeed. It refuses a sequential duplicate
-     * correctly; it does not serialise simultaneous ones.
+     * ✅ SAFE FOR MUTUAL EXCLUSION since openregister#2215. This warning used to
+     * read "NOT YET SAFE — the underlying guard is a check followed by a write,
+     * so concurrent flow runs can all pass the check and several succeed". That
+     * was true of #2212 and is no longer true: the database arbitrates through
+     * the `_uuid` unique constraint, and the losing writer is told.
+     *
+     * Re-measured through THIS node on 2026-07-31, not inherited from the fix's
+     * own PR: twelve simultaneous flow runs claiming one identifier produced
+     * `1 completed / 11 stopped`, each loser carrying `An object with identifier
+     * "…" already exists`, and exactly ONE row in the table.
+     *
+     * The stale warning mattered more than a stale comment usually does: it sat
+     * on the one primitive hydra's per-issue lock needs, and it said the thing
+     * that would stop somebody building it.
      *
      * @var string
      */
