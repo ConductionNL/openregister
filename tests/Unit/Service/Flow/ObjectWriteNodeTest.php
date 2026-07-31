@@ -1056,4 +1056,67 @@ class ObjectWriteNodeTest extends TestCase
         $this->assertSame(1000, $seenDefault, 'the shipped default cap is 1000 writes per step execution');
 
     }//end testTheInstanceDefaultAppliesWhenNoCapIsConfigured()
+
+
+    /**
+     * With `output` set, the item's record SURVIVES and the write lands beside it.
+     *
+     * Replacing the record is fine for a write that ends a branch and wrong for
+     * one in the middle of a chain — a per-issue lock is exactly the second
+     * shape, because the run still needs the repo and the issue to do the work
+     * the lock protects. Measured while building hydra's sequencer: after the
+     * lock write, `{{repo}}` rendered empty and the next call went to
+     * `/repos//issues`.
+     *
+     * @return void
+     */
+    public function testAnOutputKeyPreservesTheIncomingRecord(): void
+    {
+        $this->objects->method('saveObject')->willReturnCallback(
+            function (mixed $object, ?array $extend=[], mixed $register=null, mixed $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?IUser $currentUser=null): ObjectEntity {
+                return $this->entity('uuid-1', $object);
+            }
+        );
+
+        $out = $this->node->execute(
+            $this->items([['repo' => 'ConductionNL/hydra', 'issue' => 410]]),
+            $this->config(['output' => 'lock', 'fields' => ['title' => '{{repo}}']]),
+            $this->registerContext
+        );
+
+        // What the run was carrying is still there.
+        $this->assertSame('ConductionNL/hydra', $out[0]['json']['repo']);
+        $this->assertSame(410, $out[0]['json']['issue']);
+
+        // And the written object is beside it, under the named key.
+        $this->assertSame('uuid-1', $out[0]['json']['lock']['uuid']);
+        $this->assertSame('ConductionNL/hydra', $out[0]['json']['lock']['title']);
+    }
+
+    /**
+     * WITHOUT `output`, the written object still replaces the record.
+     *
+     * The historical behaviour stays the default: changing it silently would
+     * rewrite what every existing flow sees downstream of a write.
+     *
+     * @return void
+     */
+    public function testWithoutAnOutputKeyTheWrittenObjectStillReplacesTheRecord(): void
+    {
+        $this->objects->method('saveObject')->willReturnCallback(
+            function (mixed $object, ?array $extend=[], mixed $register=null, mixed $schema=null, ?string $uuid=null, bool $_rbac=true, bool $_multitenancy=true, bool $silent=false, ?array $uploadedFiles=null, ?IUser $currentUser=null): ObjectEntity {
+                return $this->entity('uuid-1', $object);
+            }
+        );
+
+        $out = $this->node->execute(
+            $this->items([['repo' => 'ConductionNL/hydra']]),
+            $this->config(['fields' => ['title' => 'literal']]),
+            $this->registerContext
+        );
+
+        $this->assertArrayNotHasKey('repo', $out[0]['json']);
+        $this->assertSame('uuid-1', $out[0]['json']['uuid']);
+    }
+
 }//end class
