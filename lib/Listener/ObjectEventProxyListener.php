@@ -4,7 +4,7 @@
  * Shared proxy for filtered object-event subscriptions.
  *
  * One instance of this listener stands in for every subscription declared via
- * {@see \OCA\OpenRegister\Event\ObjectEventSubscription::register()}. On
+ * {@see \OCA\OpenRegister\Event\ObjectEventSubscription::subscribe()}. On
  * dispatch it resolves the written object's register and schema once and then
  * invokes only the subscriptions that declared an interest in them.
  *
