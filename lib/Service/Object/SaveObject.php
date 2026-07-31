@@ -3298,8 +3298,7 @@ class SaveObject
      * @param bool        $silent        Whether to skip audit trail
      * @param bool        $_multitenancy Whether to apply multitenancy
      * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
-     *
-     * @param bool         $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
+     * @param bool        $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @return ObjectEntity Created object
      *
