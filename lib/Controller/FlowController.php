@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\AppFramework\Controller;
@@ -46,12 +47,14 @@ class FlowController extends Controller
      * @param IRequest            $request      HTTP request.
      * @param EventCatalogService $eventCatalog The flow trigger catalog.
      * @param FlowNodeRegistry    $nodes        The registered flow-step types.
+     * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly EventCatalogService $eventCatalog,
         private readonly FlowNodeRegistry $nodes,
+        private readonly FlowStateMapper $flowState,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -116,4 +119,41 @@ class FlowController extends Controller
             ]
         );
     }//end nodeCatalog()
+
+    /**
+     * What a flow is currently holding between its runs.
+     *
+     * The state itself has existed since #2219 and nodes can write it since
+     * #2221, but nothing could READ it from outside the engine — so a slot
+     * table was live data nobody could render. This is the surface a dashboard
+     * needs to answer "which slot is running what, and since when".
+     *
+     * A flow with no state yet returns an empty map rather than 404: "nothing
+     * claimed" is a perfectly good answer, and a widget should not have to
+     * special-case a flow's first tick.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return JSONResponse `{ flowId, state, updated }`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     */
+    public function state(string $flowId): JSONResponse
+    {
+        $stored = $this->flowState->findByFlow(flowId: $flowId);
+
+        if ($stored === null) {
+            return new JSONResponse(
+                [
+                    'flowId'  => $flowId,
+                    'state'   => [],
+                    'updated' => null,
+                ]
+            );
+        }
+
+        return new JSONResponse($stored->jsonSerialize());
+
+    }//end state()
 }//end class

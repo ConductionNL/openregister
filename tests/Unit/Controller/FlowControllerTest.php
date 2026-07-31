@@ -74,7 +74,8 @@ class FlowControllerTest extends TestCase
             'openregister',
             $this->request,
             $this->createMock(EventCatalogService::class),
-            $this->nodes
+            $this->nodes,
+            $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class)
         );
 
     }//end setUp()
