@@ -4,7 +4,26 @@ on:
   push:
     branches: [main, beta, development, feature/**, bugfix/**, hotfix/**]
   pull_request:
-    types: [opened, reopened]
+    # `synchronize` — a push to an open PR — is what was missing. Without it the
+    # quality suite runs ONCE, when the PR is opened, and every commit after
+    # that is merged unchecked while the PR still shows the first run's green.
+    #
+    # Observed on this repo 2026-07-31: #2227 was opened, failed phpcs on
+    # pre-existing debt, was fixed by a follow-up push, and the fix was never
+    # verified by CI. #2228's only Code Quality run stayed pinned to its first
+    # commit across a merge from development and two further commits, so its
+    # checks were describing code that no longer existed.
+    #
+    # The branch list on `push:` does not cover the gap: it names `feature/**`
+    # while the convention in practice is `feat/**` and `fix/**`, so most
+    # branches get nothing there either.
+    #
+    # Cost is bounded by the `concurrency` block below — a new push cancels the
+    # in-flight run for the same head ref rather than queueing beside it.
+    #
+    # hermiq's copy of this workflow omits `types:` entirely, which defaults to
+    # [opened, synchronize, reopened]. This repo is the outlier.
+    types: [opened, reopened, synchronize]
     branches: [main, beta, development]
   workflow_dispatch:
 
