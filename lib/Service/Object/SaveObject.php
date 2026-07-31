@@ -2917,14 +2917,16 @@ class SaveObject
                 // which callers depend on it. Flipping the default would change
                 // behaviour fleet-wide with no way to enumerate the blast radius.
                 //
-                // ⚠️ THIS IS NOT A LOCK — openregister#2212. This check and the
-                // write below are two separate operations, so N concurrent
-                // callers can all reach here having found nothing and all
-                // proceed. Measured: 10 simultaneous claims on one identifier
-                // returned 201 six times. It narrows the window; it does not
-                // close it. Closing it means letting the database arbitrate — a
-                // real INSERT against the `_uuid` unique constraint, translated
-                // into this exception.
+                // This guard alone is NOT what makes the claim safe — it is a
+                // fast path. It and the write below are two separate
+                // operations, so under concurrency N callers can all reach here
+                // having found nothing. The arbitration that actually closes
+                // the race lives one layer down in
+                // MagicMapper::saveObjectToRegisterSchemaTable(), which refuses
+                // both the update branch and a losing INSERT when this flag is
+                // set (openregister#2215). Verified 6/6 races at 12 concurrent
+                // claimants: 1x201, 11x409. Do not remove that guard on the
+                // assumption that this one covers it.
                 if ($failIfExists === true) {
                     $this->logger->debug(
                         message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',

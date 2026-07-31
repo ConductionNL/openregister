@@ -31,6 +31,7 @@ class FlowRunRetryTest extends TestCase
 
         $this->service = new FlowRunService(
             $this->mapper,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->createMock(FlowEngine::class),
             $this->createMock(FlowNodeRegistry::class),
             new NullLogger(),
