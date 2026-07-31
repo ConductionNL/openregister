@@ -3022,7 +3022,8 @@ class SaveObject
                 persist: $persist,
                 silent: $silent,
                 _multitenancy: $_multitenancy,
-                currentUser: $currentUser
+                currentUser: $currentUser,
+                failIfExists: $failIfExists
             );
         } finally {
             $this->popSaveCallFrame(key: $frameKey);
@@ -3296,6 +3297,8 @@ class SaveObject
      * @param bool        $_multitenancy Whether to apply multitenancy
      * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
      *
+     * @param bool         $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
+     *
      * @return ObjectEntity Created object
      *
      * @throws Exception If file processing fails
@@ -3316,7 +3319,8 @@ class SaveObject
         bool $persist,
         bool $silent,
         bool $_multitenancy,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Create a new object entity.
         $objectEntity = new ObjectEntity();
@@ -3362,7 +3366,12 @@ class SaveObject
         // Save the object to database FIRST (so it gets an ID).
         // Use MagicMapper to route to MagicMapper when magic mapping is enabled.
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:pre-insert');
-        $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
+        $savedEntity = $this->unifiedObjectMapper->insert(
+            entity: $preparedObject,
+            register: $register,
+            schema: $schema,
+            failIfExists: $failIfExists
+        );
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
         // Update the name cache with the saved object's name.
