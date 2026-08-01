@@ -1,77 +1,93 @@
-# Fix object read visibility gated on the CREATE permission
+# Object read visibility — corrected diagnosis
 
-## Why
+> **This proposal replaces its own first version (#2251).** That version claimed
+> the read path gated on `create` and that OpenRegister could not express "any
+> authenticated user". Phase 0 disproved both. The original reasoning is
+> preserved in `design.md` alongside the evidence that overturned it, because
+> how the wrong conclusion was reached is the more useful artefact.
 
-`PermissionHandler::filterObjectsForPermissions()` is the object-level visibility
-filter on the **read** path. It gates visibility on the **create** permission:
+## What Phase 0 established
 
-```php
-// Property-level RBAC ... this loop only decides object-level visibility.
-if ($this->hasPermission(
-        schema: $schema,
-        action: 'create',   // <-- gating READ visibility on CREATE
-        userId: $userId,
-        objectOwner: $objectOwner,
-        _rbac: $_rbac
-    ) === false
-) {
-    continue;   // object hidden
-}
+### The list gate is correct
+
+Object listing is filtered in SQL by
+`MagicRbacHandler::buildRbacConditionsSql(schema, action: 'read')`
+(`lib/Db/MagicMapper/MagicRbacHandler.php:988`, called from
+`MagicSearchHandler.php:579`). It asks for `read`. There is no `create` gate on
+the live read path.
+
+### The `create` gate is real but dead
+
+`PermissionHandler::filterObjectsForPermissions()`
+(`lib/Service/Object/PermissionHandler.php:896`) does gate visibility on
+`action: 'create'` — and has **no production caller**. Repo-wide, the only
+reference is `tests/Service/ObjectHandlersIntegrationTest.php:1436`, which
+invokes it with `_rbac: false` and therefore never reaches the check.
+
+Its sibling `filterUuidsForPermissions()` gates on `action: 'delete'`, which
+looked like the same mistake and is not: its only caller is
+`ObjectService::deleteObjects()` (`ObjectService.php:3693`). `delete` is the
+correct action there. That concern is withdrawn.
+
+### The `authenticated` pseudo-group already exists
+
+`authenticated` is implemented in all three handlers
+(`MagicRbacHandler.php:413` and `:495`, `PermissionHandler.php:594`,
+`PropertyRbacHandler.php:786`) and is already specified in
+`openspec/specs/rbac-scopes/spec.md:178` and `:205`. The claimed gap does not
+exist; no new sentinel is needed.
+
+## The actual root cause of the openbuild blackout
+
+A **non-empty** authorization block that omits `read` deliberately fails closed.
+`buildRbacConditionsSql` returns `bypass => true` only for an *empty* block
+(`:1024`); a populated block with no `read` key produces `$rules = []` (`:1029`)
+and falls through to the owner condition alone (`:1041`), so a non-owner matches
+nothing and sees zero rows. The behaviour is intentional and commented as such
+at `:1031`.
+
+Every schema in `openbuild/lib/Settings/openbuild_register.json` carries
+
+```json
+"authorization": { "create": ["admin"], "update": ["admin"], "delete": ["admin"] }
 ```
 
-`lib/Service/Object/PermissionHandler.php` ~line 911. The comment directly above
-states the loop decides visibility, and it asks for `create`.
+— non-empty, no `read`. All six (Application, ApplicationVersion,
+ApplicationTemplate, BuiltAppRoute, HelloMessage, exportJob) are therefore
+owner-only for every non-admin caller. That is the whole of
+Conduction/openbuild#76.
 
-### Consequence
+**The fix is one key in openbuild, not a change to OpenRegister.** Adding
+`"read": ["authenticated"]` uses a facility OpenRegister already ships.
 
-On **any** register, a user who may not *create* a schema's objects cannot *see*
-them either. Read-only consumers are the normal case, so this is broad.
+This also explains the anomaly the first proposal could not: adding
+`read: ['rbac-editors']` flipped `rbac-editor` from 0 to 21 because it supplied
+the missing `read` rule to the SQL gate. Nothing consulted the `create` gate; it
+was never running.
 
-Observed on openbuild (Conduction/openbuild#76): the `openbuild/application`
-schema authorises `create: ["admin"]`, so every non-admin fails the check and the
-object is skipped:
+## What still changes in OpenRegister
 
-| Caller | Raw OR objects | openbuild app list |
-|---|---|---|
-| admin | 21 | all |
-| `rbac-editor` (granted editor on an app) | **0** | none |
+Only defects that survived verification, all minor:
 
-The app-level permission model is therefore unreachable for exactly the users it
-exists to serve: an owner can grant a team editor/viewer on an app and those
-users still see nothing. The affordance exists and does not work.
-
-### Second gap: no way to express "any authenticated user"
-
-`resolveReadGroupIds()` treats `public` and `admin` as broadcast sentinels.
-`public` means **anonymous** (`isPublicReadable()` explicitly replaced the
-published/depublished gate). There is no value meaning "any logged-in caller but
-not anonymous", so that intent currently cannot be expressed at all — the only
-way to approximate it publishes the data.
-
-## What changes
-
-1. The read path gates on `read`, not `create`.
-2. A new `users` sentinel means "any authenticated caller, never anonymous".
-
-## Open question — resolve BEFORE implementing
-
-Adding `read: ['rbac-editors']` flipped `rbac-editor` from 0 to 21 objects, even
-though the gate above asks for `create`. Something on that path consults read
-rules and it is not yet known what. Until that is explained, a fix here is a
-guess that happens to work, and the verification matrix below cannot be trusted
-to mean what it says.
-
-## Blast radius
-
-OpenRegister is the foundation every Conduction app builds on. A wrong read gate
-either hides data everywhere or exposes it everywhere, silently — which is
-exactly what the `create` gate has been doing undetected. This change is not
-shippable without the full matrix in `tasks.md`.
+1. **Dead code with a misleading action.** `filterObjectsForPermissions()` reads
+   as the object-level read filter and is not wired to anything. Left as is, the
+   next reader repeats this investigation — as this proposal did.
+2. **Documentation that points at it.** `docs/features/organisation-roles.md:673`
+   names `filterObjectsForPermissions()` as the List enforcement point, and
+   `:670` names `hasPermission()` as the Read result-set filter. Neither is what
+   runs; `MagicRbacHandler` is.
+3. **An inconsistency to investigate, not yet a confirmed bug.**
+   `PermissionHandler::resolveReadGroupIds()` (`:1608`) treats a missing `read`
+   key as broadcast, where the list path treats it as owner-only. It feeds
+   `getReadableByUsers()` (notification fan-out), so the two paths disagree about
+   what a schema without a `read` key means. Whether that produces a user-visible
+   wrong outcome has not been established, and must not be "fixed" on the
+   strength of the asymmetry alone.
 
 ## Impact
 
-- Unblocks Conduction/openbuild#76 and four quarantined e2e scenarios
-  (`versionRouting` 9.2, `schema-access-scopes-rbac` ×3, plus the viewer-gating
-  assertion omitted from `save-as-template`).
-- Likely unblocks equivalent read-only-consumer cases in other apps on shared
-  registers; worth checking before and after.
+- Conduction/openbuild#76 is unblocked by an openbuild-side change.
+- No behavioural change to OpenRegister. Items 1–2 are cleanup; item 3 is an
+  investigation.
+- Blast radius is correspondingly small — the earlier framing, that a wrong read
+  gate was silently mis-filtering every app on every register, was incorrect.
