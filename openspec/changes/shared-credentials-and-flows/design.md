@@ -330,6 +330,28 @@ someone who is not. So the derived list MUST be computed server-side on every
 write to `sharedWith[]` and MUST NOT be accepted from a client, with a repair
 step for objects written before this change or through a direct API write.
 
+### D12 — The register version must be bumped PAST the live schema, not just past the file
+
+The repair steps import with `force: false`, and the gate is
+`force === false && version_compare($new, $existing, '<=')` → skip. So the bump
+is what makes the import apply at all; without one it silently no-ops while the
+shipped file claims a new shape.
+
+The subtlety that actually bit: the comparison is against the version in the
+DATABASE, not the version in the previous file. On the dev instance the shipped
+`flow_register.json` said `1.1.0` while the live `flow` schema was already at
+`1.2.0` — so that import had been skipping silently for some time. Bumping the
+file to `1.2.0` would have TIED and skipped again. Both registers therefore went
+to `1.3.0`, verified by reading the live schema afterwards:
+
+| schema | version | properties |
+|---|---|---|
+| `brokeredcredential` | 1.1.0 → 1.3.0 | 7 → 10 |
+| `flow` | 1.2.0 → 1.3.0 | 10 → 14 |
+
+The check that matters is not "did the import run" but "does the live schema now
+have the properties" — the two differ exactly when the version gate skips.
+
 ### D11 — The parity matrix must run WITH a session, because the list path bypasses RBAC in CLI
 
 `applyRbacFilters()` returns early — applying no filter at all — when there is no

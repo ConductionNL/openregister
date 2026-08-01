@@ -26,13 +26,14 @@
 
 ## 3. The `sharedWith[]` shape
 
-- [ ] 3.1 Add `sharedWith[]` to `lib/Settings/credential_broker_register.json` (optional; absent grants nothing)
-- [ ] 3.2 Add `sharedWith[]` and `credentialIdentity` to `lib/Settings/flow_register.json`
-- [ ] 3.3 Add the DERIVED scalar principal list the RBAC predicate matches (per 1.5), e.g. `sharedPrincipals: ["user:alice", "group:finance"]`
-- [ ] 3.4 Derive it server-side on every write to `sharedWith[]` — NEVER accept it from the client. Two representations of one fact is a drift hazard, and a stale derived list is an access-control bug in whichever direction it is stale
-- [ ] 3.5 Apply both registers with a **forced** import and verify the properties exist on a live schema — a non-forced import advances the version WITHOUT applying it
-- [ ] 3.6 Validate entries server-side: `type` in {user, group}, non-blank `id`, known `permission`; reject unknown shapes rather than storing them
-- [ ] 3.7 Backfill/repair step for the derived list, so an object written before this change (or by a direct API write) cannot sit with a stale one
+- [x] 3.1 `sharedWith[]` on `credential_broker_register.json` (optional; absent grants nothing)
+- [x] 3.2 `sharedWith[]` + `credentialIdentity` on `flow_register.json`
+- [x] 3.3 The DERIVED scalar lists — TWO of them, `sharedUsers` + `sharedGroups`, unprefixed (design D9)
+- [x] 3.4 `SharePrincipalDeriver::apply()` recomputes them on every write and DISCARDS any client-supplied value. 17 unit tests, including that clearing the share list clears the principals, and that the output serialises as a JSON ARRAY — a gappy integer key would encode as an object, which jsonb containment does not match, so the share would fail on the list path only
+- [x] 3.5 Applied and VERIFIED against the live database: `brokeredcredential` 7 -> 10 properties, `flow` 10 -> 14. No `force` flag was needed — the version bump is what opens the gate — but the bump had to clear the version in the DATABASE, not the one in the file (design D12)
+- [x] 3.6 Per-entry validation in `SharePrincipalDeriver::validEntries()`, failing closed per entry so one malformed entry is dropped without invalidating its siblings
+- [ ] 3.7 Backfill/repair step for the derived lists, so an object written before this change (or through a direct API write that bypasses the deriver) cannot sit with a stale one
+- [ ] 3.8 Wire `SharePrincipalDeriver::apply()` into the object write path so it cannot be bypassed — it exists and is tested, but nothing calls it yet (lands with the share APIs in groups 5 and 6)
 
 ## 4. Credential sharing (broker guard chain)
 
