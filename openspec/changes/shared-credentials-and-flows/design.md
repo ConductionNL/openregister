@@ -298,8 +298,23 @@ So the object carries two representations of one fact:
 
 - `sharedWith[]` — the rich list. The management surface and the source of the
   permission verb.
-- a derived scalar list, e.g. `sharedPrincipals: ["user:alice", "group:finance"]`
-  — what the RBAC predicate matches.
+- **two** derived scalar lists — `sharedUsers: ["alice"]` and
+  `sharedGroups: ["finance"]` — which the RBAC predicates match.
+
+**Why two unprefixed lists and not one prefixed `["user:alice", …]`:** a match
+clause resolves WHOLE tokens and cannot concatenate. There is no way to express
+`"user:" + $userId`, so a prefixed list is unmatchable by `$userId` (which
+resolves to the bare uid). Splitting by principal kind keeps both predicates
+expressible with the EXISTING vocabulary and no new token:
+
+```json
+{"group": "authenticated", "match": {"sharedUsers":  {"$contains": "$userId"}}}
+{"group": "authenticated", "match": {"sharedGroups": {"$contains": "$user.groups"}}}
+```
+
+Two rules, OR'd — which is already how multiple authorization rules combine. The
+alternative was a new `$userPrincipal` token resolving to `"user:<uid>"`, i.e.
+more RBAC vocabulary (and a second SQL implementation) to buy nothing.
 
 **Alternative considered and rejected:** teach the operator a dot-path into an
 array of objects (`sharedWith.id`). It would keep one representation, but the SQL
@@ -314,6 +329,24 @@ stale — it either hides an object from someone entitled to it or shows it to
 someone who is not. So the derived list MUST be computed server-side on every
 write to `sharedWith[]` and MUST NOT be accepted from a client, with a repair
 step for objects written before this change or through a direct API write.
+
+### D11 — The parity matrix must run WITH a session, because the list path bypasses RBAC in CLI
+
+`applyRbacFilters()` returns early — applying no filter at all — when there is no
+user and `PHP_SAPI === 'cli'`. That is deliberate and documented: occ commands,
+repair steps and cron are trusted system contexts, and without the bypass a
+schema with authorization rules would clamp every CLI query to `1 = 0`.
+
+The consequence for testing is easy to get wrong, and I got it wrong first: a
+CLI parity test with no session sees the single-object path evaluate the match
+and the list path return everything, which LOOKS like a fail-open divergence and
+is not one. The matrix therefore has to create a real non-admin user and log it
+in, so the production code path is the one under test.
+
+Note also that the two SQL entry points differ here: `buildRbacConditionsSql()`
+(the raw-SQL branch) has NO CLI bypass and returns real conditions, while
+`applyRbacFilters()` (the QueryBuilder branch) bypasses. Both are intentional but
+they are not the same posture; worth knowing before reading a test result.
 
 ### D10 — RBAC grants visibility; the trigger endpoint enforces `run`
 

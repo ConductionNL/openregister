@@ -919,9 +919,11 @@ class MagicRbacHandler
         $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
 
         foreach ($rules as $rule) {
-            // Simple string rule: direct group match or `user:<uid>` override.
+            // Simple string rule: direct group match, `authenticated`, or a
+            // `user:<uid>` override.
             if (is_string($rule) === true) {
                 if (($rule === 'public' && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true)
+                    || ($rule === 'authenticated' && $userId !== null)
                     || $this->matchesUserOverride(rule: $rule, userId: $userId) === true
                     || in_array($rule, $userGroups, true) === true
                 ) {
@@ -939,7 +941,21 @@ class MagicRbacHandler
                     $group           = ($rule['group'] ?? null);
                     $qualifiesPublic = ($group === 'public'
                         && $this->qualifiesForPublic(userId: $userId, inheritFromPublic: $inheritFromPublic) === true);
-                    $userQualifies   = ($qualifiesPublic === true
+                    // The `authenticated` pseudo-group: any logged-in user
+                    // qualifies, independent of real group membership (a user
+                    // with NO groups still matches). Both SQL emitters —
+                    // processConditionalRule() and processConditionalRuleSql() —
+                    // already honour it, and PermissionHandler honours it with a
+                    // comment saying the paths must agree. This method did NOT,
+                    // so a rule like {"group":"authenticated","match":{…}} was
+                    // GRANTED by the list query and DENIED here: `authenticated`
+                    // is not `public`, and no user is ever a member of a real
+                    // group by that name, so it fell through to deny. Reachable
+                    // in production through RelationHandler, which resolves
+                    // related-object visibility with this method.
+                    $qualifiesAuthenticated = ($group === 'authenticated' && $userId !== null);
+                    $userQualifies          = ($qualifiesPublic === true
+                        || $qualifiesAuthenticated === true
                         || ($group !== null && in_array($group, $userGroups, true) === true));
                 }
 

@@ -13,7 +13,8 @@
 - [x] 2.3 Unit tests for the PHP operator — 12 cases, including null / non-array / empty-operand / strict-typing / array-intersection
 - [x] 2.4a FIXED EN ROUTE: `MagicRbacHandler` kept a private token resolver that recognised only BARE tokens, so every dotted form (`$user.groups`, `$user.uid`, `$user.email`, `$organisation.<prop>`) resolved on `find` and fell through as a LITERAL STRING on `list`. Delegated to the one shared resolver; 8 parity tests pin it
 - [x] 2.5 Positive control: disabling the `$contains` case fails 4 tests, so they are not vacuous
-- [ ] 2.4 The end-to-end verdict-parity matrix over a LIVE database — the shipped tests pin the PHP verdict and the SQL's shape, NOT two real queries returning the same rows
+- [x] 2.4 The end-to-end verdict-parity matrix over a LIVE PostgreSQL database — 10 fixtures, each run through the single-object path AND the real RBAC-filtered list query, compared to each other and to the expected verdict. Found a genuine pre-existing divergence en route (see 2.6), plus two harness traps now documented as D11
+- [x] 2.6 FIXED EN ROUTE: `MagicRbacHandler::hasPermission()` did not honour the `authenticated` pseudo-group, in either its simple-rule or conditional-rule branch, while BOTH SQL emitters and `PermissionHandler` do. So `{"group":"authenticated","match":{…}}` was GRANTED by the list query and DENIED on the single-object path — reachable in production via `RelationHandler`. This is the rule shape the share grants use
 
 ## 2. The share-check operator, on both enforcement paths
 
