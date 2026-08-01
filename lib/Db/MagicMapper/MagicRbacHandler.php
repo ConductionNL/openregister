@@ -957,7 +957,7 @@ class MagicRbacHandler
                     $userQualifies          = ($qualifiesPublic === true
                         || $qualifiesAuthenticated === true
                         || ($group !== null && in_array($group, $userGroups, true) === true));
-                }
+                }//end if
 
                 if ($userQualifies === false) {
                     continue;
