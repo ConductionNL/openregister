@@ -164,6 +164,7 @@ class FlowRunServiceTest extends TestCase
 
         $this->service = new FlowRunService(
             $this->mapper,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $engine,
             $registry,
             $this->createMock(LoggerInterface::class),

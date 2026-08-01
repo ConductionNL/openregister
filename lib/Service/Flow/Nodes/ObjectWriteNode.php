@@ -192,10 +192,20 @@ class ObjectWriteNode implements IFlowNode
      * answer, and overwriting it means two flow runs both believe they won
      * while the loser is never told. See openregister#2210.
      *
-     * ⚠️ NOT YET SAFE FOR MUTUAL EXCLUSION — openregister#2212. The underlying
-     * guard is a check followed by a write, so concurrent flow runs can all
-     * pass the check and several succeed. It refuses a sequential duplicate
-     * correctly; it does not serialise simultaneous ones.
+     * ✅ SAFE FOR MUTUAL EXCLUSION since openregister#2215. This warning used to
+     * read "NOT YET SAFE — the underlying guard is a check followed by a write,
+     * so concurrent flow runs can all pass the check and several succeed". That
+     * was true of #2212 and is no longer true: the database arbitrates through
+     * the `_uuid` unique constraint, and the losing writer is told.
+     *
+     * Re-measured through THIS node on 2026-07-31, not inherited from the fix's
+     * own PR: twelve simultaneous flow runs claiming one identifier produced
+     * `1 completed / 11 stopped`, each loser carrying `An object with identifier
+     * "…" already exists`, and exactly ONE row in the table.
+     *
+     * The stale warning mattered more than a stale comment usually does: it sat
+     * on the one primitive hydra's per-issue lock needs, and it said the thing
+     * that would stop somebody building it.
      *
      * @var string
      */
@@ -495,7 +505,11 @@ class ObjectWriteNode implements IFlowNode
             $writes++;
 
             $out[] = FlowItems::item(
-                json: $this->writtenJson(saved: $saved, register: $register, schema: $schema),
+                json: $this->outputJson(
+                    incoming: (array) ($item[FlowItems::JSON] ?? []),
+                    written: $this->writtenJson(saved: $saved, register: $register, schema: $schema),
+                    config: $config
+                ),
                 binary: $binary,
                 fromItemIndex: (int) $index
             );
@@ -504,6 +518,43 @@ class ObjectWriteNode implements IFlowNode
         return $out;
 
     }//end execute()
+
+    /**
+     * The json a written item carries onward.
+     *
+     * With `output` set, the incoming record is PRESERVED and the written object
+     * is added under that key — the convention every other node already follows
+     * (`hermiq.agent-step`, `openconnector.source-call`,
+     * `openregister.flow-state` all do this). Without it, the written object
+     * REPLACES the record, which is the historical behaviour and stays the
+     * default because changing it silently would rewrite what existing flows
+     * see.
+     *
+     * Replacing is fine for a write that ends a branch and wrong for one in the
+     * middle of a chain, because it discards everything the run was carrying. A
+     * per-issue lock is exactly the second shape: hydra's sequencer claims a
+     * lock and then still needs the repo, the issue and its slot number to do
+     * the work the lock protects. Measured while building it — after the lock
+     * write, `{{repo}}` rendered empty and the next call went to `/repos//issues`.
+     *
+     * @param array $incoming The item's json as it arrived.
+     * @param array $written  The written object's json.
+     * @param array $config   The step configuration.
+     *
+     * @return array The outgoing json.
+     */
+    private function outputJson(array $incoming, array $written, array $config): array
+    {
+        $key = trim((string) ($config['output'] ?? ''));
+        if ($key === '') {
+            return $written;
+        }
+
+        $incoming[$key] = $written;
+
+        return $incoming;
+
+    }//end outputJson()
 
     /**
      * Perform one guarded delete and build its output item.

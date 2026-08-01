@@ -30,7 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
+use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -126,14 +128,27 @@ class SetFieldsNode implements IFlowNode
      */
     public function validateConfig(array $config): void
     {
-        $set    = (array) ($config['set'] ?? []);
-        $rename = (array) ($config['rename'] ?? []);
-        $remove = (array) ($config['remove'] ?? []);
+        $set     = (array) ($config['set'] ?? []);
+        $compute = (array) ($config['compute'] ?? []);
+        $rename  = (array) ($config['rename'] ?? []);
+        $remove  = (array) ($config['remove'] ?? []);
 
-        if ($set === [] && $rename === [] && $remove === []) {
+        if ($set === [] && $compute === [] && $rename === [] && $remove === []) {
             throw new UnexpectedValueException(
-                $this->l10n->t('Choose at least one field to set, rename or remove.')
+                $this->l10n->t('Choose at least one field to set, compute, rename or remove.')
             );
+        }
+
+        // A malformed expression is caught HERE, when the flow is saved, rather
+        // than evaluating to null on every item at 03:00 — `FlowExpression`
+        // swallows a broken rule and returns null, which is indistinguishable
+        // from a field that legitimately resolved to nothing.
+        foreach ($compute as $field => $logic) {
+            if (FlowExpression::isValid(logic: $logic) === false) {
+                throw new UnexpectedValueException(
+                    $this->l10n->t('The expression for computed field "%s" is not valid.', [(string) $field])
+                );
+            }
         }
 
     }//end validateConfig()
@@ -141,9 +156,10 @@ class SetFieldsNode implements IFlowNode
     /**
      * Apply the configured reshaping to every item.
      *
-     * Order is remove, then rename, then set. Rename before set so setting a
-     * field the author also renamed away is not silently undone, and remove
-     * first so a rename can legitimately reuse a removed name.
+     * Order is remove, then rename, then set, then compute. Rename before set
+     * so setting a field the author also renamed away is not silently undone,
+     * and remove first so a rename can legitimately reuse a removed name.
+     * Compute last so a derived value can build on one just substituted.
      *
      * `keepOnlySet` mirrors n8n's option of the same name: drop everything the
      * step did not explicitly set, for building a clean payload.
@@ -157,9 +173,11 @@ class SetFieldsNode implements IFlowNode
     public function execute(array $items, array $config, array $context): array
     {
         $set         = (array) ($config['set'] ?? []);
+        $compute     = (array) ($config['compute'] ?? []);
         $rename      = (array) ($config['rename'] ?? []);
         $remove      = (array) ($config['remove'] ?? []);
         $keepOnlySet = (($config['keepOnlySet'] ?? false) === true);
+        $count       = count($items);
 
         $out = [];
         foreach ($items as $index => $item) {
@@ -184,8 +202,47 @@ class SetFieldsNode implements IFlowNode
                 $json = [];
             }
 
+            // Values are rendered against the item, the way every other node
+            // resolves its authored config — `source-call` its endpoint and
+            // body, `agent-step` its prompt, `object-write` its fields.
+            //
+            // This node could previously only write CONSTANTS: `{{retries}}`
+            // was stored as the literal seven characters. That makes the one
+            // node whose entire job is setting fields the only one that cannot
+            // refer to the item it is setting them on — and it is also the
+            // reference implementation other node authors copy.
+            //
+            // A value that is exactly one placeholder keeps its TYPE, so a
+            // counter stays a number and a list stays a list.
             foreach ($set as $field => $value) {
-                $json[(string) $field] = $value;
+                $json[(string) $field] = FlowValueTemplate::render(value: $value, json: $json);
+            }
+
+            // `compute` is the same idea as `set` for values that have to be
+            // DERIVED rather than substituted. `{{retries}}` can copy a
+            // counter; nothing could add one to it, because a template
+            // substitutes and does not calculate.
+            //
+            // That gap was not academic — it is what stopped hydra's
+            // retry/escalation flow: read the count, increment, store. The
+            // read and the store were expressible and the `+ 1` was not, so
+            // the counter sat at 0 and a run "retried" forever.
+            //
+            // The expression language is the one the routers already use
+            // (`FlowExpression`), so an author who can write a branch condition
+            // can write this, and the same `{"var": "json.…"}` paths work in
+            // both. It is applied AFTER `set`, so a computed value can build on
+            // one that was just substituted.
+            foreach ($compute as $field => $logic) {
+                $json[(string) $field] = FlowExpression::evaluate(
+                    logic: $logic,
+                    data: FlowExpression::dataFor(
+                        item: [FlowItems::JSON => $json],
+                        itemIndex: (int) $index,
+                        itemCount: $count,
+                        context: $context
+                    )
+                );
             }
 
             // Provenance: this item's own index, one in and one out, so the

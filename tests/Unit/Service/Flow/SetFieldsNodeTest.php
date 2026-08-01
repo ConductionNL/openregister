@@ -124,4 +124,119 @@ class SetFieldsNodeTest extends TestCase
         $this->node->validateConfig(['set' => ['a' => 1]]);
         $this->addToAssertionCount(1);
     }
+
+
+    /**
+     * `set` values are rendered against the item, not stored verbatim.
+     *
+     * Before this, the one node whose entire job is setting fields was the only
+     * one that could not refer to the item it was setting them on: `{{retries}}`
+     * was stored as the literal seven characters. It is also the reference
+     * implementation other node authors copy, so the gap propagated.
+     *
+     * @return void
+     */
+    public function testSetValuesAreRenderedFromTheItem(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['repo' => 'ConductionNL/hydra', 'retries' => 2])],
+            ['set' => ['label' => 'retry {{retries}} on {{repo}}', 'count' => '{{retries}}']],
+            []
+        );
+
+        $this->assertSame('retry 2 on ConductionNL/hydra', $out[0]['json']['label']);
+
+        // A whole placeholder keeps its type — a counter must stay a number,
+        // or every downstream `<` comparison becomes a string comparison.
+        $this->assertSame(2, $out[0]['json']['count']);
+    }
+
+    /**
+     * A literal with no placeholder is untouched.
+     *
+     * @return void
+     */
+    public function testALiteralValueIsUnchanged(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: [])],
+            ['set' => ['stage' => 'builder', 'max' => 3]],
+            []
+        );
+
+        $this->assertSame('builder', $out[0]['json']['stage']);
+        $this->assertSame(3, $out[0]['json']['max']);
+    }
+
+
+
+    /**
+     * `compute` DERIVES a value, which a template cannot do.
+     *
+     * `{{retries}}` can copy a counter; nothing could add one to it, because a
+     * template substitutes and does not calculate. That is what stopped hydra's
+     * retry/escalation flow — read the count, increment, store: the read and the
+     * store were expressible and the `+ 1` was not, so the counter sat at 0 and
+     * a run "retried" forever.
+     *
+     * @return void
+     */
+    public function testComputeDerivesAValue(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['retries' => 2])],
+            ['compute' => ['next' => ['+' => [['var' => 'json.retries'], 1]]]],
+            []
+        );
+
+        $this->assertSame(3, $out[0]['json']['next']);
+    }
+
+    /**
+     * `compute` runs AFTER `set`, so it can build on a value just substituted.
+     *
+     * @return void
+     */
+    public function testComputeSeesWhatSetJustWrote(): void
+    {
+        $out = $this->node->execute(
+            [FlowItems::item(json: ['retries' => 1])],
+            [
+                'set'     => ['base' => '{{retries}}'],
+                'compute' => ['next' => ['+' => [['var' => 'json.base'], 10]]],
+            ],
+            []
+        );
+
+        $this->assertSame(11, $out[0]['json']['next']);
+    }
+
+    /**
+     * A malformed expression is refused when the flow is SAVED.
+     *
+     * `FlowExpression` swallows a broken rule and returns null, which is
+     * indistinguishable from a field that legitimately resolved to nothing. So
+     * the only place it can be caught honestly is at save time.
+     *
+     * @return void
+     */
+    public function testAMalformedExpressionIsRefusedAtSaveTime(): void
+    {
+        $this->expectException(\UnexpectedValueException::class);
+
+        $this->node->validateConfig(['compute' => ['next' => ['nosuchoperator' => [1, 2]]]]);
+    }
+
+    /**
+     * A step that only computes is a legitimate step.
+     *
+     * @return void
+     */
+    public function testAComputeOnlyStepValidates(): void
+    {
+        $this->node->validateConfig(['compute' => ['next' => ['+' => [1, 1]]]]);
+
+        $this->addToAssertionCount(1);
+    }
+
 }

@@ -147,6 +147,54 @@ class FlowRunMapper extends QBMapper
     }//end findActive()
 
     /**
+     * Whether one flow already has a run that has not finished.
+     *
+     * A SCHEDULED flow can be slower than its own interval — a hydra-shaped
+     * pipeline poll easily outlives five minutes — and `fireDueFlows()` has no
+     * overlap guard of its own, so tick N+1 would start while tick N is still
+     * going. Two runs of the same flow then race on whatever that flow is
+     * bookkeeping.
+     *
+     * This is the query that lets the scheduler refuse to do that. It is
+     * deliberately the same NON-terminal definition {@see findActive} uses:
+     * `queued`, `running` and `suspended` all mean "still going". A guard that
+     * only looked at `running` would let a suspended run be overlapped, which
+     * is precisely the long-lived state a slow flow spends its time in.
+     *
+     * Cheap on purpose — a count with a limit, not a fetch. The scheduler asks
+     * this once per due flow on every cron tick.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return boolean True when a non-terminal run exists for this flow.
+     */
+    public function hasActiveRun(string $flowId): bool
+    {
+        if (trim($flowId) === '') {
+            return false;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::ACTIVE, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        return $row !== false;
+
+    }//end hasActiveRun()
+
+    /**
      * How many runs are still going, for one organisation.
      *
      * Separate from {@see findActive} because a widget shows a bounded list but

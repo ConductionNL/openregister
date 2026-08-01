@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
+use OCA\OpenRegister\Db\FlowStateMapper;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -47,14 +48,16 @@ class FlowRunService
     /**
      * Constructor.
      *
-     * @param FlowRunMapper      $mapper    Persists runs.
-     * @param FlowEngine         $engine    Walks the graph.
-     * @param FlowNodeRegistry   $registry  Resolves step types.
-     * @param LoggerInterface    $logger    The logger.
-     * @param ContainerInterface $container Lazily resolves OrganisationService.
+     * @param FlowRunMapper      $mapper      Persists runs.
+     * @param FlowStateMapper    $stateMapper Persists state that outlives a run.
+     * @param FlowEngine         $engine      Walks the graph.
+     * @param FlowNodeRegistry   $registry    Resolves step types.
+     * @param LoggerInterface    $logger      The logger.
+     * @param ContainerInterface $container   Lazily resolves OrganisationService.
      */
     public function __construct(
         private readonly FlowRunMapper $mapper,
+        private readonly FlowStateMapper $stateMapper,
         private readonly FlowEngine $engine,
         private readonly FlowNodeRegistry $registry,
         private readonly LoggerInterface $logger,
@@ -149,6 +152,71 @@ class FlowRunService
         return $this->mapper->insert($run);
 
     }//end queue()
+
+    /**
+     * Whether a flow already has a run that has not finished.
+     *
+     * Exposed for the SCHEDULER, which must not start tick N+1 of a flow while
+     * tick N is still going: a scheduled flow can outlive its own interval, and
+     * two concurrent runs of one flow race on whatever that flow is
+     * bookkeeping. See FlowRunMapper::hasActiveRun() for why "not finished"
+     * includes `suspended` and `queued`, not just `running`.
+     *
+     * @param string $flowId The flow's uuid.
+     *
+     * @return boolean True when a non-terminal run exists for this flow.
+     */
+    public function hasActiveRun(string $flowId): bool
+    {
+        return $this->mapper->hasActiveRun(flowId: $flowId);
+
+    }//end hasActiveRun()
+
+    /**
+     * Write a run's flow state back to its own table, when a node changed it.
+     *
+     * @param FlowRun $run     The run that just finished a pass.
+     * @param array   $context The context the engine returned.
+     *
+     * @return void
+     */
+    private function persistFlowState(FlowRun $run, array $context): void
+    {
+        $handle = ($context[FlowStateHandle::CONTEXT_KEY] ?? null);
+        if (($handle instanceof FlowStateHandle) === false) {
+            return;
+        }
+
+        if ($handle->isDirty() === false) {
+            return;
+        }
+
+        $flowId = trim((string) $run->getFlowId());
+        if ($flowId === '') {
+            return;
+        }
+
+        try {
+            $this->stateMapper->put(flowId: $flowId, state: $handle->all());
+        } catch (Throwable $e) {
+            // Deliberately non-fatal, and deliberately LOUD. A run that did its
+            // work should not be recorded as failed because its bookkeeping
+            // could not be saved — but a silently dropped state write would let
+            // a flow repeat work forever while looking healthy, so this must be
+            // visible rather than swallowed.
+            $this->logger->error(
+                message: '[FlowRunService] Could not persist flow state',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'flow'  => $flowId,
+                    'run'   => $run->getUuid(),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
+
+    }//end persistFlowState()
 
     /**
      * Queue a fresh run that repeats a finished one.
@@ -251,6 +319,22 @@ class FlowRunService
         // gets back exactly what it held when it stopped.
         $context[FlowToken::CONTEXT_KEY] = FlowToken::fromArray(($context[FlowToken::CONTEXT_KEY] ?? null));
 
+        // Flow state is the token's long-lived sibling: the token belongs to
+        // THIS run and dies with it, this belongs to the FLOW and outlives every
+        // run of it. Loaded from its own table rather than from the run's
+        // context, because a scheduled flow's next tick is a different run and
+        // would otherwise start blank — which is the whole gap OR#2216 exists
+        // to close.
+        //
+        // Handed over as an object for the same reason as the token: nodes take
+        // $context by value, so only a handle gives them write access.
+        $flowState = null;
+        if (trim((string) $run->getFlowId()) !== '') {
+            $stored    = $this->stateMapper->findByFlow(flowId: (string) $run->getFlowId());
+            $flowState = new FlowStateHandle(values: ($stored?->getState() ?? []));
+            $context[FlowStateHandle::CONTEXT_KEY] = $flowState;
+        }
+
         try {
             $result = $this->engine->run(
                 flow: $flow,
@@ -307,6 +391,22 @@ class FlowRunService
         if (isset($context[FlowToken::CONTEXT_KEY]) === true && $context[FlowToken::CONTEXT_KEY] instanceof FlowToken === true) {
             $context[FlowToken::CONTEXT_KEY] = $context[FlowToken::CONTEXT_KEY]->jsonSerialize();
         }
+
+        // Flow state persists to its OWN table and is then removed from the
+        // run's context. Two reasons it must not be written into the context
+        // JSON alongside the token:
+        //
+        // - it would be a per-run COPY of flow-level state, and a resumed run
+        // would restore a stale snapshot over whatever later runs had
+        // written
+        // - a slot table or a cursor would be duplicated into every run row
+        // the flow ever produces
+        //
+        // Only written when a node actually changed something: a flow that
+        // merely READS its state should not touch the row on every tick, and a
+        // five-minute schedule makes that difference thousands of writes a week.
+        $this->persistFlowState(run: $run, context: $context);
+        unset($context[FlowStateHandle::CONTEXT_KEY]);
 
         $run->setStatus($status);
         $run->setItems((array) ($result['items'] ?? []));

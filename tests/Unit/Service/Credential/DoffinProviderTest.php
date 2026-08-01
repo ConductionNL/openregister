@@ -129,7 +129,27 @@ class DoffinProviderTest extends TestCase
         // no repo, release or file-content write is reachable through them. The
         // DELETE is the catalogue's first, and is separately sanctioned in
         // ProviderCatalogueTest::SANCTIONED_DELETE_RULES.
-        $this->assertCount(14, $github['allowRules']);
+        //
+        // 15 since 2026-07-31 (PO decision): `PUT /repos/*\/pulls/*\/merge`.
+        // This does not widen what the credential can DO — `PATCH
+        // /repos/*\/git/refs/*`, granted since v1.6.0, can fast-forward a base
+        // branch to a PR head, which GitHub records as a merged PR. The merge
+        // was always reachable; the catalogue simply did not say so, and
+        // ConductionNL/openregister#2203 was filed on that gap. A rule the
+        // list forbids but a one-line call achieves makes the whole allow-list
+        // unreliable as a statement of capability, which is worse than an
+        // explicit grant. Naming it keeps merge authority reviewable,
+        // greppable and revocable in one place.
+        // 16 since 2026-07-31: `PUT /repos/*\/pulls/*\/update-branch`, the
+        // pre-merge step (hydra-flows-first-port task 2.2). The task asked
+        // whether pre-merge should resolve LOCALLY and land a fresh commit or
+        // let the FORGE do it; the forge won, because resolving locally needs a
+        // working tree and the flow plane has none — the sidecar that runs an
+        // agent step is read_only, mounts nothing and holds no checkout.
+        // Narrower than the refs rule it sits beside: it can only merge a pull
+        // request's OWN base into its OWN head, so unlike
+        // `PATCH /repos/*\/git/refs/*` it cannot move an arbitrary ref.
+        $this->assertCount(16, $github['allowRules']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);
