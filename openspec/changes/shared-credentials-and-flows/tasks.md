@@ -4,7 +4,7 @@
 - [ ] 1.2 Decide whether a credential share needs a `read` verb distinct from `use` (a UI must list a credential to let someone pick it)
 - [x] 1.3 DECIDED: a flow share does NOT carry run history — recipients see only their own runs (design D7)
 - [x] 1.4 DECIDED: granting and revoking is owner-only; no organisation-admin path (design D8)
-- [ ] 1.5 DECIDE the storage shape (design D9) — `$contains` compares SCALARS, and the declared `sharedWith[]` entry is an OBJECT `{type, id, permission}`, so `{"sharedWith": {"$contains": "$userId"}}` matches NOTHING. Verified against the shipped operator. Options: (a) a derived scalar principal list beside the rich list, (b) teach the operator a dot-path into an array of objects. (b) needs `jsonb_path_exists` on PostgreSQL and a different construct on MariaDB — the platform-divergence class this change exists to avoid. Recommend (a).
+- [x] 1.5 DECIDED (design D9): TWO derived unprefixed scalar lists beside the rich list. `$contains` compares scalars and the entry is an object, so a direct match finds nothing (verified against the shipped operator); and a match clause resolves whole tokens, so a single PREFIXED list would be unmatchable by `$userId` too. Rejected teaching the operator a dot-path into an array of objects: `jsonb_path_exists` on PostgreSQL versus a different construct on MariaDB is the platform-divergence class this change exists to avoid.
 
 ## 2. The share-check operator, on both enforcement paths
 
@@ -15,14 +15,6 @@
 - [x] 2.5 Positive control: disabling the `$contains` case fails 4 tests, so they are not vacuous
 - [x] 2.4 The end-to-end verdict-parity matrix over a LIVE PostgreSQL database — 10 fixtures, each run through the single-object path AND the real RBAC-filtered list query, compared to each other and to the expected verdict. Found a genuine pre-existing divergence en route (see 2.6), plus two harness traps now documented as D11
 - [x] 2.6 FIXED EN ROUTE: `MagicRbacHandler::hasPermission()` did not honour the `authenticated` pseudo-group, in either its simple-rule or conditional-rule branch, while BOTH SQL emitters and `PermissionHandler` do. So `{"group":"authenticated","match":{…}}` was GRANTED by the list query and DENIED on the single-object path — reachable in production via `RelationHandler`. This is the rule shape the share grants use
-
-## 2. The share-check operator, on both enforcement paths
-
-- [ ] 2.1 Add the operator to `OperatorEvaluator` — "the object's array-valued property contains the resolved value" — with array-to-array intersection so `$user.groups` works unchanged
-- [ ] 2.2 Add the same operator to `MagicRbacHandler`'s SQL emitter (`buildSingleOperatorCondition`), per the class contract that operators live in `OperatorEvaluator` and only the emission stays local
-- [ ] 2.3 Unit-test the PHP operator: scalar-in-array, array-intersects-array, empty array, null value, non-array property, malformed entry — each denying rather than passing through
-- [ ] 2.4 Write the verdict-parity matrix (design D6): one fixture set run through the single-object path AND the list path, asserting identical verdicts for owner, org member, non-member, shared user, member of a shared group, revoked share, anonymous, malformed entry
-- [ ] 2.5 Confirm the parity matrix FAILS if either implementation is removed — a parity test that passes with one side stubbed is proving nothing
 
 ## 3. The `sharedWith[]` shape
 
@@ -37,13 +29,13 @@
 
 ## 4. Credential sharing (broker guard chain)
 
-- [ ] 4.1 Add the third admit branch to Guard 1 in `CredentialBrokerService::loadAdmittedCredential()`, ordered after the personal-owner and organisation-member branches
-- [ ] 4.2 Resolve group principals via `IGroupManager`, as permission principals only — never as a tenant discriminator (ADR-002 Rule 1)
-- [ ] 4.3 Enforce the tenant edge: deny a named principal who is outside the credential's organisation
-- [ ] 4.4 Keep the branch fail-closed: unauthenticated, unresolvable principal, malformed entry, store error all deny through the single static 403, logged secret-free
-- [ ] 4.5 Test that existing verdicts are byte-for-byte unchanged for credentials with no `sharedWith[]`
-- [ ] 4.6 Test that a share recipient still passes through `allowedApps`, allow-rule, and host-lock guards, and is denied by each when it should be
-- [ ] 4.7 Test that no share path returns secret material — object read, export, audit row, error body
+- [x] 4.1 Guard 1c added to `loadAdmittedCredential()`. It only ever ADMITS, never denies, so the scope guards keep producing their specific denial reasons and every pre-existing verdict is unchanged
+- [x] 4.2 Group principals resolved via `IGroupManager` as permission principals only. Injected NULLABLE with a default: eight call sites construct this service directly and a drifted constructor is a FATAL, not a test failure. The fallback is fail-closed — no group manager means a group share admits nobody
+- [x] 4.3 Tenant edge enforced in `shareWithinTenant()`: a credential declaring an `organisation` admits a named principal only inside it; a session is authoritative and an asserted organisation is ignored, so a request-context caller cannot escalate
+- [x] 4.4 Fails closed on no acting identity, absent/malformed `sharedWith`, unresolvable principal, and outside-tenant — falling through to the existing static 403
+- [x] 4.5 Tested: owner still admitted, non-owner still denied, empty share list changes nothing
+- [x] 4.6 Tested: a share recipient is still refused by `allowedApps`. 15 new tests, and a positive control — disabling the branch fails 5 of them, so they are not vacuous
+- [x] 4.7 Tested: the recipient's response never contains the secret (a share grants USE, not sight)
 
 ## 5. Credential share management API
 

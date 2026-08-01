@@ -70,7 +70,10 @@ namespace OCA\OpenRegister\Service\Credential;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCP\Http\Client\IClientService;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTimeImmutable;
@@ -128,6 +131,8 @@ class CredentialBrokerService
      * @param IClientService      $clientService       NC HTTP client factory (the outbound call).
      * @param LoggerInterface     $logger              Logger for secret-free server-side diagnostics.
      * @param OrganisationService $organisationService Resolves organisation membership (organisation guard branch).
+     * @param IGroupManager|null  $groupManager        Resolves group principals for the share guard; null ⇒ group shares admit nobody.
+     * @param IUserManager|null   $userManager         Resolves the asserted uid's groups on the sessionless path; null ⇒ no groups.
      *
      * @return void
      */
@@ -139,6 +144,15 @@ class CredentialBrokerService
         private readonly IClientService $clientService,
         private readonly LoggerInterface $logger,
         private readonly OrganisationService $organisationService,
+        // Optional collaborators for the share-principal guard branch. Nullable
+        // with a default so the eight existing call sites that construct this
+        // service directly keep working — a drifted constructor signature is a
+        // FATAL, not a test failure. Production auto-wires both by type.
+        //
+        // The fallback is fail-closed by construction: with no group manager, a
+        // GROUP share resolves no groups and therefore admits nobody.
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?IUserManager $userManager=null,
     ) {
     }//end __construct()
 
@@ -528,6 +542,29 @@ class CredentialBrokerService
         }
 
         $data = $credential->jsonSerialize();
+
+        // Guard 1c — an explicit SHARE admits, subject to the tenant edge.
+        //
+        // Evaluated before the scope asserts purely so that when nothing admits,
+        // the reported denial is still the scope guard's specific reason rather
+        // than a generic "not shared". The outcome is identical either way: this
+        // branch only ever ADMITS, never denies, and a credential with no
+        // `sharedWith` cannot admit here — so every pre-existing verdict is
+        // unchanged.
+        //
+        // A share grants USE. It does not bypass anything downstream: the
+        // allowedApps, provider allow-rule and host-lock guards still run on
+        // every admitted call, and the secret is still injected server-side and
+        // never returned (ADR-004 Rules 1 and 4).
+        if ($this->sharedPrincipalAdmits(
+            data: $data,
+            actingUserId: $actingUserId,
+            actingOrganisationId: $actingOrganisationId
+        ) === true
+        ) {
+            return $credential;
+        }
+
         if ($this->scopeOf(data: $data) === self::SCOPE_ORGANISATION) {
             $this->assertOrganisationMember(
                 data: $data,
@@ -541,6 +578,127 @@ class CredentialBrokerService
 
         return $credential;
     }//end loadAdmittedCredential()
+
+    /**
+     * Whether an explicit share admits the acting identity (Guard 1c).
+     *
+     * Returns a boolean rather than denying, so a failed share falls through to
+     * the scope guards and their specific denial reasons. It admits only on a
+     * positive match and fails closed on everything else: no acting identity, an
+     * absent or malformed `sharedWith`, an unresolvable principal, or a principal
+     * outside the credential's organisation.
+     *
+     * TENANT EDGE: when the credential declares an `organisation`, a named
+     * principal is admitted ONLY if it is also inside that organisation. A share
+     * narrows access within a tenant; it can never cross one, and a group is
+     * never consulted as the tenant key (ADR-002 Rule 1) — the organisation UUID
+     * is.
+     *
+     * GROUPS come from the acting identity, resolved the same way the owner guard
+     * resolves it: the session when there is one, otherwise the trusted
+     * in-process `actingUserId` assertion (never request input). With no group
+     * manager wired, no group resolves and a group share admits nobody.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string|null          $actingUserId         Asserted user for sessionless in-process callers only.
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+     *
+     * @return bool True when a share admits the acting identity.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/credential-broker/spec.md#requirement-share-principal-broker-guard
+     */
+    private function sharedPrincipalAdmits(
+        array $data,
+        ?string $actingUserId=null,
+        ?string $actingOrganisationId=null
+    ): bool {
+        $sharedWith = ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null);
+        if (is_array($sharedWith) === false || $sharedWith === []) {
+            return false;
+        }
+
+        $uid = $this->resolveActingIdentity(actingUserId: $actingUserId);
+        if ($uid === null) {
+            return false;
+        }
+
+        if ($this->shareWithinTenant(
+            data: $data,
+            actingOrganisationId: $actingOrganisationId
+        ) === false
+        ) {
+            return false;
+        }
+
+        $deriver = new SharePrincipalDeriver();
+
+        // A credential share grants `use`. The schema's `default: use` is not
+        // applied to stored data, so an entry that omits `permission` is treated
+        // as the default here rather than being silently dropped.
+        return $deriver->grants(
+            sharedWith: $sharedWith,
+            userId: $uid,
+            userGroups: $this->groupsOf(uid: $uid),
+            permissions: ['use', null]
+        );
+    }//end sharedPrincipalAdmits()
+
+    /**
+     * Whether the acting identity is inside the credential's organisation, when it declares one.
+     *
+     * A credential with no `organisation` carries no tenant constraint (a purely
+     * personal credential), so a share on it is bounded only by its principals.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+     *
+     * @return bool True when there is no tenant constraint, or the caller satisfies it.
+     */
+    private function shareWithinTenant(array $data, ?string $actingOrganisationId=null): bool
+    {
+        $organisation = (string) ($data['organisation'] ?? '');
+        if ($organisation === '') {
+            return true;
+        }
+
+        // Session present: the session is authoritative and any asserted
+        // organisation is ignored, so a request-context caller can never escalate
+        // by asserting one.
+        if ($this->userSession->getUser() !== null) {
+            return $this->organisationService->hasAccessToOrganisation($organisation) === true;
+        }
+
+        return $actingOrganisationId !== null && $actingOrganisationId === $organisation;
+    }//end shareWithinTenant()
+
+    /**
+     * The acting identity's group ids.
+     *
+     * Resolves through the session user when there is one, else through the
+     * asserted uid. Returns an empty list when groups cannot be resolved, which
+     * makes a group share admit nobody rather than everybody.
+     *
+     * @param string $uid The acting user id.
+     *
+     * @return string[] Group ids, empty when unresolvable.
+     */
+    private function groupsOf(string $uid): array
+    {
+        if ($this->groupManager === null) {
+            return [];
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null || $user->getUID() !== $uid) {
+            $user = $this->userManager?->get($uid);
+        }
+
+        if ($user === null) {
+            return [];
+        }
+
+        return $this->groupManager->getUserGroupIds($user);
+    }//end groupsOf()
 
     /**
      * Personal owner guard — UNCHANGED: admit only when the acting identity owns it.
