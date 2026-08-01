@@ -283,6 +283,49 @@ second principal who can alter a security-relevant list is not free.
 acting as that user or as a Nextcloud admin. If that becomes painful, an
 org-admin path is additive.
 
+### D9 — The RBAC predicate matches a DERIVED scalar principal list, not the rich share list
+
+`$contains` compares scalars against an array's members. The share entry this
+change declares is an **object** — `{ "type": "user", "id": "alice",
+"permission": "run" }` — so `{"sharedWith": {"$contains": "$userId"}}` matches
+**nothing**. Verified against the shipped operator, not assumed:
+
+```php
+in_array('alice', [['type'=>'user','id'=>'alice','permission'=>'run']], true) === false
+```
+
+So the object carries two representations of one fact:
+
+- `sharedWith[]` — the rich list. The management surface and the source of the
+  permission verb.
+- a derived scalar list, e.g. `sharedPrincipals: ["user:alice", "group:finance"]`
+  — what the RBAC predicate matches.
+
+**Alternative considered and rejected:** teach the operator a dot-path into an
+array of objects (`sharedWith.id`). It would keep one representation, but the SQL
+side needs `jsonb_path_exists` on PostgreSQL and an entirely different construct
+on MariaDB — reintroducing exactly the platform-divergence risk that D2 and the
+single-builder implementation were designed to remove, in the one predicate that
+decides access.
+
+**The hazard this creates, and the mitigation:** two representations can drift,
+and a stale derived list is an access-control bug in whichever direction it is
+stale — it either hides an object from someone entitled to it or shows it to
+someone who is not. So the derived list MUST be computed server-side on every
+write to `sharedWith[]` and MUST NOT be accepted from a client, with a repair
+step for objects written before this change or through a direct API write.
+
+### D10 — RBAC grants visibility; the trigger endpoint enforces `run`
+
+`run` is not an object RBAC verb — the actions are create / read / update /
+delete. So the schema rule grants a share recipient *visibility* of the flow, and
+the trigger endpoint enforces the verb by reading the rich `sharedWith[]`.
+
+That is two enforcement points for one grant, which is worth stating plainly
+rather than discovering later: a `read`-only recipient who can see the flow must
+still be refused at the trigger, and that refusal needs its own test because no
+RBAC rule expresses it.
+
 ## Open Questions
 
 - **Operator name.** `$contains` reads naturally but invites confusion with

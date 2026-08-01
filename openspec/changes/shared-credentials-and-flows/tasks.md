@@ -1,9 +1,19 @@
 ## 1. Decide the open questions
 
-- [ ] 1.1 Name the new match operator (`$contains` / `$anyOf` / `$includes`) — it becomes part of the RBAC vocabulary and the SQL emitter's contract, so it cannot be renamed cheaply later (design Open Questions)
+- [x] 1.1 DECIDED: the operator is `$contains` (shipped)
 - [ ] 1.2 Decide whether a credential share needs a `read` verb distinct from `use` (a UI must list a credential to let someone pick it)
 - [x] 1.3 DECIDED: a flow share does NOT carry run history — recipients see only their own runs (design D7)
 - [x] 1.4 DECIDED: granting and revoking is owner-only; no organisation-admin path (design D8)
+- [ ] 1.5 DECIDE the storage shape (design D9) — `$contains` compares SCALARS, and the declared `sharedWith[]` entry is an OBJECT `{type, id, permission}`, so `{"sharedWith": {"$contains": "$userId"}}` matches NOTHING. Verified against the shipped operator. Options: (a) a derived scalar principal list beside the rich list, (b) teach the operator a dot-path into an array of objects. (b) needs `jsonb_path_exists` on PostgreSQL and a different construct on MariaDB — the platform-divergence class this change exists to avoid. Recommend (a).
+
+## 2. The share-check operator, on both enforcement paths
+
+- [x] 2.1 `$contains` in `OperatorEvaluator` — scalar-in-array plus ANY-intersection for an array operand (`$user.groups`)
+- [x] 2.2 The SQL side: ONE platform-branched builder, called by BOTH the QueryBuilder and raw-SQL emitters (the QueryBuilder cannot express JSON containment on either platform), so the two list paths cannot drift
+- [x] 2.3 Unit tests for the PHP operator — 12 cases, including null / non-array / empty-operand / strict-typing / array-intersection
+- [x] 2.4a FIXED EN ROUTE: `MagicRbacHandler` kept a private token resolver that recognised only BARE tokens, so every dotted form (`$user.groups`, `$user.uid`, `$user.email`, `$organisation.<prop>`) resolved on `find` and fell through as a LITERAL STRING on `list`. Delegated to the one shared resolver; 8 parity tests pin it
+- [x] 2.5 Positive control: disabling the `$contains` case fails 4 tests, so they are not vacuous
+- [ ] 2.4 The end-to-end verdict-parity matrix over a LIVE database — the shipped tests pin the PHP verdict and the SQL's shape, NOT two real queries returning the same rows
 
 ## 2. The share-check operator, on both enforcement paths
 
@@ -17,8 +27,11 @@
 
 - [ ] 3.1 Add `sharedWith[]` to `lib/Settings/credential_broker_register.json` (optional; absent grants nothing)
 - [ ] 3.2 Add `sharedWith[]` and `credentialIdentity` to `lib/Settings/flow_register.json`
-- [ ] 3.3 Apply both with a **forced** register import and verify the properties are present on a live schema — a non-forced import advances the version WITHOUT applying it
-- [ ] 3.4 Validate entries server-side: `type` in {user, group}, non-blank `id`, known `permission`; reject unknown shapes rather than storing them
+- [ ] 3.3 Add the DERIVED scalar principal list the RBAC predicate matches (per 1.5), e.g. `sharedPrincipals: ["user:alice", "group:finance"]`
+- [ ] 3.4 Derive it server-side on every write to `sharedWith[]` — NEVER accept it from the client. Two representations of one fact is a drift hazard, and a stale derived list is an access-control bug in whichever direction it is stale
+- [ ] 3.5 Apply both registers with a **forced** import and verify the properties exist on a live schema — a non-forced import advances the version WITHOUT applying it
+- [ ] 3.6 Validate entries server-side: `type` in {user, group}, non-blank `id`, known `permission`; reject unknown shapes rather than storing them
+- [ ] 3.7 Backfill/repair step for the derived list, so an object written before this change (or by a direct API write) cannot sit with a stale one
 
 ## 4. Credential sharing (broker guard chain)
 
@@ -39,8 +52,8 @@
 
 ## 6. Flow sharing
 
-- [ ] 6.1 Express the flow share grant as a conditional RBAC rule using the new operator, so one server-side decision covers read and list
-- [ ] 6.2 Distinguish `read` from `run`; `run` implies `read`
+- [ ] 6.1 Express the flow share grant as ONE conditional RBAC rule in the flow schema's `authorization` block, matching the derived principal list — so one server-side decision covers both `find` and `list`. One schema rule plus per-object data; NOT a rule per share
+- [ ] 6.2 Distinguish `read` from `run`. NOTE: `run` is not an object RBAC verb (the actions are create/read/update/delete), so RBAC grants VISIBILITY and the trigger endpoint enforces the verb by reading the rich `sharedWith[]`. Two enforcement points for one grant — state it, and test that a `read`-only recipient is refused at the trigger
 - [ ] 6.3 Ensure a share never grants `edit` — definition, `sharedWith[]`, and `credentialIdentity` all stay owner-only
 - [ ] 6.4 Owner-only grant / revoke endpoints for flow shares, plus "flows shared with me"
 - [ ] 6.5 Test the revocation path on BOTH read and list, since they are separate implementations
