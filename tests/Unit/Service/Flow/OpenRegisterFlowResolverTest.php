@@ -13,6 +13,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\OpenRegisterFlowResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -32,9 +34,19 @@ class OpenRegisterFlowResolverTest extends TestCase
             static fn (string $app, string $key, string $default = '') => $default
         );
 
+        // The trigger index is read through a distributed cache. A miss on every
+        // get() keeps these tests exercising the build path rather than a value
+        // a previous test seeded, which is what they were written to assert.
+        $cache = $this->createMock(ICache::class);
+        $cache->method('get')->willReturn(null);
+
+        $cacheFactory = $this->createMock(ICacheFactory::class);
+        $cacheFactory->method('createDistributed')->willReturn($cache);
+
         $this->resolver = new OpenRegisterFlowResolver(
             $this->objects,
             $config,
+            $cacheFactory,
             $this->createMock(\Psr\Log\LoggerInterface::class)
         );
     }

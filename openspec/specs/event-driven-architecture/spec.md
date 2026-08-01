@@ -1,8 +1,12 @@
 ---
-status: done
+status: in-progress
 ---
 
 # Event-Driven Architecture
+
+**OpenSpec changes**
+- `actor-forwarded-listener-jobs` (active, implemented — not yet archived) — the actor-forwarding deferral contract: `ListenerDeferralService`, `DeferredListenerContext`, `DeferredEntryObjectResolver` and the abstract `ActorForwardedJob` (capture-at-dispatch, re-establish-in-job, guaranteed `finally` restore, chunk-level enqueueing, stale no-op idempotency). Defers `TranslationProjectionListener`, `AnnotationNotificationListener` and `AggregationThresholdListener`.
+- `object-event-sync-async-split` (active) — applies the ADR-078 fleet rule to OpenRegister's own 21 listener classes / 51 registrations: post-`*ed` listener work is asynchronous by default, synchronous execution is reserved for pre-`*ing` veto/mutate listeners plus four closed exception categories (`realtime`, `sapi-memory`, `cheap-bounded`, `correctness`), delete-path deferral requires an explicit payload contract, trigger/flow resolution must filter at query time (`OpenRegisterFlowResolver::flowsForTrigger()`), and the classification is mechanically enforced by hydra gate 61.
 
 ## Purpose
 

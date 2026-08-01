@@ -39,11 +39,14 @@ namespace OCA\OpenRegister\Service\Flow;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * The resolver for OpenRegister's own flow objects.
+ *
+ * @spec openspec/changes/or-flow-native-store/specs/flow-native-store/spec.md
  */
 class OpenRegisterFlowResolver implements IFlowResolver
 {
@@ -65,15 +68,40 @@ class OpenRegisterFlowResolver implements IFlowResolver
     private const SCHEMA_DEFAULT = 'flow';
 
     /**
+     * Cache key the compact trigger index is stored under.
+     */
+    private const INDEX_CACHE_KEY = 'flow-trigger-index';
+
+    /**
+     * Config key overriding how long the trigger index stays cached.
+     */
+    private const INDEX_TTL_KEY = 'flow_trigger_index_ttl';
+
+    /**
+     * Seconds the trigger index stays cached (matches AggregationCache).
+     */
+    private const INDEX_TTL_DEFAULT = 60;
+
+    /**
+     * Request-level memo of the trigger index, avoiding a cache round trip
+     * per object in a bulk save.
+     *
+     * @var array<int, array<string, string>>|null
+     */
+    private ?array $indexMemo = null;
+
+    /**
      * Constructor.
      *
      * @param ObjectService   $objectService Loads and lists flow objects.
      * @param IAppConfig      $appConfig     Names the register and schema.
+     * @param ICacheFactory   $cacheFactory  Builds the distributed index cache.
      * @param LoggerInterface $logger        The logger.
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly IAppConfig $appConfig,
+        private readonly ICacheFactory $cacheFactory,
         private readonly LoggerInterface $logger
     ) {
 
@@ -180,18 +208,115 @@ class OpenRegisterFlowResolver implements IFlowResolver
      */
     public function flowsForTrigger(string $event, string $register, string $schema): array
     {
+        $ids = [];
+        foreach ($this->triggerIndex() as $entry) {
+            if ($entry['trigger'] !== $event) {
+                continue;
+            }
+
+            $flowRegister = $entry['triggerRegister'];
+            $flowSchema   = $entry['triggerSchema'];
+            if ($flowRegister !== '' && $flowRegister !== $register) {
+                continue;
+            }
+
+            if ($flowSchema !== '' && $flowSchema !== $schema) {
+                continue;
+            }
+
+            $ids[] = $entry['id'];
+        }//end foreach
+
+        return $ids;
+
+    }//end flowsForTrigger()
+
+    /**
+     * The compact (id, trigger, register, schema) index of ENABLED flows.
+     *
+     * Every object write asks "is any flow wired to this event?". Answering it
+     * by listing and rendering every flow object cost ~144 ms cold / ~9 ms warm
+     * per write, because the first touch of the flow register in a request pays
+     * register/schema resolution and magic-table metadata regardless of how few
+     * flows exist. The answer only changes when an admin edits a flow, so it is
+     * cached: the hot path reads a small array instead of the object store.
+     *
+     * Staleness is bounded by the TTL (default 60 s, the same bound
+     * AggregationCache uses); a newly enabled flow starts firing within that
+     * window. Set `openregister/flow_trigger_index_ttl` to `0` to disable
+     * caching and restore the previous read-through behaviour.
+     *
+     * @return array<int, array<string, string>> Index entries.
+     *
+     * @spec openspec/changes/object-event-sync-async-split/specs/event-driven-architecture/spec.md
+     */
+    private function triggerIndex(): array
+    {
+        if ($this->indexMemo !== null) {
+            return $this->indexMemo;
+        }
+
+        $ttl   = $this->appConfig->getValueInt(self::APP_ID, self::INDEX_TTL_KEY, self::INDEX_TTL_DEFAULT);
+        $cache = null;
+        if ($ttl > 0) {
+            $cache = $this->cacheFactory->createDistributed('openregister_flow_triggers');
+
+            $cached = $cache->get(self::INDEX_CACHE_KEY);
+            if (is_array($cached) === true) {
+                $this->indexMemo = $cached;
+                return $cached;
+            }
+        }
+
+        $index = $this->buildTriggerIndex();
+
+        if ($cache !== null) {
+            $cache->set(self::INDEX_CACHE_KEY, $index, $ttl);
+        }
+
+        $this->indexMemo = $index;
+
+        return $index;
+
+    }//end triggerIndex()
+
+    /**
+     * Read the flow store and reduce it to the trigger index.
+     *
+     * Only enabled flows are indexed, so the hot path never re-checks the flag.
+     * The query filters on `enabled` server-side; the trigger itself stays a
+     * PHP-side match because one index serves every event id.
+     *
+     * @return array<int, array<string, string>> Index entries.
+     */
+    private function buildTriggerIndex(): array
+    {
         try {
             $flows = $this->objectService->findAll(
-                config: ['filters' => ['register' => $this->flowRegister(), 'schema' => $this->flowSchema()]],
+                config: [
+                    'filters' => [
+                        'register' => $this->flowRegister(),
+                        'schema'   => $this->flowSchema(),
+                        'enabled'  => true,
+                    ],
+                ],
                 _rbac: false,
                 _multitenancy: false
             );
         } catch (Throwable $e) {
-            // No flow store yet — nothing to trigger.
-            return [];
-        }
+            // No flow store yet — nothing to trigger. Logged because an
+            // unreadable flow store and an empty one are indistinguishable
+            // from the caller, and the difference is "no flows configured"
+            // versus "every flow silently stopped firing".
+            $this->logger->info(
+                message: '[OpenRegisterFlowResolver] Flow store unreadable — no flows will be triggered: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
 
-        $ids = [];
+            return [];
+        }//end try
+
+        $index = [];
         foreach ($flows as $flow) {
             if (($flow instanceof ObjectEntity) === false) {
                 continue;
@@ -202,26 +327,17 @@ class OpenRegisterFlowResolver implements IFlowResolver
                 continue;
             }
 
-            if ((string) ($data['trigger'] ?? '') !== $event) {
-                continue;
-            }
-
-            $flowRegister = (string) ($data['triggerRegister'] ?? '');
-            $flowSchema   = (string) ($data['triggerSchema'] ?? '');
-            if ($flowRegister !== '' && $flowRegister !== $register) {
-                continue;
-            }
-
-            if ($flowSchema !== '' && $flowSchema !== $schema) {
-                continue;
-            }
-
-            $ids[] = (string) $flow->getUuid();
+            $index[] = [
+                'id'              => (string) $flow->getUuid(),
+                'trigger'         => (string) ($data['trigger'] ?? ''),
+                'triggerRegister' => (string) ($data['triggerRegister'] ?? ''),
+                'triggerSchema'   => (string) ($data['triggerSchema'] ?? ''),
+            ];
         }//end foreach
 
-        return $ids;
+        return $index;
 
-    }//end flowsForTrigger()
+    }//end buildTriggerIndex()
 
     /**
      * The register flows are stored in.
