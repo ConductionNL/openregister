@@ -44,6 +44,7 @@ use OCA\OpenRegister\Service\Credential\CredentialUpstreamException;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -86,6 +87,7 @@ class CredentialController extends Controller
      * @param CredentialBrokerService   $broker              The guarded outbound broker.
      * @param CredentialAppTokenService $tokenService        Per-app signing-secret registry + token verify.
      * @param OrganisationService       $organisationService Organisation membership + admin authority resolution.
+     * @param SharePrincipalDeriver     $shareDeriver        Validates share lists and derives the principal lists RBAC matches.
      *
      * @return void
      *
@@ -102,6 +104,7 @@ class CredentialController extends Controller
         private readonly CredentialBrokerService $broker,
         private readonly CredentialAppTokenService $tokenService,
         private readonly OrganisationService $organisationService,
+        private readonly SharePrincipalDeriver $shareDeriver,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -352,6 +355,184 @@ class CredentialController extends Controller
 
         return new JSONResponse($this->serialise(object: $saved));
     }//end update()
+
+    /**
+     * GET /api/credentials/{id}/shares — the principals this credential is shared with (owner only).
+     *
+     * @param string $id The credential UUID.
+     *
+     * @return JSONResponse The share list, or a static error.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/credential-sharing/spec.md#requirement-shares-are-discoverable-by-owner-and-recipient
+     */
+    #[NoAdminRequired]
+    public function shares(string $id): JSONResponse
+    {
+        $existing = $this->ensureManageable(id: $id, uid: $this->currentUid());
+        if ($existing instanceof JSONResponse) {
+            return $existing;
+        }
+
+        $data = $existing->getObject();
+
+        return new JSONResponse(
+            [
+                'sharedWith'   => $this->shareDeriver->validEntries(
+                    sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null)
+                ),
+                'sharedUsers'  => ($data[SharePrincipalDeriver::PROP_SHARED_USERS] ?? []),
+                'sharedGroups' => ($data[SharePrincipalDeriver::PROP_SHARED_GROUPS] ?? []),
+            ]
+        );
+    }//end shares()
+
+    /**
+     * PUT /api/credentials/{id}/shares — REPLACE the share list (owner only).
+     *
+     * Replace rather than add/remove: one idempotent write, no partial-update
+     * race between two owners editing the same list, and revocation is simply a
+     * PUT without that principal. It mirrors how `allowedApps` is already
+     * handled.
+     *
+     * Owner-only via {@see ensureManageable()} — the SAME guard update/destroy
+     * use, so a share recipient cannot widen the list or re-share onward
+     * (design D8: no organisation-admin path beyond the existing org-admin
+     * management of organisation-scoped credentials).
+     *
+     * The derived principal lists are recomputed here and any client-supplied
+     * value for them is discarded: they are outputs, and accepting them would let
+     * a caller grant itself access without appearing in `sharedWith` at all.
+     *
+     * @param string $id The credential UUID.
+     *
+     * @return JSONResponse The stored share list, or a static error.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/credential-sharing/spec.md#requirement-a-brokered-credential-carries-a-principal-share-list
+     */
+    #[NoAdminRequired]
+    public function updateShares(string $id): JSONResponse
+    {
+        $existing = $this->ensureManageable(id: $id, uid: $this->currentUid());
+        if ($existing instanceof JSONResponse) {
+            return $existing;
+        }
+
+        $requested = $this->request->getParam(SharePrincipalDeriver::PROP_SHARED_WITH);
+        if (is_array($requested) === false) {
+            return new JSONResponse(['message' => 'sharedWith must be an array'], Http::STATUS_BAD_REQUEST);
+        }
+
+        // Reject rather than silently drop: an owner who mistypes a principal
+        // should be told, not left believing they granted access they did not.
+        $valid = $this->shareDeriver->validEntries(sharedWith: $requested);
+        if (count($valid) !== count($requested)) {
+            return new JSONResponse(
+                ['message' => 'Every share entry needs a type of user or group and a non-blank id'],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $data = $existing->getObject();
+        $data[SharePrincipalDeriver::PROP_SHARED_WITH] = $valid;
+        $data = $this->shareDeriver->apply(object: $data);
+
+        try {
+            $saved = $this->objectService->saveObject(
+                object: $data,
+                register: CredentialBrokerService::REGISTER,
+                schema: CredentialBrokerService::SCHEMA,
+                uuid: $id
+            );
+        } catch (Throwable $e) {
+            return new JSONResponse(['message' => 'Unable to update shares'], Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        $savedData = $saved->getObject();
+
+        return new JSONResponse(
+            [
+                'sharedWith'   => ($savedData[SharePrincipalDeriver::PROP_SHARED_WITH] ?? []),
+                'sharedUsers'  => ($savedData[SharePrincipalDeriver::PROP_SHARED_USERS] ?? []),
+                'sharedGroups' => ($savedData[SharePrincipalDeriver::PROP_SHARED_GROUPS] ?? []),
+            ]
+        );
+    }//end updateShares()
+
+    /**
+     * GET /api/credentials/shared-with-me — credentials shared with the caller.
+     *
+     * Matches the caller directly and through every group they belong to. Returns
+     * METADATA ONLY, like every other credential response: a recipient can use a
+     * shared credential through the broker but never sees the secret
+     * (ADR-004 Rule 1).
+     *
+     * @return JSONResponse The credentials shared with the caller, or a static error.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/credential-sharing/spec.md#requirement-shares-are-discoverable-by-owner-and-recipient
+     */
+    #[NoAdminRequired]
+    public function sharedWithMe(): JSONResponse
+    {
+        $uid = $this->currentUid();
+        if ($uid === null) {
+            return new JSONResponse(['message' => 'Unauthorized'], Http::STATUS_UNAUTHORIZED);
+        }
+
+        $user   = $this->userSession->getUser();
+        $groups = [];
+        if ($user !== null) {
+            $groups = $this->groupManager->getUserGroupIds($user);
+        }
+
+        try {
+            // Register/schema come from the setter context, as in index().
+            $this->objectService
+                ->setRegister(CredentialBrokerService::REGISTER)
+                ->setSchema(CredentialBrokerService::SCHEMA);
+
+            // RBAC disabled deliberately: the share list IS the access decision
+            // here, and it is applied below per object. A credential is not
+            // readable through object RBAC by a non-owner, so leaving RBAC on
+            // would return nothing and this endpoint would always be empty.
+            //
+            // Multitenancy is left ENFORCED (the default): a share narrows access
+            // within a tenant and must never cross one, so tenancy stays an
+            // independent gate rather than something the share list can override.
+            $all = $this->objectService->findAll(_rbac: false);
+        } catch (Throwable $e) {
+            return new JSONResponse(['message' => 'Unable to list shared credentials'], Http::STATUS_INTERNAL_SERVER_ERROR);
+        }
+
+        $shared = [];
+        foreach ($all as $object) {
+            if (($object instanceof ObjectEntity) === false) {
+                continue;
+            }
+
+            $data = $object->getObject();
+
+            // The owner sees their own credentials through the ordinary index;
+            // this endpoint is about what OTHERS shared with the caller.
+            if ($object->getOwner() === $uid) {
+                continue;
+            }
+
+            $admits = $this->shareDeriver->grants(
+                sharedWith: ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null),
+                userId: $uid,
+                userGroups: $groups,
+                permissions: ['use', null]
+            );
+
+            if ($admits === false) {
+                continue;
+            }
+
+            $shared[] = $this->serialise(object: $object);
+        }//end foreach
+
+        return new JSONResponse(['results' => $shared, 'total' => count($shared)]);
+    }//end sharedWithMe()
 
     /**
      * DELETE /api/credentials/{id} — delete the object and its vault secret (owner only).

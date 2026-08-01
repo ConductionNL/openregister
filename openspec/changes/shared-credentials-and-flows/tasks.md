@@ -39,10 +39,12 @@
 
 ## 5. Credential share management API
 
-- [ ] 5.1 Owner-only grant / revoke endpoints on `CredentialController`, with an explicit auth posture on every route
-- [ ] 5.2 Reject `sharedWith[]` writes from a share recipient (no self-widening, no onward re-sharing)
-- [ ] 5.3 "Shared with me" read: credentials naming the user directly or via a group they belong to
-- [ ] 5.4 Verify every new response is secret-free (ADR-004 Rule 1)
+- [x] 5.1 `GET/PUT /api/credentials/{id}/shares` + `GET /api/credentials/shared-with-me`, all `#[NoAdminRequired]` with the owner guard. REPLACE rather than add/remove: one idempotent write, no partial-update race between two owners, and revocation is a PUT without that principal — mirroring how `allowedApps` already works
+- [x] 5.2 Owner-only via the SAME `ensureManageable()` guard update/destroy use. Also true by construction elsewhere: `create()` and `update()` build from an explicit param allow-list, so `sharedWith` and the derived lists cannot be injected through them at all
+- [x] 5.3 "Shared with me" matches the caller directly and through every group. Multitenancy left ENFORCED so a share cannot cross a tenant; RBAC disabled deliberately because the share list IS the decision there and is applied per object
+- [x] 5.4 Tested: no share response carries secret material
+- [x] 5.5 A malformed entry is REJECTED (400), not silently dropped — storing a shorter list would leave the owner believing they granted access they did not
+- [x] 5.6 Wired the deriver into this write path (part of 3.8): the derived lists are recomputed on save and a client-supplied value is discarded, with a test asserting exactly that
 
 ## 6. Flow sharing
 
