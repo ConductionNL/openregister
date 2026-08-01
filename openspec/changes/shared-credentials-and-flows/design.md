@@ -330,6 +330,43 @@ someone who is not. So the derived list MUST be computed server-side on every
 write to `sharedWith[]` and MUST NOT be accepted from a client, with a repair
 step for objects written before this change or through a direct API write.
 
+### D13 — Flows have NO authorization today, and that BLOCKS `credentialIdentity: owner`
+
+Checked against the live instance and the code, not assumed:
+
+- **Read.** Every `flow` schema has `authorization = NULL`. An empty
+  authorization block means "open" in both enforcement paths, so every flow is
+  readable by every user in the tenant right now.
+- **Run.** `flowRun#test` is `#[NoAdminRequired]` with **no ownership check at
+  all** — zero owner/forbidden checks in the method. `flowRun#retry` likewise,
+  and `FlowMcpToolProvider::runFlow()` is a third unguarded entry point.
+
+So **any authenticated user can already read and run any flow.** Flow "sharing"
+as originally specified has no gap to fill: what is missing is not a way to grant
+access but any restriction to grant *from*.
+
+**This is a blocking dependency, not a nuance.** `credentialIdentity: owner`
+lends the owner's credential to whoever triggers the run. Shipping it while the
+run endpoint is unauthorised would let ANY authenticated user run someone else's
+flow and cause outbound calls signed with that owner's secret — a
+privilege-escalation path created by this change. The broker's guards cannot
+catch it, because the flow resolves as the owner *by design*; that is the
+declared intent of the mode.
+
+Therefore:
+
+1. Run authorization for flows (owner, plus a `run` share) MUST land BEFORE
+   `credentialIdentity: owner` is enabled. Task group 7 is re-sequenced behind
+   group 6, and `owner` mode must not be shippable until then.
+2. Both halves of flow sharing are **breaking changes to existing behaviour**,
+   not additions: restricting read makes flows invisible to non-owners who can
+   see them today, and restricting run makes them un-runnable by users who can
+   run them today. That is a hardening change wearing a feature's clothes, and
+   the blast radius belongs to the product owner, not to this change.
+
+The credential half is unaffected — it granted access where there genuinely was
+none, and has already shipped.
+
 ### D12 — The register version must be bumped PAST the live schema, not just past the file
 
 The repair steps import with `force: false`, and the gate is

@@ -46,7 +46,15 @@
 - [x] 5.5 A malformed entry is REJECTED (400), not silently dropped — storing a shorter list would leave the owner believing they granted access they did not
 - [x] 5.6 Wired the deriver into this write path (part of 3.8): the derived lists are recomputed on save and a client-supplied value is discarded, with a test asserting exactly that
 
-## 6. Flow sharing
+## 6. Flow sharing — BLOCKED ON A DECISION (design D13)
+
+> Flows have NO authorization today: every `flow` schema has `authorization = NULL`
+> (so all flows are readable tenant-wide) and `flowRun#test`, `flowRun#retry` and
+> `FlowMcpToolProvider::runFlow()` all run a flow with ZERO ownership checks. There
+> is no restriction to grant access *from*, so both halves of flow sharing are
+> BREAKING changes to existing behaviour rather than additions. Needs a product
+> decision on blast radius before implementing.
+
 
 - [ ] 6.1 Express the flow share grant as ONE conditional RBAC rule in the flow schema's `authorization` block, matching the derived principal list — so one server-side decision covers both `find` and `list`. One schema rule plus per-object data; NOT a rule per share
 - [ ] 6.2 Distinguish `read` from `run`. NOTE: `run` is not an object RBAC verb (the actions are create/read/update/delete), so RBAC grants VISIBILITY and the trigger endpoint enforces the verb by reading the rich `sharedWith[]`. Two enforcement points for one grant — state it, and test that a `read`-only recipient is refused at the trigger
@@ -56,7 +64,13 @@
 - [ ] 6.6 Scope run history to the requester for a share recipient — they see their own runs only, never the owner's or another recipient's (design D7)
 - [ ] 6.7 Test that a non-owner cannot grant or revoke (design D8)
 
-## 7. Credential identity on a run
+## 7. Credential identity on a run — MUST NOT SHIP BEFORE GROUP 6 (design D13)
+
+> `credentialIdentity: owner` lends the owner's credential to whoever triggers the
+> run. With the run endpoint unauthorised, any authenticated user could run
+> someone else's flow and cause calls signed with that owner's secret. The broker
+> cannot catch it: resolving as the owner IS the declared intent of the mode.
+
 
 - [ ] 7.1 Add `credentialIdentity` handling to the flow, defaulting to `runner` when absent so current behaviour is preserved exactly
 - [ ] 7.2 Reject a `credentialIdentity` write from anyone but the flow owner
@@ -68,8 +82,8 @@
 
 ## 8. Documentation and ADR amendment
 
-- [ ] 8.1 Amend ADR-004 Rule 4: its text enumerates the guard chain, which now has a third admit branch in Guard 1
-- [ ] 8.2 Record in ADR-004 that a share grants use and never disclosure, so the boundary is documented where a reviewer will look
+- [x] 8.1 ADR-004 Rule 4 amended: the access check's three admit branches are enumerated, with the ordering property that none can change another's verdict
+- [x] 8.2 ADR-004 now records both load-bearing properties — use-not-disclosure, and that a share never crosses a tenant boundary — plus that guards 2-4 still apply so a share is not a bypass
 - [ ] 8.3 Note in the flow docs that `credentialIdentity: owner` is a delegation of the owner's authority, with its audit trail
 
 ## 9. Verify
