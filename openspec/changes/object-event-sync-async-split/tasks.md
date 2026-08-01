@@ -73,6 +73,62 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 - [ ] 4.3 `SourceRecordChangeListener` payload tests: re-parenting refreshes **both** masters; a bulk edit of 500 source records on one master collapses to one recompute; deleted-path master uuid resolved inline.
 - [ ] 4.4 `HookListener` split test: a pre-event hook veto still aborts the save and enqueues **no** post-event job.
 
+## 4b. Filtered subscription (D6 — resolves hydra Open Question 2)
+
+- [x] 4b.1 `ObjectEventSubscription::register()` — registration-site declaration
+      of register/schema interest; registers one shared proxy per event class,
+      idempotently; `null` declarations mean "all" so adoption is opt-in.
+- [x] 4b.2 `ObjectEventProxyListener` — resolves the written object's
+      register/schema off the `ObjectEntity` once per dispatch and invokes only
+      matching subscriptions. Resolution from the server container and the
+      `QueryException` skip both mirror `ServiceEventListener` exactly;
+      handler exceptions propagate as Symfony's dispatcher already lets them.
+- [x] 4b.3 `RegisterMapper::findIdsBySlugs()` / `SchemaMapper::findIdsBySlugs()`
+      — bounded `IN` lookup, one query per table per request, NOT the existing
+      `getSlugToIdMap()` which materialises all 1,931 schema rows.
+- [x] 4b.4 Per-request memoisation plus a 60 s local (APCu) cache of the
+      resolved slug→id maps. Neither table has an index on `slug`, so an
+      uncached resolution is a sequential scan (measured 1,137 us for the pair).
+- [x] 4b.5 `objectEventFilter` app-config kill switch restores unfiltered
+      invocation instance-wide; also the A/B knob.
+- [x] 4b.6 Proxy self-instrumentation behind the existing
+      `/tmp/or-trace-write-phases` flag, writing per-request
+      dispatch/invoked/skipped counts and its own microsecond cost to
+      `/tmp/or-event-proxy.log`.
+- [ ] 4b.7 Unit tests for `ObjectEventSubscription` (declaration normalisation,
+      proxy registered once per event, per-request scoping) and for the proxy's
+      match logic. NOT DONE in the pilot change.
+- [ ] 4b.8 Convert OpenRegister's own schema-specific listeners. NOT DONE —
+      OpenRegister's listeners are mostly not schema-specific, which is why the
+      pilot is a leaf app.
+
+### Pilot (procest) — falsifiable evidence
+
+- [x] 4b.9 `BezwaarLifecycleListener` (Created + Updated) and
+      `BezwaarLegalHoldListener` (Created) converted, declaring
+      `registers: ['procest']` and their own schema slug lists.
+- [x] 4b.10 Direct non-invocation proof, with a temporary counter inside
+      `handle()` that was removed afterwards. Same write
+      (`larpingapp/character`, register 8 / schema 18) in both arms, toggled at
+      runtime rather than redeployed:
+      - kill switch `off` → `handle()` INVOKED (proxy: `invoked=4 skipped=0`)
+      - kill switch `on` → `handle()` NOT invoked (proxy: `invoked=0 skipped=4`)
+      - positive control, `procest/bezwaar` (register 17 / schema 116) with the
+        switch `on` → `handle()` INVOKED (proxy: `invoked=2 skipped=2`)
+- [x] 4b.11 Measured cost, n=18 requests per arm, interleaved ON/OFF/ON/OFF at
+      host load 16-21 throughout:
+
+      | | filter off | filter on |
+      |---|---|---|
+      | invocations | 72 | 0 |
+      | proxy cost / request | 1,845 us (median ~1,100) | 308 us (median ~168) |
+      | proxy cost / dispatch | 922 us | 154 us |
+      | listener handler time / request | 536 us | 0 us |
+
+      Converting two leaf listeners removes ~0.9-1.5 ms per object write for a
+      filter cost of ~0.17-0.31 ms. Most of the saving is not handler body but
+      the DI construction of the two listeners, which no longer happens.
+
 ## 5. Verification
 
 - [ ] 5.1 Hydra gate 61 (`listener-work-placement`) reports PASS on openregister with only annotated exclusions — no blanket suppression.

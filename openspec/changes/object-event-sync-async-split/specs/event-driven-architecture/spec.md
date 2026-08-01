@@ -205,6 +205,65 @@ webhooks configured pays no serialization cost
 - **THEN** `dispatchEvent()` SHALL return before `extractPayload()` runs
 - **AND** the entity SHALL NOT be `jsonSerialize()`d
 
+### Requirement: OpenRegister MUST provide registration-time filtered event subscription
+
+OpenRegister owns the object event dispatcher and SHALL expose a registration
+helper that records, at listener **registration** time, the register and schema
+slugs a listener reacts to, so that a listener whose declaration excludes the
+dispatched object's register or schema is NOT invoked at all rather than being
+invoked and self-filtering inside its handler body.
+
+The declaration SHALL live at the registration site as arguments to the helper,
+NOT as a manifest block and NOT as an attribute on the listener class: an
+attribute is only readable by reflecting the class, and reflecting it requires
+autoloading exactly the file the mechanism exists to avoid touching.
+
+Omitting both declarations SHALL mean "all", so adoption is a strictly opt-in
+narrowing and an undeclared subscription behaves as a global registration does.
+
+Slug-to-id resolution SHALL be memoized per request and SHALL NOT be performed
+per dispatch. The filter's own cost SHALL be measured and SHALL be lower than
+the handler time it removes; a filter that costs more than it saves MUST be
+reported as such rather than shipped.
+
+The mechanism SHALL NOT change Nextcloud's dispatch semantics other than
+ordering: an exception thrown by a subscribed handler SHALL propagate as it
+does today, and a listener that cannot be resolved SHALL be logged and skipped
+as `ServiceEventListener` already does. Because subscriptions share one
+dispatcher slot, ordering relative to other apps' listeners changes; the helper
+SHALL therefore expose no priority parameter, and SHALL be used only for
+post-events, which expose neither mutation nor veto.
+
+A runtime kill switch SHALL restore unfiltered invocation instance-wide without
+a deploy.
+
+#### Scenario: An uninterested listener is not invoked
+
+- **GIVEN** a listener registered through the helper declaring register
+  `procest` and schemas `bezwaar`, `objection`
+- **WHEN** an object of schema `character` in register `larpingapp` is created
+- **THEN** the listener's `handle()` SHALL NOT be invoked
+
+#### Scenario: An interested listener is still invoked
+
+- **GIVEN** the same listener and declaration
+- **WHEN** an object of schema `bezwaar` in register `procest` is created
+- **THEN** the listener's `handle()` SHALL be invoked
+
+#### Scenario: Slug resolution is memoized rather than repeated
+
+- **GIVEN** a request that dispatches several object lifecycle events
+- **WHEN** the proxy resolves declared slugs to register and schema ids
+- **THEN** it SHALL issue at most one bounded query per table for the whole
+  request
+- **AND** it SHALL NOT issue a query per dispatch
+
+#### Scenario: The kill switch restores unfiltered invocation
+
+- **GIVEN** `objectEventFilter` set to `off`
+- **WHEN** an object of an undeclared schema is created
+- **THEN** every subscription SHALL be invoked, as a global registration would
+
 ### Requirement: The listener placement classification MUST be recorded and mechanically enforced
 
 Every listener registered on an object lifecycle event MUST have its sync/async

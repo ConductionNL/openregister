@@ -2064,6 +2064,61 @@ class SchemaMapper extends QBMapper
     }//end getSlugToIdMap()
 
     /**
+     * Resolve a bounded set of schema slugs to their primary-key ids.
+     *
+     * Deliberately NOT `getSlugToIdMap()`: that materialises every schema row
+     * on the instance (1931 on the reference instance) to answer a question
+     * about a handful of slugs. Filtered event subscription runs this on the
+     * object write path, so it must be bounded by the caller's declaration
+     * rather than by the size of the instance.
+     *
+     * A slug is not unique across apps — the same `decision` slug can exist in
+     * two registers — so each slug maps to a LIST of ids and the caller narrows
+     * further (typically by register). Matching is case-insensitive, mirroring
+     * {@see find()}; keys come back lower-cased.
+     *
+     * @param array<int,string> $slugs Schema slugs to resolve.
+     *
+     * @return array<string,array<int,string>> Lower-cased slug => matching ids.
+     *                                         Empty when $slugs is empty.
+     *
+     * @spec openspec/specs/event-driven-architecture/spec.md
+     */
+    public function findIdsBySlugs(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $lowered = array_values(array_unique(array_map('strtolower', $slugs)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $map    = array_fill_keys($lowered, []);
+        while (($row = $result->fetch()) !== false) {
+            $key = strtolower((string) $row['slug']);
+            if (isset($map[$key]) === false) {
+                $map[$key] = [];
+            }
+
+            $map[$key][] = (string) $row['id'];
+        }
+
+        $result->closeCursor();
+
+        return $map;
+    }//end findIdsBySlugs()
+
+    /**
      * Find schemas that have properties referencing the given schema
      *
      * This method searches through all schemas to find ones that have properties

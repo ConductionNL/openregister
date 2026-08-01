@@ -237,6 +237,37 @@ Other Nextcloud apps (opencatalogi, docudesk, zaakafhandelapp, pipelinq, procest
 - **AND** OpenRegister MUST NOT need any configuration or awareness of which external apps are listening
 - **AND** listener instantiation MUST be lazy (deferred until event dispatch)
 
+### Requirement: Filtered object-event subscriptions MUST be declared from boot() and MUST honour both slugs and ids
+A leaf app narrowing an object-event listener to specific registers/schemas MUST declare the subscription from its `Application::boot()` via `ObjectEventSubscription::subscribe()`, taking the live `IEventDispatcher` from the server container. It MUST NOT declare it from `Application::register()`.
+
+Declaration tokens MUST accept both register/schema slugs and numeric ids. A token consisting only of digits MUST be treated as an id and compared directly against the id the written `ObjectEntity` carries; any other token MUST be resolved as a slug. Neither kind may be silently dropped. An entirely numeric slug is therefore NOT supported.
+
+#### Scenario: An app that boots before OpenRegister still gets a filtered subscription
+- **GIVEN** `docudesk` is app 21 of 92 and `openregister` is app 52, and Nextcloud enables each app's autoloader immediately before calling that app's own `register()`
+- **WHEN** docudesk declares its subscription from `boot()` rather than `register()`
+- **THEN** `class_exists('\OCA\OpenRegister\Event\ObjectEventSubscription')` MUST resolve true, because `boot()` runs only after every app's `register()` has completed
+- **AND** the listener MUST appear in `ObjectEventSubscription::subscribedListeners()`
+- **AND** it MUST be invoked for a write to a register/schema it declared
+
+#### Scenario: Falling back to an unfiltered registration MUST be loud
+- **GIVEN** OpenRegister is absent or its subscription class cannot be autoloaded
+- **WHEN** a leaf app's guard falls back to a plain `addServiceListener()` registration
+- **THEN** it MUST log a warning naming the app, the listener and the event
+- **AND** the fallback MUST NOT be silent, because a silent fallback is indistinguishable from a working narrowing
+
+#### Scenario: A declaration by numeric id matches the written object
+- **GIVEN** a subscription declared as `registers: ['7'], schemas: ['228']`
+- **WHEN** an object is written whose register id is `7` and schema id is `228`
+- **THEN** the subscription MUST be invoked
+- **AND** the numeric token MUST NOT be resolved as a slug, which would match no row and silently disable the listener
+- **AND** normalisation MUST NOT coerce the token to `int`, which would make `strtolower()` a fatal `TypeError` under `strict_types`
+
+#### Scenario: The declared subscription count is observable
+- **GIVEN** an operator needs to tell a working narrowing from an inert one
+- **WHEN** they read `ObjectEventSubscription::subscriptionCount()` or the proxy trace line
+- **THEN** the number of registered subscriptions MUST be reported
+- **AND** a declared-versus-registered mismatch MUST therefore be detectable rather than invisible
+
 ### Requirement: GraphQL subscription listeners MUST push events for real-time SSE delivery
 The `GraphQLSubscriptionListener` MUST listen for `ObjectCreatedEvent`, `ObjectUpdatedEvent`, and `ObjectDeletedEvent` and push event data to the `SubscriptionService` buffer for Server-Sent Events (SSE) delivery to connected GraphQL subscription clients.
 
