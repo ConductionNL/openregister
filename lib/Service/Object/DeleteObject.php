@@ -318,6 +318,8 @@ class DeleteObject
             }
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.org');
+
         $deletionData = [
             'deletedBy'    => $userId,
             'deletedAt'    => (new DateTime())->format(DateTime::ATOM),
@@ -346,6 +348,8 @@ class DeleteObject
             schema: $schemaEntity,
             oldEntity: $preDeleteState
         ) !== null;
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.update');
 
         // **CACHE INVALIDATION**: Clear collection and facet caches so soft-deleted objects disappear from regular queries.
         if ($result === true) {
@@ -383,6 +387,8 @@ class DeleteObject
             }
         }//end if
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.cache');
+
         // Create audit trail for delete if audit trails are enabled.
         if ($this->isAuditTrailsEnabled() === true) {
             // Determine the audit action based on cascade context.
@@ -402,6 +408,8 @@ class DeleteObject
                 cascadeContext: $cascadeContext
             );
         }//end if
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.audit');
 
         return $result;
     }//end delete()
@@ -550,6 +558,8 @@ class DeleteObject
             );
         }
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.handler.in');
+
         // Reset cascade count for root deletions.
         if ($originalObjectId === null) {
             $this->lastCascadeCount = 0;
@@ -572,6 +582,8 @@ class DeleteObject
 
         $object = $context['object'];
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.ctx');
+
         // Root deletions: check referential integrity and handle cascade.
         if ($originalObjectId === null) {
             $integrityResult = $this->handleIntegrityDeletion(
@@ -583,6 +595,8 @@ class DeleteObject
                 return $integrityResult;
             }
         }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.integrity');
 
         try {
             // Pass the already-resolved scope so delete() skips its own re-find.
@@ -760,9 +774,12 @@ class DeleteObject
         $hasIntegrityAction = $schemaId !== null
             && $this->integrityService->hasIncomingOnDeleteReferences($schemaId) === true;
 
+        \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.relindex');
+
         // Run legacy cascade regardless of integrity actions.
         if ($hasIntegrityAction === false) {
             $this->runLegacyCascade(context: $context, object: $object, uuid: $uuid);
+            \OCA\OpenRegister\Service\WritePhaseProbe::stamp('del.legacycascade');
             return null;
         }
 
