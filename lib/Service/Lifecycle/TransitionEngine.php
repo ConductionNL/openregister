@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -36,6 +37,7 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use RuntimeException;
 
@@ -50,6 +52,16 @@ use RuntimeException;
 class TransitionEngine
 {
     /**
+     * App-config key opting an instance into the documented slug contract.
+     *
+     * Default 'no' — see {@see transitionEventScope()} for why a contract fix
+     * ships disabled.
+     *
+     * @var string
+     */
+    public const SLUG_CONTRACT_FLAG = 'transition_event_slug_contract';
+
+    /**
      * Constructor.
      *
      * @param ObjectService     $objectService     Object CRUD service used to load + save the entity.
@@ -57,6 +69,8 @@ class TransitionEngine
      * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+     * @param RegisterMapper    $registerMapper    Mapper used to resolve the register slug.
+     * @param IAppConfig        $appConfig         App config, for the slug-contract opt-in.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -65,9 +79,75 @@ class TransitionEngine
         private readonly SchemaMapper $schemaMapper,
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IUserSession $userSession,
-        private readonly PermissionHandler $permissionHandler
+        private readonly PermissionHandler $permissionHandler,
+        private readonly RegisterMapper $registerMapper,
+        private readonly IAppConfig $appConfig
     ) {
     }//end __construct()
+
+    /**
+     * Resolve the register/schema pair to advertise on ObjectTransitionedEvent.
+     *
+     * ObjectTransitionedEvent documents both params as SLUGS, but this engine has
+     * always passed `(string) $object->getRegister()` / `getSchema()`, which are
+     * numeric ids. Every listener comparing them to a slug literal has therefore
+     * never matched and never run — 44 of them across scholiq, shillinq and
+     * openbuild.
+     *
+     * Honouring the documented contract is a one-line change and a very large
+     * behaviour change: it simultaneously activates dormant general-ledger
+     * posting, outbound HTTP to external parties, and bulk-write handlers that
+     * have never executed against this data. So the corrected contract ships
+     * DISABLED and is opted into per instance, after that instance has assessed
+     * its own listeners. See `docs/transition-event-slug-contract.md`.
+     *
+     * Resolution failures fall back to the id rather than throwing: a lifecycle
+     * transition must not start failing because a slug lookup missed.
+     *
+     * @param ObjectEntity $object The object being transitioned.
+     *
+     * @return array{register: string, schema: string} Values for the event.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function transitionEventScope(ObjectEntity $object): array
+    {
+        $registerRef = (string) $object->getRegister();
+        $schemaRef   = (string) $object->getSchema();
+
+        if ($this->appConfig->getValueString('openregister', self::SLUG_CONTRACT_FLAG, 'no') !== 'yes') {
+            return [
+                'register' => $registerRef,
+                'schema'   => $schemaRef,
+            ];
+        }
+
+        try {
+            $register = $this->registerMapper->find($registerRef);
+            $slug     = $register->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $registerRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaRef, _multitenancy: false);
+            $slug   = $schema->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $schemaRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        return [
+            'register' => $registerRef,
+            'schema'   => $schemaRef,
+        ];
+
+    }//end transitionEventScope()
 
     /**
      * Apply a named transition to an object.
@@ -194,6 +274,8 @@ class TransitionEngine
 
         $userId = $actingUser?->getUID();
 
+        $scope = $this->transitionEventScope(object: $object);
+
         $this->eventDispatcher->dispatchTyped(
             new ObjectTransitionedEvent(
                 object: $saved,
@@ -201,8 +283,8 @@ class TransitionEngine
                 from: $currentValue,
                 to: $targetState,
                 userId: $userId,
-                register: (string) $object->getRegister(),
-                schema: (string) $object->getSchema()
+                register: $scope['register'],
+                schema: $scope['schema']
             )
         );
 
@@ -560,6 +642,8 @@ class TransitionEngine
             currentUser: $actingUser
         );
 
+        $scope = $this->transitionEventScope(object: $object);
+
         $this->eventDispatcher->dispatchTyped(
             new ObjectTransitionedEvent(
                 object: $saved,
@@ -567,8 +651,8 @@ class TransitionEngine
                 from: $from,
                 to: $targetState,
                 userId: $actingUser?->getUID(),
-                register: (string) $object->getRegister(),
-                schema: (string) $object->getSchema()
+                register: $scope['register'],
+                schema: $scope['schema']
             )
         );
 
