@@ -239,4 +239,97 @@ class SetFieldsNodeTest extends TestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * A dotted key WRITES a nested structure rather than a literal key.
+     *
+     * Reads have always gone through `{{dotted.path}}`; writes did not, so
+     * `"entry.owner"` produced a top-level key literally CALLED `entry.owner`
+     * beside any real `entry`. Nothing failed — the flow ran, the item came out,
+     * and the object the author meant to build was simply never there. That is
+     * indistinguishable from success until something downstream reads the shape
+     * and finds it empty.
+     */
+    public function testADottedKeyWritesANestedStructure(): void
+    {
+        $out = $this->node->execute(
+            $this->items([['who' => 'ruben', 'code' => 0]]),
+            ['set' => ['entry.owner' => '{{who}}', 'entry.exit_code' => '{{code}}']],
+            []
+        );
+
+        $this->assertSame('ruben', $out[0]['json']['entry']['owner']);
+        // The whole-placeholder type rule still holds through a nested write.
+        $this->assertSame(0, $out[0]['json']['entry']['exit_code']);
+        $this->assertArrayNotHasKey('entry.owner', $out[0]['json']);
+    }
+
+    /**
+     * Several dotted keys build ONE object rather than clobbering each other.
+     */
+    public function testSiblingDottedKeysShareTheirContainer(): void
+    {
+        $out = $this->node->execute(
+            $this->items([[]]),
+            ['set' => ['e.a' => '1', 'e.b' => '2', 'e.c' => '3']],
+            []
+        );
+
+        $this->assertSame(['a' => '1', 'b' => '2', 'c' => '3'], $out[0]['json']['e']);
+    }
+
+    /**
+     * A dotted write MERGES into an existing container instead of replacing it.
+     *
+     * A record composer appends a stage to a cycle that already has fields; a
+     * write that replaced the container would silently drop them.
+     */
+    public function testADottedWriteMergesIntoAnExistingObject(): void
+    {
+        $out = $this->node->execute(
+            $this->items([['entry' => ['kept' => 'yes']]]),
+            ['set' => ['entry.added' => 'also']],
+            []
+        );
+
+        $this->assertSame('yes', $out[0]['json']['entry']['kept']);
+        $this->assertSame('also', $out[0]['json']['entry']['added']);
+    }
+
+    /**
+     * Deep paths create every level they need.
+     */
+    public function testADeepPathCreatesEveryLevel(): void
+    {
+        $out = $this->node->execute($this->items([[]]), ['set' => ['a.b.c.d' => 'deep']], []);
+
+        $this->assertSame('deep', $out[0]['json']['a']['b']['c']['d']);
+    }
+
+    /**
+     * A scalar in the path is REPLACED by a container, not merged into.
+     *
+     * Merging into a scalar has no meaning, and silently skipping would
+     * reintroduce the invisible no-op this fixes.
+     */
+    public function testAScalarInThePathBecomesAContainer(): void
+    {
+        $out = $this->node->execute(
+            $this->items([['entry' => 'i am a string']]),
+            ['set' => ['entry.owner' => 'ruben']],
+            []
+        );
+
+        $this->assertSame(['owner' => 'ruben'], $out[0]['json']['entry']);
+    }
+
+    /**
+     * An undotted key is untouched by any of this.
+     */
+    public function testAnUndottedKeyStillWritesFlat(): void
+    {
+        $out = $this->node->execute($this->items([[]]), ['set' => ['plain' => 'value']], []);
+
+        $this->assertSame('value', $out[0]['json']['plain']);
+    }
+
 }
