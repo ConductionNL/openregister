@@ -215,7 +215,11 @@ class SetFieldsNode implements IFlowNode
             // A value that is exactly one placeholder keeps its TYPE, so a
             // counter stays a number and a list stays a list.
             foreach ($set as $field => $value) {
-                $json[(string) $field] = FlowValueTemplate::render(value: $value, json: $json);
+                self::assign(
+                    json: $json,
+                    path: (string) $field,
+                    value: FlowValueTemplate::render(value: $value, json: $json)
+                );
             }
 
             // `compute` is the same idea as `set` for values that have to be
@@ -257,4 +261,56 @@ class SetFieldsNode implements IFlowNode
         return $out;
 
     }//end execute()
+
+    /**
+     * Write a value at a possibly-dotted path, creating the containers it needs.
+     *
+     * `{{dotted.path}}` has always READ through nested structures; writing one
+     * did not, so `"entry.owner"` created a top-level key literally CALLED
+     * `entry.owner` beside any real `entry`. Nothing failed — the flow ran, the
+     * item came out, and the object the author meant to build was simply never
+     * there. That is indistinguishable from success until something downstream
+     * reads the shape and finds it empty.
+     *
+     * It matters because composing a NESTED record is the reason a flow sets
+     * fields at all: hydra's run record is `cycles[].stages[]`, and without this
+     * a flow can only ever produce a flat bag. `compute` is no help — JsonLogic
+     * evaluates expressions and cannot construct an object.
+     *
+     * A segment whose current value is not an array is REPLACED by a container.
+     * The alternative — merging into a scalar — has no meaning, and silently
+     * skipping would reintroduce the same invisible no-op this fixes.
+     *
+     * @param array  $json  The item's record, modified in place.
+     * @param string $path  The field name, optionally dotted.
+     * @param mixed  $value The value to write.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+     */
+    private static function assign(array &$json, string $path, mixed $value): void
+    {
+        if (str_contains($path, '.') === false) {
+            $json[$path] = $value;
+
+            return;
+        }
+
+        $segments = explode('.', $path);
+        $last     = array_pop($segments);
+        $cursor   = &$json;
+
+        foreach ($segments as $segment) {
+            if (isset($cursor[$segment]) === false || is_array($cursor[$segment]) === false) {
+                $cursor[$segment] = [];
+            }
+
+            $cursor = &$cursor[$segment];
+        }
+
+        $cursor[$last] = $value;
+        unset($cursor);
+
+    }//end assign()
 }//end class
