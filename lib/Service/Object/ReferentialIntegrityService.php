@@ -92,6 +92,19 @@ class ReferentialIntegrityService
     private const CACHE_TTL = 3600;
 
     /**
+     * How long a schema edit must have aged before the version token is trusted.
+     *
+     * `openregister_schemas.updated` is `timestamp(0)`, so two edits within the
+     * same clock second collapse onto one value and a token computed between
+     * them would wrongly compare equal. Two seconds clears the truncation
+     * boundary with a full second of slack for jitter between the PHP clock
+     * that writes the stamp and the one that reads it back.
+     *
+     * @var int
+     */
+    private const VERSION_SETTLE_SECONDS = 2;
+
+    /**
      * Valid onDelete action values.
      *
      * @var string[]
@@ -357,7 +370,15 @@ class ReferentialIntegrityService
         // rebuild hydrates EVERY schema on the instance purely to discover
         // which ones declare an onDelete relation — measured at ~270 ms of an
         // ~800 ms delete against 1,935 schemas, of which only 121 can
-        // contribute. The version token below makes a stale index impossible.
+        // contribute.
+        //
+        // Correctness rests entirely on the version token, and the token is
+        // trusted only when it can be shown to have settled — see
+        // {@see schemaCatalogueVersion()}, which returns null whenever that
+        // cannot be established. A null token bypasses the cache in BOTH
+        // directions: nothing is read, and nothing is written back. This gate
+        // is deliberately asymmetric. A missed cache hit costs milliseconds; a
+        // missed RESTRICT destroys data the user asked the system to protect.
         $version = $this->schemaCatalogueVersion();
         $cache   = $this->cacheFactory->createDistributed(self::CACHE_PREFIX);
         if ($version !== null) {
@@ -406,14 +427,37 @@ class ReferentialIntegrityService
     /**
      * Compute a token that changes whenever any schema definition changes.
      *
-     * One cheap aggregate against the schema table stands in for hydrating the
-     * whole catalogue. Any insert or delete moves the count; any update moves
-     * `MAX(updated)`. Returning null on failure disables caching for this call
-     * rather than risking a stale referential-integrity index — a missed
-     * RESTRICT would delete data that should have been protected, so this fails
-     * towards the slow-but-correct path.
+     * A narrow projection — `id`, `version`, `updated` — over the schema table
+     * stands in for hydrating the whole catalogue. It reads three small columns
+     * instead of decoding 1,935 JSON property blobs, and it is folded into one
+     * digest in PHP rather than in SQL so no database-specific aggregate
+     * (`string_agg` / `group_concat`) is required.
      *
-     * @return string|null The version token, or null when it cannot be computed.
+     * Three independent signals make it move:
+     *
+     *  1. The row set itself — an inserted or deleted schema changes the digest
+     *     regardless of any timestamp.
+     *  2. `version`, which {@see \OCA\OpenRegister\Db\SchemaMapper::updateFromArray()}
+     *     bumps on every edit that does not name a version explicitly.
+     *  3. `updated`, which SchemaMapper::update() now stamps on every edit. It
+     *     previously never moved at all, which is precisely how an edit that
+     *     added an incoming RESTRICT relation could leave this index stale and
+     *     let a protected parent be deleted.
+     *
+     * **The whole-second window.** `updated` is `timestamp(0)`, so two edits in
+     * the same clock second are indistinguishable, and an index built between
+     * them would carry a token that still matches. Signal 2 usually covers
+     * this, but a caller that supplies its own `version` defeats it, so the
+     * window is closed structurally instead: a token whose newest `updated` has
+     * not yet aged past the truncation boundary is refused outright. For the
+     * couple of seconds after any schema edit, deletes take the slow path and
+     * are correct by construction; after that the token is provably settled.
+     *
+     * Returning null on any failure — unreadable table, unparseable timestamp,
+     * a stamp in the future — disables caching for this call rather than
+     * risking a stale referential-integrity index.
+     *
+     * @return string|null The version token, or null when it cannot be trusted.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -421,17 +465,46 @@ class ReferentialIntegrityService
     {
         try {
             $qb = $this->db->getQueryBuilder();
-            $qb->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
-                ->selectAlias($qb->createFunction('MAX(updated)'), 'mx')
+            $qb->select('id', 'version', 'updated')
                 ->from('openregister_schemas');
             $result = $qb->executeQuery();
-            $row    = $result->fetch();
+            $rows   = $result->fetchAll();
             $result->closeCursor();
-            if (is_array($row) === false) {
+
+            $parts  = [];
+            $newest = null;
+            foreach ($rows as $row) {
+                $stamp   = (string) ($row['updated'] ?? '');
+                $parts[] = ((string) ($row['id'] ?? '')).':'
+                    .((string) ($row['version'] ?? '')).':'.$stamp;
+
+                if ($stamp === '') {
+                    continue;
+                }
+
+                $epoch = strtotime($stamp);
+                if ($epoch === false) {
+                    // An unparseable stamp means the freshness of this row
+                    // cannot be established, so the token cannot be trusted.
+                    return null;
+                }
+
+                if ($newest === null || $epoch > $newest) {
+                    $newest = $epoch;
+                }
+            }
+
+            // Refuse a token that has not settled past the timestamp(0)
+            // truncation boundary. A stamp in the future (clock skew, or a
+            // caller-supplied value) yields a negative age and is refused by
+            // the same comparison.
+            if ($newest !== null && (time() - $newest) < self::VERSION_SETTLE_SECONDS) {
                 return null;
             }
 
-            return ((string) ($row['cnt'] ?? '')).'|'.((string) ($row['mx'] ?? ''));
+            sort($parts);
+
+            return count($parts).'|'.md5(implode("\n", $parts));
         } catch (\Throwable $e) {
             $this->logger->debug(
                 message: '[ReferentialIntegrity] Could not compute schema catalogue version',

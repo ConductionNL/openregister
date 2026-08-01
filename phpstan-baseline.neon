@@ -5479,7 +5479,7 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
+			count: 2
 			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-
@@ -5489,7 +5489,7 @@ parameters:
 
 		-
 			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
+			count: 2
 			path: lib/Service/Object/ReferentialIntegrityService.php
 
 		-

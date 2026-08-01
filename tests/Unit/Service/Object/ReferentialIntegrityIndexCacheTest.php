@@ -161,30 +161,52 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
 
 
     /**
-     * Build a DB connection whose catalogue-version query yields the given row.
+     * A settled catalogue row: an id/version pair stamped safely in the past.
      *
-     * Passing null for $row makes the query throw, standing in for a version
-     * token that cannot be computed.
+     * Every row the token reads must have aged past the timestamp(0) settle
+     * window, otherwise the service refuses the token by design.
      *
-     * @param array|null $row The row returned by the aggregate query.
+     * @param int    $id      Schema ID.
+     * @param string $version Schema version string.
+     * @param string $updated Modification stamp.
+     *
+     * @return array<string, string>
+     */
+    private function row(int $id, string $version='0.0.1', string $updated='2026-01-01 00:00:00'): array
+    {
+        return [
+            'id'      => (string) $id,
+            'version' => $version,
+            'updated' => $updated,
+        ];
+
+    }//end row()
+
+
+    /**
+     * Build a DB connection whose catalogue-version query yields the given rows.
+     *
+     * Passing null makes the query throw, standing in for a version token that
+     * cannot be computed at all.
+     *
+     * @param array|null $rows Rows returned by the catalogue-version query.
      *
      * @return IDBConnection&MockObject
      */
-    private function dbReturning(?array $row): IDBConnection&MockObject
+    private function dbReturning(?array $rows): IDBConnection&MockObject
     {
         $db = $this->createMock(IDBConnection::class);
 
-        if ($row === null) {
+        if ($rows === null) {
             $db->method('getQueryBuilder')->willThrowException(new \RuntimeException('no db'));
             return $db;
         }
 
         $result = $this->createMock(IResult::class);
-        $result->method('fetch')->willReturn($row);
+        $result->method('fetchAll')->willReturn($rows);
 
         $qb = $this->createMock(IQueryBuilder::class);
-        $qb->method('selectAlias')->willReturnSelf();
-        $qb->method('createFunction')->willReturnArgument(0);
+        $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
         $qb->method('executeQuery')->willReturn($result);
 
@@ -196,15 +218,15 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
 
 
     /**
-     * Construct a service over a given schema catalogue and version row.
+     * Construct a service over a given schema catalogue and version rows.
      *
      * @param array      $schemas     Schemas returned by SchemaMapper::findAll.
-     * @param array|null $versionRow  Row for the catalogue-version query.
+     * @param array|null $versionRows Rows for the catalogue-version query.
      * @param int|null   $expectFinds Expected number of findAll calls, or null to not assert.
      *
      * @return ReferentialIntegrityService
      */
-    private function service(array $schemas, ?array $versionRow, ?int $expectFinds=null): ReferentialIntegrityService
+    private function service(array $schemas, ?array $versionRows, ?int $expectFinds=null): ReferentialIntegrityService
     {
         $schemaMapper = $this->createMock(SchemaMapper::class);
 
@@ -222,7 +244,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
             $this->createMock(MagicMapper::class),
             $this->createMock(AuditTrailMapper::class),
             $this->createMock(LoggerInterface::class),
-            $this->dbReturning($versionRow),
+            $this->dbReturning($versionRows),
             $this->cacheFactory
         );
 
@@ -243,17 +265,14 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
             $this->schema(1, 'parent'),
             $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
         ];
-        $row       = [
-            'cnt' => '2',
-            'mx'  => '2026-01-01 00:00:00',
-        ];
+        $rows      = [$this->row(1), $this->row(2)];
 
         // First instance populates the cache (one findAll).
-        $first = $this->service($catalogue, $row, 1);
+        $first = $this->service($catalogue, $rows, 1);
         $this->assertTrue($first->hasIncomingOnDeleteReferences('1'));
 
         // Second instance, same version token: must NOT touch the schema mapper.
-        $second = $this->service($catalogue, $row, 0);
+        $second = $this->service($catalogue, $rows, 0);
         $this->assertTrue(
             $second->hasIncomingOnDeleteReferences('1'),
             'Cached index must still report the incoming RESTRICT reference'
@@ -280,10 +299,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
 
         $first = $this->service(
             $withRelation,
-            [
-                'cnt' => '2',
-                'mx'  => '2026-01-01 00:00:00',
-            ],
+            [$this->row(1), $this->row(2)],
             1
         );
         $this->assertTrue($first->hasIncomingOnDeleteReferences('1'));
@@ -291,10 +307,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
         // Catalogue changed: relation removed AND the version token moved.
         $second = $this->service(
             [$this->schema(1, 'parent')],
-            [
-                'cnt' => '1',
-                'mx'  => '2026-01-02 00:00:00',
-            ],
+            [$this->row(1)],
             1
         );
         $this->assertFalse(
@@ -319,24 +332,18 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
         // Cache is primed while nothing references schema 1.
         $before = $this->service(
             [$this->schema(1, 'parent')],
-            [
-                'cnt' => '1',
-                'mx'  => '2026-01-01 00:00:00',
-            ],
+            [$this->row(1)],
             1
         );
         $this->assertFalse($before->hasIncomingOnDeleteReferences('1'));
 
-        // A referencing schema is added; the token moves because COUNT(*) moved.
+        // A referencing schema is added; the token moves because the row set did.
         $after = $this->service(
             [
                 $this->schema(1, 'parent'),
                 $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
             ],
-            [
-                'cnt' => '2',
-                'mx'  => '2026-01-02 00:00:00',
-            ],
+            [$this->row(1), $this->row(2)],
             1
         );
         $this->assertTrue(
@@ -365,10 +372,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
         // Prime the cache with a healthy token.
         $primed = $this->service(
             $catalogue,
-            [
-                'cnt' => '2',
-                'mx'  => '2026-01-01 00:00:00',
-            ],
+            [$this->row(1), $this->row(2)],
             1
         );
         $this->assertTrue($primed->hasIncomingOnDeleteReferences('1'));
@@ -414,10 +418,7 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
                 $this->schema(1, 'parent'),
                 $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
             ],
-            [
-                'cnt' => '2',
-                'mx'  => '2026-01-01 00:00:00',
-            ],
+            [$this->row(1), $this->row(2)],
             1
         );
 
@@ -436,28 +437,22 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
      */
     public function testMalformedCachePayloadIsIgnored(): void
     {
-        $row = [
-            'cnt' => '2',
-            'mx'  => '2026-01-01 00:00:00',
+        $catalogue = [
+            $this->schema(1, 'parent'),
+            $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
         ];
+        $rows      = [$this->row(1), $this->row(2)];
 
-        // Correct version token, but the index is not an array.
-        $this->cache->set(
-            'relation_index',
-            [
-                'version' => '2|2026-01-01 00:00:00',
-                'index'   => 'not-an-array',
-            ]
-        );
+        // Prime through the service so the stored token is genuinely current,
+        // rather than hard-coding a digest the implementation is free to change.
+        $this->assertTrue($this->service($catalogue, $rows, 1)->hasIncomingOnDeleteReferences('1'));
 
-        $service = $this->service(
-            [
-                $this->schema(1, 'parent'),
-                $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
-            ],
-            $row,
-            1
-        );
+        // Corrupt only the payload, leaving the (correct) version in place.
+        $entry          = $this->cache->get('relation_index');
+        $entry['index'] = 'not-an-array';
+        $this->cache->set('relation_index', $entry);
+
+        $service = $this->service($catalogue, $rows, 1);
 
         $this->assertTrue(
             $service->hasIncomingOnDeleteReferences('1'),
@@ -465,6 +460,124 @@ class ReferentialIntegrityIndexCacheTest extends TestCase
         );
 
     }//end testMalformedCachePayloadIsIgnored()
+
+
+    /**
+     * Editing an EXISTING schema must invalidate the index.
+     *
+     * This is the regression test for the data-loss bug. The row count does not
+     * move on an edit, and `updated` is whole-second, so a token built from
+     * those two alone can compare equal across an edit that adds an incoming
+     * RESTRICT — the cache then answers "no incoming references", the RESTRICT
+     * is skipped, and a protected parent is deleted with no error.
+     *
+     * Here the schema is edited in place: same id, same row count, same
+     * `updated` stamp. Only `version` moves, exactly as
+     * SchemaMapper::updateFromArray() bumps it. The new RESTRICT must be seen.
+     *
+     * @return void
+     */
+    public function testEditedSchemaVersionInvalidatesIndex(): void
+    {
+        // Cache is primed while schema 2 does not reference schema 1.
+        $before = $this->service(
+            [$this->schema(1, 'parent'), $this->schema(2, 'child')],
+            [$this->row(1), $this->row(2, '0.0.1')],
+            1
+        );
+        $this->assertFalse($before->hasIncomingOnDeleteReferences('1'));
+
+        // Schema 2 is EDITED to add the relation. Count unchanged, `updated`
+        // unchanged (same clock second); only the version bumped.
+        $after = $this->service(
+            [
+                $this->schema(1, 'parent'),
+                $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
+            ],
+            [$this->row(1), $this->row(2, '0.0.2')],
+            1
+        );
+
+        $this->assertTrue(
+            $after->hasIncomingOnDeleteReferences('1'),
+            'A RESTRICT added by EDITING an existing schema must invalidate the cached index'
+        );
+
+    }//end testEditedSchemaVersionInvalidatesIndex()
+
+
+    /**
+     * A catalogue edited within the settle window is never cached.
+     *
+     * `updated` is timestamp(0), so while the newest stamp is still inside the
+     * current clock second a second edit can land on the same value and be
+     * invisible. The token must be refused outright for that window: the index
+     * is rebuilt from the catalogue and nothing is written back.
+     *
+     * @return void
+     */
+    public function testRecentlyEditedCatalogueBypassesCacheEntirely(): void
+    {
+        $catalogue = [
+            $this->schema(1, 'parent'),
+            $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
+        ];
+
+        // A schema was just edited: its stamp is this very second.
+        $rows = [
+            $this->row(1),
+            $this->row(2, '0.0.2', date('Y-m-d H:i:s')),
+        ];
+
+        $setCallsBefore = $this->cache->setCalls;
+
+        $service = $this->service($catalogue, $rows, 1);
+        $this->assertTrue($service->hasIncomingOnDeleteReferences('1'));
+
+        $this->assertSame(
+            $setCallsBefore,
+            $this->cache->setCalls,
+            'An index built over an unsettled catalogue must not be cached'
+        );
+        $this->assertSame(
+            [],
+            $this->cache->store,
+            'Nothing may be written while the newest schema edit is still inside the timestamp(0) window'
+        );
+
+    }//end testRecentlyEditedCatalogueBypassesCacheEntirely()
+
+
+    /**
+     * A stamp in the future is treated as unsettled, not as safely old.
+     *
+     * Clock skew, or a caller that supplied its own `updated`, must not be able
+     * to hand the cache a token it cannot vouch for.
+     *
+     * @return void
+     */
+    public function testFutureStampBypassesCache(): void
+    {
+        $catalogue = [
+            $this->schema(1, 'parent'),
+            $this->schema(2, 'child', ['parent' => $this->relation('parent')]),
+        ];
+
+        $rows = [
+            $this->row(1),
+            $this->row(2, '0.0.1', date('Y-m-d H:i:s', (time() + 3600))),
+        ];
+
+        $service = $this->service($catalogue, $rows, 1);
+        $this->assertTrue($service->hasIncomingOnDeleteReferences('1'));
+
+        $this->assertSame(
+            [],
+            $this->cache->store,
+            'A future modification stamp must disable the cache, not be read as settled'
+        );
+
+    }//end testFutureStampBypassesCache()
 
 
 }//end class
