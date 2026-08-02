@@ -95,19 +95,39 @@ webpackConfig.stats = {
 	modules: false,
 }
 
-// Add TypeScript handling to module rules
-// Use ts-loader for TypeScript files (already in dependencies)
-webpackConfig.module.rules.push({
-	test: /\.(ts|tsx)$/,
-	exclude: /node_modules/,
-	use: {
-		loader: 'ts-loader',
-		options: {
-			transpileOnly: true,
-			appendTsSuffixTo: [/\.vue$/],
+// TypeScript handling.
+//
+// ⚠️ REPLACE the base config's TypeScript rule — do not push a second one.
+// `@nextcloud/webpack-vue-config@5` shipped NO `.ts` rule, which is why this
+// app added its own with `transpileOnly: true`. Version 7 introduced one
+// (`rules.js`, `test: /\.tsx?$/` using a bare `'ts-loader'` with no options),
+// so pushing left TWO rules matching every `.ts` file — and the base one type
+// checks.
+//
+// The effect was 218 `[tsl] ERROR` type errors out of `src/store/modules/search.ts`
+// (TS2345/TS2683/TS7006, all pre-existing under `strict: true`), failing the
+// build. Those are real type debt, but they are NOT Vue 3 work, and a
+// framework migration is the wrong change to smuggle a new 218-error type gate
+// into. Replacing keeps exactly the previous behaviour: one transpile-only rule.
+//
+// Turning the type check on deliberately is worth doing — separately.
+const nonTsRules = webpackConfig.module.rules.filter(
+	(rule) => String(rule.test) !== String(/\.tsx?$/),
+)
+webpackConfig.module.rules = [
+	...nonTsRules,
+	{
+		test: /\.(ts|tsx)$/,
+		exclude: /node_modules/,
+		use: {
+			loader: 'ts-loader',
+			options: {
+				transpileOnly: true,
+				appendTsSuffixTo: [/\.vue$/],
+			},
 		},
 	},
-})
+]
 
 // Add .ts and .tsx to resolve extensions and '@' alias
 webpackConfig.resolve = webpackConfig.resolve || {}
