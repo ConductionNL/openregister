@@ -47,7 +47,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							</div>
 
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="!canProceedToProperties"
 								@click="confirmRegisterSchemaSelection">
 								<template #icon>
@@ -62,8 +62,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<!-- Display Object -->
 				<div v-else>
 					<div class="tabContainer">
-						<BTabs v-model="activeTab" content-class="mt-3" justified>
-							<BTab :title="t('openregister', 'Properties')" active>
+						<AppTabs v-model="activeTab" content-class="mt-3" justified>
+							<AppTab :title="t('openregister', 'Properties')" active>
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -91,23 +91,23 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<td class="tableColumnConstrained prop-cell">
 													<div class="prop-cell-content">
 														<AlertCircle v-if="getPropertyValidationClass(key, value) === 'property-invalid'"
-															v-tooltip="getPropertyErrorMessage(key, value)"
+															:title="getPropertyErrorMessage(key, value)"
 															class="validation-icon error-icon"
 															:size="16" />
 														<Alert v-else-if="getPropertyValidationClass(key, value) === 'property-warning'"
-															v-tooltip="getPropertyWarningMessage(key, value)"
+															:title="getPropertyWarningMessage(key, value)"
 															class="validation-icon warning-icon"
 															:size="16" />
 														<Plus v-else-if="getPropertyValidationClass(key, value) === 'property-new'"
-															v-tooltip="getPropertyNewMessage(key)"
+															:title="getPropertyNewMessage(key)"
 															class="validation-icon new-icon"
 															:size="16" />
 														<LockOutline v-else-if="!isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)"
-															v-tooltip="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
+															:title="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
 															class="validation-icon lock-icon"
 															:size="16" />
 														<span
-															v-tooltip="getPropertyTooltip(key)">
+															:title="getPropertyTooltip(key)">
 															{{ getPropertyDisplayName(key) }}
 														</span>
 													</div>
@@ -117,58 +117,58 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<!-- Boolean properties -->
 														<NcCheckboxRadioSwitch
 															v-if="getPropertyInputComponent(key) === 'NcCheckboxRadioSwitch'"
-															:checked="formData[key] !== undefined ? formData[key] : value"
+															:model-value="formData[key] !== undefined ? formData[key] : value"
 															type="switch"
-															@update:checked="updatePropertyValue(key, $event)">
+															@update:modelValue="updatePropertyValue(key, $event)">
 															{{ getPropertyDisplayName(key) }}
 														</NcCheckboxRadioSwitch>
 
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
+															:model-value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
 															:type="getPropertyInputType(key)"
 															:label="getPropertyDisplayName(key)"
-															@input="updatePropertyValue(key, $event)" />
+															@update:modelValue="updatePropertyValue(key, $event)" />
 
 														<!-- Text/Number properties -->
 														<NcTextField
 															v-else
 															ref="propertyValueInput"
-															:value="String(formData[key] !== undefined ? formData[key] : value || '')"
+															:model-value="String(formData[key] !== undefined ? formData[key] : value || '')"
 															:type="getPropertyInputType(key)"
 															:placeholder="getPropertyDisplayName(key)"
 															:min="getPropertyMinimum(key)"
 															:max="getPropertyMaximum(key)"
 															:step="getPropertyStep(key)"
-															@update:value="updatePropertyValue(key, $event)" />
+															@update:modelValue="updatePropertyValue(key, $event)" />
 													</div>
 													<div v-else>
 														<template v-if="formData[key] !== undefined">
 															<!-- Show edited value -->
 															<pre
 																v-if="typeof formData[key] === 'object' && formData[key] !== null"
-																v-tooltip="'JSON object (edited)'"
+																title="JSON object (edited)"
 																class="json-value">{{ formatValue(formData[key]) }}</pre>
 															<span
 																v-else-if="isValidDate(formData[key])"
-																v-tooltip="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
+																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
 															<span
 																v-else
-																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
+																:title="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
 														</template>
 														<template v-else>
 															<!-- Show original value -->
 															<pre
 																v-if="typeof value === 'object' && value !== null"
-																v-tooltip="'JSON object'"
+																title="JSON object"
 																class="json-value">{{ formatValue(value) }}</pre>
 															<span
 																v-else-if="isValidDate(value)"
-																v-tooltip="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
+																:title="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
 															<span
 																v-else
-																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
+																:title="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
 														</template>
 													</div>
 												</td>
@@ -176,8 +176,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -221,8 +221,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-							</BTab>
-							<BTab :title="t('openregister', 'Data')">
+							</AppTab>
+							<AppTab :title="t('openregister', 'Data')">
 								<NcNoteCard v-if="success" type="success" class="note-card">
 									<p>{{ t('openregister', 'Object successfully modified') }}</p>
 								</NcNoteCard>
@@ -240,7 +240,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											style="height: 400px" />
 										<NcButton
 											class="format-json-button"
-											type="secondary"
+											variant="secondary"
 											size="small"
 											@click="formatJSON">
 											Format JSON
@@ -250,8 +250,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										Invalid JSON format
 									</span>
 								</div>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -286,8 +286,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No uses found for this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
 								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -322,8 +322,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No objects are using this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
 								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -358,17 +358,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Files')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Files')">
 								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
 												<th class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:checked="allFilesSelected"
+														:model-value="allFilesSelected"
 														:indeterminate="someFilesSelected"
-														@update:checked="toggleSelectAllFiles" />
+														@update:modelValue="toggleSelectAllFiles" />
 												</th>
 												<th class="tableColumnExpanded">
 													Name
@@ -415,13 +415,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												}">
 												<td class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:checked="selectedAttachments.includes(attachment.id)"
-														@update:checked="(checked) => toggleFileSelection(attachment.id, checked)" />
+														:model-value="selectedAttachments.includes(attachment.id)"
+														@update:modelValue="(checked) => toggleFileSelection(attachment.id, checked)" />
 												</td>
 												<td class="tableColumnExpanded table-row-title">
 													<!-- Show warning icon if file is not shared -->
 													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
-														v-tooltip="'Not shared'"
+														title="Not shared"
 														class="warningIcon"
 														:size="20" />
 													<!-- Show published icon if file is shared -->
@@ -449,7 +449,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															:disabled="labelsLoading"
 															:input-label="t('openregister', 'Labels')" />
 														<div class="fileLabelsEditActions">
-															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
+															<NcButton :disabled="labelsLoading" variant="primary" @click="saveFileLabels(attachment)">
 																<template #icon>
 																	<NcLoadingIcon v-if="labelsLoading" :size="20" />
 																	<Check v-else :size="20" />
@@ -510,38 +510,38 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:min-items-to-show="5"
 									@page-changed="onFilesPageChanged"
 									@page-size-changed="onFilesPageSizeChanged" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Emails">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Emails">
 								<EmailsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Events">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Events">
 								<EventsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Contacts">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Contacts">
 								<ContactsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Deck">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Deck">
 								<DeckTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Relations">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Relations">
 								<RelationsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-						</BTabs>
+							</AppTab>
+						</AppTabs>
 					</div>
 				</div>
 			</div>
@@ -565,7 +565,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Audit Trails
 				</NcButton>
-				<NcButton type="primary" :disabled="isSaving" @click="saveObject">
+				<NcButton variant="primary" :disabled="isSaving" @click="saveObject">
 					<template #icon>
 						<NcLoadingIcon v-if="isSaving" :size="20" />
 						<ContentSave v-else :size="20" />
@@ -594,7 +594,8 @@ import {
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 import { getTheme } from '../../services/getTheme.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -639,8 +640,8 @@ export default {
 		NcEmptyContent,
 		NcSelect,
 		CodeMirror,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		Cancel,
 		FileOutline,
 		OpenInNew,

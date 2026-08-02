@@ -173,14 +173,14 @@
 					<h4>Execution Mode</h4>
 					<div class="radio-group">
 						<NcCheckboxRadioSwitch
-							:checked.sync="localConfig.mode"
+							v-model="localConfig.mode"
 							name="validate_mode"
 							value="serial"
 							type="radio">
 							Serial Mode (Safer, slower)
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="localConfig.mode"
+							v-model="localConfig.mode"
 							name="validate_mode"
 							value="parallel"
 							type="radio">
@@ -311,7 +311,7 @@
 
 				<NcButton
 					v-if="!massValidating && !completed"
-					type="primary"
+					variant="primary"
 					@click="startMassValidate">
 					<template #icon>
 						<CheckCircle :size="20" />
@@ -321,7 +321,7 @@
 
 				<NcButton
 					v-if="completed"
-					type="secondary"
+					variant="secondary"
 					@click="resetModal">
 					<template #icon>
 						<Refresh :size="20" />

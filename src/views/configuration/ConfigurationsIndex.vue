@@ -28,7 +28,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as cards'"
+							title="See configurations as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -38,7 +38,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as a table'"
+							title="See configurations as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -114,9 +114,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
 									<th>{{ t('openregister', 'Source') }}</th>
@@ -136,8 +136,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									:class="{ viewTableRowSelected: selectedConfigurations.includes(configuration.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedConfigurations.includes(configuration.id)"
-											@update:checked="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
+											:model-value="selectedConfigurations.includes(configuration.id)"
+											@update:modelValue="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">

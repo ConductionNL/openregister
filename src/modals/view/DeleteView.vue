@@ -34,7 +34,7 @@
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteView()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

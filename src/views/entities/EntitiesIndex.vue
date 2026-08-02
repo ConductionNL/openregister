@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Entities') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
@@ -39,7 +39,7 @@
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See entities as cards'"
+							title="See entities as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -49,7 +49,7 @@
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See entities as a table'"
+							title="See entities as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -147,10 +147,10 @@
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
 											:aria-label="t('openregister', 'Select all entities')"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Value') }}</th>
 									<th>{{ t('openregister', 'Type') }}</th>
@@ -169,9 +169,9 @@
 									:class="{ viewTableRowSelected: selectedEntities.includes(entity.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedEntities.includes(entity.id)"
+											:model-value="selectedEntities.includes(entity.id)"
 											:aria-label="t('openregister', 'Select entity {value}', { value: entity.value })"
-											@update:checked="(checked) => toggleEntitySelection(entity.id, checked)" />
+											@update:modelValue="(checked) => toggleEntitySelection(entity.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="entity-value-cell">
@@ -246,6 +246,7 @@ import EyeOutline from 'vue-material-design-icons/EyeOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
 import { navigationStore } from '../../store/store.js'
 
 /**
@@ -348,17 +349,17 @@ export default {
 	mounted() {
 		this.loadEntities()
 		// Listen for filter changes emitted by EntitiesSideBar via the root event bus.
-		this.$root.$on('entities-search-changed', this.handleSearchUpdate)
-		this.$root.$on('entities-type-changed', this.handleTypeUpdate)
-		this.$root.$on('entities-category-changed', this.handleCategoryUpdate)
+		eventBus.on('entities-search-changed', this.handleSearchUpdate)
+		eventBus.on('entities-type-changed', this.handleTypeUpdate)
+		eventBus.on('entities-category-changed', this.handleCategoryUpdate)
 	},
 	/**
 	 * @spec exclude Lifecycle teardown; removes root event bus listeners to prevent memory leaks.
 	 */
-	beforeDestroy() {
-		this.$root.$off('entities-search-changed', this.handleSearchUpdate)
-		this.$root.$off('entities-type-changed', this.handleTypeUpdate)
-		this.$root.$off('entities-category-changed', this.handleCategoryUpdate)
+	beforeUnmount() {
+		eventBus.off('entities-search-changed', this.handleSearchUpdate)
+		eventBus.off('entities-type-changed', this.handleTypeUpdate)
+		eventBus.off('entities-category-changed', this.handleCategoryUpdate)
 	},
 	methods: {
 		t,

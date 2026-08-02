@@ -6,20 +6,20 @@
 			<div class="section__field">
 				<label for="deactivation-reason">{{ t('openregister', 'Reason (optional)') }}</label>
 				<NcTextField id="deactivation-reason"
-					:value="reason"
+					:model-value="reason"
 					:label="t('openregister', 'Reason')"
-					@input="$emit('update:reason', $event.target.value)" />
+					@update:modelValue="$emit('update:reason', $event)" />
 			</div>
 			<div class="section__field">
 				<label for="confirm-username">
 					{{ t('openregister', 'Type your username to confirm') }}: <strong>{{ username }}</strong>
 				</label>
 				<NcTextField id="confirm-username"
-					:value="confirmUsername"
+					:model-value="confirmUsername"
 					:label="t('openregister', 'Username')"
-					@input="$emit('update:confirmUsername', $event.target.value)" />
+					@update:modelValue="$emit('update:confirmUsername', $event)" />
 			</div>
-			<NcButton type="error"
+			<NcButton variant="error"
 				:disabled="confirmUsername !== username"
 				@click="$emit('confirm')">
 				{{ t('openregister', 'Confirm deactivation') }}
@@ -30,9 +30,7 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton, NcModal, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'ConfirmDeactivationModal',

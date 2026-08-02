@@ -7,9 +7,9 @@
 		<!-- Search Field -->
 		<div class="search-section">
 			<NcTextField
-				:value.sync="localSearch"
+				v-model="localSearch"
 				:placeholder="t('openregister', 'Search by name or URL')"
-				@input="handleSearchInput">
+				@update:modelValue="handleSearchInput">
 				<Magnify :size="20" />
 			</NcTextField>
 		</div>
@@ -19,24 +19,24 @@
 			<h4>{{ t('openregister', 'Status') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === null"
+					:model-value="selectedEnabled === null"
 					type="radio"
 					value="all"
-					@update:checked="updateEnabled(null)">
+					@update:modelValue="updateEnabled(null)">
 					{{ t('openregister', 'All Webhooks') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === true"
+					:model-value="selectedEnabled === true"
 					type="radio"
 					value="enabled"
-					@update:checked="updateEnabled(true)">
+					@update:modelValue="updateEnabled(true)">
 					{{ t('openregister', 'Enabled') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === false"
+					:model-value="selectedEnabled === false"
 					type="radio"
 					value="disabled"
-					@update:checked="updateEnabled(false)">
+					@update:modelValue="updateEnabled(false)">
 					{{ t('openregister', 'Disabled') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -45,7 +45,7 @@
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				@click="clearFilters">
 				{{ t('openregister', 'Clear filters') }}
 			</NcButton>

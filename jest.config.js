@@ -1,6 +1,6 @@
 module.exports = {
 	transform: {
-		'^.+\\.vue$': '@vue/vue2-jest',
+		'^.+\\.vue$': '@vue/vue3-jest',
 		'^.+\\.[cm]?js$': 'babel-jest',
 		'^.+\\.ts$': 'ts-jest',
 		'.+\\.(css|styl|less|sass|scss|png|jpg|ttf|woff|woff2)$': 'jest-transform-stub',

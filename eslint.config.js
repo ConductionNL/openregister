@@ -1,3 +1,27 @@
+/**
+ * ESLint flat config for OpenRegister.
+ *
+ * Layered as:
+ *   1. `@nextcloud` (v8 base, via FlatCompat) — the fleet's baseline style rules.
+ *   2. `conductionVue3Fixes` from `@conduction/nextcloud-vue/eslint`, spread
+ *      LAST so it wins.
+ *   3. this app's own overrides (in layer 1's `rules` block).
+ *
+ * ⚠️ Layer 2 is load-bearing, not decoration. Without it not one
+ * `vue/no-deprecated-*` rule is active, and every surviving Vue-2 idiom
+ * (`beforeDestroy`, `.sync`, `$listeners`) lints clean while being silently
+ * ignored at runtime — openconnector finished its Vue 3 migration with four
+ * live `beforeDestroy` memory leaks exactly that way.
+ *
+ * ⚠️ `@nextcloud/eslint-config/vue3` is deliberately NOT extended directly: it
+ * sets `parserOptions.parser` to a bare string, which routes template
+ * expressions through `@typescript-eslint/parser`, drops `v-for` scope, and
+ * manufactures hundreds of bogus `vue/valid-v-for` errors.
+ *
+ * ⚠️ `conductionVue3Fixes` is an ARRAY of configs and must be SPREAD, not
+ * pushed as a single object. It registers no plugins, which is why it layers
+ * cleanly on top of the `@nextcloud` base.
+ */
 const {
 	defineConfig,
 } = require('@eslint/config-helpers')
@@ -7,6 +31,8 @@ const js = require('@eslint/js')
 const {
 	FlatCompat,
 } = require('@eslint/eslintrc')
+
+const { conductionVue3Fixes } = require('@conduction/nextcloud-vue/eslint')
 
 const compat = new FlatCompat({
 	baseDirectory: __dirname,
@@ -45,4 +71,7 @@ module.exports = defineConfig([{
 		'import/no-named-as-default': 'off', // disable named-as-default checking to avoid parser requirement
 		'import/no-named-as-default-member': 'off', // disable named-as-default-member checking to avoid parser requirement
 	},
-}])
+},
+// Spread LAST so the Vue 3 rules win over the Vue 2 base.
+...conductionVue3Fixes,
+])

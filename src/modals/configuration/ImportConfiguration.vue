@@ -19,9 +19,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" content-class="mt-3" justified>
 				<!-- Discover Tab -->
-				<BTab active>
+				<AppTab active>
 					<template #title>
 						<Magnify :size="16" />
 						<span>Discover</span>
@@ -46,7 +46,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<div class="searchContainer">
 							<NcTextField
-								:value.sync="searchQuery"
+								v-model="searchQuery"
 								:label="t('openregister', 'Search configurations')"
 								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
 								@keyup.enter="searchConfigurations">
@@ -111,10 +111,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							</template>
 						</NcEmptyContent>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- GitHub/GitLab Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Github :size="16" />
 						<span>GitHub / GitLab</span>
@@ -131,18 +131,18 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<NcTextField
 							v-if="repoSource === 'GitHub'"
-							:value.sync="repoOwner"
+							v-model="repoOwner"
 							label="Repository Owner"
 							placeholder="e.g., ConductionNL" />
 
 						<NcTextField
 							v-if="repoSource === 'GitLab'"
-							:value.sync="repoNamespace"
+							v-model="repoNamespace"
 							label="Namespace"
 							placeholder="e.g., conduction" />
 
 						<NcTextField
-							:value.sync="repoName"
+							v-model="repoName"
 							:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
 							placeholder="e.g., openregister" />
 
@@ -160,7 +160,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							v-model="selectedBranch"
 							:options="branches"
 							input-label="Branch"
-							@change="fetchConfigurationFiles" />
+							@update:modelValue="fetchConfigurationFiles" />
 
 						<div v-if="configFiles.length > 0" class="filesGrid">
 							<div
@@ -178,10 +178,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							</div>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- URL Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<LinkVariant :size="16" />
 						<span>Import from URL</span>
@@ -192,19 +192,19 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</p>
 
 						<NcTextField
-							:value.sync="importUrl"
+							v-model="importUrl"
 							label="Configuration URL"
 							placeholder="https://example.com/config.json"
-							@input="urlError = null" />
+							@update:modelValue="urlError = null" />
 
 						<NcNoteCard v-if="urlError" type="warning">
 							<p>{{ urlError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- File Upload Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<FileUpload :size="16" />
 						<span>Import from File</span>
@@ -254,23 +254,23 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<p>{{ fileError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
-			</BTabs>
+				</AppTab>
+			</AppTabs>
 		</div>
 
 		<!-- Synchronization Settings - Always Visible -->
 		<div v-if="!success" class="syncSettings">
 			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
 			<NcCheckboxRadioSwitch
-				:checked="syncEnabled"
+				:model-value="syncEnabled"
 				type="switch"
-				@update:checked="syncEnabled = $event">
+				@update:modelValue="syncEnabled = $event">
 				{{ t('openregister', 'Enable automatic synchronization') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField
 				v-if="syncEnabled"
-				:value.sync="syncInterval"
+				v-model="syncInterval"
 				type="number"
 				label="Sync Interval (hours)"
 				placeholder="24"
@@ -291,7 +291,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 			</NcButton>
 			<NcButton
 				:disabled="loading || !canImport"
-				type="primary"
+				variant="primary"
 				@click="performImport">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -315,7 +315,8 @@ import {
 	NcEmptyContent,
 } from '@nextcloud/vue'
 
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
@@ -341,8 +342,8 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		NcTextField,
 		NcSelect,
 		NcEmptyContent,

@@ -21,8 +21,8 @@ import axios from '@nextcloud/axios'
 			</p>
 
 			<NcCheckboxRadioSwitch
-				:checked="includeObjects"
-				@update:checked="includeObjects = $event">
+				:model-value="includeObjects"
+				@update:modelValue="includeObjects = $event">
 				Include related objects
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -36,7 +36,7 @@ import axios from '@nextcloud/axios'
 			</NcButton>
 			<NcButton
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

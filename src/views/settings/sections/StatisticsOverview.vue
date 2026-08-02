@@ -7,7 +7,7 @@
 			:loading-message="t('openregister', 'Loading statistics...')">
 			<template #actions>
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="loading || saving || rebasing || loadingStats"
 					@click="loadStats">
 					<template #icon>
@@ -161,7 +161,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalBlobObjects > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingBlobObjects"
 												@click="showClearBlobObjectsDialog">
@@ -206,7 +206,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalAuditTrails > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingAuditTrails"
 												@click="showClearAuditTrailsDialog">
@@ -229,7 +229,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalSearchTrails > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingSearchTrails"
 												@click="showClearSearchTrailsDialog">
@@ -324,7 +324,7 @@
 						</p>
 						<div class="rebase-actions">
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="loading || saving || rebasing"
 								@click="settingsStore.showRebaseDialog">
 								<template #icon>
@@ -347,7 +347,7 @@
 						</p>
 						<div class="mass-validate-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="loading || saving || rebasing || massValidating"
 								@click="openMassValidateModal">
 								<template #icon>

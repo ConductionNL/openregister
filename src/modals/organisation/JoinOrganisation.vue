@@ -97,7 +97,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton
 				v-if="!success"
-				type="primary"
+				variant="primary"
 				:disabled="!selectedOrganisation || joining"
 				@click="joinSelectedOrganisation">
 				<template #icon>

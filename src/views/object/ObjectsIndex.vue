@@ -17,7 +17,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					<DatabaseOutline />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="addObject">
+					<NcButton variant="primary" @click="addObject">
 						Add Object
 					</NcButton>
 				</template>
