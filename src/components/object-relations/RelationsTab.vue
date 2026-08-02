@@ -8,9 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 		<div v-if="!loading && relations.length > 0" class="relations-tab__filters">
 			<NcCheckboxRadioSwitch v-for="type in availableTypes"
 				:key="type"
-				:checked="selectedTypes.includes(type)"
+				:model-value="selectedTypes.includes(type)"
 				type="button"
-				@update:checked="toggleType(type)">
+				@update:modelValue="toggleType(type)">
 				{{ typeLabels[type] || type }}
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -72,9 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import { NcEmptyContent, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'

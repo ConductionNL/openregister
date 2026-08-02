@@ -25,7 +25,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<NcCheckboxRadioSwitch :disabled="loading"
 					:label="t('openregister', 'Auto share')"
 					type="switch"
-					:checked.sync="share">
+					v-model="share">
 					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -68,7 +68,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeTitle">
 							<NcButton
 								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
+								variant="primary"
 								@click="openFileUpload()">
 								<template #icon>
 									<Plus :size="20" />
@@ -91,7 +91,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<NcNoteCard type="warning">
 							<p class="folderLink">
 								{{ t('openregister', 'To add files larger than or equal to 512MB, go to the') }}
-								<NcButton type="secondary"
+								<NcButton variant="secondary"
 									class="folderLinkButton"
 									:aria-label="t('openregister', 'Open folder')"
 									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
@@ -135,7 +135,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeTitle">
 							<NcButton
 								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
+								variant="primary"
 								@click="openFileUpload()">
 								<template #icon>
 									<Plus :size="20" />
@@ -208,10 +208,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										v-tooltip="t('openregister', 'Edit labels')"
+										:title="t('openregister', 'Edit labels')"
 										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
 										:aria-label="t('openregister', 'Edit tags for {name}', { name: file.name })"
-										type="secondary"
+										variant="secondary"
 										class="editTagsButton"
 										@click="editingTags = file.name, editedTags = file.tags">
 										<template #icon>
@@ -220,8 +220,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										v-tooltip="t('openregister', 'Save labels')"
-										type="primary"
+										:title="t('openregister', 'Save labels')"
+										variant="primary"
 										:aria-label="t('openregister', 'Save tags for {name}', { name: file.name })"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
@@ -232,8 +232,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 									<!-- File Actions -->
 									<NcButton v-if="file.status === 'failed'"
-										v-tooltip="t('openregister', 'Retry upload')"
-										type="primary"
+										:title="t('openregister', 'Retry upload')"
+										variant="primary"
 										@click="addAttachments(file)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -241,8 +241,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										v-tooltip="t('openregister', 'Remove from list')"
-										type="primary"
+										:title="t('openregister', 'Remove from list')"
+										variant="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
 											<Minus :size="20" />

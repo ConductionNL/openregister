@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowStateHandle;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -61,7 +62,7 @@ use OCP\WorkflowEngine\IManager;
  *
  * @link https://OpenRegister.app
  */
-class FlowStateNode implements IFlowNode
+class FlowStateNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -183,6 +184,36 @@ class FlowStateNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a flow-state step, across all five operations.
+     *
+     * Deliberately the UNION rather than a per-operation set: which keys are
+     * required for which operation is `validateConfig()`'s question, and it
+     * answers it with a message naming the operation. This method answers only
+     * "could this node ever read that key".
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return [
+            'operation',
+            'key',
+            'as',
+            'default',
+            'value',
+            'from',
+            'record',
+            'slots',
+            'capacity',
+            'holder',
+            'slot',
+        ];
+
+    }//end configKeys()
 
     /**
      * Validate the authored configuration.

@@ -2126,7 +2126,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         if (in_array($key, $boolFields, true) === true) {
-            $this->validateBoolConfigValue(key: $key, value: $value);
+            // $key is int|string because PHP array keys can be ints. The cast is
+            // explicit rather than relying on this file having no strict_types.
+            $this->validateBoolConfigValue(key: (string) $key, value: $value);
             $validatedConfig[$key] = $value;
             return;
         }

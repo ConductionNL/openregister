@@ -66,6 +66,13 @@ class ObjectWriteNodeTest extends TestCase
         $this->schema->setSlug('example-cache-entry');
 
         $this->objects = $this->createMock(ObjectService::class);
+        // `runAs()` scopes the acting user around a read. The double must RUN
+        // the callable, or every lookup silently returns null and the node
+        // reports "matched nothing" for reasons that have nothing to do with
+        // the test.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
 
         $registers = $this->createMock(RegisterMapper::class);
         $registers->method('find')->willReturn($this->register);
@@ -888,6 +895,95 @@ class ObjectWriteNodeTest extends TestCase
         $this->assertSame('r1', $out[0]['json']['retiredId'], 'the input record is carried through');
 
     }//end testASkippedDeleteIsDistinguishableFromAPerformedOne()
+
+
+    /**
+     * `config.output` on a delete used to be read by nothing.
+     *
+     * `outputJson()` is what honours the key, and it was only ever called on the
+     * non-delete path — `executeDelete()` was never handed the config. So a
+     * delete was the one operation that could not carry its incoming record
+     * forward: everything the item was holding (the issue number, the repo, the
+     * run id) was dropped the moment something was removed.
+     *
+     * @return void
+     */
+    public function testADeleteHonoursTheOutputKeyAndKeepsTheIncomingRecord(): void
+    {
+        $this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
+        $this->objects->method('deleteObject')->willReturn(true);
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(['output' => 'removed']),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertSame(489, $json['issue'], 'the incoming record survives the delete');
+        $this->assertSame('r1', $json['retiredId']);
+        $this->assertSame('u-gone', $json['removed']['uuid'], 'the delete record lands under the output key');
+        $this->assertTrue($json['removed']['deleted']);
+
+    }//end testADeleteHonoursTheOutputKeyAndKeepsTheIncomingRecord()
+
+
+    /**
+     * POSITIVE CONTROL — with no `output`, the shape is exactly what it was.
+     *
+     * The fix must not change any flow that does not ask for one.
+     *
+     * @return void
+     */
+    public function testADeleteWithoutAnOutputKeyIsUnchanged(): void
+    {
+        $this->tableOf([['uuid' => 'u-gone', 'data' => ['sourceId' => 'r1']]]);
+        $this->objects->method('deleteObject')->willReturn(true);
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertSame('u-gone', $json['uuid']);
+        $this->assertTrue($json['deleted']);
+        $this->assertArrayNotHasKey('issue', $json, 'unchanged: without output, the delete record IS the item');
+        $this->assertArrayNotHasKey('removed', $json);
+
+    }//end testADeleteWithoutAnOutputKeyIsUnchanged()
+
+
+    /**
+     * A SKIPPED delete gets the output key too.
+     *
+     * An output key that exists only on the branch that removed something makes
+     * `{{removed.deleted}}` resolve on some items and not others — a downstream
+     * null with no visible cause.
+     *
+     * @return void
+     */
+    public function testASkippedDeleteAlsoCarriesTheOutputKey(): void
+    {
+        $this->tableOf([]);
+        $this->objects->expects($this->never())->method('deleteObject');
+
+        $out = $this->node->execute(
+            $this->items([['retiredId' => 'r1', 'issue' => 489]]),
+            $this->deleteConfig(['onNoMatch' => 'skip', 'output' => 'removed']),
+            $this->registerContext
+        );
+
+        $json = $out[0]['json'];
+
+        $this->assertFalse($json['deleted'], 'the top-level flag stays where it was');
+        $this->assertSame('r1', $json['retiredId']);
+        $this->assertFalse($json['removed']['deleted']);
+
+    }//end testASkippedDeleteAlsoCarriesTheOutputKey()
 
 
     public function testAnAmbiguousDeleteMatchFailsRatherThanChoosing(): void

@@ -58,7 +58,7 @@
 			</NcButton>
 			<NcButton
 				:disabled="saving"
-				type="primary"
+				variant="primary"
 				@click="$emit('confirm', collect())">
 				<template #icon>
 					<NcLoadingIcon v-if="saving" :size="20" />
@@ -81,9 +81,7 @@
  * @spec openspec/specs/integration-email/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcDialog, NcLoadingIcon } from '@nextcloud/vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'

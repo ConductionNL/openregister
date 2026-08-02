@@ -3857,8 +3857,91 @@ class MagicMapper extends AbstractObjectMapper
             }//end foreach
         }//end if
 
+        $this->reportDroppedProperties(data: $data, schemaProperties: $schemaProperties, schema: $schema);
+
         return $preparedData;
     }//end prepareObjectDataForTable()
+
+    /**
+     * Say so when a property the caller sent is about to be thrown away.
+     *
+     * The loop above is a whitelist BY OMISSION: it walks the schema's declared
+     * properties and copies those out of `$data`. Anything the caller sent that
+     * the schema does not declare is simply never read — and there is no `object`
+     * JSON blob column to fall back on, so it is gone. No error, no warning, no
+     * trace: the write succeeds and the field is missing.
+     *
+     * Measured 2026-08-02: the hydra flow documents carry `description`, the
+     * agentflow schema had no such property, and every flow's description was
+     * discarded on save. The graphs table then showed "—" for all ten, which
+     * reads exactly like ten flows that were never given a description.
+     *
+     * This does not reject — rejecting at the DB write boundary is far too late
+     * for a clean 400 (the entity is built, folders may exist, cascades have
+     * run) and would break every caller that harmlessly posts an extra key. It
+     * makes the loss VISIBLE, which is the whole difference between a schema
+     * that needs a property added and a field that quietly evaporates.
+     *
+     * @param array<string, mixed> $data             The caller's data, minus `@self`.
+     * @param mixed                $schemaProperties The schema's declared properties.
+     * @param Schema               $schema           The schema being written to.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
+     */
+    private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void
+    {
+        if (is_array($schemaProperties) === false) {
+            return;
+        }
+
+        $dropped = [];
+        foreach (array_keys($data) as $key) {
+            $name = (string) $key;
+            if (array_key_exists($name, $schemaProperties) === true) {
+                continue;
+            }
+
+            // `@`-prefixed keys are envelope/metadata (`@self` is already gone),
+            // `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
+            // is the caller echoing back an identifier. None of these are user
+            // data the schema was ever supposed to declare, so warning about them
+            // would drown the signal in noise on literally every save.
+            if ($name === '' || $name === 'id' || $name[0] === '@' || $name[0] === '_') {
+                continue;
+            }
+
+            $dropped[] = $name;
+        }
+
+        if ($dropped === []) {
+            return;
+        }
+
+        $plural = 'ies';
+        if (count($dropped) === 1) {
+            $plural = 'y';
+        }
+
+        $this->logger->warning(
+            message: sprintf(
+                '[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
+                .'They are NOT stored anywhere — add them to the schema or stop sending them.',
+                count($dropped),
+                $plural,
+                (string) ($schema->getTitle() ?? $schema->getSlug() ?? (string) $schema->getId()),
+                implode(', ', $dropped)
+            ),
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'schema'     => $schema->getId(),
+                'schemaSlug' => $schema->getSlug(),
+                'dropped'    => $dropped,
+            ]
+        );
+    }//end reportDroppedProperties()
 
     /**
      * Convert database row to ObjectEntity.

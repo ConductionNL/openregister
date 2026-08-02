@@ -68,7 +68,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				data-testid="mdm-merge-confirm"
 				:disabled="!canConfirm"
 				@click="confirm">

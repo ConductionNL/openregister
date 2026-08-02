@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
@@ -55,6 +56,7 @@ class FlowNodeRegistrationListener implements IEventListener
      * Constructor.
      *
      * @param SetFieldsNode   $setFields   The built-in "Edit fields" node.
+     * @param ExplodeNode     $explode     The built-in "Explode" node.
      * @param FilterNode      $filter      The built-in "Filter" node.
      * @param WaitNode        $wait        The built-in "Wait" node.
      * @param SwitchNode      $switch      The built-in "Switch" node.
@@ -69,6 +71,7 @@ class FlowNodeRegistrationListener implements IEventListener
      */
     public function __construct(
         private readonly SetFieldsNode $setFields,
+        private readonly ExplodeNode $explode,
         private readonly FilterNode $filter,
         private readonly WaitNode $wait,
         private readonly SwitchNode $switch,
@@ -100,6 +103,7 @@ class FlowNodeRegistrationListener implements IEventListener
         }
 
         $event->registerNode(node: $this->setFields);
+        $event->registerNode(node: $this->explode);
         $event->registerNode(node: $this->filter);
         $event->registerNode(node: $this->wait);
         $event->registerNode(node: $this->switch);

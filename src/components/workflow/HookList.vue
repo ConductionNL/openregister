@@ -25,13 +25,13 @@
 					<td>{{ hook.order || 0 }}</td>
 					<td>{{ hook.enabled !== false ? 'Yes' : 'No' }}</td>
 					<td>
-						<NcButton type="tertiary" @click="$emit('edit', index)">
+						<NcButton variant="tertiary" @click="$emit('edit', index)">
 							Edit
 						</NcButton>
-						<NcButton type="tertiary" @click="$emit('test', hook)">
+						<NcButton variant="tertiary" @click="$emit('test', hook)">
 							Test
 						</NcButton>
-						<NcButton type="error" @click="$emit('delete', index)">
+						<NcButton variant="error" @click="$emit('delete', index)">
 							Delete
 						</NcButton>
 					</td>

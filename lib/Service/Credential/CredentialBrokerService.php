@@ -534,8 +534,32 @@ class CredentialBrokerService
                 _rbac: false
             );
         } catch (Throwable $e) {
+            // Log the REASON. A credential that is genuinely absent and a lookup
+            // that THREW are entirely different problems, and collapsing both
+            // into `$credential = null` makes them indistinguishable — the
+            // operator is told "credential not found" about a credential that
+            // demonstrably exists.
+            //
+            // Measured 2026-08-01: a brokered call that returns 200 outside a
+            // flow run is denied inside one with `credential not found`, and the
+            // reason it is really failing was sitting in this swallowed
+            // exception. Diagnosing it without this meant guessing at guards
+            // that were never reached.
+            //
+            // Not re-thrown: a missing credential must still deny rather than
+            // 500, and the caller's contract is unchanged. Only the diagnosis
+            // improves.
+            $this->logger->warning(
+                '[CredentialBrokerService] the credential lookup threw; treating as not found',
+                [
+                    'credential' => $credentialId,
+                    'reason'     => $e->getMessage(),
+                    'class'      => get_class($e),
+                ]
+            );
+
             $credential = null;
-        }
+        }//end try
 
         if ($credential === null) {
             $this->deny(reason: 'credential not found', credentialId: $credentialId);

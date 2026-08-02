@@ -81,7 +81,7 @@
 						input-id="extraction-scope"
 						:input-label="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -101,7 +101,7 @@
 						:input-label="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
 							<div class="option-item">
 								<span class="option-icon">{{ icon }}</span>
@@ -123,7 +123,7 @@
 							<NcTextField id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
 								:placeholder="t('openregister', 'https://api.your-dolphin-instance.com')"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
 								</template>
@@ -139,7 +139,7 @@
 								v-model="fileSettings.dolphinApiKey"
 								type="password"
 								:placeholder="t('openregister', 'Enter your API key')"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<KeyIcon :size="20" />
 								</template>
@@ -149,7 +149,7 @@
 							</p>
 						</div>
 
-						<NcButton type="secondary"
+						<NcButton variant="secondary"
 							@click="testDolphinConnection">
 							<template #icon>
 								<CheckIcon v-if="dolphinConnectionTested === 'success'" :size="20" />
@@ -168,7 +168,7 @@
 						:input-label="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -271,7 +271,7 @@
 						<NcCheckboxRadioSwitch
 							v-model="fileSettings.includeInSearch"
 							type="switch"
-							@update:checked="saveSettings">
+							@update:modelValue="saveSettings">
 							Include in Search Results
 						</NcCheckboxRadioSwitch>
 						<p class="setting-description">
@@ -295,7 +295,7 @@
 						input-id="object-extraction-mode"
 						:input-label="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
-						@input="saveObjectSettings">
+						@update:modelValue="saveObjectSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -322,7 +322,7 @@
 					<NcCheckboxRadioSwitch
 						v-model="fileSettings.entityRecognitionEnabled"
 						type="switch"
-						@update:checked="saveSettings">
+						@update:modelValue="saveSettings">
 						Enable Entity Recognition
 					</NcCheckboxRadioSwitch>
 					<p class="setting-description">
@@ -337,7 +337,7 @@
 						input-id="entity-recognition-method"
 						:input-label="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
 							<div class="option-item">
 								<span class="option-icon">{{ icon }}</span>
@@ -391,7 +391,7 @@
 									{{ backendTestResults[backend.name] === 'success' ? t('openregister', 'Reachable') : t('openregister', 'Unreachable') }}
 								</span>
 							</span>
-							<NcButton type="tertiary"
+							<NcButton variant="tertiary"
 								:disabled="testingBackendMethod === backend.name"
 								:aria-label="t('openregister', 'Test connection for {backend}', { backend: backend.label })"
 								@click="testBackend(backend.name)">
@@ -424,7 +424,7 @@
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
 								:placeholder="'http://openregister-presidio-analyzer:3000'"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
 								</template>
@@ -434,7 +434,7 @@
 							</p>
 						</div>
 
-						<NcButton type="secondary"
+						<NcButton variant="secondary"
 							@click="testPresidioConnection">
 							<template #icon>
 								<CheckIcon v-if="presidioConnectionTested === 'success'" :size="20" />
@@ -453,11 +453,11 @@
 						<legend>{{ t('openregister', 'OpenAnonymiser source') }}</legend>
 
 						<!-- Internal: detected ExApp via AppAPI -->
-						<NcCheckboxRadioSwitch :checked="fileSettings.openAnonymiserSource"
+						<NcCheckboxRadioSwitch :model-value="fileSettings.openAnonymiserSource"
 							type="radio"
 							value="internal"
 							name="openanonymiser-source"
-							@update:checked="setOpenAnonymiserSource">
+							@update:modelValue="setOpenAnonymiserSource">
 							{{ t('openregister', 'Use the built-in OpenAnonymiser (recommended)') }}
 						</NcCheckboxRadioSwitch>
 
@@ -474,7 +474,7 @@
 									{{ t('openregister', 'Install OpenAnonymiser') }}
 								</a>
 							</p>
-							<NcButton type="secondary"
+							<NcButton variant="secondary"
 								:disabled="testingBackendMethod === 'openanonymiser'"
 								@click="testBackend('openanonymiser')">
 								<template #icon>
@@ -488,11 +488,11 @@
 						</div>
 
 						<!-- External: operator-entered endpoint -->
-						<NcCheckboxRadioSwitch :checked="fileSettings.openAnonymiserSource"
+						<NcCheckboxRadioSwitch :model-value="fileSettings.openAnonymiserSource"
 							type="radio"
 							value="external"
 							name="openanonymiser-source"
-							@update:checked="setOpenAnonymiserSource">
+							@update:modelValue="setOpenAnonymiserSource">
 							{{ t('openregister', 'Use an external OpenAnonymiser endpoint') }}
 						</NcCheckboxRadioSwitch>
 
@@ -502,7 +502,7 @@
 								<NcTextField id="openanonymiser-endpoint"
 									v-model="fileSettings.openAnonymiserApiEndpoint"
 									placeholder="http://openregister-openanonymiser:8080"
-									@update:value="saveSettings">
+									@update:modelValue="saveSettings">
 									<template #trailing-button-icon>
 										<InformationIcon :size="20" />
 									</template>
@@ -512,7 +512,7 @@
 								</p>
 							</div>
 
-							<NcButton type="secondary"
+							<NcButton variant="secondary"
 								@click="testOpenAnonymiserConnection">
 								<template #icon>
 									<CheckIcon v-if="openAnonymiserConnectionTested === 'success'" :size="20" />
@@ -554,9 +554,9 @@
 				<div class="file-types-grid">
 					<NcCheckboxRadioSwitch v-for="fileType in fileTypes"
 						:key="fileType.extension"
-						:checked.sync="fileType.enabled"
+						v-model="fileType.enabled"
 						type="checkbox"
-						@update:checked="saveSettings">
+						@update:modelValue="saveSettings">
 						<span class="file-type-label">
 							{{ fileType.icon }} {{ fileType.label }}
 							<span class="file-type-extension">(.{{ fileType.extension }})</span>

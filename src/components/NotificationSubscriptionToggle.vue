@@ -1,6 +1,6 @@
 <template>
 	<NcButton
-		:type="isSubscribed ? 'secondary' : 'tertiary'"
+		:variant="isSubscribed ? 'secondary' : 'tertiary'"
 		:disabled="loading"
 		:title="title"
 		:aria-label="title"
@@ -29,8 +29,7 @@
  * Closes notificatie-engine task: "Users MUST be able to manage their
  * notification preferences".
  */
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import BellIcon from 'vue-material-design-icons/Bell.vue'
 import BellOutlineIcon from 'vue-material-design-icons/BellOutline.vue'
 

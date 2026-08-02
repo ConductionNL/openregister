@@ -83,6 +83,11 @@ final class ObjectReadNodeTest extends TestCase
         $this->objects = $this->createMock(originalClassName: ObjectService::class);
         $this->objects->method('setRegister')->willReturnSelf();
         $this->objects->method('setSchema')->willReturnSelf();
+        // `runAs()` scopes the acting user around the read. The double must RUN
+        // the callable, or every read silently returns null.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
 
         $registers = $this->createMock(originalClassName: RegisterMapper::class);
         $registers->method('find')->willReturn($register);
@@ -106,7 +111,19 @@ final class ObjectReadNodeTest extends TestCase
         );
 
         $l10n = $this->createMock(originalClassName: IL10N::class);
-        $l10n->method('t')->willReturnArgument(0);
+        // The double SUBSTITUTES rather than returning the template, because a
+        // message assertion against an un-substituted `%s` proves nothing about
+        // what the caller would actually read — and worse, matches by accident:
+        // `/repo/` is satisfied by the word "reported" in the template itself.
+        $l10n->method('t')->willReturnCallback(
+            static function (string $text, array $parameters=[]): string {
+                if ($parameters === []) {
+                    return $text;
+                }
+
+                return vsprintf($text, $parameters);
+            }
+        );
 
         $this->node = new ObjectReadNode(
             $this->objects,
@@ -436,5 +453,106 @@ final class ObjectReadNodeTest extends TestCase
         $this->assertCount(1, $out);
         $this->assertCount(2, $out[0]['json']['objects']);
     }
+
+
+    /**
+     * A filter placeholder the item cannot fill FAILS the step.
+     *
+     * This is the defect hydra's lock reaper was dormant in. Its filter
+     * interpolated `{{repo}}`, and a schedule tick's payload is only
+     * `{flowId, scheduledAt}` — so under its own trigger `lockName` rendered as
+     * `"ZZ issue-lock "`, matched nothing, and the run reported `completed`. It
+     * reaped correctly whenever a caller supplied `repo` in a test payload,
+     * which is precisely what kept it hidden.
+     *
+     * The read must never happen: an empty constraint is a different question,
+     * not a looser one.
+     *
+     * @return void
+     */
+    public function testAFilterThatRendersEmptyFailsTheStep(): void
+    {
+        $this->objects->expects($this->never())->method('findAll');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/could not be rendered: repo resolved to nothing/');
+
+        $this->node->execute(
+            [FlowItems::item(json: ['flowId' => 'f-1', 'scheduledAt' => '2026-08-02T15:00:00+00:00'])],
+            $this->config(['filters' => ['name' => 'ZZ issue-lock {{repo}}']]),
+            $this->ownedContext
+        );
+
+    }//end testAFilterThatRendersEmptyFailsTheStep()
+
+
+    /**
+     * A placeholder that resolves to null is refused just like an absent one.
+     *
+     * `openregister.set-fields` assigns whatever its expression returns, so a
+     * `compute` whose expression failed leaves the key PRESENT and null. That
+     * renders to the empty string exactly as a missing path does, so telling
+     * the two apart would only let one of them through.
+     *
+     * @return void
+     */
+    public function testAFilterPlaceholderResolvingToNullIsAlsoRefused(): void
+    {
+        $this->objects->expects($this->never())->method('findAll');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/could not be rendered: cutoff resolved to nothing/');
+
+        $this->node->execute(
+            [FlowItems::item(json: ['cutoff' => null])],
+            $this->config(['filters' => ['@self' => ['created' => ['lt' => '{{cutoff}}']]]]),
+            $this->ownedContext
+        );
+
+    }//end testAFilterPlaceholderResolvingToNullIsAlsoRefused()
+
+
+    /**
+     * The positive control: a filter whose placeholders all resolve still reads.
+     *
+     * A guard only ever seen refusing is indistinguishable from a step that
+     * cannot read at all, so the happy path is asserted beside it — including
+     * the values a strict emptiness rule could plausibly have swallowed.
+     * `false` and `0` are ANSWERS: a whole-value placeholder keeps their type,
+     * so `enabled = false` is a real constraint rather than a missing one.
+     *
+     * @return void
+     */
+    public function testAFullyRenderedFilterStillReads(): void
+    {
+        $seen = [];
+        $this->objects->method('findAll')->willReturnCallback(
+            function (array $config=[], bool $_rbac=true, bool $_multitenancy=true) use (&$seen): array {
+                $seen[] = $config['filters'];
+                return [];
+            }
+        );
+
+        $this->node->execute(
+            [FlowItems::item(json: ['cutoff' => '2026-08-02 14:30:00', 'wanted' => false, 'attempts' => 0])],
+            $this->config(
+                [
+                    'filters' => [
+                        'name'     => 'ZZ issue-lock',
+                        'enabled'  => '{{wanted}}',
+                        'attempts' => '{{attempts}}',
+                        '@self'    => ['created' => ['lt' => '{{cutoff}}']],
+                    ],
+                ]
+            ),
+            $this->ownedContext
+        );
+
+        $this->assertSame('ZZ issue-lock', $seen[0]['name']);
+        $this->assertFalse($seen[0]['enabled']);
+        $this->assertSame(0, $seen[0]['attempts']);
+        $this->assertSame('2026-08-02 14:30:00', $seen[0]['@self']['created']['lt']);
+
+    }//end testAFullyRenderedFilterStillReads()
 
 }//end class

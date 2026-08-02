@@ -36,6 +36,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -44,7 +45,7 @@ use UnexpectedValueException;
 /**
  * Tags each item with the output branch it should go to.
  */
-class RouterNode implements IFlowNode
+class RouterNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -115,6 +116,25 @@ class RouterNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a route step.
+     *
+     * `routes` is NOT here, deliberately. It is the single most common way to
+     * author this node wrong (hydra-analyze-verdicts shipped it), and it is
+     * wrong all the way down — the entries are `when`/`to` where this node
+     * reads `condition`/`output`. Accepting the outer key would leave the
+     * inner mismatch just as silent.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['rules', 'default'];
+
+    }//end configKeys()
 
     /**
      * Reject a router with no rules — it would route nothing.

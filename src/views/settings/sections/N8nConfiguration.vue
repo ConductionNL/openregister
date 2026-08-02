@@ -36,7 +36,7 @@
 				v-model="n8nEnabled"
 				:disabled="saving"
 				type="switch"
-				@update:checked="onToggleN8n">
+				@update:modelValue="onToggleN8n">
 				{{ n8nEnabled ? t('openregister', 'n8n integration enabled') : t('openregister', 'n8n integration disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
@@ -65,7 +65,7 @@
 						id="n8n-url"
 						v-model="n8nUrl"
 						placeholder="http://master-n8n-1:5678"
-						@update:value="updateN8nUrl">
+						@update:modelValue="updateN8nUrl">
 						<template #trailing-button-icon>
 							<Web :size="20" />
 						</template>
@@ -84,7 +84,7 @@
 							v-model="n8nApiKey"
 							placeholder="n8n_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateN8nApiKey">
+							@update:modelValue="updateN8nApiKey">
 							<template #trailing-button-icon>
 								<Key :size="20" />
 							</template>
@@ -102,7 +102,7 @@
 						id="n8n-project"
 						v-model="n8nProject"
 						placeholder="openregister"
-						@update:value="updateN8nProject">
+						@update:modelValue="updateN8nProject">
 						<template #trailing-button-icon>
 							<FolderOutline :size="20" />
 						</template>
@@ -115,7 +115,7 @@
 				<!-- Action Buttons -->
 				<div class="action-buttons">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="saving || !hasChanges"
 						@click="saveConfiguration">
 						<template #icon>
@@ -126,7 +126,7 @@
 					</NcButton>
 
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						:disabled="testingConnection || !n8nUrl || !n8nApiKey"
 						@click="testConnection">
 						<template #icon>
@@ -138,7 +138,7 @@
 
 					<NcButton
 						v-if="connectionStatus && connectionStatus.success"
-						type="primary"
+						variant="primary"
 						:disabled="initializing"
 						@click="initializeN8n">
 						<template #icon>
@@ -210,7 +210,7 @@
 
 				<div class="workflow-actions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="loadingWorkflows"
 						@click="loadWorkflows">
 						<template #icon>
@@ -221,7 +221,7 @@
 					</NcButton>
 
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						@click="openN8nEditor">
 						<template #icon>
 							<OpenInNew :size="20" />

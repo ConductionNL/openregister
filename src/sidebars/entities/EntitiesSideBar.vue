@@ -21,10 +21,10 @@
 			<div class="filterSection">
 				<div class="filterGroup">
 					<NcTextField
-						:value="localSearch"
+						:model-value="localSearch"
 						:placeholder="t('openregister', 'Search by value')"
 						:label="t('openregister', 'Search by value')"
-						@update:value="handleSearchInput">
+						@update:modelValue="handleSearchInput">
 						<template #trailing-button-icon>
 							<Magnify :size="20" />
 						</template>
@@ -37,43 +37,43 @@
 				<h3>{{ t('openregister', 'Type') }}</h3>
 				<div class="filterGroup filterGroupRadio">
 					<NcCheckboxRadioSwitch
-						:checked="selectedType === null"
+						:model-value="selectedType === null"
 						type="radio"
 						value="all"
 						name="entity_type_radio"
-						@update:checked="updateType(null)">
+						@update:modelValue="updateType(null)">
 						{{ t('openregister', 'All Types') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedType === 'PERSON'"
+						:model-value="selectedType === 'PERSON'"
 						type="radio"
 						value="PERSON"
 						name="entity_type_radio"
-						@update:checked="updateType('PERSON')">
+						@update:modelValue="updateType('PERSON')">
 						{{ t('openregister', 'Person') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedType === 'ORGANIZATION'"
+						:model-value="selectedType === 'ORGANIZATION'"
 						type="radio"
 						value="ORGANIZATION"
 						name="entity_type_radio"
-						@update:checked="updateType('ORGANIZATION')">
+						@update:modelValue="updateType('ORGANIZATION')">
 						{{ t('openregister', 'Organization') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedType === 'EMAIL'"
+						:model-value="selectedType === 'EMAIL'"
 						type="radio"
 						value="EMAIL"
 						name="entity_type_radio"
-						@update:checked="updateType('EMAIL')">
+						@update:modelValue="updateType('EMAIL')">
 						{{ t('openregister', 'Email') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedType === 'PHONE'"
+						:model-value="selectedType === 'PHONE'"
 						type="radio"
 						value="PHONE"
 						name="entity_type_radio"
-						@update:checked="updateType('PHONE')">
+						@update:modelValue="updateType('PHONE')">
 						{{ t('openregister', 'Phone') }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -84,35 +84,35 @@
 				<h3>{{ t('openregister', 'Category') }}</h3>
 				<div class="filterGroup filterGroupRadio">
 					<NcCheckboxRadioSwitch
-						:checked="selectedCategory === null"
+						:model-value="selectedCategory === null"
 						type="radio"
 						value="all"
 						name="entity_category_radio"
-						@update:checked="updateCategory(null)">
+						@update:modelValue="updateCategory(null)">
 						{{ t('openregister', 'All Categories') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedCategory === 'personal_data'"
+						:model-value="selectedCategory === 'personal_data'"
 						type="radio"
 						value="personal_data"
 						name="entity_category_radio"
-						@update:checked="updateCategory('personal_data')">
+						@update:modelValue="updateCategory('personal_data')">
 						{{ t('openregister', 'Personal Data') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedCategory === 'sensitive_pii'"
+						:model-value="selectedCategory === 'sensitive_pii'"
 						type="radio"
 						value="sensitive_pii"
 						name="entity_category_radio"
-						@update:checked="updateCategory('sensitive_pii')">
+						@update:modelValue="updateCategory('sensitive_pii')">
 						{{ t('openregister', 'Sensitive PII') }}
 					</NcCheckboxRadioSwitch>
 					<NcCheckboxRadioSwitch
-						:checked="selectedCategory === 'business_data'"
+						:model-value="selectedCategory === 'business_data'"
 						type="radio"
 						value="business_data"
 						name="entity_category_radio"
-						@update:checked="updateCategory('business_data')">
+						@update:modelValue="updateCategory('business_data')">
 						{{ t('openregister', 'Business Data') }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -121,7 +121,7 @@
 			<!-- Clear Filters -->
 			<div v-if="hasActiveFilters" class="filterSection">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					wide
 					@click="clearFilters">
 					{{ t('openregister', 'Clear filters') }}
@@ -161,6 +161,7 @@ import {
 } from '@nextcloud/vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import { navigationStore } from '../../store/store.js'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'EntitiesSideBar',
@@ -216,7 +217,7 @@ export default {
 			this.localSearch = value
 			clearTimeout(this.searchTimeout)
 			this.searchTimeout = setTimeout(() => {
-				this.$root.$emit('entities-search-changed', value)
+				eventBus.emit('entities-search-changed', value)
 			}, 500)
 		},
 		/**
@@ -228,7 +229,7 @@ export default {
 		 */
 		updateType(type) {
 			this.selectedType = type
-			this.$root.$emit('entities-type-changed', type)
+			eventBus.emit('entities-type-changed', type)
 		},
 		/**
 		 * Update the entity-category filter and notify the parent view.
@@ -239,7 +240,7 @@ export default {
 		 */
 		updateCategory(category) {
 			this.selectedCategory = category
-			this.$root.$emit('entities-category-changed', category)
+			eventBus.emit('entities-category-changed', category)
 		},
 		/**
 		 * Clear all active filters and notify the parent view.
@@ -251,9 +252,9 @@ export default {
 			this.localSearch = ''
 			this.selectedType = null
 			this.selectedCategory = null
-			this.$root.$emit('entities-search-changed', '')
-			this.$root.$emit('entities-type-changed', null)
-			this.$root.$emit('entities-category-changed', null)
+			eventBus.emit('entities-search-changed', '')
+			eventBus.emit('entities-type-changed', null)
+			eventBus.emit('entities-category-changed', null)
 		},
 	},
 }

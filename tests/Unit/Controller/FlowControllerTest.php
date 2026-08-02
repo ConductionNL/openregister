@@ -25,6 +25,7 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\FlowController;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
@@ -51,6 +52,13 @@ class FlowControllerTest extends TestCase
     private FlowNodeRegistry $nodes;
 
     /**
+     * The mocked preflight.
+     *
+     * @var FlowNodePreflight
+     */
+    private FlowNodePreflight $preflight;
+
+    /**
      * The controller under test.
      *
      * @var FlowController
@@ -67,15 +75,17 @@ class FlowControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
-        $this->nodes   = $this->createMock(FlowNodeRegistry::class);
+        $this->request   = $this->createMock(IRequest::class);
+        $this->nodes     = $this->createMock(FlowNodeRegistry::class);
+        $this->preflight = $this->createMock(FlowNodePreflight::class);
 
         $this->controller = new FlowController(
             'openregister',
             $this->request,
             $this->createMock(EventCatalogService::class),
             $this->nodes,
-            $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class)
+            $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
+            $this->preflight
         );
 
     }//end setUp()
@@ -207,7 +217,8 @@ class FlowControllerTest extends TestCase
             $this->request,
             $this->createMock(EventCatalogService::class),
             $this->nodes,
-            $mapper
+            $mapper,
+            $this->preflight
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -242,7 +253,8 @@ class FlowControllerTest extends TestCase
             $this->request,
             $this->createMock(EventCatalogService::class),
             $this->nodes,
-            $mapper
+            $mapper,
+            $this->preflight
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -251,4 +263,100 @@ class FlowControllerTest extends TestCase
         $this->assertArrayNotHasKey('results', $data);
 
     }//end testStateWithoutListIsUnchanged()
+
+
+    /**
+     * Preflighting a document that cannot run answers 200 with a verdict.
+     *
+     * A flow that will not run is a valid ANSWER, not a failed request — a CI
+     * job asking the question needs the finding list, not an HTTP error it has
+     * to reverse-engineer.
+     *
+     * @return void
+     */
+    public function testValidateReportsBlockingFindings(): void
+    {
+        $flow = [
+            'name'  => 'hydra-file-findings',
+            'nodes' => [['id' => 'a'], ['id' => 'b']],
+            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.explode']],
+        ];
+
+        $this->request->method('getParam')->willReturn($flow);
+        $this->preflight->method('looksLikeFlow')->willReturn(true);
+        $this->preflight->method('inspect')->willReturn(
+            [
+                'blocking' => [
+                    [
+                        'type'   => 'openregister.explode',
+                        'app'    => 'openregister',
+                        'edge'   => 'e1',
+                        'reason' => FlowNodePreflight::REASON_MISSING_FROM_OWNER,
+                    ],
+                ],
+                'warnings' => [],
+            ]
+        );
+        $this->preflight->method('describe')->willReturn('Flow "hydra-file-findings" names 1 step type(s)');
+
+        $response = $this->controller->validate();
+
+        $this->assertSame(200, $response->getStatus());
+        $data = $response->getData();
+        $this->assertFalse($data['valid']);
+        $this->assertCount(1, $data['blocking']);
+        $this->assertSame('openregister.explode', $data['blocking'][0]['type']);
+        $this->assertArrayHasKey('message', $data);
+
+    }//end testValidateReportsBlockingFindings()
+
+
+    /**
+     * An absent optional app is a warning, and the document stays valid.
+     *
+     * @return void
+     */
+    public function testValidateTreatsAnAbsentAppAsAWarning(): void
+    {
+        $this->request->method('getParam')->willReturn(['nodes' => [], 'edges' => []]);
+        $this->preflight->method('looksLikeFlow')->willReturn(true);
+        $this->preflight->method('inspect')->willReturn(
+            [
+                'blocking' => [],
+                'warnings' => [
+                    [
+                        'type'   => 'openconnector.source-call',
+                        'app'    => 'openconnector',
+                        'edge'   => 'e1',
+                        'reason' => FlowNodePreflight::REASON_OWNER_NOT_ENABLED,
+                    ],
+                ],
+            ]
+        );
+
+        $data = $this->controller->validate()->getData();
+
+        $this->assertTrue($data['valid']);
+        $this->assertCount(1, $data['warnings']);
+        $this->assertArrayNotHasKey('message', $data);
+
+    }//end testValidateTreatsAnAbsentAppAsAWarning()
+
+
+    /**
+     * A body that is not a graph is a 400, not a silent pass.
+     *
+     * @return void
+     */
+    public function testValidateRejectsANonFlowBody(): void
+    {
+        $this->request->method('getParam')->willReturn(['title' => 'not a flow']);
+        $this->preflight->method('looksLikeFlow')->willReturn(false);
+
+        $response = $this->controller->validate();
+
+        $this->assertSame(400, $response->getStatus());
+        $this->assertFalse($response->getData()['valid']);
+
+    }//end testValidateRejectsANonFlowBody()
 }//end class

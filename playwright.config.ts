@@ -27,6 +27,7 @@
  */
 import { defineConfig, devices } from '@playwright/test'
 import * as path from 'path'
+import { resolveBaseUrl } from './tests/e2e/base-url'
 
 export default defineConfig({
 	testDir: './tests/e2e',
@@ -43,7 +44,10 @@ export default defineConfig({
 	outputDir: 'tests/e2e/test-results',
 
 	use: {
-		baseURL: process.env.NEXTCLOUD_URL || 'http://localhost:8080',
+		// ⚠️ No `|| 'http://localhost:8080'` fallback — that literal is the
+		// shared dev container, which bind-mounts other people's checkouts.
+		// See tests/e2e/base-url.ts.
+		baseURL: resolveBaseUrl(),
 		extraHTTPHeaders: {
 			// Basic auth used by api-smoke.spec.ts; UI specs override
 			// auth via `storageState` below.

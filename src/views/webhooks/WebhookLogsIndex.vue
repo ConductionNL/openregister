@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Webhook Logs') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						@click="goBack">
 						<template #icon>
 							<ArrowLeft :size="20" />
@@ -39,13 +39,13 @@
 						:clearable="true"
 						:label-outside="true"
 						:input-label="t('openregister', 'Filter by webhook')"
-						@update:value="handleWebhookFilterChange">
+						@update:modelValue="handleWebhookFilterChange">
 						<template #option="{ option }">
 							{{ option.label }}
 						</template>
 					</NcSelect>
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						@click="refreshLogs">
 						<template #icon>
 							<Refresh :size="20" />
@@ -266,7 +266,7 @@ export default {
 	 * @spec exclude UI plumbing — event-listener teardown
 	 * @return {void}
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		// Clean up event listener.
 		window.removeEventListener('webhook-log-retried', this.loadLogs)
 	},

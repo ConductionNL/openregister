@@ -75,6 +75,8 @@ use Psr\Container\ContainerInterface;
  * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   RBAC needs IUserSession, IUserManager, IGroupManager, ConditionMatcher, Register/Schema mappers
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     All RBAC logic is centralised per ADR-011; splitting would re-scatter the security policy
+ *
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 class PermissionHandler
 {
@@ -954,6 +956,8 @@ class PermissionHandler
      * @param int|null $schemaId Specific schema to evict, or null to clear all.
      *
      * @return void
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function clearInheritFromPublicCache(?int $schemaId=null): void
     {
@@ -1017,82 +1021,20 @@ class PermissionHandler
         }
     }//end checkPermission()
 
-    /**
-     * Filter objects array based on RBAC and multi-tenancy permissions
+    /*
+     * NOTE: there is deliberately no object-level read filter here.
      *
-     * Removes objects from the array that the current user doesn't have permission to access
-     * or that belong to a different organization in multi-tenant mode.
+     * Listing is filtered in SQL by MagicRbacHandler::buildRbacConditionsSql()
+     * (action: 'read'), called from MagicSearchHandler — unauthorised rows are
+     * never loaded, which also keeps pagination correct. A post-load filter in
+     * this class would duplicate that gate and silently disagree with it.
      *
-     * @param array<array<string, mixed>> $objects       Array of objects to filter.
-     * @param bool                        $_rbac         Whether to apply RBAC filtering.
-     * @param bool                        $_multitenancy Whether to apply multitenancy filtering.
-     *
-     * @return array[] Filtered array of objects
-     *
-     * @psalm-return list<array<string, mixed>>
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission filtering requires multiple conditional checks
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  RBAC/multitenancy flags follow established API patterns
-     *
-     * @spec openspec/specs/rbac-scopes/spec.md
+     * A `filterObjectsForPermissions()` method used to live at this spot. It had
+     * no production caller and gated visibility on `create`, so it read as the
+     * live read gate while never running — which cost a full investigation to
+     * establish (openspec/changes/fix-object-read-visibility-gate/design.md).
+     * Please do not reintroduce it; extend the SQL gate instead.
      */
-    public function filterObjectsForPermissions(array $objects, bool $_rbac, bool $_multitenancy): array
-    {
-        $filteredObjects = [];
-        $currentUser     = $this->userSession->getUser();
-        $userId          = null;
-        if ($currentUser !== null) {
-            $userId = $currentUser->getUID();
-        }
-
-        $activeOrganisation = $this->getActiveOrganisationForContext();
-
-        foreach ($objects as $object) {
-            $self = $object['@self'] ?? [];
-
-            // Check RBAC permissions if enabled.
-            if ($_rbac === true && $userId !== null) {
-                $objectOwner  = $self['owner'] ?? null;
-                $objectSchema = $self['schema'] ?? null;
-
-                if ($objectSchema !== null) {
-                    try {
-                        $schema = $this->schemaMapper->find($objectSchema);
-                        // Property-level RBAC (per-property authorization + writeOnly
-                        // stripping) is enforced on the read path by PropertyRbacHandler
-                        // via RenderObject; this loop only decides object-level visibility.
-                        if ($this->hasPermission(
-                                schema: $schema,
-                                action: 'create',
-                                userId: $userId,
-                                objectOwner: $objectOwner,
-                                _rbac: $_rbac
-                            ) === false
-                        ) {
-                            continue;
-                            // Skip this object if user doesn't have permission.
-                        }
-                    } catch (Exception $e) {
-                        // Skip objects with invalid schemas.
-                        continue;
-                    }//end try
-                }//end if
-            }//end if
-
-            // Check multi-organization filtering if enabled.
-            if ($_multitenancy === true && $activeOrganisation !== null) {
-                $objectOrganisation = $self['organisation'] ?? null;
-                if ($objectOrganisation !== null && $objectOrganisation !== $activeOrganisation) {
-                    continue;
-                    // Skip objects from different organizations.
-                }
-            }
-
-            $filteredObjects[] = $object;
-        }//end foreach
-
-        return $filteredObjects;
-    }//end filterObjectsForPermissions()
 
     /**
      * Filter UUIDs based on RBAC and multi-tenancy permissions
@@ -1981,6 +1923,8 @@ class PermissionHandler
      * does not hard-deny every authenticated read.
      *
      * @return bool The configured tenant default (true when unconfigured/unreachable).
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
      */
     public function inheritFromPublicTenantDefault(): bool
     {

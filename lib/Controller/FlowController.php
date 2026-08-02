@@ -29,8 +29,10 @@ namespace OCA\OpenRegister\Controller;
 
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
+use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
@@ -48,6 +50,7 @@ class FlowController extends Controller
      * @param EventCatalogService $eventCatalog The flow trigger catalog.
      * @param FlowNodeRegistry    $nodes        The registered flow-step types.
      * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
+     * @param FlowNodePreflight   $preflight    Resolves a document's step types.
      */
     public function __construct(
         string $appName,
@@ -55,6 +58,7 @@ class FlowController extends Controller
         private readonly EventCatalogService $eventCatalog,
         private readonly FlowNodeRegistry $nodes,
         private readonly FlowStateMapper $flowState,
+        private readonly FlowNodePreflight $preflight,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -181,6 +185,62 @@ class FlowController extends Controller
         return new JSONResponse($body);
 
     }//end state()
+
+    /**
+     * Resolve a flow document's step types without saving it.
+     *
+     * The listener that guards the save path answers "may this be stored"; this
+     * answers "would it run", which a CI job, an editor and a deployment check
+     * all need to ask about a document they are not writing. It is the same
+     * FlowNodePreflight, so the two answers cannot drift.
+     *
+     * Always 200 with a verdict — a document that cannot run is a valid answer,
+     * not a failed request. `valid` is false only for findings no install can
+     * fix; a step type owned by an app this instance has not enabled comes back
+     * under `warnings` with `valid` still true, because installing that app is
+     * the fix and the document is not wrong.
+     *
+     * @return JSONResponse `{ valid, blocking, warnings, message? }`.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function validate(): JSONResponse
+    {
+        $flow = $this->request->getParam('flow');
+        if (is_array($flow) === false) {
+            $flow = $this->request->getParams();
+        }
+
+        if ($this->preflight->looksLikeFlow(data: $flow) === false) {
+            return new JSONResponse(
+                [
+                    'valid'    => false,
+                    'blocking' => [],
+                    'warnings' => [],
+                    'message'  => 'Body does not describe a flow graph: it needs a non-empty "nodes" list whose '
+                        .'entries carry an "id", and a non-empty "edges" list whose entries carry "from"/"to".',
+                ],
+                Http::STATUS_BAD_REQUEST
+            );
+        }
+
+        $report = $this->preflight->inspect(flow: $flow);
+        $name   = (string) ($flow['name'] ?? 'flow');
+        $body   = [
+            'valid'    => ($report['blocking'] === []),
+            'blocking' => $report['blocking'],
+            'warnings' => $report['warnings'],
+        ];
+
+        if ($report['blocking'] !== []) {
+            $body['message'] = $this->preflight->describe(flow: $name, blocking: $report['blocking']);
+        }
+
+        return new JSONResponse($body);
+
+    }//end validate()
 
     /**
      * One state key as a list, with each entry carrying the key it was under.

@@ -5,18 +5,18 @@
 			<div class="section__field">
 				<label for="token-name">{{ t('openregister', 'Token name') }}</label>
 				<NcTextField id="token-name"
-					:value="tokenName"
+					:model-value="tokenName"
 					:label="t('openregister', 'Token name')"
-					@input="$emit('update:tokenName', $event.target.value)" />
+					@update:modelValue="$emit('update:tokenName', $event)" />
 			</div>
 			<div class="section__field">
 				<label for="token-expires">{{ t('openregister', 'Expires in (e.g., 90d)') }}</label>
 				<NcTextField id="token-expires"
-					:value="tokenExpires"
+					:model-value="tokenExpires"
 					:label="t('openregister', 'Expiration')"
-					@input="$emit('update:tokenExpires', $event.target.value)" />
+					@update:modelValue="$emit('update:tokenExpires', $event)" />
 			</div>
-			<NcButton type="primary"
+			<NcButton variant="primary"
 				:disabled="!tokenName"
 				@click="$emit('create')">
 				{{ t('openregister', 'Create') }}
@@ -27,9 +27,7 @@
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton, NcModal, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'CreateTokenModal',
