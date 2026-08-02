@@ -232,6 +232,116 @@ class ObjectSharingController extends Controller
     }//end createShare()
 
     /**
+     * Create a tokenised link to an object.
+     *
+     * @param string $register Register slug or id.
+     * @param string $schema   Schema slug or id.
+     * @param string $id       Object uuid.
+     *
+     * @return JSONResponse The created link, or an error.
+     *
+     * @NoAdminRequired
+     */
+    #[NoAdminRequired]
+    public function createLink(string $register, string $schema, string $id): JSONResponse
+    {
+        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+        if ($object instanceof JSONResponse) {
+            return $object;
+        }
+
+        try {
+            $link = $this->sharing->createLink(
+                object: $object,
+                permissions: $this->requestedPermissions(),
+                password: $this->optionalParam(name: 'password'),
+                expiration: $this->optionalParam(name: 'expiration')
+            );
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->unexpected(exception: $e, context: 'createLink');
+        }
+
+        return new JSONResponse($link, Http::STATUS_CREATED);
+    }//end createLink()
+
+    /**
+     * Invite an email address to an object.
+     *
+     * @param string $register Register slug or id.
+     * @param string $schema   Schema slug or id.
+     * @param string $id       Object uuid.
+     *
+     * @return JSONResponse The created invitation, or an error.
+     *
+     * @NoAdminRequired
+     */
+    #[NoAdminRequired]
+    public function inviteByEmail(string $register, string $schema, string $id): JSONResponse
+    {
+        $object = $this->resolveObject(register: $register, schema: $schema, id: $id);
+        if ($object instanceof JSONResponse) {
+            return $object;
+        }
+
+        try {
+            $invite = $this->sharing->inviteByEmail(
+                object: $object,
+                email: (string) ($this->request->getParam('email') ?? ''),
+                permissions: $this->requestedPermissions(),
+                password: $this->optionalParam(name: 'password'),
+                expiration: $this->optionalParam(name: 'expiration')
+            );
+        } catch (NotAuthorizedException $e) {
+            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_FORBIDDEN);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(['message' => $e->getMessage()], Http::STATUS_BAD_REQUEST);
+        } catch (\Throwable $e) {
+            return $this->unexpected(exception: $e, context: 'inviteByEmail');
+        }
+
+        return new JSONResponse($invite, Http::STATUS_CREATED);
+    }//end inviteByEmail()
+
+    /**
+     * The requested permission bitmask, defaulting to READ.
+     *
+     * Defaulting to read is the safe direction: a link that silently carried
+     * write because the caller omitted a field would be the wrong surprise.
+     *
+     * @return integer The bitmask.
+     */
+    private function requestedPermissions(): int
+    {
+        $requested = $this->request->getParam('permissions');
+        if (is_numeric($requested) === true) {
+            return (int) $requested;
+        }
+
+        return 1;
+    }//end requestedPermissions()
+
+    /**
+     * A request parameter, or null when it is absent or blank.
+     *
+     * @param string $name The parameter name.
+     *
+     * @return string|null The value.
+     */
+    private function optionalParam(string $name): ?string
+    {
+        $value = $this->request->getParam($name);
+        if (is_string($value) === false || trim($value) === '') {
+            return null;
+        }
+
+        return $value;
+    }//end optionalParam()
+
+    /**
      * Revoke one grant.
      *
      * @param string $register Register slug or id.
