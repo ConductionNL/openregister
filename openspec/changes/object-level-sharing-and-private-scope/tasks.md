@@ -80,12 +80,55 @@
       private. The carve-out is safe because `scope` can only ever NARROW, unlike the action
       lists in the same block, which can widen — so it must be a `scope`-only carve-out, not a
       relaxation of the strip (design D3a)
-- [ ] 4.1 Grant / revoke a principal on ONE object, owner-only
-- [ ] 4.2 Compose with schema rules — narrows within, never widens
-- [ ] 4.3 Enforce the tenant edge independently of the grant list
+> **Enforcement half LANDED** (`ObjectGrantResolver`): a grant is a real core share
+> on the object's NC folder, read through `IManager` at decision time and memoised
+> for ONE request only. Composed into all four paths as the single substitution
+> `notPrivate` → `(notPrivate OR grantedToMe)` (design D3b). The owner-only
+> grant/revoke API is NOT written yet — grants are created through core.
+
+- [x] 4.1a Resolve a caller's grants from core's shares, folder-shares only, read-through.
+      Verified live: `getObjectFolder()` names the folder after the object UUID, a
+      `TYPE_USER` folder share is creatable, and the resolver maps it back
+- [ ] 4.1b Owner-only grant / revoke API on ONE object (create the share on the object's
+      folder). `ShareLinkService::createShare()` CANNOT be reused: it requires a `$fileId`
+      and rejects any node that is not a file inside the folder — that is the file-share
+      concept and it stays separate (task 8.2)
+- [x] 4.2 Compose with schema rules — narrows within, never widens. The schema is the
+      CEILING and a grant re-opens a private row within it (design D3b); tested with a
+      schema whose read rule names a group the caller lacks
+- [x] 4.3 Enforce the tenant edge independently of the grant list — IMPLEMENTED by forcing
+      the EXISTING `applyOrganizationFilter()` on whenever the caller holds a grant, rather
+      than putting an `_organisation` term in the grant branch (design D3c). **NOT yet
+      covered by a test** — needs a two-organisation fixture
 - [ ] 4.4 Reject a recipient's attempt to widen or re-share onward
-- [ ] 4.5 Carry a permission on the grant, and enforce non-RBAC verbs at the endpoint that performs them (design: two enforcement points, deliberately)
-- [ ] 4.6 Revocation denies on the NEXT request — no cache, no job
+- [ ] 4.5 Carry a permission on the grant, and enforce non-RBAC verbs at the endpoint that
+      performs them (design: two enforcement points, deliberately). The resolver already
+      CARRIES the bitmask (`grantedObjectUuids()` returns uuid => permissions, widest wins
+      across overlapping shares); nothing consumes it yet — every grant currently admits
+      for `read`
+- [x] 4.6 Revocation denies on the NEXT request — no cache, no job. True by construction:
+      the resolver memoises for one request and stores nothing beyond it
+- [x] 4.7 A share on a FILE inside the object's folder is NOT an object grant — otherwise
+      attaching a document and sharing it would hand over the object's data too
+- [x] 4.8 A grant is scoped to the object it names — guards against a predicate that admits
+      every private row as soon as the caller holds any grant at all
+- [x] 4.9 Positive control for the grant paths: the SQL builder's grant disjunct, the
+      `PermissionHandler` fall-through and the relation-path fall-through each neutered
+      independently, each producing a distinct attributable failure
+
+### Finding fixed while doing group 4
+
+- [x] 4.10 **`prepareObjectDataForTable()` DESTROYED per-object `_authorization` on every
+      save.** The method strips `authorization` from incoming metadata (per-object RBAC is
+      deliberately not writable by ordinary create/update calls) — but the field was ALSO
+      listed in the metadata-column map, whose loop resolves each field as
+      `$metadata[$field] ?? null`. So the stripped key returned as an explicit NULL and the
+      UPDATE wrote it. A private object became visible again as soon as anything saved it,
+      and resolving its folder does exactly that — so SHARING an object was enough to
+      un-private it. The same wipe hit the Wave-12 Fix 5 per-object action overrides. Fixed
+      by removing the field from the map: `updateObjectInRegisterSchemaTable()` only sets
+      keys that are PRESENT, so the stored value is now carried forward untouched. Pinned by
+      `testAnUpdateDoesNotDestroyPerObjectAuthorization`, which drives the REAL writer
 
 ## 5. The share provider surface (core owns the record)
 

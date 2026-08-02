@@ -833,7 +833,8 @@ class RelationHandler
                 action: 'read',
                 objectOwner: $object->getOwner(),
                 objectData: $objectData,
-                objectAuthorization: $object->getAuthorization()
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;

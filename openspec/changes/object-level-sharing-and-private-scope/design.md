@@ -129,6 +129,55 @@ object private through the object API. Enforcement is complete and testable
 without that; the owner-may-set-`scope` carve-out belongs with the grant API in
 group 4, and it is safe there precisely because `scope` can only ever narrow.
 
+### D3b — A grant makes a private row behave as NOT private; the schema stays the ceiling
+
+Decided while starting group 4. The spec is explicit that `private` cannot widen:
+
+> **WHEN** a schema's rules would refuse a user an action, and a private object of
+> that schema invites them for it — **THEN** the request is still denied.
+
+So a grant is not an independent admit path. The schema's rules are the CEILING of
+who could ever reach an object; `private` narrows that to the owner; a grant
+re-opens it, **within the ceiling**, for one principal.
+
+That reading resolves what looked like a contradiction with D3 ("schema group rules
+are suppressed for a private object"). Suppressed as a *grant* path — a group rule
+no longer admits anyone to a private object on its own — but still applied as a
+*ceiling*. Both statements are true of the same evaluation.
+
+It also makes the implementation one substitution rather than a new branch. The
+list predicate was:
+
+    owner  OR  (notPrivate AND rules)
+
+and becomes:
+
+    owner  OR  ((notPrivate OR grantedToMe) AND rules)
+
+A grant makes a private row behave, for this caller, exactly as an ordinary row —
+and the rules then decide, as they already do. Nothing else in either emitter
+changes, and there is no second admit path to keep in step with the first.
+
+For the credential and flow cases this is the right shape: the schema grants `read`
+to `authenticated` (the ceiling is "any logged-in user"), the object is `private`
+(nobody but the owner), and a grant picks out the one colleague.
+
+### D3c — The tenant edge is enforced by the EXISTING organisation filter, forced on
+
+A grant must never become a cross-tenant hole (ADR-002: the organisation UUID is
+the only tenant key). The tempting fix is an `_organisation = :activeOrg` term
+inside the grant branch — but that is a second definition of the tenant edge, and
+this change exists because second definitions of a rule drift apart.
+
+`MagicSearchHandler::applyAccessControlFilters()` already decides whether to apply
+`applyOrganizationFilter()`, and already SKIPS it when the schema has conditional
+rules that deliberately cross tenants. So the grant branch must extend that
+existing decision — when the caller reaches rows through a grant, the organisation
+filter is applied — rather than carrying its own copy of the edge.
+
+Cross-organisation sharing is a real future case (group 7, federated principals)
+and is a deliberate decision to take there, not a side effect to inherit here.
+
 ### D4 — All four enforcement points, or none
 
 `private` and per-object grants land simultaneously in:

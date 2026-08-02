@@ -265,4 +265,48 @@ class ObjectScopeResolver
         // version does not recognise.
         return "({$columnName} IS NULL OR ({$scope}) IS NULL OR ({$scope}) = '' OR ({$scope}) = {$organisation})";
     }//end notPrivateSql()
+
+    /**
+     * The predicate for "this row is reachable at all by this caller".
+     *
+     * A grant makes a private row behave, for this caller, exactly as an
+     * ordinary row — and the schema's rules then decide, as they already do
+     * (design D3b). So the whole grant feature is this one disjunct, and there
+     * is no second admit path in either emitter to keep in step with the first:
+     *
+     *     owner OR ((notPrivate OR grantedToMe) AND rules)
+     *
+     * The schema remains the CEILING. A grant re-opens a private row within what
+     * the rules would have allowed; it cannot admit somebody the schema refuses,
+     * which is what the spec means by "`private` cannot widen access".
+     *
+     * @param string   $authColumn             The `_authorization` column, qualified by the caller.
+     * @param bool     $schemaDefaultIsPrivate Whether the schema makes its objects private by default.
+     * @param bool     $isPostgres             Whether the connected platform is PostgreSQL.
+     * @param string   $uuidColumn             The `_uuid` column, qualified by the caller.
+     * @param string[] $quotedUuids            Granted object UUIDs, ALREADY quoted as SQL literals.
+     *
+     * @return string A SQL predicate true for rows this caller may reach.
+     */
+    public function notPrivateOrGrantedSql(
+        string $authColumn,
+        bool $schemaDefaultIsPrivate,
+        bool $isPostgres,
+        string $uuidColumn,
+        array $quotedUuids
+    ): string {
+        $notPrivate = $this->notPrivateSql(
+            columnName: $authColumn,
+            schemaDefaultIsPrivate: $schemaDefaultIsPrivate,
+            isPostgres: $isPostgres
+        );
+
+        if (empty($quotedUuids) === true) {
+            return $notPrivate;
+        }
+
+        $inList = implode(', ', $quotedUuids);
+
+        return "({$notPrivate} OR {$uuidColumn} IN ({$inList}))";
+    }//end notPrivateOrGrantedSql()
 }//end class

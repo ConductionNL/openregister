@@ -57,8 +57,13 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\Files\Folder;
+use OCP\Share\IManager;
+use OCP\Share\IShare;
 use OCP\IDBConnection;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -101,6 +106,21 @@ class PrivateScopeParityIntegrationTest extends TestCase
     private ?IUser $testUser = null;
 
     private string $testUid = '';
+
+    /**
+     * A REAL second Nextcloud user, used as the owner in the grant tests.
+     *
+     * The scope tests own their fixtures with a bare uid string, which is enough
+     * because nothing about a scope needs the owner to exist. A GRANT does: the
+     * object's NC folder is created in the storage of whichever session first
+     * asks for it, and core will only let a user share a node they can reach. So
+     * the grant fixtures need a real owner whose session creates the folder.
+     *
+     * @var IUser|null
+     */
+    private ?IUser $ownerUser = null;
+
+    private string $ownerUid = '';
 
     /**
      * @var int[]
@@ -153,6 +173,9 @@ class PrivateScopeParityIntegrationTest extends TestCase
             $this->markTestSkipped('could not create a test user');
         }
 
+        $this->ownerUid  = 'scope-owner-'.$suffix;
+        $this->ownerUser = $this->userManager->createUser($this->ownerUid, 'Scope-Test-Pass-123');
+
         $this->userSession->setUser($this->testUser);
 
         if ($this->rbacHandler->isAdmin() === true) {
@@ -167,6 +190,10 @@ class PrivateScopeParityIntegrationTest extends TestCase
 
         if ($this->testUser !== null) {
             $this->testUser->delete();
+        }
+
+        if ($this->ownerUser !== null) {
+            $this->ownerUser->delete();
         }
 
         foreach ($this->createdTables as $tableName) {
@@ -461,16 +488,341 @@ class PrivateScopeParityIntegrationTest extends TestCase
 
 
     /**
+     * REGRESSION: an ordinary update must not destroy per-object authorization.
+     *
+     * `prepareObjectDataForTable()` strips `authorization` from the incoming
+     * metadata, because per-object RBAC is deliberately not writable by ordinary
+     * create/update calls. But the field was also listed in the metadata-column
+     * map, and that loop resolves every listed field as `$metadata[$field] ?? null`
+     * — so the stripped key came back as an explicit NULL and the UPDATE wrote it.
+     *
+     * The effect was that a private object became visible again as soon as
+     * ANYTHING saved it. Resolving an object's folder does exactly that, so
+     * sharing an object — the operation this whole capability exists for — was
+     * enough to un-private it. The same wipe hit the per-object action overrides
+     * shipped as Wave-12 Fix 5.
+     *
+     * This drives the REAL writer rather than asserting on a hand-built payload:
+     * a fixture in the shape the code expects cannot catch the code writing the
+     * wrong shape.
+     */
+    public function testAnUpdateDoesNotDestroyPerObjectAuthorization(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'survives', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $entity = $this->readBackByKey($register, $schema)['survives'];
+        $this->assertSame(['scope' => 'private'], $entity->getAuthorization(), 'fixture did not persist');
+
+        // Resolving the folder calls update() — the real production writer.
+        $this->objectFolderAsOwner($entity);
+
+        $this->assertSame(
+            ['scope' => 'private'],
+            $this->readBackByKey($register, $schema)['survives']->getAuthorization(),
+            'an update wiped the per-object authorization'
+        );
+
+        // And the consequence that made it matter: still invisible to a caller
+        // who is neither owner nor invited.
+        $this->assertNotContains('survives', $this->visibleKeys($register, $schema));
+        $this->assertNotContains('survives', $this->visibleKeysViaUnion($register, $schema));
+    }//end testAnUpdateDoesNotDestroyPerObjectAuthorization()
+
+
+    /**
+     * A grant on a private object admits the invited caller — on all four paths.
+     *
+     * This is the whole point of the capability: the object answers to nobody but
+     * its owner, and one named principal is let back in.
+     */
+    public function testAGrantAdmitsTheInvitedCallerOnEveryPath(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'granted', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $this->insertFixture($register, $schema, 'not-granted', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $entities = $this->readBackByKey($register, $schema);
+        $this->grantTo($entities['granted'], $this->testUid);
+
+        $this->assertContains('granted', $this->visibleKeys($register, $schema));
+        $this->assertNotContains('not-granted', $this->visibleKeys($register, $schema));
+
+        $this->assertContains('granted', $this->visibleKeysViaUnion($register, $schema));
+        $this->assertNotContains('not-granted', $this->visibleKeysViaUnion($register, $schema));
+
+        $this->assertTrue(
+            $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: $this->testUid,
+                objectOwner: $entities['granted']->getOwner(),
+                object: $entities['granted']
+            ),
+            'the single-object verdict must honour the grant'
+        );
+
+        $this->assertTrue(
+            $this->rbacHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                objectOwner: $entities['granted']->getOwner(),
+                objectData: ($entities['granted']->getObject() ?? []),
+                objectAuthorization: $entities['granted']->getAuthorization(),
+                objectUuid: $entities['granted']->getUuid()
+            ),
+            'the relation-path verdict must honour the grant'
+        );
+    }//end testAGrantAdmitsTheInvitedCallerOnEveryPath()
+
+
+    /**
+     * Revoking a grant denies on the next request — no cache, no job.
+     *
+     * `forget()` is what a NEW REQUEST does: the resolver memoises for the
+     * lifetime of one request and stores nothing beyond it, which is what makes
+     * "denies on the next request" true by construction rather than by a
+     * cache-invalidation rule somebody has to remember (design D2). Calling it
+     * here simulates the next request inside one PHP process.
+     */
+    public function testRevokingAGrantDeniesOnTheNextRequest(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'revocable', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $entity = $this->readBackByKey($register, $schema)['revocable'];
+        $share  = $this->grantTo($entity, $this->testUid);
+
+        $this->assertContains('revocable', $this->visibleKeys($register, $schema), 'granted first');
+
+        $this->shareManager()->deleteShare($share);
+        $this->grantResolver()->forget();
+
+        $this->assertNotContains(
+            'revocable',
+            $this->visibleKeys($register, $schema),
+            'a revoked grant must deny on the next request'
+        );
+        $this->assertNotContains('revocable', $this->visibleKeysViaUnion($register, $schema));
+    }//end testRevokingAGrantDeniesOnTheNextRequest()
+
+
+    /**
+     * A grant CANNOT widen past the schema — the schema is the ceiling.
+     *
+     * The spec is explicit: "a schema's rules would refuse a user an action, and
+     * a private object of that schema invites them for it — the request is still
+     * denied". A grant re-opens a private row WITHIN what the rules allow; it is
+     * not an independent admit path (design D3b).
+     */
+    public function testAGrantCannotWidenPastTheSchema(): void
+    {
+        // A schema whose read rule names a group the caller is not in, so the
+        // ceiling excludes them however they are invited.
+        [$register, $schema] = $this->createFixtureTable(readRule: 'a-group-the-caller-is-not-in');
+
+        $this->insertFixture($register, $schema, 'refused', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $entity = $this->readBackByKey($register, $schema)['refused'];
+        $this->grantTo($entity, $this->testUid);
+
+        $this->assertNotContains(
+            'refused',
+            $this->visibleKeys($register, $schema),
+            'a grant must not admit somebody the schema refuses'
+        );
+        $this->assertNotContains('refused', $this->visibleKeysViaUnion($register, $schema));
+
+        $this->assertFalse(
+            $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: $this->testUid,
+                objectOwner: $entity->getOwner(),
+                object: $entity
+            ),
+            'the single-object verdict must not let a grant widen past the schema'
+        );
+    }//end testAGrantCannotWidenPastTheSchema()
+
+
+    /**
+     * A share on a FILE inside the object's folder is NOT an object grant.
+     *
+     * File shares are a separate, pre-existing concept served by
+     * `ShareLinkService`, and they must stay separate — otherwise attaching a
+     * document to an object and sharing that document would silently hand over
+     * the object's data too.
+     */
+    public function testAFileShareInsideTheFolderIsNotAnObjectGrant(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'hasfile', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['hasfile'];
+
+        $folder = $this->objectFolderAsOwner($entity);
+        if ($folder === null) {
+            $this->markTestSkipped('could not resolve the object folder');
+        }
+
+        $this->userSession->setUser($this->ownerUser);
+        try {
+            $file  = $folder->newFile('attachment.txt', 'contents');
+            $share = $this->shareManager()->newShare();
+            $share->setNode($file);
+            $share->setShareType(IShare::TYPE_USER);
+            $share->setSharedWith($this->testUid);
+            $share->setSharedBy($this->ownerUid);
+            $share->setPermissions(1);
+            $this->shareManager()->createShare($share);
+        } finally {
+            $this->userSession->setUser($this->testUser);
+        }
+
+        $this->grantResolver()->forget();
+
+        $this->assertSame(
+            [],
+            $this->grantResolver()->grantedObjectUuids($this->testUid),
+            'a file share must not register as an object grant'
+        );
+        $this->assertNotContains('hasfile', $this->visibleKeys($register, $schema));
+    }//end testAFileShareInsideTheFolderIsNotAnObjectGrant()
+
+
+    /**
+     * Grant one object, then assert the caller can still not see a DIFFERENT
+     * private object of the same schema.
+     *
+     * Guards against a predicate that admits every private row as soon as the
+     * caller holds any grant at all — which would pass every test above.
+     */
+    public function testAGrantIsScopedToTheObjectItNames(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'mine-by-grant', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $this->insertFixture($register, $schema, 'somebody-elses', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $entities = $this->readBackByKey($register, $schema);
+        $this->grantTo($entities['mine-by-grant'], $this->testUid);
+
+        $visible = $this->visibleKeys($register, $schema);
+        $this->assertContains('mine-by-grant', $visible);
+        $this->assertNotContains('somebody-elses', $visible);
+    }//end testAGrantIsScopedToTheObjectItNames()
+
+
+    /**
+     * Create a real core share of an object's folder, as its real owner.
+     *
+     * @param ObjectEntity $entity    The object to grant.
+     * @param string       $recipient Uid to grant it to.
+     *
+     * @return IShare The created share.
+     */
+    private function grantTo(ObjectEntity $entity, string $recipient): IShare
+    {
+        $folder = $this->objectFolderAsOwner($entity);
+        if ($folder === null) {
+            $this->markTestSkipped('could not resolve the object folder');
+        }
+
+        $this->userSession->setUser($this->ownerUser);
+        try {
+            $share = $this->shareManager()->newShare();
+            $share->setNode($folder);
+            $share->setShareType(IShare::TYPE_USER);
+            $share->setSharedWith($recipient);
+            $share->setSharedBy($this->ownerUid);
+            $share->setPermissions(1);
+            $created = $this->shareManager()->createShare($share);
+        } finally {
+            $this->userSession->setUser($this->testUser);
+        }
+
+        // The grant was made after this request's resolver had already answered,
+        // so drop the memoisation — a real next request starts with a fresh one.
+        $this->grantResolver()->forget();
+
+        return $created;
+    }//end grantTo()
+
+
+    /**
+     * Resolve an object's NC folder while logged in as its real owner.
+     *
+     * The folder is created in the storage of whichever session asks for it
+     * first, and core only lets a user share a node they can reach — so this
+     * must run as the owner, not as the recipient.
+     *
+     * @param ObjectEntity $entity The object.
+     *
+     * @return Folder|null The folder, or null when it cannot be resolved.
+     */
+    private function objectFolderAsOwner(ObjectEntity $entity): ?Folder
+    {
+        $this->userSession->setUser($this->ownerUser);
+        try {
+            $folder = \OC::$server->get(FolderManagementHandler::class)->getObjectFolder($entity);
+            if (($folder instanceof Folder) === true) {
+                return $folder;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        } finally {
+            $this->userSession->setUser($this->testUser);
+        }
+    }//end objectFolderAsOwner()
+
+
+    /**
+     * Core's share manager.
+     *
+     * @return IManager
+     */
+    private function shareManager(): IManager
+    {
+        return \OC::$server->get(IManager::class);
+    }//end shareManager()
+
+
+    /**
+     * The one per-request grant resolver.
+     *
+     * @return ObjectGrantResolver
+     */
+    private function grantResolver(): ObjectGrantResolver
+    {
+        return \OC::$server->get(ObjectGrantResolver::class);
+    }//end grantResolver()
+
+
+    /**
      * Build the register, schema and magic table for one test.
      *
      * @param string|null $schemaScope       Scope to declare as the schema default, if any.
      * @param bool        $withAuthorization Whether to give the schema an authorization block at all.
      * @param bool        $partner           Whether this is the empty second pair that forces the UNION path.
+     * @param string      $readRule          The schema's read rule. Defaults to `authenticated`, which admits
+     *                                       every logged-in caller and so leaves the scope as the only
+     *                                       discriminator; a group name the caller lacks makes the schema the
+     *                                       binding ceiling instead.
      *
      * @return array{0: Register, 1: Schema}
      */
-    private function createFixtureTable(?string $schemaScope=null, bool $withAuthorization=true, bool $partner=false): array
-    {
+    private function createFixtureTable(
+        ?string $schemaScope=null,
+        bool $withAuthorization=true,
+        bool $partner=false,
+        string $readRule='authenticated'
+    ): array {
         $label    = ($partner === true ? 'union-partner' : 'private-scope');
         $register = $this->registerMapper->createFromArray(
             [
@@ -495,7 +847,7 @@ class PrivateScopeParityIntegrationTest extends TestCase
         if ($withAuthorization === true) {
             // `authenticated` admits every logged-in caller, so the scope is the
             // only thing left that can decide a verdict.
-            $definition['authorization'] = ['read' => ['authenticated']];
+            $definition['authorization'] = ['read' => [$readRule]];
             if ($schemaScope !== null) {
                 $definition['authorization']['scope'] = $schemaScope;
             }
@@ -522,8 +874,10 @@ class PrivateScopeParityIntegrationTest extends TestCase
      * @param Register           $register       The register.
      * @param Schema             $schema         The schema.
      * @param string             $key            Identifier used to recognise the row.
-     * @param array<mixed>|null  $authorization  The per-object authorization block.
-     * @param bool               $ownedByCaller  Whether the session user owns it.
+     * @param array<mixed>|null  $authorization      The per-object authorization block.
+     * @param bool               $ownedByCaller      Whether the session user owns it.
+     * @param bool               $ownedByRealOwner   Own it with the REAL second user, which the grant
+     *                                               tests need so core will let that user share it.
      *
      * @return void
      */
@@ -532,14 +886,22 @@ class PrivateScopeParityIntegrationTest extends TestCase
         Schema $schema,
         string $key,
         ?array $authorization,
-        bool $ownedByCaller
+        bool $ownedByCaller,
+        bool $ownedByRealOwner=false
     ): void {
+        $owner = self::OTHER_OWNER;
+        if ($ownedByCaller === true) {
+            $owner = $this->testUid;
+        } else if ($ownedByRealOwner === true) {
+            $owner = $this->ownerUid;
+        }
+
         $entity = new ObjectEntity();
         $entity->setUuid(Uuid::v4()->toRfc4122());
         $entity->setRegister((string) $register->getId());
         $entity->setSchema((string) $schema->getId());
         $entity->setObject(['key' => $key]);
-        $entity->setOwner($ownedByCaller === true ? $this->testUid : self::OTHER_OWNER);
+        $entity->setOwner($owner);
         if ($authorization !== null) {
             $entity->setAuthorization($authorization);
         }

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
@@ -118,6 +119,7 @@ class MagicRbacHandler
      * @param LoggerInterface          $logger              Logger for debugging
      * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
      *                                                      a fatal at existing construction sites.
+     * @param ObjectGrantResolver|null $objectGrantResolver Shared per-object grant resolver; nullable for the same reason.
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -127,7 +129,8 @@ class MagicRbacHandler
         private readonly ConditionMatcher $conditionMatcher,
         private readonly ContainerInterface $container,
         private readonly LoggerInterface $logger,
-        private readonly ?ObjectScopeResolver $objectScopeResolver=null
+        private readonly ?ObjectScopeResolver $objectScopeResolver=null,
+        private readonly ?ObjectGrantResolver $objectGrantResolver=null
     ) {
     }//end __construct()
 
@@ -146,7 +149,75 @@ class MagicRbacHandler
     }//end objectScope()
 
     /**
-     * The "this row is not private" predicate for one schema, as raw SQL.
+     * The shared per-object grant resolver.
+     *
+     * Unlike the scope resolver this one is NOT stateless — it memoises per
+     * request — so the injected instance is strongly preferred and the fallback
+     * is resolved through the container to keep one instance per request. A
+     * fresh instance per call would re-read core's shares on every row-level
+     * decision.
+     *
+     * @return ObjectGrantResolver|null The resolver, or null when unavailable.
+     */
+    private function objectGrants(): ?ObjectGrantResolver
+    {
+        if ($this->objectGrantResolver !== null) {
+            return $this->objectGrantResolver;
+        }
+
+        try {
+            $resolved = $this->container->get(ObjectGrantResolver::class);
+            if (($resolved instanceof ObjectGrantResolver) === true) {
+                return $resolved;
+            }
+
+            return null;
+        } catch (Throwable $e) {
+            // Fail CLOSED: no resolver means no grants, which hides objects
+            // rather than exposing them.
+            return null;
+        }
+    }//end objectGrants()
+
+    /**
+     * The object UUIDs granted to the current caller, as quoted SQL literals.
+     *
+     * @param string|null $userId The caller.
+     *
+     * @return string[] Quoted UUID literals, empty when the caller holds none.
+     */
+    private function quotedGrantedUuids(?string $userId): array
+    {
+        $grants = $this->objectGrants()?->grantedObjectUuids(userId: $userId);
+        if (empty($grants) === true) {
+            return [];
+        }
+
+        $quoted = [];
+        foreach (array_keys($grants) as $uuid) {
+            $quoted[] = $this->quoteValue(value: $uuid);
+        }
+
+        return $quoted;
+    }//end quotedGrantedUuids()
+
+    /**
+     * Whether the current caller holds any per-object grant.
+     *
+     * `MagicSearchHandler` uses this to force the organisation filter on when a
+     * grant is in play, so a grant cannot widen the tenant edge (design D3c).
+     * Exposed here rather than injecting the grant resolver into the search
+     * handler as well, so the grant set is resolved through ONE collaborator.
+     *
+     * @return bool True when the caller has at least one granted object.
+     */
+    public function currentCallerHoldsObjectGrants(): bool
+    {
+        return $this->objectGrants()?->hasAnyGrant(userId: $this->getCurrentUserId()) === true;
+    }//end currentCallerHoldsObjectGrants()
+
+    /**
+     * The "this caller may reach this row at all" predicate, as raw SQL.
      *
      * Both list emitters call this ONE method, and it in turn calls the ONE
      * builder on {@see ObjectScopeResolver}. The QueryBuilder emitter wraps the
@@ -155,21 +226,29 @@ class MagicRbacHandler
      * implementation would be a second definition of the vocabulary, which is
      * how the two divergences in the predecessor change happened.
      *
-     * @param array|null $authorization The schema/register authorization block (no object).
-     * @param string     $columnName    The `_authorization` column as this emitter references it.
+     * @param array|null  $authorization The schema/register authorization block (no object).
+     * @param string      $columnName    The `_authorization` column as this emitter references it.
+     * @param string      $uuidColumn    The `_uuid` column as this emitter references it.
+     * @param string|null $userId        The caller, for grant resolution.
      *
-     * @return string A SQL predicate true for rows that are not private.
+     * @return string A SQL predicate true for rows this caller may reach.
      *
      * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
      */
-    private function notPrivateSqlFor(?array $authorization, string $columnName): string
-    {
-        return $this->objectScope()->notPrivateSql(
-            columnName: $columnName,
+    private function reachableRowSqlFor(
+        ?array $authorization,
+        string $columnName,
+        string $uuidColumn,
+        ?string $userId
+    ): string {
+        return $this->objectScope()->notPrivateOrGrantedSql(
+            authColumn: $columnName,
             schemaDefaultIsPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
-            isPostgres: $this->isPostgres()
+            isPostgres: $this->isPostgres(),
+            uuidColumn: $uuidColumn,
+            quotedUuids: $this->quotedGrantedUuids(userId: $userId)
         );
-    }//end notPrivateSqlFor()
+    }//end reachableRowSqlFor()
 
     /**
      * Apply RBAC filters to a query builder based on schema authorization
@@ -249,7 +328,12 @@ class MagicRbacHandler
         // branch below, so the scope cannot be honoured on one exit path and
         // missed on another.
         $notPrivate = $qb->createFunction(
-            $this->notPrivateSqlFor(authorization: $authorization, columnName: 't._authorization')
+            $this->reachableRowSqlFor(
+                authorization: $authorization,
+                columnName: 't._authorization',
+                uuidColumn: 't._uuid',
+                userId: $userId
+            )
         );
 
         // The owner-admits conditions, which apply whatever the scope says.
@@ -919,6 +1003,7 @@ class MagicRbacHandler
      * @param string|null $objectOwner         Optional object owner for ownership check
      * @param array|null  $objectData          Optional object data for conditional checks
      * @param array|null  $objectAuthorization Optional per-object `_authorization`, carrying its scope
+     * @param string|null $objectUuid          Optional object UUID, for per-object grant resolution
      *
      * @return bool True if user has permission
      *
@@ -931,7 +1016,8 @@ class MagicRbacHandler
         string $action,
         ?string $objectOwner=null,
         ?array $objectData=null,
-        ?array $objectAuthorization=null
+        ?array $objectAuthorization=null,
+        ?string $objectUuid=null
     ): bool {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
@@ -978,7 +1064,13 @@ class MagicRbacHandler
                     schemaAuthorization: $scopeSource
                 ) === true
             ) {
-                return false;
+                // A grant makes a private object behave, for this caller, as an
+                // ordinary one — and the rule chain below then decides, because
+                // the schema stays the CEILING (design D3b). Without a grant a
+                // private object denies here.
+                if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $objectUuid) !== true) {
+                    return false;
+                }
             }
         }//end if
 
@@ -1131,7 +1223,12 @@ class MagicRbacHandler
         // QueryBuilder emitter uses. Note the UNQUALIFIED column name: this
         // emitter feeds UNION members that carry no table alias, which is why
         // its owner conditions read `_owner` and not `t._owner`.
-        $notPrivate = $this->notPrivateSqlFor(authorization: $authorization, columnName: '_authorization');
+        $notPrivate = $this->reachableRowSqlFor(
+            authorization: $authorization,
+            columnName: '_authorization',
+            uuidColumn: '_uuid',
+            userId: $userId
+        );
 
         // The owner conditions, which apply whatever the scope says. Admins
         // already returned above; openregister#1617 covers the system-owner one.

@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
@@ -216,6 +217,8 @@ class PermissionHandler
      * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher     Optional dispatcher for custom-scope events.
      * @param ObjectScopeResolver|null                   $objectScopeResolver Shared object-scope resolver; nullable so adding it is
      *                                                                        not a fatal at existing construction sites.
+     * @param ObjectGrantResolver|null                   $objectGrantResolver Shared per-object grant resolver; nullable for the
+     *                                                                        same reason.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -230,7 +233,8 @@ class PermissionHandler
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
         private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null,
-        private readonly ?ObjectScopeResolver $objectScopeResolver=null
+        private readonly ?ObjectScopeResolver $objectScopeResolver=null,
+        private readonly ?ObjectGrantResolver $objectGrantResolver=null
     ) {
     }//end __construct()
 
@@ -248,6 +252,35 @@ class PermissionHandler
     {
         return ($this->objectScopeResolver ?? new ObjectScopeResolver());
     }//end objectScope()
+
+    /**
+     * The shared per-object grant resolver.
+     *
+     * Unlike the scope resolver this one memoises per request, so the container
+     * instance is used rather than a fresh one — a new instance per call would
+     * re-read core's shares on every decision.
+     *
+     * @return ObjectGrantResolver|null The resolver, or null when unavailable.
+     */
+    private function objectGrants(): ?ObjectGrantResolver
+    {
+        if ($this->objectGrantResolver !== null) {
+            return $this->objectGrantResolver;
+        }
+
+        try {
+            $resolved = $this->container->get(ObjectGrantResolver::class);
+            if (($resolved instanceof ObjectGrantResolver) === true) {
+                return $resolved;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            // Fail CLOSED: no resolver means no grants, which hides objects
+            // rather than exposing them.
+            return null;
+        }
+    }//end objectGrants()
 
     /**
      * Check if current user has permission to perform action on schema
@@ -747,11 +780,25 @@ class PermissionHandler
 
         $owner = ($objectOwner ?? $object->getOwner());
 
-        return $this->objectScope()->admitsUnconditionally(
-            userId: $userId,
-            userGroups: $userGroups,
-            objectOwner: $owner
-        );
+        if ($this->objectScope()->admitsUnconditionally(
+                userId: $userId,
+                userGroups: $userGroups,
+                objectOwner: $owner
+            ) === true
+        ) {
+            return true;
+        }
+
+        // A grant makes a private object behave, for this caller, as an ordinary
+        // one — so decline to decide and let the rule chain run, because the
+        // schema stays the CEILING (design D3b). `private` narrows and a grant
+        // re-opens within that ceiling; neither can admit somebody the schema
+        // refuses.
+        if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid()) === true) {
+            return null;
+        }
+
+        return false;
     }//end privateScopeVerdict()
 
     /**
