@@ -180,9 +180,18 @@
 
 ## 8. Fleet-wide consolidation
 
-- [ ] 8.1 Audit every existing share surface: openregister (12 files), launchpad (3), opencatalogi (3), doriath (1)
-- [ ] 8.2 Keep FILE shares (`ShareLinkService`) distinct and unchanged — they share files in an object's folder, which is a different thing
-- [ ] 8.3 Migrate the bespoke `sharedWith[]` on brokered credentials and flows to the primitive
+- [x] 8.1 Audited. The count was wrong and so was the framing: openregister has 32 files across
+      FIVE concepts, not 12 across four. Four are legitimately distinct and stay — file shares,
+      `FederatedShare`, and `ShareableConfigType` (config distribution over GitHub, which this
+      design had not accounted for at all). Only the bespoke `sharedWith[]` duplicates the new
+      primitive. Fleet-wide the duplicates are launchpad's manifest `sharedWith[]` and doriath's
+      `sharedWithMe` dashboards; opencatalogi's three files are FILE-oriented and need nothing.
+      See design D6
+- [x] 8.2 FILE shares stay distinct and unchanged — and so do `FederatedShare` and
+      `ShareableConfigType`, for the same reason: sharing a container, distributing a
+      configuration, and inviting a person are three different acts
+- [ ] 8.3 Migrate the bespoke `sharedWith[]` to the primitive. Scoped by the audit to THREE
+      consumers: openregister credentials + flows, launchpad manifests, doriath dashboards
 - [ ] 8.4 Point the credential broker's share admit branch at the primitive instead of its own copy of the shape
 - [ ] 8.6 Collapse `scope` as the ACCESS discriminator into `private` (Q7): `personal` -> private-with-no-invitations, `organisation` -> the default scope
 - [ ] 8.7 KEEP `scope` as the VAULT-OWNER selector, untouched — and test that an organisation credential minted BEFORE the collapse is still readable after it
