@@ -109,4 +109,80 @@ final class FlowValueTemplateTest extends TestCase
         $this->assertSame('hydra-410', $out['nested']['deep']);
 
     }//end testStructuresAreRenderedRecursively()
+
+
+    /**
+     * `renderTracked()` renders identically AND names what came out empty.
+     *
+     * `render()` cannot fail, which is right for a written field and wrong for
+     * a question: an empty filter value matches nothing and the step reports
+     * success. So the tracked variant reports the paths, and leaves the
+     * decision to the caller.
+     *
+     * @return void
+     */
+    public function testRenderTrackedNamesTheEmptyPlaceholders(): void
+    {
+        $out = FlowValueTemplate::renderTracked(
+            ['name' => 'ZZ issue-lock {{repo}}', 'cutoff' => '{{cutoff}}'],
+            ['flowId' => 'f-1', 'scheduledAt' => '2026-08-02T15:00:00+00:00']
+        );
+
+        $this->assertSame('ZZ issue-lock ', $out['value']['name']);
+        $this->assertNull($out['value']['cutoff']);
+        $this->assertSame(['repo', 'cutoff'], $out['unresolved']);
+
+    }//end testRenderTrackedNamesTheEmptyPlaceholders()
+
+
+    /**
+     * Null and the empty string count as empty; `false`, `0` and `[]` do not.
+     *
+     * A computed field whose expression failed is PRESENT and null, and renders
+     * exactly as an absent path does — so treating them differently would only
+     * let one of them through. `false` and `0` are answers, and a whole-value
+     * placeholder keeps their type, so they are real values.
+     *
+     * @return void
+     */
+    public function testOnlyValuesThatRenderAsNothingCountAsEmpty(): void
+    {
+        $out = FlowValueTemplate::renderTracked(
+            [
+                'computedNull' => '{{cutoff}}',
+                'blank'        => '{{empty}}',
+                'flag'         => '{{off}}',
+                'count'        => '{{zero}}',
+                'list'         => '{{none}}',
+            ],
+            ['cutoff' => null, 'empty' => '', 'off' => false, 'zero' => 0, 'none' => []]
+        );
+
+        $this->assertSame(['cutoff', 'empty'], $out['unresolved']);
+        $this->assertFalse($out['value']['flag']);
+        $this->assertSame(0, $out['value']['count']);
+        $this->assertSame([], $out['value']['list']);
+
+    }//end testOnlyValuesThatRenderAsNothingCountAsEmpty()
+
+
+    /**
+     * A fully resolvable structure reports nothing unresolved.
+     *
+     * The positive control for the two above: a tracker that flagged everything
+     * would satisfy them both and refuse every real read.
+     *
+     * @return void
+     */
+    public function testRenderTrackedReportsNothingWhenEverythingResolves(): void
+    {
+        $out = FlowValueTemplate::renderTracked(
+            ['name' => 'ZZ issue-lock', '@self' => ['created' => ['lt' => '{{cutoff}}']]],
+            ['cutoff' => '2026-08-02 14:30:00']
+        );
+
+        $this->assertSame([], $out['unresolved']);
+        $this->assertSame('2026-08-02 14:30:00', $out['value']['@self']['created']['lt']);
+
+    }//end testRenderTrackedReportsNothingWhenEverythingResolves()
 }//end class
