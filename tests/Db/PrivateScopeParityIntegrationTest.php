@@ -513,6 +513,71 @@ class PrivateScopeParityIntegrationTest extends TestCase
 
 
     /**
+     * `_rbac: false` must bypass the private scope, or every trigger stops firing.
+     *
+     * This is the load-bearing safety property of making flows private by default
+     * (task 9.1). The flow engine never runs in the caller's authority: it runs a
+     * flow AS ITS OWNER, and triggers, scheduled runs and background jobs have no
+     * session at all to evaluate against. So all four OpenRegisterFlowResolver
+     * paths — resolveFlow(), resolveSubject(), scheduledFlows() and
+     * buildTriggerIndex() — load with `_rbac: false` on purpose.
+     *
+     * If the scope predicate were applied OUTSIDE that gate, making flows private
+     * would silently empty the trigger index: every trigger in the fleet would
+     * stop firing, with no error anywhere, because a trigger that matches nothing
+     * is indistinguishable from a trigger that matched and did nothing.
+     *
+     * The bypass half of this test is vacuous on its own — "the object is visible"
+     * proves nothing if the object was never private. So the control runs FIRST,
+     * on the same row in the same table: with RBAC on it must be absent. Only then
+     * does its presence under `_rbac: false` mean the bypass is what admitted it.
+     *
+     * The QueryBuilder emitter is the correct path to assert here, and
+     * deliberately not the UNION one: flows live in exactly one register/schema
+     * pair, and shouldUseUnionQuery() needs more than one pair, so the raw-SQL
+     * emitter is never the one a flow lookup reaches.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+     */
+    public function testRbacFalseBypassesThePrivateScopeSoTheFlowEngineStillResolves(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'engine-visible', null, false);
+        $this->insertFixture($register, $schema, 'engine-private', ['scope' => 'private'], false);
+
+        // CONTROL: with RBAC on, the private row is genuinely hidden. Without
+        // this the bypass assertion below would pass for a row that was never
+        // private in the first place.
+        $enforced = $this->visibleKeys($register, $schema);
+        $this->assertContains('engine-visible', $enforced);
+        $this->assertNotContains(
+            'engine-private',
+            $enforced,
+            'Control failed: the row is not actually private, so the bypass assertion would be vacuous.'
+        );
+
+        // The engine path: same table, same row, RBAC disabled.
+        $asEngine = $this->keysOf(
+            $this->mapper->searchObjectsInRegisterSchemaTable(
+                ['_multitenancy' => false, '_rbac' => false],
+                $register,
+                $schema
+            )
+        );
+
+        $this->assertContains(
+            'engine-private',
+            $asEngine,
+            'A private object is invisible to _rbac:false — triggers and scheduled runs would silently stop.'
+        );
+        $this->assertContains('engine-visible', $asEngine);
+    }//end testRbacFalseBypassesThePrivateScopeSoTheFlowEngineStillResolves()
+
+
+    /**
      * REGRESSION: an ordinary update must not destroy per-object authorization.
      *
      * `prepareObjectDataForTable()` strips `authorization` from the incoming
