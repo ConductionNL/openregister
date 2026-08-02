@@ -560,7 +560,8 @@ class PermissionHandler
             authorization: $authorization,
             object: $object,
             userId: $userId,
-            objectOwner: $objectOwner
+            objectOwner: $objectOwner,
+            action: $action
         );
         if ($privateVerdict !== null) {
             return $privateVerdict;
@@ -751,6 +752,8 @@ class PermissionHandler
      * @param ObjectEntity|null $object        The object under evaluation, if any.
      * @param string|null       $userId        The caller, or null to resolve from the session.
      * @param string|null       $objectOwner   The object's owner, if the caller supplied it separately.
+     * @param string            $action        The action being decided; a grant only counts when it carries
+     *                                         that permission.
      *
      * @return bool|null The verdict, or null when the object is not private.
      */
@@ -758,7 +761,8 @@ class PermissionHandler
         ?array $authorization,
         ?ObjectEntity $object,
         ?string $userId,
-        ?string $objectOwner
+        ?string $objectOwner,
+        string $action
     ): ?bool {
         if ($object === null) {
             return null;
@@ -796,7 +800,7 @@ class PermissionHandler
         // schema stays the CEILING (design D3b). `private` narrows and a grant
         // re-opens within that ceiling; neither can admit somebody the schema
         // refuses.
-        if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid()) === true) {
+        if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $action) === true) {
             return null;
         }
 

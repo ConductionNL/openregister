@@ -50,6 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use OCP\Constants;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -184,20 +185,81 @@ class ObjectGrantResolver
     }//end hasAnyGrant()
 
     /**
-     * Whether one object is granted to the caller.
+     * The core permission bit an action requires, or null when it has none.
+     *
+     * Core's bitmask has five verbs. An OpenRegister action outside that set —
+     * a custom verb like ZGW's `besluit_nemen` — has NO bit, and a grant
+     * therefore cannot admit it: it returns null and the caller fails closed.
+     * That is the conservative direction and it matches design Q5, where RBAC
+     * grants visibility only and an extension verb is enforced at the endpoint
+     * that performs it.
+     *
+     * @param string $action The action being decided.
+     *
+     * @return integer|null The required bit, or null when the action has none.
+     */
+    public function permissionFor(string $action): ?int
+    {
+        $bits = [
+            'read'   => Constants::PERMISSION_READ,
+            'update' => Constants::PERMISSION_UPDATE,
+            'create' => Constants::PERMISSION_CREATE,
+            'delete' => Constants::PERMISSION_DELETE,
+            'share'  => Constants::PERMISSION_SHARE,
+        ];
+
+        return ($bits[$action] ?? null);
+    }//end permissionFor()
+
+    /**
+     * The object UUIDs granted to a caller FOR ONE ACTION.
+     *
+     * A grant carries a permission, and until this existed every grant admitted
+     * every action — a read-only invitation silently allowed delete. The list
+     * emitters use this so the grant branch only ever names rows the caller may
+     * reach for the action being filtered.
+     *
+     * @param string|null $userId The caller.
+     * @param string      $action The action being decided.
+     *
+     * @return array<string, int> Object UUID => permission bitmask.
+     */
+    public function grantedObjectUuidsFor(?string $userId, string $action): array
+    {
+        $required = $this->permissionFor(action: $action);
+        if ($required === null) {
+            return [];
+        }
+
+        $granted = [];
+        foreach ($this->grantedObjectUuids(userId: $userId) as $uuid => $permissions) {
+            if (($permissions & $required) === $required) {
+                $granted[$uuid] = $permissions;
+            }
+        }
+
+        return $granted;
+    }//end grantedObjectUuidsFor()
+
+    /**
+     * Whether one object is granted to the caller for one action.
      *
      * @param string|null $userId     The caller.
      * @param string|null $objectUuid The object's UUID.
+     * @param string      $action     The action being decided.
      *
-     * @return bool True when a grant exists.
+     * @return bool True when a grant exists that carries the action's permission.
      */
-    public function isGranted(?string $userId, ?string $objectUuid): bool
+    public function isGranted(?string $userId, ?string $objectUuid, string $action='read'): bool
     {
         if ($objectUuid === null || $objectUuid === '') {
             return false;
         }
 
-        return array_key_exists($objectUuid, $this->grantedObjectUuids(userId: $userId));
+        return array_key_exists(
+            $objectUuid,
+            $this->grantedObjectUuidsFor(userId: $userId, action: $action)
+        );
     }//end isGranted()
 
     /**

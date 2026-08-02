@@ -183,12 +183,13 @@ class MagicRbacHandler
      * The object UUIDs granted to the current caller, as quoted SQL literals.
      *
      * @param string|null $userId The caller.
+     * @param string      $action The action being filtered; a grant only counts when it carries that permission.
      *
      * @return string[] Quoted UUID literals, empty when the caller holds none.
      */
-    private function quotedGrantedUuids(?string $userId): array
+    private function quotedGrantedUuids(?string $userId, string $action): array
     {
-        $grants = $this->objectGrants()?->grantedObjectUuids(userId: $userId);
+        $grants = $this->objectGrants()?->grantedObjectUuidsFor(userId: $userId, action: $action);
         if (empty($grants) === true) {
             return [];
         }
@@ -263,6 +264,7 @@ class MagicRbacHandler
      * @param string      $columnName    The `_authorization` column as this emitter references it.
      * @param string      $uuidColumn    The `_uuid` column as this emitter references it.
      * @param string|null $userId        The caller, for grant resolution.
+     * @param string      $action        The action being filtered; a grant only counts when it carries that permission.
      *
      * @return string A SQL predicate true for rows this caller may reach.
      *
@@ -272,14 +274,15 @@ class MagicRbacHandler
         ?array $authorization,
         string $columnName,
         string $uuidColumn,
-        ?string $userId
+        ?string $userId,
+        string $action
     ): string {
         return $this->objectScope()->notPrivateOrGrantedSql(
             authColumn: $columnName,
             defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
             isPostgres: $this->isPostgres(),
             uuidColumn: $uuidColumn,
-            quotedUuids: $this->quotedGrantedUuids(userId: $userId)
+            quotedUuids: $this->quotedGrantedUuids(userId: $userId, action: $action)
         );
     }//end reachableRowSqlFor()
 
@@ -365,7 +368,8 @@ class MagicRbacHandler
                 authorization: $authorization,
                 columnName: 't._authorization',
                 uuidColumn: 't._uuid',
-                userId: $userId
+                userId: $userId,
+                action: $action
             )
         );
 
@@ -1101,7 +1105,7 @@ class MagicRbacHandler
                 // ordinary one — and the rule chain below then decides, because
                 // the schema stays the CEILING (design D3b). Without a grant a
                 // private object denies here.
-                if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $objectUuid) !== true) {
+                if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $objectUuid, action: $action) !== true) {
                     return false;
                 }
             }
@@ -1260,7 +1264,8 @@ class MagicRbacHandler
             authorization: $authorization,
             columnName: '_authorization',
             uuidColumn: '_uuid',
-            userId: $userId
+            userId: $userId,
+            action: $action
         );
 
         $ownerAdmits = $this->ownerAdmitConditionsSql(userGroups: $userGroups, userId: $userId);

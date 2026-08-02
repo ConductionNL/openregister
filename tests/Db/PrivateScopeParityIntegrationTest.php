@@ -998,6 +998,79 @@ class PrivateScopeParityIntegrationTest extends TestCase
 
 
     /**
+     * A grant's PERMISSION gates the action (task 4.5).
+     *
+     * The resolver has always carried core's bitmask; until this landed nothing
+     * consumed it, so a read-only invitation silently admitted `delete` too. The
+     * bit is now required per action, on every path.
+     */
+    public function testAReadOnlyGrantDoesNotAdmitAWrite(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'readonly', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['readonly'];
+
+        // PERMISSION_READ only.
+        $this->grantTo($entity, $this->testUid);
+
+        $this->assertTrue(
+            $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: 'read',
+                userId: $this->testUid,
+                objectOwner: $entity->getOwner(),
+                object: $entity
+            ),
+            'a read grant must admit read'
+        );
+
+        foreach (['update', 'delete'] as $write) {
+            $this->assertFalse(
+                $this->permissionHandler->hasPermission(
+                    schema: $schema,
+                    action: $write,
+                    userId: $this->testUid,
+                    objectOwner: $entity->getOwner(),
+                    object: $entity
+                ),
+                "a read-only grant must NOT admit $write"
+            );
+        }
+
+        // And the list path agrees: a read grant still shows the row on a read.
+        $this->assertContains('readonly', $this->visibleKeys($register, $schema));
+    }//end testAReadOnlyGrantDoesNotAdmitAWrite()
+
+
+    /**
+     * A grant cannot admit a CUSTOM verb, which has no core permission bit.
+     *
+     * Core's bitmask has five verbs. An OpenRegister action outside that set —
+     * ZGW's `besluit_nemen`, say — has no bit, so a grant cannot carry it and the
+     * caller fails closed. RBAC grants visibility; an extension verb is enforced
+     * at the endpoint that performs it (design Q5).
+     */
+    public function testAGrantCannotAdmitACustomVerb(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'customverb', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['customverb'];
+        $this->grantTo($entity, $this->testUid);
+
+        $this->assertNull(
+            $this->grantResolver()->permissionFor('besluit_nemen'),
+            'a custom verb must map to no core permission bit'
+        );
+        $this->assertFalse(
+            $this->grantResolver()->isGranted($this->testUid, $entity->getUuid(), 'besluit_nemen'),
+            'a grant must not admit a verb it cannot carry'
+        );
+    }//end testAGrantCannotAdmitACustomVerb()
+
+
+    /**
      * A GRANT MUST NOT CROSS THE TENANT EDGE (task 4.3).
      *
      * The grant branch is OR-ed into the RBAC filter, so on its own it would
