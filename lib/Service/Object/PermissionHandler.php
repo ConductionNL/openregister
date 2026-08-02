@@ -42,6 +42,8 @@ use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -68,6 +70,10 @@ use Psr\Container\ContainerInterface;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Three over, from the private-scope work:
+ *   objectScope() / objectGrants() resolve the two shared resolvers, and privateScopeVerdict()
+ *   is the scope gate. Splitting them out would put part of one access decision in another
+ *   class, which is exactly the drift this change exists to prevent.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    RBAC methods are cohesive units; splitting scatters the security policy without reducing it
  * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath
@@ -203,17 +209,22 @@ class PermissionHandler
     /**
      * PermissionHandler constructor.
      *
-     * @param IUserSession                               $userSession        User session for getting current user.
-     * @param IUserManager                               $userManager        User manager for getting user objects.
-     * @param IGroupManager                              $groupManager       Group manager for checking user groups.
-     * @param SchemaMapper                               $schemaMapper       Mapper for schema operations.
-     * @param MagicMapper                                $objectEntityMapper Mapper for object entity operations.
-     * @param ConditionMatcher                           $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
-     * @param IAppConfig                                 $appConfig          App config for the inheritFromPublic tenant default and
-     *                                                                       the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
-     * @param LoggerInterface                            $logger             Logger for permission auditing.
-     * @param ContainerInterface                         $container          Container for lazy loading services.
-     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
+     * @param IUserSession                               $userSession         User session for getting current user.
+     * @param IUserManager                               $userManager         User manager for getting user objects.
+     * @param IGroupManager                              $groupManager        Group manager for checking user groups.
+     * @param SchemaMapper                               $schemaMapper        Mapper for schema operations.
+     * @param MagicMapper                                $objectEntityMapper  Mapper for object entity operations.
+     * @param ConditionMatcher                           $conditionMatcher    Shared PHP-side match evaluator (ADR-011).
+     * @param IAppConfig                                 $appConfig           App config for the inheritFromPublic tenant default and
+     *                                                                        the `enforce_default_closed` opt-in flag (Wave-12 Fix
+     *                                                                        2).
+     * @param LoggerInterface                            $logger              Logger for permission auditing.
+     * @param ContainerInterface                         $container           Container for lazy loading services.
+     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher     Optional dispatcher for custom-scope events.
+     * @param ObjectScopeResolver|null                   $objectScopeResolver Shared object-scope resolver; nullable so adding it is
+     *                                                                        not a fatal at existing construction sites.
+     * @param ObjectGrantResolver|null                   $objectGrantResolver Shared per-object grant resolver; nullable for the
+     *                                                                        same reason.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -227,9 +238,55 @@ class PermissionHandler
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
-        private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null
+        private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null,
+        private readonly ?ObjectScopeResolver $objectScopeResolver=null,
+        private readonly ?ObjectGrantResolver $objectGrantResolver=null
     ) {
     }//end __construct()
+
+    /**
+     * The shared object-scope resolver.
+     *
+     * Nullable-with-default in the constructor so adding it does not become a
+     * fatal at every existing construction site. The resolver is a stateless
+     * value object, so falling back to a fresh instance is equivalent to the
+     * injected one.
+     *
+     * @return ObjectScopeResolver The one definition of the scope vocabulary.
+     */
+    private function objectScope(): ObjectScopeResolver
+    {
+        return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+    }//end objectScope()
+
+    /**
+     * The shared per-object grant resolver.
+     *
+     * Unlike the scope resolver this one memoises per request, so the container
+     * instance is used rather than a fresh one — a new instance per call would
+     * re-read core's shares on every decision.
+     *
+     * @return ObjectGrantResolver|null The resolver, or null when unavailable.
+     */
+    private function objectGrants(): ?ObjectGrantResolver
+    {
+        if ($this->objectGrantResolver !== null) {
+            return $this->objectGrantResolver;
+        }
+
+        try {
+            $resolved = $this->container->get(ObjectGrantResolver::class);
+            if (($resolved instanceof ObjectGrantResolver) === true) {
+                return $resolved;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            // Fail CLOSED: no resolver means no grants, which hides objects
+            // rather than exposing them.
+            return null;
+        }
+    }//end objectGrants()
 
     /**
      * Check if current user has permission to perform action on schema
@@ -498,6 +555,22 @@ class PermissionHandler
             return false;
         }
 
+        // The `private` scope. Evaluated here — after the cascade has resolved
+        // and before ANY rule is consulted — because that is what the scope
+        // means: a private object does not answer to the schema's rules at all.
+        // Returns null for the ordinary case so nothing changes for an object
+        // that never declared it.
+        $privateVerdict = $this->privateScopeVerdict(
+            authorization: $authorization,
+            object: $object,
+            userId: $userId,
+            objectOwner: $objectOwner,
+            action: $action
+        );
+        if ($privateVerdict !== null) {
+            return $privateVerdict;
+        }
+
         // Get current user if not provided.
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -659,6 +732,84 @@ class PermissionHandler
 
         return false;
     }//end evaluatePermission()
+
+    /**
+     * Decide a private object, or decline to decide.
+     *
+     * Returns `true` (admit), `false` (deny), or `null` meaning "this object is
+     * not private — carry on with the normal rule chain". The null case is the
+     * overwhelmingly common one and does no user lookup at all, so an object
+     * that never declared a scope costs nothing.
+     *
+     * `$authorization` is the ALREADY-CASCADED block from
+     * {@see resolveAuthorization()}, in which the object's own `_authorization`
+     * has replaced the schema's keys. Reading the scope from it therefore gets
+     * the object-over-schema precedence for free, and gets it from the same
+     * value the rule chain is about to use.
+     *
+     * A check with NO object is never gated. A scope is a property of an object,
+     * so with no object there is nothing to be private — and gating here would
+     * turn a schema whose DEFAULT is private into a schema nobody can create in,
+     * which inverts the meaning of a default.
+     *
+     * @param array|null        $authorization The cascaded authorization block.
+     * @param ObjectEntity|null $object        The object under evaluation, if any.
+     * @param string|null       $userId        The caller, or null to resolve from the session.
+     * @param string|null       $objectOwner   The object's owner, if the caller supplied it separately.
+     * @param string            $action        The action being decided; a grant only counts when it carries
+     *                                         that permission.
+     *
+     * @return bool|null The verdict, or null when the object is not private.
+     */
+    private function privateScopeVerdict(
+        ?array $authorization,
+        ?ObjectEntity $object,
+        ?string $userId,
+        ?string $objectOwner,
+        string $action
+    ): ?bool {
+        if ($object === null) {
+            return null;
+        }
+
+        if ($this->objectScope()->declaredScope(authorization: $authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
+            return null;
+        }
+
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()?->getUID();
+        }
+
+        $userGroups = [];
+        if ($userId !== null) {
+            $userObj = $this->userManager->get($userId);
+            if ($userObj !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($userObj);
+            }
+        }
+
+        $owner = ($objectOwner ?? $object->getOwner());
+
+        if ($this->objectScope()->admitsUnconditionally(
+                userId: $userId,
+                userGroups: $userGroups,
+                objectOwner: $owner
+            ) === true
+        ) {
+            return true;
+        }
+
+        // A grant makes a private object behave, for this caller, as an ordinary
+        // one — so decline to decide and let the rule chain run, because the
+        // schema stays the CEILING (design D3b). `private` narrows and a grant
+        // re-opens within that ceiling; neither can admit somebody the schema
+        // refuses.
+        if ($this->objectGrants()?->isGranted(userId: $userId, objectUuid: $object->getUuid(), action: $action) === true) {
+            return null;
+        }
+
+        return false;
+    }//end privateScopeVerdict()
 
     /**
      * Dispatch `CustomScopeEvaluatingEvent` and collect a listener

@@ -3660,7 +3660,26 @@ class MagicMapper extends AbstractObjectMapper
             'files',
             'relations',
             'locked',
-            'authorization',
+            // `authorization` is DELIBERATELY absent from this list.
+            //
+            // The `unset($metadata['authorization'])` above says per-object RBAC
+            // must not be writable by ordinary create/update calls. But listing
+            // the field here undid that in the worst possible way: the loop below
+            // resolves every listed field as `$metadata[$field] ?? null`, so the
+            // stripped key came back as an explicit NULL and the UPDATE wrote it
+            // — DESTROYING the stored rules on the next save of that object.
+            //
+            // Measured: an object with `{"scope": "private"}` lost it as soon as
+            // anything resolved its folder, because that path calls update().
+            // A private object silently became visible again, which is the exact
+            // failure direction a privacy feature must not have. The same wipe hit
+            // the per-object action overrides shipped as Wave-12 Fix 5.
+            //
+            // Omitting the field means the column is never named in the INSERT or
+            // UPDATE at all — `updateObjectInRegisterSchemaTable()` only sets keys
+            // that are PRESENT — so the stored value is carried forward untouched,
+            // which is what "not writable by this path" has to mean. Writes go
+            // through the dedicated authorization-management path.
             'validation',
             'deleted',
             'geo',
@@ -10274,7 +10293,9 @@ class MagicMapper extends AbstractObjectMapper
                 schema: $schema,
                 action: 'read',
                 objectOwner: $object->getOwner(),
-                objectData: $objectData
+                objectData: $objectData,
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;

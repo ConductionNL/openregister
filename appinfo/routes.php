@@ -37,6 +37,12 @@ return [
         // against the session user. All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        // Sharing (shared-credentials-and-flows). `shared-with-me` is a LITERAL
+        // segment and is registered next to `providers`, before the `{id}` routes,
+        // so a future `GET /api/credentials/{id}` cannot swallow it.
+        ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
         ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -65,6 +71,16 @@ return [
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+
+        // Per-object scope and grants. `_authorization` is not writable through an
+        // ordinary object save — non-admin writes have it stripped and the write
+        // path omits the column so a routine update cannot destroy it — so
+        // changing an object's scope needs this owner-checked entry point.
+        ['name' => 'objectSharing#scope',        'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#setScope',     'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#shares',       'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#createShare',  'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#destroyShare', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'shareId' => '[^/]+']],
 
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],

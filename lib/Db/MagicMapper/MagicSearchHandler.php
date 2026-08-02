@@ -1302,11 +1302,27 @@ class MagicSearchHandler
             );
         }
 
+        // A per-object grant must never widen the tenant edge (ADR-002; design
+        // D3c). The grant branch is OR-ed into the RBAC filter, so on a schema
+        // whose conditional rules would otherwise SKIP the organisation filter a
+        // grant would become a cross-tenant hole. Forcing the EXISTING filter on
+        // is deliberate: an `_organisation` term inside the grant branch would be
+        // a second definition of the tenant edge, and this change exists because
+        // second definitions of a rule drift apart. Cross-organisation sharing is
+        // group 7's decision to take, not a side effect to inherit here.
+        $hasObjectGrants = false;
+        if ($_rbac === true) {
+            $hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
+        }
+
         // Apply multitenancy filter based on RBAC access and explicit request.
         if ($_multitenancy === true) {
             $applyMultitenancy = false;
 
-            if ($userHasRbacAccess === false) {
+            if ($hasObjectGrants === true) {
+                // Reached rows through a grant — the tenant edge stands.
+                $applyMultitenancy = true;
+            } else if ($userHasRbacAccess === false) {
                 // No RBAC access - apply multitenancy as normal.
                 $applyMultitenancy = true;
             } else if ($multitenancyExplicit === true) {

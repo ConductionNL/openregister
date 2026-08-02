@@ -32,6 +32,7 @@ use OCP\IURLGenerator;
 use stdClass;
 use Exception;
 use RuntimeException;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -107,6 +108,10 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   One over the threshold, from the
+ * ObjectScopeResolver import — used only for its scope-vocabulary constants, so the
+ * `scope` key is validated against the SAME list the runtime resolves it with rather
+ * than a second copy of the strings here.
  *
  * @psalm-suppress                                PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -903,10 +908,19 @@ class Schema extends Entity implements JsonSerializable
      * Validate an authorization rules array
      *
      * Keys are either CRUD actions (create, read, update, delete) holding rule
-     * arrays, or reserved cascade flags (e.g. inheritFromPublic) holding a
-     * boolean. Reserved flags are behaviour toggles read at runtime by
-     * PermissionHandler, not action rule sets, so they are validated as
-     * booleans and skip the action/array checks.
+     * arrays, or reserved non-action keys. Reserved keys are behaviour toggles
+     * read at runtime, not action rule sets, so they skip the action/array
+     * checks and are validated against their own shape:
+     *
+     * - `inheritFromPublic` — a boolean cascade flag.
+     * - `scope` — the default object scope for this schema, from the
+     *   {@see ObjectScopeResolver} vocabulary.
+     *
+     * `scope` is validated STRICTLY here even though the runtime treats an
+     * unrecognised value as private. The two are not alternatives: strict
+     * validation gives a schema author an error at authoring time, and the
+     * runtime fail-closed still covers a value that arrived some other way — an
+     * import, a direct write, or a version that knew a scope this one does not.
      *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
@@ -939,6 +953,12 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }
 
+            // The default object scope for this schema.
+            if ($action === ObjectScopeResolver::SCOPE_KEY) {
+                $this->validateScopeValue(scope: $rules, context: $context);
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
@@ -959,6 +979,32 @@ class Schema extends Entity implements JsonSerializable
             }
         }//end foreach
     }//end validateAuthorizationRules()
+
+    /**
+     * Validate a schema's default object scope.
+     *
+     * Strict on purpose, even though the runtime treats an unrecognised value as
+     * private: validation gives a schema author an error at authoring time, and
+     * the runtime fail-closed still covers a value that arrived some other way.
+     *
+     * @param mixed  $scope   The declared scope value.
+     * @param string $context Context for the error message.
+     *
+     * @throws \InvalidArgumentException When the scope is not in the vocabulary.
+     *
+     * @return void
+     */
+    private function validateScopeValue(mixed $scope, string $context): void
+    {
+        $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+
+        if (in_array($scope, $validScopes, true) === false) {
+            $scopeList = implode(', ', $validScopes);
+            throw new InvalidArgumentException(
+                "Authorization scope in {$context} must be one of: {$scopeList}"
+            );
+        }
+    }//end validateScopeValue()
 
     /**
      * Validate property-level authorization
