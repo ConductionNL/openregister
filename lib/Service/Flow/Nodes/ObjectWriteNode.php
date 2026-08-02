@@ -70,6 +70,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use OCP\IL10N;
@@ -88,7 +89,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Most of the length is reasoning and per-rule docblocks; the executable body is small and flat.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
  */
-class ObjectWriteNode implements IFlowNode
+class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -352,6 +353,37 @@ class ObjectWriteNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of an object-write step, across all four operations.
+     *
+     * The union, not a per-operation set. Which keys are FORBIDDEN for which
+     * operation is `validateOperationKeys()`'s question and it answers it far
+     * more usefully than a bare "unknown key" ever could — `"fields" has no
+     * meaning for a delete step` names the mistake, not just the symptom.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return [
+            'register',
+            'schema',
+            'operation',
+            'fields',
+            'match',
+            'replace',
+            'output',
+            'confirmDelete',
+            'maxWrites',
+            'onConflict',
+            'onMissing',
+            'onNoMatch',
+        ];
+
+    }//end configKeys()
 
     /**
      * Refuse a configuration the author cannot have meant.

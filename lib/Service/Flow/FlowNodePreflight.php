@@ -40,6 +40,33 @@
  * - The owning app **is not enabled**. Installing it is exactly the fix, and the
  *   document is not wrong. WARNED, loudly and structurally, and saved.
  *
+ * ## The type resolving is only half the question
+ *
+ * A resolved type says the app provides the step. It says nothing about whether
+ * the node can READ the config the edge hands it, and that second half produced
+ * its own set of measured failures (hydra#489, four inert flows). The check has
+ * two parts, and it needs both:
+ *
+ * - `validateConfig()` — the node's own opinion. Catches a REQUIRED key that is
+ *   missing or malformed. It cannot catch anything else, because a node only
+ *   examines the keys it looks for; a key it does not look for is invisible to
+ *   it by construction. Where the required set is empty the method is a no-op no
+ *   matter how carefully it is written — `StopNode::validateConfig()` is empty
+ *   for exactly that reason, and it is not wrong to be.
+ * - The node's declared vocabulary ({@see IFlowNodeConfigKeys}) — catches a key
+ *   the node will silently ignore. `StopNode` accepting `status`/`reason` while
+ *   reading `error`/`message`, `SubFlowNode` accepting `input`/`output` while
+ *   implementing neither: both satisfied every required key and both were inert.
+ *
+ * Keys beginning with `$` are authoring annotations (`$why`, `$comment`), used
+ * throughout the fleet's flow documents and read by nothing. They are exempt by
+ * contract — a check that refused them would refuse nearly every real flow,
+ * which is worse than no check.
+ *
+ * A node that does not declare a vocabulary is not vocabulary-checked. That is
+ * today's behaviour preserved for out-of-tree nodes, not an oversight; see
+ * {@see IFlowNodeConfigKeys} for why the contract is opt-in.
+ *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
  *
@@ -66,6 +93,12 @@ use UnexpectedValueException;
 
 /**
  * Resolves every step type in a flow document before the flow can run.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The complexity is a count of
+ *   the distinct ways a flow document can be wrong, spread across ten short
+ *   single-purpose methods (the longest branches four ways). Splitting it would
+ *   move the branching, not remove it, and would put "what makes a step
+ *   unrunnable" in two places — which is the drift this class exists to end.
  *
  * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
  */
@@ -101,6 +134,51 @@ class FlowNodePreflight
      * COMPLETED, which is the failure this whole class exists to remove.
      */
     public const REASON_CONFIG_REJECTED = 'node-config-rejected';
+
+    /**
+     * The config carries a key the node never reads.
+     *
+     * Blocking, and it is the half `validateConfig()` structurally cannot see.
+     * That method answers "is anything REQUIRED missing"; a step written in
+     * another node's dialect can satisfy every required key and still be inert,
+     * because the keys carrying the actual intent are ones the node ignores.
+     * `StopNode` requires nothing at all, so it accepted `status`/`reason`
+     * (it reads `error`/`message`) and stopped runs with the generic "Flow
+     * stopped" and `isError=false`. `SubFlowNode` requires only `flow`, so it
+     * accepted `input`/`output` and passed the child nothing. Neither was
+     * catchable until a node could name its whole vocabulary.
+     */
+    public const REASON_CONFIG_UNKNOWN_KEY = 'node-config-unknown-key';
+
+    /**
+     * `onError` was put in `config` instead of on the edge.
+     *
+     * `FlowEngine::policyFor()` reads `$step['onError']` — the EDGE, one level
+     * up from `config`. A policy inside `config` is read by nothing.
+     *
+     * Blocking only when the buried policy differs from the engine default
+     * (`stop`), because that is exactly when it changes what the run does: the
+     * author asked for `continue` or `dead_letter` and silently got `stop`.
+     * A buried `"stop"` is still wrong, but it is wrong in the direction the
+     * engine was already going, so it warns instead of refusing a fleet's worth
+     * of live flow documents over a no-op key. Same rule, same threshold, as
+     * `hydra/scripts/test-flow-definitions.sh` — deliberately, so the two
+     * guards cannot disagree about the same document.
+     */
+    public const REASON_CONFIG_ONERROR_MISPLACED = 'node-config-onerror-misplaced';
+
+    /**
+     * The key the engine reads from the EDGE and never from `config`.
+     */
+    private const EDGE_LEVEL_ONERROR = 'onError';
+
+    /**
+     * The `onError` policy the engine applies when an edge declares none.
+     *
+     * Mirrors `FlowEngine::ON_ERROR_STOP`, not imported from it: this class
+     * must not gain a dependency on the engine to know one default string.
+     */
+    private const DEFAULT_ONERROR = 'stop';
 
     /**
      * Constructor.
@@ -147,12 +225,45 @@ class FlowNodePreflight
             return false;
         }
 
+        return ($this->nodesLookRight(nodes: $nodes) === true && $this->edgesLookRight(edges: $edges) === true);
+
+    }//end looksLikeFlow()
+
+    /**
+     * Whether every entry in a `nodes` list is a record carrying an id.
+     *
+     * @param array $nodes The candidate node list.
+     *
+     * @return boolean True when they all are.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function nodesLookRight(array $nodes): bool
+    {
         foreach ($nodes as $node) {
             if (is_array($node) === false || isset($node['id']) === false) {
                 return false;
             }
         }
 
+        return true;
+
+    }//end nodesLookRight()
+
+    /**
+     * Whether every entry in an `edges` list carries both endpoints.
+     *
+     * Either spelling is accepted — `from`/`to` is this engine's, `source`/
+     * `target` is what most graph editors emit.
+     *
+     * @param array $edges The candidate edge list.
+     *
+     * @return boolean True when they all do.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function edgesLookRight(array $edges): bool
+    {
         foreach ($edges as $edge) {
             if (is_array($edge) === false) {
                 return false;
@@ -167,7 +278,7 @@ class FlowNodePreflight
 
         return true;
 
-    }//end looksLikeFlow()
+    }//end edgesLookRight()
 
     /**
      * Resolve every step type the document names.
@@ -239,6 +350,15 @@ class FlowNodePreflight
                     ];
                 }//end if
 
+                // ...and the half a required-key check cannot reach. A node
+                // only sees the keys it looks for; the ones it does not look
+                // for are invisible to it BY CONSTRUCTION, however careful its
+                // validateConfig() is. Only the node's declared vocabulary
+                // ({@see IFlowNodeConfigKeys}) can expose those.
+                $dialect  = $this->dialectFindings(node: $node, edge: $edge, type: $type, edgeId: $edgeId);
+                $blocking = array_merge($blocking, $dialect['blocking']);
+                $warnings = array_merge($warnings, $dialect['warnings']);
+
                 continue;
             }//end if
 
@@ -276,6 +396,29 @@ class FlowNodePreflight
         $name   = ($label ?? (string) ($flow['name'] ?? 'flow'));
 
         foreach ($report['warnings'] as $warning) {
+            if ($warning['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
+                $this->logger->warning(
+                    message: sprintf(
+                        '[FlowNodePreflight] Flow "%s", edge "%s" (%s) sets config.onError="%s". '
+                        .'Nothing reads that: the engine takes the policy from the EDGE, beside "type". '
+                        .'It happens to match the default, so the run behaves the same — move it up one level.',
+                        $name,
+                        $warning['edge'],
+                        $warning['type'],
+                        ($warning['detail'] ?? '')
+                    ),
+                    context: [
+                        'file'   => __FILE__,
+                        'line'   => __LINE__,
+                        'flow'   => $name,
+                        'type'   => $warning['type'],
+                        'edge'   => $warning['edge'],
+                        'reason' => $warning['reason'],
+                    ]
+                );
+                continue;
+            }//end if
+
             // Loud on purpose. The measured failure was not that a step was
             // missing, it was that nothing said so — the run reported success.
             $this->logger->warning(
@@ -323,6 +466,38 @@ class FlowNodePreflight
     {
         $lines = [];
         foreach ($blocking as $finding) {
+            if ($finding['reason'] === self::REASON_CONFIG_UNKNOWN_KEY) {
+                // A node with an empty vocabulary needs saying in words:
+                // "it reads " followed by nothing reads like a truncated
+                // message, not like the deliberate answer it is.
+                $reads = (string) ($finding['reads'] ?? '');
+                if ($reads === '') {
+                    $reads = 'no config at all';
+                }
+
+                $lines[] = sprintf(
+                    '"%s" (edge %s) — config key(s) %s, which that node never reads; '
+                    .'it reads %s. Ignored keys make the step a pass-through that reports success',
+                    $finding['type'],
+                    $finding['edge'],
+                    ($finding['detail'] ?? '?'),
+                    $reads
+                );
+                continue;
+            }
+
+            if ($finding['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
+                $lines[] = sprintf(
+                    '"%s" (edge %s) — config.onError="%s" is read by nothing; the engine takes the policy '
+                    .'from the EDGE, beside "type". As written this step gets "%s"',
+                    $finding['type'],
+                    $finding['edge'],
+                    ($finding['detail'] ?? '?'),
+                    self::DEFAULT_ONERROR
+                );
+                continue;
+            }
+
             if ($finding['reason'] === self::REASON_CONFIG_REJECTED) {
                 $lines[] = sprintf(
                     '"%s" (edge %s) — the node exists but refuses this step\'s config: %s. '
@@ -354,9 +529,10 @@ class FlowNodePreflight
         }//end foreach
 
         return sprintf(
-            'Flow "%s" names %d step type(s) this instance cannot run: %s. '
-            .'Refusing the save: an unrunnable flow only fails once it is already halfway through, '
-            .'after earlier steps have made changes that do not roll back.',
+            'Flow "%s" has %d step(s) this instance cannot run as written: %s. '
+            .'Refusing the save: a step that cannot run only fails once the flow is already halfway through, '
+            .'after earlier steps have made changes that do not roll back — and a step whose config is ignored '
+            .'does not fail at all, it reports success having done nothing.',
             $flow,
             count($blocking),
             implode('; ', $lines)
@@ -401,6 +577,182 @@ class FlowNodePreflight
         return null;
 
     }//end configRejection()
+
+    /**
+     * Every config key on this edge that the node will never read.
+     *
+     * Only asked of a node that declares its vocabulary. A node that does not
+     * implement {@see IFlowNodeConfigKeys} is skipped entirely and silently:
+     * OpenRegister cannot know what `openconnector.source-call` or
+     * `hermiq.agent-step` read, and guessing would refuse correct flows from
+     * apps that shipped before this contract existed. That is today's behaviour
+     * preserved exactly — no node gets WORSE, some get better.
+     *
+     * Two exemptions, both deliberate and both documented on the interface:
+     *
+     * - A key beginning with `$` is an authoring annotation. `$why` and
+     *   `$comment` appear throughout the fleet's flow documents, explaining to
+     *   the next reader why a step exists. The engine has never read them. A
+     *   check without this exemption would refuse nearly every real flow, which
+     *   is a worse outcome than no check at all.
+     * - `onError` gets its own diagnosis rather than a generic "unknown key",
+     *   because the author did not invent it — they put a real engine option
+     *   one level too deep, and telling them so is worth more than telling them
+     *   the key is unrecognised.
+     *
+     * @param IFlowNode $node   The resolved node.
+     * @param array     $edge   The edge declaring the step.
+     * @param string    $type   The step type.
+     * @param string    $edgeId The edge's identifier, for the message.
+     *
+     * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function dialectFindings(IFlowNode $node, array $edge, string $type, string $edgeId): array
+    {
+        $report = [
+            'blocking' => [],
+            'warnings' => [],
+        ];
+
+        $config = ($edge['config'] ?? []);
+        $known  = $this->declaredKeys(node: $node);
+        if ($known === null || is_array($config) === false || $config === []) {
+            return $report;
+        }
+
+        $app    = $this->ownerOf(type: $type);
+        $strays = $this->strayKeys(config: $config, known: $known);
+
+        if ($strays['onError'] === true) {
+            $finding  = $this->onErrorFinding(config: $config, type: $type, app: $app, edgeId: $edgeId);
+            $severity = 'blocking';
+            if ($finding['detail'] === self::DEFAULT_ONERROR) {
+                $severity = 'warnings';
+            }
+
+            $report[$severity][] = $finding;
+        }
+
+        if ($strays['unknown'] === []) {
+            return $report;
+        }
+
+        // One finding per EDGE, not per key. An edge authored in the wrong
+        // dialect is wrong once — listing its four stray keys as four separate
+        // refusals reads like four separate mistakes.
+        $report['blocking'][] = [
+            'type'   => $type,
+            'app'    => $app,
+            'edge'   => $edgeId,
+            'reason' => self::REASON_CONFIG_UNKNOWN_KEY,
+            'detail' => implode(', ', $strays['unknown']),
+            'reads'  => implode(', ', $known),
+        ];
+
+        return $report;
+
+    }//end dialectFindings()
+
+    /**
+     * A node's declared config vocabulary, or null when it declares none.
+     *
+     * Null and `[]` are different answers and the caller must be able to tell
+     * them apart: `[]` is `openregister.switch` saying it reads no config at
+     * all, null is a node that never joined the contract and must therefore not
+     * be judged by it.
+     *
+     * @param IFlowNode $node The resolved node.
+     *
+     * @return array<int, string>|null The keys, or null when unchecked.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function declaredKeys(IFlowNode $node): ?array
+    {
+        if (($node instanceof IFlowNodeConfigKeys) === false) {
+            return null;
+        }
+
+        try {
+            $known = $node->configKeys();
+        } catch (Throwable $e) {
+            // A node whose own vocabulary lookup throws must not block the save
+            // — same reasoning as configRejection(): one broken node cannot be
+            // allowed to make the instance unsavable.
+            $this->logger->warning(
+                message: '[FlowNodePreflight] A node\'s configKeys() failed, skipping the dialect check: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
+            );
+            return null;
+        }
+
+        return array_map(static fn ($key): string => (string) $key, (array) $known);
+
+    }//end declaredKeys()
+
+    /**
+     * Split a step's config keys into the ones nothing will read.
+     *
+     * @param array              $config The step configuration.
+     * @param array<int, string> $known  The node's declared vocabulary.
+     *
+     * @return array{unknown: array<int, string>, onError: bool}
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function strayKeys(array $config, array $known): array
+    {
+        $unknown = [];
+        $onError = false;
+
+        foreach (array_keys($config) as $key) {
+            $key = (string) $key;
+            if (str_starts_with($key, IFlowNodeConfigKeys::ANNOTATION_PREFIX) === true) {
+                continue;
+            }
+
+            if ($key === self::EDGE_LEVEL_ONERROR) {
+                $onError = true;
+                continue;
+            }
+
+            if (in_array($key, $known, true) === false) {
+                $unknown[] = $key;
+            }
+        }//end foreach
+
+        return [
+            'unknown' => $unknown,
+            'onError' => $onError,
+        ];
+
+    }//end strayKeys()
+
+    /**
+     * Describe an `onError` policy that was written one level too deep.
+     *
+     * @param array  $config The step configuration.
+     * @param string $type   The step type.
+     * @param string $app    The app that owns the type.
+     * @param string $edgeId The edge's identifier.
+     *
+     * @return array<string, string> The finding; its severity is the caller's call.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function onErrorFinding(array $config, string $type, string $app, string $edgeId): array
+    {
+        return [
+            'type'   => $type,
+            'app'    => $app,
+            'edge'   => $edgeId,
+            'reason' => self::REASON_CONFIG_ONERROR_MISPLACED,
+            'detail' => (string) ($config[self::EDGE_LEVEL_ONERROR] ?? ''),
+        ];
+
+    }//end onErrorFinding()
 
     /**
      * The app a namespaced type belongs to.

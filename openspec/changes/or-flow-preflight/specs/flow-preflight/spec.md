@@ -92,6 +92,111 @@ holding every node an or#2244 instance had) through the real FlowNodeRegistry,
 the real preflight and the real ObjectCreatingEvent, with a positive control
 proving the same document saves once the node exists
 
+### Requirement: A node declares the config keys it reads, and stray keys are refused (REQ-PF-004)
+
+`validateConfig()` answers exactly one question — is anything REQUIRED missing —
+and cannot answer the other one. A node examines only the keys it looks for, so a
+key it does not look for is invisible to it by construction, and where a node
+requires nothing the method is a no-op however carefully it is written.
+
+Measured, in hydra#489, on flows that REQ-PF-003 passes:
+
+- `openregister.stop` accepted `config.status` / `config.reason` — it reads
+  `error` / `message` — and stopped runs with the generic "Flow stopped" and
+  `isError: false`. `StopNode::validateConfig()` has a literally empty body, and
+  on its own terms that is correct: a stop with no config is a clean stop.
+- `openregister.sub-flow` requires only `flow`/`flowId`, so it accepted
+  `config.input` / `config.output`, neither of which it implements, and the child
+  flow received nothing the author meant to hand it.
+
+Both satisfied every required key. Both resolved, dispatched and reported
+COMPLETED.
+
+OpenRegister SHALL therefore offer `IFlowNodeConfigKeys::configKeys()`, by which a
+node states its WHOLE top-level config vocabulary, required and optional alike;
+and the preflight SHALL REFUSE a save when an edge's `config` carries a key the
+resolved node's vocabulary does not contain.
+
+The contract SHALL be a SEPARATE, OPTIONAL interface rather than a new method on
+`IFlowNode`. Node implementations live in other repositories (openconnector ships
+`source-call` and `synchronization-run`, hermiq ships `agent-step` and
+`workload-step`); widening `IFlowNode` would make every un-updated implementation
+a fatal error on load. A node that does not implement the new interface SHALL NOT
+be vocabulary-checked, which is exactly the behaviour before this requirement.
+Every node OpenRegister itself ships SHALL implement it.
+
+Two exemptions SHALL apply:
+
+- A config key beginning with `$` is an authoring annotation. `$why` and
+  `$comment` appear throughout the fleet's flow documents and the engine has
+  never read them; a check without this exemption would refuse nearly every real
+  flow, which is worse than no check.
+- `onError` SHALL be reported as a MISPLACED engine option rather than an unknown
+  key, since `FlowEngine` reads the policy from the EDGE, one level above
+  `config`. It SHALL block only when the buried value differs from the engine
+  default `stop` — that is precisely when the run's behaviour differs from what
+  was asked for — and SHALL warn otherwise. This is the same threshold
+  `hydra/scripts/test-flow-definitions.sh` applies, so two guards cannot disagree
+  about one document.
+
+An edge SHALL yield at most one unknown-key finding, listing all its stray keys
+together: an edge written in the wrong dialect is one mistake, not four.
+
+The node catalogue (`GET /api/flow/node-catalog`) SHALL serve each node's
+`configKeys` when it declares them, and SHALL OMIT the field when it does not, so
+a consumer can distinguish "reads no config" (`[]`) from "did not say". This makes
+one machine-readable source of truth available to the editor and to any
+repository's flow lint, in place of a hand-maintained table per repository.
+
+#### Scenario: A stop step written in another node's dialect is refused
+
+- **GIVEN** an edge of type `openregister.stop` whose config declares `status` and `reason`
+- **WHEN** the flow is saved
+- **THEN** the save is refused, naming both keys and the keys the node does read
+
+#### Scenario: The same step in the node's own dialect saves
+
+- **GIVEN** the same edge declaring `error` and `message`
+- **WHEN** the flow is saved
+- **THEN** nothing blocks and nothing warns
+
+#### Scenario: A stop step with no config at all saves
+
+- **GIVEN** an edge of type `openregister.stop` with no config
+- **WHEN** the flow is saved
+- **THEN** nothing blocks, because both keys are optional
+
+#### Scenario: Authoring annotations are tolerated
+
+- **GIVEN** an edge whose config carries `$why` and `$comment` beside valid keys
+- **WHEN** the flow is saved
+- **THEN** nothing blocks and nothing warns
+
+#### Scenario: A node that declares no vocabulary is not checked
+
+- **GIVEN** a registered node that does not implement `IFlowNodeConfigKeys`
+- **WHEN** a flow gives one of its edges arbitrary config keys
+- **THEN** nothing blocks, because OpenRegister cannot know that node's vocabulary
+
+#### Scenario: A buried non-default onError policy is refused
+
+- **GIVEN** an edge whose config declares `onError: "continue"`
+- **WHEN** the flow is saved
+- **THEN** the save is refused, saying the policy belongs on the edge beside `type`
+
+#### Scenario: A buried default onError policy only warns
+
+- **GIVEN** an edge whose config declares `onError: "stop"`
+- **WHEN** the flow is saved
+- **THEN** the object is stored and a warning naming the edge is logged
+
+@e2e exclude backend save-path guard — covered by FlowNodeConfigVocabularyTest,
+which drives the REAL nodes through the REAL registry and preflight in both
+directions: the four bogus configs measured in hydra#489 are refused, and every
+one of the ten live hydra flow documents still saves. It additionally ratchets
+that every in-tree node declares a vocabulary and that every declared key appears
+in that node's own source
+
 ### Requirement: A flow document can be preflighted without being saved (REQ-PF-002)
 
 OpenRegister SHALL expose `POST /api/flow/validate`, which resolves a submitted

@@ -46,6 +46,7 @@ use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -56,7 +57,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode implements IFlowNode
+class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -151,6 +152,25 @@ class SubFlowNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a sub-flow step.
+     *
+     * `input` and `output` are NOT here, and their absence is the point. This
+     * node hands the child its items whole and returns the child's items
+     * whole; there is no mapping layer to configure. A step declaring them
+     * required only `flow`, so it saved, ran, and the author's intended
+     * mapping simply never happened — measured, in hydra#489.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['flow', 'flowId', 'wait'];
+
+    }//end configKeys()
 
     /**
      * Reject a sub-flow step that names no flow.

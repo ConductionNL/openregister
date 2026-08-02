@@ -34,6 +34,7 @@ use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -42,7 +43,7 @@ use UnexpectedValueException;
 /**
  * Reshapes each item's record.
  */
-class SetFieldsNode implements IFlowNode
+class SetFieldsNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -113,6 +114,23 @@ class SetFieldsNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a set-fields step.
+     *
+     * `fields` is NOT here. It is the plausible-looking name an author reaches
+     * for, it is what `openregister.object-write` calls its payload, and
+     * hydra-analyze-verdicts shipped a step using it that set nothing at all.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['set', 'compute', 'rename', 'remove', 'keepOnlySet'];
+
+    }//end configKeys()
 
     /**
      * Reject a configuration that would do nothing.
