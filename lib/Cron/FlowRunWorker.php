@@ -130,8 +130,15 @@ class FlowRunWorker extends TimedJob
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(time: $time);
-        // Every minute: a Wait step's resolution is bounded by this, and a
-        // queued run should feel immediate to the person who triggered it.
+        // A FLOOR, not a schedule. `setInterval` says "not more often than
+        // this"; how often the job actually runs is how often Nextcloud's cron
+        // is invoked, and the stock system cron is every FIVE minutes.
+        //
+        // Worth being explicit about, because reading this line as "every
+        // minute" overstates the queue's throughput by 5x: measured on the dev
+        // instance 2026-08-02, the drain was a flat 25 runs per five minutes —
+        // 300/hour — not 25 per minute. Capacity planning that starts from
+        // BATCH alone will be wrong by whatever the cron period is.
         $this->setInterval(seconds: 60);
 
     }//end __construct()
@@ -146,6 +153,7 @@ class FlowRunWorker extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
      */
     protected function run($argument): void
     {
