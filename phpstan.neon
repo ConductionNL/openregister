@@ -52,7 +52,14 @@ parameters:
         - '#has unknown class OCP\\ContextChat\\#'
         - '#has invalid type OCP\\ContextChat\\#'
         - '#Instantiated class OCP\\ContextChat\\#'
-        - '#implements unknown interface OCP\\ContextChat\\#'
+        # NOT ignorable: "Class ContentProvider implements unknown interface
+        # OCP\ContextChat\IContentProvider" is a class-level structural error
+        # that phpstan refuses to suppress via ignoreErrors — adding a pattern
+        # for it does not remove the error, it ADDS a second one
+        # ("... cannot be ignored, use excludePaths instead"). Excluding the
+        # whole file would hide real findings in it, so this single diagnostic
+        # is left visible until the nextcloud/ocp bump in #2273 resolves the
+        # interface for real.
         # Note the lower-case 'a' in TagUnassignedEvent — the two event class
         # names are NOT symmetrical (TagAssignedEvent / TagUnassignedEvent), so
         # a `Tag(Un)?AssignedEvent` alternation silently misses the Unassigned
