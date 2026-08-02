@@ -1,6 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <files psalm-version="5.26.1@d747f6500b38ac4f7dfc5edbcae6e4b637d7add0">
+  <file src="lib/AppHost/Observability/HealthCheckExecutor.php">
+    <UnusedParam>
+      <code><![CDATA[$appId]]></code>
+    </UnusedParam>
+  </file>
+  <file src="lib/AppHost/Observability/Source/ProviderMetricSource.php">
+    <UnusedParam>
+      <code><![CDATA[$appId]]></code>
+    </UnusedParam>
+  </file>
   <file src="lib/AppInfo/Application.php">
+    <UndefinedClass>
+      <code><![CDATA[\OCP\ContextChat\Events\ContentProviderRegisterEvent]]></code>
+      <code><![CDATA[\OCP\SystemTag\TagAssignedEvent]]></code>
+      <code><![CDATA[\OCP\SystemTag\TagUnassignedEvent]]></code>
+    </UndefinedClass>
     <UnusedClosureParam>
       <code><![CDATA[$container]]></code>
       <code><![CDATA[$container]]></code>
@@ -11,12 +26,6 @@
     <ParamNameMismatch>
       <code><![CDATA[$arguments]]></code>
     </ParamNameMismatch>
-  </file>
-  <file src="lib/BackgroundJob/ActionScheduleJob.php">
-    <UndefinedClass>
-      <code><![CDATA[$cron]]></code>
-      <code><![CDATA[CronExpression]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/BackgroundJob/DestructionCheckJob.php">
     <UnusedParam>
@@ -65,6 +74,17 @@
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
   </file>
+  <file src="lib/ContextChat/ContentProvider.php">
+    <UndefinedClass>
+      <code><![CDATA[IContentProvider]]></code>
+    </UndefinedClass>
+  </file>
+  <file src="lib/ContextChat/ContentProviderRegistrationListener.php">
+    <UndefinedClass>
+      <code><![CDATA[ContentProviderRegisterEvent]]></code>
+      <code><![CDATA[IContentManager]]></code>
+    </UndefinedClass>
+  </file>
   <file src="lib/Controller/ArchivalController.php">
     <UndefinedMethod>
       <code><![CDATA[findByUuid]]></code>
@@ -73,12 +93,6 @@
       <code><![CDATA[findByUuid]]></code>
       <code><![CDATA[findByUuid]]></code>
     </UndefinedMethod>
-  </file>
-  <file src="lib/Controller/BulkController.php">
-    <UndefinedClass>
-      <code><![CDATA[$e]]></code>
-      <code><![CDATA[UniqueConstraintViolationException]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Controller/GraphQLController.php">
     <UndefinedClass>
@@ -116,6 +130,7 @@
   <file src="lib/Controller/Trait/HandlesExceptionsTrait.php">
     <UndefinedThisPropertyFetch>
       <code><![CDATA[$this->logger]]></code>
+      <code><![CDATA[$this->logger]]></code>
     </UndefinedThisPropertyFetch>
   </file>
   <file src="lib/Db/ConsumerMapper.php">
@@ -127,52 +142,6 @@
     <InvalidNamedArgument>
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
-  </file>
-  <file src="lib/Db/EmailLinkMapper.php">
-    <UndefinedClass>
-      <code><![CDATA[$schema]]></code>
-      <code><![CDATA[$schema]]></code>
-      <code><![CDATA[$this->db->createSchema()]]></code>
-    </UndefinedClass>
-  </file>
-  <file src="lib/Db/MagicMapper.php">
-    <UndefinedClass>
-      <code><![CDATA[PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-    </UndefinedClass>
-    <UnusedParam>
-      <code><![CDATA[$column]]></code>
-      <code><![CDATA[$columns]]></code>
-      <code><![CDATA[$tableName]]></code>
-      <code><![CDATA[$type]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/Db/MagicMapper/MagicBulkHandler.php">
-    <UndefinedClass>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-    </UndefinedClass>
-    <UnusedParam>
-      <code><![CDATA[$chunkNumber]]></code>
-      <code><![CDATA[$tableName]]></code>
-    </UnusedParam>
-  </file>
-  <file src="lib/Db/MagicMapper/MagicFacetHandler.php">
-    <UndefinedClass>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-    </UndefinedClass>
-    <UnusedParam>
-      <code><![CDATA[$baseQuery]]></code>
-      <code><![CDATA[$field]]></code>
-      <code><![CDATA[$interval]]></code>
-      <code><![CDATA[$isMetadata]]></code>
-      <code><![CDATA[$schema]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Db/Mapping.php">
     <RedundantPropertyInitializationCheck>
@@ -204,11 +173,6 @@
       <code><![CDATA[array|null]]></code>
     </LessSpecificImplementedReturnType>
   </file>
-  <file src="lib/Db/OrganisationMapper.php">
-    <UndefinedClass>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Db/Register.php">
     <RedundantPropertyInitializationCheck>
       <code><![CDATA[$this->id]]></code>
@@ -224,29 +188,32 @@
       <code><![CDATA['unknown']]></code>
     </RedundantPropertyInitializationCheck>
   </file>
-  <file src="lib/Db/SearchTrailMapper.php">
-    <UndefinedClass>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\AbstractMySQLPlatform]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Db/SelectionListMapper.php">
     <InvalidNamedArgument>
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
   </file>
-  <file src="lib/Db/WebhookLogMapper.php">
+  <file src="lib/Listener/ContextChatSubmissionListener.php">
     <UndefinedClass>
-      <code><![CDATA[\Doctrine\DBAL\Platforms\PostgreSQLPlatform]]></code>
+      <code><![CDATA[$this->contentManager]]></code>
+      <code><![CDATA[$this->contentManager]]></code>
+      <code><![CDATA[ContentItem]]></code>
+      <code><![CDATA[IContentManager]]></code>
     </UndefinedClass>
   </file>
-  <file src="lib/Migration/Version1Date20251106000000.php">
-    <UndefinedClass>
-      <code><![CDATA[Type]]></code>
-    </UndefinedClass>
+  <file src="lib/Listener/FlowTriggerListener.php">
+    <UndefinedMethod>
+      <code><![CDATA[getObject]]></code>
+    </UndefinedMethod>
   </file>
-  <file src="lib/Migration/Version1Date20251106120000.php">
+  <file src="lib/Listener/NativeFlowTriggerListener.php">
+    <InvalidTemplateParam>
+      <code><![CDATA[IEventListener]]></code>
+    </InvalidTemplateParam>
     <UndefinedClass>
-      <code><![CDATA[Type]]></code>
+      <code><![CDATA[TagAssignedEvent]]></code>
+      <code><![CDATA[TagAssignedEvent|TagUnassignedEvent]]></code>
+      <code><![CDATA[TagAssignedEvent|TagUnassignedEvent]]></code>
     </UndefinedClass>
   </file>
   <file src="lib/Migration/Version1Date20260325120000.php">
@@ -261,28 +228,9 @@
     </UndefinedMethod>
   </file>
   <file src="lib/Service/Archival/DestructionService.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[objectEntity]]></code>
-    </InvalidNamedArgument>
-    <TooFewArguments>
-      <code><![CDATA[delete]]></code>
-    </TooFewArguments>
     <UndefinedMethod>
       <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
-      <code><![CDATA[findByUuid]]></code>
     </UndefinedMethod>
-  </file>
-  <file src="lib/Service/ArchivalService.php">
-    <InvalidNullableReturnType>
-      <code><![CDATA[string]]></code>
-    </InvalidNullableReturnType>
-    <NullableReturnStatement>
-      <code><![CDATA[$obj->getUuid()]]></code>
-    </NullableReturnStatement>
-    <UnusedParam>
-      <code><![CDATA[$destructionListId]]></code>
-    </UnusedParam>
   </file>
   <file src="lib/Service/AuthorizationService.php">
     <InvalidThrow>
@@ -291,6 +239,9 @@
   </file>
   <file src="lib/Service/CalendarEventService.php">
     <UndefinedClass>
+      <code><![CDATA[$this->calDavBackend]]></code>
+      <code><![CDATA[$this->calDavBackend]]></code>
+      <code><![CDATA[$this->calDavBackend]]></code>
       <code><![CDATA[$this->calDavBackend]]></code>
       <code><![CDATA[$this->calDavBackend]]></code>
       <code><![CDATA[$this->calDavBackend]]></code>
@@ -363,6 +314,8 @@
       <code><![CDATA[$this->cardDavBackend]]></code>
       <code><![CDATA[$this->cardDavBackend]]></code>
       <code><![CDATA[$this->cardDavBackend]]></code>
+      <code><![CDATA[$this->cardDavBackend]]></code>
+      <code><![CDATA[$this->cardDavBackend]]></code>
       <code><![CDATA[CardDavBackend]]></code>
       <code><![CDATA[CardDavBackend]]></code>
     </UndefinedClass>
@@ -390,9 +343,14 @@
     </UnusedParam>
   </file>
   <file src="lib/Service/Edepot/SipPackageBuilder.php">
-    <FalsableReturnStatement>
-      <code><![CDATA[$zipPath]]></code>
-    </FalsableReturnStatement>
+    <UndefinedClass>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+    </UndefinedClass>
   </file>
   <file src="lib/Service/Edepot/Transport/SftpTransport.php">
     <UndefinedClass>
@@ -411,10 +369,66 @@
       <code><![CDATA[$col]]></code>
     </StringIncrement>
   </file>
+  <file src="lib/Service/File/DocumentProcessingHandler.php">
+    <UndefinedClass>
+      <code><![CDATA[ZipArchive]]></code>
+    </UndefinedClass>
+  </file>
+  <file src="lib/Service/File/FilePublishingHandler.php">
+    <UndefinedClass>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+      <code><![CDATA[\ZipArchive]]></code>
+    </UndefinedClass>
+  </file>
   <file src="lib/Service/File/Pdf/PdfTextReplacer.php">
     <AssignmentToVoid>
       <code><![CDATA[$residualEntities]]></code>
     </AssignmentToVoid>
+  </file>
+  <file src="lib/Service/File/Sanitizer/DocxSanitizer.php">
+    <UndefinedClass>
+      <code><![CDATA[$zip]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+    </UndefinedClass>
+  </file>
+  <file src="lib/Service/File/Sanitizer/OdtSanitizer.php">
+    <UndefinedClass>
+      <code><![CDATA[$zip]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+      <code><![CDATA[ZipArchive]]></code>
+    </UndefinedClass>
   </file>
   <file src="lib/Service/GraphQL/GraphQLResolver.php">
     <InvalidPropertyAssignmentValue>
@@ -448,6 +462,11 @@
       <code><![CDATA[bool]]></code>
     </UnusedReturnValue>
   </file>
+  <file src="lib/Service/Object/SaveObject.php">
+    <UnusedParam>
+      <code><![CDATA[$failIfExists]]></code>
+    </UnusedParam>
+  </file>
   <file src="lib/Service/Object/SaveObjects.php">
     <ImplicitToStringCast>
       <code><![CDATA[$registerId]]></code>
@@ -455,6 +474,9 @@
       <code><![CDATA[self::$registerCache]]></code>
       <code><![CDATA[self::$schemaCache]]></code>
     </ImplicitToStringCast>
+    <UnusedParam>
+      <code><![CDATA[$rowSchema]]></code>
+    </UnusedParam>
   </file>
   <file src="lib/Service/Object/SchemaTypeConverter.php">
     <UnusedParam>
@@ -465,6 +487,15 @@
     <InvalidThrow>
       <code><![CDATA[\OCP\AppFramework\Http\ContentSecurityPolicy]]></code>
     </InvalidThrow>
+  </file>
+  <file src="lib/Service/ObjectSource/DbalObjectSourceProvider.php">
+    <TooManyArguments>
+      <code><![CDATA[select]]></code>
+      <code><![CDATA[select]]></code>
+    </TooManyArguments>
+    <UnusedParam>
+      <code><![CDATA[$config]]></code>
+    </UnusedParam>
   </file>
   <file src="lib/Service/OrganisationService.php">
     <InvalidThrow>
@@ -550,9 +581,26 @@
       <code><![CDATA[$relation]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/TextExtractionService.php">
+  <file src="lib/Service/TextExtraction/SpreadsheetExtractor.php">
     <StringIncrement>
       <code><![CDATA[$col]]></code>
     </StringIncrement>
+  </file>
+  <file src="lib/Service/WebPush/HexIconService.php">
+    <UndefinedClass>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\Imagick]]></code>
+      <code><![CDATA[\ImagickPixel]]></code>
+      <code><![CDATA[\ImagickPixel]]></code>
+      <code><![CDATA[\ImagickPixel]]></code>
+      <code><![CDATA[\ImagickPixel]]></code>
+    </UndefinedClass>
   </file>
 </files>
