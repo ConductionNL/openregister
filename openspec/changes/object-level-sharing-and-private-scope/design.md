@@ -200,23 +200,81 @@ a fail-open divergence that does not exist.
 
 ### D5 — Federated principals are principals
 
-A remote principal is one more thing an object can be shared with, resolved
-through the existing `OpenRegisterCloudFederationProvider`. `FederatedShare`
-already carries `objectUri`, `sharedWith`, `permissions` and `shareToken`, so the
-inbound half exists; this change gives it the same principal vocabulary as a local
-grant instead of a second decision path.
+A remote principal is one more thing an object can be shared with. That is
+satisfied structurally rather than with new code: `IShare::TYPE_REMOTE` and
+`TYPE_REMOTE_GROUP` sit in the SAME lists as the user and group types, both in
+`ObjectGrantResolver` and in `ObjectSharingService`. A remote grant therefore
+flows through the same resolve, the same SQL disjunct and the same PHP verdict.
+There is no federated branch to keep in step with the local one, which is the
+property worth having. `FederatedPrincipalVocabularyTest` pins both lists,
+because the property is invisible and nothing else would notice it being edited
+away.
+
+**CORRECTION — this decision previously said to reconcile object grants with
+`FederatedShare`. That was wrong, and following it would have been a mistake.**
+
+They are not two shapes of one thing:
+
+| | `FederatedShare` | a `TYPE_REMOTE` object grant |
+|---|---|---|
+| what is shared | a register / schema / object / query | one object |
+| who with | an ORGANISATION on a peer instance | a remote USER or group |
+| how authorised | OpenRegister's own scoped bearer `shareToken` | core's OCM federation |
+| served by | `federation#objects`, proxied by `FederatedObjectSourceProvider` against the peer's OpenRegister base URL | the ordinary RBAC filter |
+
+Folding a per-principal grant into an instance-to-instance transport would give
+the grant a second decision path — the exact thing D4 forbids — and would put
+object-level RBAC behind a bearer token that was designed to authorise a whole
+register. They stay distinct, for the same reason file shares stay distinct
+(task 8.2): sharing a container and inviting a person are different acts.
+
+**What is NOT proven.** That an inbound federated grant from a real peer admits a
+real remote user needs a SECOND Nextcloud instance and an OCM handshake. No
+single-instance test substitutes for it, and none here pretends to — tasks 7.2
+and 7.3 stay open with that stated.
 
 ### D6 — One primitive: the bespoke `sharedWith[]` is superseded
 
 Credentials and flows grew `sharedWith[]` + `sharedUsers` + `sharedGroups` +
 a `$contains` operator because no primitive existed. Once this lands, the broker's
 Guard 1c consumes the shared primitive and the per-schema copies are migrated
-away. Leaving both would be the fourth share concept this change exists to
-prevent.
+away.
 
 `$contains` itself stays — it is general RBAC vocabulary now, implemented on both
 SQL emitters through one builder, and it is what makes a principal-list predicate
 expressible at all.
+
+**THE AUDIT (task 8.1), and it corrects the count above.** This decision used to
+say leaving both would be "the fourth share concept". Counting properly, there
+are FIVE in openregister alone — 32 files — and only ONE of them is a duplicate:
+
+| concept | shares WHAT | with WHOM | verdict |
+|---|---|---|---|
+| object grants (this change) | one object | a principal | **the primitive** |
+| `ShareLinkService` (7 files) | the FILES in an object's folder | a principal or a link | keep — a file is not an object (8.2) |
+| `FederatedShare` (5 files) | a register / schema / object / query | an ORGANISATION on a peer instance | keep — an instance transport (D5) |
+| `ShareableConfigType` (11 files) | an app's CONFIGURATION as portable files, over GitHub | other INSTALLATIONS | keep — distribution, not access |
+| bespoke `sharedWith[]` (18 files) | a credential, a flow | a principal | **migrate — this is the duplicate** |
+
+`ShareableConfigType` is the one this design had not accounted for at all. It is
+not an access-control mechanism: it packages configuration for publication and
+installation elsewhere, and a type is explicitly allowed to keep its
+configuration outside OpenRegister entirely. Folding it in would confuse
+"distribute this configuration" with "let this person read this row".
+
+**Across the fleet**, the same audit finds bespoke principal lists in exactly the
+places the primitive is meant to serve:
+
+- **launchpad** — the manifest register carries its own `sharedWith[]`, and
+  `ManifestController` selects "objects the user owns OR that list the user in
+  `sharedWith`". That is the object-grant primitive, reimplemented.
+- **doriath** — `DashboardService` counts `sharedWithMe`. This is the dashboards
+  case that motivated the whole change.
+- **opencatalogi** — three files, all FILE-oriented (`FileService`,
+  `DownloadService`, `EventService`). Not principal grants; nothing to migrate.
+
+So task 8.3's real scope is three consumers, not "the fleet": openregister's
+credentials and flows, launchpad's manifests, and doriath's dashboards.
 
 ### D7 — nc-vue: one widget, one tab, one component underneath
 

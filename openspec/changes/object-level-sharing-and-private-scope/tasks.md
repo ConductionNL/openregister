@@ -162,16 +162,36 @@
 
 ## 7. Federated principals
 
-- [ ] 7.1 A remote principal is one more principal, resolved through the existing `OpenRegisterCloudFederationProvider`
-- [ ] 7.2 A federated grant yields the same verdict as a local grant of the same permission, from the same evaluator
-- [ ] 7.3 Revoking a federated grant denies it
-- [ ] 7.4 Reconcile with `FederatedShare`'s existing `objectUri` / `sharedWith` / `permissions` / `shareToken` rather than adding a second shape
+- [x] 7.1 A remote principal is one more principal — satisfied STRUCTURALLY: both remote share
+      types sit in the same lists as user/group, so a remote grant uses the same resolve, the
+      same SQL disjunct and the same PHP verdict. Pinned by `FederatedPrincipalVocabularyTest`,
+      because the property is invisible and nothing else would notice it being edited away
+- [ ] 7.2 A federated grant yields the same verdict as a local grant — NOT PROVEN, and cannot be
+      on one instance. Needs a SECOND Nextcloud and an OCM handshake. Structurally it must hold
+      (there is only one evaluator), but that is an argument, not evidence
+- [ ] 7.3 Revoking a federated grant denies it — same two-instance dependency as 7.2
+- [x] 7.4 RESOLVED THE OTHER WAY, and the original wording was wrong. `FederatedShare` shares a
+      register/schema/object/query with an ORGANISATION on a peer instance, authorised by
+      OpenRegister's own bearer token and served by `federation#objects`; a `TYPE_REMOTE` grant
+      invites a remote USER to one object and is decided by the ordinary RBAC filter. Folding one
+      into the other would give the grant a SECOND decision path — what D4 forbids — and put
+      object-level RBAC behind a token designed to authorise a whole register. They stay distinct,
+      for the same reason file shares do (8.2). See design D5
 
 ## 8. Fleet-wide consolidation
 
-- [ ] 8.1 Audit every existing share surface: openregister (12 files), launchpad (3), opencatalogi (3), doriath (1)
-- [ ] 8.2 Keep FILE shares (`ShareLinkService`) distinct and unchanged — they share files in an object's folder, which is a different thing
-- [ ] 8.3 Migrate the bespoke `sharedWith[]` on brokered credentials and flows to the primitive
+- [x] 8.1 Audited. The count was wrong and so was the framing: openregister has 32 files across
+      FIVE concepts, not 12 across four. Four are legitimately distinct and stay — file shares,
+      `FederatedShare`, and `ShareableConfigType` (config distribution over GitHub, which this
+      design had not accounted for at all). Only the bespoke `sharedWith[]` duplicates the new
+      primitive. Fleet-wide the duplicates are launchpad's manifest `sharedWith[]` and doriath's
+      `sharedWithMe` dashboards; opencatalogi's three files are FILE-oriented and need nothing.
+      See design D6
+- [x] 8.2 FILE shares stay distinct and unchanged — and so do `FederatedShare` and
+      `ShareableConfigType`, for the same reason: sharing a container, distributing a
+      configuration, and inviting a person are three different acts
+- [ ] 8.3 Migrate the bespoke `sharedWith[]` to the primitive. Scoped by the audit to THREE
+      consumers: openregister credentials + flows, launchpad manifests, doriath dashboards
 - [ ] 8.4 Point the credential broker's share admit branch at the primitive instead of its own copy of the shape
 - [ ] 8.6 Collapse `scope` as the ACCESS discriminator into `private` (Q7): `personal` -> private-with-no-invitations, `organisation` -> the default scope
 - [ ] 8.7 KEEP `scope` as the VAULT-OWNER selector, untouched — and test that an organisation credential minted BEFORE the collapse is still readable after it
@@ -196,9 +216,15 @@
 
 ## 11. Documentation and ADRs
 
-- [ ] 11.1 Document the sharing model: `private`, per-object grants, links, email invites, federation — and how each composes with schema-level RBAC
-- [ ] 11.2 Amend the RBAC docs with the `private` principal and the all-four-paths rule
-- [ ] 11.3 Record the distinction between the three pre-existing share concepts, so a future reader does not add a fourth
+- [x] 11.1 `docs/Features/object-sharing.md` — the scope, grants, links, email invites, the
+      ceiling rule, and the fact that granting an object also reaches its FILES
+- [x] 11.2 `docs/Features/access-control.md` links to it from the object level, and the new page
+      states the all-four-paths rule and the one-line verdict
+- [x] 11.3 There were FOUR pre-existing concepts, not three — see the audit in design D6. All four
+      distinctions are recorded there and the user-facing ones in the docs page
 - [ ] 11.4 Document the breaking flow change and its upgrade note
-- [ ] 11.5 Amend ADR-006 for capability-style links (Q4)
-- [ ] 11.6 New ADR governing permission-verb extensions: declared by the schema, enforced at the acting endpoint, never redefining a core verb (Q5)
+- [x] 11.5 ADR-006 Rule 4 — a link is a revocable, expiring, attributable CAPABILITY and is not a
+      data flag, so it does not violate Rules 1-3. Includes what it does NOT license
+- [x] 11.6 ADR-010 — uniform core set on core's bitmask; an action with no core bit is not
+      admitted by a grant (fail closed); extensions declared by the schema, enforced at the acting
+      endpoint, never redefining a core verb
