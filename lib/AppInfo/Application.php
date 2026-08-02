@@ -494,6 +494,13 @@ class Application extends App implements IBootstrap
         // clear HTTP 400 instead of a silent zero-row result or a bare 500.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
 
+        // Register the UnknownMetadataFieldMiddleware: maps
+        // UnknownMetadataFieldException — thrown when a `@self` filter names a
+        // field that no metadata column corresponds to — onto an HTTP 400 that
+        // names the field and lists the filterable ones, instead of the opaque
+        // driver-level 500 an unresolvable column name used to produce.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
+
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
         // with a concrete NcOfficeConverterInterface implementation that
