@@ -213,7 +213,8 @@ export default {
 	 */
 	render() {
 		// Referenced so a child registration invalidates this render.
-		void this.registrationTick
+		// eslint-disable-next-line no-unused-expressions
+		this.registrationTick
 		return h('div', { class: 'app-tabs' }, [
 			this.renderTabList(),
 			h('div', { class: ['app-tabs__content', this.contentClass] }, this.$slots.default?.()),

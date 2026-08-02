@@ -74,4 +74,48 @@ module.exports = defineConfig([{
 },
 // Spread LAST so the Vue 3 rules win over the Vue 2 base.
 ...conductionVue3Fixes,
+{
+	name: 'openregister/vue3-base-rule-corrections',
+	files: ['**/*.vue'],
+	rules: {
+		// ⚠️ INVERTED VUE-2 RULE. `vue/no-multiple-template-root` forbids what
+		// Vue 3 requires: fragments. Removing this app's `vue-frag` `<Fragment>`
+		// wrappers (which existed ONLY to fake fragments under Vue 2) legitimately
+		// produces multi-root templates in Modals.vue, ViewSource.vue and
+		// RegisterSideBar.vue.
+		//
+		// It is armed by the `@nextcloud` v8 base and `conductionVue3Fixes` does
+		// NOT disable it, even though it already disables the other two rules of
+		// exactly this class (`vue/no-v-model-argument`,
+		// `vue/no-v-for-template-key`). Reported upstream — remove this override
+		// once the shared preset covers it.
+		'vue/no-multiple-template-root': 'off',
+
+		// `vue/v-on-event-hyphenation` would rewrite `@update:tokenName` to
+		// `@update:token-name`. That only keeps working because Vue 3's `emit()`
+		// falls back to a hyphenated lookup — and that fallback does NOT apply to
+		// components reading `props['onUpdate:x']` directly via `useModel`, which
+		// is why the shared preset already ignores `update:modelValue`.
+		//
+		// Every event below is a `update:*` component event emitted with an exact
+		// camelCase name (verified at each `$emit` site), so the camelCase
+		// listener is the spelling that matches the emit rather than the spelling
+		// that survives a fallback. Same rationale as the preset's own exception,
+		// extended to this app's events.
+		//
+		// The right fix is for the preset to ignore `update:*` generally;
+		// reported upstream.
+		'vue/v-on-event-hyphenation': ['error', 'always', {
+			autofix: false,
+			ignore: [
+				'update:modelValue',
+				'update:showDetails',
+				'update:riskLevel',
+				'update:tokenName',
+				'update:tokenExpires',
+				'update:confirmUsername',
+			],
+		}],
+	},
+},
 ])
