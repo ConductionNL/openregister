@@ -90,6 +90,17 @@ class ObjectWriteNodeMetadataMatchTest extends TestCase
         $this->schema->setSlug('example-cache-entry');
 
         $this->objects = $this->createMock(ObjectService::class);
+        // `runAs()` scopes the acting user around the lookup. The double must
+        // RUN the callable: an unstubbed mock method returns null, so
+        // `findMatch()` sees no rows and every delete here reported "A delete
+        // matched no object" — nine errors that had nothing to do with the
+        // behaviour under test. `ObjectWriteNodeTest` and `ObjectReadNodeTest`
+        // were both updated when the read moved inside `runAs()`
+        // (openregister#2272); this file was not, so it has been failing on
+        // `development` ever since.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
         $this->objects->method('setRegister')->willReturnSelf();
         $this->objects->method('setSchema')->willReturnSelf();
 
