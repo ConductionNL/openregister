@@ -67,11 +67,18 @@
       to the same column and honours that key on all four paths; making the action overrides
       row-level in SQL is its own piece of work. Pinned by
       `testPerObjectActionOverrideIsNotYetHonouredByTheListPaths`, which fails when it is fixed.
-- [ ] 3.9 **Pre-existing PHP warning**, proven against baseline: `QueryBuilder::select()` emits
-      `Undefined array key 0` on the RBAC-filtered list path when a session is present — a spread
-      of a single-element array with a non-zero key. Reproduces with the baseline
-      `MagicRbacHandler`, so it is not from this change; surfaced because this is the first DB test
-      to exercise that combination. Not localised.
+- [x] 3.9 **Pre-existing PHP warning — LOCALISED, and it is NOT in OpenRegister.** `QueryBuilder::select()`
+      emits `Undefined array key 0`. The cause is a **named argument on a variadic parameter**:
+      `$qb->select(selects: '*')` makes PHP collect the argument as `['selects' => '*']`, a
+      string-keyed array, so core's `count($selects) === 1 && is_array($selects[0])` unwrap reads a
+      key that does not exist. Backtrace (captured via `auto_prepend_file` + `set_error_handler`)
+      lands in **launchpad** `lib/Db/DashboardMapper.php`, reached from openregister's tests only
+      because a `tearDown()` user deletion fires launchpad's `UserDeletedListener`. 174 call sites,
+      all in launchpad, none in openregister. The string form works by luck (`quoteColumnNames()`
+      maps over values); the **array** form is genuinely broken — the unwrap that was supposed to
+      flatten it never runs, so an array is passed as a column name
+      (`launchpad/lib/Migration/Version001006Date20260430130000.php:192`). Fixing it is mechanical
+      (drop the `selects:` label) and belongs to the launchpad work in group 8.3, not here.
 
 ## 4. Per-object grants
 
@@ -203,7 +210,18 @@
 
 ## 9. Flows (BREAKING — last, and it unblocks the previous change)
 
-- [ ] 9.1 Give flows read authorization; they have `authorization = NULL` today, so this REMOVES tenant-wide visibility
+- [x] 9.1 Give flows read authorization; they have `authorization = NULL` today, so this REMOVES tenant-wide visibility.
+      DONE: the `flow` schema in `lib/Settings/flow_register.json` now declares
+      `scope: private` plus explicit `read`/`create`/`update`/`delete` rules for `authenticated` — the four
+      action rules preserve the existing capability, `scope` narrows which objects it applies to.
+      Lands via the existing `ImportFlowRegister` repair step on `occ upgrade`; no `--force` needed, because
+      `ImportHandler::schemaContentDiffers()` compares `authorization` and so applies the block even when the
+      stored version is not older. Descriptor bumped 1.3.0 → 1.4.0, and the drifted
+      `ImportFlowRegister::REGISTER_VERSION` (`1.1.0`) corrected to match. BREAKING; upgrade note in CHANGELOG.
+      The safety property — that `_rbac: false` bypasses the private scope, so triggers, scheduled runs and
+      sub-flows keep resolving — is now pinned by
+      `testRbacFalseBypassesThePrivateScopeSoTheFlowEngineStillResolves`, which runs its control first so
+      "the row is visible" cannot pass for a row that was never private.
 - [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
 - [ ] 9.3 Only then enable `credentialIdentity: owner` from `shared-credentials-and-flows` — until run authorization exists, any authenticated user could run someone else's flow and cause calls signed with that owner's secret
 - [ ] 9.4 Scope run history to the requester for a share recipient (that change's design D7)
