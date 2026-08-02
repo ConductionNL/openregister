@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Service\ConditionMatcher;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use OCP\IUserSession;
@@ -123,9 +124,52 @@ class MagicRbacHandler
         private readonly IAppConfig $appConfig,
         private readonly ConditionMatcher $conditionMatcher,
         private readonly ContainerInterface $container,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?ObjectScopeResolver $objectScopeResolver=null
     ) {
     }//end __construct()
+
+
+    /**
+     * The shared object-scope resolver.
+     *
+     * Nullable-with-default so adding it is not a fatal at every existing
+     * construction site. The resolver is a stateless value object, so a fresh
+     * instance is equivalent to the injected one.
+     *
+     * @return ObjectScopeResolver The one definition of the scope vocabulary.
+     */
+    private function objectScope(): ObjectScopeResolver
+    {
+        return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+    }//end objectScope()
+
+
+    /**
+     * The "this row is not private" predicate for one schema, as raw SQL.
+     *
+     * Both list emitters call this ONE method, and it in turn calls the ONE
+     * builder on {@see ObjectScopeResolver}. The QueryBuilder emitter wraps the
+     * result in `createFunction()` because QueryBuilder cannot express JSON
+     * member extraction portably — writing a second, QueryBuilder-native
+     * implementation would be a second definition of the vocabulary, which is
+     * how the two divergences in the predecessor change happened.
+     *
+     * @param array|null $authorization The schema/register authorization block (no object).
+     * @param string     $columnName    The `_authorization` column as this emitter references it.
+     *
+     * @return string A SQL predicate true for rows that are not private.
+     *
+     * @spec openspec/changes/object-level-sharing-and-private-scope/specs/private-object-scope/spec.md#requirement-the-private-principal-is-honoured-identically-on-every-enforcement-path
+     */
+    private function notPrivateSqlFor(?array $authorization, string $columnName): string
+    {
+        return $this->objectScope()->notPrivateSql(
+            columnName: $columnName,
+            schemaDefaultIsPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
+            isPostgres: $this->isPostgres()
+        );
+    }//end notPrivateSqlFor()
 
     /**
      * Apply RBAC filters to a query builder based on schema authorization
@@ -201,12 +245,37 @@ class MagicRbacHandler
             return;
         }
 
-        // If no authorization is configured, schema is open to all.
+        // The "not private" row predicate. Resolved once here and used by every
+        // branch below, so the scope cannot be honoured on one exit path and
+        // missed on another.
+        $notPrivate = $qb->createFunction(
+            $this->notPrivateSqlFor(authorization: $authorization, columnName: 't._authorization')
+        );
+
+        // The owner-admits conditions, which apply whatever the scope says.
+        $ownerAdmits = [];
+        if ($userId !== null) {
+            $ownerAdmits[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
+        }
+
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $ownerAdmits[] = $qb->expr()->eq(
+                't._owner',
+                $qb->createNamedParameter($this->getSystemUserId())
+            );
+        }
+
+        // If no authorization is configured, the schema is open to all — but an
+        // individual OBJECT may still declare itself private, so the query is
+        // still clamped to non-private rows plus the caller's own. Skipping the
+        // predicate here would leak private objects on exactly the schemas that
+        // configure nothing and are therefore watched least.
         if (empty($authorization) === true) {
             $this->logger->debug(
-                message: '[MagicRbacHandler] No authorization configured, schema is open',
+                message: '[MagicRbacHandler] No authorization configured, schema is open to non-private rows',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
+            $qb->andWhere($qb->expr()->orX(...$ownerAdmits, ...[$notPrivate]));
             return;
         }
 
@@ -226,24 +295,10 @@ class MagicRbacHandler
             );
         }
 
-        // Build the RBAC filter conditions.
-        $conditions = [];
-
-        // Condition: User is the owner of the object (owners always have access).
-        if ($userId !== null) {
-            $conditions[] = $qb->expr()->eq('t._owner', $qb->createNamedParameter($userId));
-        }
-
-        // Condition: User is in a configured system-reader group - grant
-        // visibility on rows owned by the system identifier (e.g. cron-written
-        // rows). See openregister#1617. Admins already returned at line 147 so
-        // this branch only fires for non-admin reader-group members.
-        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
-            $conditions[] = $qb->expr()->eq(
-                't._owner',
-                $qb->createNamedParameter($this->getSystemUserId())
-            );
-        }
+        // Build the RBAC filter conditions. The owner conditions come first and
+        // are never qualified by the scope — an owner reaches their own object
+        // whatever it declares (openregister#1617 covers the system-owner one).
+        $conditions = $ownerAdmits;
 
         // Resolve whether authenticated users inherit `public` rights once.
         $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
@@ -259,13 +314,20 @@ class MagicRbacHandler
             );
 
             if ($ruleCondition === true) {
-                // User has unconditional access via this rule - no filtering needed.
-                return;
+                // Unconditional access via this rule. That grant reaches every
+                // NON-private row; a private one still answers only to its owner
+                // and to administrators, who returned long before this point. So
+                // this is no longer an unfiltered early return — no later rule
+                // can widen past "everything not private", hence the break.
+                $conditions[] = $notPrivate;
+                break;
             }
 
             if ($ruleCondition !== null && $ruleCondition !== false) {
-                // Add the SQL condition for this rule.
-                $conditions[] = $ruleCondition;
+                // A schema rule only ever decides a NON-private row. Suppressing
+                // the schema's rules for a private object is the entire point of
+                // the scope, and AND-ing here is what suppresses them per row.
+                $conditions[] = $qb->expr()->andX($notPrivate, $ruleCondition);
             }
         }//end foreach
 
@@ -852,10 +914,11 @@ class MagicRbacHandler
      * qualifies for the group AND (when object data is supplied) ConditionMatcher
      * confirms the object satisfies the match clause.
      *
-     * @param Schema      $schema      Schema to check
-     * @param string      $action      CRUD action to check
-     * @param string|null $objectOwner Optional object owner for ownership check
-     * @param array|null  $objectData  Optional object data for conditional checks
+     * @param Schema      $schema              Schema to check
+     * @param string      $action              CRUD action to check
+     * @param string|null $objectOwner         Optional object owner for ownership check
+     * @param array|null  $objectData          Optional object data for conditional checks
+     * @param array|null  $objectAuthorization Optional per-object `_authorization`, carrying its scope
      *
      * @return bool True if user has permission
      *
@@ -867,7 +930,8 @@ class MagicRbacHandler
         Schema $schema,
         string $action,
         ?string $objectOwner=null,
-        ?array $objectData=null
+        ?array $objectData=null,
+        ?array $objectAuthorization=null
     ): bool {
         $user   = $this->userSession->getUser();
         $userId = $user?->getUID();
@@ -887,6 +951,36 @@ class MagicRbacHandler
         if ($userId !== null && $objectOwner !== null && $objectOwner === $userId) {
             return true;
         }
+
+        // The `private` scope. Owner and administrators both returned above,
+        // unconditionally, so a private object denies anything reaching here.
+        //
+        // The scope is read through resolveSchemaAuthorization() rather than
+        // $schema->getAuthorization() below, so the SCHEMA DEFAULT is resolved
+        // through the same register cascade both list emitters use. The rule
+        // chain's own source is left alone: widening it here would change
+        // verdicts unrelated to this capability.
+        //
+        // Gated on $objectData because that is this method's signal that an
+        // object is in play at all — a schema-level check has nothing to be
+        // private.
+        if ($objectData !== null) {
+            $scopeSource = null;
+            try {
+                $scopeSource = $this->resolveSchemaAuthorization(schema: $schema);
+            } catch (AuthorizationUnresolvableException $e) {
+                // Fail closed, exactly as both emitters do.
+                return false;
+            }
+
+            if ($this->objectScope()->isPrivate(
+                    objectAuthorization: $objectAuthorization,
+                    schemaAuthorization: $scopeSource
+                ) === true
+            ) {
+                return false;
+            }
+        }//end if
 
         // Get schema authorization.
         $authorization = $schema->getAuthorization();
@@ -1033,9 +1127,33 @@ class MagicRbacHandler
             return ['bypass' => false, 'conditions' => []];
         }
 
-        // If no authorization is configured, schema is open to all.
+        // The "not private" row predicate, from the same builder the
+        // QueryBuilder emitter uses. Note the UNQUALIFIED column name: this
+        // emitter feeds UNION members that carry no table alias, which is why
+        // its owner conditions read `_owner` and not `t._owner`.
+        $notPrivate = $this->notPrivateSqlFor(authorization: $authorization, columnName: '_authorization');
+
+        // The owner conditions, which apply whatever the scope says. Admins
+        // already returned above; openregister#1617 covers the system-owner one.
+        $ownerAdmits = [];
+        if ($userId !== null) {
+            $quotedUserId  = $this->quoteValue(value: $userId);
+            $ownerAdmits[] = "_owner = {$quotedUserId}";
+        }
+
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
+            $ownerAdmits[]  = "_owner = {$quotedSystemId}";
+        }
+
+        // If no authorization is configured, the schema is open to all — but an
+        // individual OBJECT may still declare itself private, so this is no
+        // longer an unconditional bypass. Mirrors applyRbacFilters exactly.
         if (empty($authorization) === true) {
-            return ['bypass' => true, 'conditions' => []];
+            return [
+                'bypass'     => false,
+                'conditions' => array_merge($ownerAdmits, [$notPrivate]),
+            ];
         }
 
         // Get authorization rules for this action.
@@ -1048,21 +1166,7 @@ class MagicRbacHandler
         // applyRbacFilters and PermissionHandler. Admins already returned; the
         // empty-block open-default above is unchanged.
         // Build the RBAC filter conditions.
-        $conditions = [];
-
-        // Condition: User is the owner of the object (owners always have access).
-        if ($userId !== null) {
-            $quotedUserId = $this->quoteValue(value: $userId);
-            $conditions[] = "_owner = {$quotedUserId}";
-        }
-
-        // Condition: User is in a configured system-reader group - grant
-        // visibility on rows owned by the system identifier. See
-        // openregister#1617. Admins already returned at line 781.
-        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
-            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
-            $conditions[]   = "_owner = {$quotedSystemId}";
-        }
+        $conditions = $ownerAdmits;
 
         // Resolve whether authenticated users inherit `public` rights once.
         $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
@@ -1077,13 +1181,18 @@ class MagicRbacHandler
             );
 
             if ($ruleResult === true) {
-                // User has unconditional access via this rule - no filtering needed.
-                return ['bypass' => true, 'conditions' => []];
+                // Unconditional access via this rule reaches every NON-private
+                // row; a private one still answers only to its owner. No later
+                // rule can widen past that, hence the break — and this is no
+                // longer a `bypass => true` early return.
+                $conditions[] = $notPrivate;
+                break;
             }
 
             if (is_string($ruleResult) === true) {
-                // Add the SQL condition for this rule.
-                $conditions[] = $ruleResult;
+                // A schema rule only ever decides a NON-private row; AND-ing
+                // here is what suppresses the schema's rules for a private one.
+                $conditions[] = "({$notPrivate} AND {$ruleResult})";
             }
         }
 

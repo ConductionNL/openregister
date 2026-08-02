@@ -42,6 +42,7 @@ use OCA\OpenRegister\Exception\AuthorizationUnresolvableException;
 use OCA\OpenRegister\Event\CustomScopeEvaluatingEvent;
 use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ConditionMatcher;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\SystemOperationContext;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -225,9 +226,26 @@ class PermissionHandler
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger,
         private readonly ContainerInterface $container,
-        private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null
+        private readonly ?\OCP\EventDispatcher\IEventDispatcher $eventDispatcher=null,
+        private readonly ?ObjectScopeResolver $objectScopeResolver=null
     ) {
     }//end __construct()
+
+
+    /**
+     * The shared object-scope resolver.
+     *
+     * Nullable-with-default in the constructor so adding it does not become a
+     * fatal at every existing construction site. The resolver is a stateless
+     * value object, so falling back to a fresh instance is equivalent to the
+     * injected one.
+     *
+     * @return ObjectScopeResolver The one definition of the scope vocabulary.
+     */
+    private function objectScope(): ObjectScopeResolver
+    {
+        return ($this->objectScopeResolver ?? new ObjectScopeResolver());
+    }//end objectScope()
 
     /**
      * Check if current user has permission to perform action on schema
@@ -496,6 +514,21 @@ class PermissionHandler
             return false;
         }
 
+        // The `private` scope. Evaluated here — after the cascade has resolved
+        // and before ANY rule is consulted — because that is what the scope
+        // means: a private object does not answer to the schema's rules at all.
+        // Returns null for the ordinary case so nothing changes for an object
+        // that never declared it.
+        $privateVerdict = $this->privateScopeVerdict(
+            authorization: $authorization,
+            object: $object,
+            userId: $userId,
+            objectOwner: $objectOwner
+        );
+        if ($privateVerdict !== null) {
+            return $privateVerdict;
+        }
+
         // Get current user if not provided.
         if ($userId === null) {
             $user = $this->userSession->getUser();
@@ -657,6 +690,67 @@ class PermissionHandler
 
         return false;
     }//end evaluatePermission()
+
+    /**
+     * Decide a private object, or decline to decide.
+     *
+     * Returns `true` (admit), `false` (deny), or `null` meaning "this object is
+     * not private — carry on with the normal rule chain". The null case is the
+     * overwhelmingly common one and does no user lookup at all, so an object
+     * that never declared a scope costs nothing.
+     *
+     * `$authorization` is the ALREADY-CASCADED block from
+     * {@see resolveAuthorization()}, in which the object's own `_authorization`
+     * has replaced the schema's keys. Reading the scope from it therefore gets
+     * the object-over-schema precedence for free, and gets it from the same
+     * value the rule chain is about to use.
+     *
+     * A check with NO object is never gated. A scope is a property of an object,
+     * so with no object there is nothing to be private — and gating here would
+     * turn a schema whose DEFAULT is private into a schema nobody can create in,
+     * which inverts the meaning of a default.
+     *
+     * @param array|null        $authorization The cascaded authorization block.
+     * @param ObjectEntity|null $object        The object under evaluation, if any.
+     * @param string|null       $userId        The caller, or null to resolve from the session.
+     * @param string|null       $objectOwner   The object's owner, if the caller supplied it separately.
+     *
+     * @return bool|null The verdict, or null when the object is not private.
+     */
+    private function privateScopeVerdict(
+        ?array $authorization,
+        ?ObjectEntity $object,
+        ?string $userId,
+        ?string $objectOwner
+    ): ?bool {
+        if ($object === null) {
+            return null;
+        }
+
+        if ($this->objectScope()->declaredScope(authorization: $authorization) !== ObjectScopeResolver::SCOPE_PRIVATE) {
+            return null;
+        }
+
+        if ($userId === null) {
+            $userId = $this->userSession->getUser()?->getUID();
+        }
+
+        $userGroups = [];
+        if ($userId !== null) {
+            $userObj = $this->userManager->get($userId);
+            if ($userObj !== null) {
+                $userGroups = $this->groupManager->getUserGroupIds($userObj);
+            }
+        }
+
+        $owner = ($objectOwner ?? $object->getOwner());
+
+        return $this->objectScope()->admitsUnconditionally(
+            userId: $userId,
+            userGroups: $userGroups,
+            objectOwner: $owner
+        );
+    }//end privateScopeVerdict()
 
     /**
      * Dispatch `CustomScopeEvaluatingEvent` and collect a listener
