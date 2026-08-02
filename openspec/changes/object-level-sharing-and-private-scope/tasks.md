@@ -162,10 +162,21 @@
 
 ## 7. Federated principals
 
-- [ ] 7.1 A remote principal is one more principal, resolved through the existing `OpenRegisterCloudFederationProvider`
-- [ ] 7.2 A federated grant yields the same verdict as a local grant of the same permission, from the same evaluator
-- [ ] 7.3 Revoking a federated grant denies it
-- [ ] 7.4 Reconcile with `FederatedShare`'s existing `objectUri` / `sharedWith` / `permissions` / `shareToken` rather than adding a second shape
+- [x] 7.1 A remote principal is one more principal — satisfied STRUCTURALLY: both remote share
+      types sit in the same lists as user/group, so a remote grant uses the same resolve, the
+      same SQL disjunct and the same PHP verdict. Pinned by `FederatedPrincipalVocabularyTest`,
+      because the property is invisible and nothing else would notice it being edited away
+- [ ] 7.2 A federated grant yields the same verdict as a local grant — NOT PROVEN, and cannot be
+      on one instance. Needs a SECOND Nextcloud and an OCM handshake. Structurally it must hold
+      (there is only one evaluator), but that is an argument, not evidence
+- [ ] 7.3 Revoking a federated grant denies it — same two-instance dependency as 7.2
+- [x] 7.4 RESOLVED THE OTHER WAY, and the original wording was wrong. `FederatedShare` shares a
+      register/schema/object/query with an ORGANISATION on a peer instance, authorised by
+      OpenRegister's own bearer token and served by `federation#objects`; a `TYPE_REMOTE` grant
+      invites a remote USER to one object and is decided by the ordinary RBAC filter. Folding one
+      into the other would give the grant a SECOND decision path — what D4 forbids — and put
+      object-level RBAC behind a token designed to authorise a whole register. They stay distinct,
+      for the same reason file shares do (8.2). See design D5
 
 ## 8. Fleet-wide consolidation
 

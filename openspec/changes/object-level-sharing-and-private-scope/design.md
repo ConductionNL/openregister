@@ -200,11 +200,38 @@ a fail-open divergence that does not exist.
 
 ### D5 — Federated principals are principals
 
-A remote principal is one more thing an object can be shared with, resolved
-through the existing `OpenRegisterCloudFederationProvider`. `FederatedShare`
-already carries `objectUri`, `sharedWith`, `permissions` and `shareToken`, so the
-inbound half exists; this change gives it the same principal vocabulary as a local
-grant instead of a second decision path.
+A remote principal is one more thing an object can be shared with. That is
+satisfied structurally rather than with new code: `IShare::TYPE_REMOTE` and
+`TYPE_REMOTE_GROUP` sit in the SAME lists as the user and group types, both in
+`ObjectGrantResolver` and in `ObjectSharingService`. A remote grant therefore
+flows through the same resolve, the same SQL disjunct and the same PHP verdict.
+There is no federated branch to keep in step with the local one, which is the
+property worth having. `FederatedPrincipalVocabularyTest` pins both lists,
+because the property is invisible and nothing else would notice it being edited
+away.
+
+**CORRECTION — this decision previously said to reconcile object grants with
+`FederatedShare`. That was wrong, and following it would have been a mistake.**
+
+They are not two shapes of one thing:
+
+| | `FederatedShare` | a `TYPE_REMOTE` object grant |
+|---|---|---|
+| what is shared | a register / schema / object / query | one object |
+| who with | an ORGANISATION on a peer instance | a remote USER or group |
+| how authorised | OpenRegister's own scoped bearer `shareToken` | core's OCM federation |
+| served by | `federation#objects`, proxied by `FederatedObjectSourceProvider` against the peer's OpenRegister base URL | the ordinary RBAC filter |
+
+Folding a per-principal grant into an instance-to-instance transport would give
+the grant a second decision path — the exact thing D4 forbids — and would put
+object-level RBAC behind a bearer token that was designed to authorise a whole
+register. They stay distinct, for the same reason file shares stay distinct
+(task 8.2): sharing a container and inviting a person are different acts.
+
+**What is NOT proven.** That an inbound federated grant from a real peer admits a
+real remote user needs a SECOND Nextcloud instance and an OCM handshake. No
+single-instance test substitutes for it, and none here pretends to — tasks 7.2
+and 7.3 stay open with that stated.
 
 ### D6 — One primitive: the bespoke `sharedWith[]` is superseded
 
