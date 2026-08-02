@@ -11,11 +11,6 @@
     </UnusedParam>
   </file>
   <file src="lib/AppInfo/Application.php">
-    <UndefinedClass>
-      <code><![CDATA[\OCP\ContextChat\Events\ContentProviderRegisterEvent]]></code>
-      <code><![CDATA[\OCP\SystemTag\TagAssignedEvent]]></code>
-      <code><![CDATA[\OCP\SystemTag\TagUnassignedEvent]]></code>
-    </UndefinedClass>
     <UnusedClosureParam>
       <code><![CDATA[$container]]></code>
       <code><![CDATA[$container]]></code>
@@ -73,17 +68,6 @@
     <LessSpecificImplementedReturnType>
       <code><![CDATA[array]]></code>
     </LessSpecificImplementedReturnType>
-  </file>
-  <file src="lib/ContextChat/ContentProvider.php">
-    <UndefinedClass>
-      <code><![CDATA[IContentProvider]]></code>
-    </UndefinedClass>
-  </file>
-  <file src="lib/ContextChat/ContentProviderRegistrationListener.php">
-    <UndefinedClass>
-      <code><![CDATA[ContentProviderRegisterEvent]]></code>
-      <code><![CDATA[IContentManager]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Controller/ArchivalController.php">
     <UndefinedMethod>
@@ -193,14 +177,6 @@
       <code><![CDATA[objectId]]></code>
     </InvalidNamedArgument>
   </file>
-  <file src="lib/Listener/ContextChatSubmissionListener.php">
-    <UndefinedClass>
-      <code><![CDATA[$this->contentManager]]></code>
-      <code><![CDATA[$this->contentManager]]></code>
-      <code><![CDATA[ContentItem]]></code>
-      <code><![CDATA[IContentManager]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Listener/FlowTriggerListener.php">
     <UndefinedMethod>
       <code><![CDATA[getObject]]></code>
@@ -210,11 +186,6 @@
     <InvalidTemplateParam>
       <code><![CDATA[IEventListener]]></code>
     </InvalidTemplateParam>
-    <UndefinedClass>
-      <code><![CDATA[TagAssignedEvent]]></code>
-      <code><![CDATA[TagAssignedEvent|TagUnassignedEvent]]></code>
-      <code><![CDATA[TagAssignedEvent|TagUnassignedEvent]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Migration/Version1Date20260325120000.php">
     <UndefinedConstant>
@@ -342,16 +313,6 @@
       <code><![CDATA[$cardId]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/Service/Edepot/SipPackageBuilder.php">
-    <UndefinedClass>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/Edepot/Transport/SftpTransport.php">
     <UndefinedClass>
       <code><![CDATA[$sftp]]></code>
@@ -369,66 +330,10 @@
       <code><![CDATA[$col]]></code>
     </StringIncrement>
   </file>
-  <file src="lib/Service/File/DocumentProcessingHandler.php">
-    <UndefinedClass>
-      <code><![CDATA[ZipArchive]]></code>
-    </UndefinedClass>
-  </file>
-  <file src="lib/Service/File/FilePublishingHandler.php">
-    <UndefinedClass>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-      <code><![CDATA[\ZipArchive]]></code>
-    </UndefinedClass>
-  </file>
   <file src="lib/Service/File/Pdf/PdfTextReplacer.php">
     <AssignmentToVoid>
       <code><![CDATA[$residualEntities]]></code>
     </AssignmentToVoid>
-  </file>
-  <file src="lib/Service/File/Sanitizer/DocxSanitizer.php">
-    <UndefinedClass>
-      <code><![CDATA[$zip]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-    </UndefinedClass>
-  </file>
-  <file src="lib/Service/File/Sanitizer/OdtSanitizer.php">
-    <UndefinedClass>
-      <code><![CDATA[$zip]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-      <code><![CDATA[ZipArchive]]></code>
-    </UndefinedClass>
   </file>
   <file src="lib/Service/GraphQL/GraphQLResolver.php">
     <InvalidPropertyAssignmentValue>
@@ -585,22 +490,5 @@
     <StringIncrement>
       <code><![CDATA[$col]]></code>
     </StringIncrement>
-  </file>
-  <file src="lib/Service/WebPush/HexIconService.php">
-    <UndefinedClass>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\Imagick]]></code>
-      <code><![CDATA[\ImagickPixel]]></code>
-      <code><![CDATA[\ImagickPixel]]></code>
-      <code><![CDATA[\ImagickPixel]]></code>
-      <code><![CDATA[\ImagickPixel]]></code>
-    </UndefinedClass>
   </file>
 </files>

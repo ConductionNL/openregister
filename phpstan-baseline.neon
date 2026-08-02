@@ -1,21 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Class OCP\\\\ContextChat\\\\Events\\\\ContentProviderRegisterEvent not found\\.$#"
-			count: 1
-			path: lib/AppInfo/Application.php
-
-		-
-			message: "#^Class OCP\\\\SystemTag\\\\TagAssignedEvent not found\\.$#"
-			count: 1
-			path: lib/AppInfo/Application.php
-
-		-
-			message: "#^Class OCP\\\\SystemTag\\\\TagUnassignedEvent not found\\.$#"
-			count: 1
-			path: lib/AppInfo/Application.php
-
-		-
 			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php
@@ -154,41 +139,6 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 2
 			path: lib/Command/ReconcileMagicTablesCommand.php
-
-		-
-			message: "#^Unknown parameter \\$_multitenancy in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
-			path: lib/ContextChat/ContentProvider.php
-
-		-
-			message: "#^Unknown parameter \\$_rbac in call to method OCA\\\\OpenRegister\\\\Db\\\\SchemaMapper\\:\\:findAll\\(\\)\\.$#"
-			count: 1
-			path: lib/ContextChat/ContentProvider.php
-
-		-
-			message: "#^Call to method isContextChatAvailable\\(\\) on an unknown class OCP\\\\ContextChat\\\\IContentManager\\.$#"
-			count: 1
-			path: lib/ContextChat/ContentProviderRegistrationListener.php
-
-		-
-			message: "#^Call to method registerContentProvider\\(\\) on an unknown class OCP\\\\ContextChat\\\\Events\\\\ContentProviderRegisterEvent\\.$#"
-			count: 1
-			path: lib/ContextChat/ContentProviderRegistrationListener.php
-
-		-
-			message: "#^Class OCP\\\\ContextChat\\\\Events\\\\ContentProviderRegisterEvent not found\\.$#"
-			count: 1
-			path: lib/ContextChat/ContentProviderRegistrationListener.php
-
-		-
-			message: "#^Parameter \\$contentManager of method OCA\\\\OpenRegister\\\\ContextChat\\\\ContentProviderRegistrationListener\\:\\:__construct\\(\\) has invalid type OCP\\\\ContextChat\\\\IContentManager\\.$#"
-			count: 2
-			path: lib/ContextChat/ContentProviderRegistrationListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\ContextChat\\\\ContentProviderRegistrationListener\\:\\:\\$contentManager has unknown class OCP\\\\ContextChat\\\\IContentManager as its type\\.$#"
-			count: 2
-			path: lib/ContextChat/ContentProviderRegistrationListener.php
 
 		-
 			message: "#^Method OCA\\\\OpenRegister\\\\Controller\\\\AgentsController\\:\\:index\\(\\) should return OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200\\|500, array\\{error\\?\\: 'Failed to retrieve…', results\\?\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\> but returns OCP\\\\AppFramework\\\\Http\\\\JSONResponse\\<200, array\\{results\\: array\\<OCA\\\\OpenRegister\\\\Db\\\\Agent\\>\\}, array\\{\\}\\>\\.$#"
@@ -3241,33 +3191,8 @@ parameters:
 			path: lib/Listener/ApprovalChainAdvanceListener.php
 
 		-
-			message: "#^Call to method deleteContent\\(\\) on an unknown class OCP\\\\ContextChat\\\\IContentManager\\.$#"
-			count: 1
-			path: lib/Listener/ContextChatSubmissionListener.php
-
-		-
-			message: "#^Call to method submitContent\\(\\) on an unknown class OCP\\\\ContextChat\\\\IContentManager\\.$#"
-			count: 1
-			path: lib/Listener/ContextChatSubmissionListener.php
-
-		-
-			message: "#^Instantiated class OCP\\\\ContextChat\\\\ContentItem not found\\.$#"
-			count: 1
-			path: lib/Listener/ContextChatSubmissionListener.php
-
-		-
 			message: "#^Parameter \\#1 \\$callback of method OCP\\\\IUserManager\\:\\:callForSeenUsers\\(\\) expects Closure\\(OCP\\\\IUser\\)\\: \\(bool\\|null\\), Closure\\(mixed\\)\\: void given\\.$#"
 			count: 1
-			path: lib/Listener/ContextChatSubmissionListener.php
-
-		-
-			message: "#^Parameter \\$contentManager of method OCA\\\\OpenRegister\\\\Listener\\\\ContextChatSubmissionListener\\:\\:__construct\\(\\) has invalid type OCP\\\\ContextChat\\\\IContentManager\\.$#"
-			count: 2
-			path: lib/Listener/ContextChatSubmissionListener.php
-
-		-
-			message: "#^Property OCA\\\\OpenRegister\\\\Listener\\\\ContextChatSubmissionListener\\:\\:\\$contentManager has unknown class OCP\\\\ContextChat\\\\IContentManager as its type\\.$#"
-			count: 2
 			path: lib/Listener/ContextChatSubmissionListener.php
 
 		-
@@ -3279,66 +3204,6 @@ parameters:
 			message: "#^Strict comparison using \\=\\=\\= between true and false will always evaluate to false\\.$#"
 			count: 1
 			path: lib/Listener/MailAppScriptListener.php
-
-		-
-			message: "#^Call to method getObjectIds\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagAssignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Call to method getObjectIds\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagUnassignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Call to method getObjectType\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagAssignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Call to method getObjectType\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagUnassignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Call to method getTags\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagAssignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Call to method getTags\\(\\) on an unknown class OCP\\\\SystemTag\\\\TagUnassignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Class OCP\\\\SystemTag\\\\TagAssignedEvent not found\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Class OCP\\\\SystemTag\\\\TagUnassignedEvent not found\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^PHPDoc tag @implements has invalid type OCP\\\\SystemTag\\\\TagAssignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^PHPDoc tag @implements has invalid type OCP\\\\SystemTag\\\\TagUnassignedEvent\\.$#"
-			count: 1
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Parameter \\$event of method OCA\\\\OpenRegister\\\\Listener\\\\NativeFlowTriggerListener\\:\\:tagPayload\\(\\) has invalid type OCP\\\\SystemTag\\\\TagAssignedEvent\\.$#"
-			count: 2
-			path: lib/Listener/NativeFlowTriggerListener.php
-
-		-
-			message: "#^Parameter \\$event of method OCA\\\\OpenRegister\\\\Listener\\\\NativeFlowTriggerListener\\:\\:tagPayload\\(\\) has invalid type OCP\\\\SystemTag\\\\TagUnassignedEvent\\.$#"
-			count: 2
-			path: lib/Listener/NativeFlowTriggerListener.php
 
 		-
 			message: "#^Type OCP\\\\Files\\\\Events\\\\Node\\\\NodeCreatedEvent\\|OCP\\\\Files\\\\Events\\\\Node\\\\NodeDeletedEvent\\|OCP\\\\Files\\\\Events\\\\Node\\\\NodeWrittenEvent\\|OCP\\\\Share\\\\Events\\\\ShareCreatedEvent\\|OCP\\\\Share\\\\Events\\\\ShareDeletedEvent\\|OCP\\\\SystemTag\\\\TagAssignedEvent\\|OCP\\\\SystemTag\\\\TagUnassignedEvent\\|OCP\\\\User\\\\Events\\\\UserCreatedEvent\\|OCP\\\\User\\\\Events\\\\UserDeletedEvent in generic type OCP\\\\EventDispatcher\\\\IEventListener\\<OCP\\\\Files\\\\Events\\\\Node\\\\NodeCreatedEvent\\|OCP\\\\Files\\\\Events\\\\Node\\\\NodeDeletedEvent\\|OCP\\\\Files\\\\Events\\\\Node\\\\NodeWrittenEvent\\|OCP\\\\Share\\\\Events\\\\ShareCreatedEvent\\|OCP\\\\Share\\\\Events\\\\ShareDeletedEvent\\|OCP\\\\SystemTag\\\\TagAssignedEvent\\|OCP\\\\SystemTag\\\\TagUnassignedEvent\\|OCP\\\\User\\\\Events\\\\UserCreatedEvent\\|OCP\\\\User\\\\Events\\\\UserDeletedEvent\\> in PHPDoc tag @implements is not subtype of template type T of OCP\\\\EventDispatcher\\\\Event of interface OCP\\\\EventDispatcher\\\\IEventListener\\.$#"
