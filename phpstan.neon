@@ -30,6 +30,41 @@ parameters:
         # OCA\DAV is server-internal and not in nextcloud/ocp stubs
         - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
+        # OCP\ContextChat\* and OCP\SystemTag\Tag(Un)AssignedEvent exist on the
+        # servers this app supports, but NOT in the `nextcloud/ocp` stub package,
+        # which composer.lock pins at v31.0.9 while the app targets NC 32-34.
+        # Verified on the NC 34 container backing this checkout:
+        #   /var/www/html/lib/public/SystemTag/TagAssignedEvent.php   PRESENT
+        #   /var/www/html/lib/public/ContextChat/IContentManager.php  PRESENT
+        # and both are ABSENT from vendor/nextcloud/ocp. So these 33 diagnostics
+        # describe a stale analysis path, not defective code — the listeners and
+        # the ContextChat content provider are correct as written.
+        #
+        # The real fix is to bump nextcloud/ocp to a stub matching the supported
+        # server range; that is a fleet-wide dependency change with its own
+        # fallout (it will move many other diagnostics at once), so it is tracked
+        # separately rather than smuggled in behind a static-analysis triage.
+        # These patterns are deliberately narrow — they name the two namespaces
+        # involved and nothing else.
+        - '#unknown class OCP\\ContextChat\\#'
+        - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCP\\ContextChat\\#'
+        - '#has unknown class OCP\\ContextChat\\#'
+        - '#has invalid type OCP\\ContextChat\\#'
+        - '#Instantiated class OCP\\ContextChat\\#'
+        - '#implements unknown interface OCP\\ContextChat\\#'
+        # Note the lower-case 'a' in TagUnassignedEvent — the two event class
+        # names are NOT symmetrical (TagAssignedEvent / TagUnassignedEvent), so
+        # a `Tag(Un)?AssignedEvent` alternation silently misses the Unassigned
+        # half. Matching the namespace avoids re-introducing that trap.
+        - '#unknown class OCP\\SystemTag\\Tag(A|Una)ssignedEvent#'
+        - '#Class OCP\\SystemTag\\Tag(A|Una)ssignedEvent not found#'
+        - '#has invalid type OCP\\SystemTag\\Tag(A|Una)ssignedEvent#'
+        - '#@implements has invalid type OCP\\SystemTag\\Tag(A|Una)ssignedEvent#'
+        # The listener implements IEventListener over a union that includes the
+        # two absent SystemTag events, so the whole @implements union fails the
+        # subtype check for the same stub-gap reason.
+        - '#in generic type OCP\\EventDispatcher\\IEventListener<.*OCP\\SystemTag\\Tag.*> in PHPDoc tag @implements is not subtype of template type#'
         # OCA\Bookmarks is an optional peer app (lazy-resolved via
         # \OCP\Server::get() behind a class_exists guard) — not a
         # composer dependency, so its classes are absent during analysis.

@@ -76,6 +76,30 @@
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>
                 <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
                 <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!--
+                    Present on the supported servers (NC 32-34) but absent from
+                    the `nextcloud/ocp` stub, which composer.lock pins at
+                    v31.0.9. Verified on the NC 34 container backing this
+                    checkout: lib/public/SystemTag/TagAssignedEvent.php and
+                    lib/public/ContextChat/IContentManager.php both exist there
+                    and neither exists under vendor/nextcloud/ocp. Stale
+                    analysis path, not defective code. Bumping the stub is
+                    tracked separately — it moves many diagnostics at once.
+                -->
+                <referencedClass name="OCP\ContextChat\IContentManager"/>
+                <referencedClass name="OCP\ContextChat\IContentProvider"/>
+                <referencedClass name="OCP\ContextChat\ContentItem"/>
+                <referencedClass name="OCP\ContextChat\Events\ContentProviderRegisterEvent"/>
+                <referencedClass name="OCP\SystemTag\TagAssignedEvent"/>
+                <referencedClass name="OCP\SystemTag\TagUnassignedEvent"/>
+                <!--
+                    OCA\DAV is Nextcloud server-internal and is never shipped in
+                    the OCP stubs. phpstan.neon already ignores this namespace
+                    for the same reason; psalm.xml simply never gained the
+                    matching entries.
+                -->
+                <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
+                <referencedClass name="OCA\DAV\CardDAV\CardDavBackend"/>
                 <!-- OCA\Bookmarks optional peer app (lazy-resolved at runtime) -->
                 <referencedClass name="OCA\Bookmarks\QueryParameters"/>
                 <referencedClass name="OCA\Bookmarks\Db\Bookmark"/>

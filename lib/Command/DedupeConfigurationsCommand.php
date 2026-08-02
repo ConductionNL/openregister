@@ -127,6 +127,14 @@ class DedupeConfigurationsCommand extends Command
             );
         }
 
+        // $dupeRows was read below but never assigned. PHP 8 yields null for an
+        // undefined variable, and `null === 0` is false, so the "nothing to do"
+        // early-return could never fire: on a clean database the command fell
+        // through and reported "0 app(s), 0 duplicate row(s) would be deleted"
+        // instead of "No duplicate configuration rows found.". It is the total
+        // number of rows queued for deletion across every app in the plan.
+        $dupeRows = count($deleteIds);
+
         if ($dupeRows === 0) {
             $output->writeln('<info>No duplicate configuration rows found.</info>');
             return 0;
