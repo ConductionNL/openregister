@@ -50,9 +50,7 @@ use Symfony\Component\Uid\Uuid;
  * @method SearchTrail update(Entity $entity)
  * @method SearchTrail insertOrUpdate(Entity $entity)
  * @method SearchTrail delete(Entity $entity)
- * @method SearchTrail find(int|string $id)
  * @method SearchTrail findEntity(IQueryBuilder $query)
- * @method SearchTrail[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<SearchTrail> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<SearchTrail>
@@ -113,7 +111,7 @@ class SearchTrailMapper extends QBMapper
      *
      * @return SearchTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\SearchTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\SearchTrail>
      */
     public function findAll(
         ?int $limit=null,

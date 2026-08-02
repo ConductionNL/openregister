@@ -49,21 +49,6 @@
       <code><![CDATA[_rbac]]></code>
     </InvalidNamedArgument>
   </file>
-  <file src="lib/BackgroundJob/TenantDeprovisionJob.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[filters]]></code>
-    </InvalidNamedArgument>
-  </file>
-  <file src="lib/BackgroundJob/TenantPurgeJob.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[filters]]></code>
-    </InvalidNamedArgument>
-  </file>
-  <file src="lib/BackgroundJob/TenantUsageSyncJob.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[filters]]></code>
-    </InvalidNamedArgument>
-  </file>
   <file src="lib/Calendar/RegisterCalendarProvider.php">
     <LessSpecificImplementedReturnType>
       <code><![CDATA[array]]></code>
@@ -122,11 +107,6 @@
       <code><![CDATA[Uuid::v4()]]></code>
     </ImplicitToStringCast>
   </file>
-  <file src="lib/Db/DestructionListMapper.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[objectId]]></code>
-    </InvalidNamedArgument>
-  </file>
   <file src="lib/Db/Mapping.php">
     <RedundantPropertyInitializationCheck>
       <code><![CDATA[isset($this->id) === true]]></code>
@@ -171,11 +151,6 @@
       <code><![CDATA[$this->id]]></code>
       <code><![CDATA['unknown']]></code>
     </RedundantPropertyInitializationCheck>
-  </file>
-  <file src="lib/Db/SelectionListMapper.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[objectId]]></code>
-    </InvalidNamedArgument>
   </file>
   <file src="lib/Listener/FlowTriggerListener.php">
     <UndefinedMethod>

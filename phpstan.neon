@@ -3,6 +3,11 @@ includes:
     # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
     # across the fleet.
     - phpstan-baseline.neon
+    # Five JSONResponse generic-invariance mismatches surfaced by removing the
+    # stale `@method` shadows from lib/Db. Kept in their own file so the reason
+    # (written at the top of it) cannot get detached from the entries.
+    # openregister#2288
+    - phpstan-baseline-jsonresponse-invariance.neon
 
 parameters:
     level: 5
