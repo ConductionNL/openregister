@@ -48,7 +48,7 @@ use Throwable;
  *
  * @spec openspec/changes/or-flow-native-store/specs/flow-native-store/spec.md
  */
-class OpenRegisterFlowResolver implements IFlowResolver
+class OpenRegisterFlowResolver implements IFlowResolver, IScheduledFlowSource
 {
 
     /**
@@ -230,6 +230,77 @@ class OpenRegisterFlowResolver implements IFlowResolver
         return $ids;
 
     }//end flowsForTrigger()
+
+    /**
+     * The scheduled flows OpenRegister's own store holds.
+     *
+     * This is the enumeration {@see FlowScheduleService} used to do inline. It
+     * moves here so the scheduler has exactly one way to find a scheduled flow —
+     * ask the resolvers — instead of one path for its own store and none for
+     * anybody else's. Behaviour for this store is unchanged: the same register
+     * and schema, the same fields, the same central enabled/cron checks.
+     *
+     * Neither `enabled` nor `trigger` is filtered server-side. The narrowing to
+     * schedules happens in PHP on purpose: a property filter that does not
+     * match the store's dialect returns an EMPTY result, and an empty result is
+     * indistinguishable from "nothing is scheduled" — which is precisely the
+     * silent nothing-ever-fires failure this change exists to fix. Listing the
+     * flow store costs what the trigger index already pays, once per five-minute
+     * tick. And the scheduler is told about disabled schedules rather than
+     * having them filtered away, so "a disabled flow never runs" stays a
+     * property of one place instead of every store's query.
+     *
+     * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null}>
+     *         The candidate flows.
+     *
+     * @spec openspec/changes/or-flow-schedule-any-store/specs/flow-scheduled-trigger/spec.md
+     */
+    public function scheduledFlows(): array
+    {
+        try {
+            $flows = $this->objectService->findAll(
+                config: ['filters' => ['register' => $this->flowRegister(), 'schema' => $this->flowSchema()]],
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (Throwable $e) {
+            // No flow store yet — nothing scheduled here.
+            return [];
+        }
+
+        $candidates = [];
+        foreach ($flows as $flow) {
+            if (($flow instanceof ObjectEntity) === false) {
+                continue;
+            }
+
+            $data = $flow->getObject();
+            if ((string) ($data['trigger'] ?? '') !== 'schedule') {
+                continue;
+            }
+
+            $owner = trim((string) ($flow->getOwner() ?? ''));
+            if ($owner === '') {
+                $owner = trim((string) ($data['owner'] ?? ''));
+            }
+
+            $ownerId = null;
+            if ($owner !== '') {
+                $ownerId = $owner;
+            }
+
+            $candidates[] = [
+                'id'      => (string) $flow->getUuid(),
+                'enabled' => (($data['enabled'] ?? false) === true),
+                'trigger' => (string) ($data['trigger'] ?? ''),
+                'cron'    => (string) ($data['cron'] ?? ''),
+                'owner'   => $ownerId,
+            ];
+        }//end foreach
+
+        return $candidates;
+
+    }//end scheduledFlows()
 
     /**
      * The compact (id, trigger, register, schema) index of ENABLED flows.

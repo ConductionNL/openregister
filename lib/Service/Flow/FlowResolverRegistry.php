@@ -176,6 +176,66 @@ class FlowResolverRegistry
     }//end flowsForTrigger()
 
     /**
+     * The scheduled-flow candidates every contributing app owns.
+     *
+     * The scheduler used to read one hard-coded store, so a flow that declared
+     * `trigger: schedule` in a leaf app's own register was invisible to it and
+     * could never fire — the event triggers had gone through the resolvers
+     * since day one, the schedule never had. This closes that: any app whose
+     * resolver also implements {@see IScheduledFlowSource} contributes its
+     * scheduled flows, exactly as it already contributes its event-triggered
+     * ones.
+     *
+     * A resolver that does not implement the interface is skipped rather than
+     * asked, so an app that owns only event-triggered flows costs nothing and
+     * needs no change. A resolver that throws is logged and skipped, because
+     * one broken app must not stop the whole instance's schedule.
+     *
+     * Candidates are de-duplicated by flow id, first source winning — the same
+     * precedence `resolveFlow()` uses, so the app that would actually run the
+     * flow is the one whose cron and owner are used.
+     *
+     * @return array<int, array{id: string, enabled: bool, trigger: string, cron: string, owner: string|null}>
+     *         The candidate flows.
+     *
+     * @spec openspec/changes/or-flow-schedule-any-store/specs/flow-scheduled-trigger/spec.md
+     */
+    public function scheduledFlows(): array
+    {
+        $candidates = [];
+        foreach ($this->all() as $resolver) {
+            if (($resolver instanceof IScheduledFlowSource) === false) {
+                continue;
+            }
+
+            try {
+                foreach ($resolver->scheduledFlows() as $candidate) {
+                    $id = (string) ($candidate['id'] ?? '');
+                    if ($id === '' || array_key_exists($id, $candidates) === true) {
+                        continue;
+                    }
+
+                    $candidates[$id] = [
+                        'id'      => $id,
+                        'enabled' => (bool) ($candidate['enabled'] ?? false),
+                        'trigger' => (string) ($candidate['trigger'] ?? ''),
+                        'cron'    => (string) ($candidate['cron'] ?? ''),
+                        'owner'   => ($candidate['owner'] ?? null),
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[FlowResolverRegistry] A resolver threw listing scheduled flows: '.$e->getMessage(),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }//end try
+        }//end foreach
+
+        return array_values($candidates);
+
+    }//end scheduledFlows()
+
+    /**
      * Collect the contributed resolvers once per request.
      *
      * @return array<int, IFlowResolver> The resolvers.
