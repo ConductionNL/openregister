@@ -108,6 +108,17 @@ class ObjectGrantResolver
     private array $memoised = [];
 
     /**
+     * Extension verbs carried by the caller's grants, keyed by object UUID.
+     *
+     * Populated during the same resolve as the bitmask and cleared by the same
+     * `forget()`, so the two can never disagree about which request they belong
+     * to.
+     *
+     * @var array<string, string[]>
+     */
+    private array $verbs = [];
+
+    /**
      * Constructor.
      *
      * @param LoggerInterface         $logger    Logger.
@@ -276,10 +287,16 @@ class ObjectGrantResolver
     {
         if ($userId === null) {
             $this->memoised = [];
+            $this->verbs    = [];
             return;
         }
 
         unset($this->memoised[$userId]);
+
+        // The verb map is keyed by OBJECT, not by user, so a per-user forget
+        // cannot prune it precisely. Clearing it wholly is the safe direction:
+        // it is rebuilt on the next resolve, and a stale verb would admit.
+        $this->verbs = [];
     }//end forget()
 
     /**
@@ -332,7 +349,18 @@ class ObjectGrantResolver
                 // composes overlapping shares.
                 $existing       = ($granted[$uuid] ?? 0);
                 $granted[$uuid] = ($existing | $share->getPermissions());
-            }
+
+                // Extension verbs ride in IShare's attribute bag (ADR-010), not
+                // in the permission integer, because core's bitmask has no room
+                // for a verb it does not define. Unioned across overlapping
+                // grants for the same reason the bitmask is.
+                $verbs = $this->verbsOf(share: $share);
+                if (empty($verbs) === false) {
+                    $this->verbs[$uuid] = array_values(
+                        array_unique(array_merge(($this->verbs[$uuid] ?? []), $verbs))
+                    );
+                }
+            }//end foreach
 
             if (count($shares) < self::PAGE_SIZE) {
                 return;
@@ -351,6 +379,87 @@ class ObjectGrantResolver
             ]
         );
     }//end collectForType()
+
+    /**
+     * The attribute scope OpenRegister's extension verbs live under.
+     *
+     * @var string
+     */
+    public const VERB_ATTRIBUTE_SCOPE = 'openregister';
+
+    /**
+     * The attribute key holding the verb list.
+     *
+     * @var string
+     */
+    public const VERB_ATTRIBUTE_KEY = 'verbs';
+
+    /**
+     * Whether a grant carries one EXTENSION verb for this caller.
+     *
+     * Core's bitmask has five verbs and OpenRegister has more concepts than
+     * that — `use` a credential, `run` a flow. ADR-010 puts those in the share's
+     * attribute bag rather than widening the RBAC vocabulary, and this is the
+     * read side of it.
+     *
+     * Deliberately SEPARATE from {@see isGranted()}. That method answers for the
+     * five core verbs and refuses everything else, which is what keeps the RBAC
+     * evaluator finite and reviewable. An extension verb is asked for by the
+     * endpoint that performs the action, and only there.
+     *
+     * @param string|null $userId     The caller.
+     * @param string|null $objectUuid The object.
+     * @param string      $verb       The extension verb, e.g. `use`.
+     *
+     * @return bool True when a grant to this caller carries that verb.
+     */
+    public function grantCarriesVerb(?string $userId, ?string $objectUuid, string $verb): bool
+    {
+        if ($objectUuid === null || $objectUuid === '') {
+            return false;
+        }
+
+        // Force the resolve — that is what populates the verb map.
+        $granted = $this->grantedObjectUuids(userId: $userId);
+        if (array_key_exists($objectUuid, $granted) === false) {
+            return false;
+        }
+
+        return in_array($verb, ($this->verbs[$objectUuid] ?? []), true);
+    }//end grantCarriesVerb()
+
+    /**
+     * The extension verbs one share carries.
+     *
+     * @param IShare $share The share.
+     *
+     * @return string[] The verbs, empty when it carries none.
+     */
+    private function verbsOf(IShare $share): array
+    {
+        try {
+            $attributes = $share->getAttributes();
+            if ($attributes === null) {
+                return [];
+            }
+
+            $raw = $attributes->getAttribute(self::VERB_ATTRIBUTE_SCOPE, self::VERB_ATTRIBUTE_KEY);
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        if (is_string($raw) === true) {
+            $raw = json_decode($raw, true);
+        }
+
+        if (is_array($raw) === false) {
+            return [];
+        }
+
+        return array_values(
+            array_filter($raw, static fn($verb) => is_string($verb) === true && $verb !== '')
+        );
+    }//end verbsOf()
 
     /**
      * The object UUID a share grants, or null when it grants no object.

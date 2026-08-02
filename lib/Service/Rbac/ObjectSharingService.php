@@ -236,14 +236,23 @@ class ObjectSharingService
      * @param string       $type        One of the GRANTABLE_TYPES keys.
      * @param string       $shareWith   The principal to grant.
      * @param integer      $permissions Core permission bitmask.
+     * @param string[]     $verbs       Extension verbs (e.g. `use`, `run`) carried in the share's
+     *                                  attribute bag. Core's bitmask has no room for a verb it does
+     *                                  not define, so ADR-010 puts them here rather than widening
+     *                                  the RBAC vocabulary.
      *
      * @throws NotAuthorizedException When the caller is neither owner nor admin.
      * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
      *
      * @return array<string, mixed> The created grant.
      */
-    public function grant(ObjectEntity $object, string $type, string $shareWith, int $permissions=1): array
-    {
+    public function grant(
+        ObjectEntity $object,
+        string $type,
+        string $shareWith,
+        int $permissions=1,
+        array $verbs=[]
+    ): array {
         $this->requireOwnerOrAdmin(object: $object);
 
         if (isset(self::GRANTABLE_TYPES[$type]) === false) {
@@ -273,6 +282,8 @@ class ObjectSharingService
         $share->setSharedBy($uid);
         $share->setPermissions($permissions);
 
+        $this->applyVerbs(share: $share, verbs: $verbs);
+
         $created = $this->shareManager->createShare($share);
 
         // The caller may re-decide access within this same request.
@@ -283,8 +294,43 @@ class ObjectSharingService
             'type'        => $type,
             'sharedWith'  => $created->getSharedWith(),
             'permissions' => $created->getPermissions(),
+            'verbs'       => array_values($verbs),
         ];
     }//end grant()
+
+    /**
+     * Attach extension verbs to a share.
+     *
+     * Stored as JSON in `IShare`'s attribute bag under OpenRegister's own scope,
+     * which is the extension point other Nextcloud apps use for exactly this.
+     * Values are filtered to non-empty strings so a malformed request cannot put
+     * an object or a null into the bag and have the read side trip over it.
+     *
+     * @param IShare   $share The share being built.
+     * @param string[] $verbs The verbs to carry.
+     *
+     * @return void
+     */
+    private function applyVerbs(IShare $share, array $verbs): void
+    {
+        $clean = array_values(
+            array_unique(
+                array_filter($verbs, static fn($verb) => is_string($verb) === true && trim($verb) !== '')
+            )
+        );
+
+        if (empty($clean) === true) {
+            return;
+        }
+
+        $attributes = ($share->getAttributes() ?? $share->newAttributes());
+        $attributes->setAttribute(
+            ObjectGrantResolver::VERB_ATTRIBUTE_SCOPE,
+            ObjectGrantResolver::VERB_ATTRIBUTE_KEY,
+            json_encode($clean)
+        );
+        $share->setAttributes($attributes);
+    }//end applyVerbs()
 
     /**
      * Create a tokenised LINK to an object, optionally expiring and passworded.

@@ -332,6 +332,71 @@ class ObjectShareLinkIntegrationTest extends TestCase
 
 
     /**
+     * An extension verb rides on the grant, and a plain read grant does not carry it.
+     *
+     * ADR-010: core's bitmask has five verbs and OpenRegister has more concepts
+     * than that. `use` a credential and `run` a flow live in the share's
+     * attribute bag instead of widening the RBAC vocabulary — and the point of
+     * keeping them separate is that a read grant must NOT imply them.
+     *
+     * This is the half the ADR listed as unbuilt when it was written. It is what
+     * lets the credential broker's Guard 1d admit on the shared primitive.
+     */
+    public function testAGrantCarriesExtensionVerbsAndReadAloneDoesNot(): void
+    {
+        [$register, $schema, $object] = $this->privateObject('verbgrant');
+
+        $recipientUid = 'verb-recipient-'.substr((string) Uuid::v4(), 0, 8);
+        $recipient    = $this->userManager->createUser($recipientUid, 'Link-Test-Pass-123');
+
+        try {
+            $resolver = \OC::$server->get(\OCA\OpenRegister\Service\Rbac\ObjectGrantResolver::class);
+
+            // A plain READ grant first — the control. Without it, a passing
+            // assertion below would not distinguish "the verb was carried" from
+            // "every grant reports every verb".
+            $this->sharing()->grant(
+                object: $object,
+                type: 'user',
+                shareWith: $recipientUid,
+                permissions: 1
+            );
+            $resolver->forget();
+
+            $this->assertFalse(
+                $resolver->grantCarriesVerb($recipientUid, $object->getUuid(), 'use'),
+                'a plain read grant must NOT carry `use` — seeing a credential is weaker than spending it'
+            );
+
+            // Now one that does carry it.
+            [, , $withVerb] = $this->privateObject('verbgrant2');
+            $this->sharing()->grant(
+                object: $withVerb,
+                type: 'user',
+                shareWith: $recipientUid,
+                permissions: 1,
+                verbs: ['use']
+            );
+            $resolver->forget();
+
+            $this->assertTrue(
+                $resolver->grantCarriesVerb($recipientUid, $withVerb->getUuid(), 'use'),
+                'a grant created with the `use` verb must carry it'
+            );
+            $this->assertFalse(
+                $resolver->grantCarriesVerb($recipientUid, $withVerb->getUuid(), 'run'),
+                'it must carry only the verbs it was given'
+            );
+        } finally {
+            $this->userSession->setUser($this->ownerUser);
+            if ($recipient !== false && $recipient !== null) {
+                $recipient->delete();
+            }
+        }
+    }//end testAGrantCarriesExtensionVerbsAndReadAloneDoesNot()
+
+
+    /**
      * Resolve a token the way the public endpoint does.
      *
      * Deliberately mirrors `ObjectShareLinkController` rather than calling it:
