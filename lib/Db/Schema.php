@@ -951,14 +951,7 @@ class Schema extends Entity implements JsonSerializable
 
             // The default object scope for this schema.
             if ($action === ObjectScopeResolver::SCOPE_KEY) {
-                $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
-                if (in_array($rules, $validScopes, true) === false) {
-                    $scopeList = implode(', ', $validScopes);
-                    throw new InvalidArgumentException(
-                        "Authorization scope in {$context} must be one of: {$scopeList}"
-                    );
-                }
-
+                $this->validateScopeValue(scope: $rules, context: $context);
                 continue;
             }
 
@@ -982,6 +975,32 @@ class Schema extends Entity implements JsonSerializable
             }
         }//end foreach
     }//end validateAuthorizationRules()
+
+    /**
+     * Validate a schema's default object scope.
+     *
+     * Strict on purpose, even though the runtime treats an unrecognised value as
+     * private: validation gives a schema author an error at authoring time, and
+     * the runtime fail-closed still covers a value that arrived some other way.
+     *
+     * @param mixed  $scope   The declared scope value.
+     * @param string $context Context for the error message.
+     *
+     * @throws \InvalidArgumentException When the scope is not in the vocabulary.
+     *
+     * @return void
+     */
+    private function validateScopeValue(mixed $scope, string $context): void
+    {
+        $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+
+        if (in_array($scope, $validScopes, true) === false) {
+            $scopeList = implode(', ', $validScopes);
+            throw new InvalidArgumentException(
+                "Authorization scope in {$context} must be one of: {$scopeList}"
+            );
+        }
+    }//end validateScopeValue()
 
     /**
      * Validate property-level authorization

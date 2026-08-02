@@ -242,10 +242,9 @@ class ObjectScopeResolver
      */
     public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string
     {
+        $scope = "JSON_UNQUOTE(JSON_EXTRACT({$columnName}, '$.".self::SCOPE_KEY."'))";
         if ($isPostgres === true) {
             $scope = "({$columnName})::jsonb ->> '".self::SCOPE_KEY."'";
-        } else {
-            $scope = "JSON_UNQUOTE(JSON_EXTRACT({$columnName}, '$.".self::SCOPE_KEY."'))";
         }
 
         $organisation = "'".self::SCOPE_ORGANISATION."'";
