@@ -108,7 +108,7 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One over the threshold, from the
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   One over the threshold, from the
  * ObjectScopeResolver import — used only for its scope-vocabulary constants, so the
  * `scope` key is validated against the SAME list the runtime resolves it with rather
  * than a second copy of the strings here.

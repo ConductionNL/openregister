@@ -1177,7 +1177,7 @@ class MagicRbacHandler
                     // in production through RelationHandler, which resolves
                     // related-object visibility with this method.
                     $qualifiesAuth = ($group === 'authenticated' && $userId !== null);
-                    $userQualifies          = ($qualifiesPublic === true
+                    $userQualifies = ($qualifiesPublic === true
                         || $qualifiesAuth === true
                         || ($group !== null && in_array($group, $userGroups, true) === true));
                 }//end if
