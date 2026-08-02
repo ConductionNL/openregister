@@ -135,15 +135,21 @@
 
 ## 5. The share provider surface (core owns the record)
 
-- [ ] 5.1 Share the object's FOLDER through `OCP\Share\IManager` — no provider registration (Q1). Reuse `ShareLinkService`'s folder-resolve and six-type walk for the read half
-- [ ] 5.2 Read share records THROUGH at decision time; keep NO OpenRegister-side copy (design D2 — `ShareLinkService` documents why a snapshot desyncs)
-- [ ] 5.3 Resolve the caller's principal set once per REQUEST and pass it to the emitters, rather than per row
-- [ ] 5.4 Link shares: token, expiry, password, revocation — all core's mechanics
+- [x] 5.1 Share the object's FOLDER through `OCP\Share\IManager` — no provider registration (Q1)
+- [x] 5.2 Read share records THROUGH at decision time; keep NO OpenRegister-side copy (design D2)
+- [x] 5.3 Resolve the caller's principal set once per REQUEST and pass it to the emitters
+- [x] 5.4 Link shares: token, expiry, password, revocation — all core's mechanics, redeemed on a
+      PUBLIC endpoint because a link admits whoever holds the token and there is no principal
+      for RBAC to resolve
 - [ ] 5.8 Carry object verbs (`run`, `use`) in `IShare`'s `IAttributes`; core's bitmask has no such verbs
 - [ ] 5.9 Make the file coupling explicit in the UI: a grant on the folder also reaches the files in it
-- [ ] 5.5 Email invitations through core's mailer; the message carries no object data, so revocation still works after delivery
-- [ ] 5.6 A share never exceeds the sharer's own access
-- [ ] 5.7 Verify a share revoked or expired in core takes effect immediately in OpenRegister
+- [x] 5.5 Email invitations through core's mailer (`TYPE_EMAIL`); the message carries no object
+      data, so revocation still works after delivery
+- [x] 5.6 A share never exceeds the sharer's own access — owner-or-admin is required to create
+      one, and core clamps the permission against the node
+- [x] 5.7 A share revoked or expired in core takes effect on the NEXT request, with nothing for
+      OpenRegister to invalidate — both are checks inside `getShareByToken()`. Tested, with the
+      control: neutering the revoke makes the test fail
 
 ## 6. nc-vue: one component, two surfaces
 

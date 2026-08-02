@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use DateTime;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -284,6 +285,192 @@ class ObjectSharingService
             'permissions' => $created->getPermissions(),
         ];
     }//end grant()
+
+    /**
+     * Create a tokenised LINK to an object, optionally expiring and passworded.
+     *
+     * A link is a CAPABILITY, not a principal grant: it admits whoever presents
+     * the token, so it is deliberately absent from
+     * {@see ObjectGrantResolver::PRINCIPAL_SHARE_TYPES} and is never resolved by
+     * the RBAC filter. It is decided on the public entry point instead, from the
+     * token itself.
+     *
+     * That distinction is what reconciles this with ADR-006 (design Q4): the ADR
+     * says publication is a schema-level RBAC change and not a per-object data
+     * flag, and a revocable, expiring, core-issued bearer token is neither of
+     * those things.
+     *
+     * Everything about the token's lifecycle — generation, expiry enforcement,
+     * password hashing, revocation — stays core's.
+     *
+     * @param ObjectEntity $object      The object to link.
+     * @param integer      $permissions Core permission bitmask; defaults to READ.
+     * @param string|null  $password    Optional password.
+     * @param string|null  $expiration  Optional expiry, any format DateTime parses.
+     *
+     * @throws NotAuthorizedException When the caller is neither owner nor admin.
+     * @throws InvalidArgumentException On an unresolvable folder or a bad expiry.
+     *
+     * @return array<string, mixed> The created link, including its token.
+     */
+    public function createLink(
+        ObjectEntity $object,
+        int $permissions=1,
+        ?string $password=null,
+        ?string $expiration=null
+    ): array {
+        $share = $this->newFolderShare(
+            object: $object,
+            shareType: IShare::TYPE_LINK,
+            shareWith: null,
+            permissions: $permissions
+        );
+
+        $this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
+
+        $created = $this->shareManager->createShare($share);
+
+        return [
+            'id'          => $created->getFullId(),
+            'type'        => 'link',
+            'token'       => $created->getToken(),
+            'permissions' => $created->getPermissions(),
+            'expiration'  => $created->getExpirationDate()?->format('c'),
+            'hasPassword' => ($created->getPassword() !== null),
+        ];
+    }//end createLink()
+
+    /**
+     * Invite an EMAIL ADDRESS to an object.
+     *
+     * `TYPE_EMAIL` is core's account-less link addressed to an address — the
+     * Files behaviour, chosen deliberately (design Q2), because requiring the
+     * recipient to already have an account defeats inviting a colleague who does
+     * not have one.
+     *
+     * The message carries no object data: the recipient follows the invitation to
+     * reach the object, so revoking it still works after the mail has been sent.
+     * Delivery is core's mailer, not ours.
+     *
+     * @param ObjectEntity $object      The object to share.
+     * @param string       $email       The address to invite.
+     * @param integer      $permissions Core permission bitmask; defaults to READ.
+     * @param string|null  $password    Optional password.
+     * @param string|null  $expiration  Optional expiry.
+     *
+     * @throws NotAuthorizedException When the caller is neither owner nor admin.
+     * @throws InvalidArgumentException On a missing address or unresolvable folder.
+     *
+     * @return array<string, mixed> The created invitation.
+     */
+    public function inviteByEmail(
+        ObjectEntity $object,
+        string $email,
+        int $permissions=1,
+        ?string $password=null,
+        ?string $expiration=null
+    ): array {
+        if (filter_var(trim($email), FILTER_VALIDATE_EMAIL) === false) {
+            throw new InvalidArgumentException('A valid email address is required');
+        }
+
+        $share = $this->newFolderShare(
+            object: $object,
+            shareType: IShare::TYPE_EMAIL,
+            shareWith: trim($email),
+            permissions: $permissions
+        );
+
+        $this->applyLinkOptions(share: $share, password: $password, expiration: $expiration);
+
+        $created = $this->shareManager->createShare($share);
+
+        return [
+            'id'          => $created->getFullId(),
+            'type'        => 'email',
+            'sharedWith'  => $created->getSharedWith(),
+            'token'       => $created->getToken(),
+            'permissions' => $created->getPermissions(),
+            'expiration'  => $created->getExpirationDate()?->format('c'),
+        ];
+    }//end inviteByEmail()
+
+    /**
+     * Build an owner-checked share on the object's folder.
+     *
+     * @param ObjectEntity $object      The object.
+     * @param integer      $shareType   Core share type.
+     * @param string|null  $shareWith   Principal or address, or null for a link.
+     * @param integer      $permissions Core permission bitmask.
+     *
+     * @throws NotAuthorizedException When the caller is neither owner nor admin.
+     * @throws InvalidArgumentException When the folder cannot be resolved.
+     *
+     * @return IShare The unsaved share.
+     */
+    private function newFolderShare(
+        ObjectEntity $object,
+        int $shareType,
+        ?string $shareWith,
+        int $permissions
+    ): IShare {
+        $this->requireOwnerOrAdmin(object: $object);
+
+        $folder = $this->resolveFolder(object: $object);
+        if ($folder === null) {
+            throw new InvalidArgumentException('Could not resolve the object folder to share');
+        }
+
+        $uid = $this->callerUid();
+        if ($uid === null) {
+            throw new NotAuthorizedException(message: 'No user session');
+        }
+
+        $share = $this->shareManager->newShare();
+        $share->setNode($folder);
+        $share->setShareType($shareType);
+        $share->setSharedBy($uid);
+
+        // A share must never exceed what the sharer holds. The owner-or-admin
+        // check above establishes the sharer can reach the object at all; core
+        // additionally clamps against the node's own permissions when the share
+        // is created, so a wider request cannot become a wider share.
+        $share->setPermissions($permissions);
+
+        if ($shareWith !== null) {
+            $share->setSharedWith($shareWith);
+        }
+
+        return $share;
+    }//end newFolderShare()
+
+    /**
+     * Apply the optional password and expiry to a link-style share.
+     *
+     * @param IShare      $share      The share being built.
+     * @param string|null $password   Optional password.
+     * @param string|null $expiration Optional expiry.
+     *
+     * @throws InvalidArgumentException When the expiry cannot be parsed.
+     *
+     * @return void
+     */
+    private function applyLinkOptions(IShare $share, ?string $password, ?string $expiration): void
+    {
+        if ($password !== null && trim($password) !== '') {
+            $share->setPassword($password);
+        }
+
+        if ($expiration === null || trim($expiration) === '') {
+            return;
+        }
+
+        try {
+            $share->setExpirationDate(new DateTime($expiration));
+        } catch (Throwable $e) {
+            throw new InvalidArgumentException('Could not read that expiry date');
+        }
+    }//end applyLinkOptions()
 
     /**
      * Revoke one grant.
