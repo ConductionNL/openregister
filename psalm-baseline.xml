@@ -43,12 +43,6 @@
       <code><![CDATA[$skippedCount]]></code>
     </UnusedParam>
   </file>
-  <file src="lib/BackgroundJob/ReportRenderJob.php">
-    <InvalidNamedArgument>
-      <code><![CDATA[_multitenancy]]></code>
-      <code><![CDATA[_rbac]]></code>
-    </InvalidNamedArgument>
-  </file>
   <file src="lib/Calendar/RegisterCalendarProvider.php">
     <LessSpecificImplementedReturnType>
       <code><![CDATA[array]]></code>
