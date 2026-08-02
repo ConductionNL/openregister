@@ -94,7 +94,6 @@ class ObjectScopeResolver
      */
     private const ADMIN_GROUP = 'admin';
 
-
     /**
      * Read the scope declared by one authorization block.
      *
@@ -125,7 +124,6 @@ class ObjectScopeResolver
         return self::SCOPE_PRIVATE;
     }//end declaredScope()
 
-
     /**
      * Resolve the effective scope for one object.
      *
@@ -152,7 +150,6 @@ class ObjectScopeResolver
         return self::SCOPE_ORGANISATION;
     }//end effectiveScope()
 
-
     /**
      * Whether one object is private.
      *
@@ -169,7 +166,6 @@ class ObjectScopeResolver
         ) === self::SCOPE_PRIVATE;
     }//end isPrivate()
 
-
     /**
      * Whether a schema makes its objects private by default.
      *
@@ -185,7 +181,6 @@ class ObjectScopeResolver
     {
         return $this->declaredScope(authorization: $schemaAuthorization) === self::SCOPE_PRIVATE;
     }//end schemaDefaultIsPrivate()
-
 
     /**
      * Whether a caller is admitted to a private object without an invitation.
@@ -216,7 +211,6 @@ class ObjectScopeResolver
 
         return $objectOwner === $userId;
     }//end admitsUnconditionally()
-
 
     /**
      * One platform-appropriate predicate for "this row is NOT private".
@@ -271,6 +265,4 @@ class ObjectScopeResolver
         // version does not recognise.
         return "({$columnName} IS NULL OR ({$scope}) IS NULL OR ({$scope}) = '' OR ({$scope}) = {$organisation})";
     }//end notPrivateSql()
-
-
 }//end class

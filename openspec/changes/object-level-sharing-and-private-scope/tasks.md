@@ -12,26 +12,74 @@
 
 ## 2. `private` as a principal, on all four enforcement paths
 
-- [ ] 2.1 Add `private` to the principal vocabulary, resolved against the object
-- [ ] 2.2 Owner and administrator admits FIRST and unconditional, so an owner cannot lock themselves out (design D3)
-- [ ] 2.3 Suppress the schema's group rules for a private object — that is the scope's purpose — while keeping it unable to WIDEN
-- [ ] 2.4 `PermissionHandler` — the single-object verdict
-- [ ] 2.5 `MagicRbacHandler::hasPermission()` — the relation-path verdict
-- [ ] 2.6 `MagicRbacHandler` QueryBuilder emitter — list endpoints
-- [ ] 2.7 `MagicRbacHandler` raw-SQL emitter — the search path
-- [ ] 2.8 Verify an unrecognised scope value still admits owner and admins and nobody else
-- [ ] 2.9 Verify nothing changes for an object with no `private` scope (the opt-in guarantee)
+> Landed. Vocabulary, PHP verdict and SQL predicate live once in
+> `lib/Service/Rbac/ObjectScopeResolver.php`; every path is a caller. Storage is
+> the `scope` key of an authorization block, at object and schema level, mirroring
+> the existing non-action key `inheritFromPublic`.
+
+- [x] 2.1 Add `private` to the principal vocabulary, resolved against the object
+- [x] 2.2 Owner and administrator admits FIRST and unconditional, so an owner cannot lock themselves out (design D3)
+- [x] 2.3 Suppress the schema's group rules for a private object — that is the scope's purpose — while keeping it unable to WIDEN
+- [x] 2.4 `PermissionHandler` — the single-object verdict
+- [x] 2.5 `MagicRbacHandler::hasPermission()` — the relation-path verdict
+- [x] 2.6 `MagicRbacHandler` QueryBuilder emitter — list endpoints
+- [x] 2.7 `MagicRbacHandler` raw-SQL emitter — the search path
+- [x] 2.8 Verify an unrecognised scope value still admits owner and admins and nobody else
+- [x] 2.9 Verify nothing changes for an object with no `private` scope (the opt-in guarantee)
+- [x] 2.10 Schema-level validation: `scope` is a reserved non-action key, validated STRICTLY at
+      authoring time (the runtime fail-closed still covers a value that arrives by import or by
+      a version that knew a scope this one does not)
+- [x] 2.11 Neither list emitter returns unfiltered any more — not on an unconditional grant, and
+      not on a schema with NO authorization block. An OBJECT can declare itself private on an
+      otherwise open schema, and bypassing there would leak exactly the objects on the schemas
+      nobody is watching. The `IS NULL` disjunct leads the predicate so an unwritten column is
+      decided without touching the JSON.
 
 ## 3. Verdict parity, over a live database
 
-- [ ] 3.1 Parity matrix: one fixture set through the single-object path AND the real RBAC-filtered list query, compared to each other AND to the expected verdict
-- [ ] 3.2 Run it WITH an authenticated non-admin session — `applyRbacFilters()` bypasses RBAC entirely when there is no user and PHP_SAPI is cli, which reports a fail-open divergence that does not exist
-- [ ] 3.3 Own the fixtures with a non-session user — RBAC OR-s an `_owner = <uid>` condition in, which would mask the predicate under test
-- [ ] 3.4 Positive control: disabling either implementation must fail the matrix
-- [ ] 3.5 Fixtures: owner, admin, org member, invited user, member of an invited group, revoked grant, expired share, anonymous, malformed scope
+> Landed as `tests/Db/PrivateScopeParityIntegrationTest.php` (5 tests, live
+> Postgres). Every fixture goes through all FOUR paths and the verdicts are
+> compared to each other AND to the expectation.
+
+- [x] 3.1 Parity matrix: one fixture set through the single-object path AND the real RBAC-filtered list query, compared to each other AND to the expected verdict
+- [x] 3.2 Run it WITH an authenticated non-admin session — `applyRbacFilters()` bypasses RBAC entirely when there is no user and PHP_SAPI is cli, which reports a fail-open divergence that does not exist
+- [x] 3.3 Own the fixtures with a non-session user — RBAC OR-s an `_owner = <uid>` condition in, which would mask the predicate under test
+- [x] 3.4 Positive control: disabling either implementation must fail the matrix — run for ALL FOUR
+      paths independently, each producing a distinct, attributable disagreement
+- [x] 3.5 Fixtures: owner, admin, org member, malformed scope, non-string scope, empty-string scope,
+      absent block, block without a scope key. (Invited user, group member, revoked grant and
+      expired share arrive with the grant layer in group 4 — there is nothing to invite yet.)
+- [x] 3.6 The UNION arm must be given TWO register/schema pairs. `searchAcrossMultipleTables()`
+      falls back to the SEQUENTIAL implementation — which uses the QueryBuilder emitter — for a
+      single pair, so a one-pair test compares one implementation with itself and reports perfect
+      agreement.
+- [x] 3.7 Feed the PHP paths objects READ BACK from the database, not built in memory alongside the
+      fixtures — a fixture in the shape the code expects cannot catch the code reading the wrong shape.
+
+### Findings recorded while doing groups 2–3
+
+- [x] 3.8 **Pre-existing leak, now pinned by a test.** A per-object ACTION override in
+      `_authorization` (e.g. `{"read": ["admin"]}`, live since Wave-12 Fix 5) is honoured by
+      `PermissionHandler` and IGNORED by both list emitters and by
+      `MagicRbacHandler::hasPermission()`: `resolveSchemaAuthorization()` calls the resolver with
+      NO object, and `hasPermission()` reads `$schema->getAuthorization()` directly. So such an
+      object is denied on `find` and RETURNED by `list`. NOT fixed here — this change adds `scope`
+      to the same column and honours that key on all four paths; making the action overrides
+      row-level in SQL is its own piece of work. Pinned by
+      `testPerObjectActionOverrideIsNotYetHonouredByTheListPaths`, which fails when it is fixed.
+- [ ] 3.9 **Pre-existing PHP warning**, proven against baseline: `QueryBuilder::select()` emits
+      `Undefined array key 0` on the RBAC-filtered list path when a session is present — a spread
+      of a single-element array with a non-zero key. Reproduces with the baseline
+      `MagicRbacHandler`, so it is not from this change; surfaced because this is the first DB test
+      to exercise that combination. Not localised.
 
 ## 4. Per-object grants
 
+- [ ] 4.0 Let an OWNER set their own object's `scope`. `stripSelfInjectionFields()` strips
+      `authorization` from every non-admin write, so today only an admin can make an object
+      private. The carve-out is safe because `scope` can only ever NARROW, unlike the action
+      lists in the same block, which can widen — so it must be a `scope`-only carve-out, not a
+      relaxation of the strip (design D3a)
 - [ ] 4.1 Grant / revoke a principal on ONE object, owner-only
 - [ ] 4.2 Compose with schema rules — narrows within, never widens
 - [ ] 4.3 Enforce the tenant edge independently of the grant list

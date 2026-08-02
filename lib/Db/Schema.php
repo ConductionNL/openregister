@@ -32,6 +32,7 @@ use OCP\IURLGenerator;
 use stdClass;
 use Exception;
 use RuntimeException;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -903,10 +904,19 @@ class Schema extends Entity implements JsonSerializable
      * Validate an authorization rules array
      *
      * Keys are either CRUD actions (create, read, update, delete) holding rule
-     * arrays, or reserved cascade flags (e.g. inheritFromPublic) holding a
-     * boolean. Reserved flags are behaviour toggles read at runtime by
-     * PermissionHandler, not action rule sets, so they are validated as
-     * booleans and skip the action/array checks.
+     * arrays, or reserved non-action keys. Reserved keys are behaviour toggles
+     * read at runtime, not action rule sets, so they skip the action/array
+     * checks and are validated against their own shape:
+     *
+     * - `inheritFromPublic` — a boolean cascade flag.
+     * - `scope` — the default object scope for this schema, from the
+     *   {@see ObjectScopeResolver} vocabulary.
+     *
+     * `scope` is validated STRICTLY here even though the runtime treats an
+     * unrecognised value as private. The two are not alternatives: strict
+     * validation gives a schema author an error at authoring time, and the
+     * runtime fail-closed still covers a value that arrived some other way — an
+     * import, a direct write, or a version that knew a scope this one does not.
      *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
@@ -933,6 +943,19 @@ class Schema extends Entity implements JsonSerializable
                 if (is_bool($rules) === false) {
                     throw new InvalidArgumentException(
                         "Authorization flag '{$action}' in {$context} must be a boolean"
+                    );
+                }
+
+                continue;
+            }
+
+            // The default object scope for this schema.
+            if ($action === ObjectScopeResolver::SCOPE_KEY) {
+                $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+                if (in_array($rules, $validScopes, true) === false) {
+                    $scopeList = implode(', ', $validScopes);
+                    throw new InvalidArgumentException(
+                        "Authorization scope in {$context} must be one of: {$scopeList}"
                     );
                 }
 

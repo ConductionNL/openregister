@@ -96,6 +96,39 @@ lock themselves out of their own object — the failure mode that makes a privac
 feature unusable. `private` narrows; it can never widen, so it cannot be used to
 grant access the schema would refuse.
 
+### D3a — The scope is stored as the `scope` key of an authorization block
+
+Decided while implementing group 2, because the spec said "an object MAY declare a
+`private` scope" without saying where.
+
+`_authorization` (a JSON column that already exists on every magic table) carries
+`{"scope": "private"}`; the schema's `authorization` block carries the same key as
+the DEFAULT for its objects. The object wins, in both directions — a default is
+not a ceiling, so an owner may put their own object back to `organisation`, which
+is the Files model.
+
+**Why this rather than a new `_scope` column.** `inheritFromPublic` is already a
+non-action key in exactly this block, with its own cascade, so the shape is not
+new. A column would need a migration across every existing magic table (2,731 of
+them on the dev instance alone) for a value that is NULL on essentially all rows.
+The cost is that the predicate is a JSON extraction rather than an indexed
+compare; the `IS NULL` disjunct leads it so an unwritten column is decided without
+touching the JSON. Promote to a column if list performance ever demands it.
+
+**Two things this forces, both deliberate.**
+
+*Strict validation at authoring time.* `Schema::validateAuthorizationRules()` now
+accepts `scope` and rejects anything outside the vocabulary. That is not
+redundant with the runtime fail-closed: validation gives a schema author an error
+instead of an invisible object, and fail-closed still covers a value that arrived
+by import, by direct write, or from a version that knew a scope this one does not.
+
+*Non-admins cannot yet set it.* `stripSelfInjectionFields()` strips
+`authorization` from non-admin writes, so an ordinary owner cannot make their own
+object private through the object API. Enforcement is complete and testable
+without that; the owner-may-set-`scope` carve-out belongs with the grant API in
+group 4, and it is safe there precisely because `scope` can only ever narrow.
+
 ### D4 — All four enforcement points, or none
 
 `private` and per-object grants land simultaneously in:

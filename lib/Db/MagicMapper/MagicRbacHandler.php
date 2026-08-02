@@ -109,13 +109,15 @@ class MagicRbacHandler
     /**
      * Constructor for MagicRbacHandler
      *
-     * @param IUserSession       $userSession      User session for current user context
-     * @param IGroupManager      $groupManager     Group manager for user group operations
-     * @param IUserManager       $userManager      User manager for user operations
-     * @param IAppConfig         $appConfig        App configuration for RBAC settings
-     * @param ConditionMatcher   $conditionMatcher Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
-     * @param ContainerInterface $container        Container for service injection
-     * @param LoggerInterface    $logger           Logger for debugging
+     * @param IUserSession             $userSession         User session for current user context
+     * @param IGroupManager            $groupManager        Group manager for user group operations
+     * @param IUserManager             $userManager         User manager for user operations
+     * @param IAppConfig               $appConfig           App configuration for RBAC settings
+     * @param ConditionMatcher         $conditionMatcher    Shared PHP-side match evaluator (ADR-011; SQL emitter stays here).
+     * @param ContainerInterface       $container           Container for service injection
+     * @param LoggerInterface          $logger              Logger for debugging
+     * @param ObjectScopeResolver|null $objectScopeResolver Shared object-scope resolver; nullable so adding it is not
+     *                                                      a fatal at existing construction sites.
      */
     public function __construct(
         private readonly IUserSession $userSession,
@@ -128,7 +130,6 @@ class MagicRbacHandler
         private readonly ?ObjectScopeResolver $objectScopeResolver=null
     ) {
     }//end __construct()
-
 
     /**
      * The shared object-scope resolver.
@@ -143,7 +144,6 @@ class MagicRbacHandler
     {
         return ($this->objectScopeResolver ?? new ObjectScopeResolver());
     }//end objectScope()
-
 
     /**
      * The "this row is not private" predicate for one schema, as raw SQL.
@@ -1194,7 +1194,7 @@ class MagicRbacHandler
                 // here is what suppresses the schema's rules for a private one.
                 $conditions[] = "({$notPrivate} AND {$ruleResult})";
             }
-        }
+        }//end foreach
 
         // Return conditions (empty array means deny all).
         return ['bypass' => false, 'conditions' => $conditions];

@@ -202,17 +202,20 @@ class PermissionHandler
     /**
      * PermissionHandler constructor.
      *
-     * @param IUserSession                               $userSession        User session for getting current user.
-     * @param IUserManager                               $userManager        User manager for getting user objects.
-     * @param IGroupManager                              $groupManager       Group manager for checking user groups.
-     * @param SchemaMapper                               $schemaMapper       Mapper for schema operations.
-     * @param MagicMapper                                $objectEntityMapper Mapper for object entity operations.
-     * @param ConditionMatcher                           $conditionMatcher   Shared PHP-side match evaluator (ADR-011).
-     * @param IAppConfig                                 $appConfig          App config for the inheritFromPublic tenant default and
-     *                                                                       the `enforce_default_closed` opt-in flag (Wave-12 Fix 2).
-     * @param LoggerInterface                            $logger             Logger for permission auditing.
-     * @param ContainerInterface                         $container          Container for lazy loading services.
-     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher    Optional dispatcher for custom-scope events.
+     * @param IUserSession                               $userSession         User session for getting current user.
+     * @param IUserManager                               $userManager         User manager for getting user objects.
+     * @param IGroupManager                              $groupManager        Group manager for checking user groups.
+     * @param SchemaMapper                               $schemaMapper        Mapper for schema operations.
+     * @param MagicMapper                                $objectEntityMapper  Mapper for object entity operations.
+     * @param ConditionMatcher                           $conditionMatcher    Shared PHP-side match evaluator (ADR-011).
+     * @param IAppConfig                                 $appConfig           App config for the inheritFromPublic tenant default and
+     *                                                                        the `enforce_default_closed` opt-in flag (Wave-12 Fix
+     *                                                                        2).
+     * @param LoggerInterface                            $logger              Logger for permission auditing.
+     * @param ContainerInterface                         $container           Container for lazy loading services.
+     * @param \OCP\EventDispatcher\IEventDispatcher|null $eventDispatcher     Optional dispatcher for custom-scope events.
+     * @param ObjectScopeResolver|null                   $objectScopeResolver Shared object-scope resolver; nullable so adding it is
+     *                                                                        not a fatal at existing construction sites.
      *
      * @spec openspec/specs/rbac-scopes/spec.md
      */
@@ -230,7 +233,6 @@ class PermissionHandler
         private readonly ?ObjectScopeResolver $objectScopeResolver=null
     ) {
     }//end __construct()
-
 
     /**
      * The shared object-scope resolver.
