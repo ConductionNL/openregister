@@ -179,7 +179,11 @@ webpackConfig.resolve.alias = {
 	// the file keeps every consumer on one copy regardless.
 	vue$: path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
 	pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.mjs'),
-	'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.mjs'),
+	// `dist/vue-router.js` — NOT `.mjs`, which does not exist. This is the file
+	// the package's own `exports['.'].import` (and `module`) names, so the alias
+	// reproduces default resolution exactly while still guaranteeing that
+	// @nextcloud/vue's chunks and this app share ONE router copy.
+	'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.js'),
 	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
 	// Shim for floating-vue compatibility: adds getScrollParents (0.x API) as alias for getOverflowAncestors (1.x API)
 	'@floating-ui/dom$': path.resolve(__dirname, 'src/shims/floating-ui-dom.js'),

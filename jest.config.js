@@ -17,6 +17,18 @@ module.exports = {
 	],
 	moduleNameMapper: {
 		'^@/(.*)$': '<rootDir>/src/$1',
+		// ⚠️ Jest's default resolver reads `main` and does NOT honour an
+		// `exports` map or a bare `module` field. The Vue-3-era @nextcloud
+		// packages ship one or the other and no `main`, so `jest.mock(...)` and
+		// plain imports both fail with "Cannot find module" — 16 suites' worth.
+		// This is the same trap as webpack's exports-map/directory-alias problem,
+		// one layer up: point at the resolved FILE.
+		//   @nextcloud/vue      — exports map only, no main/module
+		//   @nextcloud/dialogs  — exports map only, no main/module
+		//   @nextcloud/axios    — `module` only, no `main`
+		'^@nextcloud/vue$': '<rootDir>/node_modules/@nextcloud/vue/dist/index.mjs',
+		'^@nextcloud/dialogs$': '<rootDir>/node_modules/@nextcloud/dialogs/dist/index.mjs',
+		'^@nextcloud/axios$': '<rootDir>/node_modules/@nextcloud/axios/dist/index.js',
 		// @nextcloud/browser-storage ships pure ESM with `"type": "module"`.
 		// Babel-jest can't transparently transform it from a CJS dependency
 		// chain, so stub it for the unit-test environment.
@@ -41,6 +53,13 @@ module.exports = {
 		'/vendor/',
 		'<rootDir>/custom_apps/',
 		'<rootDir>/\\.claude/worktrees/',
+		// Scratch/tooling directories. A directory hidden from git (via
+		// .gitignore or .git/info/exclude) is still perfectly visible to jest,
+		// webpack and eslint — extracting a package tarball here for inspection
+		// made jest try to transform the library's own `src/**/*.vue` and
+		// produced 140 bogus "Cannot use import statement outside a module"
+		// errors across 79 suites.
+		'<rootDir>/\\.migration/',
 		'<rootDir>/\\.playwright-mcp/',
 		// Playwright suite — has its own runner via `npx playwright test`.
 		'<rootDir>/tests/e2e/',
@@ -48,6 +67,7 @@ module.exports = {
 	modulePathIgnorePatterns: [
 		'<rootDir>/custom_apps/',
 		'<rootDir>/\\.claude/worktrees/',
+		'<rootDir>/\\.migration/',
 	],
 	coveragePathIgnorePatterns: [
 		'index.js',
