@@ -20,6 +20,7 @@ use OCA\OpenRegister\AppHost\Bootstrap;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__.'/RecordingRegistrationContext.php';
+require_once __DIR__.'/LeafOwnControllerFixture.php';
 
 /**
  * Bootstrap::register() must alias the leaf controller class names to the
@@ -155,4 +156,39 @@ class BootstrapTest extends TestCase
         $this->assertNotContains('OCA\\PetStore\\Controller\\MetricsController', $services);
         $this->assertContains('OCA\\PetStore\\Controller\\SettingsController', $services);
     }//end testObservabilityOptOutSkipsHealthMetrics()
+
+    /**
+     * A leaf app that defines its own controller must KEEP it.
+     *
+     * `registerService()` overrides autowiring, so aliasing unconditionally
+     * shadowed the consuming app's controller: routes pointing at a method
+     * only the leaf defines (`dashboard#summary`) 500'd, and response-level
+     * behaviour the leaf applied — a CSP built with `allowEvalWasm(true)` —
+     * never ran, so the served CSP lacked `wasm-unsafe-eval` and blocked
+     * Argon2 WASM (share/export/import).
+     */
+    public function testDoesNotShadowAControllerTheLeafAppDefinesItself(): void
+    {
+        $context = new RecordingRegistrationContext();
+        Bootstrap::register($context, 'leafwithowndashboard', ['namespace' => 'OCA\\LeafWithOwnDashboard']);
+        $services = $context->services;
+
+        // Positive control: the fixture class really is loadable, so a false
+        // "not registered" cannot come from a typo'd class name.
+        $this->assertTrue(
+            class_exists('OCA\\LeafWithOwnDashboard\\Controller\\DashboardController'),
+            'fixture leaf controller must exist, otherwise this test proves nothing'
+        );
+
+        $this->assertNotContains(
+            'OCA\\LeafWithOwnDashboard\\Controller\\DashboardController',
+            $services,
+            'AppHost must not alias its generic controller over one the leaf app ships itself'
+        );
+
+        // …and the controllers the leaf does NOT define are still aliased, so
+        // the opt-in generic behaviour is not lost wholesale.
+        $this->assertContains('OCA\\LeafWithOwnDashboard\\Controller\\SettingsController', $services);
+        $this->assertContains('OCA\\LeafWithOwnDashboard\\Controller\\PreferencesController', $services);
+    }//end testDoesNotShadowAControllerTheLeafAppDefinesItself()
 }//end class
