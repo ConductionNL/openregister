@@ -17,8 +17,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 		<div v-if="createAnother || !success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
+				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
 							<span>{{ t('openregister', 'Settings') }}</span>
@@ -27,20 +27,20 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Name *')"
-								:value.sync="organisationItem.name"
+								v-model="organisationItem.name"
 								:error="!organisationItem.name.trim()"
 								:placeholder="t('openregister', 'Enter organisation name')" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Slug')"
-								:value.sync="organisationItem.slug"
+								v-model="organisationItem.slug"
 								:placeholder="t('openregister', 'Optional URL-friendly identifier')" />
 
 							<NcTextArea
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								:value.sync="organisationItem.description"
+								v-model="organisationItem.description"
 								:placeholder="t('openregister', 'Enter organisation description (optional)')"
 								:rows="4" />
 
@@ -58,7 +58,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									:filterable="false"
 									:placeholder="t('openregister', 'Search groups...')"
 									@search-change="searchGroups"
-									@input="updateGroups">
+									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{ name }}</span>
@@ -76,7 +76,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
-								:checked.sync="organisationItem.active">
+								v-model="organisationItem.active">
 								{{ t('openregister', 'Active') }}
 							</NcCheckboxRadioSwitch>
 
@@ -84,9 +84,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<p>{{ t('openregister', 'Inactive organisations cannot be used') }}</p>
 							</NcNoteCard>
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Database :size="16" />
 							<span>{{ t('openregister', 'Quota') }}</span>
@@ -97,44 +97,44 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								:label="t('openregister', 'Storage Quota (MB)')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
+								:model-value="storageQuotaMB"
+								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Bandwidth Quota (MB/month)')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
+								:model-value="bandwidthQuotaMB"
+								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'API Request Quota (requests/day)')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:value="organisationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
+								:model-value="organisationItem.quota?.requests || 0"
+								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'User Quota')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:value="organisationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
+								:model-value="organisationItem.quota?.users || 0"
+								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Group Quota')"
 								type="number"
 								:placeholder="t('openregister', '0 = unlimited')"
-								:value="organisationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
+								:model-value="organisationItem.quota?.groups || 0"
+								@update:modelValue="updateGroupQuota" />
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab :disabled="!organisationItem.uuid">
+					<AppTab :disabled="!organisationItem.uuid">
 						<template #title>
 							<AccountMultiple :size="16" />
 							<span>{{ t('openregister', 'Users') }}</span>
@@ -143,7 +143,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							<div class="users-header">
 								<NcButton
 									v-if="organisationItem.uuid"
-									type="primary"
+									variant="primary"
 									:disabled="loading"
 									@click="showAddUserDialog = true">
 									<template #icon>
@@ -169,7 +169,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 										</div>
 										<NcButton
 											v-if="userId !== organisationItem.owner"
-											type="tertiary"
+											variant="tertiary"
 											:disabled="loading || removingUser === userId"
 											@click="removeUser(userId)">
 											<template #icon>
@@ -190,9 +190,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<p>{{ t('openregister', 'Save the organisation first to manage users.') }}</p>
 							</NcNoteCard>
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Shield :size="16" />
 							<span>{{ t('openregister', 'Security') }}</span>
@@ -204,79 +204,79 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 							</div>
 
 							<div v-else class="rbac-container">
-								<BTabs content-class="mt-3" pills>
+								<AppTabs content-class="mt-3" pills>
 									<!-- Registers -->
-									<BTab :title="t('openregister', 'Registers')">
+									<AppTab :title="t('openregister', 'Registers')">
 										<RbacTable
 											entity-type="register"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Schemas -->
-									<BTab :title="t('openregister', 'Schemas')">
+									<AppTab :title="t('openregister', 'Schemas')">
 										<RbacTable
 											entity-type="schema"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Objects -->
-									<BTab :title="t('openregister', 'Objects')">
+									<AppTab :title="t('openregister', 'Objects')">
 										<RbacTable
 											entity-type="object"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Views -->
-									<BTab :title="t('openregister', 'Views')">
+									<AppTab :title="t('openregister', 'Views')">
 										<RbacTable
 											entity-type="view"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Agents -->
-									<BTab :title="t('openregister', 'Agents')">
+									<AppTab :title="t('openregister', 'Agents')">
 										<RbacTable
 											entity-type="agent"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Configurations -->
-									<BTab :title="t('openregister', 'Configurations')">
+									<AppTab :title="t('openregister', 'Configurations')">
 										<RbacTable
 											entity-type="configuration"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Applications -->
-									<BTab :title="t('openregister', 'Applications')">
+									<AppTab :title="t('openregister', 'Applications')">
 										<RbacTable
 											entity-type="application"
 											:authorization="organisationItem.authorization || {}"
 											:available-groups="availableGroups"
 											:organisation-groups="organisationItem.groups || []"
 											@update="updateEntityPermission" />
-									</BTab>
+									</AppTab>
 
 									<!-- Special Rights -->
-									<BTab :title="t('openregister', 'Special Rights')">
+									<AppTab :title="t('openregister', 'Special Rights')">
 										<div class="special-rights-container">
 											<p class="rbac-description">
 												{{ t('openregister', 'Grant additional permissions beyond standard CRUD operations') }}
@@ -307,7 +307,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																track-by="id"
 																:multiple="true"
 																:placeholder="t('openregister', 'Select groups...')"
-																@input="updateSpecialRight('object_publish', $event)" />
+																@update:modelValue="updateSpecialRight('object_publish', $event)" />
 														</td>
 													</tr>
 													<tr>
@@ -326,7 +326,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																track-by="id"
 																:multiple="true"
 																:placeholder="t('openregister', 'Select groups...')"
-																@input="updateSpecialRight('agent_use', $event)" />
+																@update:modelValue="updateSpecialRight('agent_use', $event)" />
 														</td>
 													</tr>
 													<tr>
@@ -345,7 +345,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																track-by="id"
 																:multiple="true"
 																:placeholder="t('openregister', 'Select groups...')"
-																@input="updateSpecialRight('dashboard_view', $event)" />
+																@update:modelValue="updateSpecialRight('dashboard_view', $event)" />
 														</td>
 													</tr>
 													<tr>
@@ -364,18 +364,18 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 																track-by="id"
 																:multiple="true"
 																:placeholder="t('openregister', 'Select groups...')"
-																@input="updateSpecialRight('llm_use', $event)" />
+																@update:modelValue="updateSpecialRight('llm_use', $event)" />
 														</td>
 													</tr>
 												</tbody>
 											</table>
 										</div>
-									</BTab>
-								</BTabs>
+									</AppTab>
+								</AppTabs>
 							</div>
 						</div>
-					</BTab>
-				</BTabs>
+					</AppTab>
+				</AppTabs>
 			</div>
 		</div>
 
@@ -384,7 +384,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 				v-if="!organisationStore.organisationItem?.uuid"
 				class="create-another-checkbox"
 				:disabled="loading"
-				:checked.sync="createAnother">
+				v-model="createAnother">
 				{{ t('openregister', 'Create another') }}
 			</NcCheckboxRadioSwitch>
 			<NcButton @click="closeModal">
@@ -395,7 +395,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="createAnother || !success"
 				:disabled="loading || !organisationItem.name.trim()"
-				type="primary"
+				variant="primary"
 				@click="saveOrganisation()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -425,7 +425,8 @@ import {
 	NcNoteCard,
 	NcCheckboxRadioSwitch,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 import { showSuccess, showError } from '@nextcloud/dialogs'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
@@ -453,8 +454,8 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		RemoveUserDialog,
 		RbacTable,
 		// Icons
@@ -1018,17 +1019,17 @@ export default {
 		updateEntityPermission({ entityType, groupId, action, hasPermission }) {
 			// Initialize authorization object if it doesn't exist
 			if (!this.organisationItem.authorization) {
-				this.$set(this.organisationItem, 'authorization', {})
+				this.organisationItem.authorization = {}
 			}
 
 			// Initialize entity type if it doesn't exist
 			if (!this.organisationItem.authorization[entityType]) {
-				this.$set(this.organisationItem.authorization, entityType, {})
+				this.organisationItem.authorization[entityType] = {}
 			}
 
 			// Initialize action array if it doesn't exist
 			if (!this.organisationItem.authorization[entityType][action]) {
-				this.$set(this.organisationItem.authorization[entityType], action, [])
+				this.organisationItem.authorization[entityType][action] = []
 			}
 
 			const currentPermissions = this.organisationItem.authorization[entityType][action]
@@ -1054,14 +1055,14 @@ export default {
 		updateSpecialRight(right, groups) {
 			// Initialize authorization if it doesn't exist
 			if (!this.organisationItem.authorization) {
-				this.$set(this.organisationItem, 'authorization', {})
+				this.organisationItem.authorization = {}
 			}
 
 			// Convert group objects to array of group IDs
 			const groupIds = groups.map(g => g.id)
 
 			// Update the authorization
-			this.$set(this.organisationItem.authorization, right, groupIds)
+			this.organisationItem.authorization[right] = groupIds
 
 			// Update the selected special rights for UI binding
 			this.selectedSpecialRights[right] = groups

@@ -1,4 +1,4 @@
-import Vue from 'vue'
+import { createApp } from 'vue'
 import { translate, translatePlural } from '@nextcloud/l10n'
 import PersonalRoot from './components/userSettings/PersonalRoot.vue'
 
@@ -16,13 +16,13 @@ import PersonalRoot from './components/userSettings/PersonalRoot.vue'
 // CnCredentials talks straight to /apps/openregister/api/credentials over axios and
 // holds no store, so this entry needs no Pinia.
 
-Vue.mixin({
+const app = createApp(PersonalRoot)
+
+app.mixin({
 	methods: {
 		t: translate,
 		n: translatePlural,
 	},
 })
 
-new Vue({
-	render: h => h(PersonalRoot),
-}).$mount('#openregister-personal-settings')
+app.mount('#openregister-personal-settings')

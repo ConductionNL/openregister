@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 	<div class="contacts-tab">
 		<!-- Toolbar -->
 		<div v-if="!loading && !contactsUnavailable" class="contacts-tab__toolbar">
-			<NcButton type="primary" @click="openCreateDialog">
+			<NcButton variant="primary" @click="openCreateDialog">
 				<template #icon>
 					<AccountPlus :size="20" />
 				</template>
@@ -64,7 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						<span v-if="contact.role" class="contacts-tab__role">{{ contact.role }}</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Remove contact')"
 					@click="unlinkContact(contact)">
 					<template #icon>
@@ -78,9 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'

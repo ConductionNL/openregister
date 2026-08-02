@@ -336,4 +336,72 @@ class ProviderCatalogueTest extends TestCase
             );
         }
     }//end testEverySecretIsCarriedInASingleHeaderTemplate()
+
+    /**
+     * The pushing credential is a SEPARATE, inject-only entry — and `github` is not.
+     *
+     * `git push` needs a credential, not a proxied API call: git speaks the
+     * smart-HTTP pack protocol, so there is no single request for the broker to
+     * make and no header to substitute. The host-locked `github` entry therefore
+     * returns null from `resolveInjectable()` by design, and that null is a
+     * ROUTING signal, not a denial — but `request()` cannot express a push, so a
+     * pushing stage had no compliant credential home at all.
+     *
+     * The half that matters most is the second assertion. Making `github`
+     * inject-only would have been the one-line version of this change and would
+     * have silently widened EVERY existing github credential in the fleet from
+     * "its secret never leaves OpenRegister" to "its secret is handed to the
+     * calling app". Two entries keeps the pushing credential greppable,
+     * reviewable and revocable on its own.
+     */
+    public function testTheGithubPushCredentialIsInjectOnlyAndTheProxyEntryIsNot(): void
+    {
+        $push = $this->catalogue->get('github-push');
+        $this->assertNotNull($push, 'github-push must exist: without it a push has no brokered credential');
+        $this->assertTrue(($push['inject_only'] ?? false), 'github-push must be inject-only or it cannot be resolved');
+        $this->assertArrayNotHasKey('baseUrl', $push, 'an inject-only entry must carry no proxy affordance');
+        $this->assertArrayNotHasKey('allowRules', $push, 'an inject-only entry must carry no proxy affordance');
+
+        $proxy = $this->catalogue->get('github');
+        $this->assertNotNull($proxy);
+        $this->assertNotTrue(
+            ($proxy['inject_only'] ?? false),
+            'the host-locked github entry must stay a PROXY entry — flipping it would hand every existing '
+            .'github credential in the fleet to its calling app'
+        );
+        $this->assertArrayHasKey('baseUrl', $proxy);
+    }//end testTheGithubPushCredentialIsInjectOnlyAndTheProxyEntryIsNot()
+
+    /**
+     * No entry grants workflow write, and none ever should.
+     *
+     * A credential that can edit `.github/workflows` obtains code execution on
+     * the forge's runners, which escapes every other control around it. The
+     * catalogue carried a workflow-dispatch grant once (openregister#2240) and
+     * reverted it (#2242); this is the assertion that would have caught it.
+     *
+     * ⚠️ It bounds the CATALOGUE, not the token. Whether the stored secret
+     * itself carries workflow permission is a property of the forge credential
+     * and cannot be asserted from here — see the github-push $comment for the
+     * probe that verifies it before the secret is stored.
+     */
+    public function testNoProviderCanReachAWorkflowDefinition(): void
+    {
+        foreach ($this->catalogue->all() as $id => $entry) {
+            foreach (($entry['allowRules'] ?? []) as $rule) {
+                $path = (string) ($rule['pathPattern'] ?? '');
+                $this->assertStringNotContainsStringIgnoringCase(
+                    'workflow',
+                    $path,
+                    $id.' grants '.$path.' — a workflow write is code execution on the forge runners'
+                );
+                $this->assertStringNotContainsStringIgnoringCase(
+                    '/actions',
+                    $path,
+                    $id.' grants '.$path.' — the actions surface can run arbitrary workflows'
+                );
+            }
+        }
+    }//end testNoProviderCanReachAWorkflowDefinition()
+
 }//end class

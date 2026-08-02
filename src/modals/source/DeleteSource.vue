@@ -29,7 +29,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteSource()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

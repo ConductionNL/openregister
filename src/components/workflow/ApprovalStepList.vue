@@ -18,10 +18,10 @@ import { generateUrl } from '@nextcloud/router'
 			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
 			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
 				<input v-model="comments[step.id]" type="text" :placeholder="t('openregister', 'Comment...')">
-				<NcButton type="success" @click="approve(step)">
+				<NcButton variant="success" @click="approve(step)">
 					{{ t('openregister', 'Approve') }}
 				</NcButton>
-				<NcButton type="error" @click="reject(step)">
+				<NcButton variant="error" @click="reject(step)">
 					{{ t('openregister', 'Reject') }}
 				</NcButton>
 			</div>

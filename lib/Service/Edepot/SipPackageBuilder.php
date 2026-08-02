@@ -321,6 +321,9 @@ class SipPackageBuilder
     private function writeZipArchive(array $entries, string $suffix): string
     {
         $zipPath = $this->tempManager->getTemporaryFile(".sip{$suffix}.zip");
+        if ($zipPath === false) {
+            throw new InvalidArgumentException('Failed to allocate a temporary file for the SIP archive');
+        }
 
         $zip    = new ZipArchive();
         $result = $zip->open($zipPath, (ZipArchive::CREATE | ZipArchive::OVERWRITE));
@@ -363,6 +366,13 @@ class SipPackageBuilder
     private function writeBagitArchive(string $transferId, array $entries, string $suffix): string
     {
         $zipPath = $this->tempManager->getTemporaryFile(".bag{$suffix}.zip");
+        if ($zipPath === false) {
+            // getTemporaryFile() returns false when it cannot create the file.
+            // This file declares strict_types, so passing that false straight to
+            // ZipArchive::open() raises a TypeError about an argument rather than
+            // saying what actually went wrong — and the method promises a string.
+            throw new InvalidArgumentException('Failed to allocate a temporary file for the BagIt archive');
+        }
 
         $zip    = new ZipArchive();
         $result = $zip->open($zipPath, (ZipArchive::CREATE | ZipArchive::OVERWRITE));

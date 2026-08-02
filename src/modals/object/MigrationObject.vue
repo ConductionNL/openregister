@@ -77,7 +77,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								ID: {{ obj.id || obj['@self']?.id }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
 							@click="removeObject(obj.id)">
 							<template #icon>
@@ -110,7 +110,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					label="title"
 					track-by="id"
 					:placeholder="t('openregister', 'Select a register...')"
-					@update:model-value="onRegisterChange" />
+					@update:modelValue="onRegisterChange" />
 			</div>
 
 			<!-- Target Schema Selection -->
@@ -123,7 +123,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					label="title"
 					track-by="id"
 					:placeholder="t('openregister', 'Select a schema...')"
-					@update:model-value="onSchemaChange" />
+					@update:modelValue="onSchemaChange" />
 			</div>
 		</div>
 
@@ -172,7 +172,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								track-by="value"
 								:placeholder="'Map to target property...'"
 								:clearable="true"
-								@update:model-value="updateMappingFromUI(sourceProperty.name)" />
+								@update:modelValue="updateMappingFromUI(sourceProperty.name)" />
 						</div>
 					</div>
 				</div>
@@ -276,7 +276,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 1"
 				:disabled="selectedObjects.length === 0"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -285,7 +285,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 2"
-				type="secondary"
+				variant="secondary"
 				@click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
@@ -295,7 +295,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 2"
 				:disabled="!targetRegister || !targetSchema"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -304,7 +304,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 3"
-				type="secondary"
+				variant="secondary"
 				@click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
@@ -314,7 +314,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 3"
 				:disabled="loading || !canMigrate"
-				type="primary"
+				variant="primary"
 				@click="performMigration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

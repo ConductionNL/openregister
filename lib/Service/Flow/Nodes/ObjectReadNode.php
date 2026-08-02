@@ -29,6 +29,11 @@
  * and "the read did not happen" are different answers, and a reaper that reads
  * the second as the first quietly stops reaping.
  *
+ * The same distinction applies BEFORE the read: a filter whose placeholder
+ * renders empty asked a different question from the one it was authored to
+ * ask, so it throws too. See {@see renderFilters()} — that is the shape hydra's
+ * lock reaper was dormant in for weeks while every run reported `completed`.
+ *
  * TWO OUTPUT SHAPES, AND THE DEFAULT IS THE NARROWER ONE
  * ------------------------------------------------------
  * By default the matches land as a LIST under `output`, which is right for
@@ -273,7 +278,7 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys
         $out = [];
         foreach ($items as $index => $item) {
             $json    = (array) ($item[FlowItems::JSON] ?? []);
-            $filters = (array) FlowValueTemplate::render(value: (array) ($config['filters'] ?? []), json: $json);
+            $filters = $this->renderFilters(config: $config, json: $json);
 
             $records = $this->read(
                 register: $register,
@@ -330,6 +335,65 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys
         return $out;
 
     }//end execute()
+
+    /**
+     * Render the step's filters, refusing any placeholder that comes out empty.
+     *
+     * A FILTER IS A QUESTION, AND AN EMPTY ONE IS STILL A QUESTION.
+     * ------------------------------------------------------------
+     * `FlowValueTemplate::render()` cannot fail: a path the item does not carry
+     * resolves to null and substitutes as the empty string. For a written FIELD
+     * that is a deliberate narrowing, governed by `onMissing`. For a filter it
+     * is a silent change of meaning — `"ZZ issue-lock {{repo}}"` becomes
+     * `"ZZ issue-lock "`, which matches nothing, and the step then returns zero
+     * rows and reports success.
+     *
+     * That is not hypothetical. hydra's lock reaper is a scheduled flow whose
+     * filter interpolated `{{repo}}`, and a schedule tick's payload is only
+     * `{flowId, scheduledAt}` — so under its own trigger the filter always
+     * rendered empty and the reaper swept nothing, every run `completed`. It
+     * reaped correctly whenever a human passed `repo` in a test payload, which
+     * is exactly what kept it hidden.
+     *
+     * So an unfilled placeholder throws here, the same way
+     * `ObjectWriteNode::findMatch()` refuses an unfilled MATCH key: a guard
+     * that gets weaker when its input is missing is not a guard. `null` and the
+     * empty string count as unfilled alongside an absent path, because all
+     * three render identically — a computed field whose expression returned
+     * null is present in the record and just as empty.
+     *
+     * A step that genuinely wants "everything" says so by authoring no filter,
+     * which is a different sentence from one whose filter did not render.
+     *
+     * @param array $config The step configuration.
+     * @param array $json   The current item's record.
+     *
+     * @return array The rendered filters.
+     *
+     * @throws RuntimeException When a filter placeholder renders empty.
+     *
+     * @spec openspec/changes/or-flow-nodes/specs/flow-nodes/spec.md
+     */
+    private function renderFilters(array $config, array $json): array
+    {
+        $rendered = FlowValueTemplate::renderTracked(
+            value: (array) ($config['filters'] ?? []),
+            json: $json
+        );
+
+        if ($rendered['unresolved'] !== []) {
+            throw new RuntimeException(
+                $this->l10n->t(
+                    'The object-read step\'s filter could not be rendered: %s resolved to nothing on this item. '
+                    .'A filter that renders empty matches nothing, so the step would report success having read no objects.',
+                    [implode(', ', $rendered['unresolved'])]
+                )
+            );
+        }
+
+        return (array) $rendered['value'];
+
+    }//end renderFilters()
 
     /**
      * Perform one read as the run owner.

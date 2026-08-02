@@ -1,5 +1,5 @@
 <template>
-	<NcDialog :open.sync="isOpen" name="Test Hook (Dry Run)" size="large">
+	<NcDialog v-model:open="isOpen" name="Test Hook (Dry Run)" size="large">
 		<div class="test-hook-dialog">
 			<p class="warning-text">
 				Dry run -- no data will be persisted.
@@ -12,7 +12,7 @@
 				<NcButton @click="isOpen = false">
 					Cancel
 				</NcButton>
-				<NcButton type="primary" :disabled="loading" @click="runTest">
+				<NcButton variant="primary" :disabled="loading" @click="runTest">
 					{{ loading ? 'Running...' : 'Run Test' }}
 				</NcButton>
 			</div>

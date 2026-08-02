@@ -18,7 +18,7 @@
 						<div class="active-filter-header">
 							<span class="active-filter-name">{{ getActiveFacetDisplayName(facetField) }}</span>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								size="small"
 								:aria-label="t('openregister', 'Remove filter')"
 								@click="removeFilter(facetField)">
@@ -43,7 +43,7 @@
 					<!-- Clear all filters button -->
 					<div class="clear-filters">
 						<NcButton
-							type="tertiary-no-background"
+							variant="tertiary-no-background"
 							size="small"
 							@click="clearAllFilters">
 							{{ t('openregister', 'Clear all filters') }}
@@ -87,16 +87,16 @@
 									:model-value="getDateRangeValue(fieldName, 'from')"
 									:placeholder="t('openregister', 'From date')"
 									type="date"
-									@update:model-value="updateDateRange(fieldName, 'from', $event)" />
+									@update:modelValue="updateDateRange(fieldName, 'from', $event)" />
 								<span class="date-separator">{{ t('openregister', 'to') }}</span>
 								<NcDateTimePickerNative
 									:model-value="getDateRangeValue(fieldName, 'to')"
 									:placeholder="t('openregister', 'To date')"
 									type="date"
-									@update:model-value="updateDateRange(fieldName, 'to', $event)" />
+									@update:modelValue="updateDateRange(fieldName, 'to', $event)" />
 								<NcButton
 									v-if="hasDateRange(fieldName)"
-									type="tertiary"
+									variant="tertiary"
 									size="small"
 									:aria-label="t('openregister', 'Clear date range')"
 									@click="clearDateRange(fieldName)">
@@ -131,7 +131,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateMetadataDropdownSelection(fieldName, $event)">
+								@update:modelValue="updateMetadataDropdownSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -152,8 +152,8 @@
 							:key="`meta-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:checked="isActiveFacet(`@self.${fieldName}`)"
-								@update:checked="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
+								:model-value="isActiveFacet(`@self.${fieldName}`)"
+								@update:modelValue="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
 								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
@@ -185,10 +185,10 @@
 								<NcCheckboxRadioSwitch
 									v-for="bucket in facet.data.buckets"
 									:key="bucket.value"
-									:checked="isDateRangeSelected(fieldName, bucket.value)"
+									:model-value="isDateRangeSelected(fieldName, bucket.value)"
 									type="radio"
 									name="date-range-${fieldName}"
-									@update:checked="selectDateRangeBucket(fieldName, bucket)">
+									@update:modelValue="selectDateRangeBucket(fieldName, bucket)">
 									{{ bucket.label || bucket.value }}
 									<span v-if="bucket.count !== undefined" class="value-count">({{ bucket.count }})</span>
 								</NcCheckboxRadioSwitch>
@@ -202,16 +202,16 @@
 										:model-value="getObjectDateRangeValue(fieldName, 'from')"
 										:placeholder="t('openregister', 'From date')"
 										type="date"
-										@update:model-value="updateObjectDateRange(fieldName, 'from', $event)" />
+										@update:modelValue="updateObjectDateRange(fieldName, 'from', $event)" />
 									<span class="date-separator">{{ t('openregister', 'to') }}</span>
 									<NcDateTimePickerNative
 										:model-value="getObjectDateRangeValue(fieldName, 'to')"
 										:placeholder="t('openregister', 'To date')"
 										type="date"
-										@update:model-value="updateObjectDateRange(fieldName, 'to', $event)" />
+										@update:modelValue="updateObjectDateRange(fieldName, 'to', $event)" />
 									<NcButton
 										v-if="hasObjectDateRange(fieldName)"
-										type="tertiary"
+										variant="tertiary"
 										size="small"
 										:aria-label="t('openregister', 'Clear date range')"
 										@click="clearObjectDateRange(fieldName)">
@@ -245,7 +245,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateDateHistogramSelection(fieldName, $event)">
+								@update:modelValue="updateDateHistogramSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -282,7 +282,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateDropdownSelection(fieldName, $event)">
+								@update:modelValue="updateDropdownSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -303,8 +303,8 @@
 							:key="`checkbox-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:checked="isActiveFacet(fieldName)"
-								@update:checked="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
+								:model-value="isActiveFacet(fieldName)"
+								@update:modelValue="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
 								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
