@@ -163,7 +163,32 @@ class DoffinProviderTest extends TestCase
         // arbitrary code in the repository. This one lets it file a bug report.
         // Bounded to /issues, it writes issue metadata and never a byte of code,
         // and is reversible through the PATCH rule beside it.
-        $this->assertCount(17, $github['allowRules']);
+        //
+        // 18 since 2026-08-02: `GET /search/issues`. hydra's sequencer runs on a
+        // SCHEDULE, and a schedule tick's payload is only
+        // `{flowId, scheduledAt}` — it carries no repository. So it searches the
+        // organisation for its queue label and reads the repository back off
+        // whatever it finds. The alternative is enumerating the org and querying
+        // each repository in turn, which hydra already tried and abandoned:
+        // 41 repos x 5 label queries = 205 calls per tick, and the forge's abuse
+        // governor 403'd everything from that IP for ~15 minutes.
+        // Read-only, host-locked like every rule here, and the issues
+        // counterpart of `GET /search/repositories` which rule 5 already allows.
+        // Narrower per issue than `GET /repos/*` at rule 1: a search result
+        // omits fields a direct issue read returns.
+        $this->assertCount(18, $github['allowRules']);
+
+        // The search grant is READ-only and must stay so: a search rule that
+        // grew a write method would be a write to every repository the token can
+        // see, in one call.
+        $issueSearch = array_values(
+            array_filter(
+                $github['allowRules'],
+                static fn (array $rule): bool => ($rule['pathPattern'] ?? '') === '/search/issues'
+            )
+        );
+        $this->assertCount(1, $issueSearch);
+        $this->assertSame('GET', $issueSearch[0]['method']);
 
         // The grant is CREATE-only and must stay that way: nothing here may
         // reach a repository, a release or file content.
