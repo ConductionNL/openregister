@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.1",
-    "@conduction/nextcloud-vue": "2.1.0-vue3.13",
+    "@conduction/nextcloud-vue": "2.1.0-vue3.16",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-solid-svg-icons": "^6.5.2",
     "@nextcloud/auth": "^2.6.0",
@@ -136,7 +136,6 @@
     "vue": "^3.5.18",
     "@nextcloud/vue": "^9.9.0",
     "@nextcloud/axios": "^2.6.0",
-    "@nextcloud/initial-state": "^3.0.0",
     "stylelint": "^15.11.0",
     "eslint": "^8.56.0",
     "postcss": "^8.4.31",

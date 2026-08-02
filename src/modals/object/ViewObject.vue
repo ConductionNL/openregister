@@ -681,6 +681,13 @@ export default {
 			jsonData: '',
 			activeTab: 0,
 			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
+			// Vue 3 initialises `instance.update` to null and only assigns the render
+			// effect in setupRenderEffect, i.e. AFTER the `immediate: true` watchers
+			// below have already run. Calling $forceUpdate() in that window makes Vue
+			// queue a null job and throw `Cannot read properties of null (reading
+			// 'flags')`. Vue 2's $forceUpdate() guarded on `vm._watcher &&` so the same
+			// call was a silent no-op there. Gate the call on this flag instead.
+			isMounted: false,
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
@@ -1087,8 +1094,11 @@ export default {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
 				}
-				// Force Vue to re-evaluate computed properties
-				this.$forceUpdate()
+				// Force Vue to re-evaluate computed properties. Only legal once the
+				// render effect exists — see the `isMounted` note in data().
+				if (this.isMounted) {
+					this.$forceUpdate()
+				}
 			},
 			immediate: true,
 		},
@@ -1146,6 +1156,9 @@ export default {
 		// Initialize data when modal opens
 		this.initializeData()
 		this.loadTitles()
+
+		// The render effect exists from here on, so $forceUpdate() is safe.
+		this.isMounted = true
 	},
 	/**
 	 * @spec exclude Vue lifecycle hook re-loading data on update
