@@ -192,7 +192,11 @@
       configuration, and inviting a person are three different acts
 - [ ] 8.3 Migrate the bespoke `sharedWith[]` to the primitive. Scoped by the audit to THREE
       consumers: openregister credentials + flows, launchpad manifests, doriath dashboards
-- [ ] 8.4 Point the credential broker's share admit branch at the primitive instead of its own copy of the shape
+- [x] 8.4 The broker reads the primitive as Guard 1d, ALONGSIDE its own 1c rather than instead of
+      it — so a credential shared either way is admitted and retiring the bespoke list becomes a
+      data migration, not a flag day. The verb is `use`, not `read` (Q6), which required building
+      ADR-010's IAttributes half: grants can now carry extension verbs, and `grantCarriesVerb()`
+      is separate from `isGranted()` so RBAC keeps answering only for the five core verbs
 - [ ] 8.6 Collapse `scope` as the ACCESS discriminator into `private` (Q7): `personal` -> private-with-no-invitations, `organisation` -> the default scope
 - [ ] 8.7 KEEP `scope` as the VAULT-OWNER selector, untouched — and test that an organisation credential minted BEFORE the collapse is still readable after it
 - [ ] 8.5 Remove the per-schema derived lists once nothing reads them, with a data migration — not before
