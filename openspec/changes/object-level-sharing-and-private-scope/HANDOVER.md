@@ -9,7 +9,7 @@ Written to survive a session compaction. Everything needed to pick this up cold.
 | | |
 |---|---|
 | **Worktree** | `/home/rubenlinde/gate19-worktrees/or-sharing-spec` |
-| **Branch** | `docs/shared-credentials-and-flows-spec` (17 commits ahead of `development`) |
+| **Branch** | `docs/shared-credentials-and-flows-spec` (19 commits ahead of `development`) |
 | **PR** | [openregister#2241](https://github.com/ConductionNL/openregister/pull/2241) — OPEN, 26/26 CI green |
 | **Shared checkout** | `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister` — the LIVE bind-mount the running Nextcloud serves. **Other sessions have files modified here.** |
 | **Live instance** | `http://localhost:8080` (admin/admin), containers `nextcloud` + `conduction-postgres` |
@@ -17,8 +17,8 @@ Written to survive a session compaction. Everything needed to pick this up cold.
 The PR carries TWO OpenSpec changes:
 
 - `shared-credentials-and-flows` — credential sharing, **shipped and green**
-- `object-level-sharing-and-private-scope` — **groups 2 and 3 shipped**; group 4
-  (per-object grants) is next
+- `object-level-sharing-and-private-scope` — **groups 2 and 3 shipped, plus group
+  4's enforcement half**; the rest of group 4 (the write API and 4.3's test) is next
 
 ---
 
@@ -74,8 +74,8 @@ path is a caller. Storage is the `scope` key of an authorization block (design
 **D3a**), at object and schema level, object wins in both directions.
 
 Proven on live Postgres by `tests/Db/PrivateScopeParityIntegrationTest.php` —
-5 tests, and the positive control was run for **each of the four paths
-independently**.
+now 11 tests covering scope AND grants, and the positive control was run for
+**each of the four paths independently**.
 
 **Two consequences to carry forward.**
 
@@ -103,11 +103,52 @@ object private. Task **4.0** is the `scope`-only carve-out, and it must stay
 
 ---
 
-## 4. NEXT UNIT OF WORK — task group 4, per-object grants
+## 3c. Group 4's ENFORCEMENT half is done too
+
+`ObjectGrantResolver` resolves a caller's grants from core's shares on object
+folders, read-through, memoised for ONE request. Composed into all four paths as a
+single substitution (design **D3b**):
+
+    owner OR ((notPrivate OR grantedToMe) AND rules)
+
+A grant makes a private row behave as an ordinary one and the rules then decide,
+so the schema stays the CEILING and there is no second admit path to keep in step.
+
+Verified live: folder name == object UUID, a `TYPE_USER` folder share is creatable
+and maps back, a FILE share inside the folder is NOT an object grant, a grant is
+scoped to the object it names, a grant cannot widen past the schema, and revocation
+denies on the next request. Positive control run for the SQL builder's grant
+disjunct and both PHP fall-throughs, independently.
+
+**Third bug found, and this one is FIXED.** `prepareObjectDataForTable()` was
+destroying per-object `_authorization` on every save: the method strips
+`authorization` from incoming metadata (deliberately — per-object RBAC is not
+writable by ordinary create/update calls), but the field was ALSO in the
+metadata-column map, whose loop resolves `$metadata[$field] ?? null`. The stripped
+key came back as an explicit NULL and got written. So a private object became
+visible again as soon as anything saved it — and resolving its folder does exactly
+that, meaning **sharing an object was enough to un-private it**. The Wave-12 Fix 5
+per-object action overrides have therefore never survived an update either. Fixed
+by removing the field from the map; pinned by
+`testAnUpdateDoesNotDestroyPerObjectAuthorization`.
+
+### What is NOT done in group 4
+
+| | |
+|---|---|
+| 4.0 | Owner may set their own object's `scope` — still admin-only |
+| 4.1b | The owner-only grant/revoke API. `ShareLinkService::createShare()` CANNOT be reused: it needs a `$fileId` and rejects anything that is not a file inside the folder |
+| 4.3 | Tenant edge is IMPLEMENTED but has NO test — needs a two-organisation fixture |
+| 4.4 | Recipient cannot widen or re-share onward |
+| 4.5 | The resolver CARRIES the permission bitmask; nothing consumes it, so every grant currently admits for `read` |
+
+---
+
+## 4. NEXT UNIT OF WORK — finish group 4
 
 Start with **4.0** (the owner-may-set-`scope` carve-out), because without it the
 capability is unreachable for a real user and the e2e in group 10 cannot be
-written. Then 4.1–4.6.
+written. Then 4.1b (the API), then 4.3's missing test, then 4.4/4.5.
 
 The four paths that must change together for any new principal — a principal
 honoured by some and not others is a silent access-control bug, and that is how
@@ -168,6 +209,26 @@ the ONE builder → unit tests → live-DB parity matrix → positive control pe
 - A `docker exec` phpunit run that times out mid-script can leave BASELINE files
   deployed in the shared checkout. **Always re-verify which version is deployed
   after a timeout** — `diff -q` each file against the worktree.
+- **After `git checkout --` cleanup in the shared checkout, the deployed TEST files
+  are stale too.** Two "new" failures in `MagicRbacHandlerIntegrationTest` were the
+  old assertions running against new code. Re-deploy tests, not just `lib/`, before
+  believing a regression.
+
+**Object folders and shares**
+
+- An object's NC folder is created in the storage of **whichever session asks for it
+  first** (`/<uid>/files/Open Registers/<register>/<object-uuid>`). Core only lets a
+  user share a node they can reach, so a grant fixture needs a REAL owner user and
+  the folder must be resolved while logged in as them.
+- The folder's `name` IS the object UUID — that is the reverse lookup. Do NOT use
+  `FileMapper::findOwningObjectUuid()` for it: that resolves a file's PARENT, so on
+  a folder share it returns the REGISTER folder's name, not the object's.
+- **`ShareLinkService` cannot create an object grant.** `createShare()` takes a
+  `$fileId` and rejects any node that is not a file inside the folder — it is the
+  file-share concept, and the two must stay separate.
+- `searchAcrossMultipleTables()` aside, note that a test asserting the CONSEQUENCE
+  ("the object stays hidden") caught the `_authorization` wipe, while every test
+  asserting the mechanism passed. Prefer asserting the outcome the user would notice.
 
 **Register imports**
 
