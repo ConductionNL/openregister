@@ -9,7 +9,7 @@ Written to survive a session compaction. Everything needed to pick this up cold.
 | | |
 |---|---|
 | **Worktree** | `/home/rubenlinde/gate19-worktrees/or-sharing-spec` |
-| **Branch** | `docs/shared-credentials-and-flows-spec` (15 commits ahead of `development`) |
+| **Branch** | `docs/shared-credentials-and-flows-spec` (17 commits ahead of `development`) |
 | **PR** | [openregister#2241](https://github.com/ConductionNL/openregister/pull/2241) — OPEN, 26/26 CI green |
 | **Shared checkout** | `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister` — the LIVE bind-mount the running Nextcloud serves. **Other sessions have files modified here.** |
 | **Live instance** | `http://localhost:8080` (admin/admin), containers `nextcloud` + `conduction-postgres` |
@@ -17,7 +17,8 @@ Written to survive a session compaction. Everything needed to pick this up cold.
 The PR carries TWO OpenSpec changes:
 
 - `shared-credentials-and-flows` — credential sharing, **shipped and green**
-- `object-level-sharing-and-private-scope` — **specified, all decisions settled, not started**
+- `object-level-sharing-and-private-scope` — **groups 2 and 3 shipped**; group 4
+  (per-object grants) is next
 
 ---
 
@@ -65,23 +66,65 @@ Full reasoning in `design.md` (D1–D13 + Open Questions).
 
 ---
 
-## 4. NEXT UNIT OF WORK — task groups 2 and 3
+## 3b. Groups 2 and 3 are DONE — what they left behind
 
-**The `private` principal across all four enforcement paths, plus the live-DB
-parity matrix.** One coherent, reviewable chunk.
+`private` is enforced on all four paths. The vocabulary, the PHP verdict and the
+SQL predicate live once in **`lib/Service/Rbac/ObjectScopeResolver.php`**; every
+path is a caller. Storage is the `scope` key of an authorization block (design
+**D3a**), at object and schema level, object wins in both directions.
 
-The four paths that must change together (a principal honoured by some and not
-others is a silent access-control bug — that is how both bugs above happened):
+Proven on live Postgres by `tests/Db/PrivateScopeParityIntegrationTest.php` —
+5 tests, and the positive control was run for **each of the four paths
+independently**.
+
+**Two consequences to carry forward.**
+
+Neither list emitter returns unfiltered any more — not on an unconditional
+grant, and not on a schema with no authorization block at all. An OBJECT can
+declare itself private on an otherwise open schema. Three existing bypass
+assertions were updated accordingly (the grant is unchanged; its encoding is).
+
+**Non-admins still cannot set `scope`.** `stripSelfInjectionFields()` strips
+`authorization` from every non-admin write, so today only an admin can make an
+object private. Task **4.0** is the `scope`-only carve-out, and it must stay
+`scope`-only: unlike the action lists in the same block, `scope` can only narrow.
+
+### Two findings, both recorded in tasks.md
+
+1. **A pre-existing leak, now pinned by a passing test.** A per-object ACTION
+   override in `_authorization` (`{"read": ["admin"]}`, live since Wave-12 Fix 5)
+   is honoured by `PermissionHandler` and IGNORED by both list emitters and by
+   `MagicRbacHandler::hasPermission()`. Such an object is **denied on `find` and
+   returned by `list`**. Not fixed — pinned by
+   `testPerObjectActionOverrideIsNotYetHonouredByTheListPaths`, which fails when
+   somebody fixes it. Task 3.8.
+2. A pre-existing `QueryBuilder::select()` "Undefined array key 0" warning on the
+   RBAC-filtered list path with a session. Proven against baseline. Task 3.9.
+
+---
+
+## 4. NEXT UNIT OF WORK — task group 4, per-object grants
+
+Start with **4.0** (the owner-may-set-`scope` carve-out), because without it the
+capability is unreachable for a real user and the e2e in group 10 cannot be
+written. Then 4.1–4.6.
+
+The four paths that must change together for any new principal — a principal
+honoured by some and not others is a silent access-control bug, and that is how
+both of the bugs in §2 happened:
 
 | file | what it decides |
 |---|---|
-| `lib/Service/Object/PermissionHandler.php` | single-object verdict |
+| `lib/Service/Object/PermissionHandler.php` → `privateScopeVerdict()` | single-object verdict |
 | `lib/Db/MagicMapper/MagicRbacHandler.php` → `hasPermission()` | relation-path verdict |
-| `lib/Db/MagicMapper/MagicRbacHandler.php` → `buildSingleOperatorCondition()` | QueryBuilder list path |
-| `lib/Db/MagicMapper/MagicRbacHandler.php` → `buildSingleOperatorConditionSql()` | raw-SQL search path |
+| `lib/Db/MagicMapper/MagicRbacHandler.php` → `applyRbacFilters()` | QueryBuilder list path |
+| `lib/Db/MagicMapper/MagicRbacHandler.php` → `buildRbacConditionsSql()` | raw-SQL search path |
 
-Order that worked last time: PHP verdict → SQL builder → wire both emitters to
-the ONE builder → unit tests → live-DB parity matrix → positive control.
+Both emitters now take their predicate from `notPrivateSqlFor()`, which calls the
+ONE builder on the resolver. **Extend that, do not add a second predicate.**
+
+Order that worked twice now: PHP verdict → SQL builder → wire both emitters to
+the ONE builder → unit tests → live-DB parity matrix → positive control per path.
 
 ---
 
@@ -102,6 +145,29 @@ the ONE builder → unit tests → live-DB parity matrix → positive control.
   does. Same schema, different posture — know which one a test exercised.
 - A parity test that passes with one side stubbed proves nothing. **Always run the
   positive control** (temporarily disable one side; it must fail).
+- **`searchAcrossMultipleTables()` needs MORE THAN ONE register/schema pair to take
+  the UNION path.** With one pair it falls back to the SEQUENTIAL implementation,
+  which uses the QueryBuilder emitter — so a "raw SQL vs QueryBuilder" parity test
+  built on a single pair compares one implementation with ITSELF and reports
+  perfect agreement. Cost me a test that proved nothing until the positive control
+  showed the two columns moving together.
+- **Feed the PHP paths objects READ BACK from the database.** Building them in
+  memory beside the fixtures means a fixture in the shape the code expects, which
+  cannot catch the code reading the wrong shape. Also assert the fixture's own
+  column is really on disk — a NULL `_authorization` makes every private case look
+  correctly denied for entirely the wrong reason.
+- **A pre-existing warning surfacing in a NEW test is not a new warning.** The
+  `QueryBuilder::select()` "Undefined array key 0" looked like mine until I ran the
+  probe against the baseline `MagicRbacHandler` and it reproduced. Baseline-compare
+  before attributing anything — and note that a `set_error_handler` inside a
+  PHPUnit test does NOT fire, so that is not the way to get a trace.
+- **Baseline-compare by FAILING TEST NAME, not by count.** 964 errors before and
+  after looked identical; the failure count went 8 → 11 and the diff named exactly
+  the three tests, all of them assertions about the bypass semantics I had
+  deliberately changed. A count alone would have hidden which.
+- A `docker exec` phpunit run that times out mid-script can leave BASELINE files
+  deployed in the shared checkout. **Always re-verify which version is deployed
+  after a timeout** — `diff -q` each file against the worktree.
 
 **Register imports**
 
