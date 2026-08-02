@@ -47,5 +47,12 @@ jobs:
       enable-eslint: true
       enable-phpunit: true
       enable-newman: true
+      # Playwright starts from a deliberately SMALL spec set rather than the
+      # whole of tests/e2e (58 files, several of which write fixtures or shell
+      # out to occ). A gate that is red on arrival is a gate nobody turns on —
+      # which is how this repo ended up with an E2E job that had never
+      # succeeded. The floor is green and it grows; see tests/e2e/ci/.
+      enable-playwright: true
+      playwright-test-path: tests/e2e/ci
       enable-coverage-guard: true
       enable-sbom: true
