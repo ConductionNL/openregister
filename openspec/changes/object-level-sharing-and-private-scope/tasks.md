@@ -8,7 +8,7 @@
 - [x] 1.4 Q4 DECIDED: amend ADR-006 — a link is a revocable, expiring CAPABILITY, not a visibility flag; Rule 3's concern is a data field treated as a boundary, which a core-issued token is not
 - [x] 1.5 Q5 DECIDED: uniform core set mapped onto core's permission bitmask, plus per-schema extensions in `IAttributes`, governed by an ADR so the vocabulary cannot sprawl
 - [x] 1.6 Q6 DECIDED: yes, separate — `use` implies `read`
-- [ ] 1.7 Q7 STILL OPEN: do the broker's `scope: personal|organisation` values collapse into `private`, or stay a second vocabulary for one concept?
+- [x] 1.7 Q7 DECIDED: yes, they collapse — but only the ACCESS half. `scope` ALSO selects the vault owner (`personal` = the user, `organisation` = a reserved SYSTEM identity), so the storage selector survives verbatim; removing it would make every existing organisation credential's secret unreadable
 
 ## 2. `private` as a principal, on all four enforcement paths
 
@@ -73,6 +73,8 @@
 - [ ] 8.2 Keep FILE shares (`ShareLinkService`) distinct and unchanged — they share files in an object's folder, which is a different thing
 - [ ] 8.3 Migrate the bespoke `sharedWith[]` on brokered credentials and flows to the primitive
 - [ ] 8.4 Point the credential broker's share admit branch at the primitive instead of its own copy of the shape
+- [ ] 8.6 Collapse `scope` as the ACCESS discriminator into `private` (Q7): `personal` -> private-with-no-invitations, `organisation` -> the default scope
+- [ ] 8.7 KEEP `scope` as the VAULT-OWNER selector, untouched — and test that an organisation credential minted BEFORE the collapse is still readable after it
 - [ ] 8.5 Remove the per-schema derived lists once nothing reads them, with a data migration — not before
 
 ## 9. Flows (BREAKING — last, and it unblocks the previous change)

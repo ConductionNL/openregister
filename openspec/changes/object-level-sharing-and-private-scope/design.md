@@ -212,7 +212,7 @@ which is, in order: user grants, group grants, **link shares** (Q4),
 surface this change asked for, already reachable through core, already
 folder-resolved per object.
 
-**Recommendation.** The object's folder IS the share target. Core owns the share
+**DECIDED.** The object's folder IS the share target. Core owns the share
 records exactly as it does today; OR's evaluator reads the folder's shares and
 resolves them into principals. That delivers (a)-for-the-surface and
 (b)-for-the-verdict without a provider, and the read half largely exists.
@@ -274,10 +274,27 @@ action (RBAC grants visibility only), and SHALL NOT redefine a core verb.
 exists" and "you may spend it", so they are separate verbs and `use` implies
 `read`.
 
-### Q7 — Do the credential broker's `scope` values collapse into `private`?
+### Q7 — DECIDED: yes, they collapse — but only the ACCESS half
 
-The broker already has `scope: personal | organisation`, which is the same idea
-this change generalises: `personal` is `private` with no invitations, and
-`organisation` is the default scope. Keeping both means two vocabularies for one
-concept — the fourth-share-concept failure mode this change exists to prevent —
-but collapsing them touches a shipped, security-critical guard chain.
+`scope: personal` becomes `private` with no invitations; `scope: organisation`
+becomes the default organisation scope. One vocabulary for one concept, which is
+the point of this change.
+
+**HARD CONSTRAINT: `scope` has two jobs, and only one of them collapses.**
+
+Verified in `NextcloudVaultCredentialStore`: `scope` also selects the **vault
+owner the secret is stored under** — `personal` stores it under the current user,
+`organisation` under a reserved SYSTEM identity (the empty-string user). That is a
+STORAGE decision, not an access-control one.
+
+So the collapse applies to the access dispatch in the broker's Guard 1 only. The
+storage selector MUST survive verbatim. Removing `scope` outright, or deriving the
+vault owner from the new `private` scope, would look up every existing
+organisation credential's secret under the wrong owner and make it unreadable —
+the secret is not lost, but nothing can reach it, which is indistinguishable from
+loss at the point of use.
+
+The safe shape is therefore: keep the stored `scope` value as the vault-owner
+selector, and stop using it as the access discriminator. Sequenced in group 8,
+after the primitive is proven, with a test that an organisation credential minted
+BEFORE the change is still readable after it.
