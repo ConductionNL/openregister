@@ -182,9 +182,9 @@ class Bootstrap
     private static function registerControllers(IRegistrationContext $context, string $appId, string $controllerNs, bool $observability): void
     {
         self::aliasControllerUnlessLeafDefinesIt(
-            $context,
-            $controllerNs.'\\DashboardController',
-            static function (ContainerInterface $c) use ($appId) {
+            context: $context,
+            leafClass: $controllerNs.'\\DashboardController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_DASHBOARD_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -194,9 +194,9 @@ class Bootstrap
         );
 
         self::aliasControllerUnlessLeafDefinesIt(
-            $context,
-            $controllerNs.'\\PreferencesController',
-            static function (ContainerInterface $c) use ($appId) {
+            context: $context,
+            leafClass: $controllerNs.'\\PreferencesController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_PREFERENCES_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -208,9 +208,9 @@ class Bootstrap
         );
 
         self::aliasControllerUnlessLeafDefinesIt(
-            $context,
-            $controllerNs.'\\SettingsController',
-            static function (ContainerInterface $c) use ($appId) {
+            context: $context,
+            leafClass: $controllerNs.'\\SettingsController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_SETTINGS_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -225,9 +225,9 @@ class Bootstrap
         }
 
         self::aliasControllerUnlessLeafDefinesIt(
-            $context,
-            $controllerNs.'\\HealthController',
-            static function (ContainerInterface $c) use ($appId) {
+            context: $context,
+            leafClass: $controllerNs.'\\HealthController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_HEALTH_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -239,9 +239,9 @@ class Bootstrap
         );
 
         self::aliasControllerUnlessLeafDefinesIt(
-            $context,
-            $controllerNs.'\\MetricsController',
-            static function (ContainerInterface $c) use ($appId) {
+            context: $context,
+            leafClass: $controllerNs.'\\MetricsController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_METRICS_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -252,7 +252,6 @@ class Bootstrap
             }
         );
     }//end registerControllers()
-
 
     /**
      * Alias one leaf controller class name to a generic AppHost controller,
