@@ -1,5 +1,48 @@
 # Tasks — object-event-sync-async-split (openregister)
 
+## ⚠️ DO NOT ARCHIVE — audit 2026-08-02
+
+**12 of 31 tasks genuinely done, 19 genuinely undone.** Verified by inspecting
+merged code on `origin/development`, not by reading PR titles.
+
+Archiving now would make these delta requirements canonical while the code
+contradicts them:
+
+- *"Post-event object listeners MUST defer heavy work…"* covers **every**
+  listener on `ObjectCreatedEvent`/`ObjectUpdatedEvent`/`ObjectDeletedEvent`.
+  Exactly **one of six** complies (`ObjectCleanupListener`). `HookListener`,
+  `FlowActionListener`, `ContextChatSubmissionListener`, `ActionListener` and
+  `SourceRecordChangeListener` all still run inline — `HookDispatchJob`,
+  `FlowActionJob`, `ContextChatSubmissionJob`, `ActionDispatchJob` and
+  `SourceRecordRecomputeJob` **do not exist** (tasks 2.2–2.6).
+- *"A post-event listener that stays synchronous MUST declare a named exception
+  category"* — `git grep "@listener-placement" -- lib/` returns **zero hits**
+  repo-wide (task 3.1). Positive control: the same grep shape finds `@spec`.
+- *"Trigger, flow and rule resolution MUST filter at query time"* — its own
+  scenario forbids `findAll()` without a limit; `buildTriggerIndex()` calls
+  `findAll()` with no limit. Its third scenario (*"`dispatchEvent()` SHALL return
+  before `extractPayload()` runs"*) is falsified by
+  `lib/Listener/WebhookEventListener.php:124`, which calls `extractPayload()`
+  unconditionally (tasks 1.1, 1.3).
+- *"Deferred entries MUST carry every value that cannot be re-fetched at job
+  time"* — the `SourceRecordChangeListener` master-UUID payload contract does
+  not exist (task 4.3).
+- Gate 61 (`check_listener_placement.py --all`) exits **1** on openregister with
+  3 failures, all `SourceRecordChangeListener` (task 5.1). Note a diff-scoped run
+  passes *trivially* on an unrelated PR — a scoped PASS is not evidence here.
+
+Also unverified rather than done: 5.3 (`composer check:strict` + full suites),
+5.4 (re-measure `mm:EVENT-DISPATCH`), 5.5 (opencatalogi/softwarecatalog
+regression check).
+
+Requirement headers were checked and are all exactly `### Requirement:`, so
+nothing would be silently dropped by `openspec archive` on that axis — the
+blocker is unmet requirements, not malformed ones.
+
+**Options:** finish 1.1, 1.3, 2.2–2.6, 3.1, 4.1–4.4, 5.1–5.5; or split the
+change so only what shipped (`ObjectCleanupListener` deferral + filtered event
+subscription) is archived and the rest carries into a follow-on.
+
 ## Classification — 21 listener classes, 51 registrations
 
 Recorded here so the sync/async verdict is auditable rather than folklore.
@@ -55,7 +98,12 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 
 ## 2. Deferred post-event listeners (existing contract only)
 
-- [ ] 2.1 `ObjectCleanupListener` → `ObjectCleanupJob` (uuid-only entries, no extra payload); inline interest gate + kill-switch fallback.
+- [x] 2.1 `ObjectCleanupListener` → `ObjectCleanupJob` (uuid-only entries, no extra payload); inline interest gate + kill-switch fallback.
+      DONE (#2214): `lib/BackgroundJob/ObjectCleanupJob.php`; `ObjectCleanupListener`
+      injects `ListenerDeferralService` and enqueues `jobClass: ObjectCleanupJob::class`,
+      with the inline fallback documented. Tests:
+      `tests/Unit/Listener/ObjectCleanupListenerTest.php` +
+      `tests/Unit/BackgroundJob/ObjectCleanupJobTest.php` (#2243).
 - [ ] 2.2 Split `HookListener` registrations in `lib/AppInfo/Application.php`: L2624-2626 (Creating/Updating/Deleting) stay inline and veto-capable; L2627-2629 (Created/Updated/Deleted) → `HookDispatchJob`. Deleted entry carries the serialized object. Comment the split with an ADR-078 reference so a future edit cannot silently re-merge it.
 - [ ] 2.3 `FlowActionListener` (C/U/D) → `FlowActionJob`; Deleted entry carries payload; verify `CalendarEventService` resolves the forwarded actor.
 - [ ] 2.4 `ContextChatSubmissionListener` (C/U/D) → `ContextChatSubmissionJob`; the `deleteContent` path MUST check object existence before removing (same-uuid re-create race).
@@ -95,9 +143,16 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
       `/tmp/or-trace-write-phases` flag, writing per-request
       dispatch/invoked/skipped counts and its own microsecond cost to
       `/tmp/or-event-proxy.log`.
-- [ ] 4b.7 Unit tests for `ObjectEventSubscription` (declaration normalisation,
+- [x] 4b.7 Unit tests for `ObjectEventSubscription` (declaration normalisation,
       proxy registered once per event, per-request scoping) and for the proxy's
-      match logic. NOT DONE in the pilot change.
+      match logic. DONE (#2223): `tests/Unit/Event/ObjectEventSubscriptionTest.php`
+      constructs a real `ObjectEventProxyListener` and covers
+      `testSubscribeRegistersProxyOncePerEvent`,
+      `testUndeclaredSubscriptionInvokesForEverything`,
+      `testNumericIdDeclarationSkipsOtherSchema`,
+      `testNumericRegisterAndSchemaMustBothMatch`,
+      `testIdTokensAreExcludedFromSlugResolution` + 6 more.
+      (The earlier "NOT DONE in the pilot change" note was stale.)
 - [ ] 4b.8 Convert OpenRegister's own schema-specific listeners. NOT DONE —
       OpenRegister's listeners are mostly not schema-specific, which is why the
       pilot is a leaf app.
@@ -136,7 +191,9 @@ four are pure mutators. `HookListener` is the only veto-capable registration.
 - [ ] 5.3 `composer check:strict` (phpcs/phpmd/psalm/phpstan) clean on all touched files; full `tests/Unit/Listener` + `tests/Unit/BackgroundJob` suites green.
 - [ ] 5.4 Re-measure `mm:EVENT-DISPATCH` at n≥32 on the same instance and record before/after next to the 2026-07-30 baseline (min 42 / median 133 / p95 175 / max 206 ms).
 - [ ] 5.5 Regression-check opencatalogi and softwarecatalog object writes, specifically hook-driven workflows and source-record master recompute.
-- [ ] 5.6 `openspec validate object-event-sync-async-split --strict` passes.
+- [x] 5.6 `openspec validate object-event-sync-async-split --strict` passes.
+      DONE: `Change 'object-event-sync-async-split' is valid`, exit 0
+      (openspec CLI 1.2.0).
 
 ## Acceptance criteria
 
