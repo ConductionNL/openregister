@@ -29,6 +29,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowStop;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -36,7 +37,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Stops the run, optionally as an error.
  */
-class StopNode implements IFlowNode
+class StopNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -109,7 +110,32 @@ class StopNode implements IFlowNode
     }//end isAvailableForScope()
 
     /**
-     * Nothing to validate — a stop with no message is a fine clean stop.
+     * The config vocabulary of a stop step.
+     *
+     * Both keys are OPTIONAL — a stop with no config is a perfectly good "end
+     * this branch here" — which is why `validateConfig()` below has nothing to
+     * require and why an empty body was, on its own terms, correct. It is also
+     * why this node was the one that let `{"status": "...", "reason": "..."}`
+     * through: a required-key check cannot object to a config with no required
+     * keys. Naming the vocabulary is the only thing that can.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['error', 'message'];
+
+    }//end configKeys()
+
+    /**
+     * Nothing to REQUIRE — a stop with no message is a fine clean stop.
+     *
+     * Empty, and correct to be: this node has no mandatory key, so there is
+     * nothing here to miss. The check that catches a stop step written in
+     * another node's dialect is {@see self::configKeys()} above, which is a
+     * different question and needed a different method to ask it.
      *
      * @param array $config The step configuration.
      *

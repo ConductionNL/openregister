@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -40,7 +41,7 @@ use OCP\WorkflowEngine\IManager;
 /**
  * A pass-through node whose outgoing edges carry the routing conditions.
  */
-class SwitchNode implements IFlowNode
+class SwitchNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -113,11 +114,31 @@ class SwitchNode implements IFlowNode
     }//end isAvailableForScope()
 
     /**
+     * A switch reads NO config — its conditions live on its outgoing edges.
+     *
+     * The empty list is a real statement, not a stub: any key at all on a
+     * switch step is one nothing will ever read. An author who writes
+     * `config.rules` here has written a route and drawn a switch, and the flow
+     * will pass every item down the first edge without complaint.
+     *
+     * @return array<int, string> The accepted config keys — none.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return [];
+
+    }//end configKeys()
+
+    /**
      * Nothing to validate on the node — the conditions live on its edges.
      *
      * @param array $config The step configuration.
      *
      * @return void
+     *
+     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
      */
     public function validateConfig(array $config): void
     {

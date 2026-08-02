@@ -67,6 +67,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\FlowValueTemplate;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IL10N;
 use OCP\IURLGenerator;
@@ -80,7 +81,7 @@ use UnexpectedValueException;
 /**
  * Reads objects from a register into the run.
  */
-class ObjectReadNode implements IFlowNode
+class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -192,6 +193,19 @@ class ObjectReadNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of an object-read step.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['register', 'schema', 'filters', 'fanOut', 'limit', 'output'];
+
+    }//end configKeys()
 
     /**
      * Refuse a step that cannot name what it reads.

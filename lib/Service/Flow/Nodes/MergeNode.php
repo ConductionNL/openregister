@@ -40,6 +40,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -48,7 +49,7 @@ use UnexpectedValueException;
 /**
  * Merges branch item lists — append, merge-by-key, or unique.
  */
-class MergeNode implements IFlowNode
+class MergeNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -127,6 +128,19 @@ class MergeNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a merge step.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['mode', 'key'];
+
+    }//end configKeys()
 
     /**
      * Reject an unknown mode, or a keyed mode with no key.

@@ -137,17 +137,51 @@ class FlowNodeConfigDialectTest extends TestCase
         $report = $this->preflight()->inspect(flow: $flow);
 
         $this->assertSame([], $report['warnings']);
-        $this->assertCount(2, $report['blocking'], 'Both dialect mismatches must be caught.');
 
         foreach ($report['blocking'] as $finding) {
-            $this->assertSame(FlowNodePreflight::REASON_CONFIG_REJECTED, $finding['reason']);
             $this->assertSame('openregister', $finding['app']);
             $this->assertNotSame('', ($finding['detail'] ?? ''));
         }
 
-        $edges = array_column($report['blocking'], 'edge');
+        $edges = array_unique(array_column($report['blocking'], 'edge'));
         sort($edges);
-        $this->assertSame(['code-contradiction', 'derive'], $edges);
+        $this->assertSame(
+            ['code-contradiction', 'derive'],
+            $edges,
+            'Both dialect mismatches must be caught.'
+        );
+
+        // Each edge is caught TWICE, and the two catches are genuinely
+        // different questions about it:
+        //
+        //   REASON_CONFIG_REJECTED    the node's own validateConfig() — the
+        //                             REQUIRED key is missing (`rules`, `set`)
+        //   REASON_CONFIG_UNKNOWN_KEY the node's declared vocabulary — the keys
+        //                             that ARE there will never be read
+        //
+        // The second is what the whole document would have needed if the first
+        // had had nothing to say, which is exactly the StopNode / SubFlowNode
+        // case (see FlowNodeConfigVocabularyTest). Asserting both are present
+        // keeps either from silently regressing behind the other.
+        $reasons = array_unique(array_column($report['blocking'], 'reason'));
+        sort($reasons);
+        $this->assertSame(
+            [
+                FlowNodePreflight::REASON_CONFIG_REJECTED,
+                FlowNodePreflight::REASON_CONFIG_UNKNOWN_KEY,
+            ],
+            $reasons
+        );
+
+        foreach (['code-contradiction', 'derive'] as $edge) {
+            $forEdge = array_values(
+                array_filter(
+                    $report['blocking'],
+                    static fn (array $f): bool => ($f['edge'] === $edge)
+                )
+            );
+            $this->assertCount(2, $forEdge, sprintf('Edge "%s" must be caught by both halves.', $edge));
+        }
     }
 
     /**
