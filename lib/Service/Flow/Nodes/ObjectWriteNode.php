@@ -482,10 +482,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         $register  = $this->resolveRegister(config: $config);
         $schema    = $this->resolveSchema(config: $config, register: $register);
 
+        // `onNoMatch` is deliberately absent here: it is read inside
+        // executeDelete(), the only path that acts on it, rather than resolved
+        // here and passed down as an eleventh parameter.
         $pairs      = $this->matchPairs(config: $config);
         $fields     = (array) ($config['fields'] ?? []);
         $onMissing  = $this->optionFrom(config: $config, key: 'onMissing', allowed: self::ON_MISSING, default: self::ON_MISSING_OMIT);
-        $onNoMatch  = $this->optionFrom(config: $config, key: 'onNoMatch', allowed: self::ON_NO_MATCH, default: self::ON_NO_MATCH_ERROR);
         $onConflict = $this->optionFrom(config: $config, key: 'onConflict', allowed: self::ON_CONFLICT, default: self::ON_CONFLICT_OVERWRITE);
         $replace    = (($config['replace'] ?? false) === true);
         $cap        = $this->writeCap(config: $config);
@@ -505,8 +507,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
                     register: $register,
                     schema: $schema,
                     owner: $owner,
-                    onNoMatch: $onNoMatch,
                     cap: $cap,
+                    config: $config,
                     writes: $writes
                 );
                 continue;
@@ -591,15 +593,15 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
     /**
      * Perform one guarded delete and build its output item.
      *
-     * @param array    $item      The input item (`json` and `binary`).
-     * @param int      $index     The input item's index, for provenance.
-     * @param array    $pairs     The composite match pairs.
-     * @param Register $register  The resolved register.
-     * @param Schema   $schema    The resolved schema.
-     * @param IUser    $owner     The run owner, as the acting user.
-     * @param string   $onNoMatch What a zero-match delete means.
-     * @param int      $cap       The step's write cap.
-     * @param int      $writes    Writes performed so far; incremented by reference.
+     * @param array    $item     The input item (`json` and `binary`).
+     * @param int      $index    The input item's index, for provenance.
+     * @param array    $pairs    The composite match pairs.
+     * @param Register $register The resolved register.
+     * @param Schema   $schema   The resolved schema.
+     * @param IUser    $owner    The run owner, as the acting user.
+     * @param int      $cap      The step's write cap.
+     * @param array    $config   The step configuration; `onNoMatch` and `output` are read from it.
+     * @param int      $writes   Writes performed so far; incremented by reference.
      *
      * @return array The output item.
      *
@@ -612,10 +614,21 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         Register $register,
         Schema $schema,
         IUser $owner,
-        string $onNoMatch,
         int $cap,
+        array $config,
         int &$writes
     ): array {
+        // Read from the config rather than taken as an eleventh parameter. The
+        // caller resolves it exactly this way; passing both it and the config
+        // would be two spellings of one fact, and the parameter list is already
+        // at its limit.
+        $onNoMatch = $this->optionFrom(
+            config: $config,
+            key: 'onNoMatch',
+            allowed: self::ON_NO_MATCH,
+            default: self::ON_NO_MATCH_ERROR
+        );
+
         $json   = (array) ($item[FlowItems::JSON] ?? []);
         $binary = (array) ($item[FlowItems::BINARY] ?? []);
 
@@ -632,8 +645,21 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
             // it is never indistinguishable from a removal in the run log.
             $json['deleted'] = false;
 
+            // ...and it gets the `output` key too, when one is set. A step
+            // whose output key exists only on the branch that deleted
+            // something makes `{{removed.deleted}}` resolve on some items and
+            // not others, which is a downstream null nobody can explain.
+            //
+            // NOT via outputJson() here: on this branch the record IS the
+            // output, so an empty key must leave `$json` alone rather than
+            // replace it with the two-field written record.
+            $outputKey = trim((string) ($config['output'] ?? ''));
+            if ($outputKey !== '') {
+                $json[$outputKey] = ['deleted' => false];
+            }
+
             return FlowItems::item(json: $json, binary: $binary, fromItemIndex: $index);
-        }
+        }//end if
 
         $uuid = (string) $matched->getUuid();
 
@@ -651,13 +677,25 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         );
         $writes++;
 
+        // Through `outputJson()`, exactly like every non-delete write. Without
+        // it a delete was the one operation that could not carry its incoming
+        // record forward: `config.output` never reached this method, so the
+        // key the author set did nothing and everything the item was carrying
+        // — the issue number, the repo, the run id — was dropped at the delete.
+        //
+        // With no `output` set the returned record is unchanged, so this is not
+        // a behaviour change for any flow that does not ask for one.
         return FlowItems::item(
-            json: [
-                'uuid'     => $uuid,
-                'register' => $this->identifierOf(register: $register),
-                'schema'   => $this->labelOf(schema: $schema),
-                'deleted'  => true,
-            ],
+            json: $this->outputJson(
+                incoming: $json,
+                written: [
+                    'uuid'     => $uuid,
+                    'register' => $this->identifierOf(register: $register),
+                    'schema'   => $this->labelOf(schema: $schema),
+                    'deleted'  => true,
+                ],
+                config: $config
+            ),
             binary: $binary,
             fromItemIndex: $index
         );
