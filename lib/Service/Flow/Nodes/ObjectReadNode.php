@@ -352,17 +352,33 @@ class ObjectReadNode implements IFlowNode, IFlowNodeConfigKeys
     private function read(Register $register, Schema $schema, array $filters, int $limit, IUser $owner): array
     {
         try {
-            $found = $this->objects
-                ->setRegister($register)
-                ->setSchema($schema)
-                ->findAll(config: ['filters' => $filters, 'limit' => $limit]);
+            // The read runs AS the owner. `$owner` was resolved, declared and
+            // documented as "the subject whose RBAC applies" — and then never
+            // used, so the read actually ran under whatever subject the ambient
+            // session happened to carry. Under CLI cron that is no subject at
+            // all, and both the RBAC and the organisation filter treat a
+            // sessionless CLI context as trusted and skip themselves entirely.
+            // So a scheduled flow read past the very access control this
+            // parameter names.
+            //
+            // ObjectService::findAll() has no acting-user parameter anywhere on
+            // its chain, so the subject is set for the duration of the call and
+            // restored afterwards. See ObjectService::runAs() for why that is
+            // the seam rather than threading a user through the query layer.
+            $found = $this->objects->runAs(
+                $owner,
+                fn (): array => $this->objects
+                    ->setRegister($register)
+                    ->setSchema($schema)
+                    ->findAll(config: ['filters' => $filters, 'limit' => $limit])
+            );
         } catch (Throwable $e) {
             throw new RuntimeException(
                 $this->l10n->t('The object-read step could not read from the register: %s', [$e->getMessage()]),
                 0,
                 $e
             );
-        }
+        }//end try
 
         $records = [];
         foreach ($found as $object) {

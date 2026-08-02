@@ -384,6 +384,54 @@ class ObjectService
     }//end runAsSystem()
 
     /**
+     * Run a callable as a NAMED user, with that user's RBAC and multitenancy.
+     *
+     * The opposite of runAsSystem(): this narrows rather than elevates. It
+     * exists because the read side of the query layer has no acting-user
+     * parameter at all — `findAll()` and everything under it resolve the
+     * subject from the session, and the two handlers that build the RBAC and
+     * organisation predicates (MagicRbacHandler, MagicOrganizationHandler) read
+     * `IUserSession::getUser()` directly at roughly a dozen points. A caller who
+     * has an explicit user in hand therefore has nowhere to put it.
+     *
+     * Threading a `?IUser` through would mean changing about twenty signatures
+     * across six layers plus OrganisationService and its UID-keyed caches, and
+     * missing any one of them yields a query that silently disagrees with the
+     * others. Setting the session subject for the duration of the call moves
+     * every one of those readers in lockstep instead, including the caches,
+     * which are keyed by UID and so stay correct by construction.
+     *
+     * This is the pattern the background jobs already use — see
+     * ActorForwardedJob, which sets the actor, runs, and restores in a
+     * `finally` so a cron process never carries one job's identity into the
+     * next. Restoring the PREVIOUS user rather than clearing means nesting
+     * composes correctly.
+     *
+     * This does not grant anything. If the named user cannot see a row, neither
+     * can the callable.
+     *
+     * @param IUser    $user      The user to act as.
+     * @param callable $operation The operation to execute as that user.
+     *
+     * @return mixed Whatever the callable returns.
+     *
+     * @spec openspec/specs/rbac-scopes/spec.md
+     */
+    public function runAs(IUser $user, callable $operation)
+    {
+        $previousUser = $this->userSession->getUser();
+        $this->userSession->setUser($user);
+
+        try {
+            return $operation();
+        } finally {
+            // ALWAYS restore, including on a throw, so a long-lived process
+            // (cron worker, queue runner) never leaks this identity forward.
+            $this->userSession->setUser($previousUser);
+        }
+    }//end runAs()
+
+    /**
      * Set the current register context.
      *
      * @param Register|string|int $register The register object or its ID/UUID

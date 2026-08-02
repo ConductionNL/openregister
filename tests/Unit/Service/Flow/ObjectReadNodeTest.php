@@ -83,6 +83,11 @@ final class ObjectReadNodeTest extends TestCase
         $this->objects = $this->createMock(originalClassName: ObjectService::class);
         $this->objects->method('setRegister')->willReturnSelf();
         $this->objects->method('setSchema')->willReturnSelf();
+        // `runAs()` scopes the acting user around the read. The double must RUN
+        // the callable, or every read silently returns null.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
 
         $registers = $this->createMock(originalClassName: RegisterMapper::class);
         $registers->method('find')->willReturn($register);
