@@ -216,9 +216,15 @@
 
 ## 11. Documentation and ADRs
 
-- [ ] 11.1 Document the sharing model: `private`, per-object grants, links, email invites, federation — and how each composes with schema-level RBAC
-- [ ] 11.2 Amend the RBAC docs with the `private` principal and the all-four-paths rule
-- [ ] 11.3 Record the distinction between the three pre-existing share concepts, so a future reader does not add a fourth
+- [x] 11.1 `docs/Features/object-sharing.md` — the scope, grants, links, email invites, the
+      ceiling rule, and the fact that granting an object also reaches its FILES
+- [x] 11.2 `docs/Features/access-control.md` links to it from the object level, and the new page
+      states the all-four-paths rule and the one-line verdict
+- [x] 11.3 There were FOUR pre-existing concepts, not three — see the audit in design D6. All four
+      distinctions are recorded there and the user-facing ones in the docs page
 - [ ] 11.4 Document the breaking flow change and its upgrade note
-- [ ] 11.5 Amend ADR-006 for capability-style links (Q4)
-- [ ] 11.6 New ADR governing permission-verb extensions: declared by the schema, enforced at the acting endpoint, never redefining a core verb (Q5)
+- [x] 11.5 ADR-006 Rule 4 — a link is a revocable, expiring, attributable CAPABILITY and is not a
+      data flag, so it does not violate Rules 1-3. Includes what it does NOT license
+- [x] 11.6 ADR-010 — uniform core set on core's bitmask; an action with no core bit is not
+      admitted by a grant (fail closed); extensions declared by the schema, enforced at the acting
+      endpoint, never redefining a core verb
