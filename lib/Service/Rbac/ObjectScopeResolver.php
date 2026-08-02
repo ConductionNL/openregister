@@ -234,13 +234,13 @@ class ObjectScopeResolver
      * the common row, whose `_authorization` was never written, is decided
      * without touching the JSON at all.
      *
-     * @param string $columnName             The `_authorization` column, qualified by the caller.
-     * @param bool   $schemaDefaultIsPrivate Whether the schema makes its objects private by default.
-     * @param bool   $isPostgres             Whether the connected platform is PostgreSQL.
+     * @param string $columnName     The `_authorization` column, qualified by the caller.
+     * @param bool   $defaultPrivate Whether the schema makes its objects private by default.
+     * @param bool   $isPostgres     Whether the connected platform is PostgreSQL.
      *
      * @return string A SQL predicate that is true for rows that are not private.
      */
-    public function notPrivateSql(string $columnName, bool $schemaDefaultIsPrivate, bool $isPostgres): string
+    public function notPrivateSql(string $columnName, bool $defaultPrivate, bool $isPostgres): string
     {
         if ($isPostgres === true) {
             $scope = "({$columnName})::jsonb ->> '".self::SCOPE_KEY."'";
@@ -250,7 +250,7 @@ class ObjectScopeResolver
 
         $organisation = "'".self::SCOPE_ORGANISATION."'";
 
-        if ($schemaDefaultIsPrivate === true) {
+        if ($defaultPrivate === true) {
             // Under a private default an unwritten column means private, so the
             // `IS NULL` short-circuit is deliberately absent here: only an
             // explicit organisation declaration takes a row back out.
@@ -280,24 +280,24 @@ class ObjectScopeResolver
      * the rules would have allowed; it cannot admit somebody the schema refuses,
      * which is what the spec means by "`private` cannot widen access".
      *
-     * @param string   $authColumn             The `_authorization` column, qualified by the caller.
-     * @param bool     $schemaDefaultIsPrivate Whether the schema makes its objects private by default.
-     * @param bool     $isPostgres             Whether the connected platform is PostgreSQL.
-     * @param string   $uuidColumn             The `_uuid` column, qualified by the caller.
-     * @param string[] $quotedUuids            Granted object UUIDs, ALREADY quoted as SQL literals.
+     * @param string   $authColumn     The `_authorization` column, qualified by the caller.
+     * @param bool     $defaultPrivate Whether the schema makes its objects private by default.
+     * @param bool     $isPostgres     Whether the connected platform is PostgreSQL.
+     * @param string   $uuidColumn     The `_uuid` column, qualified by the caller.
+     * @param string[] $quotedUuids    Granted object UUIDs, ALREADY quoted as SQL literals.
      *
      * @return string A SQL predicate true for rows this caller may reach.
      */
     public function notPrivateOrGrantedSql(
         string $authColumn,
-        bool $schemaDefaultIsPrivate,
+        bool $defaultPrivate,
         bool $isPostgres,
         string $uuidColumn,
         array $quotedUuids
     ): string {
         $notPrivate = $this->notPrivateSql(
             columnName: $authColumn,
-            schemaDefaultIsPrivate: $schemaDefaultIsPrivate,
+            defaultPrivate: $defaultPrivate,
             isPostgres: $isPostgres
         );
 

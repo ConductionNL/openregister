@@ -50,7 +50,6 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
-use OCP\Files\Node;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use Psr\Container\ContainerInterface;
@@ -310,18 +309,16 @@ class ObjectGrantResolver
                 return null;
             }
 
-            $node = $share->getNode();
-            if (($node instanceof Node) === false) {
-                return null;
-            }
-
-            $name = $node->getName();
+            // `getNode()` is typed to return a Node and `getName()` a string, so
+            // neither is re-checked here — both throw instead when the node has
+            // gone, which the catch below is for.
+            $name = $share->getNode()->getName();
         } catch (Throwable $e) {
             // A share whose node has gone is not a grant. Core will clean it up.
             return null;
-        }//end try
+        }
 
-        if (is_string($name) === false || $name === '') {
+        if ($name === '') {
             return null;
         }
 

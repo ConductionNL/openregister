@@ -217,6 +217,39 @@ class MagicRbacHandler
     }//end currentCallerHoldsObjectGrants()
 
     /**
+     * The owner-admit conditions for the raw-SQL emitter.
+     *
+     * These apply whatever the object's scope says — an owner reaches their own
+     * object even when it is private, which is what stops an owner locking
+     * themselves out. Admins never get here (they return earlier);
+     * openregister#1617 covers the system-owner carve-out.
+     *
+     * Note the UNQUALIFIED column: this emitter feeds UNION members that carry
+     * no table alias, which is why it reads `_owner` and not `t._owner`.
+     *
+     * @param array       $userGroups The caller's group IDs.
+     * @param string|null $userId     The caller.
+     *
+     * @return string[] SQL conditions to OR together.
+     */
+    private function ownerAdmitConditionsSql(array $userGroups, ?string $userId): array
+    {
+        $conditions = [];
+
+        if ($userId !== null) {
+            $quotedUserId = $this->quoteValue(value: $userId);
+            $conditions[] = "_owner = {$quotedUserId}";
+        }
+
+        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
+            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
+            $conditions[]   = "_owner = {$quotedSystemId}";
+        }
+
+        return $conditions;
+    }//end ownerAdmitConditionsSql()
+
+    /**
      * The "this caller may reach this row at all" predicate, as raw SQL.
      *
      * Both list emitters call this ONE method, and it in turn calls the ONE
@@ -243,7 +276,7 @@ class MagicRbacHandler
     ): string {
         return $this->objectScope()->notPrivateOrGrantedSql(
             authColumn: $columnName,
-            schemaDefaultIsPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
+            defaultPrivate: $this->objectScope()->schemaDefaultIsPrivate(schemaAuthorization: $authorization),
             isPostgres: $this->isPostgres(),
             uuidColumn: $uuidColumn,
             quotedUuids: $this->quotedGrantedUuids(userId: $userId)
@@ -1230,18 +1263,7 @@ class MagicRbacHandler
             userId: $userId
         );
 
-        // The owner conditions, which apply whatever the scope says. Admins
-        // already returned above; openregister#1617 covers the system-owner one.
-        $ownerAdmits = [];
-        if ($userId !== null) {
-            $quotedUserId  = $this->quoteValue(value: $userId);
-            $ownerAdmits[] = "_owner = {$quotedUserId}";
-        }
-
-        if ($this->shouldGrantSystemRowVisibility(userGroups: $userGroups) === true) {
-            $quotedSystemId = $this->quoteValue(value: $this->getSystemUserId());
-            $ownerAdmits[]  = "_owner = {$quotedSystemId}";
-        }
+        $ownerAdmits = $this->ownerAdmitConditionsSql(userGroups: $userGroups, userId: $userId);
 
         // If no authorization is configured, the schema is open to all — but an
         // individual OBJECT may still declare itself private, so this is no
@@ -1258,17 +1280,50 @@ class MagicRbacHandler
 
         // Fail-closed: a non-empty authorization block that does not list this
         // action no longer bypasses filtering (no early `bypass => true`). Flow
-        // falls through to the owner condition below; unmatched callers (e.g.
+        // falls through to the owner conditions; unmatched callers (e.g.
         // anonymous) get the deny-all empty-conditions result — consistent with
         // applyRbacFilters and PermissionHandler. Admins already returned; the
         // empty-block open-default above is unchanged.
-        // Build the RBAC filter conditions.
-        $conditions = $ownerAdmits;
+        $conditions = array_merge(
+            $ownerAdmits,
+            $this->collectRuleConditionsSql(
+                rules: $rules,
+                schema: $schema,
+                userGroups: $userGroups,
+                userId: $userId,
+                notPrivate: $notPrivate
+            )
+        );
 
+        // Return conditions (empty array means deny all).
+        return ['bypass' => false, 'conditions' => $conditions];
+    }//end buildRbacConditionsSql()
+
+    /**
+     * Turn one action's rules into raw-SQL conditions.
+     *
+     * Extracted from {@see buildRbacConditionsSql()} so that method stays under
+     * the length budget; the dispatch is unchanged.
+     *
+     * @param array       $rules      The rules for the action being filtered.
+     * @param Schema      $schema     The schema, for the inheritFromPublic resolve.
+     * @param array       $userGroups The caller's group IDs.
+     * @param string|null $userId     The caller.
+     * @param string      $notPrivate The reachable-row predicate to AND each rule with.
+     *
+     * @return string[] SQL conditions to OR together.
+     */
+    private function collectRuleConditionsSql(
+        array $rules,
+        Schema $schema,
+        array $userGroups,
+        ?string $userId,
+        string $notPrivate
+    ): array {
         // Resolve whether authenticated users inherit `public` rights once.
         $inheritFromPublic = $this->authenticatedInheritsPublic(schema: $schema);
 
-        // Process each authorization rule.
+        $conditions = [];
         foreach ($rules as $rule) {
             $ruleResult = $this->processAuthorizationRuleSql(
                 rule: $rule,
@@ -1293,9 +1348,8 @@ class MagicRbacHandler
             }
         }//end foreach
 
-        // Return conditions (empty array means deny all).
-        return ['bypass' => false, 'conditions' => $conditions];
-    }//end buildRbacConditionsSql()
+        return $conditions;
+    }//end collectRuleConditionsSql()
 
     /**
      * Process a single authorization rule for raw SQL output.

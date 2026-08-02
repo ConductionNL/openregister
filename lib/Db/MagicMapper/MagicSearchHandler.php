@@ -1102,16 +1102,16 @@ class MagicSearchHandler
         // a second definition of the tenant edge, and this change exists because
         // second definitions of a rule drift apart. Cross-organisation sharing is
         // group 7's decision to take, not a side effect to inherit here.
-        $callerHoldsObjectGrants = false;
+        $hasObjectGrants = false;
         if ($_rbac === true) {
-            $callerHoldsObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
+            $hasObjectGrants = $this->rbacHandler->currentCallerHoldsObjectGrants();
         }
 
         // Apply multitenancy filter based on RBAC access and explicit request.
         if ($_multitenancy === true) {
             $applyMultitenancy = false;
 
-            if ($callerHoldsObjectGrants === true) {
+            if ($hasObjectGrants === true) {
                 // Reached rows through a grant — the tenant edge stands.
                 $applyMultitenancy = true;
             } else if ($userHasRbacAccess === false) {
