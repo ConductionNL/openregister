@@ -2,13 +2,13 @@
 
 > All seven are stated with their consequences in design.md "Open Questions".
 
-- [ ] 1.1 Q1 — which NC share type an object share registers as (gates group 5 and most of 6)
-- [ ] 1.2 Q2 — email invite to a non-user: account-less link share, or account required
-- [ ] 1.3 Q3 — `private` on the object, on the schema as a default, or both (the schema default is what group 9 needs)
-- [ ] 1.4 Q4 — does a PUBLIC link share contradict ADR-006 Rule 2 ("to publish, grant a read scope, do not set a field")? Either amend the ADR to admit capability-style links, or restrict object links to non-public permissions
-- [ ] 1.5 Q5 — one uniform permission vocabulary, or per-schema verbs
-- [ ] 1.6 Q6 — does a credential share need `read` distinct from `use`
-- [ ] 1.7 Q7 — do the broker's `scope: personal|organisation` values collapse into `private`, or stay a second vocabulary
+- [x] 1.1 Q1 ANSWERED by research: do NOT register a provider — `IShareProvider`/`IShare` are Files-bound (`getNodeId(): int` non-nullable). Share the object's FOLDER instead; every object has one on demand, and `ShareLinkService` already reads the six types that matter on it
+- [x] 1.2 Q2 DECIDED: mirror Files — `TYPE_EMAIL`, an account-less link addressed to an email
+- [x] 1.3 Q3 DECIDED: both — schema default for new objects, object overrides
+- [x] 1.4 Q4 DECIDED: amend ADR-006 — a link is a revocable, expiring CAPABILITY, not a visibility flag; Rule 3's concern is a data field treated as a boundary, which a core-issued token is not
+- [x] 1.5 Q5 DECIDED: uniform core set mapped onto core's permission bitmask, plus per-schema extensions in `IAttributes`, governed by an ADR so the vocabulary cannot sprawl
+- [x] 1.6 Q6 DECIDED: yes, separate — `use` implies `read`
+- [ ] 1.7 Q7 STILL OPEN: do the broker's `scope: personal|organisation` values collapse into `private`, or stay a second vocabulary for one concept?
 
 ## 2. `private` as a principal, on all four enforcement paths
 
@@ -41,10 +41,12 @@
 
 ## 5. The share provider surface (core owns the record)
 
-- [ ] 5.1 Register an OR share provider with `OCP\Share\IManager`
+- [ ] 5.1 Share the object's FOLDER through `OCP\Share\IManager` — no provider registration (Q1). Reuse `ShareLinkService`'s folder-resolve and six-type walk for the read half
 - [ ] 5.2 Read share records THROUGH at decision time; keep NO OpenRegister-side copy (design D2 — `ShareLinkService` documents why a snapshot desyncs)
 - [ ] 5.3 Resolve the caller's principal set once per REQUEST and pass it to the emitters, rather than per row
 - [ ] 5.4 Link shares: token, expiry, password, revocation — all core's mechanics
+- [ ] 5.8 Carry object verbs (`run`, `use`) in `IShare`'s `IAttributes`; core's bitmask has no such verbs
+- [ ] 5.9 Make the file coupling explicit in the UI: a grant on the folder also reaches the files in it
 - [ ] 5.5 Email invitations through core's mailer; the message carries no object data, so revocation still works after delivery
 - [ ] 5.6 A share never exceeds the sharer's own access
 - [ ] 5.7 Verify a share revoked or expired in core takes effect immediately in OpenRegister
@@ -90,9 +92,11 @@
 - [ ] 10.6 Assert on rendered SVGs and measured content, not on the manifest — an unregistered icon renders nothing and a stale bundle serves the pre-fix code
 - [ ] 10.7 `composer check:strict` in the container (host PHP is too old)
 
-## 11. Documentation
+## 11. Documentation and ADRs
 
 - [ ] 11.1 Document the sharing model: `private`, per-object grants, links, email invites, federation — and how each composes with schema-level RBAC
 - [ ] 11.2 Amend the RBAC docs with the `private` principal and the all-four-paths rule
 - [ ] 11.3 Record the distinction between the three pre-existing share concepts, so a future reader does not add a fourth
 - [ ] 11.4 Document the breaking flow change and its upgrade note
+- [ ] 11.5 Amend ADR-006 for capability-style links (Q4)
+- [ ] 11.6 New ADR governing permission-verb extensions: declared by the schema, enforced at the acting endpoint, never redefining a core verb (Q5)
