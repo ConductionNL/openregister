@@ -88,7 +88,17 @@ test.describe('object sharing over HTTP', () => {
 				title: `e2e share schema ${RUN}`,
 				description: 'e2e',
 				properties: { key: { type: 'string', title: 'Key', maxLength: 255 } },
-				authorization: { read: ['authenticated'] },
+				// A non-empty authorization block FAILS CLOSED for any action it
+				// does not list — so listing only `read` means the owner cannot
+				// even create the fixture. The first CI run said exactly that:
+				// "does not have permission to 'create' objects in schema".
+				// `read` is still the ceiling that matters for the scope tests.
+				authorization: {
+					read: ['authenticated'],
+					create: ['authenticated'],
+					update: ['authenticated'],
+					delete: ['authenticated'],
+				},
 			},
 		})
 		expect(sch.ok(), `schema create failed: ${await sch.text()}`).toBeTruthy()
