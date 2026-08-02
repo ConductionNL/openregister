@@ -480,6 +480,11 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Preflight a flow document against the live node registry WITHOUT
+        // saving it — the question a CI job or a deploy check needs to ask
+        // about a document it is not writing. Must stay above `{flowId}` so
+        // "validate" is never captured as a flow uuid.
+        ['name' => 'flow#validate',     'url' => '/api/flow/validate',      'verb' => 'POST'],
         // What a flow is holding between runs — the read side of flow state,
         // so a dashboard can render slot occupancy (or#2216).
         ['name' => 'flow#state',        'url' => '/api/flow/{flowId}/state', 'verb' => 'GET', 'requirements' => ['flowId' => '[^/]+']],
