@@ -56,8 +56,41 @@ class FlowRunControllerTest extends TestCase
             $this->runner,
             $this->resolvers,
             $this->createMock(IUserSession::class),
-            $this->organisations
+            $this->organisations,
+            $this->runGuardObjectService(),
+            $this->runGuardAppConfig()
         );
+    }
+
+    /**
+     * An ObjectService that resolves any flow, for the run guard.
+     *
+     * `test()` and `retry()` now resolve the flow WITH RBAC before running it,
+     * and fail CLOSED without this collaborator — an unguarded run is the thing
+     * that guard exists to prevent. These tests are about the run behaviour, so
+     * the guard is satisfied rather than exercised here.
+     *
+     * @return \OCA\OpenRegister\Service\ObjectService
+     */
+    private function runGuardObjectService(): \OCA\OpenRegister\Service\ObjectService
+    {
+        $service = $this->createMock(\OCA\OpenRegister\Service\ObjectService::class);
+        $service->method('find')->willReturn($this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class));
+
+        return $service;
+    }
+
+    /**
+     * An IAppConfig returning the default register/schema slugs.
+     *
+     * @return \OCP\IAppConfig
+     */
+    private function runGuardAppConfig(): \OCP\IAppConfig
+    {
+        $config = $this->createMock(\OCP\IAppConfig::class);
+        $config->method('getValueString')->willReturnArgument(2);
+
+        return $config;
     }
 
     /** Make getActiveOrganisation() answer with an organisation of this uuid. */

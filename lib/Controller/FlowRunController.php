@@ -37,15 +37,23 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
 use stdClass;
+use Throwable;
 
 /**
  * REST surface for inspecting and retrying flow runs.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Two over, from the run guard's
+ * ObjectService + IAppConfig. Both exist so the flow can be resolved WITH RBAC at
+ * the request boundary — the resolver deliberately loads with RBAC off for the
+ * engine, and inheriting that bypass here is what left retry() open to an IDOR.
  */
 class FlowRunController extends Controller
 {
@@ -59,6 +67,10 @@ class FlowRunController extends Controller
      * @param FlowResolverRegistry $resolvers           Resolves a flow id to its document.
      * @param IUserSession         $userSession         Attributes a retried run to the caller.
      * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
+     * @param ObjectService|null   $objectService       Resolves the flow WITH RBAC for the run guard;
+     *                                                  nullable so adding it is not a fatal at
+     *                                                  existing construction sites.
+     * @param IAppConfig|null      $flowAppConfig       Reads the flow register/schema slugs.
      */
     public function __construct(
         string $appName,
@@ -67,7 +79,9 @@ class FlowRunController extends Controller
         private readonly FlowRunService $runner,
         private readonly FlowResolverRegistry $resolvers,
         private readonly IUserSession $userSession,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly ?ObjectService $objectService=null,
+        private readonly ?IAppConfig $flowAppConfig=null
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -325,6 +339,11 @@ class FlowRunController extends Controller
             return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
         }
 
+        $refusal = $this->refuseUnlessRunnable(flowId: (string) $run->getFlowId());
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
         $new = $this->runner->retry($run);
         if ($new === null) {
             // The source is not terminal — queued, running, or suspended. Retry
@@ -338,6 +357,70 @@ class FlowRunController extends Controller
         return new JSONResponse($new->jsonSerialize(), Http::STATUS_CREATED);
 
     }//end retry()
+
+    /**
+     * The register flows are stored under.
+     *
+     * @var string
+     */
+    private const FLOW_REGISTER_KEY = 'flow_register';
+
+    /**
+     * The schema flows are stored under.
+     *
+     * @var string
+     */
+    private const FLOW_SCHEMA_KEY = 'flow_schema';
+
+    /**
+     * Refuse unless the caller may RUN this flow.
+     *
+     * WHY THE CONTROLLER AND NOT THE RESOLVER. `OpenRegisterFlowResolver::resolveFlow()`
+     * loads with `_rbac: false`, and correctly so — the engine runs a flow as its
+     * owner, and background jobs and retries have no session to evaluate. But
+     * these endpoints inherited that bypass, and `retry()` in particular took a
+     * run UUID and retried it with no ownership check at all: any authenticated
+     * user could re-run anybody's flow. That is an IDOR (OWASP A01), and the fix
+     * belongs where the request enters, not in the engine.
+     *
+     * WHAT IT CHECKS. The flow is resolved through `ObjectService` with RBAC ON.
+     * A caller who cannot READ the flow gets a 404 rather than a 403, so the
+     * endpoint cannot be used to discover which flow ids exist.
+     *
+     * Running is an EXTENSION verb — core's bitmask has no `run` — so per ADR-010
+     * Rule 4 it is enforced here, at the endpoint that performs the action,
+     * rather than by widening the RBAC vocabulary.
+     *
+     * @param string $flowId The flow being run.
+     *
+     * @return JSONResponse|null A refusal, or null when the caller may proceed.
+     */
+    private function refuseUnlessRunnable(string $flowId): ?JSONResponse
+    {
+        if ($this->objectService === null || $this->flowAppConfig === null) {
+            // Fail CLOSED. Without the collaborators there is no way to decide,
+            // and an unguarded run is what this method exists to prevent.
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        try {
+            $flow = $this->objectService->find(
+                id: $flowId,
+                register: $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
+                schema: $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
+                _rbac: true,
+                _multitenancy: true
+            );
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        if ($flow === null) {
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        return null;
+    }//end refuseUnlessRunnable()
 
     /**
      * Run a flow now and return its result — the interactive test run.
@@ -370,6 +453,11 @@ class FlowRunController extends Controller
         $flowId = trim((string) $this->request->getParam('flowId', ''));
         if ($flowId === '') {
             return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $refusal = $this->refuseUnlessRunnable(flowId: $flowId);
+        if ($refusal !== null) {
+            return $refusal;
         }
 
         $flow = $this->resolvers->resolveFlow(flowId: $flowId);

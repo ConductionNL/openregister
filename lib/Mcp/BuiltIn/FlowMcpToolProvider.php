@@ -36,6 +36,8 @@ namespace OCA\OpenRegister\Mcp\BuiltIn;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\ObjectService;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use UnexpectedValueException;
 
@@ -47,16 +49,22 @@ class FlowMcpToolProvider implements IMcpToolProvider
     /**
      * Constructor.
      *
-     * @param FlowRunService $runner      Queues a flow run.
-     * @param FlowRunMapper  $mapper      Reads recent runs (for listing / status).
-     * @param IUserSession   $userSession The invoking session — an MCP tool call always
-     *                                    arrives inside one, and its user is the actor
-     *                                    a queued run is attributed to.
+     * @param FlowRunService     $runner        Queues a flow run.
+     * @param FlowRunMapper      $mapper        Reads recent runs (for listing / status).
+     * @param IUserSession       $userSession   The invoking session — an MCP tool
+     *                                          call always
+     * @param ObjectService|null $objectService Resolves the flow WITH RBAC for the run guard; nullable
+     *                                          so adding it is not a fatal at existing construction sites.
+     * @param IAppConfig|null    $appConfig     Reads the flow register/schema slugs.
+     *                                          arrives inside one, and its user is the actor
+     *                                          a queued run is attributed to.
      */
     public function __construct(
         private readonly FlowRunService $runner,
         private readonly FlowRunMapper $mapper,
-        private readonly IUserSession $userSession
+        private readonly IUserSession $userSession,
+        private readonly ?ObjectService $objectService=null,
+        private readonly ?IAppConfig $appConfig=null
     ) {
 
     }//end __construct()
@@ -206,6 +214,16 @@ class FlowMcpToolProvider implements IMcpToolProvider
             throw new UnexpectedValueException('runFlow needs a flowId.');
         }
 
+        // The third unguarded run entry point. An MCP tool call carries a real
+        // user session, so the flow is resolved WITH RBAC and a caller who
+        // cannot read it is refused — otherwise an agent could run any flow on
+        // the instance by guessing an id.
+        //
+        // Running is an extension verb (core's bitmask has no `run`), so per
+        // ADR-010 Rule 4 it is enforced here, at the endpoint that performs the
+        // action, rather than by widening the RBAC vocabulary.
+        $this->assertRunnable(flowId: $flowId);
+
         $run = $this->runner->queue(
             flowId: $flowId,
             subject: [
@@ -224,6 +242,45 @@ class FlowMcpToolProvider implements IMcpToolProvider
         ];
 
     }//end runFlow()
+
+    /**
+     * Refuse unless the acting user may run this flow.
+     *
+     * `FlowResolverRegistry::resolveFlow()` loads with RBAC off — correct for the
+     * engine, which runs a flow as its owner — so the check has to happen here,
+     * where a real session exists.
+     *
+     * @param string $flowId The flow being run.
+     *
+     * @throws UnexpectedValueException When the caller may not run it.
+     *
+     * @return void
+     */
+    private function assertRunnable(string $flowId): void
+    {
+        if ($this->objectService === null || $this->appConfig === null) {
+            // Fail CLOSED: without the collaborators there is no way to decide.
+            throw new UnexpectedValueException('No such flow: '.$flowId);
+        }
+
+        try {
+            $flow = $this->objectService->find(
+                id: $flowId,
+                register: $this->appConfig->getValueString('openregister', 'flow_register', 'flows'),
+                schema: $this->appConfig->getValueString('openregister', 'flow_schema', 'flow'),
+                _rbac: true,
+                _multitenancy: true
+            );
+        } catch (\Throwable $e) {
+            throw new UnexpectedValueException('No such flow: '.$flowId);
+        }
+
+        if ($flow === null) {
+            // Same message as a genuinely missing flow, so this cannot be used
+            // to discover which ids exist.
+            throw new UnexpectedValueException('No such flow: '.$flowId);
+        }
+    }//end assertRunnable()
 
     /**
      * Read a run's status, log and items.
