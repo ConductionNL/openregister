@@ -1,7 +1,7 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} in isset\\(\\) always exists and is not nullable\\.$#"
+			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} in isset\\(\\) always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/AppInfo/Application.php
 
@@ -4721,17 +4721,17 @@ parameters:
 			path: lib/Service/MappingService.php
 
 		-
-			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 2
 			path: lib/Service/Mcp/McpToolsService.php
 
 		-
-			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Mcp/McpToolsService.php
 
 		-
-			message: "#^Offset 'name' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			message: "#^Offset 'name' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Service/Mcp/McpToolsService.php
 
@@ -5886,22 +5886,17 @@ parameters:
 			path: lib/Settings/OpenRegisterAdmin.php
 
 		-
-			message: "#^Call to function array_key_exists\\(\\) with 'scope' and array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} will always evaluate to false\\.$#"
+			message: "#^Offset 'description' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Tool/McpProviderBridge.php
 
 		-
-			message: "#^Offset 'description' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
-			count: 1
-			path: lib/Tool/McpProviderBridge.php
-
-		-
-			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			message: "#^Offset 'id' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 2
 			path: lib/Tool/McpProviderBridge.php
 
 		-
-			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array\\} on left side of \\?\\? always exists and is not nullable\\.$#"
+			message: "#^Offset 'inputSchema' on array\\{id\\: string, name\\: string, description\\: string, inputSchema\\: array, scope\\?\\: string, readOnlyHint\\?\\: bool, destructiveHint\\?\\: bool, idempotentHint\\?\\: bool\\} on left side of \\?\\? always exists and is not nullable\\.$#"
 			count: 1
 			path: lib/Tool/McpProviderBridge.php
 
