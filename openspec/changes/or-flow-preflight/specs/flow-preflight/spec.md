@@ -47,6 +47,44 @@ legitimately half-connected, and refusing a draft would make the editor unusable
 - **WHEN** it is saved
 - **THEN** preflight does not run and the save is unaffected
 
+### Requirement: A resolved node must also accept the config it is given (REQ-PF-003)
+
+For every edge whose `type` resolves, OpenRegister SHALL call the node's
+`validateConfig()` — already on the `IFlowNode` contract and already implemented
+by every node in tree — and SHALL REFUSE the save when the node rejects it.
+
+This is the harder half of the same defect. A node reads the config keys IT
+implements and silently ignores the rest, so an edge written in another node's
+dialect resolves, runs, returns its input untouched and reports COMPLETED.
+Measured across the ten hydra flows, four are inert exactly this way;
+`hydra-analyze-verdicts` declares `routes[].when`/`routes[].to` where RouterNode
+reads `rules[].output`, and `fields` where SetFieldsNode reads `set`/`compute`,
+so it cannot run at all. `scripts/test-flow-definitions.sh` passes on all four:
+it validates graph STRUCTURE and is blind to dialect.
+
+A node that throws for a reason of its own (a broken translation, a missing
+collaborator) SHALL NOT block the save — only `UnexpectedValueException`, which
+is what every in-tree implementation raises to refuse a config, counts.
+
+Config SHALL NOT be checked for a node the instance does not have; an absent
+optional app stays a warning.
+
+#### Scenario: The right type with the wrong dialect is refused
+
+- **GIVEN** an edge of type `openregister.route` whose config declares `routes[]`
+- **WHEN** the flow is saved
+- **THEN** the save is refused, naming the edge and the node's own message
+
+#### Scenario: The same edge in the correct dialect saves
+
+- **GIVEN** the same edge declaring `rules[].output`
+- **WHEN** the flow is saved
+- **THEN** nothing blocks and nothing warns
+
+@e2e exclude backend save-path guard — covered by FlowNodeConfigDialectTest,
+which uses the REAL RouterNode and SetFieldsNode with the config from
+hydra-analyze-verdicts verbatim, with a positive control in the corrected dialect
+
 @e2e exclude backend save-path guard — covered by FlowNodePreflightTest,
 FlowNodePreflightListenerTest and FlowNodePreflightRegressionTest, the last of
 which replays or#2247 (the `hydra-file-findings` graph verbatim against a registry

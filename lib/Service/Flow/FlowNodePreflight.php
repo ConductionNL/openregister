@@ -94,6 +94,15 @@ class FlowNodePreflight
     public const REASON_OWNER_NOT_ENABLED = 'node-type-owner-app-not-enabled';
 
     /**
+     * The type resolves, but the node refuses the config it was given.
+     *
+     * Blocking. A step whose config the node cannot read is not a step that
+     * half-works — it is a step that returns its input untouched and reports
+     * COMPLETED, which is the failure this whole class exists to remove.
+     */
+    public const REASON_CONFIG_REJECTED = 'node-config-rejected';
+
+    /**
      * Constructor.
      *
      * @param FlowNodeRegistry $registry   The live catalogue of node types.
@@ -172,6 +181,11 @@ class FlowNodePreflight
      * An edge with no `type` is a pass-through and is skipped, matching
      * `RegistryStepDispatcher`, which returns items untouched for such an edge.
      *
+     * A resolved type is checked TWICE: once that it exists, and once that the
+     * node accepts the config the edge gives it. The second check is the one
+     * that catches an edge written in another node's dialect — the type is
+     * right, the step runs, and it does nothing.
+     *
      * @param array $flow The flow document.
      *
      * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
@@ -193,11 +207,42 @@ class FlowNodePreflight
                 continue;
             }
 
-            if ($this->isRegistered(type: $type) === true) {
-                continue;
-            }
+            $edgeId = (string) ($edge['id'] ?? $edge['name'] ?? $index);
+            $node   = $this->resolve(type: $type);
+            if ($node !== null) {
+                // The type resolving is only half the question. A node reads the
+                // config keys IT implements, and silently ignores the rest — so
+                // an edge written in another node's dialect resolves fine, runs,
+                // and returns its input untouched while reporting COMPLETED.
+                //
+                // Measured across the ten hydra flows: four are inert this way.
+                // `hydra-analyze-verdicts` declares `routes[].when`/`routes[].to`
+                // where RouterNode reads `rules[].output`, and `config.fields`
+                // where SetFieldsNode reads `set`/`compute`. The flow cannot run
+                // at all, and `scripts/test-flow-definitions.sh` passes on it —
+                // that script checks graph STRUCTURE and is blind to dialect.
+                //
+                // Every node already implements `validateConfig()`; the contract
+                // is on IFlowNode. It was simply never called at save time.
+                // SetFieldsNode's own docblock says the check exists so a
+                // malformed expression is "caught HERE, when the flow is saved,
+                // rather than evaluating to null on every item at 03:00" — which
+                // is exactly what it did NOT do, because nothing called it.
+                $rejection = $this->configRejection(node: $node, edge: $edge);
+                if ($rejection !== null) {
+                    $blocking[] = [
+                        'type'   => $type,
+                        'app'    => $this->ownerOf(type: $type),
+                        'edge'   => $edgeId,
+                        'reason' => self::REASON_CONFIG_REJECTED,
+                        'detail' => $rejection,
+                    ];
+                }//end if
 
-            $finding = $this->classify(type: $type, edge: (string) ($edge['id'] ?? $edge['name'] ?? $index));
+                continue;
+            }//end if
+
+            $finding = $this->classify(type: $type, edge: $edgeId);
             if ($finding['reason'] === self::REASON_OWNER_NOT_ENABLED) {
                 $warnings[] = $finding;
                 continue;
@@ -278,6 +323,17 @@ class FlowNodePreflight
     {
         $lines = [];
         foreach ($blocking as $finding) {
+            if ($finding['reason'] === self::REASON_CONFIG_REJECTED) {
+                $lines[] = sprintf(
+                    '"%s" (edge %s) — the node exists but refuses this step\'s config: %s. '
+                    .'A config it cannot read makes the step a pass-through that reports success',
+                    $finding['type'],
+                    $finding['edge'],
+                    ($finding['detail'] ?? 'no detail')
+                );
+                continue;
+            }
+
             if ($finding['reason'] === self::REASON_NOT_NAMESPACED) {
                 $lines[] = sprintf(
                     '"%s" (edge %s) — not namespaced, so no app can provide it; '
@@ -295,7 +351,7 @@ class FlowNodePreflight
                 $finding['edge'],
                 $finding['app']
             );
-        }
+        }//end foreach
 
         return sprintf(
             'Flow "%s" names %d step type(s) this instance cannot run: %s. '
@@ -307,6 +363,64 @@ class FlowNodePreflight
         );
 
     }//end describe()
+
+    /**
+     * Ask the node whether it can read this edge's config.
+     *
+     * A node that throws for a reason of its own (a broken translation, a
+     * missing collaborator) must not block the save — that would turn one bad
+     * node into an unsavable instance. Only the node's own refusal counts, and
+     * `UnexpectedValueException` is what every implementation in-tree raises.
+     *
+     * @param IFlowNode $node The resolved node.
+     * @param array     $edge The edge declaring the step.
+     *
+     * @return string|null The node's message, or null when it accepts the config.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function configRejection(IFlowNode $node, array $edge): ?string
+    {
+        $config = ($edge['config'] ?? []);
+        if (is_array($config) === false) {
+            return 'Step config must be an object.';
+        }
+
+        try {
+            $node->validateConfig($config);
+        } catch (UnexpectedValueException $e) {
+            return $e->getMessage();
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[FlowNodePreflight] A node\'s validateConfig() failed for its own reasons, not blocking: '
+                    .$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'node' => get_class($node)]
+            );
+        }//end try
+
+        return null;
+
+    }//end configRejection()
+
+    /**
+     * The app a namespaced type belongs to.
+     *
+     * @param string $type The step type.
+     *
+     * @return string The app id, or an empty string when the type is not namespaced.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    private function ownerOf(string $type): string
+    {
+        $separator = strpos($type, '.');
+        if ($separator === false || $separator === 0) {
+            return '';
+        }
+
+        return substr($type, 0, $separator);
+
+    }//end ownerOf()
 
     /**
      * Decide why a type failed to resolve.
@@ -346,24 +460,23 @@ class FlowNodePreflight
     }//end classify()
 
     /**
-     * Whether the registry provides a type.
+     * The node answering to a type, or null when nothing does.
      *
      * @param string $type The step type.
      *
-     * @return boolean True when a node answers to it.
+     * @return IFlowNode|null The node.
      *
      * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
      */
-    private function isRegistered(string $type): bool
+    private function resolve(string $type): ?IFlowNode
     {
         try {
-            $this->registry->get(type: $type);
-            return true;
+            return $this->registry->get(type: $type);
         } catch (UnexpectedValueException) {
-            return false;
+            return null;
         }
 
-    }//end isRegistered()
+    }//end resolve()
 
     /**
      * Whether an app is enabled on this instance.

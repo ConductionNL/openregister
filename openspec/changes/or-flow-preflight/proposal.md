@@ -50,6 +50,28 @@ have it. That is always a defect. If the owning app is absent, installing it is
 the fix. So the first refuses and the second warns — loudly, structurally, and
 without blocking anyone's import.
 
+## Known gaps this does NOT close
+
+Recorded precisely rather than half-fixed.
+
+**Schedule-triggered flows in a leaf app's store cannot fire at all.**
+`FlowScheduleService` enumerates only the `flow_register`/`flow_schema` pair
+(defaulting to `flows`/`flow`); it never consults the resolver registry. So
+`hydra-sequencer`, `hydra-dispatch` and `hydra-lock-reaper`, which live as
+hermiq `agentflow` objects, are invisible to the scheduler. Verified in
+`FlowScheduleService` (`REGISTER_KEY` / `SCHEMA_KEY` are the only lookups).
+
+**And their `cron` is dropped on the way in.** The live `agentflow` schema (5020)
+has no `cron` property — verified: `properties ? 'cron'` is false — so the `cron`
+key in those flow documents is silently discarded at save. That is the same
+family as `or-silent-field-loss`, and the warning added there is what makes it
+visible; declaring the property and teaching the scheduler to ask the resolvers
+is a separate change.
+
+Preflight does not catch either: both are about a definition asking for
+something the *instance* does not provide, but neither is expressible as an edge
+type or an edge config.
+
 ## What is deliberately NOT validated
 
 The graph's shape. `FlowDefinitionBuilder` could check it and already refuses
