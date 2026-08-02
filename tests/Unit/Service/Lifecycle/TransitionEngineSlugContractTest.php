@@ -115,7 +115,8 @@ class TransitionEngineSlugContractTest extends TestCase
             $this->userSession,
             $this->permission,
             $this->registerMapper,
-            $this->appConfig
+            $this->appConfig,
+            $this->createMock(\Psr\Log\LoggerInterface::class)
         );
 
     }//end engine()

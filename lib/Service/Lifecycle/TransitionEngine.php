@@ -39,7 +39,9 @@ use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IAppConfig;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -71,6 +73,7 @@ class TransitionEngine
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
      * @param RegisterMapper    $registerMapper    Mapper used to resolve the register slug.
      * @param IAppConfig        $appConfig         App config, for the slug-contract opt-in.
+     * @param LoggerInterface   $logger            Logger for post-commit listener failures.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -81,9 +84,85 @@ class TransitionEngine
         private readonly IUserSession $userSession,
         private readonly PermissionHandler $permissionHandler,
         private readonly RegisterMapper $registerMapper,
-        private readonly IAppConfig $appConfig
+        private readonly IAppConfig $appConfig,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Dispatch `ObjectTransitionedEvent` without letting a listener undo the write.
+     *
+     * `ObjectTransitionedEvent` is a POST event: by the time it is dispatched the
+     * lifecycle mutation has already been saved and committed. Propagating a
+     * listener's exception out of here therefore reports failure for work that
+     * succeeded — the caller sees a 500 (or a 422 "transition refused", when the
+     * listener happens to throw a `RuntimeException` that
+     * {@see \OCA\OpenRegister\Controller\TransitionController::transition()}
+     * maps to that status) while the object sits in its NEW state. Retrying then
+     * fails a second time with "not allowed from the current state", because the
+     * transition it is being asked to repeat has in fact already happened.
+     *
+     * So a post-event listener MUST NOT be able to fail a committed transition.
+     * That is deliberately NOT extended to the pre-event (`*ing`) family: those
+     * exist precisely so a listener can veto, they are dispatched before the
+     * save, and their exceptions must keep propagating. Nothing here touches
+     * them — the veto path for a transition is `HookStoppedException` raised
+     * inside `saveObject()`, which is upstream of this method and unaffected.
+     *
+     * Swallowing silently would trade a loud wrong answer for a quiet one, so
+     * the failure is logged at ERROR with the exception attached: a listener
+     * that throws here is a real bug, and the side effect it owns (a legal hold,
+     * a ledger posting, an outbound notification) did not happen.
+     *
+     * @param ObjectEntity $object The saved object, in its post-transition state.
+     * @param string       $action The transition action that was applied.
+     * @param string       $from   The lifecycle value before the transition.
+     * @param string       $to     The lifecycle value after the transition.
+     * @param string|null  $userId The acting user, when there is a session.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function dispatchTransitioned(
+        ObjectEntity $object,
+        string $action,
+        string $from,
+        string $to,
+        ?string $userId
+    ): void {
+        $scope = $this->transitionEventScope(object: $object);
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectTransitionedEvent(
+                    object: $object,
+                    action: $action,
+                    from: $from,
+                    to: $to,
+                    userId: $userId,
+                    register: $scope['register'],
+                    schema: $scope['schema']
+                )
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                '[TransitionEngine] A listener threw on ObjectTransitionedEvent. '
+                .'The transition itself is COMMITTED; the listener\'s side effect did not run.',
+                [
+                    'app'       => 'openregister',
+                    'uuid'      => $object->getUuid(),
+                    'register'  => $scope['register'],
+                    'schema'    => $scope['schema'],
+                    'action'    => $action,
+                    'from'      => $from,
+                    'to'        => $to,
+                    'exception' => $e,
+                ]
+            );
+        }//end try
+
+    }//end dispatchTransitioned()
 
     /**
      * Resolve the register/schema pair to advertise on ObjectTransitionedEvent.
@@ -274,18 +353,12 @@ class TransitionEngine
 
         $userId = $actingUser?->getUID();
 
-        $scope = $this->transitionEventScope(object: $object);
-
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectTransitionedEvent(
-                object: $saved,
-                action: $action,
-                from: $currentValue,
-                to: $targetState,
-                userId: $userId,
-                register: $scope['register'],
-                schema: $scope['schema']
-            )
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $currentValue,
+            to: $targetState,
+            userId: $userId
         );
 
         return $saved;
@@ -642,18 +715,12 @@ class TransitionEngine
             currentUser: $actingUser
         );
 
-        $scope = $this->transitionEventScope(object: $object);
-
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectTransitionedEvent(
-                object: $saved,
-                action: $action,
-                from: $from,
-                to: $targetState,
-                userId: $actingUser?->getUID(),
-                register: $scope['register'],
-                schema: $scope['schema']
-            )
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $from,
+            to: $targetState,
+            userId: $actingUser?->getUID()
         );
 
         return $saved;
