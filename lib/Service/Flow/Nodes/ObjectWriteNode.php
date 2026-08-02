@@ -548,7 +548,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
             $payload = $this->buildPayload(fields: $fields, json: $json, onMissing: $onMissing);
             $matched = null;
             if ($operation !== self::OP_CREATE) {
-                $matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema);
+                $matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
             }
 
             if ($operation === self::OP_UPDATE && $matched === null) {
@@ -663,7 +663,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         $json   = (array) ($item[FlowItems::JSON] ?? []);
         $binary = (array) ($item[FlowItems::BINARY] ?? []);
 
-        $matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema);
+        $matched = $this->findMatch(pairs: $pairs, json: $json, register: $register, schema: $schema, owner: $owner);
 
         if ($matched === null) {
             if ($onNoMatch !== self::ON_NO_MATCH_SKIP) {
@@ -999,17 +999,32 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
      * non-deterministic across instances, which is the defect class that only
      * ever appears on someone else's system.
      *
+     * The lookup runs AS the owner, so the object a match resolves to is one the
+     * owner can actually see. Without that the node checked one subject and
+     * chose another: the writes were attributed (`currentUser: $owner`) while
+     * the scan that decided WHICH row to write ran under the ambient session.
+     * Under CLI cron that session is empty, and both the RBAC and organisation
+     * filters skip themselves for a sessionless CLI context — so the match
+     * could resolve a row outside the owner's visibility, and `upsert` could
+     * find one the owner could not see and therefore insert a duplicate.
+     *
      * @param array    $pairs    The match pairs.
      * @param array    $json     The current item's record.
      * @param Register $register The resolved register.
      * @param Schema   $schema   The resolved schema.
+     * @param IUser    $owner    The run owner, whose RBAC applies to the lookup.
      *
      * @return ObjectEntity|null The single match, or null when nothing matched.
      *
      * @throws RuntimeException When a match value cannot be templated, or the match is ambiguous.
      */
-    private function findMatch(array $pairs, array $json, Register $register, Schema $schema): ?ObjectEntity
-    {
+    private function findMatch(
+        array $pairs,
+        array $json,
+        Register $register,
+        Schema $schema,
+        IUser $owner
+    ): ?ObjectEntity {
         $filters = [
             'register' => $register->getId(),
             'schema'   => $schema->getId(),
@@ -1038,11 +1053,14 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
             );
         }
 
-        $rows = $this->objects->findAll(
-            config: [
-                'filters' => $filters,
-                'limit'   => self::MATCH_SCAN_LIMIT,
-            ]
+        $rows = $this->objects->runAs(
+            $owner,
+            fn (): array => $this->objects->findAll(
+                config: [
+                    'filters' => $filters,
+                    'limit'   => self::MATCH_SCAN_LIMIT,
+                ]
+            )
         );
 
         $entities = [];

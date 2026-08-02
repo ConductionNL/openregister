@@ -66,6 +66,13 @@ class ObjectWriteNodeTest extends TestCase
         $this->schema->setSlug('example-cache-entry');
 
         $this->objects = $this->createMock(ObjectService::class);
+        // `runAs()` scopes the acting user around a read. The double must RUN
+        // the callable, or every lookup silently returns null and the node
+        // reports "matched nothing" for reasons that have nothing to do with
+        // the test.
+        $this->objects->method('runAs')->willReturnCallback(
+            static fn (IUser $user, callable $operation) => $operation()
+        );
 
         $registers = $this->createMock(RegisterMapper::class);
         $registers->method('find')->willReturn($this->register);
