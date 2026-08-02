@@ -526,6 +526,102 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         $writes = 0;
         $out    = [];
 
+        // THE WRITES RUN AS THE OWNER, rather than merely naming one.
+        //
+        // `$owner` was resolved, passed down every path as `currentUser:` and
+        // documented as the subject the write is attributed to — and it is,
+        // in the audit trail. But it is NOT the subject the ACCESS CHECK uses:
+        // MagicRbacHandler and MagicOrganizationHandler read
+        // `IUserSession::getUser()` directly, so the permission gate answers
+        // for whoever the ambient session carries. Under a cron worker
+        // (`FlowRunWorker`) that is nobody, and a scheduled write is refused
+        // as `Anonymous` no matter who owns the run — measured on the hydra
+        // sequencer's `lock-issue`, which failed with "User 'Anonymous' does
+        // not have permission to 'create' objects in schema 'Agent flow'"
+        // while `triggeredBy` was `admin` all along.
+        //
+        // openregister#2272 fixed exactly this for `ObjectReadNode`, which had
+        // the mirror-image version of the bug (a sessionless read SKIPS the
+        // RBAC predicate and reads too much, where a sessionless write is
+        // DENIED and writes nothing). The write side was left behind. Same
+        // seam, same reason: the query layer has no acting-user parameter, so
+        // `runAs()` sets the subject for the duration and restores it in a
+        // `finally`.
+        //
+        // The whole loop is wrapped rather than each call, because `findMatch()`
+        // is a READ that decides what a write or delete then touches. Running
+        // the match under one subject and the write under another is how a
+        // delete finds a row it is not allowed to remove.
+        //
+        // This narrows; it never grants. A run whose owner cannot write is
+        // still refused, and now says so for the right reason.
+        return $this->objects->runAs(
+            $owner,
+            fn (): array => $this->writeItems(
+                items: $items,
+                config: $config,
+                operation: $operation,
+                owner: $owner,
+                register: $register,
+                schema: $schema,
+                pairs: $pairs,
+                fields: $fields,
+                onMissing: $onMissing,
+                onConflict: $onConflict,
+                replace: $replace,
+                cap: $cap
+            )
+        );
+
+    }//end execute()
+
+    /**
+     * The per-item write loop, executed as the run owner.
+     *
+     * Split out of {@see execute()} only so the whole loop can be handed to
+     * `ObjectService::runAs()` as one callable — the match and the write it
+     * feeds must share a subject.
+     *
+     * @param array    $items      The input items.
+     * @param array    $config     The step configuration.
+     * @param string   $operation  The resolved operation.
+     * @param IUser    $owner      The run owner, as the acting user.
+     * @param Register $register   The resolved register.
+     * @param Schema   $schema     The resolved schema.
+     * @param array    $pairs      The match pairs.
+     * @param array    $fields     The configured fields.
+     * @param string   $onMissing  The missing-field policy.
+     * @param string   $onConflict The conflict policy.
+     * @param bool     $replace    Whether the write replaces.
+     * @param int|null $cap        The write cap.
+     *
+     * @return array One output item per input item.
+     *
+     * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One branch per operation.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Same.
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved.
+     *
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+     */
+    private function writeItems(
+        array $items,
+        array $config,
+        string $operation,
+        IUser $owner,
+        Register $register,
+        Schema $schema,
+        array $pairs,
+        array $fields,
+        string $onMissing,
+        string $onConflict,
+        bool $replace,
+        ?int $cap
+    ): array {
+        $writes = 0;
+        $out    = [];
+
         foreach ($items as $index => $item) {
             $json   = (array) ($item[FlowItems::JSON] ?? []);
             $binary = (array) ($item[FlowItems::BINARY] ?? []);
@@ -582,7 +678,7 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
 
         return $out;
 
-    }//end execute()
+    }//end writeItems()
 
     /**
      * The json a written item carries onward.
