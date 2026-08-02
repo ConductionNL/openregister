@@ -166,6 +166,6 @@ class SelectionListMapper extends QBMapper
     {
         $entity->setUpdated(new DateTime());
 
-        return $this->update(objectId: $entity);
+        return $this->update(entity: $entity);
     }//end updateEntry()
 }//end class

@@ -83,9 +83,7 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
  * @method Schema delete(Entity $entity, bool $force=false)
- * @method Schema find(int|string $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true)
  * @method Schema findEntity(IQueryBuilder $query)
- * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Schema>
@@ -813,7 +811,7 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return                                  list<\OCA\OpenRegister\Db\Schema>
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
