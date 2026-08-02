@@ -75,37 +75,40 @@
 
 ## 4. Per-object grants
 
-- [ ] 4.0 Let an OWNER set their own object's `scope`. `stripSelfInjectionFields()` strips
-      `authorization` from every non-admin write, so today only an admin can make an object
-      private. The carve-out is safe because `scope` can only ever NARROW, unlike the action
-      lists in the same block, which can widen — so it must be a `scope`-only carve-out, not a
-      relaxation of the strip (design D3a)
-> **Enforcement half LANDED** (`ObjectGrantResolver`): a grant is a real core share
-> on the object's NC folder, read through `IManager` at decision time and memoised
-> for ONE request only. Composed into all four paths as the single substitution
-> `notPrivate` → `(notPrivate OR grantedToMe)` (design D3b). The owner-only
-> grant/revoke API is NOT written yet — grants are created through core.
+> **LANDED, read and write.** A grant is a real core share on the object's NC
+> folder, read through `IManager` at decision time and memoised for ONE request
+> only. Composed into all four paths as the single substitution
+> `notPrivate` → `(notPrivate OR grantedToMe)` (design D3b). The owner-checked
+> write surface is `ObjectSharingService` + `ObjectSharingController`.
 
+- [x] 4.0 An OWNER can set their own object's `scope`, through a dedicated owner-checked
+      endpoint rather than the object payload — `stripSelfInjectionFields()` strips
+      `authorization` from every non-admin write and the write path omits the column, both
+      correctly. Safe because `scope` can only ever NARROW, unlike the action lists in the
+      same block, which can widen; so it is a `scope`-only carve-out and the write is
+      read-modify-write of one key, leaving an admin-set seal intact (design D3a)
 - [x] 4.1a Resolve a caller's grants from core's shares, folder-shares only, read-through.
       Verified live: `getObjectFolder()` names the folder after the object UUID, a
       `TYPE_USER` folder share is creatable, and the resolver maps it back
-- [ ] 4.1b Owner-only grant / revoke API on ONE object (create the share on the object's
+- [x] 4.1b Owner-only grant / revoke API on ONE object (create the share on the object's
       folder). `ShareLinkService::createShare()` CANNOT be reused: it requires a `$fileId`
       and rejects any node that is not a file inside the folder — that is the file-share
       concept and it stays separate (task 8.2)
 - [x] 4.2 Compose with schema rules — narrows within, never widens. The schema is the
       CEILING and a grant re-opens a private row within it (design D3b); tested with a
       schema whose read rule names a group the caller lacks
-- [x] 4.3 Enforce the tenant edge independently of the grant list — IMPLEMENTED by forcing
-      the EXISTING `applyOrganizationFilter()` on whenever the caller holds a grant, rather
-      than putting an `_organisation` term in the grant branch (design D3c). **NOT yet
-      covered by a test** — needs a two-organisation fixture
+- [x] 4.3 Enforce the tenant edge independently of the grant list — by forcing the EXISTING
+      `applyOrganizationFilter()` on whenever the caller holds a grant (design D3c). TESTED,
+      and the test took three attempts: the first two passed with the forcing DISABLED
+      (`_multitenancy_explicit` turns the filter on by itself; and a schema whose rules do
+      not bypass multitenancy gets the filter anyway). Only a schema whose read rule names a
+      REAL group the caller is in reaches the branch where the forcing is load-bearing
 - [ ] 4.4 Reject a recipient's attempt to widen or re-share onward
-- [ ] 4.5 Carry a permission on the grant, and enforce non-RBAC verbs at the endpoint that
-      performs them (design: two enforcement points, deliberately). The resolver already
-      CARRIES the bitmask (`grantedObjectUuids()` returns uuid => permissions, widest wins
-      across overlapping shares); nothing consumes it yet — every grant currently admits
-      for `read`
+- [x] 4.5 Carry a permission on the grant and gate the ACTION on it. Threaded through all
+      three decision points; a read-only grant no longer admits update or delete. An action
+      outside core's five verbs maps to no bit, so a grant cannot carry it and the caller
+      fails closed — RBAC grants visibility, extension verbs are enforced at the acting
+      endpoint (design Q5)
 - [x] 4.6 Revocation denies on the NEXT request — no cache, no job. True by construction:
       the resolver memoises for one request and stores nothing beyond it
 - [x] 4.7 A share on a FILE inside the object's folder is NOT an object grant — otherwise
