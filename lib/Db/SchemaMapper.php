@@ -404,6 +404,41 @@ class SchemaMapper extends QBMapper
             );
         }
 
+        // A bare slug can legitimately match SEVERAL rows. Since
+        // Version1Date20260723000000 widened the unique key from
+        // (organisation, slug) to (organisation, application, slug), two apps
+        // may each own a schema with the same generic slug — that widening was
+        // deliberate, and reverting it would put back the collision it fixed.
+        //
+        // What did NOT land with it is the determinism its own docblock promised
+        // ("resolution is scoped by app (import) and by register (runtime) in
+        // the accompanying code change"). The scoped resolvers exist, but every
+        // one of them falls back HERE when it misses, and here there was no
+        // ORDER BY and no row cap at all: which same-slug schema won was decided
+        // by the storage engine.
+        //
+        // Measured 2026-08-02: schemas 5012 "AgentFlow" (application '') and
+        // 5020 "Agent flow" (application 'hermiq') both carry slug `agentflow`
+        // in one organisation. 5012 holds 1 object, 5020 holds 46. Every
+        // slug-based resolution was a coin flip that happened to keep landing on
+        // the populated one.
+        //
+        // The tie-break, in order. First: a row an app OWNS beats an
+        // unattributed one. The widened key exists precisely to express
+        // ownership, so a leftover row that no app claims must never shadow an
+        // app's real schema. Second: the lowest id, matching
+        // RegisterMapper::find() and the `openregister:schemas:dedup` command's
+        // keep-the-lowest rule.
+        //
+        // Ownership has to come first, and not only for tidiness: on the live
+        // duplicate the unordered query returns the UNATTRIBUTED row first, and
+        // so would a bare `ORDER BY id ASC`.
+        $qb->addOrderBy(
+            $qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
+            'ASC'
+        );
+        $qb->addOrderBy('id', 'ASC');
+
         // Apply organisation filter.
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
         $this->applyOrganisationFilter(
@@ -413,9 +448,44 @@ class SchemaMapper extends QBMapper
             multiTenancyEnabled: $_multitenancy
         );
 
+        // Two rows, not one: enough to KNOW the identifier was ambiguous, which
+        // a capped single-row fetch can never tell you. Silence is what let the
+        // agentflow collision run for as long as it did.
+        $qb->setMaxResults(2);
+
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
+
+        $row = ($rows[0] ?? false);
+        if (count($rows) > 1) {
+            $this->logger->warning(
+                message: sprintf(
+                    '[SchemaMapper] Identifier "%s" matches more than one schema; resolving to #%s ("%s", application "%s"). '
+                    .'Fix the duplicate with `occ openregister:schemas:dedup`.',
+                    (string) $id,
+                    (string) ($rows[0]['id'] ?? '?'),
+                    (string) ($rows[0]['title'] ?? '?'),
+                    (string) ($rows[0]['application'] ?? '')
+                ),
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'identifier' => (string) $id,
+                    'candidates' => array_map(
+                        static function (array $candidate): array {
+                            return [
+                                'id'          => ($candidate['id'] ?? null),
+                                'title'       => ($candidate['title'] ?? null),
+                                'slug'        => ($candidate['slug'] ?? null),
+                                'application' => ($candidate['application'] ?? null),
+                            ];
+                        },
+                        $rows
+                    ),
+                ]
+            );
+        }//end if
 
         if ($row === false) {
             // Include diagnostic info in exception message for debugging.
