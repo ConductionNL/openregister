@@ -59,7 +59,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\File\FolderManagementHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
+use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
+use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Folder;
 use OCP\Share\IManager;
@@ -802,6 +804,196 @@ class PrivateScopeParityIntegrationTest extends TestCase
     {
         return \OC::$server->get(ObjectGrantResolver::class);
     }//end grantResolver()
+
+
+    /**
+     * The owner-checked write surface.
+     *
+     * @return ObjectSharingService
+     */
+    private function sharingService(): ObjectSharingService
+    {
+        return \OC::$server->get(ObjectSharingService::class);
+    }//end sharingService()
+
+
+    /**
+     * An OWNER can make their own object private — the whole point of task 4.0.
+     *
+     * Without this the capability is admin-only and unreachable for a real user:
+     * `stripSelfInjectionFields()` removes `authorization` from every non-admin
+     * write, and the object write path omits the column entirely. So the scope
+     * needs its own owner-checked entry point, and this proves it works end to
+     * end — the write lands AND the consequence follows.
+     */
+    public function testAnOwnerCanMakeTheirOwnObjectPrivate(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'ownerturns', null, false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['ownerturns'];
+
+        // Visible to the other user first — this is an ordinary object.
+        $this->assertContains('ownerturns', $this->visibleKeys($register, $schema));
+
+        $this->asOwner(
+            function () use ($register, $schema, $entity): void {
+                $this->sharingService()->setScope(
+                    register: $register,
+                    schema: $schema,
+                    object: $entity,
+                    scope: 'private'
+                );
+            }
+        );
+
+        $this->assertSame(
+            ['scope' => 'private'],
+            $this->readBackByKey($register, $schema)['ownerturns']->getAuthorization(),
+            'the owner-set scope did not persist'
+        );
+
+        $this->assertNotContains(
+            'ownerturns',
+            $this->visibleKeys($register, $schema),
+            'the object should now be hidden from a non-owner'
+        );
+        $this->assertNotContains('ownerturns', $this->visibleKeysViaUnion($register, $schema));
+    }//end testAnOwnerCanMakeTheirOwnObjectPrivate()
+
+
+    /**
+     * Somebody who merely CAN READ an object cannot change its scope.
+     *
+     * The read guard admits them — that is what makes this worth asserting. The
+     * second guard, owner-or-admin, is what refuses.
+     */
+    public function testANonOwnerCannotChangeTheScope(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'notyours', null, false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['notyours'];
+
+        // The session user can READ it, and still must not be able to re-scope it.
+        $this->assertContains('notyours', $this->visibleKeys($register, $schema));
+
+        $this->expectException(NotAuthorizedException::class);
+        $this->sharingService()->setScope(
+            register: $register,
+            schema: $schema,
+            object: $entity,
+            scope: 'private'
+        );
+    }//end testANonOwnerCannotChangeTheScope()
+
+
+    /**
+     * Setting the scope preserves an admin-set ACTION override in the same block.
+     *
+     * `scope` and the action lists share one JSON column, and they have different
+     * privilege: an owner may narrow the scope, only an admin may change the
+     * action lists. A blind overwrite would let an owner silently drop an
+     * admin's `{"read": ["admin"]}` seal by toggling their own scope.
+     */
+    public function testSettingTheScopePreservesAnAdminSetActionOverride(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture(
+            $register,
+            $schema,
+            'sealed',
+            ['read' => ['admin']],
+            false,
+            ownedByRealOwner: true
+        );
+        $entity = $this->readBackByKey($register, $schema)['sealed'];
+
+        $this->asOwner(
+            function () use ($register, $schema, $entity): void {
+                $this->sharingService()->setScope(
+                    register: $register,
+                    schema: $schema,
+                    object: $entity,
+                    scope: 'private'
+                );
+            }
+        );
+
+        $this->assertSame(
+            ['read' => ['admin'], 'scope' => 'private'],
+            $this->readBackByKey($register, $schema)['sealed']->getAuthorization(),
+            'the admin-set action override was lost when the owner set the scope'
+        );
+    }//end testSettingTheScopePreservesAnAdminSetActionOverride()
+
+
+    /**
+     * The owner can grant and then revoke through the service, and the verdict
+     * follows on both list paths.
+     *
+     * The earlier grant tests drive core's share manager directly. This drives
+     * the SERVICE — the thing a real request actually calls — so a broken
+     * owner-check or folder resolve in it cannot pass unnoticed.
+     */
+    public function testGrantAndRevokeThroughTheService(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'viaservice', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['viaservice'];
+
+        $this->assertNotContains('viaservice', $this->visibleKeys($register, $schema), 'private first');
+
+        $grant = $this->asOwner(
+            fn() => $this->sharingService()->grant(
+                object: $entity,
+                type: 'user',
+                shareWith: $this->testUid,
+                permissions: 1
+            )
+        );
+
+        $this->grantResolver()->forget();
+        $this->assertContains('viaservice', $this->visibleKeys($register, $schema), 'the grant should admit');
+        $this->assertContains('viaservice', $this->visibleKeysViaUnion($register, $schema));
+
+        $this->asOwner(
+            function () use ($entity, $grant): void {
+                $this->sharingService()->revoke(object: $entity, shareId: (string) $grant['id']);
+            }
+        );
+
+        $this->grantResolver()->forget();
+        $this->assertNotContains(
+            'viaservice',
+            $this->visibleKeys($register, $schema),
+            'a revoked grant must deny on the next request'
+        );
+    }//end testGrantAndRevokeThroughTheService()
+
+
+    /**
+     * Run a closure while logged in as the fixture owner, then restore.
+     *
+     * The write surface is owner-checked, and the object's folder is created in
+     * whichever session asks for it first — so both the guard and the folder need
+     * the owner's session, not the recipient's.
+     *
+     * @param callable $work The work to run as the owner.
+     *
+     * @return mixed Whatever the closure returned.
+     */
+    private function asOwner(callable $work): mixed
+    {
+        $this->userSession->setUser($this->ownerUser);
+        try {
+            return $work();
+        } finally {
+            $this->userSession->setUser($this->testUser);
+        }
+    }//end asOwner()
 
 
     /**

@@ -72,6 +72,16 @@ return [
         ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
 
+        // Per-object scope and grants. `_authorization` is not writable through an
+        // ordinary object save — non-admin writes have it stripped and the write
+        // path omits the column so a routine update cannot destroy it — so
+        // changing an object's scope needs this owner-checked entry point.
+        ['name' => 'objectSharing#scope',        'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#setScope',     'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#shares',       'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#createShare',  'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#destroyShare', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'shareId' => '[^/]+']],
+
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
         ['name' => 'schemas#patch', 'url' => '/api/schemas/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
