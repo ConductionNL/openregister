@@ -47,6 +47,7 @@ use OCP\EventDispatcher\IEventDispatcher;
 use OCP\IConfig;
 use OCP\Mail\IMailer;
 use OCA\OpenRegister\Service\FederationShareService;
+use OCA\OpenRegister\Service\ObjectService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -87,7 +88,7 @@ class FlowActionService
         private readonly IEventDispatcher $eventDispatcher,
         private readonly FederationShareService $federationShareService,
         private readonly EventCatalogService $eventCatalog,
-        private readonly \OCA\OpenRegister\Service\ObjectService $objectService
+        private readonly ObjectService $objectService
     ) {
     }//end __construct()
 
