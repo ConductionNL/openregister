@@ -9,8 +9,8 @@ Written to survive a session compaction. Everything needed to pick this up cold.
 | | |
 |---|---|
 | **Worktree** | `/home/rubenlinde/gate19-worktrees/or-sharing-spec` |
-| **Branch** | `docs/shared-credentials-and-flows-spec` (19 commits ahead of `development`) |
-| **PR** | [openregister#2241](https://github.com/ConductionNL/openregister/pull/2241) — OPEN, 26/26 CI green |
+| **Branch** | `docs/shared-credentials-and-flows-spec` (22 commits ahead of `development`) |
+| **PR** | [openregister#2241](https://github.com/ConductionNL/openregister/pull/2241) — OPEN. Tests/lint/phpcs green; the four Code Quality jobs (psalm, phpstan, phpmd, Quality Report) fail **on `development` itself** since `d6172375a`, and a PR runs against the MERGE with the base, so this branch inherits them — see below |
 | **Shared checkout** | `/home/rubenlinde/nextcloud-docker-dev/workspace/server/apps-extra/openregister` — the LIVE bind-mount the running Nextcloud serves. **Other sessions have files modified here.** |
 | **Live instance** | `http://localhost:8080` (admin/admin), containers `nextcloud` + `conduction-postgres` |
 
@@ -213,6 +213,24 @@ the ONE builder → unit tests → live-DB parity matrix → positive control pe
   are stale too.** Two "new" failures in `MagicRbacHandlerIntegrationTest` were the
   old assertions running against new code. Re-deploy tests, not just `lib/`, before
   believing a regression.
+
+**CI attribution**
+
+- ⚠️ **A PR's checks run against the MERGE with the base, not against your branch.**
+  When `development` broke the four Code Quality jobs, this PR's runs went red with
+  violations in files the branch never touched, at SHIFTED LINE NUMBERS. I wrongly
+  concluded my commit had caused it, because the previous run — which merged with an
+  older, still-green `development` — had passed. **Check the BASE branch's own run
+  before attributing a CI regression to yourself.**
+- The tell was line-number shifts in unchanged files: `FilterNode.php:134 → :148`
+  with `git diff` showing that file untouched. Same violation, different line = the
+  analysed source is not what you think it is.
+- **phpmd here gates on a BASELINE, not a count.** Reproduce it exactly:
+  `./vendor/bin/phpmd lib text phpmd.xml --baseline-file phpmd.baseline.xml` — a bare
+  `phpmd` run lists ~300 baselined violations and tells you nothing. My first attempt
+  compared violation COUNTS (177 vs 180) and drew a confident, wrong conclusion.
+- psalm has `findUnusedBaselineEntry="true"`, so a baselined issue that stops
+  occurring is itself an error.
 
 **Object folders and shares**
 
