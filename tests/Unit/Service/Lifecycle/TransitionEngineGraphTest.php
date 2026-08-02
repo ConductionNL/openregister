@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -34,6 +35,7 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -64,6 +66,10 @@ class TransitionEngineGraphTest extends TestCase
 
     private PermissionHandler&MockObject $permission;
 
+    private RegisterMapper&MockObject $registerMapper;
+
+    private IAppConfig&MockObject $appConfig;
+
     private TransitionEngine $engine;
 
     protected function setUp(): void
@@ -74,13 +80,26 @@ class TransitionEngineGraphTest extends TestCase
         $this->userSession    = $this->createMock(IUserSession::class);
         $this->permission     = $this->createMock(PermissionHandler::class);
         $this->permission->method('hasPermission')->willReturn(true);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->appConfig      = $this->createMock(IAppConfig::class);
+
+        // The slug contract ships DEFAULT OFF; these graph tests assert the
+        // unchanged id-based event scope, so pin the flag to its default.
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(
+                static function (string $app, string $key, string $default = '') {
+                    return $default;
+                }
+            );
 
         $this->engine = new TransitionEngine(
             $this->objectService,
             $this->schemaMapper,
             $this->dispatcher,
             $this->userSession,
-            $this->permission
+            $this->permission,
+            $this->registerMapper,
+            $this->appConfig
         );
     }//end setUp()
 
