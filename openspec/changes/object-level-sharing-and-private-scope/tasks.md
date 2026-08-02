@@ -1,8 +1,14 @@
 ## 1. Settle the remaining design questions
 
-- [ ] 1.1 Decide which NC share type an object share registers as, and whether one provider can serve object shares without confusing the Files UI
-- [ ] 1.2 Decide whether an email invite to a non-user creates a link share addressed by email (Files' behaviour) or requires an account first
-- [ ] 1.3 Decide whether `private` lives on the object, on the schema as a default for new objects, or both
+> All seven are stated with their consequences in design.md "Open Questions".
+
+- [ ] 1.1 Q1 — which NC share type an object share registers as (gates group 5 and most of 6)
+- [ ] 1.2 Q2 — email invite to a non-user: account-less link share, or account required
+- [ ] 1.3 Q3 — `private` on the object, on the schema as a default, or both (the schema default is what group 9 needs)
+- [ ] 1.4 Q4 — does a PUBLIC link share contradict ADR-006 Rule 2 ("to publish, grant a read scope, do not set a field")? Either amend the ADR to admit capability-style links, or restrict object links to non-public permissions
+- [ ] 1.5 Q5 — one uniform permission vocabulary, or per-schema verbs
+- [ ] 1.6 Q6 — does a credential share need `read` distinct from `use`
+- [ ] 1.7 Q7 — do the broker's `scope: personal|organisation` values collapse into `private`, or stay a second vocabulary
 
 ## 2. `private` as a principal, on all four enforcement paths
 

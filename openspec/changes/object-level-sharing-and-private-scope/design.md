@@ -177,9 +177,56 @@ change, which must not ship before it.
 
 ## Open Questions
 
-- Which NC share type an object share registers as, and whether one provider can
-  serve both objects and the existing file shares without confusing the Files UI.
-- Whether an email invite to a non-user creates a link share addressed by email
-  (Files' behaviour) or requires an account first.
-- Whether `private` belongs on the object, on the schema as a default for new
-  objects, or both.
+Each blocks work below it, so each is stated as a decision with its consequence.
+
+### Q1 — What NC share type does an object share register as?
+
+Whether one provider can serve object shares without confusing the Files UI, or
+whether objects need their own share type. Determines the provider's shape, so it
+gates task group 5 and most of 6.
+
+### Q2 — Does an email invite to a non-user create an account-less link share?
+
+Files addresses a link share to an email address; the alternative is requiring an
+account first. Affects whether an invited stranger can reach an object at all, and
+therefore the whole "invite by email" surface.
+
+### Q3 — Where does `private` live: on the object, on the schema as a default for new objects, or both?
+
+Object-only is the smallest change. A schema default is what makes "private by
+default" possible for a whole schema — which is exactly what the flow step (group
+9) needs, so this is not merely cosmetic.
+
+### Q4 — Does a public link share on an object contradict ADR-006?
+
+ADR-006 Rule 2 says: *"To publish, grant a read scope, do not set a field"* —
+publication is a schema-level RBAC change, deliberately not a per-object flag. A
+per-object PUBLIC link share is per-object publication by another route.
+
+The distinction may be that a link is a capability (a bearer token, revocable,
+expiring) rather than a visibility flag, which is a different thing from
+`published: true`. But that reading should be stated in ADR-006 rather than
+assumed, or the ADR quietly stops describing the system. Either amend ADR-006 to
+admit capability-style links, or restrict object link shares to non-public
+permissions.
+
+### Q5 — Is the permission vocabulary uniform across object types, or per schema?
+
+A flow share needs `run`, a credential share needs `use`, an ordinary object needs
+`read`/`write`. One uniform set is simpler to enforce and to render in one UI
+component; a per-schema set is more precise but means the shares tab must be told
+what verbs exist for the schema it is looking at.
+
+### Q6 — Does a credential share need `read` distinct from `use`?
+
+Carried over from `shared-credentials-and-flows`. A UI must LIST a credential for
+someone to pick it, which is arguably weaker than driving a call with it. Today
+`use` implies both.
+
+### Q7 — Do the credential broker's `scope` values collapse into `private`?
+
+The broker already has `scope: personal | organisation`, which is the same idea
+this change generalises: `personal` is `private` with no invitations, and
+`organisation` is the default scope. Keeping both means two vocabularies for one
+concept — the fourth-share-concept failure mode this change exists to prevent —
+but collapsing them touches a shipped, security-critical guard chain.
