@@ -686,6 +686,10 @@ class ImportService
                 'updated'   => [],
                 'unchanged' => [],
                 'errors'    => [],
+                // Non-fatal findings the caller still needs to see. A dropped
+                // undeclared property is the first of these: the row imports
+                // fine and is quietly missing a field.
+                'warnings'  => [],
             ];
 
             // Phase 1: resolve every row to an (uuid, body) pair. When a pack is
@@ -732,6 +736,44 @@ class ImportService
 
                     // Body = schema properties only; empty strings → null.
                     $body = array_intersect_key($raw, $propertyKeys);
+
+                    // Report what that intersection just threw away. An import
+                    // drops undeclared keys BEFORE the save, so the warning at
+                    // the DB write boundary never sees them — an imported field
+                    // the schema does not declare would vanish with nothing
+                    // anywhere saying so. `@`/`_`/`id` are envelope and metadata,
+                    // never user data, so they are not losses.
+                    $importDropped = [];
+                    foreach (array_keys($raw) as $rawKey) {
+                        $rawName = (string) $rawKey;
+                        if (array_key_exists($rawName, $propertyKeys) === true) {
+                            continue;
+                        }
+
+                        if ($rawName === '' || $rawName === 'id' || $rawName === 'uuid'
+                            || $rawName[0] === '@' || $rawName[0] === '_'
+                        ) {
+                            continue;
+                        }
+
+                        $importDropped[] = $rawName;
+                    }
+
+                    if ($importDropped !== []) {
+                        $droppedPlural = 'ies';
+                        if (count($importDropped) === 1) {
+                            $droppedPlural = 'y';
+                        }
+
+                        $summary['warnings'][] = sprintf(
+                            'Row %d: dropped %d propert%s the schema does not declare: %s.',
+                            $rowNumber,
+                            count($importDropped),
+                            $droppedPlural,
+                            implode(', ', $importDropped)
+                        );
+                    }
+
                     foreach ($body as $key => $value) {
                         if ($value === '') {
                             $body[$key] = null;
