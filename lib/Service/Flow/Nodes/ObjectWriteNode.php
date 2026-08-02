@@ -88,6 +88,7 @@ use UnexpectedValueException;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   A write step needs the object service, both configuration mappers and the user manager.
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Most of the length is reasoning and per-rule docblocks; the executable body is small and flat.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) One branch per named configuration key and one per operation; collapsing it hides the guards.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           One small, named method per guard and per operation; merging them would bury the delete guards.
  */
 class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
 {
@@ -257,6 +258,36 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
      * @var integer
      */
     private const MATCH_SCAN_LIMIT = 100;
+
+    /**
+     * Prefix that addresses a match pair to object metadata rather than a property.
+     *
+     * @var string
+     */
+    private const SELF_PREFIX = '@self.';
+
+    /**
+     * Metadata fields a match pair may name.
+     *
+     * Deliberately narrower than the full metadata column set: these are the
+     * fields that identify or scope a row and are stable enough to match on.
+     * `uuid` is the one that matters most — it is what `ObjectReadNode` puts on
+     * every item it emits so a follow-up write can name the row.
+     *
+     * @var string[]
+     */
+    private const MATCHABLE_METADATA_FIELDS = [
+        'uuid',
+        'slug',
+        'uri',
+        'version',
+        'owner',
+        'organisation',
+        'application',
+        'name',
+        'created',
+        'updated',
+    ];
 
     /**
      * Constructor.
@@ -984,6 +1015,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
             'schema'   => $schema->getId(),
         ];
 
+        $properties = ($schema->getProperties() ?? []);
+
         foreach ($pairs as $pair) {
             $property = (string) $pair['property'];
             $resolved = $this->resolveTemplate(value: $pair['value'], json: $json);
@@ -997,7 +1030,12 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
                 );
             }
 
-            $filters[$property] = $resolved['value'];
+            $this->assignMatchFilter(
+                filters: $filters,
+                property: $property,
+                value: $resolved['value'],
+                properties: $properties
+            );
         }
 
         $rows = $this->objects->findAll(
@@ -1033,6 +1071,94 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         return $entities[0];
 
     }//end findMatch()
+
+    /**
+     * Route one resolved match pair into the property bag or the `@self` bag.
+     *
+     * A schema property and an object's metadata live in different places: the
+     * property in the row's JSON document, the metadata in the magic table's
+     * underscore-prefixed columns. A filter therefore has to be addressed to the
+     * right one. Every match pair used to go into the property bag
+     * unconditionally, so `uuid` — which is metadata and never a document field —
+     * was looked up as a property that does not exist and hit the
+     * `WHERE 1 = 0` branch. Zero rows, no error: an update or delete matched
+     * nothing while the run reported success, and an upsert inserted a duplicate.
+     *
+     * That `uuid` in particular is what `ObjectReadNode` puts on every item it
+     * emits, expressly so a follow-up write or delete can name the row — so the
+     * most natural way to chain a read into a write was the one way that could
+     * not work.
+     *
+     * Routing rules, in order:
+     *   1. An explicit `@self.<field>` prefix always addresses metadata.
+     *   2. A name the schema declares as a property addresses the property. This
+     *      keeps precedence with the schema, so a schema that genuinely has a
+     *      `name` or `owner` property behaves exactly as before.
+     *   3. A name that is a known metadata field addresses metadata.
+     *   4. Anything else is refused, by name. It could only ever have produced
+     *      `1 = 0`, and a guard that silently matches nothing is not a guard.
+     *
+     * @param array               $filters    The filter bag being built (by reference).
+     * @param string              $property   The configured match property name.
+     * @param mixed               $value      The resolved match value.
+     * @param array<string,mixed> $properties The schema's declared properties.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the property is neither a schema property nor metadata.
+     *
+     * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
+     */
+    private function assignMatchFilter(array &$filters, string $property, mixed $value, array $properties): void
+    {
+        // 1. Explicit metadata addressing.
+        if (str_starts_with($property, self::SELF_PREFIX) === true) {
+            $field = substr($property, strlen(self::SELF_PREFIX));
+            if (in_array($field, self::MATCHABLE_METADATA_FIELDS, true) === false) {
+                throw new RuntimeException(
+                    $this->l10n->t(
+                        'The match names metadata field "%1$s", which does not exist. Matchable metadata fields are: %2$s.',
+                        [$field, implode(', ', self::MATCHABLE_METADATA_FIELDS)]
+                    )
+                );
+            }
+
+            $filters['@self'][$field] = $value;
+            return;
+        }
+
+        // 2. The schema wins for any name it declares.
+        if (array_key_exists($property, $properties) === true) {
+            $filters[$property] = $value;
+            return;
+        }
+
+        // 3. A metadata field the schema does not shadow.
+        if (in_array($property, self::MATCHABLE_METADATA_FIELDS, true) === true) {
+            $filters['@self'][$property] = $value;
+            return;
+        }
+
+        // 4. Neither a declared property nor metadata.
+        //
+        // Refuse only when the schema actually told us what it has. An empty
+        // property list cannot distinguish "this schema declares nothing" from
+        // "the declaration was not available here", and a guard that fires on
+        // missing information would break working flows rather than protect
+        // them. With no declaration to check against, keep the historical
+        // behaviour and let the query layer answer.
+        if ($properties !== []) {
+            throw new RuntimeException(
+                $this->l10n->t(
+                    'The match names "%1$s", which is neither a property of this schema nor a metadata field, '
+                    .'so it could never match anything. Matchable metadata fields are: %2$s.',
+                    [$property, implode(', ', self::MATCHABLE_METADATA_FIELDS)]
+                )
+            );
+        }
+
+        $filters[$property] = $value;
+    }//end assignMatchFilter()
 
     /**
      * Template the configured field mapping against one item.
