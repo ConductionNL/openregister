@@ -263,6 +263,10 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.ErrorControlOperator) The trace file is a
+     * best-effort diagnostic written from a shutdown function; a failure to
+     * write it must never surface as a warning on a real request.
+     *
      * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
      */
     private function traceRead(string $method): void
@@ -1791,6 +1795,27 @@ class SchemaMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
         $this->generateFacetConfiguration(schema: $entity);
+
+        /*
+         * **MODIFICATION STAMP**: `updated` was never written on an edit. The
+         * column defaulted to CURRENT_TIMESTAMP at insert and then stayed at
+         * the creation time for the rest of the schema's life, so every
+         * consumer that keys on it was reading a value that could not move:
+         *
+         *  - ContextsController::buildEtag() served a stale JSON-LD context
+         *    ETag after a schema edit, and honoured If-None-Match with a 304.
+         *  - JsonLdContextService::cacheKey() reused a stale context.
+         *  - ReferentialIntegrityService's cross-request relation index treated
+         *    an unchanged stamp as "no schema changed" and could therefore keep
+         *    an index that predates a newly added onDelete relation.
+         *
+         * This is the single mapper choke point every runtime edit passes
+         * through (updateFromArray, the controllers, the tool providers), and
+         * it is set after hydrate() so a client-supplied `updated` cannot
+         * suppress it — the modification time is the server's to state.
+         */
+
+        $entity->setUpdated(new DateTime());
 
         $entity = parent::update(entity: $entity);
 
