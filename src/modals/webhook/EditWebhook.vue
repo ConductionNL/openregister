@@ -11,9 +11,9 @@
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" content-class="mt-3" justified>
 				<!-- Settings Tab -->
-				<BTab active>
+				<AppTab active>
 					<template #title>
 						<Cog :size="16" />
 						<span>{{ t('openregister', 'Settings') }}</span>
@@ -23,17 +23,17 @@
 						<NcTextField
 							:label="t('openregister', 'Name') + ' *'"
 							:placeholder="t('openregister', 'Enter webhook name')"
-							:value="webhookItem?.name || ''"
+							:model-value="webhookItem?.name || ''"
 							:error="!webhookItem?.name?.trim?.()"
-							@update:value="updateName" />
+							@update:modelValue="updateName" />
 
 						<NcTextField
 							:label="t('openregister', 'URL') + ' *'"
 							:placeholder="t('openregister', 'https://example.com/webhook')"
-							:value="webhookItem?.url || ''"
+							:model-value="webhookItem?.url || ''"
 							type="url"
 							:error="!webhookItem?.url?.trim?.()"
-							@update:value="updateUrl">
+							@update:modelValue="updateUrl">
 							<template #helper-text-message>
 								<p>{{ t('openregister', 'The URL where webhook events will be sent') }}</p>
 							</template>
@@ -49,7 +49,7 @@
 								track-by="value"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select HTTP method')"
-								@input="updateMethod">
+								@update:modelValue="updateMethod">
 								<template #option="{ label, description }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -64,8 +64,8 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:checked="webhookItem?.enabled !== false"
-								@update:checked="updateEnabled">
+								:model-value="webhookItem?.enabled !== false"
+								@update:modelValue="updateEnabled">
 								{{ t('openregister', 'Enabled') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
@@ -73,10 +73,10 @@
 							</p>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- Events Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Webhook :size="16" />
 						<span>{{ t('openregister', 'Events') }}</span>
@@ -95,7 +95,7 @@
 								:filterable="true"
 								:placeholder="t('openregister', 'Select event to listen to...')"
 								@search-change="searchEvents"
-								@input="updateEvent">
+								@update:modelValue="updateEvent">
 								<template #option="{ label, description, category, type }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -125,7 +125,7 @@
 								track-by="value"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select property to send as payload')"
-								@input="updateEventProperty">
+								@update:modelValue="updateEventProperty">
 								<template #option="{ label, description }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -138,10 +138,10 @@
 							</p>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- Configuration Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Database :size="16" />
 						<span>{{ t('openregister', 'Configuration') }}</span>
@@ -150,8 +150,8 @@
 					<div class="form-editor">
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:checked="configuration.sendCloudEvent !== false"
-								@update:checked="updateSendCloudEvent">
+								:model-value="configuration.sendCloudEvent !== false"
+								@update:modelValue="updateSendCloudEvent">
 								{{ t('openregister', 'Send as CloudEvent') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
@@ -161,8 +161,8 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:checked="configuration.waitForResponse === true"
-								@update:checked="updateWaitForResponse">
+								:model-value="configuration.waitForResponse === true"
+								@update:modelValue="updateWaitForResponse">
 								{{ t('openregister', 'Wait for Response') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
@@ -172,8 +172,8 @@
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:checked="configuration.allowPrivateTargets === true"
-								@update:checked="updateAllowPrivateTargets">
+								:model-value="configuration.allowPrivateTargets === true"
+								@update:modelValue="updateAllowPrivateTargets">
 								{{ t('openregister', 'Allow private/loopback targets') }}
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
@@ -191,7 +191,7 @@
 								track-by="value"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select retry policy')"
-								@input="updateRetryPolicy">
+								@update:modelValue="updateRetryPolicy">
 								<template #option="{ label, description }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -207,11 +207,11 @@
 						<NcTextField
 							:label="t('openregister', 'Max Retries')"
 							placeholder="3"
-							:value="webhookItem?.maxRetries?.toString() || '3'"
+							:model-value="webhookItem?.maxRetries?.toString() || '3'"
 							type="number"
 							min="0"
 							max="10"
-							@update:value="updateMaxRetries">
+							@update:modelValue="updateMaxRetries">
 							<template #helper-text-message>
 								<p>{{ t('openregister', 'Maximum number of retry attempts for failed deliveries') }}</p>
 							</template>
@@ -220,20 +220,20 @@
 						<NcTextField
 							:label="t('openregister', 'Timeout (seconds)')"
 							placeholder="30"
-							:value="webhookItem?.timeout?.toString() || '30'"
+							:model-value="webhookItem?.timeout?.toString() || '30'"
 							type="number"
 							min="1"
 							max="300"
-							@update:value="updateTimeout">
+							@update:modelValue="updateTimeout">
 							<template #helper-text-message>
 								<p>{{ t('openregister', 'Request timeout in seconds') }}</p>
 							</template>
 						</NcTextField>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- Advanced Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Tune :size="16" />
 						<span>{{ t('openregister', 'Advanced') }}</span>
@@ -243,9 +243,9 @@
 						<NcTextField
 							:label="t('openregister', 'Secret')"
 							:placeholder="t('openregister', 'Optional webhook secret for signature verification')"
-							:value="webhookItem?.secret || ''"
+							:model-value="webhookItem?.secret || ''"
 							type="password"
-							@update:value="updateSecret">
+							@update:modelValue="updateSecret">
 							<template #helper-text-message>
 								<p>{{ t('openregister', 'Secret key for HMAC signature generation (optional)') }}</p>
 							</template>
@@ -254,10 +254,10 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Headers') }}</label>
 							<NcTextArea
-								:value="headersText"
+								:model-value="headersText"
 								:placeholder="headersPlaceholder"
 								rows="4"
-								@update:value="updateHeaders" />
+								@update:modelValue="updateHeaders" />
 							<p class="field-hint">
 								{{ t('openregister', 'Custom HTTP headers (one per line, format: Header-Name: value)') }}
 							</p>
@@ -266,17 +266,17 @@
 						<div class="selectField">
 							<label class="dialog-label">{{ t('openregister', 'Filters') }}</label>
 							<NcTextArea
-								:value="filtersText"
+								:model-value="filtersText"
 								:placeholder="filtersPlaceholder"
 								rows="4"
-								@update:value="updateFilters" />
+								@update:modelValue="updateFilters" />
 							<p class="field-hint">
 								{{ t('openregister', 'Filter webhook triggers by payload properties (one per line, format: key: value)') }}
 							</p>
 						</div>
 					</div>
-				</BTab>
-			</BTabs>
+				</AppTab>
+			</AppTabs>
 		</div>
 
 		<template #actions>
@@ -288,7 +288,7 @@
 			</NcButton>
 			<NcButton
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="saveWebhook">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -318,7 +318,8 @@ import {
 	NcTextArea,
 } from '@nextcloud/vue'
 
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -338,8 +339,8 @@ export default {
 		NcSelect,
 		NcTextField,
 		NcTextArea,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		Cancel,
 		ContentSave,
 		Cog,

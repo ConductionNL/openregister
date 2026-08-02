@@ -36,7 +36,6 @@ import formatBytes from '../../services/formatBytes.js'
 						menu-name="Actions">
 						<NcActionButton
 							v-if="selectedAuditTrails.length > 0"
-							type="error"
 							close-after-click
 							@click="bulkDeleteAuditTrails">
 							<template #icon>
@@ -84,9 +83,9 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr>
 							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="allSelected"
+									:model-value="allSelected"
 									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
+									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th class="actionColumn">
 								{{ t('openregister', 'Action') }}
@@ -121,8 +120,8 @@ import formatBytes from '../../services/formatBytes.js'
 							:class="`action-${auditTrail.action}`">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="selectedAuditTrails.includes(auditTrail.id)"
-									@update:checked="(checked) => toggleAuditTrailSelection(auditTrail.id, checked)" />
+									:model-value="selectedAuditTrails.includes(auditTrail.id)"
+									@update:modelValue="(checked) => toggleAuditTrailSelection(auditTrail.id, checked)" />
 							</td>
 							<td class="actionColumn">
 								<span class="actionBadge" :class="`action-${auditTrail.action}`">
@@ -223,6 +222,7 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import Check from 'vue-material-design-icons/Check.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'AuditTrailIndex',
@@ -317,9 +317,9 @@ export default {
 		}
 
 		// Listen for filter changes from sidebar
-		this.$root.$on('audit-trail-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('audit-trail-export', this.handleExport)
-		this.$root.$on('audit-trail-refresh', this.refreshAuditTrails)
+		eventBus.on('audit-trail-filters-changed', this.handleFiltersChanged)
+		eventBus.on('audit-trail-export', this.handleExport)
+		eventBus.on('audit-trail-refresh', this.refreshAuditTrails)
 
 		// Emit counts to sidebar with delay to ensure store is ready
 		this.$nextTick(() => {
@@ -332,10 +332,10 @@ export default {
 	 * @spec exclude UI plumbing — event-listener teardown
 	 * @return {void}
 	 */
-	beforeDestroy() {
-		this.$root.$off('audit-trail-filters-changed')
-		this.$root.$off('audit-trail-export')
-		this.$root.$off('audit-trail-refresh')
+	beforeUnmount() {
+		eventBus.off('audit-trail-filters-changed')
+		eventBus.off('audit-trail-export')
+		eventBus.off('audit-trail-refresh')
 	},
 	methods: {
 		/**
@@ -412,14 +412,14 @@ export default {
 				await navigator.clipboard.writeText(data)
 
 				// Set successful copy state
-				this.$set(this.copyStates, auditTrail.id, true)
+				this.copyStates[auditTrail.id] = true
 
 				// Show success notification with enhanced styling
 				OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
 
 				// Reset copy state after 2 seconds
 				setTimeout(() => {
-					this.$set(this.copyStates, auditTrail.id, false)
+					this.copyStates[auditTrail.id] = false
 				}, 2000)
 
 			} catch (error) {
@@ -434,13 +434,13 @@ export default {
 					document.body.removeChild(textArea)
 
 					// Set successful copy state for fallback method too
-					this.$set(this.copyStates, auditTrail.id, true)
+					this.copyStates[auditTrail.id] = true
 
 					OC.Notification.showSuccess(this.t('openregister', 'Audit trail data copied to clipboard'))
 
 					// Reset copy state after 2 seconds
 					setTimeout(() => {
-						this.$set(this.copyStates, auditTrail.id, false)
+						this.copyStates[auditTrail.id] = false
 					}, 2000)
 
 				} catch (fallbackError) {
@@ -538,10 +538,10 @@ export default {
 		updateCounts() {
 			try {
 				const count = Array.isArray(auditTrailStore.auditTrailList) ? auditTrailStore.auditTrailList.length : 0
-				this.$root.$emit('audit-trail-filtered-count', count)
+				eventBus.emit('audit-trail-filtered-count', count)
 			} catch (error) {
 				console.error('Error updating counts:', error)
-				this.$root.$emit('audit-trail-filtered-count', 0)
+				eventBus.emit('audit-trail-filtered-count', 0)
 			}
 		},
 		/**

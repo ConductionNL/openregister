@@ -2,7 +2,7 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'API Tokens') }}</h2>
 		<div class="tokens-section">
-			<NcButton type="primary" @click="showCreateModal = true">
+			<NcButton variant="primary" @click="showCreateModal = true">
 				{{ t('openregister', 'Create new token') }}
 			</NcButton>
 
@@ -18,7 +18,7 @@
 							{{ t('openregister', 'Expires') }}: {{ formatDate(token.expires) }}
 						</span>
 					</div>
-					<NcButton type="error" @click="revokeToken(token.id)">
+					<NcButton variant="error" @click="revokeToken(token.id)">
 						{{ t('openregister', 'Revoke') }}
 					</NcButton>
 				</li>
@@ -53,7 +53,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcButton } from '@nextcloud/vue'
 import CreateTokenModal from '../../../modals/account/CreateTokenModal.vue'
 import CreatedTokenModal from '../../../modals/account/CreatedTokenModal.vue'
 

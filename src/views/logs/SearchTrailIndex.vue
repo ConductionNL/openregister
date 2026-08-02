@@ -36,7 +36,6 @@ import formatBytes from '../../services/formatBytes.js'
 						menu-name="Actions">
 						<NcActionButton
 							v-if="selectedSearchTrails.length > 0"
-							type="error"
 							close-after-click
 							@click="bulkDeleteSearchTrails">
 							<template #icon>
@@ -84,9 +83,9 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr>
 							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="allSelected"
+									:model-value="allSelected"
 									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
+									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th class="searchTermColumn">
 								{{ t('openregister', 'Search Term') }}
@@ -121,8 +120,8 @@ import formatBytes from '../../services/formatBytes.js'
 							:class="{ 'success': searchTrail.totalResults > 0, 'failed': searchTrail.totalResults === 0 }">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="selectedSearchTrails.includes(searchTrail.id)"
-									@update:checked="(checked) => toggleSearchTrailSelection(searchTrail.id, checked)" />
+									:model-value="selectedSearchTrails.includes(searchTrail.id)"
+									@update:modelValue="(checked) => toggleSearchTrailSelection(searchTrail.id, checked)" />
 							</td>
 							<td class="searchTermColumn">
 								<span class="searchTermText">{{ searchTrail.searchTerm || '-' }}</span>
@@ -218,6 +217,7 @@ import Eye from 'vue-material-design-icons/Eye.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'SearchTrailIndex',
@@ -304,8 +304,8 @@ export default {
 		}
 
 		// Listen for filter changes from sidebar
-		this.$root.$on('search-trail-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('search-trail-refresh', this.refreshSearchTrails)
+		eventBus.on('search-trail-filters-changed', this.handleFiltersChanged)
+		eventBus.on('search-trail-refresh', this.refreshSearchTrails)
 
 		// Emit counts to sidebar with delay to ensure store is ready
 		this.$nextTick(() => {
@@ -315,9 +315,9 @@ export default {
 	/**
 	 * @spec exclude list-view lifecycle; tears down sidebar listeners on destroy
 	 */
-	beforeDestroy() {
-		this.$root.$off('search-trail-filters-changed')
-		this.$root.$off('search-trail-refresh')
+	beforeUnmount() {
+		eventBus.off('search-trail-filters-changed')
+		eventBus.off('search-trail-refresh')
 	},
 	methods: {
 		/**
@@ -481,10 +481,10 @@ export default {
 		updateCounts() {
 			try {
 				const count = Array.isArray(searchTrailStore.searchTrailList) ? searchTrailStore.searchTrailList.length : 0
-				this.$root.$emit('search-trail-filtered-count', count)
+				eventBus.emit('search-trail-filtered-count', count)
 			} catch (error) {
 				console.error('Error updating counts:', error)
-				this.$root.$emit('search-trail-filtered-count', 0)
+				eventBus.emit('search-trail-filtered-count', 0)
 			}
 		},
 		/**

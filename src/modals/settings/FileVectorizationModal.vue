@@ -135,7 +135,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="processing || (stats.chunksToProcess === 0)"
 				@click="startVectorization">
 				<template #icon>
@@ -149,11 +149,7 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcProgressBar from '@nextcloud/vue/dist/Components/NcProgressBar.js'
+import { NcDialog, NcButton, NcCheckboxRadioSwitch, NcLoadingIcon, NcProgressBar } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import axios from '@nextcloud/axios'

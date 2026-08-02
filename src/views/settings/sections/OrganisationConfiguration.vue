@@ -28,7 +28,7 @@
 					:clearable="false"
 					label-outside
 					:input-label="t('openregister', 'Default Organisation')"
-					@input="handleDefaultOrganisationChange">
+					@update:modelValue="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
 							<OfficeBuilding :size="20" />
@@ -56,9 +56,9 @@
 			<div class="setting-control">
 				<NcCheckboxRadioSwitch
 					id="auto-create-default"
-					:checked="autoCreateDefault"
+					:model-value="autoCreateDefault"
 					type="switch"
-					@update:checked="handleAutoCreateDefaultChange">
+					@update:modelValue="handleAutoCreateDefaultChange">
 					{{ t('openregister', 'Enable auto-creation') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -106,7 +106,7 @@
 		<!-- Actions -->
 		<div class="actions-section">
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="saving || !hasChanges"
 				@click="saveSettings">
 				<template #icon>
@@ -118,7 +118,7 @@
 
 			<NcButton
 				v-if="hasChanges"
-				type="secondary"
+				variant="secondary"
 				:disabled="saving"
 				@click="resetSettings">
 				<template #icon>
@@ -128,7 +128,7 @@
 			</NcButton>
 
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="saving"
 				@click="refreshData">
 				<template #icon>

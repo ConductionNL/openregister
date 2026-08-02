@@ -106,7 +106,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				</template>
 				Delete Configuration
 			</NcActionButton>
-			<NcButton type="primary" @click="closeModal">
+			<NcButton variant="primary" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>

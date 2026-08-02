@@ -34,7 +34,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					v-model="customPattern"
 					:placeholder="t('openregister', 'Copy of {name}')"
 					:disabled="loading"
-					@input="updateCustomPreview" />
+					@update:modelValue="updateCustomPreview" />
 				<p class="help-text">
 					Use {name} for the original name, {id} for the original ID
 				</p>
@@ -58,7 +58,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="copyObjects()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

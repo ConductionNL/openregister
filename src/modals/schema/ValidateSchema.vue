@@ -155,7 +155,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			</NcButton>
 			<NcButton v-if="!validationResults && !loading && !error"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="startValidation()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

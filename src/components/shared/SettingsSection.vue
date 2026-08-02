@@ -33,7 +33,7 @@
 			<p class="error-message">
 				❌ {{ errorMessage }}
 			</p>
-			<NcButton v-if="onRetry" type="primary" @click="onRetry">
+			<NcButton v-if="onRetry" variant="primary" @click="onRetry">
 				<template #icon>
 					<Refresh :size="20" />
 				</template>

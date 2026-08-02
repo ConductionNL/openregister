@@ -16,13 +16,20 @@
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { execSync } from 'node:child_process'
+import { resolveContainer } from '../base-url'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
-const CONTAINER = process.env.NC_CONTAINER || 'nextcloud'
+// ⚠️ No `|| 'nextcloud'` default — see resolveContainer(). The old default
+// executed background jobs inside the SHARED dev container, which bind-mounts
+// real host checkouts.
+const CONTAINER = resolveContainer()
 const runId = `e2e-sched-${Date.now()}`
 
 function occ(args: string): string {
+	if (CONTAINER === null) {
+		throw new Error('NC_CONTAINER is not set; refusing to guess a container.')
+	}
 	return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, { encoding: 'utf8' })
 }
 

@@ -10,12 +10,12 @@
 			</p>
 
 			<NcTextField
-				:value.sync="form.field"
+				v-model="form.field"
 				:label="t('openregister', 'Field to redact *')"
 				required />
 
 			<NcTextField
-				:value.sync="form.after"
+				v-model="form.after"
 				:label="t('openregister', 'Replacement value (leave empty to blank the field)')" />
 
 			<NcSelect
@@ -32,10 +32,10 @@
 			</NcNoteCard>
 
 			<div class="redactionActions">
-				<NcButton type="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" native-type="submit" :disabled="saving || !form.field || !form.ground">
+				<NcButton variant="primary" type="submit" :disabled="saving || !form.field || !form.ground">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>

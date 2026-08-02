@@ -28,7 +28,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See applications as cards'"
+							title="See applications as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -38,7 +38,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See applications as a table'"
+							title="See applications as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -89,7 +89,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<div class="cardGrid">
 						<div v-for="application in paginatedApplications" :key="application.id" class="card">
 							<div class="cardHeader">
-								<h2 v-tooltip.bottom="application.description">
+								<h2 :title="application.description">
 									<ApplicationOutline :size="20" />
 									{{ application.name }}
 								</h2>
@@ -151,9 +151,9 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Name') }}</th>
 									<th>{{ t('openregister', 'Version') }}</th>
@@ -174,8 +174,8 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 									:class="{ viewTableRowSelected: selectedApplications.includes(application.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedApplications.includes(application.id)"
-											@update:checked="(checked) => toggleApplicationSelection(application.id, checked)" />
+											:model-value="selectedApplications.includes(application.id)"
+											@update:modelValue="(checked) => toggleApplicationSelection(application.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
