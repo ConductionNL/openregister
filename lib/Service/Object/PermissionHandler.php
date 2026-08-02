@@ -70,6 +70,10 @@ use Psr\Container\ContainerInterface;
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
+ * @SuppressWarnings(PHPMD.TooManyMethods)           Three over, from the private-scope work:
+ *   objectScope() / objectGrants() resolve the two shared resolvers, and privateScopeVerdict()
+ *   is the scope gate. Splitting them out would put part of one access decision in another
+ *   class, which is exactly the drift this change exists to prevent.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Permission evaluation requires per-action and per-role branching
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    RBAC methods are cohesive units; splitting scatters the security policy without reducing it
  * @SuppressWarnings(PHPMD.NPathComplexity)          RBAC rules handle user/group/owner/public/conditional combos - cartesian product drives NPath

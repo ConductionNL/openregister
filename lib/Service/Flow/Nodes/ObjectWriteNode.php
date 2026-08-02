@@ -523,9 +523,6 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
         $replace    = (($config['replace'] ?? false) === true);
         $cap        = $this->writeCap(config: $config);
 
-        $writes = 0;
-        $out    = [];
-
         // THE WRITES RUN AS THE OWNER, rather than merely naming one.
         //
         // `$owner` was resolved, passed down every path as `currentUser:` and

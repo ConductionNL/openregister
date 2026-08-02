@@ -57,6 +57,11 @@ use Throwable;
 
 /**
  * HTTP controller for owner-scoped credentials and the constrained broker call.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) Two over, from the owner-only share
+ * API (shares / updateShares / sharedWithMe). Every public method here is one HTTP
+ * endpoint; the count is the size of the credential surface, and splitting it across
+ * controllers to satisfy a metric would scatter one resource's routes.
  */
 class CredentialController extends Controller
 {

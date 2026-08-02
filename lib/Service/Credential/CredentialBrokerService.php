@@ -83,6 +83,9 @@ use Throwable;
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength) 44 lines over, from Guard 1c. The guard
+ * chain is one security policy read top to bottom; moving a guard elsewhere is how a
+ * caller ends up skipping it.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The fail-closed guard chain
  *   (scope dispatch + owner/membership + allowedApps + provider rules + host-lock)
  *   is deliberately decomposed into small single-purpose guard methods so each
