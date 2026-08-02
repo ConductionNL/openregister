@@ -58,7 +58,7 @@ class MapperNamedArgumentContractTest extends TestCase
         }
 
         return $names;
-    }
+    }//end parameterNames()
 
     /**
      * TenantDeprovisionJob, TenantPurgeJob and TenantUsageSyncJob all call
@@ -74,9 +74,9 @@ class MapperNamedArgumentContractTest extends TestCase
             'filters',
             $this->parameterNames(OrganisationMapper::class, 'findAll'),
             'OrganisationMapper::findAll() must accept a $filters named argument; '
-            . 'three tenant-lifecycle background jobs already pass one.'
+            .'three tenant-lifecycle background jobs already pass one.'
         );
-    }
+    }//end testOrganisationMapperFindAllAcceptsFilters()
 
     /**
      * The three tenant jobs pass `filters:` as a named argument, so the
@@ -97,13 +97,13 @@ class MapperNamedArgumentContractTest extends TestCase
                 $parameter->isDefaultValueAvailable(),
                 sprintf(
                     'OrganisationMapper::findAll($%s) has no default, so '
-                    . 'findAll(filters: ...) — which three background jobs make — '
-                    . 'would raise ArgumentCountError.',
+                    .'findAll(filters: ...) — which three background jobs make — '
+                    .'would raise ArgumentCountError.',
                     $parameter->getName()
                 )
             );
         }
-    }
+    }//end testOrganisationMapperFindAllIsCallableWithOnlyFilters()
 
     /**
      * `SelectionListMapper::updateEntry()` forwarded to the inherited
@@ -132,7 +132,7 @@ class MapperNamedArgumentContractTest extends TestCase
             ->willReturn($entity);
 
         $this->assertSame($entity, $mapper->updateEntry($entity));
-    }
+    }//end testSelectionListMapperUpdateEntryForwardsWithAValidArgumentName()
 
     /**
      * Identical defect, identical shape, in DestructionListMapper.
@@ -154,7 +154,7 @@ class MapperNamedArgumentContractTest extends TestCase
             ->willReturn($entity);
 
         $this->assertSame($entity, $mapper->updateEntry($entity));
-    }
+    }//end testDestructionListMapperUpdateEntryForwardsWithAValidArgumentName()
 
     /**
      * The mechanical guard for the whole defect class.
@@ -191,11 +191,11 @@ class MapperNamedArgumentContractTest extends TestCase
         ];
 
         foreach ($cleaned as $shortName) {
-            $file = dirname(__DIR__, 3) . '/lib/Db/' . $shortName . '.php';
+            $file = dirname(__DIR__, 3).'/lib/Db/'.$shortName.'.php';
             $this->assertFileExists($file);
 
             $source = (string) file_get_contents($file);
-            $class  = 'OCA\\OpenRegister\\Db\\' . $shortName;
+            $class  = 'OCA\\OpenRegister\\Db\\'.$shortName;
 
             preg_match_all('/^ \* @method\s+\S+\s+(\w+)\(/m', $source, $annotated);
 
@@ -216,14 +216,14 @@ class MapperNamedArgumentContractTest extends TestCase
                     $native,
                     sprintf(
                         '%s carries "@method ... %s(...)" while also declaring %s() '
-                        . 'natively. The docblock silently overrides the real signature '
-                        . 'for phpstan and psalm — see openregister#2283.',
+                        .'natively. The docblock silently overrides the real signature '
+                        .'for phpstan and psalm — see openregister#2283.',
                         $shortName,
                         $name,
                         $name
                     )
                 );
             }
-        }
-    }
-}
+        }//end foreach
+    }//end testCleanedMappersDeclareNoShadowingMethodAnnotation()
+}//end class
