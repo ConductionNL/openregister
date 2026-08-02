@@ -253,11 +253,6 @@ class FlowRunController extends Controller
      */
     private function flowName(string $flowId): string
     {
-        $refusal = $this->refuseUnlessRunnable(flowId: $flowId);
-        if ($refusal !== null) {
-            return $refusal;
-        }
-
         $flow = $this->resolvers->resolveFlow(flowId: $flowId);
         $name = trim((string) ($flow['name'] ?? ''));
 
@@ -458,6 +453,11 @@ class FlowRunController extends Controller
         $flowId = trim((string) $this->request->getParam('flowId', ''));
         if ($flowId === '') {
             return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $refusal = $this->refuseUnlessRunnable(flowId: $flowId);
+        if ($refusal !== null) {
+            return $refusal;
         }
 
         $flow = $this->resolvers->resolveFlow(flowId: $flowId);
