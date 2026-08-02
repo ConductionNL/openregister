@@ -599,8 +599,8 @@ class ObjectWriteNode implements IFlowNode, IFlowNodeConfigKeys
      *
      * @throws RuntimeException When a match is ambiguous or absent, or the cap is exceeded.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  One branch per operation.
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Same.
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)   One branch per operation.
+     * @SuppressWarnings(PHPMD.NPathComplexity)        Same.
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) The parameters execute() already resolved.
      *
      * @spec openspec/changes/or-flow-object-write-node/specs/flow-object-write-node/spec.md
