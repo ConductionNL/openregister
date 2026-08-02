@@ -367,7 +367,7 @@ class SipPackageBuilder
     {
         $zipPath = $this->tempManager->getTemporaryFile(".bag{$suffix}.zip");
         if ($zipPath === false) {
-            // getTemporaryFile() returns false when it cannot create the file.
+            // The temp manager returns false when it cannot create the file.
             // This file declares strict_types, so passing that false straight to
             // ZipArchive::open() raises a TypeError about an argument rather than
             // saying what actually went wrong — and the method promises a string.

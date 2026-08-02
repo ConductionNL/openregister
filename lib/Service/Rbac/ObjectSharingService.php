@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Rbac;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -63,6 +64,18 @@ use Throwable;
 
 /**
  * Owner-checked writes for an object's scope and its per-object grants.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) The split is deliberate and each
+ * dependency is load-bearing: MagicMapper + IDBConnection perform the ONE targeted
+ * column write (the object write path omits `_authorization` on purpose, so a save
+ * cannot be used here); FolderManagementHandler + IManager + IShare + Folder are
+ * core's share surface, which owns the grant record; ObjectScopeResolver is the
+ * shared vocabulary AND the shared owner-or-admin rule, so this cannot drift from
+ * the read side; ObjectGrantResolver is only asked to drop its per-request memo
+ * after a write; IUserSession + IGroupManager resolve the caller for the guard;
+ * Register/Schema/ObjectEntity are the addressed row. Mirrors the reasoned
+ * suppression on {@see \OCA\OpenRegister\Service\ShareLinkService}, which spans the
+ * same core-share types for the same reason.
  */
 class ObjectSharingService
 {
@@ -118,7 +131,7 @@ class ObjectSharingService
      * @param string       $scope    The requested scope.
      *
      * @throws NotAuthorizedException When the caller is neither owner nor admin.
-     * @throws \InvalidArgumentException When the scope is not in the vocabulary.
+     * @throws InvalidArgumentException When the scope is not in the vocabulary.
      *
      * @return array<string, mixed> The stored authorization block after the write.
      */
@@ -128,17 +141,18 @@ class ObjectSharingService
 
         $valid = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
         if (in_array($scope, $valid, true) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Scope must be one of: '.implode(', ', $valid)
             );
         }
 
         // Read-modify-write ONE key. An admin-set action override in the same
         // block must survive an owner changing the scope.
+        // `getAuthorization()` declares `array|null`, so this is an array after
+        // the coalesce. A defensive is_array() here is dead code — if that
+        // accessor can really return something else, that is the entity's
+        // contract to fix, not something to paper over at every call site.
         $block = ($object->getAuthorization() ?? []);
-        if (is_array($block) === false) {
-            $block = [];
-        }
 
         $block[ObjectScopeResolver::SCOPE_KEY] = $scope;
 
@@ -193,10 +207,10 @@ class ObjectSharingService
                 }
 
                 foreach ($shares as $share) {
-                    // getFullId() is the provider-prefixed form (`ocinternal:7`)
-                    // that getShareById() accepts; getId() is the bare number and
-                    // does NOT round-trip. Returning the wrong one made revoke
-                    // fail with "No such grant".
+                    // The provider-prefixed form (`ocinternal:7`) is what
+                    // getShareById() accepts; getId() is the bare number and does
+                    // NOT round-trip. Returning the wrong one made revoke fail
+                    // with "No such grant".
                     $grants[$share->getFullId()] = [
                         'id'          => $share->getFullId(),
                         'type'        => $label,
@@ -204,9 +218,9 @@ class ObjectSharingService
                         'permissions' => $share->getPermissions(),
                         'expiration'  => $share->getExpirationDate()?->format('c'),
                     ];
-                }
-            }
-        }
+                }//end foreach
+            }//end foreach
+        }//end foreach
 
         return array_values($grants);
     }//end listGrants()
@@ -223,7 +237,7 @@ class ObjectSharingService
      * @param integer      $permissions Core permission bitmask.
      *
      * @throws NotAuthorizedException When the caller is neither owner nor admin.
-     * @throws \InvalidArgumentException On an unsupported type or unresolvable folder.
+     * @throws InvalidArgumentException On an unsupported type or unresolvable folder.
      *
      * @return array<string, mixed> The created grant.
      */
@@ -232,18 +246,18 @@ class ObjectSharingService
         $this->requireOwnerOrAdmin(object: $object);
 
         if (isset(self::GRANTABLE_TYPES[$type]) === false) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Grant type must be one of: '.implode(', ', array_keys(self::GRANTABLE_TYPES))
             );
         }
 
         if (trim($shareWith) === '') {
-            throw new \InvalidArgumentException('A grant needs a principal to grant to');
+            throw new InvalidArgumentException('A grant needs a principal to grant to');
         }
 
         $folder = $this->resolveFolder(object: $object);
         if ($folder === null) {
-            throw new \InvalidArgumentException('Could not resolve the object folder to share');
+            throw new InvalidArgumentException('Could not resolve the object folder to share');
         }
 
         $uid = $this->callerUid();
@@ -282,7 +296,7 @@ class ObjectSharingService
      * @param string       $shareId The share to revoke.
      *
      * @throws NotAuthorizedException When the caller is neither owner nor admin.
-     * @throws \InvalidArgumentException When the share is not on this object.
+     * @throws InvalidArgumentException When the share is not on this object.
      *
      * @return void
      */
@@ -292,17 +306,17 @@ class ObjectSharingService
 
         $folder = $this->resolveFolder(object: $object);
         if ($folder === null) {
-            throw new \InvalidArgumentException('Could not resolve the object folder');
+            throw new InvalidArgumentException('Could not resolve the object folder');
         }
 
         try {
             $share = $this->shareManager->getShareById($shareId);
         } catch (Throwable $e) {
-            throw new \InvalidArgumentException('No such grant');
+            throw new InvalidArgumentException('No such grant');
         }
 
         if ($share->getNodeId() !== $folder->getId()) {
-            throw new \InvalidArgumentException('That grant does not belong to this object');
+            throw new InvalidArgumentException('That grant does not belong to this object');
         }
 
         $this->shareManager->deleteShare($share);
