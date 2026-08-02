@@ -125,6 +125,13 @@ class PrivateScopeParityIntegrationTest extends TestCase
     private string $ownerUid = '';
 
     /**
+     * A real group the session user is in, used only by the tenant-edge test.
+     *
+     * @var string
+     */
+    private string $tenantGroup = '';
+
+    /**
      * @var int[]
      */
     private array $createdSchemaIds = [];
@@ -178,6 +185,17 @@ class PrivateScopeParityIntegrationTest extends TestCase
         $this->ownerUid  = 'scope-owner-'.$suffix;
         $this->ownerUser = $this->userManager->createUser($this->ownerUid, 'Scope-Test-Pass-123');
 
+        // A REAL group the session user belongs to. A schema whose read rule
+        // names it makes hasConditionalRulesBypassingMultitenancy() true, which
+        // is the only situation in which the organisation filter would otherwise
+        // be SKIPPED — and therefore the only situation where the grant-forcing
+        // (design D3c) is what holds the tenant edge.
+        $this->tenantGroup = 'scope-group-'.$suffix;
+        $group             = $this->groupManager->createGroup($this->tenantGroup);
+        if ($group !== null && $this->testUser !== null) {
+            $group->addUser($this->testUser);
+        }
+
         $this->userSession->setUser($this->testUser);
 
         if ($this->rbacHandler->isAdmin() === true) {
@@ -196,6 +214,11 @@ class PrivateScopeParityIntegrationTest extends TestCase
 
         if ($this->ownerUser !== null) {
             $this->ownerUser->delete();
+        }
+
+        $group = $this->groupManager->get($this->tenantGroup);
+        if ($group !== null) {
+            $group->delete();
         }
 
         foreach ($this->createdTables as $tableName) {
@@ -972,6 +995,110 @@ class PrivateScopeParityIntegrationTest extends TestCase
             'a revoked grant must deny on the next request'
         );
     }//end testGrantAndRevokeThroughTheService()
+
+
+    /**
+     * A GRANT MUST NOT CROSS THE TENANT EDGE (task 4.3).
+     *
+     * The grant branch is OR-ed into the RBAC filter, so on its own it would
+     * admit a row from any organisation. The tenant edge is held by forcing the
+     * EXISTING `applyOrganizationFilter()` on whenever the caller holds a grant
+     * (design D3c) — deliberately reusing core's one filter rather than putting
+     * an `_organisation` term in the grant branch, because a second definition of
+     * the tenant edge is what drifts.
+     *
+     * NOTE the query runs with multitenancy ON. Every other test in this file
+     * passes `_multitenancy => false` to isolate the RBAC predicate, which means
+     * none of them exercise this at all — the reason this test has to set its own
+     * fixture up rather than reuse theirs.
+     */
+    public function testAGrantDoesNotCrossTheTenantEdge(): void
+    {
+        [$register, $schema] = $this->createFixtureTable(readRule: $this->tenantGroup);
+
+        $activeOrg = $this->activeOrganisationUuid();
+        if ($activeOrg === null) {
+            $this->markTestSkipped('the session user has no active organisation, so the org filter denies everything');
+        }
+
+        // Two rows, both private and both granted to the caller. They differ ONLY
+        // in organisation, so the organisation is the sole discriminator.
+        $this->insertFixture($register, $schema, 'sameorg', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $this->insertFixture($register, $schema, 'otherorg', ['scope' => 'private'], false, ownedByRealOwner: true);
+
+        $this->setOrganisation($register, $schema, 'sameorg', $activeOrg);
+        $this->setOrganisation($register, $schema, 'otherorg', '00000000-0000-4000-8000-00000000dead');
+
+        $stored = $this->readBackByKey($register, $schema);
+        $this->grantTo($stored['sameorg'], $this->testUid);
+        $this->grantTo($stored['otherorg'], $this->testUid);
+
+        // Deliberately NOT `_multitenancy_explicit`. That flag turns the
+        // organisation filter on by itself, which made the first version of this
+        // test pass with the grant-forcing DISABLED — it proved the org filter
+        // works and said nothing about the thing under test. Left off, the filter
+        // can only be enabled by the grant-forcing (design D3c).
+        $visible = $this->keysOf(
+            $this->mapper->searchObjectsInRegisterSchemaTable(
+                ['_multitenancy' => true],
+                $register,
+                $schema
+            )
+        );
+
+        // The positive control: without this the assertion below could pass
+        // simply because the org filter denied EVERYTHING.
+        $this->assertContains(
+            'sameorg',
+            $visible,
+            'a grant inside the caller\'s own organisation must still admit — otherwise this test proves nothing'
+        );
+
+        $this->assertNotContains(
+            'otherorg',
+            $visible,
+            'a grant must NOT carry a row across the organisation boundary'
+        );
+    }//end testAGrantDoesNotCrossTheTenantEdge()
+
+
+    /**
+     * The session user's active organisation UUID, or null when they have none.
+     *
+     * @return string|null The UUID.
+     */
+    private function activeOrganisationUuid(): ?string
+    {
+        try {
+            $service = \OC::$server->get(\OCA\OpenRegister\Service\OrganisationService::class);
+            return $service->getActiveOrganisation()?->getUuid();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end activeOrganisationUuid()
+
+
+    /**
+     * Stamp one fixture's organisation directly.
+     *
+     * @param Register $register     The register.
+     * @param Schema   $schema       The schema.
+     * @param string   $key          The fixture key.
+     * @param string   $organisation The organisation UUID to stamp.
+     *
+     * @return void
+     */
+    private function setOrganisation(Register $register, Schema $schema, string $key, string $organisation): void
+    {
+        $table = $this->mapper->getTableNameForRegisterSchema($register, $schema);
+        $uuid  = $this->readBackByKey($register, $schema)[$key]->getUuid();
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->update($table)
+            ->set('_organisation', $qb->createNamedParameter($organisation))
+            ->where($qb->expr()->eq('_uuid', $qb->createNamedParameter($uuid)));
+        $qb->executeStatement();
+    }//end setOrganisation()
 
 
     /**
