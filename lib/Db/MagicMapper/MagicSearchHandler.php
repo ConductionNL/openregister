@@ -46,6 +46,7 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Exception\EncryptedFieldFilterException;
+use OCA\OpenRegister\Exception\UnknownMetadataFieldException;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\DB\QueryBuilder\IQueryBuilder;
@@ -70,6 +71,60 @@ use DateTime;
  */
 class MagicSearchHandler
 {
+
+    /**
+     * Comparison operators accepted inside a filter's value bag.
+     *
+     * Declared once and shared by the schema-property path and the `@self`
+     * metadata path so the two dialects cannot drift apart again. Bare keys,
+     * never `$`-prefixed — `$`-style belongs to OperatorEvaluator's policy
+     * language, which is a different subsystem.
+     *
+     * @var string[]
+     */
+    private const COMPARISON_OPERATORS = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
+
+    /**
+     * Metadata columns every magic table carries.
+     *
+     * Mirrors MagicMapper::getMetadataColumns(); kept as a literal here so a
+     * `@self` filter can be rejected by name before it ever reaches SQL, rather
+     * than being interpolated into a query that fails as an opaque HTTP 500.
+     *
+     * @var string[]
+     */
+    private const METADATA_COLUMNS = [
+        '_id',
+        '_uuid',
+        '_slug',
+        '_uri',
+        '_version',
+        '_register',
+        '_schema',
+        '_schema_version',
+        '_owner',
+        '_organisation',
+        '_application',
+        '_name',
+        '_description',
+        '_summary',
+        '_image',
+        '_folder',
+        '_size',
+        '_created',
+        '_updated',
+        '_expires',
+        '_deleted',
+        '_locked',
+        '_files',
+        '_relations',
+        '_geo',
+        '_groups',
+        '_retention',
+        '_tmlo',
+        '_validation',
+        '_authorization',
+    ];
 
     /**
      * Tracks filter properties that don't exist in the schema during search.
@@ -495,6 +550,10 @@ class MagicSearchHandler
      * @param array|null $existingColumns Optional list of existing column names.
      *
      * @return string[] Array of SQL WHERE conditions (without leading AND/WHERE).
+     *
+     * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
      */
     public function buildWhereConditionsSql(array $query, Schema $schema, ?array $existingColumns=null): array
     {
@@ -525,6 +584,19 @@ class MagicSearchHandler
                 $conditions[] = $rbacCondition;
             }
         }
+
+        // 3. `@self` metadata filters.
+        // This step was missing entirely: the comment numbering jumped 2 → 4 and
+        // buildObjectFilterConditionsSql() skips every `@`-prefixed key, so a
+        // metadata filter was silently DROPPED on the UNION path. A dropped
+        // filter returns too MANY rows, which is the dangerous direction — the
+        // single-table path returned too few for the same query.
+        $metadataConditions = $this->buildMetadataFilterConditionsSql(
+            query: $query,
+            connection: $connection,
+            isPostgres: $isPostgres
+        );
+        $conditions         = array_merge($conditions, $metadataConditions);
 
         // 4. Full-text search filter with optional fuzzy matching.
         if ($search !== null && trim($search) !== '') {
@@ -734,7 +806,7 @@ class MagicSearchHandler
             // Handle array filter values: comparison operators
             // (gte/lte/gt/lt/in/notIn/ne) or a bare IN clause.
             if (is_array($value) === true) {
-                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
+                $comparisonOperators = self::COMPARISON_OPERATORS;
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === false) {
                     if (isset($value['gte']) === true) {
                         $colRef       = $this->buildFilterColumnRef(
@@ -889,6 +961,142 @@ class MagicSearchHandler
 
         return '('.implode(' OR ', $orParts).')';
     }//end buildArrayPropertyConditionSql()
+
+    /**
+     * Build SQL conditions for `@self` metadata filters on the UNION path
+     *
+     * The raw-SQL multi-table path had no metadata step at all, so a `@self`
+     * filter was silently discarded and the query returned rows the caller had
+     * explicitly excluded. This mirrors applyMetadataFilters() one-for-one —
+     * same operator vocabulary, same null sentinels, same unknown-field
+     * rejection — so the two paths cannot answer the same question differently.
+     *
+     * Columns are unqualified here (each UNION arm selects from one table) and
+     * quoted through quoteIdentifier(), matching the object-filter builder.
+     *
+     * @param array  $query      The full query array
+     * @param object $connection Database connection for value quoting
+     * @param bool   $isPostgres Whether the active platform is PostgreSQL (selects "" vs ``)
+     *
+     * @return string[] Array of SQL conditions
+     *
+     * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
+     */
+    private function buildMetadataFilterConditionsSql(
+        array $query,
+        object $connection,
+        bool $isPostgres
+    ): array {
+        $metadataFilters = ($query['@self'] ?? []);
+        if (is_array($metadataFilters) === false || empty($metadataFilters) === true) {
+            return [];
+        }
+
+        $conditions = [];
+
+        foreach ($metadataFilters as $field => $value) {
+            $column = $this->quoteIdentifier(
+                name: $this->resolveMetadataColumn(field: (string) $field),
+                isPostgres: $isPostgres
+            );
+
+            if ($value === 'IS NOT NULL') {
+                $conditions[] = "{$column} IS NOT NULL";
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $conditions[] = "{$column} IS NULL";
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $conditions = array_merge(
+                    $conditions,
+                    $this->buildMetadataOperatorConditionsSql(
+                        column: $column,
+                        value: $value,
+                        connection: $connection
+                    )
+                );
+                continue;
+            }
+
+            $conditions[] = "{$column} = ".$connection->quote((string) $value);
+        }//end foreach
+
+        return $conditions;
+    }//end buildMetadataFilterConditionsSql()
+
+    /**
+     * Build the SQL for one metadata column's operator bag (or bare IN list)
+     *
+     * @param string $column     Quoted column identifier
+     * @param array  $value      Operator bag or bare list of values
+     * @param object $connection Database connection for value quoting
+     *
+     * @return string[] Array of SQL conditions
+     */
+    private function buildMetadataOperatorConditionsSql(string $column, array $value, object $connection): array
+    {
+        $quoteList = static function (mixed $values) use ($connection): array {
+            if (is_array($values) === false) {
+                $values = [$values];
+            }
+
+            return array_map(
+                static fn (mixed $item): string => $connection->quote((string) $item),
+                $values
+            );
+        };
+
+        // No operator key at all: a bare list keeps its historical IN(...) meaning.
+        if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
+            $quoted = $quoteList($value);
+            if (empty($quoted) === true) {
+                // An empty IN () is a syntax error and matches nothing by definition.
+                return ['1 = 0'];
+            }
+
+            return [$column.' IN ('.implode(', ', $quoted).')'];
+        }
+
+        $conditions = [];
+        $simple     = [
+            'gte' => '>=',
+            'lte' => '<=',
+            'gt'  => '>',
+            'lt'  => '<',
+            'ne'  => '<>',
+        ];
+
+        foreach ($simple as $operator => $sqlOperator) {
+            if (isset($value[$operator]) === true) {
+                $conditions[] = "{$column} {$sqlOperator} ".$connection->quote((string) $value[$operator]);
+            }
+        }
+
+        if (isset($value['in']) === true) {
+            $quoted = $quoteList($value['in']);
+            if (empty($quoted) === true) {
+                $conditions[] = '1 = 0';
+            } else {
+                $conditions[] = $column.' IN ('.implode(', ', $quoted).')';
+            }
+        }
+
+        if (isset($value['notIn']) === true) {
+            $quoted = $quoteList($value['notIn']);
+            // An empty NOT IN () is a syntax error and means "exclude nothing".
+            if (empty($quoted) === false) {
+                $conditions[] = $column.' NOT IN ('.implode(', ', $quoted).')';
+            }
+        }
+
+        return $conditions;
+    }//end buildMetadataOperatorConditionsSql()
 
     /**
      * Build SQL conditions for TMLO metadata JSON field filters.
@@ -1149,33 +1357,157 @@ class MagicSearchHandler
     /**
      * Apply metadata filters to the query
      *
+     * Metadata lives in the magic table's underscore-prefixed columns (`_created`,
+     * `_uuid`, …), so a `@self` filter is resolved against a column rather than
+     * against the JSON document.
+     *
+     * The comparison vocabulary is deliberately IDENTICAL to the one
+     * applyObjectFilters() accepts — bare `gte|lte|gt|lt|in|notIn|ne` keys, never
+     * `$`-prefixed. `@self.created` and a schema property must not need different
+     * syntax to express the same comparison; that asymmetry is what made
+     * "created before X" inexpressible.
+     *
+     * A bare list with no operator key keeps its historical meaning (`IN (…)`),
+     * so `{"@self":{"register":[1,2]}}` is unaffected.
+     *
      * @param IQueryBuilder $qb      Query builder to modify
      * @param array         $filters Metadata filters to apply
      *
      * @return void
+     *
+     * @throws UnknownMetadataFieldException When a `@self` key names no metadata column.
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-self-metadata-filters-support-comparison-operators
      */
     private function applyMetadataFilters(IQueryBuilder $qb, array $filters): void
     {
         foreach ($filters as $field => $value) {
-            $columnName = '_'.$field;
-            // Metadata columns are prefixed with _.
+            $columnName = $this->resolveMetadataColumn(field: (string) $field);
+            $columnRef  = "t.{$columnName}";
+
+            // A null check is terminal: without the `continue` the sentinel string
+            // ALSO reached the equality below, so `IS NOT NULL` emitted
+            // `_owner IS NOT NULL AND _owner = 'IS NOT NULL'` — zero rows on a text
+            // column and a cast error on a timestamp one.
             if ($value === 'IS NOT NULL') {
-                $qb->andWhere($qb->expr()->isNotNull("t.{$columnName}"));
-            } else if ($value === 'IS NULL') {
-                $qb->andWhere($qb->expr()->isNull("t.{$columnName}"));
-            } else if (is_array($value) === true) {
-                $qb->andWhere(
-                    $qb->expr()->in(
-                        "t.{$columnName}",
-                        $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY)
-                    )
-                );
+                $qb->andWhere($qb->expr()->isNotNull($columnRef));
                 continue;
             }
 
-            $qb->andWhere($qb->expr()->eq("t.{$columnName}", $qb->createNamedParameter($value)));
-        }
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($columnRef));
+                continue;
+            }
+
+            if (is_array($value) === true) {
+                $this->applyMetadataOperators(qb: $qb, columnRef: $columnRef, value: $value);
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($columnRef, $qb->createNamedParameter($value)));
+        }//end foreach
     }//end applyMetadataFilters()
+
+    /**
+     * Apply an operator bag (or a bare IN list) to one metadata column
+     *
+     * @param IQueryBuilder $qb        Query builder to modify
+     * @param string        $columnRef Fully qualified column reference
+     * @param array         $value     Operator bag or bare list of values
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.NPathComplexity) A flat sequence of independent, ANDed operator checks
+     */
+    private function applyMetadataOperators(IQueryBuilder $qb, string $columnRef, array $value): void
+    {
+        // No operator key at all: a bare list keeps its historical IN(...) meaning.
+        if (empty(array_intersect(array_keys($value), self::COMPARISON_OPERATORS)) === true) {
+            $qb->andWhere(
+                $qb->expr()->in($columnRef, $qb->createNamedParameter($value, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+
+            return;
+        }
+
+        // Multiple operators AND together, so {"gte":a,"lte":b} is a range.
+        if (isset($value['gte']) === true) {
+            $qb->andWhere($qb->expr()->gte($columnRef, $qb->createNamedParameter($value['gte'])));
+        }
+
+        if (isset($value['lte']) === true) {
+            $qb->andWhere($qb->expr()->lte($columnRef, $qb->createNamedParameter($value['lte'])));
+        }
+
+        if (isset($value['gt']) === true) {
+            $qb->andWhere($qb->expr()->gt($columnRef, $qb->createNamedParameter($value['gt'])));
+        }
+
+        if (isset($value['lt']) === true) {
+            $qb->andWhere($qb->expr()->lt($columnRef, $qb->createNamedParameter($value['lt'])));
+        }
+
+        if (isset($value['ne']) === true) {
+            $qb->andWhere($qb->expr()->neq($columnRef, $qb->createNamedParameter($value['ne'])));
+        }
+
+        if (isset($value['in']) === true) {
+            $inValues = $value['in'];
+            if (is_array($inValues) === false) {
+                $inValues = [$inValues];
+            }
+
+            $qb->andWhere(
+                $qb->expr()->in($columnRef, $qb->createNamedParameter($inValues, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        }
+
+        if (isset($value['notIn']) === true) {
+            $notInValues = $value['notIn'];
+            if (is_array($notInValues) === false) {
+                $notInValues = [$notInValues];
+            }
+
+            // An empty NOT IN () is a SQL syntax error and means "exclude nothing".
+            if (empty($notInValues) === false) {
+                $qb->andWhere(
+                    $qb->expr()->notIn(
+                        $columnRef,
+                        $qb->createNamedParameter($notInValues, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+            }
+        }
+    }//end applyMetadataOperators()
+
+    /**
+     * Resolve a `@self` field name to its magic-table metadata column
+     *
+     * Two things went wrong without this. The name was concatenated raw, so the
+     * camelCase `schemaVersion` addressed a `_schemaVersion` column that does not
+     * exist (the real one is `_schema_version`) and the request died as an opaque
+     * HTTP 500. And any typo was interpolated straight into SQL rather than being
+     * named back to the caller.
+     *
+     * @param string $field Metadata field name as written in `@self`
+     *
+     * @return string The underscore-prefixed column name
+     *
+     * @throws UnknownMetadataFieldException When the field names no metadata column.
+     */
+    private function resolveMetadataColumn(string $field): string
+    {
+        $columnName = '_'.$this->sanitizeColumnName(name: $field);
+
+        if (in_array($columnName, self::METADATA_COLUMNS, true) === false) {
+            throw new UnknownMetadataFieldException(
+                field: $field,
+                known: self::METADATA_COLUMNS
+            );
+        }
+
+        return $columnName;
+    }//end resolveMetadataColumn()
 
     /**
      * Apply object field filters based on schema properties
@@ -1253,7 +1585,7 @@ class MagicSearchHandler
             }
 
             if (is_array($value) === true) {
-                $comparisonOperators = ['gte', 'lte', 'gt', 'lt', 'in', 'notIn', 'ne'];
+                $comparisonOperators = self::COMPARISON_OPERATORS;
                 if (empty(array_intersect(array_keys($value), $comparisonOperators)) === true) {
                     // Cast numeric columns to text when filtered by non-numeric
                     // (e.g. UUID) values so PostgreSQL does not abort with 22P02.
