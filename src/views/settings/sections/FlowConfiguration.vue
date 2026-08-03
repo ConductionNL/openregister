@@ -20,19 +20,19 @@
 			{{ t('openregister', 'Defaults for every flow on this instance. A flow can override each of these for itself; a flow that overrides none of them follows the values set here, including later changes.') }}
 		</p>
 
-		<NcTextField :value.sync="form.retentionDays"
+		<NcTextField v-model="form.retentionDays"
 			type="number"
 			:label="t('openregister', 'Keep run history for (days)')"
 			:helper-text="t('openregister', 'Runs and their per-step history are deleted once they exceed this age. A flow may keep less than this, or more.')" />
 
-		<NcCheckboxRadioSwitch :checked.sync="form.auditEnabled" type="switch">
+		<NcCheckboxRadioSwitch v-model="form.auditEnabled" type="switch">
 			{{ t('openregister', 'Write an audit-trail entry for every step') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
 			{{ t('openregister', 'Off by default: one entry per step per run is a lot of writes, and the run history already records what each step did. Turn this on where a compliance record of every step is required.') }}
 		</p>
 
-		<NcCheckboxRadioSwitch :checked.sync="form.oversightEnabled" type="switch">
+		<NcCheckboxRadioSwitch v-model="form.oversightEnabled" type="switch">
 			{{ t('openregister', 'Run oversight checks before each step') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
@@ -43,7 +43,7 @@
 			{{ t('openregister', 'The kill switch is on. No flow step will run on this instance until it is turned off.') }}
 		</NcNoteCard>
 
-		<NcCheckboxRadioSwitch :checked.sync="form.killSwitch" type="switch">
+		<NcCheckboxRadioSwitch v-model="form.killSwitch" type="switch">
 			{{ t('openregister', 'Kill switch — stop all flow execution now') }}
 		</NcCheckboxRadioSwitch>
 		<p class="flow-settings__hint">
