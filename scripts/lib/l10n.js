@@ -149,9 +149,36 @@ function readStringLiteral(text, start) {
 		const c = text[i]
 		if (c === '\\' && i + 1 < text.length) {
 			const n = text[i + 1]
+			// \uXXXX, \u{XXXXX} and \xXX must be DECODED, not stripped. The
+			// runtime key is whatever JS produces, so an extractor that turns
+			// '⚠' into the literal 'u26A0' reports a key that can never
+			// match at runtime -- the translation would silently never apply.
+			if (n === 'u' && text[i + 2] === '{') {
+				const close = text.indexOf('}', i + 3)
+				const hex = close === -1 ? null : text.slice(i + 3, close)
+				if (hex && /^[0-9a-fA-F]{1,6}$/.test(hex)) {
+					value += String.fromCodePoint(parseInt(hex, 16))
+					i = close + 1
+					continue
+				}
+			}
+			if (n === 'u' && /^[0-9a-fA-F]{4}$/.test(text.slice(i + 2, i + 6))) {
+				value += String.fromCharCode(parseInt(text.slice(i + 2, i + 6), 16))
+				i += 6
+				continue
+			}
+			if (n === 'x' && /^[0-9a-fA-F]{2}$/.test(text.slice(i + 2, i + 4))) {
+				value += String.fromCharCode(parseInt(text.slice(i + 2, i + 4), 16))
+				i += 4
+				continue
+			}
 			if (n === 'n') value += '\n'
 			else if (n === 't') value += '\t'
 			else if (n === 'r') value += '\r'
+			else if (n === 'b') value += '\b'
+			else if (n === 'f') value += '\f'
+			else if (n === 'v') value += '\v'
+			else if (n === '0' && !/[0-9]/.test(text[i + 2] || '')) value += '\0'
 			else value += n
 			i += 2
 			continue
