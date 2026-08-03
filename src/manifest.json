@@ -1,470 +1,670 @@
 {
-	"$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
-	"version": "1.0.0",
-	"nav": {
-		"includePersonalSettings": false
-	},
-	"pages": [
-		{
-			"id": "dashboard",
-			"route": "/",
-			"type": "custom",
-			"title": "Dashboard",
-			"component": "Dashboard",
-			"_note": "Bespoke OpenRegister dashboard (DashboardIndex) with OR-specific widgets and stores; not expressible as a built-in dashboard widget grid."
-		},
-		{
-			"id": "registers",
-			"route": "/registers",
-			"type": "custom",
-			"title": "Registers",
-			"component": "RegistersIndex",
-			"_note": "Register is an OpenRegister foundation entity served by its own controller/store, not a register-stored object; the built-in index renderer (useObjectStore by register+schema slug) cannot resolve it."
-		},
-		{
-			"id": "registerDetail",
-			"route": "/registers/:id",
-			"type": "custom",
-			"title": "Register",
-			"component": "RegisterDetail",
-			"_note": "Register foundation entity detail; no register+schema slug for the built-in detail renderer."
-		},
-		{
-			"id": "schemas",
-			"route": "/schemas",
-			"type": "custom",
-			"title": "Schemas",
-			"component": "SchemasIndex",
-			"_note": "Schema is an OpenRegister foundation entity served by its own controller/store, not a register-stored object; the built-in index renderer cannot resolve it."
-		},
-		{
-			"id": "schemaDetails",
-			"route": "/schemas/:id",
-			"type": "custom",
-			"title": "Schema",
-			"component": "SchemaDetails",
-			"_note": "Schema foundation entity detail with a bespoke property/configuration editor; no register+schema slug for the built-in detail renderer."
-		},
-		{
-			"id": "sources",
-			"route": "/sources",
-			"type": "custom",
-			"title": "Data sources",
-			"component": "SourcesIndex",
-			"_note": "Source is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
-		},
-		{
-			"id": "organisation",
-			"route": "/organisation",
-			"type": "custom",
-			"title": "Organisations",
-			"component": "OrganisationsIndex",
-			"_note": "Tenant-aware organisation management with bespoke widgets; not a generic object list."
-		},
-		{
-			"id": "applications",
-			"route": "/applications",
-			"type": "custom",
-			"title": "Applications",
-			"component": "ApplicationsIndex",
-			"_note": "Application (virtual app) is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
-		},
-		{
-			"id": "applicationDetails",
-			"route": "/applications/:id",
-			"type": "custom",
-			"title": "Application",
-			"component": "ApplicationDetails",
-			"_note": "Application foundation entity detail; no register+schema slug for the built-in detail renderer."
-		},
-		{
-			"id": "objects",
-			"route": "/objects",
-			"type": "custom",
-			"title": "Objects",
-			"component": "ObjectsIndex",
-			"_note": "Cross-register object browser with bespoke filters; there is no single register+schema slug for the built-in index renderer to target."
-		},
-		{
-			"id": "objectDetail",
-			"route": "/objects/:register/:schema/:id",
-			"type": "custom",
-			"title": "Object",
-			"component": "ObjectsIndex",
-			"_note": "Reuses ObjectsIndex with a {register,schema,id} param-watch that primes objectStore for the deep-link; forcing the built-in detail renderer would change this behaviour."
-		},
-		{
-			"id": "tables",
-			"route": "/tables",
-			"type": "custom",
-			"title": "Search / views",
-			"component": "SearchIndex",
-			"_note": "Faceted cross-schema search via OR's bespoke SearchIndex; the built-in search page would change behaviour."
-		},
-		{
-			"id": "files",
-			"route": "/files",
-			"type": "custom",
-			"title": "Files",
-			"component": "FilesIndex",
-			"_note": "Files workspace, not a standard object list."
-		},
-		{
-			"id": "configurations",
-			"route": "/configurations",
-			"type": "custom",
-			"title": "Configurations",
-			"component": "ConfigurationsIndex",
-			"_note": "Settings-shaped configuration import/export UI with no backing register schema."
-		},
-		{
-			"id": "deleted",
-			"route": "/deleted",
-			"type": "custom",
-			"title": "Deleted",
-			"component": "DeletedIndex",
-			"_note": "Recycle-bin view over soft-deleted objects with bespoke restore actions."
-		},
-		{
-			"id": "audit-trails",
-			"route": "/audit-trails",
-			"type": "custom",
-			"title": "Audit Trails",
-			"component": "AuditTrailIndex",
-			"_note": "Audit-log viewer over OR's audit store; the built-in logs page is not adopted in this shell-swap change."
-		},
-		{
-			"id": "search-trails",
-			"route": "/search-trails",
-			"type": "custom",
-			"title": "Search Trails",
-			"component": "SearchTrailIndex",
-			"_note": "Search-log viewer over OR's search-trail store; the built-in logs page is not adopted in this shell-swap change."
-		},
-		{
-			"id": "webhooks",
-			"route": "/webhooks",
-			"type": "custom",
-			"title": "Webhooks",
-			"component": "WebhooksIndex",
-			"_note": "Bespoke webhook pipeline configuration UI."
-		},
-		{
-			"id": "webhooks-logs",
-			"route": "/webhooks/logs",
-			"type": "custom",
-			"title": "Webhook logs",
-			"component": "WebhookLogsIndex",
-			"_note": "Webhook delivery-log viewer; bespoke, not the built-in logs page."
-		},
-		{
-			"id": "endpoints",
-			"route": "/endpoints",
-			"type": "custom",
-			"title": "Endpoints",
-			"component": "EndpointsIndex",
-			"_note": "Endpoint is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
-		},
-		{
-			"id": "entities",
-			"route": "/entities",
-			"type": "custom",
-			"title": "Entities",
-			"component": "EntitiesIndex",
-			"_note": "Entity is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
-		},
-		{
-			"id": "entityDetails",
-			"route": "/entities/:id",
-			"type": "custom",
-			"title": "Entity",
-			"component": "EntityDetail",
-			"_note": "Entity foundation entity detail; no register+schema slug for the built-in detail renderer."
-		},
-		{
-			"id": "templates",
-			"route": "/templates",
-			"type": "custom",
-			"title": "Templates",
-			"component": "TemplatesIndex",
-			"_note": "Bespoke template editor; not a generic object list."
-		},
-		{
-			"id": "myAccount",
-			"route": "/mijn-account",
-			"type": "custom",
-			"title": "My account",
-			"component": "MyAccount",
-			"_note": "Bespoke account/profile view bound to the current Nextcloud user."
-		},
-		{
-			"id": "avg",
-			"route": "/avg",
-			"type": "custom",
-			"title": "AVG / Verwerkingsregister",
-			"component": "AvgIndex",
-			"_note": "Bespoke GDPR verwerkingsregister UI aggregating across registers."
-		},
-		{
-			"id": "reports",
-			"route": "/reports",
-			"type": "custom",
-			"title": "Reports",
-			"component": "ReportsIndex",
-			"_note": "Non-widget report layout; not expressible as a built-in dashboard."
-		},
-		{
-			"id": "reportView",
-			"route": "/reports/:id",
-			"type": "custom",
-			"title": "Report",
-			"component": "ReportView",
-			"_note": "Bespoke report detail layout; no register+schema slug for the built-in detail renderer."
-		},
-		{
-			"id": "features-roadmap",
-			"route": "/features-roadmap",
-			"type": "custom",
-			"title": "Features & roadmap",
-			"component": "FeaturesRoadmapIndex",
-			"_note": "OR's own roadmap surface; the built-in roadmap page is not adopted in this shell-swap change."
-		},
-		{
-			"id": "integrationsView",
-			"route": "/integrations/:register/:schema/:objectId",
-			"type": "custom",
-			"title": "Integrations",
-			"component": "IntegrationsView",
-			"_note": "Standalone integration-registry surface for the per-leaf screenshot harness; bypasses object-detail so sub-resource plugins do not race the render."
-		},
-		{
-			"id": "quality",
-			"route": "/quality",
-			"type": "custom",
-			"title": "Data Quality",
-			"component": "QualityIndex",
-			"_note": "MDM steward surface (ADR-045 #3): quality KPI cards + score histogram + lowest-quality listing over the read-only quality#stats / quality#index APIs."
-		},
-		{
-			"id": "duplicates",
-			"route": "/duplicates",
-			"type": "custom",
-			"title": "Duplicate Candidates",
-			"component": "DuplicatesIndex",
-			"_note": "MDM steward surface (ADR-045 #3): read-only duplicate-candidate pair listing over duplicate#index; no merge/write control."
-		},
-		{
-			"id": "masterEntities",
-			"route": "/master-entities",
-			"type": "custom",
-			"title": "Master entities",
-			"component": "MasterEntitiesIndex",
-			"_note": "MDM steward surface (ADR-045 #3): survivorship-enabled object list with qualityScore/qualityStatus + golden-record detail panel; a dedicated view rather than an extension of the generic object browser (design.md D2)."
-		},
-		{
-			"id": "queueHealth",
-			"route": "/queue-health",
-			"type": "custom",
-			"title": "Queue / sync health",
-			"component": "QueueHealthIndex",
-			"_note": "MDM steward surface (ADR-045 #3): read-only webhook queue-health summary consuming OR's EXISTING webhook telemetry (webhooks#index/logStats/allLogs); no new backend endpoint (design.md D1)."
-		},
-		{
-			"id": "mergeOperations",
-			"route": "/mergeOperations",
-			"type": "custom",
-			"title": "Merge Operations",
-			"component": "MergeOperationsIndex",
-			"_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
-		}
-	],
-	"menu": [
-		{
-			"id": "Dashboard",
-			"label": "Dashboard",
-			"icon": "ViewDashboardOutline",
-			"route": "dashboard",
-			"section": "main",
-			"order": 10
-		},
-		{
-			"id": "DataGroup",
-			"label": "Data",
-			"icon": "DatabaseOutline",
-			"section": "main",
-			"order": 20,
-			"children": [
-				{ "id": "Registers", "label": "Registers", "icon": "DatabaseOutline", "route": "registers", "order": 20 },
-				{ "id": "Schemas", "label": "Schemas", "icon": "FileTreeOutline", "route": "schemas", "order": 30 },
-				{ "id": "Templates", "label": "Templates", "icon": "FileReplaceOutline", "route": "templates", "order": 40 },
-				{ "id": "Tables", "label": "Search / views", "icon": "Magnify", "route": "tables", "order": 50 },
-				{ "id": "Files", "label": "Files", "icon": "FileDocumentMultipleOutline", "route": "files", "order": 60 }
-			]
-		},
-		{
-			"id": "IntegrationGroup",
-			"label": "Integration",
-			"icon": "Api",
-			"section": "main",
-			"order": 90,
-			"children": [
-				{ "id": "Organisations", "label": "Organisations", "icon": "OfficeBuildingOutline", "route": "organisation", "order": 91 },
-				{ "id": "Applications", "label": "Applications", "icon": "ApplicationOutline", "route": "applications", "order": 92 },
-				{ "id": "Sources", "label": "Data sources", "icon": "DatabaseOutline", "route": "sources", "order": 93 },
-				{ "id": "Endpoints", "label": "Endpoints", "icon": "Api", "route": "endpoints", "order": 94 },
-				{ "id": "Webhooks", "label": "Webhooks", "icon": "Webhook", "route": "webhooks", "order": 95 }
-			]
-		},
-		{
-			"id": "AdministrationGroup",
-			"label": "Administration",
-			"icon": "ShieldAccountOutline",
-			"section": "main",
-			"order": 100,
-			"children": [
-				{ "id": "Configurations", "label": "Configurations", "icon": "CogOutline", "route": "configurations", "order": 94 },
-				{ "id": "Entities", "label": "Entities", "icon": "AccountOutline", "route": "entities", "order": 95 },
-				{ "id": "Avg", "label": "AVG / Verwerkingsregister", "icon": "DatabaseOutline", "route": "avg", "order": 100 },
-				{ "id": "Reports", "label": "Reports", "icon": "ChartBoxOutline", "route": "reports", "order": 101 }
-			]
-		},
-		{
-			"id": "AuditGroup",
-			"label": "Audit",
-			"icon": "TextBoxOutline",
-			"section": "main",
-			"order": 110,
-			"children": [
-				{ "id": "Deleted", "label": "Deleted", "icon": "DeleteRestore", "route": "deleted", "order": 96 },
-				{ "id": "AuditTrails", "label": "Audit Trails", "icon": "History", "route": "audit-trails", "order": 97 },
-				{ "id": "SearchTrails", "label": "Search Trails", "icon": "Magnify", "route": "search-trails", "order": 98 }
-			]
-		},
-		{
-			"id": "DataQualityGroup",
-			"label": "Data quality",
-			"icon": "ClipboardPulseOutline",
-			"section": "main",
-			"order": 120,
-			"children": [
-				{ "id": "Quality", "label": "Data Quality", "icon": "ClipboardPulseOutline", "route": "quality", "order": 10 },
-				{ "id": "Duplicates", "label": "Duplicate Candidates", "icon": "ContentDuplicate", "route": "duplicates", "order": 20 },
-				{ "id": "MasterEntities", "label": "Master entities", "icon": "AccountMultipleOutline", "route": "masterEntities", "order": 30 },
-				{ "id": "QueueHealth", "label": "Queue / sync health", "icon": "TrayFull", "route": "queueHealth", "order": 40 },
-				{ "id": "MergeOperations", "label": "Merge Operations", "icon": "Merge", "route": "mergeOperations", "order": 50 }
-			]
-		},
-		{
-			"id": "Documentation",
-			"label": "Documentation",
-			"icon": "BookOpenVariantOutline",
-			"href": "https://openregister.conduction.nl",
-			"section": "footer",
-			"order": 1
-		},
-		{
-			"id": "FeaturesRoadmapMenu",
-			"label": "Features & roadmap",
-			"icon": "MapMarkerPath",
-			"route": "features-roadmap",
-			"section": "footer",
-			"order": 2
-		}
-	],
-	"observability": {
-		"_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles.",
-		"health": {
-			"statusCodePolicy": "adr006",
-			"checks": [
-				{ "id": "database", "type": "database", "severity": "critical" },
-				{ "id": "filesystem", "type": "filesystem", "severity": "degraded" }
-			]
-		},
-		"metrics": [
-			{
-				"name": "registers_total",
-				"type": "gauge",
-				"help": "Total number of registers",
-				"source": { "kind": "tableCount", "table": "openregister_registers" }
-			},
-			{
-				"name": "schemas_total",
-				"type": "gauge",
-				"help": "Total number of schemas",
-				"source": { "kind": "tableCount", "table": "openregister_schemas" }
-			},
-			{
-				"name": "objects_total",
-				"type": "gauge",
-				"help": "Total objects by register and schema",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_objects",
-					"groupBy": ["register", "schema"]
-				}
-			},
-			{
-				"name": "search_requests_total",
-				"type": "counter",
-				"help": "Total search requests",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_metrics",
-					"filter": { "metric_type": { "like": "search_%" } }
-				}
-			},
-			{
-				"name": "objects_created_total",
-				"type": "counter",
-				"help": "Total object create operations recorded in the audit trail",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_audit_trails",
-					"filter": { "action": { "eq": "create" } }
-				}
-			},
-			{
-				"name": "objects_updated_total",
-				"type": "counter",
-				"help": "Total object update operations recorded in the audit trail",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_audit_trails",
-					"filter": { "action": { "eq": "update" } }
-				}
-			},
-			{
-				"name": "objects_deleted_total",
-				"type": "counter",
-				"help": "Total object delete operations recorded in the audit trail",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_audit_trails",
-					"filter": { "action": { "eq": "delete" } }
-				}
-			},
-			{
-				"name": "objects_read_total",
-				"type": "counter",
-				"help": "Total object read operations recorded in the audit trail",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_audit_trails",
-					"filter": { "action": { "eq": "read" } }
-				}
-			},
-			{
-				"name": "webhook_deliveries_total",
-				"type": "counter",
-				"help": "Total webhook delivery attempts grouped by status",
-				"source": {
-					"kind": "tableCount",
-					"table": "openregister_webhook_logs",
-					"groupBy": ["success"],
-					"labelMap": { "success": "status" },
-					"labelDefaults": { "success": "failure" }
-				}
-			}
-		]
-	}
+  "$schema": "https://raw.githubusercontent.com/ConductionNL/nextcloud-vue/main/src/schemas/app-manifest-v2.schema.json",
+  "version": "1.0.0",
+  "nav": {
+    "includePersonalSettings": false
+  },
+  "pages": [
+    {
+      "id": "dashboard",
+      "route": "/",
+      "type": "custom",
+      "title": "Dashboard",
+      "component": "Dashboard",
+      "_note": "Bespoke OpenRegister dashboard (DashboardIndex) with OR-specific widgets and stores; not expressible as a built-in dashboard widget grid."
+    },
+    {
+      "id": "registers",
+      "route": "/registers",
+      "type": "custom",
+      "title": "Registers",
+      "component": "RegistersIndex",
+      "_note": "Register is an OpenRegister foundation entity served by its own controller/store, not a register-stored object; the built-in index renderer (useObjectStore by register+schema slug) cannot resolve it."
+    },
+    {
+      "id": "registerDetail",
+      "route": "/registers/:id",
+      "type": "custom",
+      "title": "Register",
+      "component": "RegisterDetail",
+      "_note": "Register foundation entity detail; no register+schema slug for the built-in detail renderer."
+    },
+    {
+      "id": "schemas",
+      "route": "/schemas",
+      "type": "custom",
+      "title": "Schemas",
+      "component": "SchemasIndex",
+      "_note": "Schema is an OpenRegister foundation entity served by its own controller/store, not a register-stored object; the built-in index renderer cannot resolve it."
+    },
+    {
+      "id": "schemaDetails",
+      "route": "/schemas/:id",
+      "type": "custom",
+      "title": "Schema",
+      "component": "SchemaDetails",
+      "_note": "Schema foundation entity detail with a bespoke property/configuration editor; no register+schema slug for the built-in detail renderer."
+    },
+    {
+      "id": "sources",
+      "route": "/sources",
+      "type": "custom",
+      "title": "Data sources",
+      "component": "SourcesIndex",
+      "_note": "Source is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
+    },
+    {
+      "id": "organisation",
+      "route": "/organisation",
+      "type": "custom",
+      "title": "Organisations",
+      "component": "OrganisationsIndex",
+      "_note": "Tenant-aware organisation management with bespoke widgets; not a generic object list."
+    },
+    {
+      "id": "applications",
+      "route": "/applications",
+      "type": "custom",
+      "title": "Applications",
+      "component": "ApplicationsIndex",
+      "_note": "Application (virtual app) is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
+    },
+    {
+      "id": "applicationDetails",
+      "route": "/applications/:id",
+      "type": "custom",
+      "title": "Application",
+      "component": "ApplicationDetails",
+      "_note": "Application foundation entity detail; no register+schema slug for the built-in detail renderer."
+    },
+    {
+      "id": "objects",
+      "route": "/objects",
+      "type": "custom",
+      "title": "Objects",
+      "component": "ObjectsIndex",
+      "_note": "Cross-register object browser with bespoke filters; there is no single register+schema slug for the built-in index renderer to target."
+    },
+    {
+      "id": "objectDetail",
+      "route": "/objects/:register/:schema/:id",
+      "type": "custom",
+      "title": "Object",
+      "component": "ObjectsIndex",
+      "_note": "Reuses ObjectsIndex with a {register,schema,id} param-watch that primes objectStore for the deep-link; forcing the built-in detail renderer would change this behaviour."
+    },
+    {
+      "id": "tables",
+      "route": "/tables",
+      "type": "custom",
+      "title": "Search / views",
+      "component": "SearchIndex",
+      "_note": "Faceted cross-schema search via OR's bespoke SearchIndex; the built-in search page would change behaviour."
+    },
+    {
+      "id": "files",
+      "route": "/files",
+      "type": "custom",
+      "title": "Files",
+      "component": "FilesIndex",
+      "_note": "Files workspace, not a standard object list."
+    },
+    {
+      "id": "configurations",
+      "route": "/configurations",
+      "type": "custom",
+      "title": "Configurations",
+      "component": "ConfigurationsIndex",
+      "_note": "Settings-shaped configuration import/export UI with no backing register schema."
+    },
+    {
+      "id": "deleted",
+      "route": "/deleted",
+      "type": "custom",
+      "title": "Deleted",
+      "component": "DeletedIndex",
+      "_note": "Recycle-bin view over soft-deleted objects with bespoke restore actions."
+    },
+    {
+      "id": "audit-trails",
+      "route": "/audit-trails",
+      "type": "custom",
+      "title": "Audit Trails",
+      "component": "AuditTrailIndex",
+      "_note": "Audit-log viewer over OR's audit store; the built-in logs page is not adopted in this shell-swap change."
+    },
+    {
+      "id": "search-trails",
+      "route": "/search-trails",
+      "type": "custom",
+      "title": "Search Trails",
+      "component": "SearchTrailIndex",
+      "_note": "Search-log viewer over OR's search-trail store; the built-in logs page is not adopted in this shell-swap change."
+    },
+    {
+      "id": "flows",
+      "route": "/flows",
+      "type": "custom",
+      "component": "FlowsIndex",
+      "title": "Flows",
+      "_note": "Custom page rather than type:index. A flow lives in OpenRegister's own native flow table, not in a register/schema, so the manifest's object-backed index cannot address it — index pages resolve rows through register+schema. The body is CnFlowIndexPage from the shared library, so the list, its app scoping and its status semantics stay identical across every app that shows flows."
+    },
+    {
+      "id": "flowDetail",
+      "route": "/flows/:id",
+      "type": "custom",
+      "component": "FlowDetailPage",
+      "title": "Flow",
+      "sidebarComponent": "FlowDetailSidebar",
+      "_note": "Custom page: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped. Controls live in the NcAppSidebar (sidebarComponent) so the canvas gets the full width; the two halves share useFlowStore because they render in different parts of the tree."
+    },
+    {
+      "id": "webhooks",
+      "route": "/webhooks",
+      "type": "custom",
+      "title": "Webhooks",
+      "component": "WebhooksIndex",
+      "_note": "Bespoke webhook pipeline configuration UI."
+    },
+    {
+      "id": "webhooks-logs",
+      "route": "/webhooks/logs",
+      "type": "custom",
+      "title": "Webhook logs",
+      "component": "WebhookLogsIndex",
+      "_note": "Webhook delivery-log viewer; bespoke, not the built-in logs page."
+    },
+    {
+      "id": "endpoints",
+      "route": "/endpoints",
+      "type": "custom",
+      "title": "Endpoints",
+      "component": "EndpointsIndex",
+      "_note": "Endpoint is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
+    },
+    {
+      "id": "entities",
+      "route": "/entities",
+      "type": "custom",
+      "title": "Entities",
+      "component": "EntitiesIndex",
+      "_note": "Entity is an OpenRegister foundation entity served by its own controller/store, not a register-stored object."
+    },
+    {
+      "id": "entityDetails",
+      "route": "/entities/:id",
+      "type": "custom",
+      "title": "Entity",
+      "component": "EntityDetail",
+      "_note": "Entity foundation entity detail; no register+schema slug for the built-in detail renderer."
+    },
+    {
+      "id": "templates",
+      "route": "/templates",
+      "type": "custom",
+      "title": "Templates",
+      "component": "TemplatesIndex",
+      "_note": "Bespoke template editor; not a generic object list."
+    },
+    {
+      "id": "myAccount",
+      "route": "/mijn-account",
+      "type": "custom",
+      "title": "My account",
+      "component": "MyAccount",
+      "_note": "Bespoke account/profile view bound to the current Nextcloud user."
+    },
+    {
+      "id": "avg",
+      "route": "/avg",
+      "type": "custom",
+      "title": "AVG / Verwerkingsregister",
+      "component": "AvgIndex",
+      "_note": "Bespoke GDPR verwerkingsregister UI aggregating across registers."
+    },
+    {
+      "id": "reports",
+      "route": "/reports",
+      "type": "custom",
+      "title": "Reports",
+      "component": "ReportsIndex",
+      "_note": "Non-widget report layout; not expressible as a built-in dashboard."
+    },
+    {
+      "id": "reportView",
+      "route": "/reports/:id",
+      "type": "custom",
+      "title": "Report",
+      "component": "ReportView",
+      "_note": "Bespoke report detail layout; no register+schema slug for the built-in detail renderer."
+    },
+    {
+      "id": "features-roadmap",
+      "route": "/features-roadmap",
+      "type": "custom",
+      "title": "Features & roadmap",
+      "component": "FeaturesRoadmapIndex",
+      "_note": "OR's own roadmap surface; the built-in roadmap page is not adopted in this shell-swap change."
+    },
+    {
+      "id": "integrationsView",
+      "route": "/integrations/:register/:schema/:objectId",
+      "type": "custom",
+      "title": "Integrations",
+      "component": "IntegrationsView",
+      "_note": "Standalone integration-registry surface for the per-leaf screenshot harness; bypasses object-detail so sub-resource plugins do not race the render."
+    },
+    {
+      "id": "quality",
+      "route": "/quality",
+      "type": "custom",
+      "title": "Data Quality",
+      "component": "QualityIndex",
+      "_note": "MDM steward surface (ADR-045 #3): quality KPI cards + score histogram + lowest-quality listing over the read-only quality#stats / quality#index APIs."
+    },
+    {
+      "id": "duplicates",
+      "route": "/duplicates",
+      "type": "custom",
+      "title": "Duplicate Candidates",
+      "component": "DuplicatesIndex",
+      "_note": "MDM steward surface (ADR-045 #3): read-only duplicate-candidate pair listing over duplicate#index; no merge/write control."
+    },
+    {
+      "id": "masterEntities",
+      "route": "/master-entities",
+      "type": "custom",
+      "title": "Master entities",
+      "component": "MasterEntitiesIndex",
+      "_note": "MDM steward surface (ADR-045 #3): survivorship-enabled object list with qualityScore/qualityStatus + golden-record detail panel; a dedicated view rather than an extension of the generic object browser (design.md D2)."
+    },
+    {
+      "id": "queueHealth",
+      "route": "/queue-health",
+      "type": "custom",
+      "title": "Queue / sync health",
+      "component": "QueueHealthIndex",
+      "_note": "MDM steward surface (ADR-045 #3): read-only webhook queue-health summary consuming OR's EXISTING webhook telemetry (webhooks#index/logStats/allLogs); no new backend endpoint (design.md D1)."
+    },
+    {
+      "id": "mergeOperations",
+      "route": "/mergeOperations",
+      "type": "custom",
+      "title": "Merge Operations",
+      "component": "MergeOperationsIndex",
+      "_note": "MDM steward surface (ADR-045 follow-on #C): audit list of recent mergeOperation rows with an in-window reverse action, read through the generic object-read surface (design.md D2)."
+    }
+  ],
+  "menu": [
+    {
+      "id": "Dashboard",
+      "label": "Dashboard",
+      "icon": "ViewDashboardOutline",
+      "route": "dashboard",
+      "section": "main",
+      "order": 10
+    },
+    {
+      "id": "DataGroup",
+      "label": "Data",
+      "icon": "DatabaseOutline",
+      "section": "main",
+      "order": 20,
+      "children": [
+        {
+          "id": "Registers",
+          "label": "Registers",
+          "icon": "DatabaseOutline",
+          "route": "registers",
+          "order": 20
+        },
+        {
+          "id": "Schemas",
+          "label": "Schemas",
+          "icon": "FileTreeOutline",
+          "route": "schemas",
+          "order": 30
+        },
+        {
+          "id": "Templates",
+          "label": "Templates",
+          "icon": "FileReplaceOutline",
+          "route": "templates",
+          "order": 40
+        },
+        {
+          "id": "Tables",
+          "label": "Search / views",
+          "icon": "Magnify",
+          "route": "tables",
+          "order": 50
+        },
+        {
+          "id": "Files",
+          "label": "Files",
+          "icon": "FileDocumentMultipleOutline",
+          "route": "files",
+          "order": 60
+        }
+      ]
+    },
+    {
+      "id": "IntegrationGroup",
+      "label": "Integration",
+      "icon": "Api",
+      "section": "main",
+      "order": 90,
+      "children": [
+        {
+          "id": "Organisations",
+          "label": "Organisations",
+          "icon": "OfficeBuildingOutline",
+          "route": "organisation",
+          "order": 91
+        },
+        {
+          "id": "Applications",
+          "label": "Applications",
+          "icon": "ApplicationOutline",
+          "route": "applications",
+          "order": 92
+        },
+        {
+          "id": "Sources",
+          "label": "Data sources",
+          "icon": "DatabaseOutline",
+          "route": "sources",
+          "order": 93
+        },
+        {
+          "id": "Endpoints",
+          "label": "Endpoints",
+          "icon": "Api",
+          "route": "endpoints",
+          "order": 94
+        },
+        {
+          "id": "Webhooks",
+          "label": "Webhooks",
+          "icon": "Webhook",
+          "route": "webhooks",
+          "order": 95
+        }
+      ]
+    },
+    {
+      "id": "AdministrationGroup",
+      "label": "Administration",
+      "icon": "ShieldAccountOutline",
+      "section": "main",
+      "order": 100,
+      "children": [
+        {
+          "id": "Configurations",
+          "label": "Configurations",
+          "icon": "CogOutline",
+          "route": "configurations",
+          "order": 94
+        },
+        {
+          "id": "Entities",
+          "label": "Entities",
+          "icon": "AccountOutline",
+          "route": "entities",
+          "order": 95
+        },
+        {
+          "id": "Avg",
+          "label": "AVG / Verwerkingsregister",
+          "icon": "DatabaseOutline",
+          "route": "avg",
+          "order": 100
+        },
+        {
+          "id": "Reports",
+          "label": "Reports",
+          "icon": "ChartBoxOutline",
+          "route": "reports",
+          "order": 101
+        }
+      ]
+    },
+    {
+      "id": "AuditGroup",
+      "label": "Audit",
+      "icon": "TextBoxOutline",
+      "section": "main",
+      "order": 110,
+      "children": [
+        {
+          "id": "Deleted",
+          "label": "Deleted",
+          "icon": "DeleteRestore",
+          "route": "deleted",
+          "order": 96
+        },
+        {
+          "id": "AuditTrails",
+          "label": "Audit Trails",
+          "icon": "History",
+          "route": "audit-trails",
+          "order": 97
+        },
+        {
+          "id": "SearchTrails",
+          "label": "Search Trails",
+          "icon": "Magnify",
+          "route": "search-trails",
+          "order": 98
+        }
+      ]
+    },
+    {
+      "id": "DataQualityGroup",
+      "label": "Data quality",
+      "icon": "ClipboardPulseOutline",
+      "section": "main",
+      "order": 120,
+      "children": [
+        {
+          "id": "Quality",
+          "label": "Data Quality",
+          "icon": "ClipboardPulseOutline",
+          "route": "quality",
+          "order": 10
+        },
+        {
+          "id": "Duplicates",
+          "label": "Duplicate Candidates",
+          "icon": "ContentDuplicate",
+          "route": "duplicates",
+          "order": 20
+        },
+        {
+          "id": "MasterEntities",
+          "label": "Master entities",
+          "icon": "AccountMultipleOutline",
+          "route": "masterEntities",
+          "order": 30
+        },
+        {
+          "id": "QueueHealth",
+          "label": "Queue / sync health",
+          "icon": "TrayFull",
+          "route": "queueHealth",
+          "order": 40
+        },
+        {
+          "id": "MergeOperations",
+          "label": "Merge Operations",
+          "icon": "Merge",
+          "route": "mergeOperations",
+          "order": 50
+        }
+      ]
+    },
+    {
+      "id": "Documentation",
+      "label": "Documentation",
+      "icon": "BookOpenVariantOutline",
+      "href": "https://openregister.conduction.nl",
+      "section": "footer",
+      "order": 1
+    },
+    {
+      "id": "FeaturesRoadmapMenu",
+      "label": "Features & roadmap",
+      "icon": "MapMarkerPath",
+      "route": "features-roadmap",
+      "section": "footer",
+      "order": 2
+    },
+    {
+      "id": "Flows",
+      "label": "Flows",
+      "icon": "Sitemap",
+      "route": "flows",
+      "section": "main",
+      "order": 45
+    }
+  ],
+  "observability": {
+    "_note": "OpenRegister dogfoods its own AppHost observability engine (ADR-040). These descriptors reproduce the output of the now-deleted hand-written HealthController + MetricsController. The /api/health and /api/metrics routes are aliased to AppHost\\Controller\\GenericHealth#index / GenericMetrics#index in appinfo/routes.php, so the engine reads this block at request time. Parity: metric names, types and label keys match the pre-adoption contract; documented intentional improvements are the added health `app` field, the implicit `nextcloud_version` info label, and the objects_total register/schema labels now carrying numeric ids (engine tableCount groupBy) rather than titles.",
+    "health": {
+      "statusCodePolicy": "adr006",
+      "checks": [
+        {
+          "id": "database",
+          "type": "database",
+          "severity": "critical"
+        },
+        {
+          "id": "filesystem",
+          "type": "filesystem",
+          "severity": "degraded"
+        }
+      ]
+    },
+    "metrics": [
+      {
+        "name": "registers_total",
+        "type": "gauge",
+        "help": "Total number of registers",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_registers"
+        }
+      },
+      {
+        "name": "schemas_total",
+        "type": "gauge",
+        "help": "Total number of schemas",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_schemas"
+        }
+      },
+      {
+        "name": "objects_total",
+        "type": "gauge",
+        "help": "Total objects by register and schema",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_objects",
+          "groupBy": [
+            "register",
+            "schema"
+          ]
+        }
+      },
+      {
+        "name": "search_requests_total",
+        "type": "counter",
+        "help": "Total search requests",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_metrics",
+          "filter": {
+            "metric_type": {
+              "like": "search_%"
+            }
+          }
+        }
+      },
+      {
+        "name": "objects_created_total",
+        "type": "counter",
+        "help": "Total object create operations recorded in the audit trail",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_audit_trails",
+          "filter": {
+            "action": {
+              "eq": "create"
+            }
+          }
+        }
+      },
+      {
+        "name": "objects_updated_total",
+        "type": "counter",
+        "help": "Total object update operations recorded in the audit trail",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_audit_trails",
+          "filter": {
+            "action": {
+              "eq": "update"
+            }
+          }
+        }
+      },
+      {
+        "name": "objects_deleted_total",
+        "type": "counter",
+        "help": "Total object delete operations recorded in the audit trail",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_audit_trails",
+          "filter": {
+            "action": {
+              "eq": "delete"
+            }
+          }
+        }
+      },
+      {
+        "name": "objects_read_total",
+        "type": "counter",
+        "help": "Total object read operations recorded in the audit trail",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_audit_trails",
+          "filter": {
+            "action": {
+              "eq": "read"
+            }
+          }
+        }
+      },
+      {
+        "name": "webhook_deliveries_total",
+        "type": "counter",
+        "help": "Total webhook delivery attempts grouped by status",
+        "source": {
+          "kind": "tableCount",
+          "table": "openregister_webhook_logs",
+          "groupBy": [
+            "success"
+          ],
+          "labelMap": {
+            "success": "status"
+          },
+          "labelDefaults": {
+            "success": "failure"
+          }
+        }
+      }
+    ]
+  }
 }

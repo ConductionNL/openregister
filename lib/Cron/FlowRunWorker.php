@@ -37,7 +37,7 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -114,18 +114,18 @@ class FlowRunWorker extends TimedJob
     /**
      * Constructor.
      *
-     * @param ITimeFactory         $time      Job scheduling clock.
-     * @param FlowRunMapper        $mapper    Reads and prunes runs.
-     * @param FlowRunService       $runner    Executes a run.
-     * @param FlowResolverRegistry $resolvers Loads a run's flow and subject.
-     * @param IAppConfig           $appConfig Reads the retention setting.
-     * @param LoggerInterface      $logger    The logger.
+     * @param ITimeFactory    $time      Job scheduling clock.
+     * @param FlowRunMapper   $mapper    Reads and prunes runs.
+     * @param FlowRunService  $runner    Executes a run.
+     * @param FlowLocator     $resolvers Loads a run's flow and subject.
+     * @param IAppConfig      $appConfig Reads the retention setting.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
         ITimeFactory $time,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {

@@ -389,6 +389,23 @@ class ConfigurationSettingsHandler
                 ];
             }//end if
 
+            // Flow engine. These are ADMINISTRATOR settings, deliberately: how
+            // long run history is kept, whether every hop is audit-trailed, and
+            // whether the oversight gate runs are instance policy, not a
+            // per-user preference.
+            //
+            // The two booleans have OPPOSITE defaults on purpose. Auditing is
+            // write volume — one entry per node per run — and the step rows
+            // already carry the operational history, so it is opt-in. Oversight
+            // is what STOPS a running flow, and a safety rail defaulting to off
+            // protects only the flows somebody remembered to configure.
+            $data['flow'] = [
+                'retentionDays'    => (int) $this->appConfig->getValueString($this->appName, 'flow_run_retention_days', '31'),
+                'auditEnabled'     => $this->appConfig->getValueBool($this->appName, 'flow_audit_enabled', false),
+                'oversightEnabled' => $this->appConfig->getValueBool($this->appName, 'flow_oversight_enabled', true),
+                'killSwitch'       => $this->appConfig->getValueBool($this->appName, 'flow_kill_switch', false),
+            ];
+
             return $data;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -552,6 +569,35 @@ class ConfigurationSettingsHandler
                 ];
                 $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
             }
+
+            // Handle flow-engine settings.
+            if (($data['flow'] ?? null) !== null) {
+                $flowData = $data['flow'];
+
+                // A non-positive retention is refused rather than stored: zero
+                // would mean "delete all run history on the next sweep", which
+                // is never what a mistyped field is asking for.
+                $days = (int) ($flowData['retentionDays'] ?? 31);
+                if ($days > 0) {
+                    $this->appConfig->setValueString($this->appName, 'flow_run_retention_days', (string) $days);
+                }
+
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_audit_enabled',
+                    (bool) ($flowData['auditEnabled'] ?? false)
+                );
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_oversight_enabled',
+                    (bool) ($flowData['oversightEnabled'] ?? true)
+                );
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_kill_switch',
+                    (bool) ($flowData['killSwitch'] ?? false)
+                );
+            }//end if
 
             // Handle Multitenancy settings - enabled by default.
             if (($data['multitenancy'] ?? null) !== null) {

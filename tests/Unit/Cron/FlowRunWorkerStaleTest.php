@@ -22,7 +22,7 @@ use DateTime;
 use OCA\OpenRegister\Cron\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -57,7 +57,7 @@ class FlowRunWorkerStaleTest extends TestCase
             $this->createMock(ITimeFactory::class),
             $this->mapper,
             $this->runner,
-            $this->createMock(FlowResolverRegistry::class),
+            $this->createMock(FlowLocator::class),
             $this->appConfig,
             new NullLogger()
         );

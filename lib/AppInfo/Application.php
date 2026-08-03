@@ -144,7 +144,7 @@ use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\EventCatalogListener;
-use OCA\OpenRegister\Listener\FlowActionListener;
+use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
@@ -2393,13 +2393,18 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
         );
 
-        // Flow resolution. OpenRegister resolves flows stored as its own objects
-        // (a `flows` register / `flow` schema by default), so a flow can live in
-        // OpenRegister itself and not only in a consuming app — contributed
-        // through the same resolver event.
+        // Flow oversight. Apps contribute the checks that may STOP a run — a
+        // kill switch, a spend budget, a maintenance window — through the same
+        // idiom as flow nodes. The engine hardcodes none of them, which is what
+        // keeps app-specific safety logic out of it.
+        //
+        // There is deliberately no resolver event beside these two. Flows live
+        // in one native table, so "which app owns this flow id" has a single
+        // answer and `FlowLocator` reads it directly; the resolver registry
+        // existed only to arbitrate between per-app object stores.
         $context->registerEventListener(
-            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
-            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+            \OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent::class,
+            \OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
         );
 
         // Federated configuration sharing. Any app declares its shareable config
@@ -2487,6 +2492,15 @@ class Application extends App implements IBootstrap
         // steps are all approved. Registered immediately after
         // LifecycleValidationListener: transition legality must be established
         // before approval-chain gating runs against it.
+        // Declared flows (`x-openregister-flows`) are MATERIALISED into the flow
+        // store on schema save, because a flow lives in its own table rather
+        // than being read off the schema at runtime like every other
+        // x-openregister-* extension. Importing on save (not only on register
+        // import) means a declared flow and a builder-authored one land in the
+        // same place, and a re-import updates rather than duplicates.
+        $context->registerEventListener(SchemaCreatedEvent::class, SchemaFlowImportListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SchemaFlowImportListener::class);
+
         $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
@@ -2554,12 +2568,13 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-        // Declarative flow engine — runs x-openregister-flows actions (calendar
-        // agenda tasks, email, ...) declared on the schema when an object's
-        // create/update/delete lifecycle event fires.
-        $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+        // Object-CRUD flow triggers. These route through EventCatalogListener
+        // like every other catalog event, so there is ONE path from a dispatched
+        // event to a queued run — the action-list engine that used to handle
+        // create/update/delete separately is gone.
+        $context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
 
         // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
         // transition). Routed by EventCatalogListener so create/update/delete are
