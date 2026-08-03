@@ -73,15 +73,25 @@ class FlowRunMapper extends QBMapper
     /**
      * List runs, newest first.
      *
-     * VISIBILITY. `$requesterUid` is the scoping switch, and it is required by
-     * convention rather than optional by default: passing null means "no
-     * scoping", which is correct only for an administrator or a system read.
-     * Request paths MUST pass one.
+     * VISIBILITY. `$requesterUid` is the scoping switch, and it is deliberately
+     * required-by-convention rather than optional-by-default: passing null means
+     * "no scoping", which is correct only for an administrator or a system read.
+     * Until this parameter existed the method had no scoping at ALL, so
+     * `GET /api/flow-runs` returned every run on the instance to any
+     * authenticated caller — including each run's log, which records the subject
+     * data the flow touched. That is precisely what design D7 of
+     * `shared-credentials-and-flows` exists to prevent.
      *
-     * A run is visible if the caller triggered it OR it belongs to a flow the
-     * caller owns. The second disjunct matters because `triggered_by` is NULL
-     * for cron- and trigger-fired runs, so an "only runs you triggered" rule
-     * would hide every automated run from the flow's own owner.
+     * When scoping IS applied, a run is visible if the caller triggered it OR it
+     * belongs to a flow the caller owns. The second disjunct matters because
+     * `triggered_by` is NULL for cron- and trigger-fired runs, so a
+     * "only runs you triggered" rule would hide every automated run from the
+     * flow's own owner.
+     *
+     * An empty `$ownedFlowIds` is NOT the same as null: it means "the caller owns
+     * no flows", and the predicate must then reduce to `triggered_by = uid`
+     * rather than silently dropping the whole disjunction and matching nothing —
+     * or, worse, matching everything.
      *
      * @param string|null        $flowId       Restrict to one flow.
      * @param string|null        $status       Restrict to one status.
@@ -120,17 +130,6 @@ class FlowRunMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
         }
 
-        // VISIBILITY. Without this the endpoint returned EVERY run on the
-        // instance to any authenticated caller — including each run's log,
-        // which records the subject data the flow touched.
-        //
-        // A null uid means NO scoping, which is correct only for an
-        // administrator or a system read; request paths must pass one.
-        //
-        // An empty $ownedFlowIds is NOT the same as null: it means "the caller
-        // owns no flows", and the predicate must then reduce to
-        // `triggered_by = uid` rather than dropping the whole disjunction and
-        // matching nothing — or, worse, matching everything.
         if ($requesterUid !== null) {
             $visible = $qb->expr()->orX(
                 $qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))

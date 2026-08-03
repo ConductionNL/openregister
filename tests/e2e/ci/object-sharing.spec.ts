@@ -30,8 +30,21 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || process.env.OR_PASS || 'admin'
 /** A short unique suffix so parallel runs never collide. */
 const RUN = Math.random().toString(36).slice(2, 10)
 
-const OWNER = `e2e-owner-${RUN}`
-const OTHER = `e2e-other-${RUN}`
+/*
+ * FIXED uids, provisioned by `occ` in the workflow's `playwright-seed-command`
+ * rather than created here through the OCS provisioning API.
+ *
+ * They used to be per-run and created over `/ocs/v2.php/cloud/users`. That began
+ * returning 404 on the CI instance — `provisioning_api` is a shippped-but-
+ * optional app, and an e2e suite for object sharing should not go dark because a
+ * user-management app is absent. `occ user:add` has no such dependency.
+ *
+ * Fixed names are safe here because the config pins `workers: 1` and
+ * `fullyParallel: false`, so two runs never share an instance. Objects keep the
+ * per-run suffix, since those ARE created through the API under test.
+ */
+const OWNER = 'e2e-owner'
+const OTHER = 'e2e-other'
 const PASS = 'E2e-Share-Pass-123'
 
 /** Build an API context authenticated as one user. */
@@ -46,17 +59,20 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 	})
 }
 
-/** Provision a Nextcloud user through the provisioning API. */
-async function createUser(admin: APIRequestContext, uid: string): Promise<void> {
-	const res = await admin.post('/ocs/v2.php/cloud/users?format=json', {
-		form: { userid: uid, password: PASS },
-	})
-	// 200 = created. Anything else is worth seeing in the failure message.
-	expect(res.status(), `could not create ${uid}: ${await res.text()}`).toBeLessThan(300)
-}
-
-async function deleteUser(admin: APIRequestContext, uid: string): Promise<void> {
-	await admin.delete(`/ocs/v2.php/cloud/users/${uid}?format=json`).catch(() => undefined)
+/**
+ * Assert a seeded account is actually usable before any test leans on it.
+ *
+ * The accounts are created by the workflow's seed command, so the failure this
+ * guards against is a seed that silently did not run — which would otherwise
+ * surface later as a confusing authorization error deep inside a scope
+ * assertion rather than "the fixture user does not exist".
+ */
+async function assertSeededUser(ctx: APIRequestContext, uid: string): Promise<void> {
+	const res = await ctx.get('/index.php/apps/openregister/api/registers')
+	expect(
+		res.status(),
+		`seeded account '${uid}' cannot authenticate (${res.status()}) — did playwright-seed-command run?`,
+	).toBeLessThan(400)
 }
 
 test.describe('object sharing over HTTP', () => {
@@ -70,10 +86,11 @@ test.describe('object sharing over HTTP', () => {
 	test.beforeAll(async () => {
 		admin = await contextFor(ADMIN, ADMIN_PASS)
 
-		await createUser(admin, OWNER)
-		await createUser(admin, OTHER)
 		owner = await contextFor(OWNER, PASS)
 		other = await contextFor(OTHER, PASS)
+
+		await assertSeededUser(owner, OWNER)
+		await assertSeededUser(other, OTHER)
 
 		// A register and a schema whose read rule admits any logged-in caller,
 		// so the SCOPE is the only thing that can hide the object.
@@ -114,10 +131,9 @@ test.describe('object sharing over HTTP', () => {
 		expect(objectUuid, 'no uuid came back from the object create').toBeTruthy()
 	})
 
-	test.afterAll(async () => {
-		await deleteUser(admin, OWNER)
-		await deleteUser(admin, OTHER)
-	})
+	// No user teardown: the accounts are owned by the seed command, not by this
+	// spec. Deleting them here would break a re-run against the same instance and
+	// would race the other spec files that share them.
 
 	test('an owner can make their own object private, and it disappears for others', async () => {
 		// Visible to the other user first — this is an ordinary object.

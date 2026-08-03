@@ -110,7 +110,23 @@
       (`_multitenancy_explicit` turns the filter on by itself; and a schema whose rules do
       not bypass multitenancy gets the filter anyway). Only a schema whose read rule names a
       REAL group the caller is in reaches the branch where the forcing is load-bearing
-- [ ] 4.4 Reject a recipient's attempt to widen or re-share onward
+- [x] 4.4 Reject a recipient's attempt to widen or re-share onward. TWO halves, and only the
+      first was already covered. `requireOwnerOrAdmin()` guards all five write methods on
+      `ObjectSharingService`, so a recipient cannot add a principal or widen through OUR
+      endpoints — now asserted, with the control that matters: the caller is GRANTED read and
+      confirmed to see the object first, because a stranger would also be refused and that
+      would prove nothing about recipients. The second half was a real gap: a grant IS a share
+      on the object's FOLDER and core's Files UI acts on that folder directly, so a mask
+      carrying `PERMISSION_SHARE` let the recipient re-share the folder through core — and
+      since the resolver reads grants from exactly those folder shares, the result was a valid
+      object grant created by someone never allowed to create one. The API guard would be
+      intact and the property still false. Core's re-share bit is now cleared in ONE place used
+      by both share-construction paths (`grant()` and `newFolderShare()`, which backs links and
+      email invitations) so the two cannot drift. Stripped rather than rejected: a caller
+      passing a convenience mask like 31 does not mean to delegate re-sharing, and the safe
+      reading of an ambiguous request is the narrower one. Verified by removing the clamp and
+      watching the test fail on the persisted share (`16 is not identical to 0`); the test also
+      asserts read and update SURVIVE, so a blanket zero could not pass instead.
 - [x] 4.5 Carry a permission on the grant and gate the ACTION on it. Threaded through all
       three decision points; a read-only grant no longer admits update or delete. An action
       outside core's five verbs maps to no bit, so a grant cannot carry it and the caller
@@ -162,7 +178,20 @@
 
 - [ ] 6.1 A shares component: invite by user / group / email, create a link, set expiry, revoke — mirroring the Files share panel
 - [ ] 6.2 Expose it as a detail-page **Shares** tab
-- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget
+- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget. BLOCKED, and the blocker is measured
+      rather than suspected. A grant resolves to an object UUID, but objects live in
+      per-register/schema tables, the legacy central `openregister_objects` table holds 0 rows, and
+      the object folder path is `files/Open Registers/{Register TITLE}/{uuid}` — no schema segment
+      at all, and the register only by title. So a cross-register list needs the cross-table search,
+      and `testUnionPathTenantEdgeIsCharacterised` now shows that path returns rows from ANOTHER
+      organisation: the scope-and-grant predicate is applied there (groups 2–4 put it there) but the
+      ORGANISATION filter is not. `TODO(SEC-CTRL-1)` in ObjectsController is therefore accurate for
+      multitenancy and stale for RBAC. Building this widget over that path would leak across
+      tenants, so it waits until tenancy is wired into `searchAcrossMultipleTables()` — at which
+      point that characterisation test fails, which is the signal to flip it and build. (An HTTP-level
+      probe of the existing cross-table endpoints was INCONCLUSIVE: my pair arguments were invalid,
+      so it returned "No valid magic-mapped register+schema combinations found" for admin too. The
+      exposure is proven at the mapper level; reachability from HTTP is not established either way.)
 - [ ] 6.4 Register the widget in the dashboard catalogue and call `registerBuiltinDashboardWidgets()` — a bare side-effect import is tree-shaken and every registry tile silently renders "Widget not available"
 - [ ] 6.5 Semantic icons via the ADR-077 vocabulary, and REGISTER every name used — an unregistered MDI name renders nothing at all, not a fallback
 - [ ] 6.6 Publish on the `vue3` tag and verify the dist-tag MOVED before consuming it
@@ -224,7 +253,23 @@
       "the row is visible" cannot pass for a row that was never private.
 - [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
 - [ ] 9.3 Only then enable `credentialIdentity: owner` from `shared-credentials-and-flows` — until run authorization exists, any authenticated user could run someone else's flow and cause calls signed with that owner's secret
-- [ ] 9.4 Scope run history to the requester for a share recipient (that change's design D7)
+- [x] 9.4 Scope run history to the requester for a share recipient (that change's design D7).
+      The task understated it: `FlowRunController::index()` had NO scoping at all —
+      `findAllRuns()` filtered only by flowId and status — so any authenticated user could list
+      EVERY run on the instance, including each run's log, which records the subject data the
+      flow touched. That is the exposure D7 exists to prevent, and it was live for everyone, not
+      only for share recipients. Now scoped per caller: runs you TRIGGERED, plus runs of flows
+      you OWN. The second disjunct is load-bearing because `triggered_by` is NULL for cron- and
+      trigger-fired runs, so "only runs you triggered" would have blinded a flow's own owner to
+      every automated run of it. Owned flow ids resolve in ONE query, not per run, and the owner
+      filter is NESTED under `@self` — a bare `owner` key is read as a filter on a schema
+      PROPERTY, which the flow schema does not have, so it silently matches nothing. An
+      administrator still gets the unscoped view; `isAdmin()` fails CLOSED, so a missing group
+      manager or session scopes rather than widens, and an empty owned-list narrows to "runs I
+      triggered" rather than collapsing to nothing or to everything. Four live-DB tests, and the
+      control is the discriminating half: with the predicate disabled 3 of the 4 fail (another
+      user's run visible, an unowned cron run visible, everybody's runs visible on an empty
+      owned-list) while the null-requester admin test correctly still passes.
 
 ## 10. e2e (Playwright) and verification
 
