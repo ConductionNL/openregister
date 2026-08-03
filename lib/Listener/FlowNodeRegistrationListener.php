@@ -30,6 +30,7 @@ namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
@@ -68,6 +69,7 @@ class FlowNodeRegistrationListener implements IEventListener
      * @param ObjectWriteNode $objectWrite The built-in "Write an object" node.
      * @param ObjectReadNode  $objectRead  The built-in "Read objects" node.
      * @param FlowStateNode   $flowState   The built-in "Flow state" node.
+     * @param MapNode         $map         The built-in "Map" node.
      */
     public function __construct(
         private readonly SetFieldsNode $setFields,
@@ -82,7 +84,8 @@ class FlowNodeRegistrationListener implements IEventListener
         private readonly RouterNode $router,
         private readonly ObjectWriteNode $objectWrite,
         private readonly ObjectReadNode $objectRead,
-        private readonly FlowStateNode $flowState
+        private readonly FlowStateNode $flowState,
+        private readonly MapNode $map
     ) {
 
     }//end __construct()
@@ -115,6 +118,7 @@ class FlowNodeRegistrationListener implements IEventListener
         $event->registerNode(node: $this->objectWrite);
         $event->registerNode(node: $this->objectRead);
         $event->registerNode(node: $this->flowState);
+        $event->registerNode(node: $this->map);
 
     }//end handle()
 }//end class
