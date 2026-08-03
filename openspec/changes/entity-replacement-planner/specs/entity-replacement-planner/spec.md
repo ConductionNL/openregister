@@ -96,12 +96,16 @@ Matching MUST resolve one of three boundary policies per entity type. All bounda
 | Policy | Rule | Types |
 |---|---|---|
 | **Word-bounded** | No adjacent *word codepoint* — a Unicode letter, combining mark, decimal digit or underscore | `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, and any type not enumerated here |
-| **Delimited-token** | Word-bounded, AND the match MUST NOT be a proper substring of a longer numeric token | `DATE` |
-| **Literal** | No boundary requirement | `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS` |
+| **Delimited-token** | Word-bounded, AND the match MUST NOT be a proper substring of a longer numeric token | `DATE`, `SSN`, `PHONE`, `IP_ADDRESS` |
+| **Literal** | No boundary requirement | `EMAIL`, `IBAN` |
 
-**Delimited-token** exists because a date is short and frequently numeric, so a substring match can silently corrupt an unrelated number. A numeric token is a run of decimal digits optionally joined by single separators (`-`, `/`, `.`, `:`) where each separator is **immediately followed by a digit**. A match is rejected when expanding it under that rule yields a token longer than the match itself. Sentence punctuation therefore does not block a match, because a separator not followed by a digit does not extend the token: `1980` matches in `in 1980.` but not in `2026-0012` or `03.08.2026`. A needle may itself be internally concatenated (`20260803`) or internally separated (`03-08-2026`) — the rule constrains only what surrounds the match.
+**Delimited-token** applies to needles that are wholly or predominantly numeric, because such a needle can sit inside a longer number and a substring match there does not merely over-redact — it silently rewrites a *different* value. A numeric token is a run of decimal digits optionally joined by single separators (`-`, `/`, `.`, `:`) where each separator is **immediately followed by a digit**. A match is rejected when expanding it under that rule yields a token longer than the match itself. Sentence punctuation therefore does not block a match, because a separator not followed by a digit does not extend the token: `1980` matches in `in 1980.` but not in `2026-0012` or `03.08.2026`. A needle may itself be internally concatenated (`20260803`) or internally separated (`03-08-2026`, `192.168.1.1`) — the rule constrains only what surrounds the match.
 
-**Literal** is reserved for types that are routinely concatenated to a label without a separator (`IBAN:NL91ABNA0417164300`, where a letter sits directly against the needle). A boundary requirement there would reject a genuine match and leave PII in place, which is why these types accept the false-positive risk instead.
+The clearest case is `IP_ADDRESS`: under literal matching, the needle `192.168.1.1` matches inside `192.168.1.10`, emitting `[IP-ADRES: 1]0` — a *different* address, corrupted, with a digit of it leaking. Two adjacent addresses where one is a prefix of the other is an everyday occurrence in logs and configuration dumps. The same failure applies to a BSN inside a longer digit run and to a phone number inside a longer one.
+
+**Literal** is reserved for needles that are long, alphanumeric and distinctive enough that substring false positives are negligible, so there is no risk to weigh against the benefit: they tolerate being concatenated to a label without a separator (`IBAN:NL91ABNA0417164300`, and equally `IBANNL91ABNA0417164300`, where a letter sits directly against the needle). A boundary requirement there would reject a genuine match and leave PII in place while buying nothing. This rationale does NOT extend to short numeric identifiers, which is why `SSN`, `PHONE` and `IP_ADDRESS` are delimited-token despite also being structured.
+
+The trade-off is accepted knowingly: an unseparated `BSN123456789` is rejected under delimited-token and reported as `unmatched`. That is the visible failure mode, and it is preferred over silently corrupting `1234567890`.
 
 An entity type outside the enumerated set MUST default to **word-bounded**, NOT to literal. The two failure modes are not equally visible: a boundary miss means the needle matches nowhere and is therefore reported as residual, whereas a literal false positive silently over-redacts or corrupts a longer string and no check detects it. Defaulting to the policy whose failures surface in the report is the safer choice, and the concatenated-label rationale that justifies literal does not generalise to unknown types.
 
@@ -137,12 +141,37 @@ An entity type outside the enumerated set MUST default to **word-bounded**, NOT 
 - **THEN** the standalone `Jan` and `Bas` are replaced
 - **AND** `Januari` and `Bassin` are present in the output unmodified
 
-#### Scenario: A structured identifier matches when adjacent to word characters
+#### Scenario: A long alphanumeric identifier matches when adjacent to word characters
 
 - **GIVEN** the text `IBAN:NL91ABNA0417164300x`
 - **AND** a map with `"NL91ABNA0417164300"` → `[IBAN: 3]`, type `IBAN`
 - **WHEN** the plan is applied
 - **THEN** the IBAN is replaced despite word codepoints on both sides
+
+#### Scenario: An IP address is not matched inside a longer address
+
+- **GIVEN** the text `verbinding van 192.168.1.1 naar 192.168.1.10`
+- **AND** a map with `"192.168.1.1"` → `[IP-ADRES: 6]`, type `IP_ADDRESS`
+- **WHEN** the plan is applied
+- **THEN** the standalone `192.168.1.1` is replaced
+- **AND** `192.168.1.10` is present in the output unmodified
+- **AND** the output contains no `[IP-ADRES: 6]0`
+
+#### Scenario: A BSN is not matched inside a longer digit run
+
+- **GIVEN** the text `dossier 1234567890 betreft bsn 123456789`
+- **AND** a map with `"123456789"` → `[BSN: 7]`, type `SSN`
+- **WHEN** the plan is applied
+- **THEN** the standalone `123456789` is replaced
+- **AND** `1234567890` is present in the output unmodified
+
+#### Scenario: An unseparated numeric identifier is rejected and reported
+
+- **GIVEN** the text `BSN123456789`
+- **AND** a map with `"123456789"` → `[BSN: 7]`, type `SSN`
+- **WHEN** the plan is applied
+- **THEN** the needle is NOT replaced, because a letter sits directly against it
+- **AND** the needle is reported as `unmatched`, so the miss is visible to the operator
 
 ### Requirement: Application MUST build the output in a single pass so placeholders are never rescanned
 

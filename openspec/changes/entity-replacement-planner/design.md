@@ -71,8 +71,12 @@ Resolved from the canonical constants in `EntityRecognitionHandler` (`:64-73`; P
 | Policy | Types | Why |
 |---|---|---|
 | **Word-bounded** | `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, and any unenumerated type | Short free-text values collide with ordinary words — `Jan` inside `Januari`, `Bas` inside `Bassin`. |
-| **Delimited-token** | `DATE` | Word-bounded, plus the match may not be a proper substring of a longer numeric token. Dates are short and often numeric, so a substring hit corrupts unrelated numbers — a case number `2026-0012` must not become `[DATUM: 4]-0012`. |
-| **Literal** | `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS` | Routinely concatenated to a label with no separator (`IBAN:NL91ABNA…`), where a letter sits directly against the needle and a boundary rule would reject a genuine match and leave PII behind. |
+| **Delimited-token** | `DATE`, `SSN`, `PHONE`, `IP_ADDRESS` | Word-bounded, plus the match may not be a proper substring of a longer numeric token. A numeric needle inside a longer number does not merely over-redact, it silently rewrites a **different value**: `192.168.1.1` matches inside `192.168.1.10`, `123456789` inside `1234567890`, `2026` inside the case number `2026-0012`. |
+| **Literal** | `EMAIL`, `IBAN` | Long, alphanumeric and distinctive, so substring false positives are negligible and there is no risk to weigh. That buys tolerance for unseparated concatenation (`IBANNL91ABNA…`), where any boundary rule would reject a genuine match and leave PII behind. |
+
+**The deciding factor is numeric embeddability, not "structured vs free-text".** That was the first draft's error: it grouped all five structured types under `literal` on the strength of the concatenated-label argument, which only actually holds for the long alphanumeric ones. `IP_ADDRESS` is the sharpest counter-example — two adjacent addresses where one is a prefix of the other is an everyday occurrence in logs, and literal matching emits `[IP-ADRES: 1]0` for the second one: a corrupted, different address with a digit of it leaking.
+
+The cost is accepted knowingly: an unseparated `BSN123456789` is now rejected and reported as `unmatched`. Visible miss beats silent corruption.
 
 A boundary is "not adjacent to a word codepoint" — letter, combining mark, decimal digit or underscore — Unicode-aware, because `\b` in a non-`/u` pattern is byte-oriented and mis-fires on any accented Dutch name.
 
@@ -82,7 +86,9 @@ A boundary is "not adjacent to a word codepoint" — letter, combining mark, dec
 
 Rejected: a global word-boundary rule — it suppresses legitimate structured-identifier matches. Rejected: no boundary rule (status quo) — it over-redacts every short name.
 
-Related context, not a requirement here: the intent is that `DATE` entities are not anonymised by default at all, since only birth dates warrant it. No such gate was found in openregister — the only DATE-specific logic is `RiskLevelService.php:87` classifying it `RISK_LOW` / `CATEGORY_TEMPORAL_DATA`, and selection is per-entity operator skip decisions (`findSkippedEntityValuesForFile`), not type-level. So the default is either DocuDesk-side or not yet implemented; it needs confirming there. The boundary policy must be correct regardless, because an operator can always select a date.
+**Why `DATE` is lower-stakes than it looks.** `DATE` recognition is **disabled by default as a settings convention**: only birth dates genuinely warrant anonymisation, and the date recogniser otherwise produces a great deal of clutter. This is a configuration default, so its absence from openregister's code is by design — there is nothing to find here, and the only DATE-specific logic in-tree is `RiskLevelService.php:87` classifying it `RISK_LOW` / `CATEGORY_TEMPORAL_DATA`, which is consistent with that convention.
+
+The delimited-token rule for `DATE` is therefore **defence-in-depth for the case where an operator deliberately enables dates**, not a fix on a hot path. It still matters, because an operator who enables dates to catch birth dates gets every other date too, and that is exactly the situation where a bare year colliding with a case number becomes likely. The same rule earns its place far more urgently on `SSN`, `PHONE` and `IP_ADDRESS`, which are enabled by default.
 
 ### Decision 5: Case-insensitive matching, applied consistently to verification
 
@@ -165,11 +171,16 @@ Two port-specific notes:
 
 ## Open Questions
 
-**Settled 2026-08-03** (moved out of this list, recorded at their decisions above): residuals never block; `DATE` uses the delimited-token policy; unenumerated types default to word-bounded, not literal; a `partial` finding sets `complete: false`.
+**Settled 2026-08-03**, recorded at their respective decisions above:
+
+- Residuals never block, on any path.
+- Boundary policy resolves to three classes on the basis of **numeric embeddability**: `DATE`, `SSN`, `PHONE` and `IP_ADDRESS` are delimited-token; `EMAIL` and `IBAN` stay literal; everything else, including unenumerated types, is word-bounded.
+- Unenumerated types default to word-bounded, not literal, because a boundary miss is reported while a literal false positive is silent.
+- A `partial` finding sets `complete: false`.
+- `DATE` recognition is disabled by default as a settings convention, so its rule is defence-in-depth rather than a hot path.
 
 Still open:
 
 - **Does DocuDesk's grondslagen-summary distinguish `unmatched` from `partial`?** It now has to, at minimum to avoid treating a `partial`-only result as unpublishable — that document is fully redacted. Cross-app, and a blocker for the operator-facing half of this being useful.
-- **Is the birth-dates-only default for `DATE` implemented anywhere?** Not found in openregister (see Decision 4). Needs confirming on the DocuDesk side, or building.
-- **Should the numeric structured types adopt delimited-token too?** `SSN`, `PHONE` and `IBAN` are `literal`, so `123456789` can match inside `1234567890` and silently corrupt it — the same defect delimited-token was introduced to fix for `DATE`. The counter-argument is the one that put them in `literal`: `BSN123456789` with no separator would then be rejected. A hybrid (delimited-token, but allow a directly-adjacent letter run that is not itself digit-adjacent) would cover both, at the cost of a rule nobody will remember. Deliberately left for a follow-up rather than widened here.
 - **Does the residue-coverage rule need a length floor?** A residue of one or two letters is redacted today if it contains a letter. `[PERSOON: 1][PERSOON: 2]` where the second placeholder covers a two-character fragment may be worse for the reader than leaving the fragment, which is not identifying on its own. No evidence either way yet.
+- **Do unseparated numeric identifiers occur often enough to need a fallback?** Delimited-token rejects `BSN123456789`, reporting it rather than redacting it. If real documents (form exports, filenames pulled into text) turn out to concatenate identifiers to labels routinely, a narrow relaxation — allow a directly-adjacent *letter* run that is not itself digit-adjacent — would recover those matches without reopening the numeric-substring hole. Not built now, because the reporting makes the miss visible and there is no evidence yet on frequency.

@@ -48,7 +48,7 @@
     },
     {
       "id": "2.1",
-      "title": "BoundaryPolicy: three classes; unknown type defaults to bounded",
+      "title": "BoundaryPolicy: three classes by numeric embeddability; unknown->bounded",
       "status": "pending"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "id": "2.3b",
-      "title": "Delimited-token rule for DATE (not a substring of a longer numeric token)",
+      "title": "Delimited-token rule for DATE, SSN, PHONE, IP_ADDRESS",
       "status": "pending"
     },
     {
@@ -78,7 +78,7 @@
     },
     {
       "id": "2.5b",
-      "title": "Delimited-token and unknown-type-bounded tests",
+      "title": "Delimited-token tests incl. 192.168.1.1 inside 192.168.1.10",
       "status": "pending"
     },
     {
