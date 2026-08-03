@@ -75,6 +75,56 @@ class MappingRuntime implements RuntimeExtensionInterface
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
+    public function json_decode(string $input): array
+    {
+        return (array) json_decode(json: $input, associative: true);
+
+    }//end json_decode()
+
+    /**
+     * URL-friendly slug from arbitrary text.
+     *
+     * Ported verbatim from OpenConnector's runtime when mapping consolidated
+     * into OpenRegister. Byte-for-byte behaviour matters here: slugs authored by
+     * existing mappings are persisted as object identifiers, so any change to
+     * the transformation silently orphans previously-written objects.
+     *
+     * @param string $text The text to slugify.
+     *
+     * @return string The slug.
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+     */
+    public function createSlug(string $text): string
+    {
+        // Convert to lowercase.
+        $slug = strtolower($text);
+
+        // Replace spaces and underscores with hyphens.
+        $slug = str_replace([' ', '_'], '-', $slug);
+
+        // Remove all characters that are not a-z, 0-9, or hyphen.
+        $slug = preg_replace('/[^a-z0-9\-]/', '', $slug);
+
+        // Replace multiple consecutive hyphens with single hyphen.
+        $slug = preg_replace('/-+/', '-', $slug);
+
+        // Trim hyphens from start and end.
+        $slug = trim($slug, '-');
+
+        return $slug;
+
+    }//end createSlug()
+
+    /**
+     * Encodes a string to base64.
+     *
+     * @param string $input The unencoded input.
+     *
+     * @return string The encoded output.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
     public function b64enc(string $input): string
     {
         return base64_encode(string: $input);
