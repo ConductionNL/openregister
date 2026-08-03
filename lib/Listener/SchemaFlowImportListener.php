@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use InvalidArgumentException;
 use DateTime;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowMapper;
@@ -170,7 +171,7 @@ class SchemaFlowImportListener implements IEventListener
     {
         $name = trim((string) ($declaration['name'] ?? ''));
         if ($name === '') {
-            throw new \InvalidArgumentException('a declared flow needs a name');
+            throw new InvalidArgumentException('a declared flow needs a name');
         }
 
         $app = (string) ($declaration['app'] ?? 'openregister');

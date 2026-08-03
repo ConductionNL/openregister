@@ -145,6 +145,21 @@ class FlowRunController extends Controller
         if ($this->isAdmin() === false) {
             $requesterUid = $this->callerUid();
             $ownedFlowIds = $this->flowIdsOwnedByCaller();
+
+            // No session means there is nobody to scope to — and a null uid
+            // reaches findAllRuns() as "do not scope", which is an
+            // ADMINISTRATOR's semantics. Falling through would therefore turn
+            // the absence of a caller into the widest possible read. Return
+            // empty instead: a non-admin with no identity owns no runs.
+            if ($requesterUid === null || $requesterUid === '') {
+                return new JSONResponse(
+                    [
+                        'results' => [],
+                        'limit'   => $limit,
+                        'offset'  => $offset,
+                    ]
+                );
+            }
         }
 
         $runs = $this->mapper->findAllRuns(

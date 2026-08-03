@@ -59,19 +59,21 @@ class FlowRunControllerTest extends TestCase
         $this->userSession = $this->createMock(IUserSession::class);
         $this->userSession->method('getUser')->willReturn($user);
 
-        // FlowRunController gained an IUserSession dependency (it attributes a
-        // test/retry run to the caller); the constructor call here was never
-        // updated, so every test in this class died with an ArgumentCountError
-        // before reaching its assertions.
+        // Named arguments deliberately. This call has now silently mis-bound
+        // twice as the constructor grew: first an ArgumentCountError when
+        // IUserSession arrived, then $flows landing in the $groupManager slot
+        // and failing as a TypeError. Positionally, both look like a correct
+        // call right up until the type happens not to match — and a nullable
+        // parameter would have accepted the wrong value in silence.
         $this->controller = new FlowRunController(
-            'openregister',
-            $this->request,
-            $this->mapper,
-            $this->runner,
-            $this->resolvers,
-            $this->userSession,
-            $this->organisations,
-            $this->flows
+            appName: 'openregister',
+            request: $this->request,
+            mapper: $this->mapper,
+            runner: $this->runner,
+            resolvers: $this->resolvers,
+            userSession: $this->userSession,
+            organisationService: $this->organisations,
+            flows: $this->flows
         );
     }//end setUp()
 
@@ -314,14 +316,14 @@ class FlowRunControllerTest extends TestCase
         $session->method('getUser')->willReturn(null);
 
         $controller = new FlowRunController(
-            'openregister',
-            $this->request,
-            $this->mapper,
-            $this->runner,
-            $this->resolvers,
-            $session,
-            $this->organisations,
-            $this->flows
+            appName: 'openregister',
+            request: $this->request,
+            mapper: $this->mapper,
+            runner: $this->runner,
+            resolvers: $this->resolvers,
+            userSession: $session,
+            organisationService: $this->organisations,
+            flows: $this->flows
         );
 
         $this->mapper->expects($this->never())->method('findAllRuns');

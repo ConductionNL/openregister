@@ -54,6 +54,14 @@ use OCP\WorkflowEngine\IManager;
 /**
  * Catalog and CRUD endpoints for flows.
  *
+ * Ten of the eleven public methods are routed endpoints — the class's public
+ * surface IS the flow API, so the count measures how many routes flows have
+ * rather than how much this class does. Splitting the catalogue reads off the
+ * resource writes would put two controllers behind one `/api/flows` prefix and
+ * make the routes file the only place the API's shape is visible.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller

@@ -30,6 +30,13 @@ use OCP\IDBConnection;
 /**
  * Reads and writes flow runs.
  *
+ * A mapper's public methods are its query vocabulary: each one is a distinct
+ * question the scheduler, the worker or retention asks of the run table, and
+ * they exist as named methods precisely so those questions are not rebuilt as
+ * ad-hoc query builders at each call site.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
  * @template-extends QBMapper<FlowRun>
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
