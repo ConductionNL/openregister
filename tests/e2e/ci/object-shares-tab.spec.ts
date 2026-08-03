@@ -55,6 +55,40 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 }
 
 /**
+ * Close any modal covering the page.
+ *
+ * On the FIRST app load of a fresh instance, nc-vue's support dialog
+ * (`cn-support-dialog`) opens over everything, and its mask intercepts pointer
+ * events — the tab click retried for 45s against "subtree intercepts pointer
+ * events" while reporting the tab itself as visible, enabled and stable, which
+ * reads like a broken selector and is not one. Only the first test in a run hit
+ * it, so it also looks like flake.
+ *
+ * Escape rather than `dispatchEvent`: a real user meets this dialog too, so the
+ * test should get past it the way a user does. Bypassing hit-testing would hide
+ * a genuine overlay regression.
+ *
+ * Fails loudly if a mask survives, instead of proceeding into a click that
+ * cannot land.
+ */
+async function dismissBlockingModals(page: Page): Promise<void> {
+	const mask = page.locator('.modal-mask:visible')
+
+	for (let attempt = 0; attempt < 3; attempt++) {
+		if (await mask.count() === 0) {
+			return
+		}
+		await page.keyboard.press('Escape')
+		await page.waitForTimeout(300)
+	}
+
+	await expect(
+		mask,
+		'a modal is still covering the page after three Escapes — it will swallow every click',
+	).toHaveCount(0)
+}
+
+/**
  * Open an object's detail page and select the Shares tab.
  *
  * `/objects/:register/:schema/:id` is the deep-link route declared in
@@ -100,6 +134,7 @@ async function openSharesTab(
 		+ 'test, and an admin bypasses the private scope',
 	).toBe(OWNER)
 
+	await dismissBlockingModals(page)
 	await tab.click()
 
 	const panel = page.locator('.cn-object-access-tab')
