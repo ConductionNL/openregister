@@ -110,7 +110,23 @@
       (`_multitenancy_explicit` turns the filter on by itself; and a schema whose rules do
       not bypass multitenancy gets the filter anyway). Only a schema whose read rule names a
       REAL group the caller is in reaches the branch where the forcing is load-bearing
-- [ ] 4.4 Reject a recipient's attempt to widen or re-share onward
+- [x] 4.4 Reject a recipient's attempt to widen or re-share onward. TWO halves, and only the
+      first was already covered. `requireOwnerOrAdmin()` guards all five write methods on
+      `ObjectSharingService`, so a recipient cannot add a principal or widen through OUR
+      endpoints — now asserted, with the control that matters: the caller is GRANTED read and
+      confirmed to see the object first, because a stranger would also be refused and that
+      would prove nothing about recipients. The second half was a real gap: a grant IS a share
+      on the object's FOLDER and core's Files UI acts on that folder directly, so a mask
+      carrying `PERMISSION_SHARE` let the recipient re-share the folder through core — and
+      since the resolver reads grants from exactly those folder shares, the result was a valid
+      object grant created by someone never allowed to create one. The API guard would be
+      intact and the property still false. Core's re-share bit is now cleared in ONE place used
+      by both share-construction paths (`grant()` and `newFolderShare()`, which backs links and
+      email invitations) so the two cannot drift. Stripped rather than rejected: a caller
+      passing a convenience mask like 31 does not mean to delegate re-sharing, and the safe
+      reading of an ambiguous request is the narrower one. Verified by removing the clamp and
+      watching the test fail on the persisted share (`16 is not identical to 0`); the test also
+      asserts read and update SURVIVE, so a blanket zero could not pass instead.
 - [x] 4.5 Carry a permission on the grant and gate the ACTION on it. Threaded through all
       three decision points; a read-only grant no longer admits update or delete. An action
       outside core's five verbs maps to no bit, so a grant cannot carry it and the caller
@@ -224,7 +240,23 @@
       "the row is visible" cannot pass for a row that was never private.
 - [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
 - [ ] 9.3 Only then enable `credentialIdentity: owner` from `shared-credentials-and-flows` — until run authorization exists, any authenticated user could run someone else's flow and cause calls signed with that owner's secret
-- [ ] 9.4 Scope run history to the requester for a share recipient (that change's design D7)
+- [x] 9.4 Scope run history to the requester for a share recipient (that change's design D7).
+      The task understated it: `FlowRunController::index()` had NO scoping at all —
+      `findAllRuns()` filtered only by flowId and status — so any authenticated user could list
+      EVERY run on the instance, including each run's log, which records the subject data the
+      flow touched. That is the exposure D7 exists to prevent, and it was live for everyone, not
+      only for share recipients. Now scoped per caller: runs you TRIGGERED, plus runs of flows
+      you OWN. The second disjunct is load-bearing because `triggered_by` is NULL for cron- and
+      trigger-fired runs, so "only runs you triggered" would have blinded a flow's own owner to
+      every automated run of it. Owned flow ids resolve in ONE query, not per run, and the owner
+      filter is NESTED under `@self` — a bare `owner` key is read as a filter on a schema
+      PROPERTY, which the flow schema does not have, so it silently matches nothing. An
+      administrator still gets the unscoped view; `isAdmin()` fails CLOSED, so a missing group
+      manager or session scopes rather than widens, and an empty owned-list narrows to "runs I
+      triggered" rather than collapsing to nothing or to everything. Four live-DB tests, and the
+      control is the discriminating half: with the predicate disabled 3 of the 4 fail (another
+      user's run visible, an unowned cron run visible, everybody's runs visible on an empty
+      owned-list) while the null-requester admin test correctly still passes.
 
 ## 10. e2e (Playwright) and verification
 

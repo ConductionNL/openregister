@@ -73,17 +73,47 @@ class FlowRunMapper extends QBMapper
     /**
      * List runs, newest first.
      *
-     * @param string|null $flowId Restrict to one flow.
-     * @param string|null $status Restrict to one status.
-     * @param integer     $limit  Page size.
-     * @param integer     $offset Page offset.
+     * VISIBILITY. `$requesterUid` is the scoping switch, and it is deliberately
+     * required-by-convention rather than optional-by-default: passing null means
+     * "no scoping", which is correct only for an administrator or a system read.
+     * Until this parameter existed the method had no scoping at ALL, so
+     * `GET /api/flow-runs` returned every run on the instance to any
+     * authenticated caller — including each run's log, which records the subject
+     * data the flow touched. That is precisely what design D7 of
+     * `shared-credentials-and-flows` exists to prevent.
+     *
+     * When scoping IS applied, a run is visible if the caller triggered it OR it
+     * belongs to a flow the caller owns. The second disjunct matters because
+     * `triggered_by` is NULL for cron- and trigger-fired runs, so a
+     * "only runs you triggered" rule would hide every automated run from the
+     * flow's own owner.
+     *
+     * An empty `$ownedFlowIds` is NOT the same as null: it means "the caller owns
+     * no flows", and the predicate must then reduce to `triggered_by = uid`
+     * rather than silently dropping the whole disjunction and matching nothing —
+     * or, worse, matching everything.
+     *
+     * @param string|null        $flowId       Restrict to one flow.
+     * @param string|null        $status       Restrict to one status.
+     * @param integer            $limit        Page size.
+     * @param integer            $offset       Page offset.
+     * @param string|null        $requesterUid The caller, or null to apply NO scoping
+     *                                         (administrators and system reads only).
+     * @param array<int, string> $ownedFlowIds Flow ids the caller owns; runs of these
+     *                                         are visible regardless of who triggered them.
      *
      * @return array<int, FlowRun> The runs.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
-    public function findAllRuns(?string $flowId=null, ?string $status=null, int $limit=50, int $offset=0): array
-    {
+    public function findAllRuns(
+        ?string $flowId=null,
+        ?string $status=null,
+        int $limit=50,
+        int $offset=0,
+        ?string $requesterUid=null,
+        array $ownedFlowIds=[]
+    ): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -97,6 +127,23 @@ class FlowRunMapper extends QBMapper
 
         if ($status !== null && $status !== '') {
             $qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
+        }
+
+        if ($requesterUid !== null) {
+            $visible = $qb->expr()->orX(
+                $qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))
+            );
+
+            if (empty($ownedFlowIds) === false) {
+                $visible->add(
+                    $qb->expr()->in(
+                        'flow_id',
+                        $qb->createNamedParameter($ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+            }
+
+            $qb->andWhere($visible);
         }
 
         return $this->findEntities(query: $qb);

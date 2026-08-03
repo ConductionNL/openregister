@@ -64,6 +64,7 @@ use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\Rbac\ObjectSharingService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\Files\Folder;
+use OCP\Constants;
 use OCP\Share\IManager;
 use OCP\Share\IShare;
 use OCP\IDBConnection;
@@ -1060,6 +1061,127 @@ class PrivateScopeParityIntegrationTest extends TestCase
             'a revoked grant must deny on the next request'
         );
     }//end testGrantAndRevokeThroughTheService()
+
+
+    /**
+     * A RECIPIENT cannot add another principal to the object (task 4.4).
+     *
+     * The spec: "A recipient SHALL NOT be able to widen a grant, add a principal,
+     * or re-share onward."
+     *
+     * The control matters more than the refusal here. A stranger would also be
+     * refused, and that would prove nothing about recipients — so the caller is
+     * first GRANTED read and confirmed to actually see the object. Only then does
+     * the refusal mean "a legitimate recipient cannot re-share", rather than
+     * "someone who cannot reach the object at all cannot share it".
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md#scenario-a-recipient-cannot-re-share
+     */
+    public function testARecipientCannotAddAnotherPrincipal(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'noreshare', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['noreshare'];
+
+        // The owner invites this caller, so they are a genuine recipient.
+        $this->asOwner(
+            fn() => $this->sharingService()->grant(
+                object: $entity,
+                type: 'user',
+                shareWith: $this->testUid,
+                permissions: 1
+            )
+        );
+        $this->grantResolver()->forget();
+
+        // CONTROL: they really are a recipient — they can see the object.
+        $this->assertContains(
+            'noreshare',
+            $this->visibleKeys($register, $schema),
+            'control: the caller must be an admitted recipient, or the refusal below proves nothing'
+        );
+
+        // And still cannot pass it on.
+        $this->expectException(NotAuthorizedException::class);
+        $this->sharingService()->grant(
+            object: $entity,
+            type: 'user',
+            shareWith: 'somebody-else',
+            permissions: 1
+        );
+    }//end testARecipientCannotAddAnotherPrincipal()
+
+
+    /**
+     * A grant never carries core's re-share bit (task 4.4, second half).
+     *
+     * `requireOwnerOrAdmin()` stops a recipient using OUR endpoints, but a grant
+     * IS a share on the object's folder, and core's Files UI acts on that folder
+     * directly. With `PERMISSION_SHARE` set, the recipient could re-share the
+     * folder through core — and because the resolver reads grants from exactly
+     * those folder shares, the result would be a valid object grant created by
+     * someone who was never allowed to create one. The API guard would be intact
+     * and the property still false.
+     *
+     * The control is asserting that the OTHER requested bits survive. Without it,
+     * a mask of 0 — or a clamp that zeroed everything — would pass just as well.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/object-level-sharing-and-private-scope/specs/object-level-sharing/spec.md#scenario-a-recipient-cannot-re-share
+     */
+    public function testAGrantNeverCarriesCoresReshareBit(): void
+    {
+        [$register, $schema] = $this->createFixtureTable();
+
+        $this->insertFixture($register, $schema, 'nobit', ['scope' => 'private'], false, ownedByRealOwner: true);
+        $entity = $this->readBackByKey($register, $schema)['nobit'];
+
+        // Ask for read + update + share. Only the share bit may be dropped.
+        $requested = (Constants::PERMISSION_READ | Constants::PERMISSION_UPDATE | Constants::PERMISSION_SHARE);
+
+        $grant = $this->asOwner(
+            fn() => $this->sharingService()->grant(
+                object: $entity,
+                type: 'user',
+                shareWith: $this->testUid,
+                permissions: $requested
+            )
+        );
+
+        $granted = (int) $grant['permissions'];
+
+        $this->assertSame(
+            0,
+            ($granted & Constants::PERMISSION_SHARE),
+            'a grant must never delegate re-sharing — the recipient could otherwise pass the object on via core Files'
+        );
+
+        // CONTROLS: the clamp is surgical, not a blanket zero.
+        $this->assertSame(
+            Constants::PERMISSION_READ,
+            ($granted & Constants::PERMISSION_READ),
+            'control: read must survive the clamp'
+        );
+        $this->assertSame(
+            Constants::PERMISSION_UPDATE,
+            ($granted & Constants::PERMISSION_UPDATE),
+            'control: update must survive the clamp'
+        );
+
+        // And the share on disk carries the clamped mask, not the requested one —
+        // asserting only the returned array would miss a clamp applied after the
+        // share was already created.
+        $stored = $this->shareManager()->getShareById((string) $grant['id']);
+        $this->assertSame(
+            0,
+            ($stored->getPermissions() & Constants::PERMISSION_SHARE),
+            'the PERSISTED share must not carry the re-share bit either'
+        );
+    }//end testAGrantNeverCarriesCoresReshareBit()
 
 
     /**
