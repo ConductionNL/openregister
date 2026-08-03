@@ -334,8 +334,16 @@ const DYNAMIC_KEYS = [
 ]
 
 /**
- * Every key reached dynamically: DYNAMIC_KEYS plus each menu label in
- * src/manifest.json, which MainMenu.translate(key) passes straight to t().
+ * Every key reached dynamically: DYNAMIC_KEYS plus the src/manifest.json fields
+ * that MainMenu.translate(key) passes straight to t().
+ *
+ * Only the fields CnAppNav actually resolves through its `translate` prop count:
+ * `menu[].label` (recursively through `children`) and the two nav label
+ * overrides. Anything else in the manifest is data, not UI copy — notably
+ * `observability.metrics[].name` (Prometheus metric identifiers) and
+ * `pages[].title`, which CnPageRenderer forwards to the page component as a raw
+ * prop without translating it. Harvesting those made metric names look like
+ * catalogue keys and would have put them in front of translators.
  *
  * @param {string} repoRoot Absolute path to the app root.
  * @return {Set<string>} Keys that must count as used.
@@ -346,15 +354,18 @@ function collectDynamicKeys(repoRoot) {
 	if (!fs.existsSync(manifestPath)) return out
 	let manifest
 	try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) } catch { return out }
-	;(function collect(node) {
-		if (Array.isArray(node)) return node.forEach(collect)
-		if (node && typeof node === 'object') {
-			for (const [k, v] of Object.entries(node)) {
-				if ((k === 'label' || k === 'name' || k === 'title') && typeof v === 'string') out.add(v)
-				collect(v)
-			}
+	;(function collectMenu(items) {
+		if (!Array.isArray(items)) return
+		for (const item of items) {
+			if (!item || typeof item !== 'object') continue
+			if (typeof item.label === 'string') out.add(item.label)
+			collectMenu(item.children)
 		}
-	})(manifest)
+	})(manifest.menu)
+	for (const field of ['roadmapLabel', 'documentationLabel']) {
+		const v = manifest.nav?.[field]
+		if (typeof v === 'string') out.add(v)
+	}
 	return out
 }
 
