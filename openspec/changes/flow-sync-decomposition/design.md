@@ -96,8 +96,50 @@ which is the second reason Option A loses.
 
 ## Migration
 
-`openregister.loop` keeps its behaviour and is **renamed in the palette** to
-"Batch items", because it batches and does not loop. The id stays
-`openregister.loop` — it is referenced by stored flow definitions, and renaming
-an id breaks authored data. This is the same reasoning that kept both
-`json_decode` and `jsonDecode` registered when mapping consolidated.
+`openregister.loop` batches; it does not loop. Both its palette name AND its id
+change — to "Batch items" and `openregister.batch`.
+
+Keeping the old id was the first instinct, on the grounds that stored flow
+definitions reference it. That is the wrong trade here. A node whose id says
+`loop` and whose behaviour is `batch`, sitting next to a real `iterate`, is a
+trap that gets re-set every time someone new reads the catalogue — and unlike a
+Twig function name, a node id is not authored data typed by a human into a
+template. It is a reference the system writes and the system can rewrite.
+
+So the id is corrected and stored flows are **migrated**:
+
+- A migration rewrites `openregister.loop` → `openregister.batch` in the `nodes`
+  and `edges` of every row in `oc_openregister_flows`.
+- The registry keeps `openregister.loop` as a resolvable ALIAS for one release,
+  so a flow exported before the migration and imported after it still resolves
+  rather than failing with "no app provides the flow node type".
+- The alias is logged when used, so the tail of un-migrated definitions is
+  visible rather than assumed empty.
+
+This is the opposite call to `json_decode`/`jsonDecode`, and deliberately: a Twig
+function name lives inside a mapping template that a person wrote and we cannot
+rewrite safely, whereas a node id lives in a JSON structure we own end to end.
+
+## Credentials belong on the Source, not on a second node
+
+An earlier draft added `openregister.broker-call` alongside
+`openconnector.source-call` — one node for calls with an injectable credential,
+another for calls with a brokered one.
+
+**Rejected.** That exposes an implementation detail as a modelling choice. From
+an author's chair both nodes do the same thing — call a configured source — and
+the only way to pick correctly is to know which credential SHAPE the source
+carries, which is precisely the distinction the broker exists to hide. Getting it
+wrong yields "resolveInjectable returned null", which reads as a permission
+problem and is not one.
+
+So there is ONE node, `openconnector.source-call`, and a Source may reference a
+doriath-held credential in its configuration. The Source resolves it:
+
+- injectable credential → resolve and attach it to the outgoing request, as now
+- host-locked proxy → hand the request to OpenRegister's broker, which performs
+  it server-side and returns the response bytes
+
+The author configures a credential on the Source and calls it. That OpenRegister
+brokers the host-locked case is under the waterline, where it belongs — and it
+keeps the property that matters: the token is never handed to the flow.

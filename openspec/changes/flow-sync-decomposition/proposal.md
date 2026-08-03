@@ -65,8 +65,11 @@ This affects every while/for shape, not only pagination.
   hand-drawn back-edges: a node that emits a batch and a "more" signal, plus a
   declared loop body, so the builder can DRAW the cycle as a container instead
   of an edge that happens to point backwards.
-- **ADD** `openregister.broker-call` — an HTTP call made through OpenRegister's
-  credential broker, so a flow can use a secret it is never given.
+- **EXTEND** `openconnector.source-call` so a Source may reference a
+  doriath-held credential, brokered by OpenRegister when the credential is
+  host-locked. ONE node, not two: which credential shape a source carries is
+  exactly what the broker exists to hide, so it must not become a modelling
+  choice the author has to get right.
 - **ADD** a `publiccode` schema and a worked example flow that harvests
   publiccode.yml files from GitHub into OpenRegister objects, searchable by
   OpenCatalogi.
@@ -86,11 +89,14 @@ The fleet already has the right shape for this, and it is easy to get wrong:
 - `POST /api/credentials/{id}/request` performs the call server-side. Only
   response bytes cross the boundary.
 
-So `openconnector.source-call` is the wrong node for this: it calls a configured
-Source with credentials it can resolve. A flow that needs a host-locked
-credential needs a node that asks the broker to make the call. That is
-`openregister.broker-call`, and it is what "integrating correctly with doriath"
-means in practice — not fetching a token, but never holding one.
+So the Source must be able to carry a doriath-held credential, and resolve it by
+SHAPE: injectable credentials are attached to the request as now; a host-locked
+one is handed to OpenRegister's broker, which performs the call server-side and
+returns only response bytes. The author configures a credential and calls the
+source; the brokering is under the waterline.
+
+"Integrating correctly with doriath" therefore means never fetching a token —
+not adding a second node for the case where you cannot.
 
 This is why publiccode is a better first example than a toy: it exercises
 pagination, an unbounded loop with a per-iteration chain, mapping, idempotent
@@ -102,7 +108,8 @@ Sequenced so nothing is stranded:
 
 1. The iteration construct first — pagination depends on it, and every later
    node is easier to reason about once loops are first-class.
-2. `broker-call`, because the publiccode example cannot run without it.
+2. doriath credentials on Sources, because the publiccode example cannot run
+   without a PAT.
 3. The publiccode schema and example flow, as the proving ground.
 4. The synchronisation nodes, with `synchronization-run` deprecated but present.
 
