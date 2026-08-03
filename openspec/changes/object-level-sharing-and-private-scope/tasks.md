@@ -178,7 +178,20 @@
 
 - [ ] 6.1 A shares component: invite by user / group / email, create a link, set expiry, revoke — mirroring the Files share panel
 - [ ] 6.2 Expose it as a detail-page **Shares** tab
-- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget
+- [ ] 6.3 Expose it as a `shared-with-me` dashboard widget. BLOCKED, and the blocker is measured
+      rather than suspected. A grant resolves to an object UUID, but objects live in
+      per-register/schema tables, the legacy central `openregister_objects` table holds 0 rows, and
+      the object folder path is `files/Open Registers/{Register TITLE}/{uuid}` — no schema segment
+      at all, and the register only by title. So a cross-register list needs the cross-table search,
+      and `testUnionPathTenantEdgeIsCharacterised` now shows that path returns rows from ANOTHER
+      organisation: the scope-and-grant predicate is applied there (groups 2–4 put it there) but the
+      ORGANISATION filter is not. `TODO(SEC-CTRL-1)` in ObjectsController is therefore accurate for
+      multitenancy and stale for RBAC. Building this widget over that path would leak across
+      tenants, so it waits until tenancy is wired into `searchAcrossMultipleTables()` — at which
+      point that characterisation test fails, which is the signal to flip it and build. (An HTTP-level
+      probe of the existing cross-table endpoints was INCONCLUSIVE: my pair arguments were invalid,
+      so it returned "No valid magic-mapped register+schema combinations found" for admin too. The
+      exposure is proven at the mapper level; reachability from HTTP is not established either way.)
 - [ ] 6.4 Register the widget in the dashboard catalogue and call `registerBuiltinDashboardWidgets()` — a bare side-effect import is tree-shaken and every registry tile silently renders "Widget not available"
 - [ ] 6.5 Semantic icons via the ADR-077 vocabulary, and REGISTER every name used — an unregistered MDI name renders nothing at all, not a fallback
 - [ ] 6.6 Publish on the `vue3` tag and verify the dist-tag MOVED before consuming it
