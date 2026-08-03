@@ -153,6 +153,124 @@ class FlowRunMapper extends QBMapper
     }//end findAllRuns()
 
     /**
+     * Delete terminal runs older than a cutoff, optionally for one flow only.
+     *
+     * Only TERMINAL runs are swept. A `queued` or `suspended` run is work that
+     * has not happened yet — a flow waiting on a timer can legitimately be
+     * older than the retention window, and deleting it would silently cancel
+     * it rather than expire its history.
+     *
+     * `$flowId` is what makes a per-flow override work: the sweep applies the
+     * instance cutoff to everything EXCEPT the flows declaring their own, then
+     * applies each of those flows' cutoff by id.
+     *
+     * @param DateTime    $cutoff Runs updated before this are removed.
+     * @param string|null $flowId Restrict the deletion to one flow.
+     *
+     * @return array<int, string> The uuids of the deleted runs, so their step
+     *                            rows can be removed too.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThan(DateTime $cutoff, ?string $flowId=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if ($flowId !== null && $flowId !== '') {
+            $qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThan()
+
+    /**
+     * Delete terminal runs older than a cutoff, EXCLUDING a set of flows.
+     *
+     * The instance-wide half of the sweep: every flow that does not declare its
+     * own retention.
+     *
+     * @param DateTime           $cutoff         Runs updated before this are removed.
+     * @param array<int, string> $excludeFlowIds Flow ids with their own retention.
+     *
+     * @return array<int, string> The uuids of the deleted runs.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThanExcluding(DateTime $cutoff, array $excludeFlowIds): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if (empty($excludeFlowIds) === false) {
+            $qb->andWhere(
+                $qb->expr()->notIn(
+                    'flow_id',
+                    $qb->createNamedParameter($excludeFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThanExcluding()
+
+    /**
      * The runs that are still going, newest first.
      *
      * "Still going" is every NON-terminal status — `queued` (about to start),
