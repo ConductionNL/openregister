@@ -46,6 +46,24 @@ class McpProviderBridge implements ToolInterface
 {
 
     /**
+     * Non-boolean provider-descriptor annotations copied verbatim onto the
+     * LLphant function descriptor when present, alongside the boolean
+     * `McpAnnotationValidator::HINT_KEYS`.
+     *
+     * `scope` is the ADR-063 CRUD verb. `reach` is the orthogonal blast-radius
+     * axis (`self` < `user` < `instance` < `external`) that consuming apps gate
+     * on: it answers "who can observe or be affected by this call", which
+     * `scope` does not — a `read` tool that fetches a model-chosen URL leaves
+     * the instance, and a `delete` confined to an agent's own memory does not.
+     *
+     * Neither value is interpreted here. The bridge's job is to lose nothing;
+     * classification belongs to the consumer.
+     *
+     * @var array<int, string>
+     */
+    private const PASSTHROUGH_KEYS = ['scope', 'reach'];
+
+    /**
      * Optional agent context attached by the registry.
      *
      * @var \OCA\OpenRegister\Db\Agent|null
@@ -124,15 +142,25 @@ class McpProviderBridge implements ToolInterface
      * Each MCP descriptor becomes one LLphant function definition.
      *
      * Additively forwards the ADR-063 annotation hints
-     * (`readOnlyHint` / `destructiveHint` / `idempotentHint`) and `scope`
-     * onto the LLphant descriptor when the provider set them, so chat-surface
-     * consumers reached through {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::listTools()}
+     * (`readOnlyHint` / `destructiveHint` / `idempotentHint`) and the
+     * `PASSTHROUGH_KEYS` (`scope`, `reach`) onto the LLphant descriptor when the
+     * provider set them, so chat-surface consumers reached through
+     * {@see \OCA\OpenRegister\Service\Mcp\ToolRegistryFacade::listTools()}
      * see the same annotations the JSON-RPC `tools/list` surface already
      * carries (previously dropped here — OR#369). A key is omitted entirely
      * when the provider descriptor didn't set it; no defaults are invented.
      * These hints are ADVISORY UX metadata only — OpenRegister's
      * `ObjectService` RBAC enforcement remains the sole authoritative
      * invoke-time gate, unaffected by this or any hint value (ADR-063).
+     *
+     * 🔴 A key this method does not copy is a key the consuming app cannot see,
+     * however carefully the provider declared it. That is not hypothetical:
+     * Hermiq annotated all fourteen of its native tools with a `reach` and its
+     * resolver fails closed on an absent one, so before `reach` was forwarded
+     * here every one of those tools would have arrived unannotated, resolved to
+     * `external`, and been stripped from every agent's catalogue — an app-wide
+     * outage produced entirely by a silent drop at this boundary. Anything added
+     * to a provider descriptor from now on belongs in `PASSTHROUGH_KEYS`.
      *
      * @return array<int,array<string,mixed>> LLphant-shaped function descriptors.
      *
@@ -169,8 +197,10 @@ class McpProviderBridge implements ToolInterface
                 }
             }
 
-            if (array_key_exists('scope', $descriptor) === true) {
-                $function['scope'] = $descriptor['scope'];
+            foreach (self::PASSTHROUGH_KEYS as $passthroughKey) {
+                if (array_key_exists($passthroughKey, $descriptor) === true) {
+                    $function[$passthroughKey] = $descriptor[$passthroughKey];
+                }
             }
 
             $functions[] = $function;

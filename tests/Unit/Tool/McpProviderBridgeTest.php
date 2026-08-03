@@ -63,6 +63,59 @@ class McpProviderBridgeTest extends TestCase
         $this->assertSame('delete', $function['scope']);
     }
 
+    /**
+     * 🔴 `reach` must survive the bridge.
+     *
+     * A consuming app that gates on reach and fails closed on its absence sees
+     * a dropped key as "external" — so losing it here does not degrade to the
+     * old behaviour, it strips the tool from every agent that had it. Hermiq
+     * annotates all fourteen of its native tools this way, so the blast radius
+     * of deleting the two lines this test guards is Hermiq's entire native
+     * catalogue, with no error anywhere to explain it.
+     */
+    public function testReachSurvivesTheBridge(): void
+    {
+        $bridge = $this->bridgeFor([
+            [
+                'id'           => 'hermiq.webFetch',
+                'name'         => 'web_fetch',
+                'description'  => 'Fetch a URL.',
+                'inputSchema'  => ['type' => 'object', 'properties' => []],
+                'readOnlyHint' => true,
+                'scope'        => 'read',
+                'reach'        => 'external',
+            ],
+        ]);
+
+        $function = $bridge->getFunctions()[0];
+
+        // The pair that makes the point: identical `scope`, and `reach` is the
+        // only thing telling the consumer this one leaves the building.
+        $this->assertSame('read', $function['scope']);
+        $this->assertSame('external', $function['reach']);
+    }
+
+    /**
+     * The bridge forwards `reach` verbatim and classifies nothing — an
+     * unrecognised value must arrive intact for the CONSUMER to reject, because
+     * a bridge that silently dropped a malformed reach would hand the consumer
+     * "absent" (fail-closed) when the truth is "wrong" (a bug to fix).
+     */
+    public function testAnUnrecognisedReachIsForwardedNotSanitised(): void
+    {
+        $bridge = $this->bridgeFor([
+            [
+                'id'          => 'pipelinq.lead.get',
+                'name'        => 'lead_get',
+                'description' => 'Get a lead.',
+                'inputSchema' => ['type' => 'object', 'properties' => []],
+                'reach'       => 'galaxy',
+            ],
+        ]);
+
+        $this->assertSame('galaxy', $bridge->getFunctions()[0]['reach']);
+    }
+
     public function testDescriptorWithoutHintsGainsNoPhantomKeys(): void
     {
         $bridge = $this->bridgeFor([
@@ -82,6 +135,7 @@ class McpProviderBridgeTest extends TestCase
         $this->assertArrayNotHasKey('destructiveHint', $function);
         $this->assertArrayNotHasKey('idempotentHint', $function);
         $this->assertArrayNotHasKey('scope', $function);
+        $this->assertArrayNotHasKey('reach', $function);
     }
 
     public function testExistingFourKeysAreUnchanged(): void
@@ -127,5 +181,6 @@ class McpProviderBridgeTest extends TestCase
         $this->assertArrayNotHasKey('destructiveHint', $function);
         $this->assertArrayNotHasKey('idempotentHint', $function);
         $this->assertArrayNotHasKey('scope', $function);
+        $this->assertArrayNotHasKey('reach', $function);
     }
 }
