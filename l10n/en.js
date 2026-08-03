@@ -1989,7 +1989,6 @@ OC.L10N.register(
     "Workflow Management" : "Workflow Management",
     "Workflows" : "Workflows",
     "Wrap webhook payload in CloudEvents format for better interoperability" : "Wrap webhook payload in CloudEvents format for better interoperability",
-    "X-Custom-Header: value\nAuthorization: Bearer token" : "X-Custom-Header: value\nAuthorization: Bearer token",
     "Yes" : "Yes",
     "You do not have permission to view the permission matrix. Admin access is required." : "You do not have permission to view the permission matrix. Admin access is required.",
     "You have selected {count} properties to add to the schema." : "You have selected {count} properties to add to the schema.",

@@ -431,7 +431,7 @@ export default {
 		 * @spec exclude UI display helper — placeholder text for the headers field.
 		 */
 		headersPlaceholder() {
-			return this.t('openregister', 'X-Custom-Header: value\nAuthorization: Bearer token')
+			return 'X-Custom-Header: value\nAuthorization: Bearer token'
 		},
 		/**
 		 * @spec exclude UI display helper — placeholder text for the filters field.

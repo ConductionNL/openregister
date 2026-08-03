@@ -1989,7 +1989,6 @@ OC.L10N.register(
     "Workflow Management" : "Administrasjon av arbeidsflyter",
     "Workflows" : "Arbeidsflyter",
     "Wrap webhook payload in CloudEvents format for better interoperability" : "Pakk webhook-nyttelast i CloudEvents-format for bedre interoperabilitet",
-    "X-Custom-Header: value\nAuthorization: Bearer token" : "X-Custom-Header: value\nAuthorization: Bearer token",
     "Yes" : "Ja",
     "You do not have permission to view the permission matrix. Admin access is required." : "Du har ikke rettigheter til å se rettighetsmatrisen. Administratortilgang er påkrevd.",
     "You have selected {count} properties to add to the schema." : "Du har valgt {count} egenskaper som skal legges til i skjemaet.",

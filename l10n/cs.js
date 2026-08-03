@@ -1989,7 +1989,6 @@ OC.L10N.register(
     "Workflow Management" : "Správa pracovních postupů",
     "Workflows" : "Pracovní postupy",
     "Wrap webhook payload in CloudEvents format for better interoperability" : "Zabalit datovou část webhooku do formátu CloudEvents pro lepší interoperabilitu",
-    "X-Custom-Header: value\nAuthorization: Bearer token" : "X-Custom-Header: value\nAuthorization: Bearer token",
     "Yes" : "Ano",
     "You do not have permission to view the permission matrix. Admin access is required." : "Nemáte oprávnění zobrazit matici oprávnění. Je vyžadován přístup správce.",
     "You have selected {count} properties to add to the schema." : "Vybrali jste {count} vlastností k přidání do schématu.",

@@ -1989,7 +1989,6 @@ OC.L10N.register(
     "Workflow Management" : "Työnkulkujen hallinta",
     "Workflows" : "Työnkulut",
     "Wrap webhook payload in CloudEvents format for better interoperability" : "Kääri webhookin hyötykuorma CloudEvents-muotoon paremman yhteentoimivuuden vuoksi",
-    "X-Custom-Header: value\nAuthorization: Bearer token" : "X-Custom-Header: value\nAuthorization: Bearer token",
     "Yes" : "Kyllä",
     "You do not have permission to view the permission matrix. Admin access is required." : "Sinulla ei ole oikeutta tarkastella oikeusmatriisia. Vaaditaan ylläpitäjän oikeudet.",
     "You have selected {count} properties to add to the schema." : "Olet valinnut {count} ominaisuutta lisättäväksi skeemaan.",
