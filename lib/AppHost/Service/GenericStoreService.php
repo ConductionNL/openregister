@@ -213,6 +213,11 @@ class GenericStoreService
      * @param array<string, mixed> $params     Query params merged into the request.
      *
      * @return array{outcome: string, results: array<int, mixed>}
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) SecurityService::assertSafeFetchUrl is
+     * static upstream, and calling it directly is the point of moving this client
+     * into OpenRegister — the previous app-local copy reached it through a dynamic
+     * class-string with a weaker fallback (ADR-080 Context).
      */
     private function fetch(StoreDescriptor $descriptor, array $params): array
     {
@@ -255,7 +260,25 @@ class GenericStoreService
             return ['outcome' => self::OUTCOME_UNREACHABLE, 'results' => []];
         }
 
-        $decoded = json_decode((string) $response->getBody(), true);
+        return $this->decodeBody(descriptor: $descriptor, body: (string) $response->getBody());
+
+    }//end fetch()
+
+    /**
+     * Decode a registry response body into a result list.
+     *
+     * Split out of fetch() so neither method carries the whole guard chain:
+     * an unparseable body is a DIFFERENT outcome from an unreachable registry,
+     * and collapsing the two would make a misconfigured store look offline.
+     *
+     * @param StoreDescriptor $descriptor The calling app's store parameters.
+     * @param string          $body       The raw response body.
+     *
+     * @return array{outcome: string, results: array<int, mixed>}
+     */
+    private function decodeBody(StoreDescriptor $descriptor, string $body): array
+    {
+        $decoded = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE || is_array($decoded) === false) {
             $this->logger->warning(
                 'AppHost store ('.$descriptor->appId.'): registry returned an unparseable body'
@@ -264,17 +287,17 @@ class GenericStoreService
         }
 
         $results = ($decoded['results'] ?? null);
-        if (is_array($results) === false) {
-            // Some OpenRegister responses are a bare list; accept that too.
-            $results = [];
-            if (array_is_list($decoded) === true) {
-                $results = $decoded;
-            }
+        if (is_array($results) === true) {
+            return ['outcome' => self::OUTCOME_OK, 'results' => $results];
         }
 
-        return ['outcome' => self::OUTCOME_OK, 'results' => $results];
+        // Some OpenRegister responses are a bare list; accept that too.
+        return [
+            'outcome' => self::OUTCOME_OK,
+            'results' => (array_is_list($decoded) === true ? $decoded : []),
+        ];
 
-    }//end fetch()
+    }//end decodeBody()
 
     /**
      * Build the remote objects-API URL for this store's schema.

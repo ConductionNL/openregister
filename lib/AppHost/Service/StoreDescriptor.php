@@ -56,7 +56,7 @@ final class StoreDescriptor
         public readonly string $appId,
         public readonly string $schema,
         public readonly string $defaultRegister,
-        public readonly array $cardFields = [
+        public readonly array $cardFields=[
             'slug'        => 'slug',
             'title'       => 'title',
             'description' => 'description',
