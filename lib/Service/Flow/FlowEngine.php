@@ -183,9 +183,11 @@ class FlowEngine
             return;
         }
 
+        // Both keys are guaranteed by firstRefusal()'s return type, so no
+        // defaulting here: a `??` would be dead code that reads like a guard.
         throw new FlowStop(
-            reason: (string) ($refusal['reason'] ?? 'refused by oversight'),
-            checkId: ($refusal['checkId'] ?? null)
+            reason: $refusal['reason'],
+            checkId: $refusal['checkId']
         );
 
     }//end assertOversightAllows()

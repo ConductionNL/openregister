@@ -69,7 +69,7 @@
     "remark-preset-lint-consistent": "^5.1.1",
     "remark-preset-lint-recommended": "^6.1.2",
     "style-loader": "^4.0.0",
-    "vue": "^3.5.0",
+    "vue": "^3.5.18",
     "vue-codemirror6": "^1.6.1",
     "vue-draggable-plus": "^0.6.0",
     "vue-loading-overlay": "^6.0.6",
