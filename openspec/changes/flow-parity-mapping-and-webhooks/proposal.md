@@ -70,10 +70,16 @@ answer.
 
 ### 3. The rule pipeline has no node equivalent
 
-`EndpointService::processRules()` dispatches **18 rule types**. The flow engine
-has **15 nodes**, contributed by OpenRegister (13) and hermiq (2).
-**OpenConnector contributes none** — `openconnector.jti` and
-`openconnector.ratelimit` are distributed cache keys, not nodes.
+`EndpointService::processRules()` dispatches **23 rule types** (counted from the
+`match ($ruleType)` block, not from documentation). The live node catalogue
+returns **18 nodes**: OpenRegister 14, OpenConnector 2, hermiq 2.
+
+Two earlier claims here were wrong and are corrected. OpenConnector **does**
+contribute nodes — `openconnector.source-call` and
+`openconnector.synchronization-run` — so `synchronization` already has one. And
+`mapping` now has `openregister.map`. Both were read off the running
+`/api/flow/node-catalog`, which is the only source that reflects what the engine
+will actually resolve; the earlier table was assembled by reading code.
 
 Mapping the two vocabularies:
 
@@ -82,10 +88,11 @@ Mapping the two vocabularies:
 | `save_object` | `openregister.object-write` | — |
 | `override` | `openregister.set-fields` | partial |
 | `error` | `openregister.stop` | partial (stop carries a message; rule returns a shaped response) |
-| `synchronization` | — | **no node** |
-| `mapping` | — | **no node** (see 1) |
-| `authentication` | — | **no node** (see 2) |
-| `webhook_signature` | — | **no node** (see 2) |
+| `mapping` | `openregister.map` | — (shipped) |
+| `synchronization` | `openconnector.synchronization-run` | — (already existed) |
+| `flow` | `openregister.sub-flow` | — |
+| `authentication` | — | covered by the webhook-delivery spec |
+| `webhook_signature` | — | covered by the webhook-delivery spec |
 | `javascript` | — | **no node** |
 | `extend_input` | — | **no node** |
 | `extend_external_input` | — | **no node** |
@@ -95,9 +102,14 @@ Mapping the two vocabularies:
 | `filepart_upload` | — | **no node** |
 | `locking` | — | **no node** |
 | `audit_trail` | — | **no node** |
+| `approval` | — | **no node** |
+| `composite_fanout` | — | **no node** |
+| `avg_bsn_policy` | — | **no node** |
+| `referentienummer` | — | **no node** |
+| `selfurl_hal` | — | **no node** |
 | `custom` | — | escape hatch, not a gap |
 
-Thirteen capabilities exist only inside the endpoint pipeline. As long as that
+Thirteen capabilities still exist only inside the endpoint pipeline. As long as that
 is true, "OpenRegister owns the one flow engine" is only half true — an
 integration that needs any of them must be built as an endpoint rule chain
 instead, which is a second orchestration model with its own storage, its own

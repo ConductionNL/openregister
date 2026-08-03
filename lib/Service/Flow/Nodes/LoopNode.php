@@ -62,7 +62,7 @@ class LoopNode implements IFlowNode, IFlowNodeConfigKeys
      */
     public function getId(): string
     {
-        return 'openregister.loop';
+        return 'openregister.batch';
 
     }//end getId()
 
@@ -73,7 +73,7 @@ class LoopNode implements IFlowNode, IFlowNodeConfigKeys
      */
     public function getDisplayName(): string
     {
-        return $this->l10n->t('Loop over items');
+        return $this->l10n->t('Batch items');
 
     }//end getDisplayName()
 
