@@ -65,8 +65,17 @@ jobs:
       # absent. `|| true` because the accounts persist across re-runs on the same
       # instance; the specs assert they can authenticate rather than assuming the
       # seed ran, so a genuinely failed seed still fails loudly.
-      playwright-seed-command: >-
-        (OC_PASS=E2e-Share-Pass-123 php occ user:add --password-from-env e2e-owner || true) &&
-        (OC_PASS=E2e-Share-Pass-123 php occ user:add --password-from-env e2e-other || true)
+      #
+      # A SCRIPT, not an inline command, and the shell operators are why. The
+      # shared workflow runs this through `eval <value>` UNQUOTED, so the outer
+      # bash parses whatever it expands to and any metacharacter is parsed at the
+      # wrong level. Measured, both wrong:
+      #   `( … ) && ( … )` -> "syntax error near unexpected token OC_PASS=…", and
+      #                       the seed silently never ran.
+      #   `sh -c '… ; …'`  -> no error, but the `;` still split at the OUTER level,
+      #                       so only part of it ran inside the sh -c.
+      # `bash <path>` is a single word with no metacharacters, so eval cannot
+      # mis-parse it. Path is relative to `server/`, which the step cd's into.
+      playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
       enable-sbom: true
