@@ -307,6 +307,57 @@ function localeNameOf(file) {
 	return path.basename(file, '.js')
 }
 
+/**
+ * Keys passed to t() through a VARIABLE, so no static scan can find them.
+ * They are real, live keys: without them the Permission Matrix headers, the
+ * approval status badges and the dashboard date presets render English.
+ *
+ *   t('openregister', action)        PermissionMatrix.vue:41
+ *                                    actions: ['read','create',...] (frontend)
+ *   t('openregister', step.status)   ApprovalStepList.vue:17
+ *                                    raw DB enum from the approval-steps API;
+ *                                    the backend never localises it
+ *   t('openregister', preset.label)  DashboardIndex.vue:91,120,360
+ *                                    DATE_PRESETS (frontend)
+ *
+ * Anything listed here must be treated as USED: never reported unused, never
+ * removed by clean-l10n. Add to this list when a new variable-keyed t() call
+ * is introduced, or the key silently stops being translated.
+ */
+const DYNAMIC_KEYS = [
+	// PermissionMatrix actions
+	'read', 'create', 'update', 'delete', 'manage',
+	// ApprovalStepList step.status
+	'pending', 'approved', 'rejected', 'skipped', 'cancelled',
+	// DashboardIndex date presets
+	'All time', 'Last 7 days', 'Last 30 days', 'Last 3 months', 'Last 12 months',
+]
+
+/**
+ * Every key reached dynamically: DYNAMIC_KEYS plus each menu label in
+ * src/manifest.json, which MainMenu.translate(key) passes straight to t().
+ *
+ * @param {string} repoRoot Absolute path to the app root.
+ * @return {Set<string>} Keys that must count as used.
+ */
+function collectDynamicKeys(repoRoot) {
+	const out = new Set(DYNAMIC_KEYS)
+	const manifestPath = path.join(repoRoot, 'src/manifest.json')
+	if (!fs.existsSync(manifestPath)) return out
+	let manifest
+	try { manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) } catch { return out }
+	;(function collect(node) {
+		if (Array.isArray(node)) return node.forEach(collect)
+		if (node && typeof node === 'object') {
+			for (const [k, v] of Object.entries(node)) {
+				if ((k === 'label' || k === 'name' || k === 'title') && typeof v === 'string') out.add(v)
+				collect(v)
+			}
+		}
+	})(manifest)
+	return out
+}
+
 module.exports = {
 	loadJsTranslations,
 	serializeJs,
@@ -317,4 +368,6 @@ module.exports = {
 	findKeyReferences,
 	listJsLocaleFiles,
 	localeNameOf,
+	DYNAMIC_KEYS,
+	collectDynamicKeys,
 }

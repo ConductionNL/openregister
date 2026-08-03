@@ -35,6 +35,7 @@ const {
 	serializeJs,
 	collectUsedKeys,
 	listJsLocaleFiles,
+	collectDynamicKeys,
 } = require('./lib/l10n.js')
 
 const ROOT = path.resolve(__dirname, '..')
@@ -62,11 +63,18 @@ function main() {
 	const { app, translations: english } = loadJsTranslations(ENGLISH_FILE)
 	const existingKeys = new Set(Object.keys(english))
 	const usedKeys = collectUsedKeys(SRC_DIR, app)
-	const unused = [...existingKeys].filter(k => !usedKeys.has(k)).sort()
+	// Keys reached through a variable cannot be found by scanning. They are live,
+	// and deleting them silently un-translates real UI, so they are never
+	// candidates for removal. See DYNAMIC_KEYS in lib/l10n.js.
+	const dynamicKeys = collectDynamicKeys(ROOT)
+	const unused = [...existingKeys]
+		.filter(k => !usedKeys.has(k) && !dynamicKeys.has(k))
+		.sort()
 
 	console.log(`${app} l10n unused-key remover`)
 	console.log(`  Used keys in src/:  ${usedKeys.size}`)
 	console.log(`  Keys in en.js:      ${existingKeys.size}`)
+	console.log(`  Protected (dynamic):${dynamicKeys.size}`)
 	console.log(`  Unused keys:        ${unused.length}`)
 	console.log('')
 

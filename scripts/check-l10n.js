@@ -25,6 +25,7 @@ const {
 	walk,
 	extractTranslationCalls,
 	makeLineResolver,
+	collectDynamicKeys,
 } = require('./lib/l10n.js')
 
 const ROOT = path.resolve(__dirname, '..')
@@ -186,7 +187,9 @@ function main() {
 		return singular !== undefined && Array.isArray(translations[singular])
 	}
 	const missing = [...usedKeys].filter(k => !keys.has(k) && !satisfiedByPlural(k)).sort()
-	const unused = [...keys].filter(k => !usedKeys.has(k)).sort()
+	// Variable-keyed t() calls are invisible to the scan; those keys are live.
+	const dynamic = collectDynamicKeys(ROOT)
+	const unused = [...keys].filter(k => !usedKeys.has(k) && !dynamic.has(k)).sort()
 	const unwrapped = findUnwrapped(vueFiles, keys)
 
 	console.log(`${BOLD}${CYAN}${app} l10n check${RESET}`)
