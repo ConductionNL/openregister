@@ -31,6 +31,14 @@ concurrency:
   group: quality-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# Least privilege for the called quality pipeline: the Quality Report job
+# posts a sticky PR comment (issues/pull-requests write); everything else
+# only reads the checkout.
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   quality:
     if: github.event_name != 'push' || github.event.created != true
