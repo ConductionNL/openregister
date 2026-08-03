@@ -144,7 +144,6 @@ use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\EventCatalogListener;
-use OCA\OpenRegister\Listener\FlowActionListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
@@ -2559,12 +2558,13 @@ class Application extends App implements IBootstrap
         $context->registerEventListener(ObjectUpdatedEvent::class, AnnotationNotificationListener::class);
         $context->registerEventListener(ObjectTransitionedEvent::class, AnnotationNotificationListener::class);
 
-        // Declarative flow engine — runs x-openregister-flows actions (calendar
-        // agenda tasks, email, ...) declared on the schema when an object's
-        // create/update/delete lifecycle event fires.
-        $context->registerEventListener(ObjectCreatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectUpdatedEvent::class, FlowActionListener::class);
-        $context->registerEventListener(ObjectDeletedEvent::class, FlowActionListener::class);
+        // Object-CRUD flow triggers. These route through EventCatalogListener
+        // like every other catalog event, so there is ONE path from a dispatched
+        // event to a queued run — the action-list engine that used to handle
+        // create/update/delete separately is gone.
+        $context->registerEventListener(ObjectCreatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectUpdatedEvent::class, EventCatalogListener::class);
+        $context->registerEventListener(ObjectDeletedEvent::class, EventCatalogListener::class);
 
         // Additional flow-catalog triggers beyond CRUD (lock/unlock/revert/state
         // transition). Routed by EventCatalogListener so create/update/delete are
