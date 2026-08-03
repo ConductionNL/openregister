@@ -1,0 +1,253 @@
+{
+  "change": "entity-replacement-planner",
+  "project": "openregister",
+  "repo": "Conduction/openregister",
+  "created": "2026-08-03",
+  "tracking_issue": null,
+  "specs": [
+    "entity-replacement-planner",
+    "pdf-anonymisation"
+  ],
+  "tasks": [
+    {
+      "id": "1.1",
+      "title": "ReplacementRange value object (codepoint offsets, isResidue flag)",
+      "status": "pending"
+    },
+    {
+      "id": "1.2",
+      "title": "ReplacementPlan value object (accepted ranges, unmatched, partial)",
+      "status": "pending"
+    },
+    {
+      "id": "1.3",
+      "title": "ReplacementPlanner::plan enumerates candidates on immutable text",
+      "status": "pending"
+    },
+    {
+      "id": "1.4",
+      "title": "Candidate total order for deterministic tie-breaking",
+      "status": "pending"
+    },
+    {
+      "id": "1.5",
+      "title": "Maximum-coverage selection via weighted interval scheduling DP",
+      "status": "pending"
+    },
+    {
+      "id": "1.6",
+      "title": "Record needles with zero accepted ranges as unmatched",
+      "status": "pending"
+    },
+    {
+      "id": "1.7",
+      "title": "Planner core unit tests incl. determinism and numeric needles",
+      "status": "pending"
+    },
+    {
+      "id": "2.1",
+      "title": "BoundaryPolicy per entity type from canonical constants",
+      "status": "pending"
+    },
+    {
+      "id": "2.2",
+      "title": "Unicode-aware word-boundary test",
+      "status": "pending"
+    },
+    {
+      "id": "2.3",
+      "title": "Apply boundary policy during candidate enumeration",
+      "status": "pending"
+    },
+    {
+      "id": "2.4",
+      "title": "mb-aware case folding with folded-to-original offset mapping",
+      "status": "pending"
+    },
+    {
+      "id": "2.5",
+      "title": "Boundary and case-folding unit tests",
+      "status": "pending"
+    },
+    {
+      "id": "3.1",
+      "title": "Compute uncovered residue of rejected candidates",
+      "status": "pending"
+    },
+    {
+      "id": "3.2",
+      "title": "Drop whitespace/punctuation-only residue; cover the rest",
+      "status": "pending"
+    },
+    {
+      "id": "3.3",
+      "title": "Report split-matched needles as partial",
+      "status": "pending"
+    },
+    {
+      "id": "3.4",
+      "title": "Residue coverage unit tests (Vries-Bakker case)",
+      "status": "pending"
+    },
+    {
+      "id": "4.1",
+      "title": "PlanApplier::applyToString builds output in a single pass",
+      "status": "pending"
+    },
+    {
+      "id": "4.2",
+      "title": "SegmentMap with flatten() and scatter()",
+      "status": "pending"
+    },
+    {
+      "id": "4.3",
+      "title": "scatter() writes placeholder to start segment, clears the rest",
+      "status": "pending"
+    },
+    {
+      "id": "4.4",
+      "title": "SegmentMap unit tests incl. multi-segment and multibyte spans",
+      "status": "pending"
+    },
+    {
+      "id": "4.5",
+      "title": "Test that emitted placeholders are never rescanned",
+      "status": "pending"
+    },
+    {
+      "id": "5.1",
+      "title": "Plain-text branch routed through the planner",
+      "status": "pending"
+    },
+    {
+      "id": "5.2",
+      "title": "Office-container branch uses a text-node segment adapter",
+      "status": "pending"
+    },
+    {
+      "id": "5.3",
+      "title": "docx branch: collect PhpWord segments, then scatter",
+      "status": "pending"
+    },
+    {
+      "id": "5.4",
+      "title": "Verify PhpWord segment order is true document order",
+      "status": "pending"
+    },
+    {
+      "id": "5.5",
+      "title": "Retain defensive uksort with a comment pointing at the planner",
+      "status": "pending"
+    },
+    {
+      "id": "5.6",
+      "title": "docx fixture tests incl. cross-run entity and structure preservation",
+      "status": "pending"
+    },
+    {
+      "id": "6.1",
+      "title": "Verification pass using the same folding and boundary policy",
+      "status": "pending"
+    },
+    {
+      "id": "6.2",
+      "title": "Populate lastResidualEntities on text, office-container and docx",
+      "status": "pending"
+    },
+    {
+      "id": "6.3",
+      "title": "Report partial needles alongside residuals",
+      "status": "pending"
+    },
+    {
+      "id": "6.4",
+      "title": "Confirm complete:false + residual_count on non-PDF paths",
+      "status": "pending"
+    },
+    {
+      "id": "6.5",
+      "title": "Residual reporting tests for docx and plain text",
+      "status": "pending"
+    },
+    {
+      "id": "7.1",
+      "title": "validateOutput uses shared case folding and boundary policy",
+      "status": "pending"
+    },
+    {
+      "id": "7.2",
+      "title": "Merge SAPP rejected_substitutions into the residual list",
+      "status": "pending"
+    },
+    {
+      "id": "7.3",
+      "title": "Keep SAPP delegation and defensive uksort; update comments",
+      "status": "pending"
+    },
+    {
+      "id": "7.4",
+      "title": "Correct stale fail-closed comment and docblock (do not implement)",
+      "status": "pending"
+    },
+    {
+      "id": "7.5",
+      "title": "Assert non-blocking: residuals never withhold output",
+      "status": "pending"
+    },
+    {
+      "id": "7.6",
+      "title": "PDF reconciliation tests; existing PDF tests unchanged",
+      "status": "pending"
+    },
+    {
+      "id": "8.1",
+      "title": "@spec annotations on new classes and modified methods",
+      "status": "pending"
+    },
+    {
+      "id": "8.2",
+      "title": "SPDX and license PHPDoc headers on new files",
+      "status": "pending"
+    },
+    {
+      "id": "8.3",
+      "title": "Document boundary policy and residual semantics",
+      "status": "pending"
+    },
+    {
+      "id": "8.4",
+      "title": "Review existing fixtures for intentional output drift",
+      "status": "pending"
+    },
+    {
+      "id": "8.5",
+      "title": "composer check:strict and hydra gates clean",
+      "status": "pending"
+    },
+    {
+      "id": "8.6",
+      "title": "Performance spot-check at ~1000 candidates",
+      "status": "pending"
+    },
+    {
+      "id": "9.1",
+      "title": "Notify DocuDesk that non-PDF residual lists can be non-empty",
+      "status": "pending"
+    },
+    {
+      "id": "9.2",
+      "title": "Decide if grondslagen-summary distinguishes unmatched from partial",
+      "status": "pending"
+    },
+    {
+      "id": "9.3",
+      "title": "Coordinate with text-extraction-eml so EML consumes the planner",
+      "status": "pending"
+    },
+    {
+      "id": "9.4",
+      "title": "Semantic port to test/anonimiseren-bij-de-bron-or",
+      "status": "pending"
+    }
+  ]
+}
