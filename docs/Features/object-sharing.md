@@ -168,6 +168,17 @@ It is enforced by a test, not just asserted.
 An email invitation carries no object data in the message. The recipient follows
 it to reach the object, so revoking still works after the mail has been sent.
 
+Links and invitations appear in the same list as the principal grants, and are
+revoked the same way — `GET .../shares` reports them, and `DELETE
+.../shares/{shareId}` withdraws them. They are listed but **not** grantable:
+`POST .../shares` with `type: "link"` is refused, because a link is created by
+the link endpoint above, with the rules that belong to it.
+
+That split matters. While the listing covered principals only, a public link
+could be minted and never seen again — the panel showed nothing, so there was no
+revoke control, and withdrawing it meant raw SQL or core's Files UI. A capability
+you cannot see is a capability you cannot revoke.
+
 ---
 
 ## What sharing an object also shares
