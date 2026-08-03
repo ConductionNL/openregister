@@ -56,6 +56,11 @@ function rel(p) {
 function extractTCalls(files, app) {
 	const found = new Map()
 	const unanalyzable = []
+	// plural source string -> the singular key that owns it. An n() call has two
+	// source strings but only ONE catalogue key (the singular); the plural lives
+	// in that key's value array. Without this, every plural source reads as a
+	// missing key that can never be satisfied.
+	const pluralOf = new Map()
 
 	for (const file of files) {
 		const text = fs.readFileSync(file, 'utf8')
@@ -64,6 +69,7 @@ function extractTCalls(files, app) {
 
 		for (const c of calls) {
 			const line = posToLine(c.index)
+			if (c.fn === 'n' && c.keys.length === 2) pluralOf.set(c.keys[1], c.keys[0])
 			for (const key of c.keys) {
 				if (!found.has(key)) found.set(key, [])
 				found.get(key).push({ file, line })
@@ -78,7 +84,7 @@ function extractTCalls(files, app) {
 		}
 	}
 
-	return { found, unanalyzable }
+	return { found, unanalyzable, pluralOf }
 }
 
 /**
@@ -171,10 +177,15 @@ function main() {
 	const files = walk(SRC_DIR, ['.vue', '.js', '.ts'])
 	const vueFiles = files.filter(f => f.endsWith('.vue'))
 
-	const { found, unanalyzable } = extractTCalls(files, app)
+	const { found, unanalyzable, pluralOf } = extractTCalls(files, app)
 	const usedKeys = new Set(found.keys())
 
-	const missing = [...usedKeys].filter(k => !keys.has(k)).sort()
+	// A plural source is satisfied by its singular key holding a forms array.
+	const satisfiedByPlural = (k) => {
+		const singular = pluralOf.get(k)
+		return singular !== undefined && Array.isArray(translations[singular])
+	}
+	const missing = [...usedKeys].filter(k => !keys.has(k) && !satisfiedByPlural(k)).sort()
 	const unused = [...keys].filter(k => !usedKeys.has(k)).sort()
 	const unwrapped = findUnwrapped(vueFiles, keys)
 
