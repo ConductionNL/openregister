@@ -309,11 +309,13 @@
       one test: the grant is typed into the tab and the consequence is measured by a direct API
       call as the recipient, then the revoke button is clicked and the same call must fail again.
       The recipient is blocked BEFORE the grant, so the restored access cannot be a false pass.
-- [ ] 10.3 Create a link, open it in a fresh context, revoke it, confirm it stops working. Proven
-      at HTTP level in `object-sharing.spec.ts` ("a share link resolves anonymously, and stops
-      when revoked", asserting 404 after revoke) but NOT yet through the UI, which is what this
-      task asks for. The link control exists in the tab; driving it needs a second browser
-      context with no credentials, since the suite authenticates every request by header.
+- [x] 10.3 Create a link in the UI, open it in a fresh context, revoke it, confirm it stops
+      working. The token is read out of the rendered panel and resolved from an ANONYMOUS
+      browser context — a second context is required, not tidiness: the describe block puts
+      the owner's Authorization header on every request the test context makes, so reusing
+      the page would prove only that an owner can read their own object.
+      The HTTP sibling mints its OWN link, so it stays green even if the UI control posts to
+      the wrong endpoint or renders a token it never received; this drives the control.
 - [ ] 10.4 Email invite delivered and followable
 - [ ] 10.5 The Shares tab and the shared-with-me widget both render real data, asserted against a
       direct API call. HALF DONE and the other half is blocked. The TAB half is covered by

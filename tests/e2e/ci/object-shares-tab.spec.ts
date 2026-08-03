@@ -356,4 +356,81 @@ test.describe('the Shares tab, driven through the browser', () => {
 			+ 'request, so this is not a propagation delay',
 		).toBeGreaterThanOrEqual(400)
 	})
+
+	/*
+	 * Task 10.3. The sibling HTTP spec already proves a token resolves
+	 * anonymously and stops when revoked; what it cannot show is that the LINK
+	 * CONTROL in the tab produces such a token — the "Public link" option could
+	 * post to the wrong endpoint, or render a token it never received, and the
+	 * HTTP spec would stay green because it mints its own link.
+	 *
+	 * The anonymous half genuinely has to be a separate browser context: this
+	 * describe block puts the owner's Authorization header on every request the
+	 * test context makes, so reusing `page` would "prove" that the owner can read
+	 * their own object.
+	 */
+	test('a link created in the UI resolves with no credentials, and dies when revoked', async ({ page, browser }) => {
+		const uuid = await newObject()
+
+		const put = await owner.put(
+			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}/scope`,
+			{ data: { scope: 'private' } },
+		)
+		expect(put.ok(), `could not set the scope: ${await put.text()}`).toBeTruthy()
+
+		const panel = await openSharesTab(page, registerId, schemaId, uuid)
+
+		// Pick "Public link" in the type select. The dropdown is vue-select
+		// underneath, and its listbox is not necessarily inside the panel, so the
+		// option is looked up on the page while the combobox is not.
+		await panel.getByRole('combobox').click()
+		await page.getByRole('option', { name: 'Public link' }).click()
+
+		// A link needs no principal, so the username field must be gone — this
+		// also confirms the select actually changed the component's state rather
+		// than just its own display.
+		await expect(
+			panel.getByRole('textbox', { name: 'Username' }),
+			'the type select did not take effect — the principal field is still there',
+		).toHaveCount(0)
+
+		await panel.getByRole('button', { name: 'Share', exact: true }).click()
+
+		const tokenNode = panel.locator('.cn-object-access-tab__link code')
+		await expect(
+			tokenNode,
+			'no token appeared after creating a link — the component only renders one it received',
+		).toBeVisible({ timeout: 20_000 })
+
+		const token = (await tokenNode.innerText()).trim()
+		expect(token, 'the rendered token is empty').not.toBe('')
+
+		// ANONYMOUS: a context with no credentials at all, and no shared state
+		// with the authenticated one.
+		const anon = await browser.newContext({ baseURL: BASE, storageState: undefined })
+		try {
+			const live = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			expect(
+				live.status(),
+				`a link minted through the UI must resolve anonymously: ${await live.text()}`,
+			).toBeLessThan(300)
+
+			// Revoke it in the UI. The link is the only grant on this object, so
+			// there is exactly one revoke button to press.
+			await panel.getByRole('button', { name: 'Revoke access' }).click()
+			await expect(
+				panel.locator('.cn-object-access-tab__row'),
+				'the link row is still listed after clicking revoke',
+			).toHaveCount(0, { timeout: 20_000 })
+
+			const dead = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			expect(
+				dead.status(),
+				'a link revoked in the UI still resolves — the token check happens per request, so '
+				+ 'this is not a cache',
+			).toBe(404)
+		} finally {
+			await anon.close()
+		}
+	})
 })
