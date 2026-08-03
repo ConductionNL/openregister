@@ -165,9 +165,12 @@
       PUBLIC endpoint because a link admits whoever holds the token and there is no principal
       for RBAC to resolve
 - [ ] 5.8 Carry object verbs (`run`, `use`) in `IShare`'s `IAttributes`; core's bitmask has no such verbs
-      DEFERRED with 9.2: the `run` verb has no consumer until run authorization exists, and
-      shipping an attribute bag nothing reads would be a control that silently does nothing —
-      the exact shape of defect this programme kept finding.
+      HALF SHIPPED, and the half that shipped is `use`. 8.4 required ADR-010's IAttributes
+      mechanism, so grants already carry extension verbs and `grantCarriesVerb()` is deliberately
+      separate from `isGranted()`, which keeps answering only for the five core verbs.
+      Deferred is `run` specifically: it has no consumer until run authorization exists (9.2,
+      flow-engine owner), and shipping a verb nothing reads would be a control that silently does
+      nothing — the exact defect shape this programme kept finding.
 - [x] 5.9 Make the file coupling explicit in the UI: a grant on the folder also reaches the files
       in it. The grants section now states it — "Everyone listed here can also open the files
       attached to this item" — with a unit test that fails without it (nextcloud-vue#591).
@@ -247,6 +250,12 @@
       configuration, and inviting a person are three different acts
 - [ ] 8.3 Migrate the bespoke `sharedWith[]` to the primitive. Scoped by the audit to THREE
       consumers: openregister credentials + flows, launchpad manifests, doriath dashboards
+      PARTIALLY DONE, and deliberately not a migration. The decision (2026-08-03) was to add
+      grant-sourcing to launchpad as NET-NEW rather than to move the bespoke list: launchpad
+      manifests now fold in dashboards granted through the primitive alongside the user's own
+      (lp#24), which is 8.4's "read both" shape rather than a flag day. Retiring the bespoke
+      lists is 8.5 and stays blocked on nothing reading them.
+      Still untouched: doriath dashboards, and the credential/flow lists in openregister.
 - [x] 8.4 The broker reads the primitive as Guard 1d, ALONGSIDE its own 1c rather than instead of
       it — so a credential shared either way is admitted and retiring the bespoke list becomes a
       data migration, not a flag day. The verb is `use`, not `read` (Q6), which required building
