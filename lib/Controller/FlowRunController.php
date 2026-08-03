@@ -31,17 +31,16 @@ namespace OCA\OpenRegister\Controller;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
 use stdClass;
@@ -50,38 +49,37 @@ use Throwable;
 /**
  * REST surface for inspecting and retrying flow runs.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Two over, from the run guard's
- * ObjectService + IAppConfig. Both exist so the flow can be resolved WITH RBAC at
- * the request boundary — the resolver deliberately loads with RBAC off for the
- * engine, and inheriting that bypass here is what left retry() open to an IDOR.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) One over, from FlowService. It
+ * exists so a flow can be resolved under the CALLER's scoping at the request
+ * boundary — FlowLocator deliberately loads with RBAC off for the engine, and
+ * inheriting that bypass here is what left retry() open to an IDOR.
  */
 class FlowRunController extends Controller
 {
     /**
      * Constructor.
      *
-     * @param string               $appName             The app id.
-     * @param IRequest             $request             The request.
-     * @param FlowRunMapper        $mapper              Reads runs.
-     * @param FlowRunService       $runner              Retries, requeues and runs.
-     * @param FlowResolverRegistry $resolvers           Resolves a flow id to its document.
-     * @param IUserSession         $userSession         Attributes a retried run to the caller.
-     * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
-     * @param ObjectService|null   $objectService       Resolves the flow WITH RBAC for the run guard;
-     *                                                  nullable so adding it is not a fatal at
-     *                                                  existing construction sites.
-     * @param IAppConfig|null      $flowAppConfig       Reads the flow register/schema slugs.
+     * @param string              $appName             The app id.
+     * @param IRequest            $request             The request.
+     * @param FlowRunMapper       $mapper              Reads runs.
+     * @param FlowRunService      $runner              Retries, requeues and runs.
+     * @param FlowLocator         $resolvers           Resolves a flow id to its document.
+     * @param IUserSession        $userSession         Attributes a retried run to the caller.
+     * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
+     * @param FlowService|null    $flows               Resolves a flow under the caller's scoping for the
+     *                                                 run guard. Nullable so adding it is not a fatal at
+     *                                                 existing construction sites; the guard fails CLOSED
+     *                                                 when it is absent.
      */
     public function __construct(
         string $appName,
         IRequest $request,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
-        private readonly ?ObjectService $objectService=null,
-        private readonly ?IAppConfig $flowAppConfig=null
+        private readonly ?FlowService $flows=null
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -116,11 +114,34 @@ class FlowRunController extends Controller
             $statusFilter = (string) $status;
         }
 
+        // Scope the history. Unscoped, this endpoint returns every run on the
+        // instance to any authenticated caller, and a run carries its log —
+        // the subject data the flow walked. A caller sees the runs they
+        // triggered plus the runs of flows they own; the second half matters
+        // because `triggered_by` is NULL for cron- and trigger-fired runs, so
+        // "only runs you triggered" would hide every automated run from the
+        // flow's own owner.
+        //
+        // Fails CLOSED: with no FlowService there is no way to establish either
+        // half, so nothing is returned rather than everything.
+        $requesterUid = null;
+        $ownedFlowIds = [];
+        if ($this->flows !== null) {
+            $requesterUid = $this->userSession->getUser()?->getUID();
+            $ownedFlowIds = $this->flows->idsOwnedByCaller();
+        }
+
+        if ($requesterUid === null) {
+            return new JSONResponse(['results' => [], 'limit' => $limit, 'offset' => $offset]);
+        }
+
         $runs = $this->mapper->findAllRuns(
             flowId: $flowFilter,
             status: $statusFilter,
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            requesterUid: $requesterUid,
+            ownedFlowIds: $ownedFlowIds
         );
 
         return new JSONResponse(
@@ -144,9 +165,8 @@ class FlowRunController extends Controller
      *
      * Scoping is strict (see FlowRunMapper::findActive): a caller with no
      * resolvable organisation gets an empty list rather than everybody's runs.
-     * The full history surface (`index`) is unchanged and still unscoped —
-     * this endpoint exists precisely so that widening visibility of run
-     * activity to every user of every app does not widen it across tenants.
+     * The full history surface (`index`) applies its own rule — runs you
+     * triggered plus runs of flows you own — so neither read is unscoped.
      *
      * @return JSONResponse `{results, total, limit}` — the live runs.
      *
@@ -240,7 +260,7 @@ class FlowRunController extends Controller
     /**
      * The flow's human name, falling back to its id.
      *
-     * Resolution is memoised per flow id by FlowResolverRegistry, so a list of
+     * Resolution is memoised per flow id by FlowLocator, so a list of
      * runs over a handful of flows costs one resolve per DISTINCT flow rather
      * than one per row. A flow whose owning app is disabled no longer resolves;
      * the id is returned so the row still identifies something.
@@ -375,7 +395,7 @@ class FlowRunController extends Controller
     /**
      * Refuse unless the caller may RUN this flow.
      *
-     * WHY THE CONTROLLER AND NOT THE RESOLVER. `OpenRegisterFlowResolver::resolveFlow()`
+     * WHY THE CONTROLLER AND NOT THE RESOLVER. `FlowLocator::resolveSubject()`
      * loads with `_rbac: false`, and correctly so — the engine runs a flow as its
      * owner, and background jobs and retries have no session to evaluate. But
      * these endpoints inherited that bypass, and `retry()` in particular took a
@@ -383,9 +403,10 @@ class FlowRunController extends Controller
      * user could re-run anybody's flow. That is an IDOR (OWASP A01), and the fix
      * belongs where the request enters, not in the engine.
      *
-     * WHAT IT CHECKS. The flow is resolved through `ObjectService` with RBAC ON.
-     * A caller who cannot READ the flow gets a 404 rather than a 403, so the
-     * endpoint cannot be used to discover which flow ids exist.
+     * WHAT IT CHECKS. The flow is resolved through `FlowService`, which applies
+     * the organisation scoping and the per-flow guard. A caller who may not see
+     * the flow gets the SAME 404 as one asking for a flow that does not exist,
+     * so the endpoint cannot be used to discover which flow ids exist.
      *
      * Running is an EXTENSION verb — core's bitmask has no `run` — so per ADR-010
      * Rule 4 it is enforced here, at the endpoint that performs the action,
@@ -397,25 +418,15 @@ class FlowRunController extends Controller
      */
     private function refuseUnlessRunnable(string $flowId): ?JSONResponse
     {
-        if ($this->objectService === null || $this->flowAppConfig === null) {
-            // Fail CLOSED. Without the collaborators there is no way to decide,
+        if ($this->flows === null) {
+            // Fail CLOSED. Without the collaborator there is no way to decide,
             // and an unguarded run is what this method exists to prevent.
             return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
         }
 
         try {
-            $flow = $this->objectService->find(
-                id: $flowId,
-                register: $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
-                schema: $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
-                _rbac: true,
-                _multitenancy: true
-            );
+            $this->flows->find(uuid: $flowId);
         } catch (Throwable $e) {
-            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
-        }
-
-        if ($flow === null) {
             return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
         }
 

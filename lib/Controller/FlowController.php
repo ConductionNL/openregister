@@ -1,12 +1,20 @@
 <?php
 
 /**
- * FlowController — read surface for the visual flow builder.
+ * FlowController — the flow surface every app's builder talks to.
  *
- * Exposes the declarative-flow event catalog (the triggers a flow may subscribe
- * to) so the visual builder can populate its trigger palette from the backend
- * rather than a hard-coded list. The catalog is authoritative: every id it
- * returns is a real, dispatched event routed to the flow runner.
+ * Two halves. The catalog endpoints expose the triggers a flow may subscribe to
+ * and the node types the engine can execute, so a builder populates its palette
+ * from the backend rather than a hard-coded list — the catalog is
+ * authoritative, and a builder that invents its own ids produces flows the
+ * engine cannot run. The CRUD endpoints read and write the flow definitions
+ * themselves, which live in one native store shared by every app and are scoped
+ * per app by `app`.
+ *
+ * Every CRUD method goes through `FlowService`, never `FlowMapper`, because the
+ * service is where the organisation scoping and the per-flow guard live. A
+ * controller method that reached for the mapper directly would be reproducing
+ * the unguarded lookups this subsystem already shipped once.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -21,24 +29,32 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/visual-flow-builder/specs/flow-builder/spec.md
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
+use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\FlowStateMapper;
 use OCA\OpenRegister\Service\Flow\EventCatalogService;
 use OCA\OpenRegister\Service\Flow\FlowNodePreflight;
 use OCA\OpenRegister\Service\Flow\FlowNodeRegistry;
+use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\WorkflowEngine\IManager;
 
 /**
- * Read endpoints backing the visual flow builder.
+ * Catalog and CRUD endpoints for flows.
+ *
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class FlowController extends Controller
 {
@@ -51,6 +67,7 @@ class FlowController extends Controller
      * @param FlowNodeRegistry    $nodes        The registered flow-step types.
      * @param FlowStateMapper     $flowState    Reads state a flow keeps between runs.
      * @param FlowNodePreflight   $preflight    Resolves a document's step types.
+     * @param FlowService         $flows        Reads, writes and runs flow definitions.
      */
     public function __construct(
         string $appName,
@@ -59,6 +76,7 @@ class FlowController extends Controller
         private readonly FlowNodeRegistry $nodes,
         private readonly FlowStateMapper $flowState,
         private readonly FlowNodePreflight $preflight,
+        private readonly FlowService $flows,
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -276,4 +294,208 @@ class FlowController extends Controller
         return $results;
 
     }//end asList()
+
+    /**
+     * List flows, newest first.
+     *
+     * `app` is the per-app scoping key: OpenConnector's index passes
+     * `openconnector`, hermiq passes `hermiq`, and OpenRegister's own index
+     * passes nothing and sees every app's flows. Organisation scoping is not a
+     * parameter — `FlowService` applies it unconditionally.
+     *
+     * @return JSONResponse `{ results, total, limit, offset }`.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function index(): JSONResponse
+    {
+        $limit  = min(200, max(1, (int) $this->request->getParam('limit', 100)));
+        $offset = max(0, (int) $this->request->getParam('offset', 0));
+
+        $app       = $this->request->getParam('app');
+        $appFilter = null;
+        if ($app !== null && trim((string) $app) !== '') {
+            $appFilter = (string) $app;
+        }
+
+        $enabledFilter = null;
+        $enabled       = $this->request->getParam('enabled');
+        if ($enabled !== null && $enabled !== '') {
+            $enabledFilter = filter_var($enabled, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $flows = $this->flows->findAll(
+            app: $appFilter,
+            enabled: $enabledFilter,
+            limit: $limit,
+            offset: $offset
+        );
+
+        return new JSONResponse(
+            [
+                'results' => array_map(static fn (Flow $flow): array => $flow->jsonSerialize(), $flows),
+                'total'   => $this->flows->count(app: $appFilter),
+                'limit'   => $limit,
+                'offset'  => $offset,
+            ]
+        );
+
+    }//end index()
+
+    /**
+     * Read one flow.
+     *
+     * @param string $id The flow uuid.
+     *
+     * @return JSONResponse The flow, or 404.
+     *
+     * @NoAdminRequired
+     * @NoCSRFRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
+    public function show(string $id): JSONResponse
+    {
+        try {
+            $flow = $this->flows->find(uuid: $id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse($flow->jsonSerialize());
+
+    }//end show()
+
+    /**
+     * Create a flow.
+     *
+     * @return JSONResponse The stored flow, 201.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    public function create(): JSONResponse
+    {
+        $data = $this->flowPayload();
+
+        if (trim((string) ($data['name'] ?? '')) === '') {
+            return new JSONResponse(['error' => 'A flow needs a name.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $flow = $this->flows->save(data: $data);
+
+        return new JSONResponse($flow->jsonSerialize(), Http::STATUS_CREATED);
+
+    }//end create()
+
+    /**
+     * Update a flow.
+     *
+     * @param string $id The flow uuid.
+     *
+     * @return JSONResponse The stored flow, or 404.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    public function update(string $id): JSONResponse
+    {
+        try {
+            $flow = $this->flows->save(data: $this->flowPayload(), uuid: $id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse($flow->jsonSerialize());
+
+    }//end update()
+
+    /**
+     * Delete a flow.
+     *
+     * @param string $id The flow uuid.
+     *
+     * @return JSONResponse An empty 200, or 404.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    public function destroy(string $id): JSONResponse
+    {
+        try {
+            $this->flows->delete(uuid: $id);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse([]);
+
+    }//end destroy()
+
+    /**
+     * Queue a manual run of a flow.
+     *
+     * @param string $id The flow uuid.
+     *
+     * @return JSONResponse The queued run, 201, or 404.
+     *
+     * @NoAdminRequired
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    #[NoAdminRequired]
+    public function run(string $id): JSONResponse
+    {
+        $subject = $this->request->getParam('subject', []);
+        $context = $this->request->getParam('context', []);
+
+        try {
+            $flowRun = $this->flows->run(
+                uuid: $id,
+                subject: (array) $subject,
+                context: (array) $context
+            );
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(['error' => 'No such flow'], Http::STATUS_NOT_FOUND);
+        }
+
+        return new JSONResponse($flowRun->jsonSerialize(), Http::STATUS_CREATED);
+
+    }//end run()
+
+    /**
+     * The flow fields carried on a create or update request.
+     *
+     * Read as a whole body rather than field by field so a partial update can
+     * be distinguished from one that blanks a field: `FlowService` only touches
+     * keys that are actually present, which it cannot do if absent keys arrive
+     * as nulls manufactured here.
+     *
+     * @return array<string, mixed> The submitted fields.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function flowPayload(): array
+    {
+        $body = $this->request->getParams();
+
+        // Route placeholders and framework noise are not flow fields.
+        unset($body['id'], $body['_route']);
+
+        return $body;
+
+    }//end flowPayload()
 }//end class

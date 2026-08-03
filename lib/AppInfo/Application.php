@@ -2393,13 +2393,18 @@ class Application extends App implements IBootstrap
             \OCA\OpenRegister\Listener\FlowNodeRegistrationListener::class
         );
 
-        // Flow resolution. OpenRegister resolves flows stored as its own objects
-        // (a `flows` register / `flow` schema by default), so a flow can live in
-        // OpenRegister itself and not only in a consuming app — contributed
-        // through the same resolver event.
+        // Flow oversight. Apps contribute the checks that may STOP a run — a
+        // kill switch, a spend budget, a maintenance window — through the same
+        // idiom as flow nodes. The engine hardcodes none of them, which is what
+        // keeps app-specific safety logic out of it.
+        //
+        // There is deliberately no resolver event beside these two. Flows live
+        // in one native table, so "which app owns this flow id" has a single
+        // answer and `FlowLocator` reads it directly; the resolver registry
+        // existed only to arbitrate between per-app object stores.
         $context->registerEventListener(
-            \OCA\OpenRegister\Service\Flow\RegisterFlowResolversEvent::class,
-            \OCA\OpenRegister\Listener\FlowResolverRegistrationListener::class
+            \OCA\OpenRegister\Service\Flow\RegisterFlowOversightEvent::class,
+            \OCA\OpenRegister\Listener\FlowOversightRegistrationListener::class
         );
 
         // Federated configuration sharing. Any app declares its shareable config

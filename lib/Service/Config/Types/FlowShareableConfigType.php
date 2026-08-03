@@ -5,10 +5,10 @@
  *
  * This is the reframed #2065 "integration network": a flow is not a special kind
  * of shareable thing, it is one type among many that plug into the fleet's one
- * federated-config seam. A flow lives as an OpenRegister object in the flow store
- * ({@see OpenRegisterFlowResolver}), so serialising it is stripping the
- * instance-specific fields and keeping its portable shape (name, trigger, nodes,
- * edges, cron); installing it is writing that back into the store.
+ * federated-config seam. A flow is a row in the one native flow store, so
+ * serialising it is stripping the instance-specific fields and keeping its
+ * portable shape (name, trigger, nodes, edges, cron); installing it is writing
+ * that back into the store.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -29,10 +29,10 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Config\Types;
 
-use OCA\OpenRegister\Db\ObjectEntity;
+use DateTime;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapper;
 use OCA\OpenRegister\Service\Config\IShareableConfigType;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\IAppConfig;
 use Throwable;
 
 /**
@@ -40,19 +40,6 @@ use Throwable;
  */
 class FlowShareableConfigType implements IShareableConfigType
 {
-
-    /**
-     * The app its config lives under, and the flow-store config keys/defaults.
-     */
-    private const APP_ID = 'openregister';
-
-    private const REGISTER_KEY = 'flow_register';
-
-    private const REGISTER_DEFAULT = 'flows';
-
-    private const SCHEMA_KEY = 'flow_schema';
-
-    private const SCHEMA_DEFAULT = 'flow';
 
     /**
      * The portable fields a flow carries when shared (never id/uuid/owner/org).
@@ -75,13 +62,10 @@ class FlowShareableConfigType implements IShareableConfigType
     /**
      * Constructor.
      *
-     * @param ObjectService $objectService Reads and writes flow objects.
-     * @param IAppConfig    $appConfig     Names the flow store.
+     * @param FlowMapper $mapper Reads and writes flow definitions.
      */
-    public function __construct(
-        private readonly ObjectService $objectService,
-        private readonly IAppConfig $appConfig
-    ) {
+    public function __construct(private readonly FlowMapper $mapper)
+    {
 
     }//end __construct()
 
@@ -135,20 +119,12 @@ class FlowShareableConfigType implements IShareableConfigType
         $flows = [];
         foreach ((array) ($selection['flowIds'] ?? []) as $flowId) {
             try {
-                $object = $this->objectService->find(
-                    id: (string) $flowId,
-                    register: $this->flowRegister(),
-                    schema: $this->flowSchema(),
-                    _rbac: false,
-                    _multitenancy: false
-                );
+                $flow = $this->mapper->findByUuid((string) $flowId);
             } catch (Throwable $e) {
                 continue;
             }
 
-            if (($object instanceof ObjectEntity) === true) {
-                $flows[] = $this->portable(data: $object->getObject());
-            }
+            $flows[] = $this->portable(data: $flow->jsonSerialize());
         }
 
         return [
@@ -171,23 +147,68 @@ class FlowShareableConfigType implements IShareableConfigType
     public function deserialise(array $bundle): array
     {
         $installed = [];
-        foreach ((array) ($bundle['flows'] ?? []) as $flow) {
-            if (is_array($flow) === false) {
+        foreach ((array) ($bundle['flows'] ?? []) as $incoming) {
+            if (is_array($incoming) === false) {
                 continue;
             }
 
-            $object = $this->objectService->saveObject(
-                object: $this->portable(data: $flow),
-                register: $this->flowRegister(),
-                schema: $this->flowSchema()
-            );
+            $portable = $this->portable(data: $incoming);
 
-            $installed[] = (string) $object->getUuid();
-        }
+            $flow = new Flow();
+            $flow->setUuid($this->newUuid());
+            $flow->setApp('openregister');
+            $flow->setCreated(new DateTime());
+            $flow->setUpdated(new DateTime());
+
+            $flow->setName((string) ($portable['name'] ?? 'Imported flow'));
+            $flow->setDescription(($portable['description'] ?? null));
+            $flow->setTrigger(($portable['trigger'] ?? null));
+            $flow->setTriggerRegister(($portable['triggerRegister'] ?? null));
+            $flow->setTriggerSchema(($portable['triggerSchema'] ?? null));
+            $flow->setCron(($portable['cron'] ?? null));
+            $flow->setNodes((array) ($portable['nodes'] ?? []));
+            $flow->setEdges((array) ($portable['edges'] ?? []));
+            $flow->setLimits((array) ($portable['limits'] ?? []));
+
+            // An imported flow lands DISABLED and OWNERLESS, whatever the
+            // bundle said. `owner` and `organisation` are not portable fields —
+            // they name an identity on the SENDING instance that means nothing
+            // here — and a flow with no owner cannot dispatch. So a bundle can
+            // never arrive and start executing against the receiving tenant's
+            // data before a local person has adopted it and switched it on.
+            $flow->setEnabled(false);
+            $flow->setOwner(null);
+            $flow->setOrganisation(null);
+
+            $stored      = $this->mapper->insert($flow);
+            $installed[] = (string) $stored->getUuid();
+        }//end foreach
 
         return ['installed' => $installed];
 
     }//end deserialise()
+
+    /**
+     * Mint a v4 uuid for an imported flow.
+     *
+     * An imported flow gets a FRESH id rather than the sender's: two instances
+     * that both installed the same bundle would otherwise hold flows with the
+     * same id, and a sub-flow reference or a run row would become ambiguous the
+     * moment those instances ever exchanged anything again.
+     *
+     * @return string The uuid.
+     *
+     * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
+     */
+    private function newUuid(): string
+    {
+        $data    = random_bytes(16);
+        $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+        $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+
+    }//end newUuid()
 
     /**
      * Keep only the portable fields of a flow.
@@ -208,26 +229,4 @@ class FlowShareableConfigType implements IShareableConfigType
         return $out;
 
     }//end portable()
-
-    /**
-     * The register flows are stored in.
-     *
-     * @return string The register slug.
-     */
-    private function flowRegister(): string
-    {
-        return $this->appConfig->getValueString(self::APP_ID, self::REGISTER_KEY, self::REGISTER_DEFAULT);
-
-    }//end flowRegister()
-
-    /**
-     * The schema flows are stored under.
-     *
-     * @return string The schema slug.
-     */
-    private function flowSchema(): string
-    {
-        return $this->appConfig->getValueString(self::APP_ID, self::SCHEMA_KEY, self::SCHEMA_DEFAULT);
-
-    }//end flowSchema()
 }//end class

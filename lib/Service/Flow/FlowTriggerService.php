@@ -56,12 +56,12 @@ class FlowTriggerService
     /**
      * Constructor.
      *
-     * @param FlowResolverRegistry $resolvers Finds flows wired to an event.
-     * @param FlowRunService       $runner    Queues the runs.
-     * @param LoggerInterface      $logger    The logger.
+     * @param FlowLocator     $resolvers Finds flows wired to an event.
+     * @param FlowRunService  $runner    Queues the runs.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runner,
         private readonly LoggerInterface $logger
     ) {
