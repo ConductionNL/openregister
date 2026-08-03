@@ -1,9 +1,11 @@
 {
   "change": "entity-replacement-planner",
   "project": "openregister",
-  "repo": "Conduction/openregister",
+  "repo": "ConductionNL/openregister",
+  "base_branch": "development",
+  "feature_branch": "feature/2306/entity-replacement-planner",
   "created": "2026-08-03",
-  "tracking_issue": null,
+  "tracking_issue": 2306,
   "specs": [
     "entity-replacement-planner",
     "pdf-anonymisation"
