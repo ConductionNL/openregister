@@ -50,7 +50,7 @@
 							<td>
 								<NcButton
 									v-if="isReversible(operation)"
-									type="tertiary"
+									variant="tertiary"
 									data-testid="mdm-merge-reverse"
 									:disabled="reversingId === operation.id"
 									@click="reverse(operation)">

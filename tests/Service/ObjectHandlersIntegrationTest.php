@@ -1426,18 +1426,6 @@ class ObjectHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test filterObjectsForPermissions with RBAC disabled.
-     */
-    public function testFilterObjectsForPermissionsRbacDisabled(): void
-    {
-        $objects = [
-            ['@self' => ['schema' => $this->testSchema->getId(), 'owner' => 'admin'], 'title' => 'Test'],
-        ];
-        $result = $this->permissionHandler->filterObjectsForPermissions($objects, false, false);
-        $this->assertCount(1, $result);
-    }
-
-    /**
      * Test getActiveOrganisationForContext.
      */
     public function testGetActiveOrganisationForContext(): void

@@ -13,6 +13,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\Flow\OpenRegisterFlowResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -32,9 +34,19 @@ class OpenRegisterFlowResolverTest extends TestCase
             static fn (string $app, string $key, string $default = '') => $default
         );
 
+        // The trigger index is read through a distributed cache. A miss on every
+        // get() keeps these tests exercising the build path rather than a value
+        // a previous test seeded, which is what they were written to assert.
+        $cache = $this->createMock(ICache::class);
+        $cache->method('get')->willReturn(null);
+
+        $cacheFactory = $this->createMock(ICacheFactory::class);
+        $cacheFactory->method('createDistributed')->willReturn($cache);
+
         $this->resolver = new OpenRegisterFlowResolver(
             $this->objects,
             $config,
+            $cacheFactory,
             $this->createMock(\Psr\Log\LoggerInterface::class)
         );
     }
@@ -110,5 +122,85 @@ class OpenRegisterFlowResolverTest extends TestCase
     {
         $this->objects->method('findAll')->willThrowException(new RuntimeException('no such register'));
         $this->assertSame([], $this->resolver->flowsForTrigger('object.created', 'reg', 'sch'));
+    }
+
+    /**
+     * Only flows that actually declare a schedule are offered to the scheduler.
+     *
+     * Blast radius: the scheduler now enumerates through the resolvers on every
+     * instance in the fleet, so what a source hands it decides how much extra
+     * work every instance does. An event-triggered flow must not appear here.
+     *
+     * @return void
+     */
+    public function testScheduledFlowsReportsOnlyScheduleTriggeredFlows(): void
+    {
+        $scheduled = $this->flowObject(['enabled' => true, 'trigger' => 'schedule', 'cron' => '*/5 * * * *']);
+        $evented   = $this->flowObject(['enabled' => true, 'trigger' => 'object.created']);
+        $scheduled->setUuid('sched');
+        $evented->setUuid('evented');
+
+        $this->objects->method('findAll')->willReturn([$scheduled, $evented]);
+
+        $candidates = $this->resolver->scheduledFlows();
+
+        $this->assertCount(1, $candidates);
+        $this->assertSame('sched', $candidates[0]['id']);
+        $this->assertSame('*/5 * * * *', $candidates[0]['cron']);
+        $this->assertTrue($candidates[0]['enabled']);
+    }
+
+    /**
+     * A DISABLED schedule is reported, with `enabled` false — not omitted.
+     *
+     * The scheduler makes the run/do-not-run decision itself, in one place, for
+     * every app's flows. A source that quietly dropped disabled flows would move
+     * that decision into each app, where it can be got wrong once per app.
+     *
+     * @return void
+     */
+    public function testScheduledFlowsReportsDisabledSchedulesHonestly(): void
+    {
+        $off = $this->flowObject(['enabled' => false, 'trigger' => 'schedule', 'cron' => '*/5 * * * *']);
+        $off->setUuid('off');
+        $this->objects->method('findAll')->willReturn([$off]);
+
+        $candidates = $this->resolver->scheduledFlows();
+
+        $this->assertCount(1, $candidates);
+        $this->assertFalse($candidates[0]['enabled']);
+    }
+
+    /**
+     * The owner comes from the object's owner, falling back to the flow field.
+     *
+     * A scheduled run has no session, so without an owner every
+     * attribution-requiring node refuses (or#2158).
+     *
+     * @return void
+     */
+    public function testScheduledFlowsCarriesTheOwner(): void
+    {
+        $owned = $this->flowObject(['enabled' => true, 'trigger' => 'schedule', 'cron' => '* * * * *']);
+        $owned->setUuid('owned');
+        $owned->setOwner('alice');
+
+        $fieldOnly = $this->flowObject(
+            ['enabled' => true, 'trigger' => 'schedule', 'cron' => '* * * * *', 'owner' => 'bob']
+        );
+        $fieldOnly->setUuid('field-only');
+
+        $this->objects->method('findAll')->willReturn([$owned, $fieldOnly]);
+
+        $candidates = $this->resolver->scheduledFlows();
+
+        $this->assertSame('alice', $candidates[0]['owner']);
+        $this->assertSame('bob', $candidates[1]['owner']);
+    }
+
+    public function testNoFlowStoreYieldsNoScheduledFlows(): void
+    {
+        $this->objects->method('findAll')->willThrowException(new RuntimeException('no such register'));
+        $this->assertSame([], $this->resolver->scheduledFlows());
     }
 }

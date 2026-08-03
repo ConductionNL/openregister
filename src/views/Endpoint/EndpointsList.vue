@@ -7,7 +7,7 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 	<NcAppContentList>
 		<div class="listHeader">
 			<NcTextField
-				:value.sync="searchStore.search"
+				v-model="searchStore.search"
 				:show-trailing-button="searchStore.search !== ''"
 				:label="t('openregister', 'Search')"
 				class="searchField"

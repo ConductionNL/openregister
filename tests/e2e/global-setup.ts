@@ -23,6 +23,7 @@ import { execSync } from 'child_process'
 import * as path from 'path'
 import * as fs from 'fs'
 import { seedMdm } from './mdm-seed'
+import { resolveBaseUrl } from './base-url'
 
 const AUTH_DIR = path.resolve(__dirname, '.auth')
 const STORAGE_STATE = path.join(AUTH_DIR, 'admin.json')
@@ -93,10 +94,12 @@ async function ensureNextcloudReachable(baseURL: string): Promise<void> {
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
+	// ⚠️ No `'http://localhost:8080'` fallback. That literal is the SHARED dev
+	// container, which bind-mounts real host checkouts — a suite that silently
+	// retargets there writes fixtures into other people's working trees and
+	// fires failed logins at their instance. resolveBaseUrl() throws instead.
 	const baseURL = (config.projects[0]?.use?.baseURL as string | undefined)
-		?? process.env.NEXTCLOUD_URL
-		?? process.env.NC_BASE_URL
-		?? 'http://localhost:8080'
+		?? resolveBaseUrl()
 	const username = process.env.NC_ADMIN_USER ?? 'admin'
 	const password = process.env.NC_ADMIN_PASS ?? 'admin'
 

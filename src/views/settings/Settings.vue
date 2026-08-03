@@ -9,7 +9,7 @@
 		<!-- Clear App Store Cache action in the version card header -->
 		<template #actions>
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="settingsStore.clearingAppStoreCache"
 				@click="settingsStore.clearAppStoreCache('all')">
 				<template #icon>

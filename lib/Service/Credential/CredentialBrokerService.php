@@ -69,8 +69,12 @@ namespace OCA\OpenRegister\Service\Credential;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Rbac\ObjectGrantResolver;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCP\Http\Client\IClientService;
+use OCP\IGroupManager;
+use OCP\IUserManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use DateTimeImmutable;
@@ -80,6 +84,12 @@ use Throwable;
 /**
  * Constrained, host-locked, secret-injecting outbound broker.
  *
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   One over, from Guard 1d's grant
+ * resolver. Every parameter is a collaborator the guard chain needs, and the chain
+ * IS the class; a parameter object would only rename the coupling.
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     44 lines over, from Guard 1c. The guard
+ * chain is one security policy read top to bottom; moving a guard elsewhere is how a
+ * caller ends up skipping it.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) The fail-closed guard chain
  *   (scope dispatch + owner/membership + allowedApps + provider rules + host-lock)
  *   is deliberately decomposed into small single-purpose guard methods so each
@@ -121,13 +131,20 @@ class CredentialBrokerService
     /**
      * Constructor.
      *
-     * @param ObjectService       $objectService       OR object CRUD (loads credential metadata).
-     * @param CredentialStore     $credentialStore     Secret store leaf (reads the injected secret).
-     * @param ProviderCatalogue   $catalogue           Read-only provider catalogue (host-lock + rules).
-     * @param IUserSession        $userSession         Current session (owner guard identity).
-     * @param IClientService      $clientService       NC HTTP client factory (the outbound call).
-     * @param LoggerInterface     $logger              Logger for secret-free server-side diagnostics.
-     * @param OrganisationService $organisationService Resolves organisation membership (organisation guard branch).
+     * @param ObjectService            $objectService       OR object CRUD (loads credential metadata).
+     * @param CredentialStore          $credentialStore     Secret store leaf (reads the injected secret).
+     * @param ProviderCatalogue        $catalogue           Read-only provider catalogue (host-lock + rules).
+     * @param IUserSession             $userSession         Current session (owner guard identity).
+     * @param IClientService           $clientService       NC HTTP client factory (the outbound call).
+     * @param LoggerInterface          $logger              Logger for secret-free server-side diagnostics.
+     * @param OrganisationService      $organisationService Resolves organisation membership (organisation guard branch).
+     * @param IGroupManager|null       $groupManager        Resolves group principals for the share guard; null ⇒ group shares admit
+     *                                                      nobody.
+     * @param IUserManager|null        $userManager         Resolves the asserted uid's groups on the sessionless path; null ⇒ no
+     *                                                      groups.
+     * @param ObjectGrantResolver|null $objectGrants        Per-object grant resolver for Guard 1d; nullable so
+     *                                                      adding it is not a fatal at existing construction
+     *                                                      sites.
      *
      * @return void
      */
@@ -139,6 +156,16 @@ class CredentialBrokerService
         private readonly IClientService $clientService,
         private readonly LoggerInterface $logger,
         private readonly OrganisationService $organisationService,
+        // Optional collaborators for the share-principal guard branch. Nullable
+        // with a default so the eight existing call sites that construct this
+        // service directly keep working — a drifted constructor signature is a
+        // FATAL, not a test failure. Production auto-wires both by type.
+        //
+        // The fallback is fail-closed by construction: with no group manager, a
+        // GROUP share resolves no groups and therefore admits nobody.
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?IUserManager $userManager=null,
+        private readonly ?ObjectGrantResolver $objectGrants=null,
     ) {
     }//end __construct()
 
@@ -520,14 +547,112 @@ class CredentialBrokerService
                 _rbac: false
             );
         } catch (Throwable $e) {
+            // Log the REASON. A credential that is genuinely absent and a lookup
+            // that THREW are entirely different problems, and collapsing both
+            // into `$credential = null` makes them indistinguishable — the
+            // operator is told "credential not found" about a credential that
+            // demonstrably exists.
+            //
+            // Measured 2026-08-01: a brokered call that returns 200 outside a
+            // flow run is denied inside one with `credential not found`, and the
+            // reason it is really failing was sitting in this swallowed
+            // exception. Diagnosing it without this meant guessing at guards
+            // that were never reached.
+            //
+            // Not re-thrown: a missing credential must still deny rather than
+            // 500, and the caller's contract is unchanged. Only the diagnosis
+            // improves.
+            $this->logger->warning(
+                '[CredentialBrokerService] the credential lookup threw; treating as not found',
+                [
+                    'credential' => $credentialId,
+                    'reason'     => $e->getMessage(),
+                    'class'      => get_class($e),
+                ]
+            );
+
             $credential = null;
-        }
+        }//end try
 
         if ($credential === null) {
             $this->deny(reason: 'credential not found', credentialId: $credentialId);
         }
 
         $data = $credential->jsonSerialize();
+
+        // Guard 1c — an explicit SHARE admits, subject to the tenant edge.
+        //
+        // Evaluated before the scope asserts purely so that when nothing admits,
+        // the reported denial is still the scope guard's specific reason rather
+        // than a generic "not shared". The outcome is identical either way: this
+        // branch only ever ADMITS, never denies, and a credential with no
+        // `sharedWith` cannot admit here — so every pre-existing verdict is
+        // unchanged.
+        //
+        // A share grants USE. It does not bypass anything downstream: the
+        // allowedApps, provider allow-rule and host-lock guards still run on
+        // every admitted call, and the secret is still injected server-side and
+        // never returned (ADR-004 Rules 1 and 4).
+        if ($this->sharedPrincipalAdmits(
+            data: $data,
+            actingUserId: $actingUserId,
+            actingOrganisationId: $actingOrganisationId
+        ) === true
+        ) {
+            return $credential;
+        }
+
+        // Guard 1d — an OBJECT GRANT on this credential admits (task 8.4).
+        //
+        // A brokered credential IS an OpenRegister object, so the per-object
+        // grant primitive applies to it directly. This is the bridge that lets
+        // the bespoke `sharedWith[]` be retired: both are read here, so a
+        // credential shared either way is admitted, and nothing has to be
+        // migrated before the new path works.
+        //
+        // The verb is `use`, NOT `read`. Seeing that a credential exists is
+        // strictly weaker than spending it (design Q6), and core's bitmask has
+        // no `use` — so it rides in the share's attribute bag and is asked for
+        // here, at the endpoint that performs the action, exactly as ADR-010
+        // Rule 4 requires. A plain read grant does not admit a broker call.
+        //
+        // ADMIT-ONLY, like 1c: a credential with no grant cannot admit here, so
+        // every pre-existing verdict is unchanged.
+        if ($this->objectGrantAdmits(data: $data, actingOrganisationId: $actingOrganisationId) === true) {
+            return $credential;
+        }
+
+        return $this->admitByScope(
+            credential: $credential,
+            data: $data,
+            credentialId: $credentialId,
+            actingUserId: $actingUserId,
+            actingOrganisationId: $actingOrganisationId
+        );
+    }//end loadAdmittedCredential()
+
+    /**
+     * The scope half of Guard 1 — organisation membership, or personal ownership.
+     *
+     * Extracted from {@see loadAdmittedCredential()} so that chain stays under the
+     * length budget as guards are added. The order and the verdicts are unchanged:
+     * the same code, in the same sequence, one call further down.
+     *
+     * @param object               $credential           The credential entity.
+     * @param array<string, mixed> $data                 Its serialised data.
+     * @param string               $credentialId         For the denial message.
+     * @param string|null          $actingUserId         The acting user.
+     * @param string|null          $actingOrganisationId Asserted organisation for in-process callers.
+     *
+     * @return object The admitted credential.
+     */
+    private function admitByScope(
+        object $credential,
+        array $data,
+        string $credentialId,
+        ?string $actingUserId,
+        ?string $actingOrganisationId
+    ): object {
         if ($this->scopeOf(data: $data) === self::SCOPE_ORGANISATION) {
             $this->assertOrganisationMember(
                 data: $data,
@@ -540,7 +665,176 @@ class CredentialBrokerService
         $this->assertPersonalOwner(credential: $credential, credentialId: $credentialId, actingUserId: $actingUserId);
 
         return $credential;
-    }//end loadAdmittedCredential()
+    }//end admitByScope()
+
+    /**
+     * Whether an explicit share admits the acting identity (Guard 1c).
+     *
+     * Returns a boolean rather than denying, so a failed share falls through to
+     * the scope guards and their specific denial reasons. It admits only on a
+     * positive match and fails closed on everything else: no acting identity, an
+     * absent or malformed `sharedWith`, an unresolvable principal, or a principal
+     * outside the credential's organisation.
+     *
+     * TENANT EDGE: when the credential declares an `organisation`, a named
+     * principal is admitted ONLY if it is also inside that organisation. A share
+     * narrows access within a tenant; it can never cross one, and a group is
+     * never consulted as the tenant key (ADR-002 Rule 1) — the organisation UUID
+     * is.
+     *
+     * GROUPS come from the acting identity, resolved the same way the owner guard
+     * resolves it: the session when there is one, otherwise the trusted
+     * in-process `actingUserId` assertion (never request input). With no group
+     * manager wired, no group resolves and a group share admits nobody.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string|null          $actingUserId         Asserted user for sessionless in-process callers only.
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+     *
+     * @return bool True when a share admits the acting identity.
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/credential-broker/spec.md#requirement-share-principal-broker-guard
+     */
+    private function sharedPrincipalAdmits(
+        array $data,
+        ?string $actingUserId=null,
+        ?string $actingOrganisationId=null
+    ): bool {
+        $sharedWith = ($data[SharePrincipalDeriver::PROP_SHARED_WITH] ?? null);
+        if (is_array($sharedWith) === false || $sharedWith === []) {
+            return false;
+        }
+
+        $uid = $this->resolveActingIdentity(actingUserId: $actingUserId);
+        if ($uid === null) {
+            return false;
+        }
+
+        if ($this->shareWithinTenant(
+            data: $data,
+            actingOrganisationId: $actingOrganisationId
+        ) === false
+        ) {
+            return false;
+        }
+
+        $deriver = new SharePrincipalDeriver();
+
+        // A credential share grants `use`. The schema's `default: use` is not
+        // applied to stored data, so an entry that omits `permission` is treated
+        // as the default here rather than being silently dropped.
+        return $deriver->grants(
+            sharedWith: $sharedWith,
+            userId: $uid,
+            userGroups: $this->groupsOf(uid: $uid),
+            permissions: ['use', null]
+        );
+    }//end sharedPrincipalAdmits()
+
+    /**
+     * Whether a per-object GRANT admits the acting identity (Guard 1d).
+     *
+     * A brokered credential is an OpenRegister object, so the object-grant
+     * primitive addresses it directly by UUID — no second share shape is needed
+     * here, which is the whole point of task 8.4.
+     *
+     * THE VERB IS `use`, NOT `read`. Being able to see that a credential exists
+     * is strictly weaker than being able to spend it (design Q6), and core's
+     * permission bitmask has no `use` to carry. So the verb rides in the share's
+     * attribute bag and is asked for HERE — at the endpoint that performs the
+     * action — which is what ADR-010 Rule 4 requires and what keeps the RBAC
+     * evaluator answering only for verbs it defines. A plain read grant on a
+     * credential does not admit a broker call.
+     *
+     * TENANT EDGE: identical to Guard 1c's. When the credential declares an
+     * organisation, a grant admits only inside it. The same helper decides both,
+     * so the two guards cannot drift on the edge that matters most.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers.
+     *
+     * @return bool True when a grant carrying `use` admits the acting identity.
+     */
+    private function objectGrantAdmits(array $data, ?string $actingOrganisationId=null): bool
+    {
+        if ($this->objectGrants === null) {
+            // Fail CLOSED. No resolver means no grant, which denies rather than
+            // admits — and 1c plus the scope guards still run.
+            return false;
+        }
+
+        $uuid = (string) ($data['id'] ?? $data['uuid'] ?? '');
+        if ($uuid === '') {
+            return false;
+        }
+
+        if ($this->shareWithinTenant(data: $data, actingOrganisationId: $actingOrganisationId) === false) {
+            return false;
+        }
+
+        return $this->objectGrants->grantCarriesVerb(
+            userId: $this->userSession->getUser()?->getUID(),
+            objectUuid: $uuid,
+            verb: 'use'
+        );
+    }//end objectGrantAdmits()
+
+    /**
+     * Whether the acting identity is inside the credential's organisation, when it declares one.
+     *
+     * A credential with no `organisation` carries no tenant constraint (a purely
+     * personal credential), so a share on it is bounded only by its principals.
+     *
+     * @param array<string, mixed> $data                 The credential's serialised data.
+     * @param string|null          $actingOrganisationId Asserted organisation for sessionless in-process callers only.
+     *
+     * @return bool True when there is no tenant constraint, or the caller satisfies it.
+     */
+    private function shareWithinTenant(array $data, ?string $actingOrganisationId=null): bool
+    {
+        $organisation = (string) ($data['organisation'] ?? '');
+        if ($organisation === '') {
+            return true;
+        }
+
+        // Session present: the session is authoritative and any asserted
+        // organisation is ignored, so a request-context caller can never escalate
+        // by asserting one.
+        if ($this->userSession->getUser() !== null) {
+            return $this->organisationService->hasAccessToOrganisation($organisation) === true;
+        }
+
+        return $actingOrganisationId !== null && $actingOrganisationId === $organisation;
+    }//end shareWithinTenant()
+
+    /**
+     * The acting identity's group ids.
+     *
+     * Resolves through the session user when there is one, else through the
+     * asserted uid. Returns an empty list when groups cannot be resolved, which
+     * makes a group share admit nobody rather than everybody.
+     *
+     * @param string $uid The acting user id.
+     *
+     * @return string[] Group ids, empty when unresolvable.
+     */
+    private function groupsOf(string $uid): array
+    {
+        if ($this->groupManager === null) {
+            return [];
+        }
+
+        $user = $this->userSession->getUser();
+        if ($user === null || $user->getUID() !== $uid) {
+            $user = $this->userManager?->get($uid);
+        }
+
+        if ($user === null) {
+            return [];
+        }
+
+        return $this->groupManager->getUserGroupIds($user);
+    }//end groupsOf()
 
     /**
      * Personal owner guard — UNCHANGED: admit only when the acting identity owns it.
@@ -895,18 +1189,41 @@ class CredentialBrokerService
             $this->deny(reason: 'path must be a single-slash-rooted relative path', credentialId: '');
         }
 
-        // Single-decode, then reject any traversal in the decoded form.
+        // Single-decode, then reject traversal in the decoded form.
         $decoded = rawurldecode($path);
-        if (str_contains($decoded, '..') === true) {
-            $this->deny(reason: 'path contains traversal', credentialId: '');
-        }
 
-        $queryPos = strpos($decoded, '?');
+        $queryPos  = strpos($decoded, '?');
+        $matchPath = $decoded;
         if ($queryPos !== false) {
-            return substr($decoded, 0, $queryPos);
+            $matchPath = substr($decoded, 0, $queryPos);
         }
 
-        return $decoded;
+        // Traversal is a path SEGMENT equal to `..`, not the substring `..`
+        // appearing anywhere.
+        //
+        // The substring test rejected legitimate paths whose segments merely
+        // contain dots — GitHub's diff endpoint is `/repos/{o}/{r}/compare/
+        // {base}...{head}`, so EVERY commit comparison was denied as traversal.
+        // That is not a cosmetic refusal: `hydra-flows-first-port` task 2.5
+        // makes "diff the produced tree against the base before moving the ref"
+        // a mandatory rail on the commit-by-API path, precisely because
+        // `base_tree` overwrites rather than merges and a tree built against a
+        // moved base silently reverts files while producing a clean-looking
+        // commit. The rail could not be built at all while this guard stood.
+        //
+        // The security property is unchanged, and is checked both ways in the
+        // tests: `/a/../b` and `/a/%2e%2e/b` are still denied, because a
+        // traversal always presents as a segment that IS `..` once decoded.
+        // A segment like `..b`, `a..b` or `...` is a literal name and never
+        // walks anywhere. Double-encoding is unaffected: `%252e%252e` single-
+        // decodes to `%2e%2e`, which is not `..`, exactly as before.
+        foreach (explode('/', $matchPath) as $segment) {
+            if ($segment === '..') {
+                $this->deny(reason: 'path contains traversal', credentialId: '');
+            }
+        }
+
+        return $matchPath;
     }//end normalisePath()
 
     /**

@@ -327,7 +327,33 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
     }//end testBuildSqlAuthInheritFalseSkipsPublicCondition()
 
     /**
-     * Simple `'public'` rule + (auth, inheritFromPublic=true): bypass=true
+     * Assert the caller was granted unconditionally by a rule.
+     *
+     * An unconditional grant used to be encoded as `bypass => true`, i.e. no
+     * WHERE clause at all. Since the `private` object scope landed it is encoded
+     * as a non-bypass result whose conditions include the "not private"
+     * predicate: the grant still reaches every row the schema meant it to, but
+     * a row that declared itself private answers only to its owner and to
+     * administrators. The GRANT these tests are about is unchanged; only its
+     * encoding is, so they assert the grant rather than the encoding.
+     *
+     * @param array $result The buildRbacConditionsSql() result.
+     *
+     * @return void
+     */
+    private function assertGrantsEveryNonPrivateRow(array $result): void
+    {
+        $this->assertFalse(condition: $result['bypass']);
+        $this->assertNotEmpty(actual: $result['conditions']);
+
+        $joined = implode(' ', $result['conditions']);
+        $this->assertStringContainsString(needle: '_authorization', haystack: $joined);
+        $this->assertStringContainsString(needle: "'organisation'", haystack: $joined);
+
+    }//end assertGrantsEveryNonPrivateRow()
+
+    /**
+     * Simple `'public'` rule + (auth, inheritFromPublic=true): granted
      * (authenticated user qualifies for public unconditionally).
      *
      * @return void
@@ -344,7 +370,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
 
         $result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
-        $this->assertTrue(condition: $result['bypass']);
+        $this->assertGrantsEveryNonPrivateRow(result: $result);
 
     }//end testBuildSqlSimplePublicRuleAuthInheritTrueBypasses()
 
@@ -373,7 +399,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
     }//end testBuildSqlSimplePublicRuleAuthInheritFalseDoesNotBypass()
 
     /**
-     * Simple `'public'` rule + (anon, inheritFromPublic=false): bypass=true
+     * Simple `'public'` rule + (anon, inheritFromPublic=false): granted
      * (anonymous users are unaffected by the flag).
      *
      * @return void
@@ -390,13 +416,13 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
 
         $result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
-        $this->assertTrue(condition: $result['bypass']);
+        $this->assertGrantsEveryNonPrivateRow(result: $result);
 
     }//end testBuildSqlSimplePublicRuleAnonInheritFalseStillBypasses()
 
     /**
-     * Simple `'authenticated'` rule + (auth, inheritFromPublic=false): bypass
-     * stays true — the flag only governs the `public` group, not the
+     * Simple `'authenticated'` rule + (auth, inheritFromPublic=false): the
+     * grant stands — the flag only governs the `public` group, not the
      * `authenticated` simple-rule string.
      *
      * @return void
@@ -413,7 +439,7 @@ class MagicRbacHandlerInheritFromPublicTest extends TestCase
 
         $result = $this->handler->buildRbacConditionsSql(schema: $schema, action: 'read');
 
-        $this->assertTrue(condition: $result['bypass']);
+        $this->assertGrantsEveryNonPrivateRow(result: $result);
 
     }//end testBuildSqlAuthenticatedRuleUnaffectedByFlag()
 

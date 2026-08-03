@@ -18,7 +18,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 					<AlertCircleOutline :size="64" />
 				</template>
 				<template #action>
-					<NcButton type="primary" @click="$router.push({ name: 'applications' })">
+					<NcButton variant="primary" @click="$router.push({ name: 'applications' })">
 						<template #icon>
 							<ArrowLeft :size="20" />
 						</template>
@@ -33,7 +33,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<div class="detailsHeader">
 				<div class="headerTitleSection">
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						@click="$router.push({ name: 'applications' })">
 						<template #icon>
 							<ArrowLeft :size="20" />

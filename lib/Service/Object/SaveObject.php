@@ -2917,14 +2917,16 @@ class SaveObject
                 // which callers depend on it. Flipping the default would change
                 // behaviour fleet-wide with no way to enumerate the blast radius.
                 //
-                // ⚠️ THIS IS NOT A LOCK — openregister#2212. This check and the
-                // write below are two separate operations, so N concurrent
-                // callers can all reach here having found nothing and all
-                // proceed. Measured: 10 simultaneous claims on one identifier
-                // returned 201 six times. It narrows the window; it does not
-                // close it. Closing it means letting the database arbitrate — a
-                // real INSERT against the `_uuid` unique constraint, translated
-                // into this exception.
+                // This guard alone is NOT what makes the claim safe — it is a
+                // fast path. It and the write below are two separate
+                // operations, so under concurrency N callers can all reach here
+                // having found nothing. The arbitration that actually closes
+                // the race lives one layer down in
+                // MagicMapper::saveObjectToRegisterSchemaTable(), which refuses
+                // both the update branch and a losing INSERT when this flag is
+                // set (openregister#2215). Verified 6/6 races at 12 concurrent
+                // claimants: 1x201, 11x409. Do not remove that guard on the
+                // assumption that this one covers it.
                 if ($failIfExists === true) {
                     $this->logger->debug(
                         message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
@@ -3296,8 +3298,7 @@ class SaveObject
      * @param bool        $silent        Whether to skip audit trail
      * @param bool        $_multitenancy Whether to apply multitenancy
      * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
-     *
-     * @param bool         $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
+     * @param bool        $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @return ObjectEntity Created object
      *
@@ -3392,8 +3393,32 @@ class SaveObject
         \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
         // Create audit trail if not in silent mode.
+        //
+        // The ACTION comes from the mapper, not from this method's name. We got
+        // here because the service-level existence lookup found nothing — but
+        // the mapper looks again, and between the two lookups a concurrent
+        // writer can land the row, so the mapper may have taken its UPDATE
+        // branch on what we are calling a create.
+        //
+        // Recording `create` regardless is how three audit `create` entries
+        // ended up against a single `_id` that was inserted once (#2212/#2217):
+        // the audit trail said three objects were created, and one was. The
+        // mapper's lookup ran last and therefore matches the row, so it is the
+        // one to believe. `old: null` is kept for a genuine create — there is
+        // no previous version to diff against — while an update is recorded as
+        // an update rather than as a second birth.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            $action = $this->unifiedObjectMapper->getLastWriteAction();
+            if ($action === 'update') {
+                $log = $this->auditTrailMapper->createAuditTrail(
+                    old: null,
+                    new: $savedEntity,
+                    action: 'update'
+                );
+            } else {
+                $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            }
+
             $savedEntity->setLastLog($log->jsonSerialize());
             \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
         }

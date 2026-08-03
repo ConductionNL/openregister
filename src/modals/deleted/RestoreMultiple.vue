@@ -31,7 +31,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
 							@click="removeObject(obj.id)">
 							<template #icon>
@@ -66,7 +66,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || objectsToRestore.length === 0"
-				type="primary"
+				variant="primary"
 				@click="restoreMultiple()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -90,6 +90,8 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Restore from 'vue-material-design-icons/Restore.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'RestoreMultiple',
@@ -197,7 +199,7 @@ export default {
 				this.closeModalTimeout = setTimeout(this.closeDialog, 2000)
 
 				// Emit event to refresh parent list
-				this.$root.$emit('deleted-objects-restored', ids)
+				eventBus.emit('deleted-objects-restored', ids)
 			} catch (error) {
 				this.success = false
 				this.error = error.message || t('openregister', 'An error occurred while restoring the objects')

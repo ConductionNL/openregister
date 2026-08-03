@@ -25,7 +25,7 @@
 				<div class="viewHeader">
 					<div class="viewHeaderTitle">
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openregister', 'Back to entities')"
 							@click="$router.push('/entities')">
 							<template #icon>
@@ -155,7 +155,7 @@
 							<div class="relationActions">
 								<NcButton
 									v-if="relation.objectId"
-									type="secondary"
+									variant="secondary"
 									@click="viewObject(relation)">
 									<template #icon>
 										<EyeOutline :size="20" />
@@ -164,7 +164,7 @@
 								</NcButton>
 								<NcButton
 									v-if="relation.fileId"
-									type="secondary"
+									variant="secondary"
 									@click="viewFile(relation)">
 									<template #icon>
 										<EyeOutline :size="20" />

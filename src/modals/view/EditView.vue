@@ -14,8 +14,8 @@
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
+				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
 							<span>{{ t('openregister', 'Settings') }}</span>
@@ -24,7 +24,7 @@
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'View Name') + ' *'"
-								:value.sync="viewData.name"
+								v-model="viewData.name"
 								:placeholder="t('openregister', 'Enter view name...')"
 								:error="!viewData.name.trim() && nameTouched"
 								:helper-text="!viewData.name.trim() && nameTouched ? t('openregister', 'View name is required') : ''"
@@ -33,12 +33,12 @@
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								:value.sync="viewData.description"
+								v-model="viewData.description"
 								:placeholder="t('openregister', 'Enter description (optional)...')" />
 
 							<NcCheckboxRadioSwitch
 								:disabled="loading"
-								:checked.sync="viewData.isPublic"
+								v-model="viewData.isPublic"
 								type="switch">
 								{{ t('openregister', 'Public View') }}
 							</NcCheckboxRadioSwitch>
@@ -46,9 +46,9 @@
 								{{ t('openregister', 'Public views can be accessed by anyone in the system') }}
 							</p>
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<ShareVariant :size="16" />
 							<span>{{ t('openregister', 'Share') }}</span>
@@ -114,14 +114,14 @@
 								</p>
 							</div>
 						</div>
-					</BTab>
-				</BTabs>
+					</AppTab>
+				</AppTabs>
 			</div>
 
 			<!-- Actions -->
 			<div class="modal-actions">
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					@click="handleClose()">
 					<template #icon>
 						<Close :size="20" />
@@ -129,7 +129,7 @@
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!viewData.name.trim() || loading"
 					@click="saveView()">
 					<template #icon>
@@ -144,7 +144,8 @@
 
 <script>
 import { NcDialog, NcTextField, NcButton, NcCheckboxRadioSwitch, NcSelect, NcNoteCard } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 import Cog from 'vue-material-design-icons/Cog.vue'
 import ShareVariant from 'vue-material-design-icons/ShareVariant.vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -161,8 +162,8 @@ export default {
 		NcCheckboxRadioSwitch,
 		NcSelect,
 		NcNoteCard,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		Cog,
 		ShareVariant,
 		Close,

@@ -46,7 +46,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</span>
 					</div>
 					<NcButton v-if="organisationStore.userStats.total > 1"
-						type="secondary"
+						variant="secondary"
 						@click="showOrganisationSwitcher = true">
 						<template #icon>
 							<SwapHorizontal :size="20" />

@@ -10,10 +10,9 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
-use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 class FlowScheduleServiceTest extends TestCase
 {
 
-    private ObjectService&MockObject $objects;
+    private FlowResolverRegistry&MockObject $registry;
 
     private FlowRunService&MockObject $runs;
 
@@ -36,9 +35,9 @@ class FlowScheduleServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->objects = $this->createMock(ObjectService::class);
-        $this->runs    = $this->createMock(FlowRunService::class);
-        $this->config  = $this->createMock(IAppConfig::class);
+        $this->registry = $this->createMock(FlowResolverRegistry::class);
+        $this->runs     = $this->createMock(FlowRunService::class);
+        $this->config   = $this->createMock(IAppConfig::class);
 
         $this->config->method('getValueString')->willReturnCallback(
             fn (string $app, string $key, string $default='') => $this->store[$key] ?? $default
@@ -51,29 +50,27 @@ class FlowScheduleServiceTest extends TestCase
         );
 
         $this->service = new FlowScheduleService(
-            $this->objects,
+            $this->registry,
             $this->runs,
             $this->config,
             $this->createMock(\Psr\Log\LoggerInterface::class)
         );
     }//end setUp()
 
-    private function flow(string $uuid, array $data): ObjectEntity
+    /**
+     * A candidate as a source reports it.
+     */
+    private function candidate(string $id, array $data): array
     {
-        $o = new ObjectEntity();
-        $o->setUuid($uuid);
-        $o->setObject($data);
-        return $o;
-    }//end flow()
+        return array_merge(
+            ['id' => $id, 'enabled' => false, 'trigger' => '', 'cron' => '', 'owner' => null],
+            $data
+        );
+    }//end candidate()
 
-    private function schedule(string $uuid, string $cron, ?string $owner=null): ObjectEntity
+    private function schedule(string $id, string $cron, ?string $owner=null): array
     {
-        $flow = $this->flow($uuid, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron]);
-        if ($owner !== null) {
-            $flow->setOwner($owner);
-        }
-
-        return $flow;
+        return $this->candidate($id, ['enabled' => true, 'trigger' => 'schedule', 'cron' => $cron, 'owner' => $owner]);
     }//end schedule()
 
     /**
@@ -89,7 +86,7 @@ class FlowScheduleServiceTest extends TestCase
      */
     public function testADueFlowIsSkippedWhileItsPreviousRunIsStillGoing(): void
     {
-        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
+        $this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
         $this->runs->method('hasActiveRun')->with('f1')->willReturn(true);
 
         $this->runs->expects($this->never())->method('queue');
@@ -112,7 +109,7 @@ class FlowScheduleServiceTest extends TestCase
      */
     public function testSkippingDoesNotRecordAFireSoTheFlowStaysDue(): void
     {
-        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
+        $this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
         $this->runs->method('hasActiveRun')->with('f1')->willReturn(true);
 
         $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'));
@@ -124,7 +121,7 @@ class FlowScheduleServiceTest extends TestCase
     public function testADueScheduledFlowFiresAndRecordsTheFire(): void
     {
         // No last-fire recorded -> due on first sight.
-        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
+        $this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 
         $this->runs->expects($this->once())->method('queue')
             ->with('f1', $this->anything(), 'schedule', $this->anything());
@@ -137,6 +134,38 @@ class FlowScheduleServiceTest extends TestCase
     }//end testADueScheduledFlowFiresAndRecordsTheFire()
 
     /**
+     * FAILING PATH: a flow living in a LEAF APP's store must fire.
+     *
+     * The scheduler used to enumerate one hard-coded store — the
+     * `flow_register`/`flow_schema` pair — so a flow contributed by any other
+     * app was invisible to it and could never fire, however correct its cron.
+     * hermiq's agentflows were the casualty: `hydra-sequencer`,
+     * `hydra-dispatch` and `hydra-lock-reaper` all declared a schedule and the
+     * instance recorded ZERO runs with trigger `schedule`, ever. The scheduler
+     * now asks the resolver registry, so a source is a source wherever it lives.
+     *
+     * @return void
+     */
+    public function testAFlowContributedByAnotherAppFires(): void
+    {
+        // The registry's answer is deliberately not shaped like an OpenRegister
+        // object — it is whatever a contributing app reported.
+        $this->registry->method('scheduledFlows')->willReturn(
+            [
+                $this->schedule('agentflow-uuid', '*/5 * * * *', 'admin'),
+            ]
+        );
+
+        $this->runs->expects($this->once())->method('queue')
+            ->with('agentflow-uuid', $this->anything(), 'schedule', $this->anything(), 'admin');
+
+        $this->assertSame(
+            ['agentflow-uuid'],
+            $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00'))
+        );
+    }//end testAFlowContributedByAnotherAppFires()
+
+    /**
      * FAILING PATH (or#2158, fourth instance): a scheduled run has no session,
      * so its owner must come from the flow object — the person who created and
      * enabled it. Queued without one, `context['triggeredBy']` is null and every
@@ -147,7 +176,7 @@ class FlowScheduleServiceTest extends TestCase
      */
     public function testAScheduledRunIsAttributedToTheFlowsOwner(): void
     {
-        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *', 'alice')]);
+        $this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *', 'alice')]);
 
         $this->runs->expects($this->once())->method('queue')
             ->with('f1', $this->anything(), 'schedule', $this->anything(), 'alice');
@@ -160,50 +189,62 @@ class FlowScheduleServiceTest extends TestCase
         // Fired at 10:00; the next */5 occurrence is 10:05, so at 10:02 it is
         // not due yet.
         $this->store['flow_sched_last_f1'] = '2026-07-25T10:00:00+00:00';
-        $this->objects->method('findAll')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
+        $this->registry->method('scheduledFlows')->willReturn([$this->schedule('f1', '*/5 * * * *')]);
 
         $this->runs->expects($this->never())->method('queue');
 
         $this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:02:00')));
     }//end testAFlowThatFiredRecentlyIsNotDueAgain()
 
+    /**
+     * A disabled flow never runs — and the check lives HERE, not in the source.
+     *
+     * Enumerating through the resolvers means the scheduler now sees flows from
+     * apps it does not control, so `enabled` cannot be something a contributing
+     * app is trusted to have filtered on. This candidate is reported by a source
+     * that did not filter; the scheduler must still decline it. Every hydra flow
+     * currently ships `enabled: false` on purpose, so this is the property that
+     * keeps widening the scheduler's reach from starting ten flows.
+     *
+     * @return void
+     */
     public function testADisabledScheduleDoesNotFire(): void
     {
-        $this->objects->method('findAll')->willReturn(
-                [
-                    $this->flow('f1', ['enabled' => false, 'trigger' => 'schedule', 'cron' => '*/5 * * * *']),
-                ]
-                );
+        $this->registry->method('scheduledFlows')->willReturn(
+            [
+                $this->candidate('f1', ['enabled' => false, 'trigger' => 'schedule', 'cron' => '*/5 * * * *']),
+            ]
+        );
         $this->runs->expects($this->never())->method('queue');
         $this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
     }//end testADisabledScheduleDoesNotFire()
 
     public function testANonScheduleTriggerDoesNotFire(): void
     {
-        $this->objects->method('findAll')->willReturn(
-                [
-                    $this->flow('f1', ['enabled' => true, 'trigger' => 'object.created', 'cron' => '*/5 * * * *']),
-                ]
-                );
+        $this->registry->method('scheduledFlows')->willReturn(
+            [
+                $this->candidate('f1', ['enabled' => true, 'trigger' => 'object.created', 'cron' => '*/5 * * * *']),
+            ]
+        );
         $this->runs->expects($this->never())->method('queue');
         $this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
     }//end testANonScheduleTriggerDoesNotFire()
 
     public function testAnInvalidOrMissingCronIsSkipped(): void
     {
-        $this->objects->method('findAll')->willReturn(
-                [
-                    $this->flow('bad', ['enabled' => true, 'trigger' => 'schedule', 'cron' => 'not a cron']),
-                    $this->flow('none', ['enabled' => true, 'trigger' => 'schedule']),
-                ]
-                );
+        $this->registry->method('scheduledFlows')->willReturn(
+            [
+                $this->candidate('bad', ['enabled' => true, 'trigger' => 'schedule', 'cron' => 'not a cron']),
+                $this->candidate('none', ['enabled' => true, 'trigger' => 'schedule']),
+            ]
+        );
         $this->runs->expects($this->never())->method('queue');
         $this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
     }//end testAnInvalidOrMissingCronIsSkipped()
 
     public function testNoFlowStoreFiresNothing(): void
     {
-        $this->objects->method('findAll')->willThrowException(new \RuntimeException('no such register'));
+        $this->registry->method('scheduledFlows')->willThrowException(new \RuntimeException('no such register'));
         $this->assertSame([], $this->service->fireDueFlows(new DateTimeImmutable('2026-07-25 10:00:00')));
     }//end testNoFlowStoreFiresNothing()
 }//end class

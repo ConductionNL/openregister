@@ -174,6 +174,29 @@ class MagicMapper extends AbstractObjectMapper
     private const METADATA_PREFIX = '_';
 
     /**
+     * Whether the last single-object write INSERTED or UPDATED.
+     *
+     * The mapper is the only layer that knows. `SaveObject` performs its own
+     * existence lookup and labels the operation from that — but the mapper then
+     * looks again, and between the two lookups a concurrent writer can land the
+     * row, so the mapper takes the UPDATE branch on an operation the service
+     * has already called a create. The audit trail then records `create` for a
+     * write that updated somebody else's row.
+     *
+     * Measured while debugging #2212: three audit `create` entries against a
+     * single `_id` that was inserted once. The audit trail said three objects
+     * were created; one was.
+     *
+     * Read it with {@see getLastWriteAction()} immediately after the write.
+     * Per-request state on a per-request service, in the same spirit as the
+     * `lastRun*` fields elsewhere in the fleet — it is a report of what just
+     * happened, not a cache.
+     *
+     * @var string One of `create` or `update`; empty before any write.
+     */
+    private string $lastWriteAction = '';
+
+    /**
      * Number of magic tables probed per UNION ALL query in the locate phase.
      *
      * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -3451,6 +3474,7 @@ class MagicMapper extends AbstractObjectMapper
                         ]
                     );
                     $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+                    $this->lastWriteAction = 'update';
                     return $uuid;
                 }//end try
 
@@ -3463,6 +3487,7 @@ class MagicMapper extends AbstractObjectMapper
                         'tableName' => $tableName,
                     ]
                 );
+                $this->lastWriteAction = 'create';
                 return $uuid;
             }//end if
 
@@ -3492,6 +3517,7 @@ class MagicMapper extends AbstractObjectMapper
 
             // Update existing object.
             $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+            $this->lastWriteAction = 'update';
             $this->logger->debug(
                 message: '[MagicMapper] Updated object in register+schema table',
                 context: [
@@ -3517,6 +3543,25 @@ class MagicMapper extends AbstractObjectMapper
             throw $e;
         }//end try
     }//end saveObjectToRegisterSchemaTable()
+
+    /**
+     * What the last single-object write actually did.
+     *
+     * `create` or `update` — as decided by THIS layer's lookup, which is the
+     * one that ran last and therefore the one that matches the row. A caller
+     * that labelled the operation from its own earlier lookup should prefer
+     * this for anything it records, because between the two lookups a
+     * concurrent writer can turn a create into an update.
+     *
+     * Empty before any write in this request.
+     *
+     * @return string `create`, `update`, or ''.
+     */
+    public function getLastWriteAction(): string
+    {
+        return $this->lastWriteAction;
+
+    }//end getLastWriteAction()
 
     /**
      * Prepare object data for storage in register+schema table
@@ -3615,7 +3660,26 @@ class MagicMapper extends AbstractObjectMapper
             'files',
             'relations',
             'locked',
-            'authorization',
+            // `authorization` is DELIBERATELY absent from this list.
+            //
+            // The `unset($metadata['authorization'])` above says per-object RBAC
+            // must not be writable by ordinary create/update calls. But listing
+            // the field here undid that in the worst possible way: the loop below
+            // resolves every listed field as `$metadata[$field] ?? null`, so the
+            // stripped key came back as an explicit NULL and the UPDATE wrote it
+            // — DESTROYING the stored rules on the next save of that object.
+            //
+            // Measured: an object with `{"scope": "private"}` lost it as soon as
+            // anything resolved its folder, because that path calls update().
+            // A private object silently became visible again, which is the exact
+            // failure direction a privacy feature must not have. The same wipe hit
+            // the per-object action overrides shipped as Wave-12 Fix 5.
+            //
+            // Omitting the field means the column is never named in the INSERT or
+            // UPDATE at all — `updateObjectInRegisterSchemaTable()` only sets keys
+            // that are PRESENT — so the stored value is carried forward untouched,
+            // which is what "not writable by this path" has to mean. Writes go
+            // through the dedicated authorization-management path.
             'validation',
             'deleted',
             'geo',
@@ -3793,8 +3857,91 @@ class MagicMapper extends AbstractObjectMapper
             }//end foreach
         }//end if
 
+        $this->reportDroppedProperties(data: $data, schemaProperties: $schemaProperties, schema: $schema);
+
         return $preparedData;
     }//end prepareObjectDataForTable()
+
+    /**
+     * Say so when a property the caller sent is about to be thrown away.
+     *
+     * The loop above is a whitelist BY OMISSION: it walks the schema's declared
+     * properties and copies those out of `$data`. Anything the caller sent that
+     * the schema does not declare is simply never read — and there is no `object`
+     * JSON blob column to fall back on, so it is gone. No error, no warning, no
+     * trace: the write succeeds and the field is missing.
+     *
+     * Measured 2026-08-02: the hydra flow documents carry `description`, the
+     * agentflow schema had no such property, and every flow's description was
+     * discarded on save. The graphs table then showed "—" for all ten, which
+     * reads exactly like ten flows that were never given a description.
+     *
+     * This does not reject — rejecting at the DB write boundary is far too late
+     * for a clean 400 (the entity is built, folders may exist, cascades have
+     * run) and would break every caller that harmlessly posts an extra key. It
+     * makes the loss VISIBLE, which is the whole difference between a schema
+     * that needs a property added and a field that quietly evaporates.
+     *
+     * @param array<string, mixed> $data             The caller's data, minus `@self`.
+     * @param mixed                $schemaProperties The schema's declared properties.
+     * @param Schema               $schema           The schema being written to.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
+     */
+    private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void
+    {
+        if (is_array($schemaProperties) === false) {
+            return;
+        }
+
+        $dropped = [];
+        foreach (array_keys($data) as $key) {
+            $name = (string) $key;
+            if (array_key_exists($name, $schemaProperties) === true) {
+                continue;
+            }
+
+            // `@`-prefixed keys are envelope/metadata (`@self` is already gone),
+            // `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
+            // is the caller echoing back an identifier. None of these are user
+            // data the schema was ever supposed to declare, so warning about them
+            // would drown the signal in noise on literally every save.
+            if ($name === '' || $name === 'id' || $name[0] === '@' || $name[0] === '_') {
+                continue;
+            }
+
+            $dropped[] = $name;
+        }
+
+        if ($dropped === []) {
+            return;
+        }
+
+        $plural = 'ies';
+        if (count($dropped) === 1) {
+            $plural = 'y';
+        }
+
+        $this->logger->warning(
+            message: sprintf(
+                '[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
+                .'They are NOT stored anywhere — add them to the schema or stop sending them.',
+                count($dropped),
+                $plural,
+                (string) ($schema->getTitle() ?? $schema->getSlug() ?? (string) $schema->getId()),
+                implode(', ', $dropped)
+            ),
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'schema'     => $schema->getId(),
+                'schemaSlug' => $schema->getSlug(),
+                'dropped'    => $dropped,
+            ]
+        );
+    }//end reportDroppedProperties()
 
     /**
      * Convert database row to ObjectEntity.
@@ -6636,16 +6783,43 @@ class MagicMapper extends AbstractObjectMapper
                 _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: manually set ID if re-fetch fails.
-            $this->logger->warning(
-                message: '[MagicMapper] Failed to re-fetch inserted entity, using fallback',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            // The filtered read could not see the row. That has two very
+            // different causes and they must not share an outcome.
+            //
+            // The row IS there, and only the hydrating read could not reach it
+            // (scoping, an org/owner context still being established). Degraded
+            // but honest: the write landed, so return the in-memory entity with
+            // the id the row actually has.
+            //
+            // The row is NOT there. The write did not land, and returning the
+            // in-memory entity says it did — with a null id, to a caller that
+            // has no way to tell. That is the shape of a lost write reported as
+            // a success, which is exactly what #2212 turned out to be. It now
+            // throws.
             $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-            if ($row !== null) {
-                $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
+            if ($row === null) {
+                $this->logger->error(
+                    message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'uuid'      => $uuid,
+                        'tableName' => $tableName,
+                    ]
+                );
+
+                throw new Exception(
+                    sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
+                );
             }
 
+            $this->logger->warning(
+                message: '[MagicMapper] Could not re-fetch the inserted entity through the filtered read; '
+                    .'the row exists, so the raw id is used',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
             $insertedEntity = $entity;
         }//end try
 
@@ -10119,7 +10293,9 @@ class MagicMapper extends AbstractObjectMapper
                 schema: $schema,
                 action: 'read',
                 objectOwner: $object->getOwner(),
-                objectData: $objectData
+                objectData: $objectData,
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;

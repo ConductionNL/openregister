@@ -91,6 +91,7 @@ class FlowTriggerServiceTest extends TestCase
 
         $runner = new FlowRunService(
             $mapper,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $this->createMock(\OCA\OpenRegister\Service\Flow\FlowEngine::class),
             $this->createMock(\OCA\OpenRegister\Service\Flow\FlowNodeRegistry::class),
             new \Psr\Log\NullLogger(),

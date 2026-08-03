@@ -37,6 +37,12 @@ return [
         // against the session user. All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        // Sharing (shared-credentials-and-flows). `shared-with-me` is a LITERAL
+        // segment and is registered next to `providers`, before the `{id}` routes,
+        // so a future `GET /api/credentials/{id}` cannot swallow it.
+        ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
         ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -65,6 +71,24 @@ return [
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+
+        // Per-object scope and grants. `_authorization` is not writable through an
+        // ordinary object save — non-admin writes have it stripped and the write
+        // path omits the column so a routine update cannot destroy it — so
+        // changing an object's scope needs this owner-checked entry point.
+        ['name' => 'objectSharing#scope',        'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#setScope',     'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#shares',       'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#createShare',  'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#destroyShare', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'shareId' => '[^/]+']],
+        ['name' => 'objectSharing#createLink',   'url' => '/api/objects/{register}/{schema}/{id}/links',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#inviteByEmail','url' => '/api/objects/{register}/{schema}/{id}/invitations',      'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
+        // PUBLIC. A share token is a bearer capability: nobody is logged in, so
+        // there is no principal for RBAC to resolve and core's validation of the
+        // token IS the authorization. Read-only, addresses exactly one object,
+        // and deliberately offers no listing — see ObjectShareLinkController.
+        ['name' => 'objectShareLink#show', 'url' => '/api/shared/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -480,6 +504,14 @@ return [
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
         ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Preflight a flow document against the live node registry WITHOUT
+        // saving it — the question a CI job or a deploy check needs to ask
+        // about a document it is not writing. Must stay above `{flowId}` so
+        // "validate" is never captured as a flow uuid.
+        ['name' => 'flow#validate',     'url' => '/api/flow/validate',      'verb' => 'POST'],
+        // What a flow is holding between runs — the read side of flow state,
+        // so a dashboard can render slot occupancy (or#2216).
+        ['name' => 'flow#state',        'url' => '/api/flow/{flowId}/state', 'verb' => 'GET', 'requirements' => ['flowId' => '[^/]+']],
 
         ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],

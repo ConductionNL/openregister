@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\Credential\CredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\Http\Client\IClient;
@@ -159,7 +160,8 @@ class CredentialControllerTest extends TestCase
             $catalogue,
             $broker,
             $this->createMock(CredentialAppTokenService::class),
-            $this->createMock(OrganisationService::class)
+            $this->createMock(OrganisationService::class),
+            new SharePrincipalDeriver()
         );
     }//end makeController()
 

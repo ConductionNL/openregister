@@ -4,53 +4,51 @@ import { navigationStore } from '../store/store.js'
 
 <template>
 	<!-- Placeholder Div -->
-	<Fragment>
-		<ImportRegister />
-		<ExportRegister />
-		<PublishRegister />
-		<DeleteRegister />
-		<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
-		<DeleteConfiguration />
-		<ImportConfiguration />
-		<ExportConfiguration />
-		<PublishConfiguration />
-		<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
-		<DeleteSchema />
-		<EditSchema v-if="navigationStore.modal === 'editSchema'" />
-		<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
-		<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
-		<UploadSchema />
-		<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
-		<DeleteSchemaProperty />
-		<EditSource />
-		<DeleteSource />
-		<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
-		<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
-		<DeleteObject />
-		<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
-		<LockObject />
-		<ViewObject />
-		<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
-		<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
-		<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
-		<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
-		<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
-		<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
-		<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
-		<UploadFiles />
-		<ViewSource />
-		<ViewConfiguration />
-		<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
-		<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
-		<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
-		<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
-		<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
-		<EditApplication v-if="navigationStore.modal === 'editApplication'" />
-		<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
-		<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
-		<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
-		<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
-	</Fragment>
+	<ImportRegister />
+	<ExportRegister />
+	<PublishRegister />
+	<DeleteRegister />
+	<EditConfiguration v-if="navigationStore.modal === 'editConfiguration'" />
+	<DeleteConfiguration />
+	<ImportConfiguration />
+	<ExportConfiguration />
+	<PublishConfiguration />
+	<ExploreSchema v-if="navigationStore.dialog === 'exploreSchema'" />
+	<DeleteSchema />
+	<EditSchema v-if="navigationStore.modal === 'editSchema'" />
+	<ValidateSchema v-if="navigationStore.dialog === 'validateSchema'" />
+	<DeleteSchemaObjects v-if="navigationStore.dialog === 'deleteSchemaObjects'" />
+	<UploadSchema />
+	<EditSchemaProperty v-if="navigationStore.modal === 'editSchemaProperty'" />
+	<DeleteSchemaProperty />
+	<EditSource />
+	<DeleteSource />
+	<MergeObject v-if="navigationStore.modal === 'mergeObject'" />
+	<MigrationObject v-if="navigationStore.modal === 'migrationObject'" />
+	<DeleteObject />
+	<CopyObject v-if="navigationStore.dialog === 'copyObject'" />
+	<LockObject />
+	<ViewObject />
+	<DownloadObject v-if="navigationStore.modal === 'downloadObject'" />
+	<UploadObject v-if="navigationStore.modal === 'uploadObject'" />
+	<ViewObjectAuditTrail v-if="navigationStore.modal === 'viewObjectAuditTrail'" />
+	<MassDeleteObject v-if="navigationStore.dialog === 'massDeleteObject'" />
+	<MassValidateObjects v-if="navigationStore.dialog === 'massValidateObjects'" />
+	<RestoreMultiple v-if="navigationStore.dialog === 'restoreMultiple'" />
+	<PurgeMultiple v-if="navigationStore.dialog === 'permanentlyDeleteMultiple'" />
+	<UploadFiles />
+	<ViewSource />
+	<ViewConfiguration />
+	<JoinOrganisation v-if="navigationStore.modal === 'joinOrganisation'" />
+	<!-- EditOrganisation: modal={{ navigationStore.modal }} -->
+	<EditOrganisation v-if="navigationStore.modal === 'editOrganisation'" />
+	<DeleteOrganisation v-if="navigationStore.modal === 'deleteOrganisation'" />
+	<ManageOrganisationRoles v-if="navigationStore.modal === 'manageOrganisationRoles'" />
+	<EditApplication v-if="navigationStore.modal === 'editApplication'" />
+	<EditWebhook v-if="navigationStore.modal === 'editWebhook'" />
+	<ViewWebhookLog v-if="navigationStore.modal === 'viewWebhookLog'" />
+	<EditEndpoint v-if="navigationStore.modal === 'editEndpoint'" />
+	<DeleteEndpoint v-if="navigationStore.dialog === 'deleteEndpoint'" />
 </template>
 
 <script>

@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Webhooks') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
@@ -34,7 +34,7 @@
 				</div>
 				<div class="viewActions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						@click="openCreateDialog">
 						<template #icon>
 							<Plus :size="20" />
@@ -197,8 +197,8 @@
 		<!-- Search Sidebar -->
 		<template #details>
 			<WebhooksSidebar
-				:search.sync="searchQuery"
-				:enabled.sync="enabledFilter"
+				v-model:search="searchQuery"
+				v-model:enabled="enabledFilter"
 				@update:search="handleSearchUpdate"
 				@update:enabled="handleEnabledUpdate" />
 		</template>

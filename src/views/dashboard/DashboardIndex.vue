@@ -180,7 +180,7 @@ import { dashboardStore, searchTrailStore, registerStore, schemaStore, objectSto
 <script>
 import { NcAppContent, NcButton, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
 import { CnDashboardPage, CnDataTable } from '@conduction/nextcloud-vue'
-import VueApexCharts from 'vue-apexcharts'
+import VueApexCharts from 'vue3-apexcharts'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Magnify from 'vue-material-design-icons/Magnify.vue'
 import CubeOutline from 'vue-material-design-icons/CubeOutline.vue'
@@ -518,7 +518,7 @@ export default {
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 * @return {void}
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
 	methods: {

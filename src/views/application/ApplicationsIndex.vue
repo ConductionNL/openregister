@@ -39,7 +39,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 			<template #card="{ object }">
 				<div class="card">
 					<div class="cardHeader">
-						<h2 v-tooltip.bottom="object.description">
+						<h2 :title="object.description">
 							<ApplicationOutline :size="20" />
 							{{ object.name }}
 						</h2>

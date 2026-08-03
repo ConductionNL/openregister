@@ -121,7 +121,7 @@ import formatBytes from '../../services/formatBytes.js'
 						<h3>
 							<FileCodeOutline :size="20" />
 							{{ schema.title }}
-							<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+							<span v-if="managingConfiguration" :title="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
 								<Database :size="16" />
 								Managed
 							</span>
@@ -182,28 +182,28 @@ import formatBytes from '../../services/formatBytes.js'
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						@update:modelValue="v => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						@update:modelValue="v => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:model-value="formData.description || ''"
+						@update:modelValue="v => updateField('description', v)" />
 					<NcSelect
 						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:model-value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="vals => updateField('schemas', vals)" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -213,7 +213,7 @@ import formatBytes from '../../services/formatBytes.js'
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
 import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
-import VueApexCharts from 'vue-apexcharts'
+import VueApexCharts from 'vue3-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'

@@ -18,7 +18,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
 				:label="t('openregister', 'Url')"
-				:value.sync="schema.url" />
+				v-model="schema.url" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
 				<p>{{ t('openregister', 'Schema') }}</p>
@@ -46,7 +46,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !schema || !validateJson(schema.json)"
-				type="primary"
+				variant="primary"
 				@click="uploadSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

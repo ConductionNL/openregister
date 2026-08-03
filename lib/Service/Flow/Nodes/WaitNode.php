@@ -33,6 +33,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use DateTime;
 use OCA\OpenRegister\Service\Flow\FlowSuspension;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -41,7 +42,7 @@ use UnexpectedValueException;
 /**
  * Suspends the run for a duration or until a moment.
  */
-class WaitNode implements IFlowNode
+class WaitNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -112,6 +113,19 @@ class WaitNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a wait step.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['for', 'until'];
+
+    }//end configKeys()
 
     /**
      * Reject a wait that names no time.
