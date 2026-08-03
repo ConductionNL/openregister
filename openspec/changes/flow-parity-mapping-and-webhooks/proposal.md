@@ -9,26 +9,45 @@ capability exists twice, or exists only outside the engine.
 
 ### 1. The mapping service is implemented twice
 
-`openconnector/lib/Service/MappingService.php` (712 lines) and
-`openregister/lib/Service/MappingService.php` (721 lines) are near-duplicates.
+`openconnector/lib/Service/MappingService.php` (910 lines) and
+`openregister/lib/Service/MappingService.php` (721 lines) both evaluate mappings.
 They are not two designs for two problems: OpenConnector has **no `lib/Db/` at
-all**, and its copy already imports `OCA\OpenRegister\Db\Mapping`. So both
-operate on OpenRegister's entity, through OpenRegister's mapper, with almost the
-same public surface:
+all**, and its copy already imports `OCA\OpenRegister\Db\Mapping`, so both operate
+on OpenRegister's entity through OpenRegister's mapper.
 
-| | OpenConnector | OpenRegister |
-|---|---|---|
-| `encodeArrayKeys` | ✓ | ✓ |
-| `executeMapping` | ✓ | ✓ |
-| `coordinateStringToArray` | ✓ | ✓ |
-| `getMapping` / `getMappings` | ✓ | ✓ |
-| `renderTemplateString` | ✓ | — |
-| `invalidateMappingCache` | — | ✓ |
+They are, however, **not near-duplicates**. Comparing method by method:
+
+| Shared method | OC lines | OR lines | Same? |
+|---|---|---|---|
+| `executeMapping` | 118 | 126 | **drifted** |
+| `handleCast` | 166 | 33 | **drifted** |
+| `getMappings` | 27 | 4 | **drifted** |
+| `getMapping` | 17 | 26 | **drifted** |
+| `encodeArrayKeys` | 17 | 20 | **drifted** |
+| `__construct` | 21 | 80 | **drifted** |
+| `coordinateStringToArray` | 23 | 23 | identical |
+| `areAllArrayKeysNull` | 19 | 18 | identical |
+
+Only two of eight shared methods are identical. `handleCast` differs five-fold,
+and `executeMapping` — the entry point everything else goes through — differs in
+both copies.
+
+On top of that, each copy has methods the other lacks. OpenConnector: `renderTemplateString`
+(3 call sites in `SynchronizationService`), `translateVngFilterOperators` and
+`expandRelations` (both live in `EndpointService`), `translatePartijIdentificatorFilter`,
+plus the private `normaliseMapping`, `findMappingByIdentifier`, `resolveExpandValue`.
+OpenRegister: `applyCast`, `getCachedTemplate`, `invalidateMappingCache`.
 
 Two copies of a transformation engine is not merely redundant. A mapping that
 behaves differently depending on which app evaluated it is a data-correctness
-problem, and the divergence above is already real: only one copy invalidates its
-cache, and only one can render a bare template string.
+problem — and with `executeMapping` and `handleCast` both drifted, that is not a
+risk but the current state.
+
+This also means consolidation is a genuine merge, not a delete-and-repoint:
+six drifted methods must be reconciled behaviour by behaviour, seven methods
+ported, and roughly twenty OpenConnector files rewired. Sequencing it first is
+therefore right, but it should be costed as its own piece of work rather than as
+a preliminary to the mapping node.
 
 Worse, **a flow cannot map at all.** The engine has 15 node types and none of
 them transforms data. Every flow that needs to reshape a payload has to route it
@@ -86,10 +105,12 @@ editor and its own semantics.
 
 ## What Changes
 
-- **CONSOLIDATE** the mapping service into OpenRegister. Port
-  `renderTemplateString` from OpenConnector's copy, delete that copy, and point
-  OpenConnector's callers at OpenRegister's. One transformation engine, one
-  cache, one set of semantics.
+- **CONSOLIDATE** the mapping service into OpenRegister: reconcile the six
+  drifted methods, port the seven OpenConnector-only ones, repoint
+  OpenConnector's callers, then delete that copy. One transformation engine, one
+  cache, one set of semantics. Every reconciliation is a behavioural choice and
+  must be recorded as one — picking silently would replace a visible divergence
+  with an invisible one.
 - **ADD** `openregister.map` — a flow node that runs a stored mapping over the
   item list. This is what makes a flow able to reshape data mid-walk instead of
   routing out to an endpoint and back.
