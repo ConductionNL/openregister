@@ -46,9 +46,15 @@ use Twig\Extension\RuntimeExtensionInterface;
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
+ * A Twig runtime's public methods ARE the vocabulary mapping templates may call,
+ * so their count is the size of that vocabulary rather than a design choice.
+ * Splitting it would mean two runtimes and a rule about which functions live
+ * where — a distinction template authors would have to know and could not see.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
  * @SuppressWarnings(PHPMD.StaticAccess)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  */
 class MappingRuntime implements RuntimeExtensionInterface
 {
@@ -67,13 +73,21 @@ class MappingRuntime implements RuntimeExtensionInterface
     }//end __construct()
 
     /**
-     * Encodes a string to base64.
+     * Decode a JSON string, under the name OpenConnector's templates call.
      *
-     * @param string $input The unencoded input.
+     * The snake_case name is deliberate and cannot be corrected: it is the
+     * identifier stored mapping templates already contain. `jsonDecode` below is
+     * the same function under OpenRegister's own spelling — both exist because a
+     * mapping is authored data, so renaming what it calls breaks it at
+     * evaluation with nothing at author time to warn you.
      *
-     * @return string The encoded output.
+     * @param string $input The JSON to decode.
      *
-     * @spec openspec/specs/object-lifecycle/spec.md
+     * @return array The decoded structure.
+     *
+     * @SuppressWarnings(PHPMD.CamelCaseMethodName)
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
      */
     public function json_decode(string $input): array
     {

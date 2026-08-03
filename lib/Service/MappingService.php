@@ -101,9 +101,12 @@ class MappingService
     /**
      * MappingService constructor
      *
-     * @param MappingMapper   $mappingMapper The mapping mapper for database operations
-     * @param ICacheFactory   $cacheFactory  Cache factory for distributed caching
-     * @param LoggerInterface $logger        Logger for cache diagnostics
+     * @param MappingMapper         $mappingMapper The mapping mapper for database operations
+     * @param ICacheFactory         $cacheFactory  Cache factory for distributed caching
+     * @param LoggerInterface       $logger        Logger for cache diagnostics
+     * @param IEventDispatcher|null $events        Collects Twig functions contributed by other apps.
+     *                                             Nullable so the service still constructs where no
+     *                                             dispatcher is available (tests, early boot).
      */
     public function __construct(
         private readonly MappingMapper $mappingMapper,

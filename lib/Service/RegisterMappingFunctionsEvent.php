@@ -62,7 +62,6 @@ class RegisterMappingFunctionsEvent extends Event
      */
     private array $allowedNames = [];
 
-
     /**
      * Contribute one Twig function, and allowlist it for the sandbox.
      *
@@ -79,7 +78,6 @@ class RegisterMappingFunctionsEvent extends Event
 
     }//end registerFunction()
 
-
     /**
      * Every contributed function.
      *
@@ -93,7 +91,6 @@ class RegisterMappingFunctionsEvent extends Event
 
     }//end getFunctions()
 
-
     /**
      * The names to add to the sandbox allowlist.
      *
@@ -106,6 +103,4 @@ class RegisterMappingFunctionsEvent extends Event
         return $this->allowedNames;
 
     }//end getAllowedNames()
-
-
 }//end class

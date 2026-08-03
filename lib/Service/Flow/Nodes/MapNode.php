@@ -49,7 +49,6 @@ use UnexpectedValueException;
  */
 class MapNode implements IFlowNode, IFlowNodeConfigKeys
 {
-
     /**
      * Constructor.
      *
@@ -187,6 +186,14 @@ class MapNode implements IFlowNode, IFlowNodeConfigKeys
      *
      * @throws RuntimeException When the mapping cannot be resolved or applied.
      *
+     * `FlowItems::item()` is the item constructor every node uses; going through
+     * an injected factory would give the engine two ways to build an item and no
+     * way to tell which one a node used. `$context` is part of the IFlowNode
+     * contract and unused here — a mapping transforms the item, not the run.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess)
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
      * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
      */
     public function execute(array $items, array $config, array $context): array
@@ -269,5 +276,4 @@ class MapNode implements IFlowNode, IFlowNodeConfigKeys
         );
 
     }//end resolve()
-
 }//end class
