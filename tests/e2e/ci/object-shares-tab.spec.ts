@@ -55,46 +55,6 @@ async function contextFor(user: string, password: string): Promise<APIRequestCon
 }
 
 /**
- * Log a browser context in as an arbitrary user.
- *
- * globalSetup persists a storage state for ADMIN only, and admin is the one
- * account whose view proves nothing here — an administrator bypasses the private
- * scope by design, so a tab driven as admin would show access it did not have to
- * be granted. Hence a real per-user form login.
- *
- * The submit path is the one global-setup arrived at the hard way and its
- * reasoning applies unchanged: arm the navigation wait BEFORE submitting (the
- * redirect can complete before a wait registered afterwards ever attaches), and
- * submit through `form.requestSubmit()` rather than clicking the themed button,
- * which can swallow the click.
- */
-async function loginAs(page: Page, user: string, password: string): Promise<void> {
-	await page.goto('/index.php/login', { waitUntil: 'domcontentloaded', timeout: 90_000 })
-	await page.locator('input[name="user"]').fill(user)
-	await page.locator('input[name="password"]').fill(password)
-
-	const leftLogin = page.waitForURL(
-		(url) => !/\/login(\?|$|\/)/.test(url.toString()),
-		{ timeout: 30_000, waitUntil: 'commit' },
-	)
-	await page.locator('input[name="password"]').evaluate((el: HTMLInputElement) => {
-		el.form?.requestSubmit()
-	})
-	try {
-		await leftLogin
-	} catch (err) {
-		if (/\/login(\?|$|\/)/.test(page.url())) {
-			throw err
-		}
-	}
-
-	expect(
-		page.url(),
-		`login as '${user}' failed — still on the login page. Did playwright-seed-command run?`,
-	).not.toMatch(/\/login(\?|$|\/)/)
-}
-
-/**
  * Open an object's detail page and select the Shares tab.
  *
  * `/objects/:register/:schema/:id` is the deep-link route declared in
@@ -123,6 +83,23 @@ async function openSharesTab(
 		'no "Shares" tab on the object detail page — the tab is gated on relationContext, '
 		+ 'so this also fails when register/schema/id did not reach the view',
 	).toBeVisible({ timeout: 30_000 })
+
+	/*
+	 * WHO IS THIS PAGE? Asserted, not assumed.
+	 *
+	 * The config authenticates every request as admin and the describe block
+	 * overrides that header. If the override ever stops taking effect, all three
+	 * tests would keep passing while measuring an ADMINISTRATOR'S view — which
+	 * bypasses the private scope, so the very thing under test would be gone and
+	 * nothing would go red. That is the failure this line exists to make loud.
+	 */
+	const uid = await page.evaluate(() => (window as any).OC?.getCurrentUser?.()?.uid ?? null)
+	expect(
+		uid,
+		'the browser is not authenticated as the owner — this would silently become an admin '
+		+ 'test, and an admin bypasses the private scope',
+	).toBe(OWNER)
+
 	await tab.click()
 
 	const panel = page.locator('.cn-object-access-tab')
@@ -149,6 +126,28 @@ async function statusFor(
 }
 
 test.describe('the Shares tab, driven through the browser', () => {
+	/*
+	 * DRIVE THE BROWSER AS THE OWNER, NOT AS ADMIN.
+	 *
+	 * Admin is the one account whose view proves nothing here: an administrator
+	 * bypasses the private scope by design, so a tab driven as admin would show
+	 * access nobody had to grant.
+	 *
+	 * This overrides the config's `use.extraHTTPHeaders`, which authenticates
+	 * every request — page navigations included — as admin. That header is also
+	 * why a form login does NOT work from a test context: `/index.php/login`
+	 * arrives already authenticated and redirects, so `input[name="user"]` never
+	 * renders and the fill times out. (globalSetup CAN form-log-in because it
+	 * builds its own context with no such header.) Swapping the credentials is
+	 * both simpler and how the sibling specs authenticate page loads.
+	 */
+	test.use({
+		extraHTTPHeaders: {
+			Authorization: `Basic ${Buffer.from(`${OWNER}:${PASS}`).toString('base64')}`,
+			'OCS-APIRequest': 'true',
+		},
+	})
+
 	let admin: APIRequestContext
 	let owner: APIRequestContext
 	let other: APIRequestContext
@@ -205,7 +204,6 @@ test.describe('the Shares tab, driven through the browser', () => {
 
 	test('the tab renders the live access surface, not an empty panel', async ({ page }) => {
 		const uuid = await newObject()
-		await loginAs(page, OWNER, PASS)
 		const panel = await openSharesTab(page, registerId, schemaId, uuid)
 
 		// The three sections the component owns. Asserting on rendered text
@@ -239,7 +237,6 @@ test.describe('the Shares tab, driven through the browser', () => {
 			'the object must start out readable by the other user, or the toggle proves nothing',
 		).toBeLessThan(300)
 
-		await loginAs(page, OWNER, PASS)
 		const panel = await openSharesTab(page, registerId, schemaId, uuid)
 
 		// Click the switch's label: NcCheckboxRadioSwitch renders a visually
@@ -285,7 +282,6 @@ test.describe('the Shares tab, driven through the browser', () => {
 			'a private object must be invisible before the grant, or the grant proves nothing',
 		).toBeGreaterThanOrEqual(400)
 
-		await loginAs(page, OWNER, PASS)
 		const panel = await openSharesTab(page, registerId, schemaId, uuid)
 
 		// The type select defaults to "user", so the username field is the only
