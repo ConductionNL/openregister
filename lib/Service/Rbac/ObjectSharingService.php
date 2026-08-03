@@ -280,7 +280,7 @@ class ObjectSharingService
         $share->setShareType(self::GRANTABLE_TYPES[$type]);
         $share->setSharedWith(trim($shareWith));
         $share->setSharedBy($uid);
-        $share->setPermissions($permissions);
+        $share->setPermissions($this->withoutReshare(permissions: $permissions));
 
         $this->applyVerbs(share: $share, verbs: $verbs);
 
@@ -481,7 +481,7 @@ class ObjectSharingService
         // check above establishes the sharer can reach the object at all; core
         // additionally clamps against the node's own permissions when the share
         // is created, so a wider request cannot become a wider share.
-        $share->setPermissions($permissions);
+        $share->setPermissions($this->withoutReshare(permissions: $permissions));
 
         if ($shareWith !== null) {
             $share->setSharedWith($shareWith);
@@ -652,6 +652,43 @@ class ObjectSharingService
             );
         }
     }//end requireOwnerOrAdmin()
+
+    /**
+     * Strip core's re-share bit from a requested permission mask.
+     *
+     * Task 4.4, and the half of it that `requireOwnerOrAdmin()` does NOT cover.
+     * That guard stops a recipient calling OUR endpoints — every write method here
+     * goes through it, so a recipient cannot add a principal or widen a grant
+     * through the sharing API.
+     *
+     * But an object grant is a share on the object's FOLDER, and core's Files
+     * sharing UI acts on that folder directly. With `PERMISSION_SHARE` (16) set,
+     * the recipient could re-share the folder to anyone through core, handing the
+     * object's data onward without ever touching an OpenRegister endpoint — and
+     * the resulting share would be a perfectly valid object grant, since the
+     * resolver reads grants from exactly those folder shares. The spec's "SHALL
+     * NOT be able to widen a grant, add a principal, or re-share onward" would be
+     * satisfied on paper and false in practice.
+     *
+     * So the bit is stripped rather than rejected. Rejecting would break callers
+     * that pass a convenience mask like 31 ("everything") without meaning to
+     * delegate re-sharing, and the safe reading of an ambiguous request is the
+     * narrower one — a grant narrows within what the schema permits and never
+     * widens the principal set. Re-sharing stays the owner's prerogative,
+     * exercised through `grant()`, where the owner check applies.
+     *
+     * Applied in ONE place used by both share-construction paths (`grant()` and
+     * `newFolderShare()`, which backs links and email invitations) so the two
+     * cannot drift on the bit that matters most.
+     *
+     * @param integer $permissions The requested core permission bitmask.
+     *
+     * @return integer The mask with the re-share bit cleared.
+     */
+    private function withoutReshare(int $permissions): int
+    {
+        return ($permissions & ~\OCP\Constants::PERMISSION_SHARE);
+    }//end withoutReshare()
 
     /**
      * The current caller's uid.
