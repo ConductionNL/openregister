@@ -164,6 +164,7 @@ use OCA\OpenRegister\Listener\HandoffLifecycleListener;
 use OCA\OpenRegister\Listener\HandoffQueueDrainListener;
 use OCA\OpenRegister\Listener\LifecycleActionListener;
 use OCA\OpenRegister\Listener\LifecycleInitialStateListener;
+use OCA\OpenRegister\Listener\FlowNodePreflightListener;
 use OCA\OpenRegister\Listener\LifecycleValidationListener;
 use OCA\OpenRegister\Listener\ApprovalChainGateListener;
 use OCA\OpenRegister\Listener\ApprovalChainAdvanceListener;
@@ -492,6 +493,13 @@ class Application extends App implements IBootstrap
         // searches/facets on a field flagged `x-openregister-encrypted` — onto a
         // clear HTTP 400 instead of a silent zero-row result or a bare 500.
         $context->registerMiddleware(\OCA\OpenRegister\Middleware\EncryptedFieldFilterMiddleware::class);
+
+        // Register the UnknownMetadataFieldMiddleware: maps
+        // UnknownMetadataFieldException — thrown when a `@self` filter names a
+        // field that no metadata column corresponds to — onto an HTTP 400 that
+        // names the field and lists the filterable ones, instead of the opaque
+        // driver-level 500 an unresolvable column name used to produce.
+        $context->registerMiddleware(\OCA\OpenRegister\Middleware\UnknownMetadataFieldMiddleware::class);
 
         // Bind the dormant Path B PDF anonymisation fallback bridge to its
         // null implementation. Tenants enabling Path B replace this binding
@@ -2457,6 +2465,16 @@ class Application extends App implements IBootstrap
         if (class_exists('OCA\\Tables\\Event\\TableDeletedEvent') === true) {
             $context->registerEventListener('OCA\\Tables\\Event\\TableDeletedEvent', TablesTableDeletedListener::class);
         }
+
+        // Flow preflight — refuse a flow document naming a step type this
+        // instance cannot run. Registered FIRST on both events so an unrunnable
+        // flow is rejected before any other listener does work on the way in.
+        // The registry has always refused an unknown type, but only at dispatch,
+        // mid-run, after earlier steps had already made changes that do not roll
+        // back (or#2247: a flow named `openregister.explode` against an instance
+        // that predated it, and nothing noticed until someone checked by hand).
+        $context->registerEventListener(ObjectCreatingEvent::class, FlowNodePreflightListener::class);
+        $context->registerEventListener(ObjectUpdatingEvent::class, FlowNodePreflightListener::class);
 
         // Lifecycle annotation listeners — see x-openregister-lifecycle.
         // Order matters: initial state runs on creating; validation runs on updating.

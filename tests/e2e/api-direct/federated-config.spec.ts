@@ -15,13 +15,21 @@
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { execSync } from 'node:child_process'
+import { resolveContainer } from '../base-url'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
-const CONTAINER = process.env.NC_CONTAINER || 'nextcloud'
+// ⚠️ No `|| 'nextcloud'` default — see resolveContainer(). The old default
+// ran `occ` inside the SHARED dev container, which bind-mounts real host
+// checkouts. With no NC_CONTAINER set these tests now skip (occ returns null)
+// rather than mutating somebody else's instance.
+const CONTAINER = resolveContainer()
 const runId = `e2e-fed-${Date.now()}`
 
 function occ(args: string): string | null {
+	if (CONTAINER === null) {
+		return null
+	}
 	try {
 		return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, { encoding: 'utf8' })
 	} catch {

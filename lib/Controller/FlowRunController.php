@@ -37,15 +37,35 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
+use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use stdClass;
+use Throwable;
 
 /**
  * REST surface for inspecting and retrying flow runs.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Two over, from the run guard's
+ * ObjectService + IAppConfig. Both exist so the flow can be resolved WITH RBAC at
+ * the request boundary — the resolver deliberately loads with RBAC off for the
+ * engine, and inheriting that bypass here is what left retry() open to an IDOR.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Over budget for the same
+ * reason: the two authorization concerns this controller now carries — the run
+ * guard (retry/test may not run somebody else's flow) and history scoping (a run
+ * log is subject data, so it is visible per caller) — are both request-boundary
+ * checks. They belong at the boundary rather than in the engine, which is
+ * deliberately unauthenticated because it runs flows as their owner with no
+ * session. Moving them out would either re-open the bypass or add a second
+ * indirection over four small private helpers.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Ten constructor parameters, the
+ * last three nullable-with-default precisely so adding them broke no existing
+ * construction site. They are collaborators of those same guards, not options.
  */
 class FlowRunController extends Controller
 {
@@ -59,6 +79,15 @@ class FlowRunController extends Controller
      * @param FlowResolverRegistry $resolvers           Resolves a flow id to its document.
      * @param IUserSession         $userSession         Attributes a retried run to the caller.
      * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
+     * @param ObjectService|null   $objectService       Resolves the flow WITH RBAC for the run guard;
+     *                                                  nullable so adding it is not a fatal at
+     *                                                  existing construction sites.
+     * @param IAppConfig|null      $flowAppConfig       Reads the flow register/schema slugs.
+     * @param IGroupManager|null   $groupManager        Distinguishes an administrator, who gets
+     *                                                  the unscoped run history. Nullable so
+     *                                                  adding it is not a fatal at existing
+     *                                                  construction sites; absent means "not an
+     *                                                  admin", which SCOPES rather than widens.
      */
     public function __construct(
         string $appName,
@@ -67,7 +96,10 @@ class FlowRunController extends Controller
         private readonly FlowRunService $runner,
         private readonly FlowResolverRegistry $resolvers,
         private readonly IUserSession $userSession,
-        private readonly OrganisationService $organisationService
+        private readonly OrganisationService $organisationService,
+        private readonly ?ObjectService $objectService=null,
+        private readonly ?IAppConfig $flowAppConfig=null,
+        private readonly ?IGroupManager $groupManager=null
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -102,11 +134,27 @@ class FlowRunController extends Controller
             $statusFilter = (string) $status;
         }
 
+        // Scope the history. Until this landed the endpoint returned EVERY run on
+        // the instance to any authenticated caller — including each run's log,
+        // which records the subject data the flow touched. Design D7 of
+        // `shared-credentials-and-flows`: a recipient sees their OWN runs; runs
+        // triggered by the owner or by other recipients stay invisible.
+        //
+        // A null uid means no scoping, which is correct only for an administrator.
+        $requesterUid = null;
+        $ownedFlowIds = [];
+        if ($this->isAdmin() === false) {
+            $requesterUid = $this->callerUid();
+            $ownedFlowIds = $this->flowIdsOwnedByCaller();
+        }
+
         $runs = $this->mapper->findAllRuns(
             flowId: $flowFilter,
             status: $statusFilter,
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            requesterUid: $requesterUid,
+            ownedFlowIds: $ownedFlowIds
         );
 
         return new JSONResponse(
@@ -130,9 +178,14 @@ class FlowRunController extends Controller
      *
      * Scoping is strict (see FlowRunMapper::findActive): a caller with no
      * resolvable organisation gets an empty list rather than everybody's runs.
-     * The full history surface (`index`) is unchanged and still unscoped —
-     * this endpoint exists precisely so that widening visibility of run
-     * activity to every user of every app does not widen it across tenants.
+     *
+     * The two surfaces scope DIFFERENTLY on purpose. This one is a tenant view of
+     * live activity — a dashboard widget, deliberately showing the organisation's
+     * runs. `index()` is the history surface, and history carries each run's LOG,
+     * which records the subject data the flow touched; it is therefore scoped per
+     * CALLER (runs you triggered, plus runs of flows you own) per design D7 of
+     * `shared-credentials-and-flows`. Until that landed `index()` was unscoped and
+     * returned every run on the instance to any authenticated user.
      *
      * @return JSONResponse `{results, total, limit}` — the live runs.
      *
@@ -325,6 +378,11 @@ class FlowRunController extends Controller
             return new JSONResponse(['error' => 'No such run'], Http::STATUS_NOT_FOUND);
         }
 
+        $refusal = $this->refuseUnlessRunnable(flowId: (string) $run->getFlowId());
+        if ($refusal !== null) {
+            return $refusal;
+        }
+
         $new = $this->runner->retry($run);
         if ($new === null) {
             // The source is not terminal — queued, running, or suspended. Retry
@@ -338,6 +396,194 @@ class FlowRunController extends Controller
         return new JSONResponse($new->jsonSerialize(), Http::STATUS_CREATED);
 
     }//end retry()
+
+    /**
+     * The register flows are stored under.
+     *
+     * @var string
+     */
+    private const FLOW_REGISTER_KEY = 'flow_register';
+
+    /**
+     * The schema flows are stored under.
+     *
+     * @var string
+     */
+    private const FLOW_SCHEMA_KEY = 'flow_schema';
+
+    /**
+     * Refuse unless the caller may RUN this flow.
+     *
+     * WHY THE CONTROLLER AND NOT THE RESOLVER. `OpenRegisterFlowResolver::resolveFlow()`
+     * loads with `_rbac: false`, and correctly so — the engine runs a flow as its
+     * owner, and background jobs and retries have no session to evaluate. But
+     * these endpoints inherited that bypass, and `retry()` in particular took a
+     * run UUID and retried it with no ownership check at all: any authenticated
+     * user could re-run anybody's flow. That is an IDOR (OWASP A01), and the fix
+     * belongs where the request enters, not in the engine.
+     *
+     * WHAT IT CHECKS. The flow is resolved through `ObjectService` with RBAC ON.
+     * A caller who cannot READ the flow gets a 404 rather than a 403, so the
+     * endpoint cannot be used to discover which flow ids exist.
+     *
+     * Running is an EXTENSION verb — core's bitmask has no `run` — so per ADR-010
+     * Rule 4 it is enforced here, at the endpoint that performs the action,
+     * rather than by widening the RBAC vocabulary.
+     *
+     * @param string $flowId The flow being run.
+     *
+     * @return JSONResponse|null A refusal, or null when the caller may proceed.
+     */
+    private function refuseUnlessRunnable(string $flowId): ?JSONResponse
+    {
+        if ($this->objectService === null || $this->flowAppConfig === null) {
+            // Fail CLOSED. Without the collaborators there is no way to decide,
+            // and an unguarded run is what this method exists to prevent.
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        try {
+            $flow = $this->objectService->find(
+                id: $flowId,
+                register: $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
+                schema: $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
+                _rbac: true,
+                _multitenancy: true
+            );
+        } catch (Throwable $e) {
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        if ($flow === null) {
+            return new JSONResponse(['error' => 'No such flow: '.$flowId], Http::STATUS_NOT_FOUND);
+        }
+
+        return null;
+    }//end refuseUnlessRunnable()
+
+    /**
+     * The current caller's uid, or null when anonymous.
+     *
+     * @return string|null
+     */
+    private function callerUid(): ?string
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return null;
+        }
+
+        return $user->getUID();
+    }//end callerUid()
+
+    /**
+     * Whether the caller is a Nextcloud administrator.
+     *
+     * Fails CLOSED — no group manager, or no session, means "not an admin", so
+     * the caller gets the scoped view rather than the unscoped one. The scoping
+     * switch in `index()` treats a null uid as "no scoping", which is only ever
+     * correct for an administrator; combined with this method returning false for
+     * an anonymous caller, `index()` must and does resolve a real uid before it
+     * can skip scoping.
+     *
+     * @return boolean
+     */
+    private function isAdmin(): bool
+    {
+        if ($this->groupManager === null) {
+            return false;
+        }
+
+        $uid = $this->callerUid();
+        if ($uid === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($uid);
+    }//end isAdmin()
+
+    /**
+     * Flow ids the caller owns.
+     *
+     * Resolved in ONE query rather than per run: the owner filter is a metadata
+     * filter, and OpenRegister only recognises those NESTED under `@self` — a bare
+     * `owner` key is read as a filter on a schema PROPERTY called `owner`, which
+     * the flow schema does not have, so it silently matches nothing and this would
+     * return an empty list for everybody. `_rbac: false` is deliberate and safe:
+     * the query is already constrained to objects owned by this exact uid, so RBAC
+     * could only narrow a set the caller is by definition entitled to.
+     *
+     * Degrades to an empty list, which NARROWS the run history rather than
+     * widening it — the safe direction for a failure in a visibility filter.
+     *
+     * @return array<int, string> The owned flow ids (uuids), possibly empty.
+     */
+    private function flowIdsOwnedByCaller(): array
+    {
+        $uid = $this->callerUid();
+        if ($uid === null || $this->objectService === null || $this->flowAppConfig === null) {
+            return [];
+        }
+
+        try {
+            $flows = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
+                        'schema'   => $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
+                        '@self'    => ['owner' => $uid],
+                    ],
+                    'limit'   => 1000,
+                ],
+                _rbac: false
+            );
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($flows as $flow) {
+            $id = $this->flowIdOf(flow: $flow);
+            if ($id !== null) {
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }//end flowIdsOwnedByCaller()
+
+    /**
+     * The uuid of one flow, whichever shape `findAll()` returned it in.
+     *
+     * Rendered objects arrive as arrays with the uuid under `@self.id`; an
+     * unrendered entity exposes `getUuid()`. Extracted from
+     * `flowIdsOwnedByCaller()` so that method stays within the complexity budget
+     * as the shapes accumulate, and so the "which shape is this" question has one
+     * answer rather than one per call site.
+     *
+     * @param mixed $flow One element of the findAll() result.
+     *
+     * @return string|null The uuid, or null when it cannot be determined.
+     */
+    private function flowIdOf(mixed $flow): ?string
+    {
+        $id = null;
+
+        if (is_array($flow) === true) {
+            $self = ($flow['@self'] ?? null);
+            if (is_array($self) === true) {
+                $id = ($self['id'] ?? null);
+            }
+        } else if (is_object($flow) === true && method_exists($flow, 'getUuid') === true) {
+            $id = $flow->getUuid();
+        }
+
+        if (is_string($id) === true && $id !== '') {
+            return $id;
+        }
+
+        return null;
+    }//end flowIdOf()
 
     /**
      * Run a flow now and return its result — the interactive test run.
@@ -370,6 +616,11 @@ class FlowRunController extends Controller
         $flowId = trim((string) $this->request->getParam('flowId', ''));
         if ($flowId === '') {
             return new JSONResponse(['error' => 'A test run needs a flowId.'], Http::STATUS_BAD_REQUEST);
+        }
+
+        $refusal = $this->refuseUnlessRunnable(flowId: $flowId);
+        if ($refusal !== null) {
+            return $refusal;
         }
 
         $flow = $this->resolvers->resolveFlow(flowId: $flowId);

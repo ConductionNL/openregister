@@ -104,7 +104,7 @@ import { translate as t } from '@nextcloud/l10n'
 							v-model="githubToken"
 							placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateGitHubToken">
+							@update:modelValue="updateGitHubToken">
 							<template #trailing-button-icon>
 								<Github :size="20" />
 							</template>
@@ -112,7 +112,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 						<div class="token-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="saving || !githubToken || githubToken === originalGithubToken"
 								@click="saveGitHubToken">
 								<template #icon>
@@ -122,7 +122,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Save Token
 							</NcButton>
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="testingGithub || !githubToken"
 								@click="testGitHubToken">
 								<template #icon>
@@ -132,7 +132,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Test Token
 							</NcButton>
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="saving || !githubToken"
 								@click="clearGitHubToken">
 								<template #icon>
@@ -177,7 +177,7 @@ import { translate as t } from '@nextcloud/l10n'
 							v-model="gitlabToken"
 							placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateGitLabToken">
+							@update:modelValue="updateGitLabToken">
 							<template #trailing-button-icon>
 								<Gitlab :size="20" />
 							</template>
@@ -185,7 +185,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 						<div class="token-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
 								@click="saveGitLabToken">
 								<template #icon>
@@ -195,7 +195,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Save Token
 							</NcButton>
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="testingGitlab || !gitlabToken"
 								@click="testGitLabToken">
 								<template #icon>
@@ -205,7 +205,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Test Token
 							</NcButton>
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="saving || !gitlabToken"
 								@click="clearGitLabToken">
 								<template #icon>
@@ -239,7 +239,7 @@ import { translate as t } from '@nextcloud/l10n'
 							id="gitlab-url"
 							v-model="gitlabUrl"
 							placeholder="https://gitlab.com/api/v4"
-							@update:value="updateGitLabUrl">
+							@update:modelValue="updateGitLabUrl">
 							<template #trailing-button-icon>
 								<Web :size="20" />
 							</template>
@@ -252,7 +252,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="token-actions">
 						<NcButton
 							v-if="gitlabUrl && gitlabUrl !== originalGitlabUrl"
-							type="primary"
+							variant="primary"
 							:disabled="saving"
 							@click="saveGitLabUrl">
 							<template #icon>

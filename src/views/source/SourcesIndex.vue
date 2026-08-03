@@ -38,7 +38,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<template #card="{ object }">
 				<div class="card">
 					<div class="cardHeader">
-						<h2 v-tooltip.bottom="object.description">
+						<h2 :title="object.description">
 							<DatabaseArrowRightOutline :size="20" />
 							{{ object.title }}
 						</h2>

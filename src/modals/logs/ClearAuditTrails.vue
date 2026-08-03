@@ -47,7 +47,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="clearAuditTrails()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

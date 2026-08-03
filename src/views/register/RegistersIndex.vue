@@ -44,28 +44,28 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						@update:modelValue="v => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						@update:modelValue="v => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:model-value="formData.description || ''"
+						@update:modelValue="v => updateField('description', v)" />
 					<NcSelect
 						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:model-value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="vals => updateField('schemas', vals)" />
 				</div>
 			</template>
 
@@ -138,7 +138,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						v-tooltip="isManagedByExternalConfig(row) ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title: getManagingConfiguration(row)?.title }) : ''"
+						:title="isManagedByExternalConfig(row) ? t('openregister', 'Cannot edit: This register is managed by external configuration {title}', { title: getManagingConfiguration(row)?.title }) : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="$refs.indexPage.openFormDialog(row)">
@@ -171,7 +171,7 @@ import { registerStore, navigationStore, configurationStore, schemaStore } from 
 						</template>
 						{{ t('openregister', 'Download API Specification') }}
 					</NcActionButton>
-					<NcActionButton v-tooltip="row.stats?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
+					<NcActionButton :title="row.stats?.total > 0 ? t('openregister', 'Cannot delete: objects are still attached') : ''"
 						close-after-click
 						:disabled="row.stats?.total > 0"
 						@click="registerStore.setRegisterItem(row); navigationStore.setDialog('deleteRegister')">

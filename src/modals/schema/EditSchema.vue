@@ -66,10 +66,10 @@ import { schemaStore, navigationStore, registerStore } from '../../store/store.j
 			</ul>
 			<p>{{ t('openregister', 'Objects already stored under this schema may no longer match it. Save anyway?') }}</p>
 			<template #actions>
-				<NcButton type="tertiary" :disabled="savingBreaking" @click="cancelBreaking">
+				<NcButton variant="tertiary" :disabled="savingBreaking" @click="cancelBreaking">
 					{{ t('openregister', 'Back to editing') }}
 				</NcButton>
-				<NcButton type="warning" :disabled="savingBreaking" @click="confirmBreaking">
+				<NcButton variant="warning" :disabled="savingBreaking" @click="confirmBreaking">
 					{{ t('openregister', 'Save anyway') }}
 				</NcButton>
 			</template>

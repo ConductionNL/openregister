@@ -36,7 +36,7 @@
 						:input-label="t('openregister', 'Winning source for {attribute}', { attribute: conflict.attribute })"
 						:clearable="false"
 						label="label"
-						@input="handleSelectionChange" />
+						@update:modelValue="handleSelectionChange" />
 
 					<div class="conflictRow__outcome">
 						<NcCheckboxRadioSwitch
@@ -61,7 +61,7 @@
 				</div>
 
 				<NcTextField
-					:value.sync="rationale"
+					v-model="rationale"
 					:label="t('openregister', 'Rationale (optional)')"
 					:placeholder="t('openregister', 'Why is this the authoritative value?')" />
 
@@ -77,7 +77,7 @@
 			</NcButton>
 			<NcButton
 				v-if="conflicts.length > 0"
-				type="primary"
+				variant="primary"
 				data-testid="mdm-conflict-save"
 				:disabled="!canSave"
 				@click="save">
@@ -232,8 +232,8 @@ export default {
 			immediate: true,
 			handler(list) {
 				for (const conflict of list) {
-					if (!(conflict.attribute in this.selections)) this.$set(this.selections, conflict.attribute, null)
-					if (!(conflict.attribute in this.outcomes)) this.$set(this.outcomes, conflict.attribute, 'persistent')
+					if (!(conflict.attribute in this.selections)) this.selections[conflict.attribute] = null
+					if (!(conflict.attribute in this.outcomes)) this.outcomes[conflict.attribute] = 'persistent'
 				}
 			},
 		},

@@ -3,6 +3,11 @@ includes:
     # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
     # across the fleet.
     - phpstan-baseline.neon
+    # Five JSONResponse generic-invariance mismatches surfaced by removing the
+    # stale `@method` shadows from lib/Db. Kept in their own file so the reason
+    # (written at the top of it) cannot get detached from the entries.
+    # openregister#2288
+    - phpstan-baseline-jsonresponse-invariance.neon
 
 parameters:
     level: 5
@@ -15,6 +20,16 @@ parameters:
         - vendor-bin
         # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuild).
         - lib/Resources/template
+        # ContentProvider implements OCP\ContextChat\IContentProvider, which ships
+        # with an OPTIONAL Nextcloud component and is therefore absent during
+        # analysis. phpstan refuses to let a class-level "implements unknown
+        # interface" be ignored or baselined — it prescribes excludePaths — and
+        # analysis of the file is unreliable anyway once its interface cannot be
+        # resolved: it produced a FALSE "unknown parameter $_rbac in call to
+        # SchemaMapper::findAll()" here, for a call that is byte-identical to one
+        # phpstan accepts elsewhere. Excluding it removes noise rather than
+        # hiding a finding.
+        - lib/ContextChat/ContentProvider.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
@@ -38,6 +53,21 @@ parameters:
         - '#on an unknown class OCA\\Bookmarks\\#'
         - '#has invalid return type OCA\\Bookmarks\\#'
         - '#Instantiated class OCA\\Bookmarks\\#'
+        # OCP\ContextChat and OCP\SystemTag ship with OPTIONAL Nextcloud
+        # components, so their classes are absent during analysis in exactly the
+        # way OCA\Bookmarks above is. Ignored rather than baselined because a
+        # baseline entry would go stale the moment the component IS present —
+        # psalm sets findUnusedBaselineEntry, and phpstan would report the entry
+        # as unmatched. An absent optional dependency is a property of the
+        # analysis environment, not debt to pay down.
+        - '#unknown class OCP\\ContextChat\\#'
+        - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCP\\ContextChat\\#'
+        - '#has invalid type OCP\\ContextChat\\#'
+        - '#implements unknown interface OCP\\ContextChat\\#'
+        - '#unknown class OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
+        - '#OCP\\SystemTag\\Tag(Assigned|Unassigned)Event not found#'
+        - '#has invalid type OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
         # OCA classes from other apps (OpenRegister) not available during static analysis
         - '#unknown class OCA\\OpenRegister\\#'
         - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'

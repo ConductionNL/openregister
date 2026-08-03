@@ -18,7 +18,7 @@
 				<NcButton
 					v-for="tab in tabs"
 					:key="tab.id"
-					:type="activeTab === tab.id ? 'primary' : 'tertiary'"
+					:variant="activeTab === tab.id ? 'primary' : 'tertiary'"
 					@click="activeTab = tab.id">
 					<template #icon>
 						<component :is="tab.icon" :size="20" />
@@ -36,13 +36,13 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton type="primary" @click="openCreateDialog">
+						<NcButton variant="primary" @click="openCreateDialog">
 							<template #icon>
 								<Plus :size="20" />
 							</template>
 							{{ t('openregister', 'New activity') }}
 						</NcButton>
-						<NcButton type="tertiary" :disabled="loading" @click="refreshActivities">
+						<NcButton variant="tertiary" :disabled="loading" @click="refreshActivities">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<Refresh v-else :size="20" />
@@ -115,7 +115,7 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton type="primary" :disabled="loading" @click="loadVerantwoording">
+						<NcButton variant="primary" :disabled="loading" @click="loadVerantwoording">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<FileDocumentOutline v-else :size="20" />
@@ -174,32 +174,32 @@
 
 					<div class="dsarForm">
 						<NcTextField
-							:value.sync="dsar.subject"
+							v-model="dsar.subject"
 							:label="t('openregister', 'Subject identifier (email, BSN, name, etc.)')"
 							required />
 						<NcTextField
-							:value.sync="dsar.type"
+							v-model="dsar.type"
 							:label="t('openregister', 'Type filter (optional, e.g. email)')" />
 						<div class="dsarActions">
-							<NcButton type="primary" :disabled="!dsar.subject || loading" @click="runInzage">
+							<NcButton variant="primary" :disabled="!dsar.subject || loading" @click="runInzage">
 								<template #icon>
 									<Magnify :size="20" />
 								</template>
 								{{ t('openregister', 'Inzage (Art 15)') }}
 							</NcButton>
-							<NcButton type="secondary" :disabled="!dsar.subject || loading" @click="runVergetelheidDryRun">
+							<NcButton variant="secondary" :disabled="!dsar.subject || loading" @click="runVergetelheidDryRun">
 								<template #icon>
 									<EyeOutline :size="20" />
 								</template>
 								{{ t('openregister', 'Preview erasure') }}
 							</NcButton>
-							<NcButton type="error" :disabled="!dsar.subject || !dsarSummary || !dsarSummary.matchedCount || loading" @click="confirmVergetelheid">
+							<NcButton variant="error" :disabled="!dsar.subject || !dsarSummary || !dsarSummary.matchedCount || loading" @click="confirmVergetelheid">
 								<template #icon>
 									<TrashCanOutline :size="20" />
 								</template>
 								{{ t('openregister', 'Erase (Art 17)') }}
 							</NcButton>
-							<NcButton type="tertiary" :disabled="!dsar.subject || loading" @click="downloadPortabiliteit">
+							<NcButton variant="tertiary" :disabled="!dsar.subject || loading" @click="downloadPortabiliteit">
 								<template #icon>
 									<Download :size="20" />
 								</template>
@@ -261,7 +261,7 @@
 						</span>
 					</div>
 					<div class="viewActions">
-						<NcButton type="primary" :disabled="loading" @click="loadCompliance">
+						<NcButton variant="primary" :disabled="loading" @click="loadCompliance">
 							<template #icon>
 								<NcLoadingIcon v-if="loading" :size="20" />
 								<Refresh v-else :size="20" />
@@ -332,7 +332,7 @@
 							</span>
 						</div>
 						<div class="viewActions">
-							<NcButton type="tertiary" :disabled="loading" @click="refreshCases">
+							<NcButton variant="tertiary" :disabled="loading" @click="refreshCases">
 								<template #icon>
 									<NcLoadingIcon v-if="loading" :size="20" />
 									<Refresh v-else :size="20" />
@@ -360,7 +360,7 @@
 							:aria-label-combobox="t('openregister', 'Filter by handler')"
 							:reduce="(o) => o.value" />
 						<NcCheckboxRadioSwitch
-							:checked.sync="caseFilters.overdue"
+							v-model="caseFilters.overdue"
 							type="switch">
 							{{ t('openregister', 'Overdue only') }}
 						</NcCheckboxRadioSwitch>
@@ -404,7 +404,7 @@
 										</span>
 									</td>
 									<td>
-										<NcButton type="tertiary" @click="selectCase(c)">
+										<NcButton variant="tertiary" @click="selectCase(c)">
 											<template #icon>
 												<OpenInNew :size="20" />
 											</template>
@@ -421,7 +421,7 @@
 				<template v-else>
 					<div class="viewActionsBar">
 						<div class="viewInfo">
-							<NcButton type="tertiary" @click="backToList">
+							<NcButton variant="tertiary" @click="backToList">
 								<template #icon>
 									<ArrowLeft :size="20" />
 								</template>
@@ -429,7 +429,7 @@
 							</NcButton>
 						</div>
 						<div class="viewActions">
-							<NcButton type="tertiary" :disabled="loading" @click="reloadSelectedCase">
+							<NcButton variant="tertiary" :disabled="loading" @click="reloadSelectedCase">
 								<template #icon>
 									<NcLoadingIcon v-if="loading" :size="20" />
 									<Refresh v-else :size="20" />
@@ -495,7 +495,7 @@
 								<NcButton
 									v-for="tr in availableTransitions"
 									:key="tr.action"
-									:type="tr.action === 'finaliseDenial' ? 'warning' : 'secondary'"
+									:variant="tr.action === 'finaliseDenial' ? 'warning' : 'secondary'"
 									:disabled="loading || (tr.action === 'finaliseDenial' && !hasRegulatorReference)"
 									@click="onTransition(tr)">
 									{{ transitionLabel(tr.action) }}
@@ -522,17 +522,17 @@
 							</dl>
 							<div class="caseInlineForm">
 								<NcTextField
-									:value.sync="regulatorReferenceDraft"
+									v-model="regulatorReferenceDraft"
 									:label="t('openregister', 'Record a regulator reference')" />
 								<NcButton
-									type="secondary"
+									variant="secondary"
 									:disabled="loading || !regulatorReferenceDraft"
 									@click="recordRegulatorReference">
 									{{ t('openregister', 'Save reference') }}
 								</NcButton>
 							</div>
 							<div class="caseActionsRow">
-								<NcButton type="secondary" :disabled="loading" @click="openDenialDialog">
+								<NcButton variant="secondary" :disabled="loading" @click="openDenialDialog">
 									<template #icon>
 										<FileDocumentEditOutline :size="20" />
 									</template>
@@ -545,7 +545,7 @@
 						<div class="caseCard">
 							<div class="caseCardHead">
 								<h3>{{ t('openregister', 'Evidence') }}</h3>
-								<NcButton type="secondary" :disabled="loading" @click="harvestEvidence">
+								<NcButton variant="secondary" :disabled="loading" @click="harvestEvidence">
 									<template #icon>
 										<NcLoadingIcon v-if="loading" :size="20" />
 										<DatabaseSearchOutline v-else :size="20" />
@@ -576,7 +576,7 @@
 						<div class="caseCard">
 							<div class="caseCardHead">
 								<h3>{{ t('openregister', 'Redactions') }}</h3>
-								<NcButton type="secondary" :disabled="loading" @click="openRedactionDialog">
+								<NcButton variant="secondary" :disabled="loading" @click="openRedactionDialog">
 									<template #icon>
 										<MarkerIcon :size="20" />
 									</template>
@@ -606,20 +606,20 @@
 						<div class="caseCard">
 							<h3>{{ t('openregister', 'Export & escalation') }}</h3>
 							<div class="caseActionsRow">
-								<NcButton type="primary" :disabled="loading" @click="generateAndDownloadBundle">
+								<NcButton variant="primary" :disabled="loading" @click="generateAndDownloadBundle">
 									<template #icon>
 										<NcLoadingIcon v-if="loading" :size="20" />
 										<Download v-else :size="20" />
 									</template>
 									{{ t('openregister', 'Generate export bundle') }}
 								</NcButton>
-								<NcButton type="secondary" :disabled="loading" @click="runVerifyIdentity">
+								<NcButton variant="secondary" :disabled="loading" @click="runVerifyIdentity">
 									<template #icon>
 										<AccountCheckOutline :size="20" />
 									</template>
 									{{ t('openregister', 'Verify identity') }}
 								</NcButton>
-								<NcButton type="secondary" :disabled="loading" @click="runEscalate">
+								<NcButton variant="secondary" :disabled="loading" @click="runEscalate">
 									<template #icon>
 										<BankOutline :size="20" />
 									</template>

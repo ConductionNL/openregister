@@ -29,7 +29,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -41,7 +41,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="successSelect">{{ t('openregister', 'Success Status') }}</label>
@@ -52,7 +52,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:placeholder="t('openregister', 'All searches')"
 						:input-label="t('openregister', 'Success Status')"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label, value }">
 							<div class="statusOption" :class="value">
 								{{ label }}
@@ -70,7 +70,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Users')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -82,12 +82,12 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
 					<label for="searchTermFilter">{{ t('openregister', 'Search Term') }}</label>
@@ -96,7 +96,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						v-model="searchTermFilter"
 						:label="t('openregister', 'Filter by search term')"
 						:placeholder="t('openregister', 'Enter search term')"
-						@update:value="handleSearchTermFilterChange" />
+						@update:modelValue="handleSearchTermFilterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="executionTimeFilter">{{ t('openregister', 'Execution Time Range') }}</label>
@@ -107,14 +107,14 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							:label="t('openregister', 'Min execution time (ms)')"
 							:placeholder="t('openregister', 'Min ms')"
 							type="number"
-							@update:value="handleExecutionTimeChange" />
+							@update:modelValue="handleExecutionTimeChange" />
 						<NcTextField
 							id="executionTimeTo"
 							v-model="executionTimeTo"
 							:label="t('openregister', 'Max execution time (ms)')"
 							:placeholder="t('openregister', 'Max ms')"
 							type="number"
-							@update:value="handleExecutionTimeChange" />
+							@update:modelValue="handleExecutionTimeChange" />
 					</div>
 				</div>
 				<div class="filterGroup">
@@ -126,14 +126,14 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							:label="t('openregister', 'Min result count')"
 							:placeholder="t('openregister', 'Min results')"
 							type="number"
-							@update:value="handleResultCountChange" />
+							@update:modelValue="handleResultCountChange" />
 						<NcTextField
 							id="resultCountTo"
 							v-model="resultCountTo"
 							:label="t('openregister', 'Max result count')"
 							:placeholder="t('openregister', 'Max results')"
 							type="number"
-							@update:value="handleResultCountChange" />
+							@update:modelValue="handleResultCountChange" />
 					</div>
 				</div>
 			</div>
@@ -329,7 +329,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						input-label="Selected Activity Period"
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
-						@input="loadActivityData">
+						@update:modelValue="loadActivityData">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -396,6 +396,7 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -625,7 +626,7 @@ export default {
 		this.loadActivityData()
 
 		// Listen for filtered count updates
-		this.$root.$on('search-trail-filtered-count', (count) => {
+		eventBus.on('search-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 
@@ -635,8 +636,8 @@ export default {
 		// Initialize from current URL query params
 		this.applyQueryParamsFromRoute()
 	},
-	beforeDestroy() {
-		this.$root.$off('search-trail-filtered-count')
+	beforeUnmount() {
+		eventBus.off('search-trail-filtered-count')
 	},
 	methods: {
 		/**
@@ -781,7 +782,7 @@ export default {
 			searchTrailStore.refreshSearchTrailList()
 
 			// Also emit for legacy compatibility
-			this.$root.$emit('search-trail-filters-changed', filters)
+			eventBus.emit('search-trail-filters-changed', filters)
 
 			// Reflect filters in URL
 			this.updateRouteQueryFromState()

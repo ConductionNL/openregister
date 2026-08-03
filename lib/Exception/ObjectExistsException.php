@@ -41,14 +41,19 @@ use Throwable;
  * Uses HTTP 409 Conflict: the request could not be completed because of a
  * conflict with the current state of the resource (RFC 9110 §15.5.10).
  *
- * ⚠️ NOT A LOCK — see openregister#2212. The guard that raises this sits
- * between the existence lookup and the write, which are two separate
- * operations. Under CONCURRENT claims several callers can all pass the lookup
- * before any of them writes, and several receive 201. A sequential second
- * create is correctly refused; simultaneous ones are not serialised. Do not
- * rely on this for mutual exclusion until the arbitration moves into the
- * database (a real INSERT against the `_uuid` unique constraint, or a
- * transaction around check-and-write).
+ * This IS safe under concurrency as of openregister#2215. An earlier version of
+ * this note said the opposite, and it was true when written: the only guard
+ * then sat between the existence lookup and the write, so several simultaneous
+ * callers could all pass it and all receive 201. The arbitration now lives in
+ * MagicMapper, which refuses both the update branch and a losing INSERT when
+ * insert-only is asked for. Verified 6/6 races at 12 concurrent claimants on
+ * one identifier: 1x201, 11x409, one row.
+ *
+ * The mechanism is worth knowing before changing that code: the losing writer
+ * usually never reaches an INSERT at all. It passes the service-level lookup,
+ * so the audit trail records `create`, and then the mapper's own lookup finds
+ * the winner's row and takes the UPDATE branch. Guarding only the constraint
+ * violation therefore fixes almost nothing.
  *
  * @category Exception
  * @package  OCA\OpenRegister\Exception

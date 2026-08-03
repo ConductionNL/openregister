@@ -49,9 +49,7 @@ use Symfony\Component\Uid\Uuid;
  * @method AuditTrail update(Entity $entity)
  * @method AuditTrail insertOrUpdate(Entity $entity)
  * @method AuditTrail delete(Entity $entity)
- * @method AuditTrail find(int|string $id)
  * @method AuditTrail findEntity(IQueryBuilder $query)
- * @method AuditTrail[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<AuditTrail> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<AuditTrail>
@@ -231,7 +229,7 @@ class AuditTrailMapper extends QBMapper
      *
      * @return AuditTrail[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\AuditTrail>
+     * @psalm-return list<\OCA\OpenRegister\Db\AuditTrail>
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)       Complex query building requires many conditional paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -366,7 +364,11 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old            The old state of the object
      * @param ObjectEntity|null $new            The new state of the object
-     * @param string|null       $action         The action to create the audit trail for
+     * @param string|null       $action         The action to record. NULL (the default) infers it from which
+     *                                          entities are present: no `new` is a delete, no `old` is a create,
+     *                                          otherwise an update. A NAMED action is used verbatim — the
+     *                                          inference used to overwrite an explicit 'update' because it was
+     *                                          indistinguishable from the old default (#2217).
      * @param array|null        $cascadeContext Optional referential-integrity cascade context. When
      *                                          non-null, the context is folded into the `changed`
      *                                          column of the initial INSERT (previously this required
@@ -383,7 +385,7 @@ class AuditTrailMapper extends QBMapper
     public function createAuditTrail(
         ?ObjectEntity $old=null,
         ?ObjectEntity $new=null,
-        ?string $action='update',
+        ?string $action=null,
         ?array $cascadeContext=null
     ): AuditTrail {
         $auditTrail = $this->buildAuditTrail(old: $old, new: $new, action: $action, cascadeContext: $cascadeContext);
@@ -401,7 +403,11 @@ class AuditTrailMapper extends QBMapper
      *
      * @param ObjectEntity|null $old            The old state of the object
      * @param ObjectEntity|null $new            The new state of the object
-     * @param string|null       $action         The action to create the audit trail for
+     * @param string|null       $action         The action to record. NULL (the default) infers it from which
+     *                                          entities are present: no `new` is a delete, no `old` is a create,
+     *                                          otherwise an update. A NAMED action is used verbatim — the
+     *                                          inference used to overwrite an explicit 'update' because it was
+     *                                          indistinguishable from the old default (#2217).
      * @param array|null        $cascadeContext Optional referential-integrity cascade context to fold
      *                                          into the `changed` column (keys: triggerObject,
      *                                          triggerSchema, action_type, property).
@@ -416,17 +422,36 @@ class AuditTrailMapper extends QBMapper
     public function buildAuditTrail(
         ?ObjectEntity $old=null,
         ?ObjectEntity $new=null,
-        ?string $action='update',
+        ?string $action=null,
         ?array $cascadeContext=null
     ): AuditTrail {
+        // Infer the action from which entities are present — but ONLY when the
+        // caller did not name one.
+        //
+        // These two rules used to fire on `$action === 'update'`, which is both
+        // the default AND a legitimate explicit value, so a caller who KNEW the
+        // write was an update could not say so: `old: null, action: 'update'`
+        // was rewritten to `create` before it reached the row. That is not
+        // hypothetical — it is why MagicMapper taking its UPDATE branch on a
+        // service-labelled create still produced a `create` entry (#2217), and
+        // it is the reason a fix passing an explicit action would have looked
+        // applied while changing nothing.
+        //
+        // The inference is unchanged for every caller that omits `action`; only
+        // an explicitly-named one now survives.
+        $inferring = ($action === null);
+        if ($inferring === true) {
+            $action = 'update';
+        }
+
         // Determine the action based on the presence of old and new objects.
         $objectEntity = $new;
-        if ($new === null && $action === 'update') {
+        if ($inferring === true && $new === null) {
             $action       = 'delete';
             $objectEntity = $old;
         }
 
-        if ($old === null && $action === 'update') {
+        if ($inferring === true && $old === null && $new !== null) {
             $action       = 'create';
             $objectEntity = $new;
         }

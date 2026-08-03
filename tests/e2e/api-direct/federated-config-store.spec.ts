@@ -8,21 +8,30 @@
  *  - signing enforcement (a trusted-keys allowlist) refuses unsigned bundles,
  *  - publish refuses when the user has selected no store credential.
  *
- * The RBAC/enforcement toggles go through `occ` in the dev container
- * (NC_CONTAINER, default `nextcloud`) and a restart to clear the appconfig
- * cache; those tests skip cleanly off the dev host.
+ * The RBAC/enforcement toggles go through `occ` in the container named by
+ * NC_CONTAINER, plus a restart to clear the appconfig cache; with no
+ * NC_CONTAINER set those tests skip.
  *
  * @spec openspec/changes/federated-config-sharing/specs/federated-config-sharing/spec.md
  */
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import { execSync } from 'node:child_process'
+import { resolveBaseUrl, resolveContainer } from '../base-url'
 
 const API = '/index.php/apps/openregister/api'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' }
-const CONTAINER = process.env.NC_CONTAINER || 'nextcloud'
+// ⚠️ There is deliberately NO default here. This spec calls
+// `docker restart ${CONTAINER}`, and the previous default was the literal
+// string `'nextcloud'` — the SHARED dev container, which bind-mounts several
+// developers' real working trees. Running this spec without NC_CONTAINER set
+// therefore restarted somebody else's environment mid-session.
+const CONTAINER = resolveContainer()
 const runId = `e2e-store-${Date.now()}`
 
 function occ(args: string): string | null {
+	if (CONTAINER === null) {
+		return null
+	}
 	try {
 		return execSync(`docker exec -u www-data ${CONTAINER} php occ ${args}`, { encoding: 'utf8' })
 	} catch {
@@ -31,12 +40,17 @@ function occ(args: string): string | null {
 }
 
 function restartAndWait(): void {
+	if (CONTAINER === null) {
+		return
+	}
 	try {
 		execSync(`docker restart ${CONTAINER}`, { stdio: 'ignore' })
 		for (let i = 0; i < 40; i++) {
 			try {
+				// ⚠️ was a hardcoded `http://localhost:8080` — the shared dev
+				// container. Poll the instance actually under test.
 				const code = execSync(
-					`curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/status.php`,
+					`curl -s -o /dev/null -w '%{http_code}' ${resolveBaseUrl()}/status.php`,
 					{ encoding: 'utf8' },
 				)
 				if (code.trim() === '200') return

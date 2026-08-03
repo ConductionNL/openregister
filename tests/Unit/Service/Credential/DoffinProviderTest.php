@@ -129,7 +129,77 @@ class DoffinProviderTest extends TestCase
         // no repo, release or file-content write is reachable through them. The
         // DELETE is the catalogue's first, and is separately sanctioned in
         // ProviderCatalogueTest::SANCTIONED_DELETE_RULES.
-        $this->assertCount(14, $github['allowRules']);
+        //
+        // 15 since 2026-07-31 (PO decision): `PUT /repos/*\/pulls/*\/merge`.
+        // This does not widen what the credential can DO — `PATCH
+        // /repos/*\/git/refs/*`, granted since v1.6.0, can fast-forward a base
+        // branch to a PR head, which GitHub records as a merged PR. The merge
+        // was always reachable; the catalogue simply did not say so, and
+        // ConductionNL/openregister#2203 was filed on that gap. A rule the
+        // list forbids but a one-line call achieves makes the whole allow-list
+        // unreliable as a statement of capability, which is worse than an
+        // explicit grant. Naming it keeps merge authority reviewable,
+        // greppable and revocable in one place.
+        // 16 since 2026-07-31: `PUT /repos/*\/pulls/*\/update-branch`, the
+        // pre-merge step (hydra-flows-first-port task 2.2). The task asked
+        // whether pre-merge should resolve LOCALLY and land a fresh commit or
+        // let the FORGE do it; the forge won, because resolving locally needs a
+        // working tree and the flow plane has none — the sidecar that runs an
+        // agent step is read_only, mounts nothing and holds no checkout.
+        // Narrower than the refs rule it sits beside: it can only merge a pull
+        // request's OWN base into its OWN head, so unlike
+        // `PATCH /repos/*\/git/refs/*` it cannot move an arbitrary ref.
+        // 17 since 2026-08-01: `POST /repos/*\/issues`, the CREATE half of the
+        // three issue rules above (hydra-flows-first-port 6.1). hydra's gates
+        // report what they found by filing issues, and a finding nobody can see
+        // is a gate that may as well not have run — without this the pipeline
+        // analyses a repository and silently discards its own output. It is the
+        // last thing that stood between the flow port and deleting the
+        // 3,258-line shell orchestrator it replaces.
+        //
+        // ⚠️ Deliberately compared against the grant this catalogue briefly
+        // carried and reverted: `POST /repos/*\/actions/workflows/*\/dispatches`
+        // (openregister#2240, reverted by #2242) let a credential EXECUTE
+        // arbitrary code in the repository. This one lets it file a bug report.
+        // Bounded to /issues, it writes issue metadata and never a byte of code,
+        // and is reversible through the PATCH rule beside it.
+        //
+        // 18 since 2026-08-02: `GET /search/issues`. hydra's sequencer runs on a
+        // SCHEDULE, and a schedule tick's payload is only
+        // `{flowId, scheduledAt}` — it carries no repository. So it searches the
+        // organisation for its queue label and reads the repository back off
+        // whatever it finds. The alternative is enumerating the org and querying
+        // each repository in turn, which hydra already tried and abandoned:
+        // 41 repos x 5 label queries = 205 calls per tick, and the forge's abuse
+        // governor 403'd everything from that IP for ~15 minutes.
+        // Read-only, host-locked like every rule here, and the issues
+        // counterpart of `GET /search/repositories` which rule 5 already allows.
+        // Narrower per issue than `GET /repos/*` at rule 1: a search result
+        // omits fields a direct issue read returns.
+        $this->assertCount(18, $github['allowRules']);
+
+        // The search grant is READ-only and must stay so: a search rule that
+        // grew a write method would be a write to every repository the token can
+        // see, in one call.
+        $issueSearch = array_values(
+            array_filter(
+                $github['allowRules'],
+                static fn (array $rule): bool => ($rule['pathPattern'] ?? '') === '/search/issues'
+            )
+        );
+        $this->assertCount(1, $issueSearch);
+        $this->assertSame('GET', $issueSearch[0]['method']);
+
+        // The grant is CREATE-only and must stay that way: nothing here may
+        // reach a repository, a release or file content.
+        $issueCreate = array_values(
+            array_filter(
+                $github['allowRules'],
+                static fn (array $rule): bool => ($rule['pathPattern'] ?? '') === '/repos/*/issues'
+            )
+        );
+        $this->assertCount(1, $issueCreate);
+        $this->assertSame('POST', $issueCreate[0]['method']);
 
         $this->assertIsArray($gitlab);
         $this->assertSame('https://gitlab.com/api/v4', $gitlab['baseUrl']);

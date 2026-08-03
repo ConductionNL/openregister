@@ -10,7 +10,8 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 
-import Vue from 'vue'
+import { createApp } from 'vue'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import MailSidebar from './mail-sidebar/MailSidebar.vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
@@ -68,11 +69,21 @@ function mountSidebar() {
 		}
 
 		try {
-			const app = new Vue({
-				render: (h) => h(MailSidebar),
-			}).$mount()
-			app.$el.id = SIDEBAR_ROOT_ID
-			document.body.appendChild(app.$el)
+			// Vue 2 allowed `$mount()` with no argument — it rendered off-DOM
+			// and exposed the result as `app.$el`, which the caller then
+			// appended. Vue 3's `mount()` REQUIRES a host element and returns
+			// the root component instance, not the element, so create the host
+			// ourselves, give it the id, attach it, and mount into it.
+			const host = document.createElement('div')
+			host.id = SIDEBAR_ROOT_ID
+			document.body.appendChild(host)
+
+			const app = createApp(MailSidebar)
+			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
+			// reached every instance on the page. Vue 3's `app.mixin()` is
+			// per-app — each entry bundle must install `t`/`n` itself.
+			app.mixin({ methods: { t, n } })
+			app.mount(host)
 			return app
 		} catch (err) {
 			console.error('[OpenRegister] Mail sidebar mount failed:', err)

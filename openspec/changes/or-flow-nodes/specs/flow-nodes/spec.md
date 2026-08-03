@@ -134,6 +134,73 @@ that refuses to save.
 - **WHEN** the flow is saved
 - **THEN** validation fails and names what is missing
 
+### Requirement: A field path may be templated as well as its value (REQ-FN-009)
+
+The "Edit fields" step SHALL resolve `{{dotted.path}}` placeholders in the
+field PATH of both `set` and `compute`, not only in the value, so a flow can
+write to a position the run decides rather than only a position the author
+hardcoded. `compute` SHALL write through the same dotted-path writer as `set`,
+so the two halves of the node address positions identically.
+
+A path is a POSITION, not a value, so it SHALL be rendered one segment at a
+time: the configured path is split on `.` first and each segment rendered on
+its own. Rendering the whole string and then splitting would let item data
+decide the SHAPE of the path rather than only the name of a segment.
+
+The following SHALL be refused rather than written:
+
+- A segment whose placeholder resolves to nothing. An unresolved placeholder is
+  a broken path, not a path to a field named `""`.
+- A segment that resolves to a value which is not a scalar, since a container
+  cannot name a field.
+- A segment that resolves to a value containing a `.`. A rendered segment names
+  exactly one field and SHALL NOT introduce nesting. It is refused rather than
+  escaped: the node has no escape syntax, so an escaped segment would produce a
+  key that no other operation — including this node's own `rename` and
+  `remove` — could address.
+
+A configured path containing no placeholder SHALL be unaffected, and a literal
+`.` in the configured path SHALL keep nesting as before.
+
+An empty or blank configured path SHALL be rejected by `validateConfig()` when
+the flow is saved (REQ-FN-007).
+
+#### Scenario: A placeholder in the path decides where the value lands
+
+- **GIVEN** an item with `stage: "review"`
+- **AND** an "Edit fields" step setting `stages.{{stage}}.status` to `done`
+- **WHEN** the step runs
+- **THEN** the item carries `stages.review.status = "done"`
+- **AND** it does NOT carry a key literally named `stages.{{stage}}.status`
+
+#### Scenario: One configuration writes each item to its own position
+
+- **GIVEN** two items with `stage: "build"` and `stage: "ship"`
+- **AND** one step setting `stages.{{stage}}.ok`
+- **WHEN** the step runs
+- **THEN** the first item carries `stages.build.ok` and the second `stages.ship.ok`
+
+#### Scenario: A rendered segment cannot introduce nesting
+
+- **GIVEN** an item whose `stage` is `"a.b"`
+- **AND** a step setting `stages.{{stage}}.status`
+- **WHEN** the step runs
+- **THEN** the item fails with an error naming the segment and the dot
+- **AND** nothing is written
+
+#### Scenario: A segment resolving to nothing is refused
+
+- **GIVEN** an item with no `stage`
+- **AND** a step setting `stages.{{stage}}.status`
+- **WHEN** the step runs
+- **THEN** the item fails rather than writing to an empty field name
+
+#### Scenario: An empty field path is refused when the flow is saved
+
+- **GIVEN** an "Edit fields" step whose `set` carries an empty path
+- **WHEN** the flow is saved
+- **THEN** validation fails naming the offending configuration key
+
 ### Requirement: The Nextcloud Flow bridge is not duplicated (REQ-FN-008)
 
 OpenRegister already bridges to Nextcloud Flow: `WorkflowEngine\RegisterObjectEntity`

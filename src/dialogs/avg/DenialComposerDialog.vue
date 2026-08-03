@@ -39,10 +39,10 @@
 			</NcNoteCard>
 
 			<div class="denialActions">
-				<NcButton type="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" native-type="submit" :disabled="saving || !ground">
+				<NcButton variant="primary" type="submit" :disabled="saving || !ground">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>

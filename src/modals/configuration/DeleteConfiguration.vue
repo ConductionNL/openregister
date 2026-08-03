@@ -21,7 +21,7 @@
 			</NcButton>
 			<NcButton
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteConfiguration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

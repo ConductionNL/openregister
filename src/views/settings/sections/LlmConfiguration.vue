@@ -89,7 +89,7 @@
 				v-model="llmSettings.enabled"
 				:disabled="saving"
 				type="switch"
-				@update:checked="onLlmEnabledChange">
+				@update:modelValue="onLlmEnabledChange">
 				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
@@ -132,7 +132,7 @@
 				<div class="card-header">
 					<h5>Vector Storage</h5>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="refreshingDatabase"
 						:aria-label="t('openregister', 'Refresh database info')"
 						@click="refreshDatabaseInfo">
@@ -273,7 +273,7 @@
 				<p class="error-message">
 					❌ {{ llmErrorMessage }}
 				</p>
-				<NcButton type="primary" @click="retryConnection">
+				<NcButton variant="primary" @click="retryConnection">
 					<template #icon>
 						<Refresh :size="20" />
 					</template>
@@ -286,7 +286,7 @@
 				<div class="connection-success">
 					<span class="success-icon">✅</span>
 					<span>{{ llmConnectionStatus }}</span>
-					<NcButton type="secondary" @click="retryConnection">
+					<NcButton variant="secondary" @click="retryConnection">
 						<template #icon>
 							<Refresh :size="16" />
 						</template>

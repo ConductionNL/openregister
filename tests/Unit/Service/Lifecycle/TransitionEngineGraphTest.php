@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace Unit\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -34,9 +35,11 @@ use OCA\OpenRegister\Service\Lifecycle\TransitionEngine;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -64,6 +67,12 @@ class TransitionEngineGraphTest extends TestCase
 
     private PermissionHandler&MockObject $permission;
 
+    private RegisterMapper&MockObject $registerMapper;
+
+    private IAppConfig&MockObject $appConfig;
+
+    private LoggerInterface&MockObject $logger;
+
     private TransitionEngine $engine;
 
     protected function setUp(): void
@@ -74,13 +83,28 @@ class TransitionEngineGraphTest extends TestCase
         $this->userSession    = $this->createMock(IUserSession::class);
         $this->permission     = $this->createMock(PermissionHandler::class);
         $this->permission->method('hasPermission')->willReturn(true);
+        $this->registerMapper = $this->createMock(RegisterMapper::class);
+        $this->appConfig      = $this->createMock(IAppConfig::class);
+        $this->logger         = $this->createMock(LoggerInterface::class);
+
+        // The slug contract ships DEFAULT OFF; these graph tests assert the
+        // unchanged id-based event scope, so pin the flag to its default.
+        $this->appConfig->method('getValueString')
+            ->willReturnCallback(
+                static function (string $app, string $key, string $default = '') {
+                    return $default;
+                }
+            );
 
         $this->engine = new TransitionEngine(
             $this->objectService,
             $this->schemaMapper,
             $this->dispatcher,
             $this->userSession,
-            $this->permission
+            $this->permission,
+            $this->registerMapper,
+            $this->appConfig,
+            $this->logger
         );
     }//end setUp()
 
@@ -306,4 +330,71 @@ class TransitionEngineGraphTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->engine->transition(self::CASE, 'move-to-'.self::S3);
     }//end testApplyRejectsNonCandidateAndDoesNotSave()
+
+    /**
+     * A throwing post-event listener must not fail an already-committed
+     * transition. `ObjectTransitionedEvent` is dispatched after `saveObject()`
+     * has returned, so propagating the listener's exception would report
+     * failure for a write that succeeded.
+     *
+     * @return void
+     */
+    public function testThrowingPostEventListenerDoesNotFailACommittedTransition(): void
+    {
+        $case = $this->caseObject(status: self::S1);
+        $this->wire(
+            case: $case,
+            annotation: $this->graphAnnotation(allowedMoves: 'forward'),
+            siblings: $this->siblings()
+        );
+
+        $saved = $this->caseObject(status: self::S2);
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturn($saved);
+
+        $this->dispatcher->method('dispatchTyped')
+            ->willThrowException(new \LogicException('listener exploded'));
+
+        $result = $this->engine->transition(objectId: self::CASE, action: 'move-to-'.self::S2);
+
+        // The commit stands and the caller gets the saved object back.
+        $this->assertSame(expected: $saved, actual: $result);
+    }//end testThrowingPostEventListenerDoesNotFailACommittedTransition()
+
+    /**
+     * Swallowing silently would hide a real bug, so the listener failure is
+     * logged at ERROR with the exception attached.
+     *
+     * @return void
+     */
+    public function testThrowingPostEventListenerIsLoggedAtError(): void
+    {
+        $case = $this->caseObject(status: self::S1);
+        $this->wire(
+            case: $case,
+            annotation: $this->graphAnnotation(allowedMoves: 'forward'),
+            siblings: $this->siblings()
+        );
+
+        $this->objectService->method('saveObject')
+            ->willReturn($this->caseObject(status: self::S2));
+
+        $boom = new \LogicException('listener exploded');
+        $this->dispatcher->method('dispatchTyped')->willThrowException($boom);
+
+        $this->logger->expects($this->once())
+            ->method('error')
+            ->with(
+                $this->stringContains(string: 'ObjectTransitionedEvent'),
+                $this->callback(
+                    callback: static function (array $context) use ($boom): bool {
+                        return ($context['exception'] ?? null) === $boom
+                            && ($context['action'] ?? null) !== null;
+                    }
+                )
+            );
+
+        $this->engine->transition(objectId: self::CASE, action: 'move-to-'.self::S2);
+    }//end testThrowingPostEventListenerIsLoggedAtError()
 }//end class

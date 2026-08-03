@@ -4,198 +4,196 @@ import { registerStore, dashboardStore, navigationStore, schemaStore } from '../
 </script>
 
 <template>
-	<Fragment>
-		<NcAppSidebar
-			v-if="register"
-			ref="sidebar"
-			v-model="activeTab"
-			:name="register.title"
-			:subtitle="register.description"
-			subname="Register Details"
-			:open="navigationStore.sidebarState.register"
-			@update:open="(e) => {
-				navigationStore.setSidebarState('register', e)
-			}">
-			<template #secondary-actions>
-				<NcActionButton @click="showEditDialog = true">
-					<template #icon>
-						<Pencil :size="20" />
-					</template>
-					{{ t('openregister', 'Edit Register') }}
-				</NcActionButton>
-				<NcActionButton @click="calculateSizes">
-					<template #icon>
-						<Calculator :size="20" />
-					</template>
-					{{ t('openregister', 'Calculate Sizes') }}
-				</NcActionButton>
-				<NcActionButton @click="downloadOas">
-					<template #icon>
-						<Download :size="20" />
-					</template>
-					{{ t('openregister', 'Download API Spec') }}
-				</NcActionButton>
-				<NcActionButton @click="viewOasDoc">
-					<template #icon>
-						<ApiIcon :size="20" />
-					</template>
-					{{ t('openregister', 'View API Docs') }}
-				</NcActionButton>
+	<NcAppSidebar
+		v-if="register"
+		ref="sidebar"
+		v-model="activeTab"
+		:name="register.title"
+		:subtitle="register.description"
+		subname="Register Details"
+		:open="navigationStore.sidebarState.register"
+		@update:open="(e) => {
+			navigationStore.setSidebarState('register', e)
+		}">
+		<template #secondary-actions>
+			<NcActionButton @click="showEditDialog = true">
+				<template #icon>
+					<Pencil :size="20" />
+				</template>
+				{{ t('openregister', 'Edit Register') }}
+			</NcActionButton>
+			<NcActionButton @click="calculateSizes">
+				<template #icon>
+					<Calculator :size="20" />
+				</template>
+				{{ t('openregister', 'Calculate Sizes') }}
+			</NcActionButton>
+			<NcActionButton @click="downloadOas">
+				<template #icon>
+					<Download :size="20" />
+				</template>
+				{{ t('openregister', 'Download API Spec') }}
+			</NcActionButton>
+			<NcActionButton @click="viewOasDoc">
+				<template #icon>
+					<ApiIcon :size="20" />
+				</template>
+				{{ t('openregister', 'View API Docs') }}
+			</NcActionButton>
+		</template>
+
+		<NcAppSidebarTab id="stats-tab" name="Statistics" :order="1">
+			<template #icon>
+				<ChartBar :size="20" />
 			</template>
 
-			<NcAppSidebarTab id="stats-tab" name="Statistics" :order="1">
-				<template #icon>
-					<ChartBar :size="20" />
-				</template>
-
-				<div class="section">
-					<div class="sectionTitle">
-						{{ t('openregister', 'Statistics') }}
-					</div>
-					<div class="statsStack">
-						<CnStatsBlock
-							:title="t('openregister', 'Objects')"
-							:count="register.stats?.objects?.total || 0"
-							:count-label="t('openregister', 'object{plural}', {
-								plural: register.stats?.objects?.total !== 1 ? 's' : ''
-							})"
-							:icon="PackageVariantClosed"
-							variant="primary"
-							horizontal
-							show-zero-count
-							:breakdown="objectsBreakdown" />
-						<CnStatsBlock
-							:title="t('openregister', 'Logs')"
-							:count="register.stats?.logs?.total || 0"
-							:count-label="t('openregister', 'log{plural}', {
-								plural: register.stats?.logs?.total !== 1 ? 's' : ''
-							})"
-							:icon="TextBoxOutline"
-							horizontal
-							show-zero-count
-							:breakdown="sizeBreakdown(register.stats?.logs?.size)" />
-						<CnStatsBlock
-							:title="t('openregister', 'Files')"
-							:count="register.stats?.files?.total || 0"
-							:count-label="t('openregister', 'file{plural}', {
-								plural: register.stats?.files?.total !== 1 ? 's' : ''
-							})"
-							:icon="FileDocumentOutline"
-							horizontal
-							show-zero-count
-							:breakdown="sizeBreakdown(register.stats?.files?.size)" />
-						<CnStatsBlock
-							:title="t('openregister', 'Schemas')"
-							:count="register.schemas?.length || 0"
-							:count-label="t('openregister', 'schema{plural}', {
-								plural: register.schemas?.length !== 1 ? 's' : ''
-							})"
-							:icon="FileCodeOutline"
-							horizontal
-							show-zero-count />
-					</div>
+			<div class="section">
+				<div class="sectionTitle">
+					{{ t('openregister', 'Statistics') }}
 				</div>
-			</NcAppSidebarTab>
+				<div class="statsStack">
+					<CnStatsBlock
+						:title="t('openregister', 'Objects')"
+						:count="register.stats?.objects?.total || 0"
+						:count-label="t('openregister', 'object{plural}', {
+							plural: register.stats?.objects?.total !== 1 ? 's' : ''
+						})"
+						:icon="PackageVariantClosed"
+						variant="primary"
+						horizontal
+						show-zero-count
+						:breakdown="objectsBreakdown" />
+					<CnStatsBlock
+						:title="t('openregister', 'Logs')"
+						:count="register.stats?.logs?.total || 0"
+						:count-label="t('openregister', 'log{plural}', {
+							plural: register.stats?.logs?.total !== 1 ? 's' : ''
+						})"
+						:icon="TextBoxOutline"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(register.stats?.logs?.size)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Files')"
+						:count="register.stats?.files?.total || 0"
+						:count-label="t('openregister', 'file{plural}', {
+							plural: register.stats?.files?.total !== 1 ? 's' : ''
+						})"
+						:icon="FileDocumentOutline"
+						horizontal
+						show-zero-count
+						:breakdown="sizeBreakdown(register.stats?.files?.size)" />
+					<CnStatsBlock
+						:title="t('openregister', 'Schemas')"
+						:count="register.schemas?.length || 0"
+						:count-label="t('openregister', 'schema{plural}', {
+							plural: register.schemas?.length !== 1 ? 's' : ''
+						})"
+						:icon="FileCodeOutline"
+						horizontal
+						show-zero-count />
+				</div>
+			</div>
+		</NcAppSidebarTab>
 
-			<NcAppSidebarTab id="schemas-tab" name="Schemas" :order="2">
-				<template #icon>
-					<FileCodeOutline :size="20" />
-				</template>
+		<NcAppSidebarTab id="schemas-tab" name="Schemas" :order="2">
+			<template #icon>
+				<FileCodeOutline :size="20" />
+			</template>
 
-				<div class="section">
-					<div class="sectionTitle">
-						{{ t('openregister', 'Schemas') }}
-					</div>
-					<div v-if="!register.schemas?.length" class="emptyContainer">
-						<NcEmptyContent
-							:title="t('openregister', 'No schemas found')"
-							icon="icon-folder">
-							<template #action>
-								<NcButton @click="showEditDialog = true">
-									{{ t('openregister', 'Add Schema') }}
-								</NcButton>
-							</template>
-						</NcEmptyContent>
-					</div>
-					<div v-else class="schemaList">
-						<CnItemCard
-							v-for="schema in register.schemas"
-							:key="schema.id"
-							:title="schema.title"
-							:icon="FileCodeOutline">
-							<template #actions>
-								<NcActions :primary="true" menu-name="Schema Actions">
+			<div class="section">
+				<div class="sectionTitle">
+					{{ t('openregister', 'Schemas') }}
+				</div>
+				<div v-if="!register.schemas?.length" class="emptyContainer">
+					<NcEmptyContent
+						:title="t('openregister', 'No schemas found')"
+						icon="icon-folder">
+						<template #action>
+							<NcButton @click="showEditDialog = true">
+								{{ t('openregister', 'Add Schema') }}
+							</NcButton>
+						</template>
+					</NcEmptyContent>
+				</div>
+				<div v-else class="schemaList">
+					<CnItemCard
+						v-for="schema in register.schemas"
+						:key="schema.id"
+						:title="schema.title"
+						:icon="FileCodeOutline">
+						<template #actions>
+							<NcActions :primary="true" menu-name="Schema Actions">
+								<template #icon>
+									<DotsHorizontal :size="20" />
+								</template>
+								<NcActionButton close-after-click @click="editSchema(schema)">
 									<template #icon>
-										<DotsHorizontal :size="20" />
+										<Pencil :size="20" />
 									</template>
-									<NcActionButton close-after-click @click="editSchema(schema)">
-										<template #icon>
-											<Pencil :size="20" />
-										</template>
-										Edit Schema
-									</NcActionButton>
-								</NcActions>
-							</template>
-							<CnKpiGrid :columns="2">
-								<CnStatsBlock
-									:title="t('openregister', 'Total Objects')"
-									:count="schema.stats?.objects?.total || 0"
-									show-zero-count />
-								<CnStatsBlock
-									:title="t('openregister', 'Total Size')"
-									:count="0"
-									show-zero-count
-									:breakdown="sizeBreakdown(schema.stats?.objects?.size)" />
-							</CnKpiGrid>
-						</CnItemCard>
-					</div>
+									Edit Schema
+								</NcActionButton>
+							</NcActions>
+						</template>
+						<CnKpiGrid :columns="2">
+							<CnStatsBlock
+								:title="t('openregister', 'Total Objects')"
+								:count="schema.stats?.objects?.total || 0"
+								show-zero-count />
+							<CnStatsBlock
+								:title="t('openregister', 'Total Size')"
+								:count="0"
+								show-zero-count
+								:breakdown="sizeBreakdown(schema.stats?.objects?.size)" />
+						</CnKpiGrid>
+					</CnItemCard>
 				</div>
-			</NcAppSidebarTab>
-		</NcAppSidebar>
+			</div>
+		</NcAppSidebarTab>
+	</NcAppSidebar>
 
-		<CnFormDialog
-			v-if="showEditDialog"
-			ref="formDialog"
-			:schema="registerSchema"
-			:item="register"
-			:dialog-title="t('openregister', 'Edit Register')"
-			@confirm="onSaveRegister"
-			@close="showEditDialog = false">
-			<template #form="{ formData, errors, updateField }">
-				<div class="formContainer">
-					<NcTextField
-						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
-						:error="!!errors.title"
-						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
-					<NcTextField
-						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
-						:error="!!errors.slug"
-						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
-					<NcTextArea
-						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
-					<NcSelect
-						:input-label="t('openregister', 'Schemas')"
-						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
-						:multiple="true"
-						:close-on-select="false"
-						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
-					<RegisterLanguagesEditor
-						:value="formData.languages || []"
-						:label="t('openregister', 'Languages')"
-						:helper-text="t('openregister', 'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.')"
-						@input="vals => updateField('languages', vals)" />
-				</div>
-			</template>
-		</CnFormDialog>
-	</Fragment>
+	<CnFormDialog
+		v-if="showEditDialog"
+		ref="formDialog"
+		:schema="registerSchema"
+		:item="register"
+		:dialog-title="t('openregister', 'Edit Register')"
+		@confirm="onSaveRegister"
+		@close="showEditDialog = false">
+		<template #form="{ formData, errors, updateField }">
+			<div class="formContainer">
+				<NcTextField
+					:label="t('openregister', 'Title') + ' *'"
+					:model-value="formData.title || ''"
+					:error="!!errors.title"
+					:helper-text="errors.title"
+					@update:modelValue="v => updateField('title', v)" />
+				<NcTextField
+					:label="t('openregister', 'Slug') + ' *'"
+					:model-value="formData.slug || ''"
+					:error="!!errors.slug"
+					:helper-text="errors.slug"
+					@update:modelValue="v => updateField('slug', v)" />
+				<NcTextArea
+					:label="t('openregister', 'Description')"
+					:model-value="formData.description || ''"
+					@update:modelValue="v => updateField('description', v)" />
+				<NcSelect
+					:input-label="t('openregister', 'Schemas')"
+					:options="schemaSelectOptions"
+					:model-value="getSchemaSelectValue(formData.schemas)"
+					:multiple="true"
+					:close-on-select="false"
+					:loading="schemasLoading"
+					@update:modelValue="vals => updateField('schemas', vals)" />
+				<RegisterLanguagesEditor
+					:value="formData.languages || []"
+					:label="t('openregister', 'Languages')"
+					:helper-text="t('openregister', 'Ordered BCP 47 language tags. The first language is the register default and drives Accept-Language fallback for translatable properties.')"
+					@input="vals => updateField('languages', vals)" />
+			</div>
+		</template>
+	</CnFormDialog>
 </template>
 
 <script>

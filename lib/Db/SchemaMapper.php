@@ -83,9 +83,7 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
  * @method Schema delete(Entity $entity, bool $force=false)
- * @method Schema find(int|string $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true)
  * @method Schema findEntity(IQueryBuilder $query)
- * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Schema>
@@ -263,6 +261,10 @@ class SchemaMapper extends QBMapper
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.ErrorControlOperator) The trace file is a
+     * best-effort diagnostic written from a shutdown function; a failure to
+     * write it must never surface as a warning on a real request.
+     *
      * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
      */
     private function traceRead(string $method): void
@@ -400,6 +402,41 @@ class SchemaMapper extends QBMapper
             );
         }
 
+        // A bare slug can legitimately match SEVERAL rows. Since
+        // Version1Date20260723000000 widened the unique key from
+        // (organisation, slug) to (organisation, application, slug), two apps
+        // may each own a schema with the same generic slug — that widening was
+        // deliberate, and reverting it would put back the collision it fixed.
+        //
+        // What did NOT land with it is the determinism its own docblock promised
+        // ("resolution is scoped by app (import) and by register (runtime) in
+        // the accompanying code change"). The scoped resolvers exist, but every
+        // one of them falls back HERE when it misses, and here there was no
+        // ORDER BY and no row cap at all: which same-slug schema won was decided
+        // by the storage engine.
+        //
+        // Measured 2026-08-02: schemas 5012 "AgentFlow" (application '') and
+        // 5020 "Agent flow" (application 'hermiq') both carry slug `agentflow`
+        // in one organisation. 5012 holds 1 object, 5020 holds 46. Every
+        // slug-based resolution was a coin flip that happened to keep landing on
+        // the populated one.
+        //
+        // The tie-break, in order. First: a row an app OWNS beats an
+        // unattributed one. The widened key exists precisely to express
+        // ownership, so a leftover row that no app claims must never shadow an
+        // app's real schema. Second: the lowest id, matching
+        // RegisterMapper::find() and the `openregister:schemas:dedup` command's
+        // keep-the-lowest rule.
+        //
+        // Ownership has to come first, and not only for tidiness: on the live
+        // duplicate the unordered query returns the UNATTRIBUTED row first, and
+        // so would a bare `ORDER BY id ASC`.
+        $qb->addOrderBy(
+            $qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
+            'ASC'
+        );
+        $qb->addOrderBy('id', 'ASC');
+
         // Apply organisation filter.
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
         $this->applyOrganisationFilter(
@@ -409,9 +446,44 @@ class SchemaMapper extends QBMapper
             multiTenancyEnabled: $_multitenancy
         );
 
+        // Two rows, not one: enough to KNOW the identifier was ambiguous, which
+        // a capped single-row fetch can never tell you. Silence is what let the
+        // agentflow collision run for as long as it did.
+        $qb->setMaxResults(2);
+
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
+
+        $row = ($rows[0] ?? false);
+        if (count($rows) > 1) {
+            $this->logger->warning(
+                message: sprintf(
+                    '[SchemaMapper] Identifier "%s" matches more than one schema; resolving to #%s ("%s", application "%s"). '
+                    .'Fix the duplicate with `occ openregister:schemas:dedup`.',
+                    (string) $id,
+                    (string) ($rows[0]['id'] ?? '?'),
+                    (string) ($rows[0]['title'] ?? '?'),
+                    (string) ($rows[0]['application'] ?? '')
+                ),
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'identifier' => (string) $id,
+                    'candidates' => array_map(
+                        static function (array $candidate): array {
+                            return [
+                                'id'          => ($candidate['id'] ?? null),
+                                'title'       => ($candidate['title'] ?? null),
+                                'slug'        => ($candidate['slug'] ?? null),
+                                'application' => ($candidate['application'] ?? null),
+                            ];
+                        },
+                        $rows
+                    ),
+                ]
+            );
+        }//end if
 
         if ($row === false) {
             // Include diagnostic info in exception message for debugging.
@@ -739,7 +811,7 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return                                  list<\OCA\OpenRegister\Db\Schema>
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
@@ -1792,6 +1864,27 @@ class SchemaMapper extends QBMapper
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
         $this->generateFacetConfiguration(schema: $entity);
 
+        /*
+         * **MODIFICATION STAMP**: `updated` was never written on an edit. The
+         * column defaulted to CURRENT_TIMESTAMP at insert and then stayed at
+         * the creation time for the rest of the schema's life, so every
+         * consumer that keys on it was reading a value that could not move:
+         *
+         *  - ContextsController::buildEtag() served a stale JSON-LD context
+         *    ETag after a schema edit, and honoured If-None-Match with a 304.
+         *  - JsonLdContextService::cacheKey() reused a stale context.
+         *  - ReferentialIntegrityService's cross-request relation index treated
+         *    an unchanged stamp as "no schema changed" and could therefore keep
+         *    an index that predates a newly added onDelete relation.
+         *
+         * This is the single mapper choke point every runtime edit passes
+         * through (updateFromArray, the controllers, the tool providers), and
+         * it is set after hydrate() so a client-supplied `updated` cannot
+         * suppress it — the modification time is the server's to state.
+         */
+
+        $entity->setUpdated(new DateTime());
+
         $entity = parent::update(entity: $entity);
 
         // Dispatch update event.
@@ -2062,6 +2155,61 @@ class SchemaMapper extends QBMapper
 
         return $mappings;
     }//end getSlugToIdMap()
+
+    /**
+     * Resolve a bounded set of schema slugs to their primary-key ids.
+     *
+     * Deliberately NOT `getSlugToIdMap()`: that materialises every schema row
+     * on the instance (1931 on the reference instance) to answer a question
+     * about a handful of slugs. Filtered event subscription runs this on the
+     * object write path, so it must be bounded by the caller's declaration
+     * rather than by the size of the instance.
+     *
+     * A slug is not unique across apps — the same `decision` slug can exist in
+     * two registers — so each slug maps to a LIST of ids and the caller narrows
+     * further (typically by register). Matching is case-insensitive, mirroring
+     * {@see find()}; keys come back lower-cased.
+     *
+     * @param array<int,string> $slugs Schema slugs to resolve.
+     *
+     * @return array<string,array<int,string>> Lower-cased slug => matching ids.
+     *                                         Empty when $slugs is empty.
+     *
+     * @spec openspec/specs/event-driven-architecture/spec.md
+     */
+    public function findIdsBySlugs(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $lowered = array_values(array_unique(array_map('strtolower', $slugs)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $map    = array_fill_keys($lowered, []);
+        while (($row = $result->fetch()) !== false) {
+            $key = strtolower((string) $row['slug']);
+            if (isset($map[$key]) === false) {
+                $map[$key] = [];
+            }
+
+            $map[$key][] = (string) $row['id'];
+        }
+
+        $result->closeCursor();
+
+        return $map;
+    }//end findIdsBySlugs()
 
     /**
      * Find schemas that have properties referencing the given schema

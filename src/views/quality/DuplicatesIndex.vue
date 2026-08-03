@@ -49,7 +49,7 @@
 							<td>{{ pair.score }}</td>
 							<td>{{ (pair.matchedOn || []).join(', ') }}</td>
 							<td>
-								<NcButton type="tertiary" data-testid="mdm-merge-launch" @click="openMergeWizard(pair)">
+								<NcButton variant="tertiary" data-testid="mdm-merge-launch" @click="openMergeWizard(pair)">
 									{{ t('openregister', 'Merge') }}
 								</NcButton>
 							</td>

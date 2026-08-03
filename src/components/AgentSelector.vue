@@ -57,7 +57,7 @@
 					</div>
 					<!-- Start Button -->
 					<NcButton
-						type="primary"
+						variant="primary"
 						class="start-button"
 						:disabled="startingAgentId === agent.id"
 						@click="handleStartConversation(agent)">
@@ -273,7 +273,7 @@ export default {
 		 */
 		toggleExpand(agentId, section) {
 			const key = `${agentId}-${section}`
-			this.$set(this.expandedSections, key, !this.expandedSections[key])
+			this.expandedSections[key] = !this.expandedSections[key]
 		},
 
 		/**
