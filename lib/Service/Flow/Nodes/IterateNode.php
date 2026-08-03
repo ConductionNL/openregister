@@ -195,14 +195,46 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
      */
     public function validateConfig(array $config): void
     {
-        $source = ($config['source'] ?? null);
+        $this->assertSource(source: ($config['source'] ?? null));
+        $this->assertBody(body: ($config['body'] ?? null));
+        $this->assertBounds(config: $config);
+
+    }//end validateConfig()
+
+    /**
+     * A loop needs something that produces batches.
+     *
+     * @param mixed $source The declared source step.
+     *
+     * @return void
+     *
+     * @throws UnexpectedValueException When the source is missing or typeless.
+     *
+     * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+     */
+    private function assertSource($source): void
+    {
         if (is_array($source) === false || trim((string) ($source['type'] ?? '')) === '') {
             throw new UnexpectedValueException(
                 $this->l10n->t('A repeat step needs a source that produces each batch.')
             );
         }
 
-        $body = ($config['body'] ?? null);
+    }//end assertSource()
+
+    /**
+     * A loop needs something to repeat, and every step in it needs a type.
+     *
+     * @param mixed $body The declared body chain.
+     *
+     * @return void
+     *
+     * @throws UnexpectedValueException When the body is empty or malformed.
+     *
+     * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+     */
+    private function assertBody($body): void
+    {
         if (is_array($body) === false || $body === []) {
             throw new UnexpectedValueException(
                 $this->l10n->t('A repeat step needs at least one step to repeat.')
@@ -217,6 +249,21 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
             }
         }
 
+    }//end assertBody()
+
+    /**
+     * The limit must be positive, and the overrun behaviour must be one we have.
+     *
+     * @param array $config The step configuration.
+     *
+     * @return void
+     *
+     * @throws UnexpectedValueException When the bound is unusable.
+     *
+     * @spec openspec/changes/flow-sync-decomposition/specs/flow-iteration/spec.md
+     */
+    private function assertBounds(array $config): void
+    {
         $max = ($config['maxIterations'] ?? self::DEFAULT_MAX_ITERATIONS);
         if (is_numeric($max) === false || (int) $max < 1) {
             throw new UnexpectedValueException(
@@ -231,7 +278,7 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
             );
         }
 
-    }//end validateConfig()
+    }//end assertBounds()
 
     /**
      * Run the body once per batch, until the source runs dry.
@@ -263,7 +310,7 @@ class IterateNode implements IFlowNode, IFlowNodeConfigKeys
         $seed     = $items;
 
         for ($index = 0; $index < $max; $index++) {
-            $scoped              = $context;
+            $scoped = $context;
             $scoped['iteration'] = [
                 'index' => $index,
                 'first' => ($index === 0),

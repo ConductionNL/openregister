@@ -292,9 +292,17 @@ class GenericStoreService
         }
 
         // Some OpenRegister responses are a bare list; accept that too.
+        // A non-list decode is treated as no results rather than passed through:
+        // callers iterate this, and handing them an associative array would
+        // iterate its VALUES as if they were records.
+        $results = [];
+        if (array_is_list($decoded) === true) {
+            $results = $decoded;
+        }
+
         return [
             'outcome' => self::OUTCOME_OK,
-            'results' => (array_is_list($decoded) === true ? $decoded : []),
+            'results' => $results,
         ];
 
     }//end decodeBody()

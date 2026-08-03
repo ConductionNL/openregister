@@ -50,6 +50,28 @@ class FlowNodeRegistry
     private array $nodes = [];
 
     /**
+     * Node ids that were corrected, mapped old => new.
+     *
+     * A node id is a reference the SYSTEM writes into a flow definition, unlike
+     * a Twig function name which a person types into a template — so unlike
+     * those, an id can be corrected and the stored data migrated. A migration
+     * rewrites existing rows; this alias covers the tail the migration cannot
+     * reach: a flow exported before the rename and imported after it.
+     *
+     * Resolving through here is LOGGED, so the size of that tail is observable
+     * rather than assumed to be zero. The alias is removed one release after the
+     * rename.
+     *
+     * @var array<string, string>
+     */
+    private const RENAMED = [
+        // Renamed because it never looped: it splits items into fixed-size
+        // batches. Sitting next to the real `openregister.iterate`, the old name
+        // was a trap that re-armed for every new reader.
+        'openregister.loop' => 'openregister.batch',
+    ];
+
+    /**
      * Whether contribution has already been collected this request.
      *
      * @var boolean
@@ -213,6 +235,21 @@ class FlowNodeRegistry
     public function get(string $type): IFlowNode
     {
         $this->load();
+
+        if (isset($this->nodes[$type]) === false && isset(self::RENAMED[$type]) === true) {
+            $this->logger->info(
+                message: sprintf(
+                    '[FlowNodeRegistry] Flow node "%s" was renamed to "%s"; resolving via the '
+                    .'compatibility alias. A flow definition still references the old id.',
+                    $type,
+                    self::RENAMED[$type]
+                ),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            $type = self::RENAMED[$type];
+        }
+
         if (isset($this->nodes[$type]) === false) {
             throw new UnexpectedValueException(
                 sprintf('No app provides the flow node type "%s". Is the app that owns it installed and enabled?', $type)
