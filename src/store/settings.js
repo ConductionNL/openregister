@@ -71,6 +71,20 @@ export const useSettingsStore = defineStore('settings', {
 			adminOverride: true,
 		},
 
+		// Flow-engine instance policy. Administrator settings, not personal
+		// preferences: how long run history is kept, whether every hop is
+		// audit-trailed, and whether the oversight gate runs.
+		//
+		// `auditEnabled` and `oversightEnabled` default OPPOSITELY on purpose —
+		// auditing is write volume and opt-in, oversight is what stops a
+		// running flow and so must be on unless deliberately turned off.
+		flowOptions: {
+			retentionDays: 31,
+			auditEnabled: false,
+			oversightEnabled: true,
+			killSwitch: false,
+		},
+
 		retentionOptions: {
 			objectArchiveRetention: 31536000000, // 1 year
 			objectDeleteRetention: 63072000000, // 2 years
@@ -501,6 +515,59 @@ export const useSettingsStore = defineStore('settings', {
 		 * @param {object} retentionData - The retention settings to save
 		 * @spec exclude API passthrough to PUT /api/settings/retention
 		 */
+		/**
+		 * Load the flow-engine instance policy.
+		 *
+		 * Reads the whole settings envelope, because the flow block is served by
+		 * the generic GET rather than a dedicated endpoint. A failure leaves the
+		 * store defaults in place rather than blanking the form — showing 0 days
+		 * for a setting we could not read would invite an administrator to
+		 * "correct" it to something destructive.
+		 *
+		 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+		 * @return {Promise<void>}
+		 */
+		async loadFlowSettings() {
+			try {
+				const response = await axios.get(generateUrl('/apps/openregister/api/settings'))
+				if (response.data?.flow) {
+					this.flowOptions = { ...this.flowOptions, ...response.data.flow }
+				}
+			} catch (error) {
+				console.error('Failed to load flow settings:', error)
+			}
+		},
+
+		/**
+		 * Persist the flow-engine instance policy.
+		 *
+		 * @param {object} flowData The flow settings block.
+		 * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+		 * @return {Promise<object>} The stored settings.
+		 */
+		async updateFlowSettings(flowData) {
+			this.saving = true
+			try {
+				const response = await axios.put(
+					generateUrl('/apps/openregister/api/settings'),
+					{ flow: flowData },
+				)
+
+				if (response.data?.flow) {
+					this.flowOptions = { ...this.flowOptions, ...response.data.flow }
+				}
+
+				showSuccess(t('openregister', 'Flow settings updated'))
+				return response.data
+			} catch (error) {
+				console.error('Failed to update flow settings:', error)
+				showError(t('openregister', 'Failed to update flow settings: {error}', { error: error.message }))
+				throw error
+			} finally {
+				this.saving = false
+			}
+		},
+
 		async updateRetentionSettings(retentionData) {
 			this.saving = true
 			try {

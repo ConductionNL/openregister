@@ -144,6 +144,7 @@ use OCA\OpenRegister\Listener\AggregationThresholdListener;
 use OCA\OpenRegister\Listener\TranslationProjectionListener;
 use OCA\OpenRegister\Listener\AnnotationNotificationListener;
 use OCA\OpenRegister\Listener\EventCatalogListener;
+use OCA\OpenRegister\Listener\SchemaFlowImportListener;
 use OCA\OpenRegister\Listener\FlowEngineRegistrationListener;
 use OCA\OpenRegister\Listener\SystemEntityNotificationListener;
 use OCA\OpenRegister\Listener\NotificationDedupeAnnotationSyncListener;
@@ -2491,6 +2492,15 @@ class Application extends App implements IBootstrap
         // steps are all approved. Registered immediately after
         // LifecycleValidationListener: transition legality must be established
         // before approval-chain gating runs against it.
+        // Declared flows (`x-openregister-flows`) are MATERIALISED into the flow
+        // store on schema save, because a flow lives in its own table rather
+        // than being read off the schema at runtime like every other
+        // x-openregister-* extension. Importing on save (not only on register
+        // import) means a declared flow and a builder-authored one land in the
+        // same place, and a re-import updates rather than duplicates.
+        $context->registerEventListener(SchemaCreatedEvent::class, SchemaFlowImportListener::class);
+        $context->registerEventListener(SchemaUpdatedEvent::class, SchemaFlowImportListener::class);
+
         $context->registerEventListener(SchemaCreatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(SchemaUpdatedEvent::class, ApprovalChainAnnotationInstaller::class);
         $context->registerEventListener(ObjectUpdatingEvent::class, ApprovalChainGateListener::class);
