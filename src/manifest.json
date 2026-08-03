@@ -146,7 +146,8 @@
       "route": "/flows",
       "type": "custom",
       "component": "FlowsIndex",
-      "title": "Flows"
+      "title": "Flows",
+      "_note": "Custom page rather than type:index. A flow lives in OpenRegister's own native flow table, not in a register/schema, so the manifest's object-backed index cannot address it — index pages resolve rows through register+schema. The body is CnFlowIndexPage from the shared library, so the list, its app scoping and its status semantics stay identical across every app that shows flows."
     },
     {
       "id": "flowDetail",
@@ -154,7 +155,8 @@
       "type": "custom",
       "component": "FlowDetailPage",
       "title": "Flow",
-      "sidebarComponent": "FlowDetailSidebar"
+      "sidebarComponent": "FlowDetailSidebar",
+      "_note": "Custom page: a direct-manipulation canvas over a node/edge document is not expressible as a widget grid, and the built-in detail type is record-shaped. Controls live in the NcAppSidebar (sidebarComponent) so the canvas gets the full width; the two halves share useFlowStore because they render in different parts of the tree."
     },
     {
       "id": "webhooks",

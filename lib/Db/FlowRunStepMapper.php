@@ -85,7 +85,7 @@ class FlowRunStepMapper extends QBMapper
     public function highestSequence(string $runUuid): int
     {
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->max('sequence', 'top'))
+        $qb->selectAlias($qb->func()->max('sequence'), 'top')
             ->from($this->getTableName())
             ->where($qb->expr()->eq('run_uuid', $qb->createNamedParameter($runUuid)));
 

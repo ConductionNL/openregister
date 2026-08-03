@@ -52,7 +52,7 @@ use Throwable;
  * REST surface for inspecting and retrying flow runs.
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Two over, from the run guard's
- * ObjectService + IAppConfig. Both exist so the flow can be resolved WITH RBAC at
+ * FlowService. It exists so a flow can be resolved under the CALLER's scoping at
  * the request boundary — the resolver deliberately loads with RBAC off for the
  * engine, and inheriting that bypass here is what left retry() open to an IDOR.
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Over budget for the same
@@ -79,10 +79,6 @@ class FlowRunController extends Controller
      * @param FlowLocator          $resolvers           Resolves a flow id to its document.
      * @param IUserSession         $userSession         Attributes a retried run to the caller.
      * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
-     * @param ObjectService|null   $objectService       Resolves the flow WITH RBAC for the run guard;
-     *                                                  nullable so adding it is not a fatal at
-     *                                                  existing construction sites.
-     * @param IAppConfig|null      $flowAppConfig       Reads the flow register/schema slugs.
      * @param IGroupManager|null   $groupManager        Distinguishes an administrator, who gets
      *                                                  the unscoped run history. Nullable so
      *                                                  adding it is not a fatal at existing
@@ -97,9 +93,8 @@ class FlowRunController extends Controller
         private readonly FlowLocator $resolvers,
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
-        private readonly ?ObjectService $objectService=null,
-        private readonly ?IAppConfig $flowAppConfig=null,
-        private readonly ?IGroupManager $groupManager=null
+        private readonly ?IGroupManager $groupManager=null,
+        private readonly ?FlowService $flows=null
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -397,19 +392,7 @@ class FlowRunController extends Controller
 
     }//end retry()
 
-    /**
-     * The register flows are stored under.
-     *
-     * @var string
-     */
-    private const FLOW_REGISTER_KEY = 'flow_register';
 
-    /**
-     * The schema flows are stored under.
-     *
-     * @var string
-     */
-    private const FLOW_SCHEMA_KEY = 'flow_schema';
 
     /**
      * Refuse unless the caller may RUN this flow.
@@ -511,70 +494,17 @@ class FlowRunController extends Controller
      */
     private function flowIdsOwnedByCaller(): array
     {
-        $uid = $this->callerUid();
-        if ($uid === null || $this->objectService === null || $this->flowAppConfig === null) {
+        // Reads the NATIVE flow store. This used to enumerate flow OBJECTS in a
+        // register named by `flow_register`/`flow_schema` config — a store that
+        // no longer exists. The visibility RULE is unchanged (D7): a caller sees
+        // the runs they triggered plus the runs of flows they own.
+        if ($this->flows === null) {
             return [];
         }
 
-        try {
-            $flows = $this->objectService->findAll(
-                config: [
-                    'filters' => [
-                        'register' => $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
-                        'schema'   => $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
-                        '@self'    => ['owner' => $uid],
-                    ],
-                    'limit'   => 1000,
-                ],
-                _rbac: false
-            );
-        } catch (Throwable $e) {
-            return [];
-        }
-
-        $ids = [];
-        foreach ($flows as $flow) {
-            $id = $this->flowIdOf(flow: $flow);
-            if ($id !== null) {
-                $ids[] = $id;
-            }
-        }
-
-        return array_values(array_unique($ids));
+        return $this->flows->idsOwnedByCaller();
     }//end flowIdsOwnedByCaller()
 
-    /**
-     * The uuid of one flow, whichever shape `findAll()` returned it in.
-     *
-     * Rendered objects arrive as arrays with the uuid under `@self.id`; an
-     * unrendered entity exposes `getUuid()`. Extracted from
-     * `flowIdsOwnedByCaller()` so that method stays within the complexity budget
-     * as the shapes accumulate, and so the "which shape is this" question has one
-     * answer rather than one per call site.
-     *
-     * @param mixed $flow One element of the findAll() result.
-     *
-     * @return string|null The uuid, or null when it cannot be determined.
-     */
-    private function flowIdOf(mixed $flow): ?string
-    {
-        $id = null;
-
-        if (is_array($flow) === true) {
-            $self = ($flow['@self'] ?? null);
-            if (is_array($self) === true) {
-                $id = ($self['id'] ?? null);
-            }
-        } else if (is_object($flow) === true && method_exists($flow, 'getUuid') === true) {
-            $id = $flow->getUuid();
-        }
-
-        if (is_string($id) === true && $id !== '') {
-            return $id;
-        }
-
-        return null;
-    }//end flowIdOf()
 
     /**
      * Run a flow now and return its result — the interactive test run.

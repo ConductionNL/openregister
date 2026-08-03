@@ -401,7 +401,7 @@ class FlowRunService
      * work, the rows are the account of it.
      *
      * @param FlowRun           $run     The run these steps belong to.
-     * @param array<int, array> $entries The engine log entries for this segment.
+     * @param array<int, mixed> $entries The engine log entries for this segment.
      *
      * @return void
      *
