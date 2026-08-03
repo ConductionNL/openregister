@@ -241,12 +241,19 @@ test.describe('the Shares tab, driven through the browser', () => {
 		const uuid = await newObject()
 		const panel = await openSharesTab(page, registerId, schemaId, uuid)
 
-		// The three sections the component owns. Asserting on rendered text
+		// The three sections the component owns. Asserting on rendered content
 		// rather than on the presence of the root element: a component that
 		// mounted and then failed its first request still renders the root.
-		await expect(panel.getByText('Visibility')).toBeVisible()
-		await expect(panel.getByText('Shared with')).toBeVisible()
-		await expect(panel.getByText('Add access')).toBeVisible()
+		//
+		// By ROLE, not by text. `getByText('Shared with')` matches substrings
+		// case-insensitively, so it also resolved the empty-state paragraph
+		// "Not shared with anyone yet" and failed on strict mode with two
+		// elements — an assertion that broke on the very content it was meant to
+		// coexist with. The role also pins these as headings rather than as any
+		// element that happens to contain the words.
+		await expect(panel.getByRole('heading', { name: 'Visibility' })).toBeVisible()
+		await expect(panel.getByRole('heading', { name: 'Shared with' })).toBeVisible()
+		await expect(panel.getByRole('heading', { name: 'Add access' })).toBeVisible()
 
 		// A brand-new object has no grants, and the empty state is the proof
 		// that the grants request SUCCEEDED and came back empty — the error
