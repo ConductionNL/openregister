@@ -42,6 +42,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
 use stdClass;
@@ -71,6 +72,11 @@ class FlowRunController extends Controller
      *                                                  nullable so adding it is not a fatal at
      *                                                  existing construction sites.
      * @param IAppConfig|null      $flowAppConfig       Reads the flow register/schema slugs.
+     * @param IGroupManager|null   $groupManager        Distinguishes an administrator, who gets
+     *                                                  the unscoped run history. Nullable so
+     *                                                  adding it is not a fatal at existing
+     *                                                  construction sites; absent means "not an
+     *                                                  admin", which SCOPES rather than widens.
      */
     public function __construct(
         string $appName,
@@ -81,7 +87,8 @@ class FlowRunController extends Controller
         private readonly IUserSession $userSession,
         private readonly OrganisationService $organisationService,
         private readonly ?ObjectService $objectService=null,
-        private readonly ?IAppConfig $flowAppConfig=null
+        private readonly ?IAppConfig $flowAppConfig=null,
+        private readonly ?IGroupManager $groupManager=null
     ) {
         parent::__construct(appName: $appName, request: $request);
 
@@ -116,11 +123,27 @@ class FlowRunController extends Controller
             $statusFilter = (string) $status;
         }
 
+        // Scope the history. Until this landed the endpoint returned EVERY run on
+        // the instance to any authenticated caller — including each run's log,
+        // which records the subject data the flow touched. Design D7 of
+        // `shared-credentials-and-flows`: a recipient sees their OWN runs; runs
+        // triggered by the owner or by other recipients stay invisible.
+        //
+        // A null uid means no scoping, which is correct only for an administrator.
+        $requesterUid = null;
+        $ownedFlowIds = [];
+        if ($this->isAdmin() === false) {
+            $requesterUid = $this->callerUid();
+            $ownedFlowIds = $this->flowIdsOwnedByCaller();
+        }
+
         $runs = $this->mapper->findAllRuns(
             flowId: $flowFilter,
             status: $statusFilter,
             limit: $limit,
-            offset: $offset
+            offset: $offset,
+            requesterUid: $requesterUid,
+            ownedFlowIds: $ownedFlowIds
         );
 
         return new JSONResponse(
@@ -144,9 +167,14 @@ class FlowRunController extends Controller
      *
      * Scoping is strict (see FlowRunMapper::findActive): a caller with no
      * resolvable organisation gets an empty list rather than everybody's runs.
-     * The full history surface (`index`) is unchanged and still unscoped —
-     * this endpoint exists precisely so that widening visibility of run
-     * activity to every user of every app does not widen it across tenants.
+     *
+     * The two surfaces scope DIFFERENTLY on purpose. This one is a tenant view of
+     * live activity — a dashboard widget, deliberately showing the organisation's
+     * runs. `index()` is the history surface, and history carries each run's LOG,
+     * which records the subject data the flow touched; it is therefore scoped per
+     * CALLER (runs you triggered, plus runs of flows you own) per design D7 of
+     * `shared-credentials-and-flows`. Until that landed `index()` was unscoped and
+     * returned every run on the instance to any authenticated user.
      *
      * @return JSONResponse `{results, total, limit}` — the live runs.
      *
@@ -421,6 +449,112 @@ class FlowRunController extends Controller
 
         return null;
     }//end refuseUnlessRunnable()
+
+    /**
+     * The current caller's uid, or null when anonymous.
+     *
+     * @return string|null
+     */
+    private function callerUid(): ?string
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return null;
+        }
+
+        return $user->getUID();
+    }//end callerUid()
+
+    /**
+     * Whether the caller is a Nextcloud administrator.
+     *
+     * Fails CLOSED — no group manager, or no session, means "not an admin", so
+     * the caller gets the scoped view rather than the unscoped one. The scoping
+     * switch in `index()` treats a null uid as "no scoping", which is only ever
+     * correct for an administrator; combined with this method returning false for
+     * an anonymous caller, `index()` must and does resolve a real uid before it
+     * can skip scoping.
+     *
+     * @return boolean
+     */
+    private function isAdmin(): bool
+    {
+        if ($this->groupManager === null) {
+            return false;
+        }
+
+        $uid = $this->callerUid();
+        if ($uid === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($uid);
+    }//end isAdmin()
+
+    /**
+     * Flow ids the caller owns.
+     *
+     * Resolved in ONE query rather than per run: the owner filter is a metadata
+     * filter, and OpenRegister only recognises those NESTED under `@self` — a bare
+     * `owner` key is read as a filter on a schema PROPERTY called `owner`, which
+     * the flow schema does not have, so it silently matches nothing and this would
+     * return an empty list for everybody. `_rbac: false` is deliberate and safe:
+     * the query is already constrained to objects owned by this exact uid, so RBAC
+     * could only narrow a set the caller is by definition entitled to.
+     *
+     * Degrades to an empty list, which NARROWS the run history rather than
+     * widening it — the safe direction for a failure in a visibility filter.
+     *
+     * @return array<int, string> The owned flow ids (uuids), possibly empty.
+     */
+    private function flowIdsOwnedByCaller(): array
+    {
+        $uid = $this->callerUid();
+        if ($uid === null || $this->objectService === null || $this->flowAppConfig === null) {
+            return [];
+        }
+
+        try {
+            $flows = $this->objectService->findAll(
+                config: [
+                    'filters' => [
+                        'register' => $this->flowAppConfig->getValueString('openregister', self::FLOW_REGISTER_KEY, 'flows'),
+                        'schema'   => $this->flowAppConfig->getValueString('openregister', self::FLOW_SCHEMA_KEY, 'flow'),
+                        '@self'    => ['owner' => $uid],
+                    ],
+                    'limit'   => 1000,
+                ],
+                _rbac: false
+            );
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        if (is_array($flows) === false) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($flows as $flow) {
+            $self = null;
+            if (is_array($flow) === true) {
+                $self = ($flow['@self'] ?? null);
+            }
+
+            $id = null;
+            if (is_array($self) === true) {
+                $id = ($self['id'] ?? null);
+            } else if (is_object($flow) === true && method_exists($flow, 'getUuid') === true) {
+                $id = $flow->getUuid();
+            }
+
+            if (is_string($id) === true && $id !== '') {
+                $ids[] = $id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }//end flowIdsOwnedByCaller()
 
     /**
      * Run a flow now and return its result — the interactive test run.

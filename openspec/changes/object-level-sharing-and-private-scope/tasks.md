@@ -240,7 +240,23 @@
       "the row is visible" cannot pass for a row that was never private.
 - [ ] 9.2 Give flows run authorization: `flowRun#test`, `flowRun#retry` and `FlowMcpToolProvider::runFlow()` all run a flow with zero ownership checks today
 - [ ] 9.3 Only then enable `credentialIdentity: owner` from `shared-credentials-and-flows` — until run authorization exists, any authenticated user could run someone else's flow and cause calls signed with that owner's secret
-- [ ] 9.4 Scope run history to the requester for a share recipient (that change's design D7)
+- [x] 9.4 Scope run history to the requester for a share recipient (that change's design D7).
+      The task understated it: `FlowRunController::index()` had NO scoping at all —
+      `findAllRuns()` filtered only by flowId and status — so any authenticated user could list
+      EVERY run on the instance, including each run's log, which records the subject data the
+      flow touched. That is the exposure D7 exists to prevent, and it was live for everyone, not
+      only for share recipients. Now scoped per caller: runs you TRIGGERED, plus runs of flows
+      you OWN. The second disjunct is load-bearing because `triggered_by` is NULL for cron- and
+      trigger-fired runs, so "only runs you triggered" would have blinded a flow's own owner to
+      every automated run of it. Owned flow ids resolve in ONE query, not per run, and the owner
+      filter is NESTED under `@self` — a bare `owner` key is read as a filter on a schema
+      PROPERTY, which the flow schema does not have, so it silently matches nothing. An
+      administrator still gets the unscoped view; `isAdmin()` fails CLOSED, so a missing group
+      manager or session scopes rather than widens, and an empty owned-list narrows to "runs I
+      triggered" rather than collapsing to nothing or to everything. Four live-DB tests, and the
+      control is the discriminating half: with the predicate disabled 3 of the 4 fail (another
+      user's run visible, an unowned cron run visible, everybody's runs visible on an empty
+      owned-list) while the null-requester admin test correctly still passes.
 
 ## 10. e2e (Playwright) and verification
 
