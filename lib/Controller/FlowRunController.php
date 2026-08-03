@@ -51,10 +51,21 @@ use Throwable;
 /**
  * REST surface for inspecting and retrying flow runs.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Two over, from the run guard's
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Two over, from the run guard's
  * ObjectService + IAppConfig. Both exist so the flow can be resolved WITH RBAC at
  * the request boundary — the resolver deliberately loads with RBAC off for the
  * engine, and inheriting that bypass here is what left retry() open to an IDOR.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Over budget for the same
+ * reason: the two authorization concerns this controller now carries — the run
+ * guard (retry/test may not run somebody else's flow) and history scoping (a run
+ * log is subject data, so it is visible per caller) — are both request-boundary
+ * checks. They belong at the boundary rather than in the engine, which is
+ * deliberately unauthenticated because it runs flows as their owner with no
+ * session. Moving them out would either re-open the bypass or add a second
+ * indirection over four small private helpers.
+ * @SuppressWarnings(PHPMD.ExcessiveParameterList)   Ten constructor parameters, the
+ * last three nullable-with-default precisely so adding them broke no existing
+ * construction site. They are collaborators of those same guards, not options.
  */
 class FlowRunController extends Controller
 {
@@ -530,31 +541,49 @@ class FlowRunController extends Controller
             return [];
         }
 
-        if (is_array($flows) === false) {
-            return [];
-        }
-
         $ids = [];
         foreach ($flows as $flow) {
-            $self = null;
-            if (is_array($flow) === true) {
-                $self = ($flow['@self'] ?? null);
-            }
-
-            $id = null;
-            if (is_array($self) === true) {
-                $id = ($self['id'] ?? null);
-            } else if (is_object($flow) === true && method_exists($flow, 'getUuid') === true) {
-                $id = $flow->getUuid();
-            }
-
-            if (is_string($id) === true && $id !== '') {
+            $id = $this->flowIdOf(flow: $flow);
+            if ($id !== null) {
                 $ids[] = $id;
             }
         }
 
         return array_values(array_unique($ids));
     }//end flowIdsOwnedByCaller()
+
+    /**
+     * The uuid of one flow, whichever shape `findAll()` returned it in.
+     *
+     * Rendered objects arrive as arrays with the uuid under `@self.id`; an
+     * unrendered entity exposes `getUuid()`. Extracted from
+     * `flowIdsOwnedByCaller()` so that method stays within the complexity budget
+     * as the shapes accumulate, and so the "which shape is this" question has one
+     * answer rather than one per call site.
+     *
+     * @param mixed $flow One element of the findAll() result.
+     *
+     * @return string|null The uuid, or null when it cannot be determined.
+     */
+    private function flowIdOf(mixed $flow): ?string
+    {
+        $id = null;
+
+        if (is_array($flow) === true) {
+            $self = ($flow['@self'] ?? null);
+            if (is_array($self) === true) {
+                $id = ($self['id'] ?? null);
+            }
+        } else if (is_object($flow) === true && method_exists($flow, 'getUuid') === true) {
+            $id = $flow->getUuid();
+        }
+
+        if (is_string($id) === true && $id !== '') {
+            return $id;
+        }
+
+        return null;
+    }//end flowIdOf()
 
     /**
      * Run a flow now and return its result — the interactive test run.
