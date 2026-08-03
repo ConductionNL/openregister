@@ -42,6 +42,9 @@ const OWNER = 'e2e-owner'
 const OTHER = 'e2e-other'
 const PASS = 'E2e-Share-Pass-123'
 
+/** Seeded group whose only member is OTHER — see tests/e2e/ci/seed.sh. */
+const GROUP = 'e2e-grantees'
+
 /** Build an API context authenticated as one user. */
 async function contextFor(user: string, password: string): Promise<APIRequestContext> {
 	return pwRequest.newContext({
@@ -354,6 +357,72 @@ test.describe('the Shares tab, driven through the browser', () => {
 			await statusFor(other, registerId, schemaId, uuid),
 			'a revoked user can still reach the object — revocation takes effect on the NEXT '
 			+ 'request, so this is not a propagation delay',
+		).toBeGreaterThanOrEqual(400)
+	})
+
+	/*
+	 * THE GROUP PATH, which is the one that was silently broken.
+	 *
+	 * The tab posted `shareType: 0 | 1` — a key
+	 * ObjectSharingController::createShare() does not read — so it fell through to
+	 * the controller's 'user' default and picking "Group" created a USER grant to
+	 * a uid spelled like the group name. A user grant worked by coincidence, so
+	 * every UI test that used one stayed green (nextcloud-vue#591).
+	 *
+	 * Access is checked as OTHER, who is in the group and is named nowhere in the
+	 * grant. That is the whole discriminator: under the old behaviour the share
+	 * went to a nonexistent user called "e2e-grantees" and OTHER got nothing.
+	 */
+	test('granting to a GROUP in the UI reaches a member of that group', async ({ page }) => {
+		const uuid = await newObject()
+
+		const put = await owner.put(
+			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}/scope`,
+			{ data: { scope: 'private' } },
+		)
+		expect(put.ok(), `could not set the scope: ${await put.text()}`).toBeTruthy()
+
+		expect(
+			await statusFor(other, registerId, schemaId, uuid),
+			'the group member must be locked out before the grant, or the grant proves nothing',
+		).toBeGreaterThanOrEqual(400)
+
+		const panel = await openSharesTab(page, registerId, schemaId, uuid)
+
+		await panel.getByRole('combobox').click()
+		await page.getByRole('option', { name: 'Group' }).click()
+
+		// The label changing to "Group name" is how we know the select changed the
+		// component's state and not merely its own display.
+		await panel.getByRole('textbox', { name: 'Group name' }).fill(GROUP)
+		await panel.getByRole('button', { name: 'Share', exact: true }).click()
+
+		await expect(
+			panel.locator('.cn-object-access-tab__row'),
+			'no grant row appeared after granting to a group',
+		).toHaveCount(1, { timeout: 20_000 })
+
+		// A sanity check only, NOT the discriminator: the row renders
+		// `sharedWith`, which was the group's name under the broken behaviour
+		// too — the share went to a nonexistent USER called "e2e-grantees" and
+		// still displayed "e2e-grantees". This line would have passed either way.
+		await expect(panel.locator('.cn-object-access-tab__row')).toContainText(GROUP)
+
+		// THIS is the discriminator. OTHER is named nowhere in the grant and can
+		// only have gained access through group membership, so a user share
+		// spelled like the group leaves them locked out.
+		expect(
+			await statusFor(other, registerId, schemaId, uuid),
+			'a member of the granted group cannot reach the object — the grant was probably '
+			+ 'created as a USER share named after the group',
+		).toBeLessThan(300)
+
+		await panel.getByRole('button', { name: 'Revoke access' }).click()
+		await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(0, { timeout: 20_000 })
+
+		expect(
+			await statusFor(other, registerId, schemaId, uuid),
+			'the group member still has access after the group grant was revoked',
 		).toBeGreaterThanOrEqual(400)
 	})
 
