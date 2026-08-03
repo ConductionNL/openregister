@@ -214,7 +214,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															<Check v-if="isCopied" :size="16" />
 															<ContentCopy v-else :size="16" />
 														</template>
-														{{ isCopied ? 'Copied' : 'Copy' }}
+														{{ isCopied ? t('openregister', 'Copied') : t('openregister', 'Copy') }}
 													</NcButton>
 												</td>
 											</tr>
@@ -570,7 +570,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<NcLoadingIcon v-if="isSaving" :size="20" />
 						<ContentSave v-else :size="20" />
 					</template>
-					{{ isSaving ? (isNewObject ? 'Creating...' : 'Saving...') : (isNewObject ? 'Create' : 'Save') }}
+					{{ isSaving ? (isNewObject ? t('openregister', 'Creating...') : t('openregister', 'Saving...')) : (isNewObject ? t('openregister', 'Create') : t('openregister', 'Save')) }}
 				</NcButton>
 			</template>
 		</NcDialog>

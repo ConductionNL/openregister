@@ -20,7 +20,7 @@
 					Please wait while objects are being processed. This may take several minutes depending on the amount of data and configuration.
 				</p>
 				<div class="loading-details">
-					<p><strong>Mode:</strong> {{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
+					<p><strong>{{ t('openregister', 'Mode:') }}</strong> {{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</p>
 					<p><strong>Max Objects:</strong> {{ config.maxObjects === 0 ? 'All' : config.maxObjects }}</p>
 					<p><strong>Batch Size:</strong> {{ config.batchSize }}</p>
 					<p><strong>Error Handling:</strong> {{ config.collectErrors ? 'Collect all errors' : 'Stop on first error' }}</p>
@@ -46,7 +46,7 @@
 				<div v-if="!results.success && results.error" class="error-banner">
 					<div class="error-header">
 						<span class="error-icon">⚠️</span>
-						<h5>Error Details</h5>
+						<h5>{{ t('openregister', 'Error Details') }}</h5>
 					</div>
 					<div class="error-content">
 						<div class="error-message">
@@ -136,7 +136,7 @@
 					<h5>Configuration Used</h5>
 					<div class="config-grid">
 						<div class="config-item">
-							<span class="config-label">Mode:</span>
+							<span class="config-label">{{ t('openregister', 'Mode:') }}</span>
 							<span class="config-value">{{ config.mode === 'serial' ? 'Serial' : 'Parallel' }}</span>
 						</div>
 						<div class="config-item">
