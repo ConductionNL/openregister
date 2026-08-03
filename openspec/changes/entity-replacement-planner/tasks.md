@@ -10,17 +10,19 @@
 
 ## 2. Boundary policy and case folding
 
-- [ ] 2.1 Add `lib/Service/File/Anonymisation/BoundaryPolicy.php` resolving a policy per entity type from the canonical constants (`lib/Service/TextExtraction/EntityRecognitionHandler.php:64-73`). Word-bounded: `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, `DATE`. Literal: `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS`. Unknown type defaults to **literal**.
+- [ ] 2.1 Add `lib/Service/File/Anonymisation/BoundaryPolicy.php` resolving one of THREE policies per entity type from the canonical constants (`lib/Service/TextExtraction/EntityRecognitionHandler.php:64-73`). Word-bounded: `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, and any unenumerated type. Delimited-token: `DATE`. Literal: `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS`. Note the unknown-type default is **bounded, not literal** — a boundary miss is reported, a literal false positive is silent.
 - [ ] 2.2 Implement the boundary test as "not adjacent to a word codepoint", where word means Unicode letter, combining mark, decimal digit or underscore. Use a `/u` pattern or explicit codepoint classification — a non-`/u` `\b` is byte-oriented and mis-fires on accented names.
 - [ ] 2.3 Apply the policy during candidate enumeration (1.3): a word-bounded needle only yields a candidate at positions satisfying the boundary test on both sides.
+- [ ] 2.3b Implement the delimited-token rule for `DATE`: reject a match that is a proper substring of a longer numeric token, where a numeric token is a digit run optionally joined by single `-`/`/`/`.`/`:` separators EACH IMMEDIATELY FOLLOWED BY A DIGIT. A separator not followed by a digit does not extend the token, so `1980` matches in `in 1980.` but not in `2026-0012` or `03.08.2026`.
 - [ ] 2.4 Implement case-insensitive matching by folding both haystack and needle with `mb_strtolower`. Keep a codepoint-offset mapping from the folded text back to the original so accepted ranges address the ORIGINAL text — required because case folding can change string length for some codepoints.
 - [ ] 2.5 Unit tests: `Jan` does not match inside `Januari`, `Bas` does not match inside `Bassin`, standalone `Jan` does match, an `IBAN` matches when flanked by word characters, a differing-case occurrence matches, an accented needle folds correctly, and a needle whose folded length differs from its original length still yields correct original-text offsets.
+- [ ] 2.5b Delimited-token tests: `2026` rejected in `Zaaknummer 2026-0012` and in `03.08.2026`, accepted before a sentence-final period, `20260803` accepted as a whole needle, `03-08-2026` accepted as a whole needle. Unknown-type test: `1234567` matches standalone but not inside `12345678`.
 
 ## 3. Residue coverage for rejected candidates
 
 - [ ] 3.1 After selection (1.5), compute for each rejected candidate the subranges not covered by any accepted range.
 - [ ] 3.2 Drop a residue consisting solely of whitespace and/or a single punctuation codepoint; cover any residue containing a letter or decimal digit. Emit covered residue as a `ReplacementRange` with `isResidue: true`, attributed to the rejected candidate's needle and placeholder.
-- [ ] 3.3 Report the rejected candidate's needle as `partial` in the plan (not unmatched) when at least one of its residue subranges was covered.
+- [ ] 3.3 Report the rejected candidate's needle as `partial` in the plan (not unmatched) when at least one of its residue subranges was covered. A `partial` finding sets `complete: false` (decided 2026-08-03, conservative) even though the needle's text is fully absent from the output.
 - [ ] 3.4 Unit tests: `Jan de Vries` / `Vries-Bakker` in `Jan de Vries-Bakker` leaves neither `Vries` nor `Bakker` and reports `Vries-Bakker` as `partial`; whitespace-only residue emits no placeholder and preserves the whitespace; a residue containing a digit is always covered.
 
 ## 4. Single-pass application and the segment abstraction
@@ -44,9 +46,9 @@
 
 - [ ] 6.1 Add a verification pass that re-checks the produced text for every needle using the SAME case folding and boundary policy as matching (tasks 2.2 and 2.4).
 - [ ] 6.2 Populate `lastResidualEntities` (`:1393`) from the plan's unmatched needles plus the verification pass, for the plain-text, office-container and docx branches. Reuse the existing `{text, type, id}` record construction and placeholder-parsing regex (`:1379-1394`) rather than duplicating it — extract it to a private helper (ADR-011).
-- [ ] 6.3 Report `partial` needles alongside residuals so the caller can distinguish a split redaction from an unredacted entity.
+- [ ] 6.3 Report findings in TWO kinds — `unmatched` (text may remain) and `partial` (split-matched, text gone). Both set `complete: false`; `residual_count` counts ONLY `unmatched`, preserving its meaning for existing consumers. Ensure nothing reads `complete: false` as "PII remains".
 - [ ] 6.4 Confirm the anonymise response surface reports `complete: false` with a matching `residual_count` for a non-PDF file with residuals, per the contract at `openspec/specs/pdf-anonymisation/spec.md:165-188`. Logs stay PII-free (ADR-005); residual text is carried only in the authenticated response.
-- [ ] 6.5 Tests: a docx with an unreachable occurrence reports a residual record and `complete: false`; a fully redacted plain-text file reports an empty residual list and `complete: true`. Both are currently impossible to fail because those paths never populate the list.
+- [ ] 6.5 Tests: a docx with an unreachable occurrence reports an `unmatched` record and `complete: false`; a cleanly redacted plain-text file reports an empty list and `complete: true`; a split-matched document reports a `partial` finding with `complete: false` and `residual_count: 0`. The first two are currently impossible to fail because those paths never populate the list.
 
 ## 7. PDF path reconciliation
 

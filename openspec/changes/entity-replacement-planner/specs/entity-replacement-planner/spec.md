@@ -49,7 +49,9 @@ Because a containing needle always covers strictly more codepoints than a needle
 
 When a candidate is rejected because it overlaps an accepted range, any of its codepoints not covered by any accepted range MUST themselves be redacted, attributed to the rejected candidate's entity. A residue consisting solely of whitespace and/or a single punctuation codepoint MUST be dropped instead; any residue containing a letter or a decimal digit MUST be covered.
 
-The needle MUST be reported as `partial` in the plan — matched, but not as one contiguous span — so callers can distinguish a clean redaction from a split one.
+The needle MUST be reported as `partial` in the plan — matched, but not as one contiguous span — so callers can distinguish a clean redaction from a split one. A `partial` needle MUST also make the result **incomplete** (see "Every format MUST report unmatched and partially matched entities"), even though its text is fully absent from the output.
+
+That is a deliberately conservative choice. A split match satisfies the no-PII-in-output constraint, so `complete: true` would be defensible on redaction grounds alone; it is nevertheless reported as incomplete because a split match means the detected entities overlapped, which usually indicates a recognition or typing problem the operator should look at, and because the emitted output reads as two placeholders where a reader expects one name. The cost is accepted knowingly: a fully redacted document can report `complete: false`, so no consumer may treat `complete: false` as "PII remains in the output" — it means "a human should look at this".
 
 #### Scenario: A partially overlapping surname does not leak its tail
 
@@ -89,14 +91,43 @@ Any post-application verification that reports residual entity text MUST use the
 
 ### Requirement: Boundary policy MUST be resolved per entity type
 
-Free-text entity types MUST match only at word boundaries; structured-identifier types MUST match literally. A boundary is the absence of an adjacent *word codepoint*, where a word codepoint is a Unicode letter, combining mark, decimal digit or underscore. The check MUST be Unicode-aware.
+Matching MUST resolve one of three boundary policies per entity type. All boundary checks MUST be Unicode-aware; a non-`/u` `\b` is byte-oriented and mis-fires on accented names.
 
-Default classification over the canonical types (`EntityRecognitionHandler::ENTITY_TYPE_*`):
+| Policy | Rule | Types |
+|---|---|---|
+| **Word-bounded** | No adjacent *word codepoint* — a Unicode letter, combining mark, decimal digit or underscore | `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, and any type not enumerated here |
+| **Delimited-token** | Word-bounded, AND the match MUST NOT be a proper substring of a longer numeric token | `DATE` |
+| **Literal** | No boundary requirement | `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS` |
 
-- **Word-bounded:** `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, `DATE`
-- **Literal:** `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS`
+**Delimited-token** exists because a date is short and frequently numeric, so a substring match can silently corrupt an unrelated number. A numeric token is a run of decimal digits optionally joined by single separators (`-`, `/`, `.`, `:`) where each separator is **immediately followed by a digit**. A match is rejected when expanding it under that rule yields a token longer than the match itself. Sentence punctuation therefore does not block a match, because a separator not followed by a digit does not extend the token: `1980` matches in `in 1980.` but not in `2026-0012` or `03.08.2026`. A needle may itself be internally concatenated (`20260803`) or internally separated (`03-08-2026`) — the rule constrains only what surrounds the match.
 
-A type outside the enumerated set MUST default to **literal**, erring toward redaction rather than toward leaving text in place.
+**Literal** is reserved for types that are routinely concatenated to a label without a separator (`IBAN:NL91ABNA0417164300`, where a letter sits directly against the needle). A boundary requirement there would reject a genuine match and leave PII in place, which is why these types accept the false-positive risk instead.
+
+An entity type outside the enumerated set MUST default to **word-bounded**, NOT to literal. The two failure modes are not equally visible: a boundary miss means the needle matches nowhere and is therefore reported as residual, whereas a literal false positive silently over-redacts or corrupts a longer string and no check detects it. Defaulting to the policy whose failures surface in the report is the safer choice, and the concatenated-label rationale that justifies literal does not generalise to unknown types.
+
+#### Scenario: A date is not matched inside a longer number
+
+- **GIVEN** a map with `"2026"` → `[DATUM: 4]`, type `DATE`
+- **AND** the text `Zaaknummer 2026-0012, besloten op 3 augustus 2026.`
+- **WHEN** the plan is applied
+- **THEN** the `2026` in `Zaaknummer 2026-0012` is NOT replaced, and the case number is present unmodified
+- **AND** the trailing `2026` before the sentence-final period IS replaced
+- **AND** the sentence-final period is preserved
+
+#### Scenario: An internally concatenated date is matched as a whole
+
+- **GIVEN** a map with `"20260803"` → `[DATUM: 4]`, type `DATE`
+- **AND** the text `Datum 20260803 vastgesteld`
+- **WHEN** the plan is applied
+- **THEN** the date is replaced
+
+#### Scenario: An unknown entity type is word-bounded, not literal
+
+- **GIVEN** a map with `"1234567"` → `[POLISNUMMER: 5]` whose type is not one of the enumerated canonical types
+- **AND** the text `polis 1234567 en referentie 12345678`
+- **WHEN** the plan is applied
+- **THEN** the standalone `1234567` is replaced
+- **AND** `12345678` is present unmodified
 
 #### Scenario: A short free-text name does not match inside an ordinary word
 
@@ -162,9 +193,20 @@ When writing an accepted range back:
 
 ### Requirement: Every format MUST report unmatched and partially matched entities
 
-For every supported format the implementation MUST populate the residual report — the needles the plan could not match at all, plus those reported `partial` — using the record shape and best-effort (not fail-closed) policy already defined by `pdf-anonymisation`. A format that cannot detect residuals MUST NOT report a result as `complete`.
+For every supported format the implementation MUST populate the report using the record shape and best-effort (not fail-closed) policy already defined by `pdf-anonymisation`. A format that cannot detect residuals MUST NOT report a result as `complete`.
 
 A path that silently produces a partially anonymised document while reporting an empty residual list is non-conforming.
+
+The report MUST distinguish **two kinds** of finding, because they demand different operator responses:
+
+| Kind | Meaning | Operator response |
+|---|---|---|
+| `unmatched` | The needle matched nothing. **Its text may still be present in the output.** | Add a manual entity, adjust skip decisions, re-run. The document is not safe to publish as-is. |
+| `partial` | The needle was split-matched. Its text is fully absent, but redaction required more than one range. | Review the overlapping detections; the output is safe but reads awkwardly. |
+
+Both kinds MUST set `complete: false`. `complete: true` therefore means "every needle matched cleanly as a single span", and `complete: false` means "a human should review this" — it MUST NOT be read as "PII remains in the output", because a `partial`-only result is fully redacted. Consumers MUST consult the kind to decide whether the document is publishable.
+
+`residual_count` MUST continue to count `unmatched` findings, preserving its existing meaning for current consumers. `partial` findings MUST be counted separately.
 
 **Reporting MUST NOT block.** A detected residual MUST NOT cause the anonymisation to fail, throw, or withhold its output. The output file MUST still be produced and persisted, and the response MUST still be a success with `complete: false` and the residual list. This requirement exists to make the report a diagnostic the operator iterates on — add manual entities, adjust skip decisions, re-run — and explicitly NOT a gate. Extending detection to formats that previously reported nothing means more documents will report `complete: false` than before; that MUST surface as information, never as a refusal to deliver the file.
 
@@ -180,10 +222,20 @@ Turning residual detection into a blocking condition on any path is a product de
 
 #### Scenario: A fully redacted plain-text document reports no residuals
 
-- **GIVEN** a plain-text document where every entity occurrence is matched and replaced
+- **GIVEN** a plain-text document where every entity occurrence is matched and replaced as a single span
 - **WHEN** anonymisation completes
 - **THEN** `getLastResidualEntities()` returns an empty array
 - **AND** the response reports `complete: true`
+
+#### Scenario: A split match reports incomplete even though no entity text remains
+
+- **GIVEN** the text `Betreft: Jan de Vries-Bakker`
+- **AND** a map with `"Jan de Vries"` → `[PERSOON: 1]` and `"Vries-Bakker"` → `[PERSOON: 2]`
+- **WHEN** anonymisation completes
+- **THEN** the output contains neither `Vries` nor `Bakker`
+- **AND** `"Vries-Bakker"` is reported as a `partial` finding, not as `unmatched`
+- **AND** the response reports `complete: false`
+- **AND** `residual_count` is `0`, because no needle went unmatched
 
 ### Requirement: The planner MUST NOT alter entity identity, typing or placeholder text
 

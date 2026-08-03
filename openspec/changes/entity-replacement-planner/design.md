@@ -60,20 +60,29 @@ Rationale: leaving identifying text in the output is a worse outcome than an adj
 
 A residue consisting only of whitespace or a single punctuation codepoint is dropped rather than redacted — it carries no information and would produce noise. Any residue containing a letter or digit is always covered.
 
-The affected needle is reported as `partial` in the plan: it *was* matched, but not as a single span. Callers surface it alongside residuals so an operator can see the document was split-matched rather than cleanly redacted.
+The affected needle is reported as `partial` in the plan: it *was* matched, but not as a single span.
+
+**Decided 2026-08-03: a `partial` finding sets `complete: false`.** Redaction-wise `complete: true` would be defensible — a split-matched needle's text is entirely absent — but the conservative reading was chosen: an overlap usually means recognition produced competing or mis-typed entities, which a human should see, and the output reads as two placeholders where one name is expected. The accepted cost is that `complete: false` no longer implies PII remains. It now means "a human should review this", and consumers must consult the finding *kind* (`unmatched` vs `partial`) to decide publishability. `residual_count` keeps counting only `unmatched`, so existing consumers are not silently re-pointed at a different quantity.
 
 ### Decision 4: Per-type boundary policy — free text bounded, structured literal
 
-Resolved from the canonical constants in `EntityRecognitionHandler` (`:64-73`; PERSON, ORGANIZATION, LOCATION, EMAIL, PHONE, ADDRESS, DATE, IBAN, SSN, IP_ADDRESS):
+Resolved from the canonical constants in `EntityRecognitionHandler` (`:64-73`; PERSON, ORGANIZATION, LOCATION, EMAIL, PHONE, ADDRESS, DATE, IBAN, SSN, IP_ADDRESS). Three policies, settled 2026-08-03:
 
 | Policy | Types | Why |
 |---|---|---|
-| **Word-bounded** | `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, `DATE` | Short free-text values collide with ordinary words — `Jan` inside `Januari`, `Bas` inside `Bassin`. Over-redaction destroys utility and currently goes unreported. |
-| **Literal** | `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS` | Long, distinctive and syntactically self-delimiting, so false positives are negligible; and they legitimately abut punctuation and appear inside larger tokens, where a boundary rule would reject a real match and leave PII behind. |
+| **Word-bounded** | `PERSON`, `ORGANIZATION`, `LOCATION`, `ADDRESS`, and any unenumerated type | Short free-text values collide with ordinary words — `Jan` inside `Januari`, `Bas` inside `Bassin`. |
+| **Delimited-token** | `DATE` | Word-bounded, plus the match may not be a proper substring of a longer numeric token. Dates are short and often numeric, so a substring hit corrupts unrelated numbers — a case number `2026-0012` must not become `[DATUM: 4]-0012`. |
+| **Literal** | `EMAIL`, `PHONE`, `IBAN`, `SSN`, `IP_ADDRESS` | Routinely concatenated to a label with no separator (`IBAN:NL91ABNA…`), where a letter sits directly against the needle and a boundary rule would reject a genuine match and leave PII behind. |
 
-A boundary is "not adjacent to a word codepoint", where word means letter, combining mark, decimal digit or underscore — Unicode-aware, because `\b` in a non-`/u` pattern is byte-oriented and would mis-fire on any accented Dutch name. Types outside the enumerated set default to **literal**, erring toward redaction.
+A boundary is "not adjacent to a word codepoint" — letter, combining mark, decimal digit or underscore — Unicode-aware, because `\b` in a non-`/u` pattern is byte-oriented and mis-fires on any accented Dutch name.
 
-Rejected: a global word-boundary rule. It would suppress legitimate structured-identifier matches. Rejected: no boundary rule (status quo). It over-redacts every short name.
+**Why delimited-token rather than literal spaces.** The stated requirement was that a date be "separated by spaces on either side, but internally may be concatenated". Taken literally that breaks the commonest form a date takes: `op 3 augustus 2026.` has no trailing space, so a space-on-both-sides rule would miss it. A numeric token is therefore defined as a run of digits optionally joined by single separators (`-`, `/`, `.`, `:`) where each separator is **immediately followed by a digit**; a match is rejected if expanding under that rule yields something longer than the match. Sentence punctuation does not extend a token (`1980.` → token `1980`), while `2026-0012` and `03.08.2026` do. Internal concatenation (`20260803`) and internal separation (`03-08-2026`) are unaffected, since the rule constrains only what surrounds the match.
+
+**Why unenumerated types are bounded, not literal.** This reverses the first draft of this design. The two failure modes differ in *visibility*: a boundary miss leaves the needle matching nothing, which the report surfaces as `unmatched`; a literal false positive over-redacts or corrupts a longer string and nothing detects it. Defaulting to the policy whose failures are observable is the safer choice once reporting exists on every path, and the concatenated-label rationale that earns `literal` its place does not generalise to a custom type like `POLISNUMMER`.
+
+Rejected: a global word-boundary rule — it suppresses legitimate structured-identifier matches. Rejected: no boundary rule (status quo) — it over-redacts every short name.
+
+Related context, not a requirement here: the intent is that `DATE` entities are not anonymised by default at all, since only birth dates warrant it. No such gate was found in openregister — the only DATE-specific logic is `RiskLevelService.php:87` classifying it `RISK_LOW` / `CATEGORY_TEMPORAL_DATA`, and selection is per-entity operator skip decisions (`findSkippedEntityValuesForFile`), not type-level. So the default is either DocuDesk-side or not yet implemented; it needs confirming there. The boundary policy must be correct regardless, because an operator can always select a date.
 
 ### Decision 5: Case-insensitive matching, applied consistently to verification
 
@@ -156,7 +165,11 @@ Two port-specific notes:
 
 ## Open Questions
 
-- Should residual text ever be a blocking condition on any path? Today it is not — on PDF or anywhere else. The default answer this change assumes is **no**, and it states that as a requirement. The question is recorded only so that a future product decision to gate on residuals is made deliberately, with the cost understood: better detection would then mean more refused documents, and the operator's iterate-and-re-run remedy would be replaced by a hard stop. Note the stale comment at `PdfTextReplacer.php:362` describes a fail-closed policy the code does not implement, so anyone reading the code alone may believe blocking already exists.
-- Is `DATE` correctly classified as word-bounded? A bare year is the ambiguous case and the answer may differ between a date-of-birth and a document date.
-- Should a `partial` (split-matched) needle count toward `complete: false` in the response, or is it a third state? Reporting it as complete hides that redaction was structurally awkward; reporting it as incomplete may make well-redacted documents look failed.
-- Does DocuDesk's grondslagen-summary need to distinguish `unmatched` from `partial` residuals, or is one list enough?
+**Settled 2026-08-03** (moved out of this list, recorded at their decisions above): residuals never block; `DATE` uses the delimited-token policy; unenumerated types default to word-bounded, not literal; a `partial` finding sets `complete: false`.
+
+Still open:
+
+- **Does DocuDesk's grondslagen-summary distinguish `unmatched` from `partial`?** It now has to, at minimum to avoid treating a `partial`-only result as unpublishable — that document is fully redacted. Cross-app, and a blocker for the operator-facing half of this being useful.
+- **Is the birth-dates-only default for `DATE` implemented anywhere?** Not found in openregister (see Decision 4). Needs confirming on the DocuDesk side, or building.
+- **Should the numeric structured types adopt delimited-token too?** `SSN`, `PHONE` and `IBAN` are `literal`, so `123456789` can match inside `1234567890` and silently corrupt it — the same defect delimited-token was introduced to fix for `DATE`. The counter-argument is the one that put them in `literal`: `BSN123456789` with no separator would then be rejected. A hybrid (delimited-token, but allow a directly-adjacent letter run that is not itself digit-adjacent) would cover both, at the cost of a rule nobody will remember. Deliberately left for a follow-up rather than widened here.
+- **Does the residue-coverage rule need a length floor?** A residue of one or two letters is redacted today if it contains a letter. `[PERSOON: 1][PERSOON: 2]` where the second placeholder covers a two-character fragment may be worse for the reader than leaving the fragment, which is not identifying on its own. No evidence either way yet.
