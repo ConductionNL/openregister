@@ -272,6 +272,28 @@
 								:object-id="String(relationContext.id)"
 								surface="detail-page" />
 						</AppTab>
+						<!--
+							Shares (group 6.2). The tab is gated on relationContext
+							rather than rendered unconditionally: CnObjectAccessTab
+							declares register / schema / objectId as REQUIRED, and it
+							issues its first GET on mount. Rendered against a
+							half-populated object it would both throw the missing-prop
+							warnings and fire a request at
+							`/api/objects/undefined/undefined/undefined/shares`.
+
+							The component owns the scope switch as well as the grant
+							list, so this one tab is the whole per-object access
+							surface — the ceiling rule (a share never exceeds the
+							sharer's own access) and the file coupling (a grant on the
+							object also reaches the files in its folder) are enforced
+							server-side and explained in the component's own hints.
+						-->
+						<AppTab v-if="relationContext" :title="t('openregister', 'Shares')">
+							<CnObjectAccessTab
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								:object-id="String(relationContext.id)" />
+						</AppTab>
 						<AppTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails?.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails?.results"
@@ -349,7 +371,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
-import { CnIntegrationWidget, CnPagination, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { CnIntegrationWidget, CnObjectAccessTab, CnPagination, useIntegrationRegistry } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 
@@ -384,6 +406,7 @@ export default {
 		DeckTab,
 		RelationsTab,
 		CnIntegrationWidget,
+		CnObjectAccessTab,
 	},
 	/**
 	 * Composition-API setup: expose the integration-provider registry and
