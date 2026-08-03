@@ -72,18 +72,22 @@ class FlowRunController extends Controller
     /**
      * Constructor.
      *
-     * @param string               $appName             The app id.
-     * @param IRequest             $request             The request.
-     * @param FlowRunMapper        $mapper              Reads runs.
-     * @param FlowRunService       $runner              Retries, requeues and runs.
-     * @param FlowLocator          $resolvers           Resolves a flow id to its document.
-     * @param IUserSession         $userSession         Attributes a retried run to the caller.
-     * @param OrganisationService  $organisationService Scopes the active-runs list to the caller's tenant.
-     * @param IGroupManager|null   $groupManager        Distinguishes an administrator, who gets
-     *                                                  the unscoped run history. Nullable so
-     *                                                  adding it is not a fatal at existing
-     *                                                  construction sites; absent means "not an
-     *                                                  admin", which SCOPES rather than widens.
+     * @param string              $appName             The app id.
+     * @param IRequest            $request             The request.
+     * @param FlowRunMapper       $mapper              Reads runs.
+     * @param FlowRunService      $runner              Retries, requeues and runs.
+     * @param FlowLocator         $resolvers           Resolves a flow id to its document.
+     * @param IUserSession        $userSession         Attributes a retried run to the caller.
+     * @param OrganisationService $organisationService Scopes the active-runs list to the caller's tenant.
+     * @param IGroupManager|null  $groupManager        Distinguishes an administrator, who gets
+     *                                                 the unscoped run history. Nullable so
+     *                                                 adding it is not a fatal at existing
+     *                                                 construction sites; absent means "not an
+     *                                                 admin", which SCOPES rather than widens.
+     * @param FlowService|null    $flows               Reads which flows the caller owns, from the
+     *                                                 native flow store. Nullable for the same
+     *                                                 reason as $groupManager: absent yields no
+     *                                                 owned ids, which scopes rather than widens.
      */
     public function __construct(
         string $appName,
@@ -392,8 +396,6 @@ class FlowRunController extends Controller
 
     }//end retry()
 
-
-
     /**
      * Refuse unless the caller may RUN this flow.
      *
@@ -504,7 +506,6 @@ class FlowRunController extends Controller
 
         return $this->flows->idsOwnedByCaller();
     }//end flowIdsOwnedByCaller()
-
 
     /**
      * Run a flow now and return its result — the interactive test run.

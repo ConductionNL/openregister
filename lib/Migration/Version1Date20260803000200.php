@@ -94,7 +94,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
      */
     private IConfig $config;
 
-
     /**
      * Constructor.
      *
@@ -107,7 +106,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         $this->config = $config;
 
     }//end __construct()
-
 
     /**
      * Copy adopted flows out of the object stores and into the native table.
@@ -129,7 +127,7 @@ class Version1Date20260803000200 extends SimpleMigrationStep
      */
     public function postSchemaChange(IOutput $output, Closure $schemaClosure, array $options): void
     {
-        $sources = $this->findFlowTables($schemaClosure());
+        $sources = $this->findFlowTables(schema: $schemaClosure());
         if (empty($sources) === true) {
             $output->info('No legacy flow object stores found; nothing to backfill.');
             return;
@@ -140,16 +138,16 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         $held    = 0;
 
         foreach ($sources as $table => $app) {
-            foreach ($this->readLiveFlows($table) as $row) {
+            foreach ($this->readLiveFlows(table: $table) as $row) {
                 $uuid = ($row['_uuid'] ?? null);
-                if ($uuid === null || $uuid === '' || $this->alreadyPresent($uuid) === true) {
+                if ($uuid === null || $uuid === '' || $this->alreadyPresent(uuid: $uuid) === true) {
                     $skipped++;
                     continue;
                 }
 
                 $cron    = ($row['cron'] ?? null);
-                $enabled = $this->isTruthy($row['enabled'] ?? null);
-                if ($enabled === true && $this->cronIsTooFrequent($cron) === true) {
+                $enabled = $this->isTruthy(value: ($row['enabled'] ?? null));
+                if ($enabled === true && $this->cronIsTooFrequent(cron: $cron) === true) {
                     $enabled = false;
                     $held++;
                     $output->warning(
@@ -162,7 +160,7 @@ class Version1Date20260803000200 extends SimpleMigrationStep
                     );
                 }
 
-                $this->insertFlow($row, $app, $enabled);
+                $this->insertFlow(row: $row, app: $app, enabled: $enabled);
                 $copied++;
             }//end foreach
         }//end foreach
@@ -177,7 +175,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         );
 
     }//end postSchemaChange()
-
 
     /**
      * Every per-schema object table that carries the flow column signature.
@@ -211,13 +208,12 @@ class Version1Date20260803000200 extends SimpleMigrationStep
                 continue;
             }
 
-            $found[$name] = $this->appForTable($name, $prefix);
+            $found[$name] = $this->appForTable(table: $name, prefix: $prefix);
         }//end foreach
 
         return $found;
 
     }//end findFlowTables()
-
 
     /**
      * The app that owns a per-schema table, via its register's slug.
@@ -257,7 +253,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
 
     }//end appForTable()
 
-
     /**
      * The undeleted rows of one legacy flow table.
      *
@@ -280,7 +275,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         return $rows;
 
     }//end readLiveFlows()
-
 
     /**
      * Whether a uuid is already in the native store.
@@ -306,7 +300,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         return $found !== false && $found !== null;
 
     }//end alreadyPresent()
-
 
     /**
      * Whether a cron expression fires more often than the safe floor.
@@ -347,7 +340,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
 
     }//end cronIsTooFrequent()
 
-
     /**
      * Read a stored boolean that may be a bool, an int or a string.
      *
@@ -379,7 +371,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
 
     }//end isTruthy()
 
-
     /**
      * Write one legacy row into the native flow table.
      *
@@ -404,20 +395,20 @@ class Version1Date20260803000200 extends SimpleMigrationStep
             ->values(
                 [
                     'uuid'             => $qb->createNamedParameter((string) $row['_uuid']),
-                    'name'             => $qb->createNamedParameter($this->str($row['name'] ?? null)),
-                    'description'      => $qb->createNamedParameter($this->str($row['description'] ?? null)),
+                    'name'             => $qb->createNamedParameter($this->str(value: ($row['name'] ?? null))),
+                    'description'      => $qb->createNamedParameter($this->str(value: ($row['description'] ?? null))),
                     'app'              => $qb->createNamedParameter($app),
                     'enabled'          => $qb->createNamedParameter($enabled, 'boolean'),
-                    'trigger'          => $qb->createNamedParameter($this->str($row['trigger'] ?? null)),
-                    'trigger_register' => $qb->createNamedParameter($this->str($row['trigger_register'] ?? null)),
-                    'trigger_schema'   => $qb->createNamedParameter($this->str($row['trigger_schema'] ?? null)),
-                    'cron'             => $qb->createNamedParameter($this->str($row['cron'] ?? null)),
-                    'nodes'            => $qb->createNamedParameter($this->json($row['nodes'] ?? null)),
-                    'edges'            => $qb->createNamedParameter($this->json($row['edges'] ?? null)),
-                    'limits'           => $qb->createNamedParameter($this->json($row['limits'] ?? null)),
-                    'notes'            => $qb->createNamedParameter($this->str($row['notes'] ?? null)),
-                    'owner'            => $qb->createNamedParameter($this->str($row['owner'] ?? ($row['_owner'] ?? null))),
-                    'organisation'     => $qb->createNamedParameter($this->str($row['_organisation'] ?? null)),
+                    'trigger'          => $qb->createNamedParameter($this->str(value: ($row['trigger'] ?? null))),
+                    'trigger_register' => $qb->createNamedParameter($this->str(value: ($row['trigger_register'] ?? null))),
+                    'trigger_schema'   => $qb->createNamedParameter($this->str(value: ($row['trigger_schema'] ?? null))),
+                    'cron'             => $qb->createNamedParameter($this->str(value: ($row['cron'] ?? null))),
+                    'nodes'            => $qb->createNamedParameter($this->json(value: ($row['nodes'] ?? null))),
+                    'edges'            => $qb->createNamedParameter($this->json(value: ($row['edges'] ?? null))),
+                    'limits'           => $qb->createNamedParameter($this->json(value: ($row['limits'] ?? null))),
+                    'notes'            => $qb->createNamedParameter($this->str(value: ($row['notes'] ?? null))),
+                    'owner'            => $qb->createNamedParameter($this->str(value: ($row['owner'] ?? ($row['_owner'] ?? null)))),
+                    'organisation'     => $qb->createNamedParameter($this->str(value: ($row['_organisation'] ?? null))),
                     'created'          => $qb->createNamedParameter($now, 'datetime'),
                     'updated'          => $qb->createNamedParameter($now, 'datetime'),
                 ]
@@ -426,7 +417,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         $qb->executeStatement();
 
     }//end insertFlow()
-
 
     /**
      * Normalise a stored scalar to a string or null.
@@ -446,7 +436,6 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         return (string) $value;
 
     }//end str()
-
 
     /**
      * Normalise a stored JSON column to a JSON string.
@@ -478,6 +467,4 @@ class Version1Date20260803000200 extends SimpleMigrationStep
         return $encoded;
 
     }//end json()
-
-
 }//end class

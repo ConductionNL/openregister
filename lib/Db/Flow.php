@@ -87,6 +87,14 @@ use OCP\AppFramework\Db\Entity;
  * @method DateTime|null getUpdated()
  * @method void setUpdated(?DateTime $updated)
  *
+ * An Entity mirrors its table one field per column, so the field count below is
+ * the schema's rather than a design choice. Splitting it would need a second
+ * table or a JSON blob: the first adds a join to every read, the second makes
+ * `trigger` and `cron` unqueryable — and finding flows by trigger is the
+ * engine's hot path.
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields)
+ *
  * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
  */
 class Flow extends Entity implements JsonSerializable

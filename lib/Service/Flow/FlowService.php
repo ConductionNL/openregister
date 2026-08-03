@@ -206,19 +206,7 @@ class FlowService
     public function save(array $data, ?string $uuid=null): Flow
     {
         $isCreate = ($uuid === null || $uuid === '');
-
-        if ($isCreate === true) {
-            $flow = new Flow();
-            $flow->setUuid($this->newUuid());
-            $flow->setCreated(new DateTime());
-            $flow->setApp((string) ($data['app'] ?? self::DEFAULT_APP));
-            $flow->setOwner($this->actingUser());
-            $flow->setOrganisation($this->activeOrganisation());
-        } else {
-            // Goes through find(), so an update to a flow the caller cannot see
-            // is refused with the same "no such flow" as a missing one.
-            $flow = $this->find(uuid: $uuid);
-        }
+        $flow     = $this->flowToSave(data: $data, uuid: $uuid);
 
         $this->applyEditableFields(flow: $flow, data: $data);
         $flow->setUpdated(new DateTime());
@@ -230,6 +218,39 @@ class FlowService
         return $this->mapper->update($flow);
 
     }//end save()
+
+    /**
+     * The flow a save() will write to: a fresh one, or the caller's existing one.
+     *
+     * `owner` and `organisation` are stamped from the server here and are not in
+     * `applyEditableFields`'s allowlist, so a create cannot claim another user's
+     * identity by putting `owner` in the payload.
+     *
+     * @param array<string, mixed> $data The incoming fields.
+     * @param string|null          $uuid The flow uuid, or null to create.
+     *
+     * @return Flow The flow to apply fields to.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function flowToSave(array $data, ?string $uuid): Flow
+    {
+        if ($uuid !== null && $uuid !== '') {
+            // Goes through find(), so an update to a flow the caller cannot see
+            // is refused with the same "no such flow" as a missing one.
+            return $this->find(uuid: $uuid);
+        }
+
+        $flow = new Flow();
+        $flow->setUuid($this->newUuid());
+        $flow->setCreated(new DateTime());
+        $flow->setApp((string) ($data['app'] ?? self::DEFAULT_APP));
+        $flow->setOwner($this->actingUser());
+        $flow->setOrganisation($this->activeOrganisation());
+
+        return $flow;
+
+    }//end flowToSave()
 
     /**
      * Copy the client-editable fields onto a flow.
@@ -287,37 +308,49 @@ class FlowService
             $flow->setEnabled((bool) $data['enabled']);
         }
 
-        // The three inheritable settings. An explicit null is meaningful — it
-        // is how a flow returns to following the administrator default — so
-        // null is stored rather than skipped.
-        if (array_key_exists('retentionDays', $data) === true) {
-            $days = $data['retentionDays'];
-            if ($days === null) {
-                $flow->setRetentionDays(null);
-            } else {
-                $flow->setRetentionDays(max(1, (int) $days));
-            }
-        }
-
-        if (array_key_exists('auditEnabled', $data) === true) {
-            $audit = $data['auditEnabled'];
-            if ($audit === null) {
-                $flow->setAuditEnabled(null);
-            } else {
-                $flow->setAuditEnabled((bool) $audit);
-            }
-        }
-
-        if (array_key_exists('oversightEnabled', $data) === true) {
-            $oversight = $data['oversightEnabled'];
-            if ($oversight === null) {
-                $flow->setOversightEnabled(null);
-            } else {
-                $flow->setOversightEnabled((bool) $oversight);
-            }
-        }
+        $this->applyInheritableSettings(flow: $flow, data: $data);
 
     }//end applyEditableFields()
+
+    /**
+     * Apply the three settings a flow may inherit from the administrator default.
+     *
+     * An explicit null is meaningful here — it is how a flow returns to following
+     * the instance default — so null is STORED rather than skipped, and each
+     * value is tested for null BEFORE casting. `(int) null` and `(bool) null`
+     * would quietly turn "inherit the default" into a hard 0/false on the row,
+     * which reads identically to a deliberate choice.
+     *
+     * @param Flow                 $flow The flow to mutate.
+     * @param array<string, mixed> $data The incoming fields.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function applyInheritableSettings(Flow $flow, array $data): void
+    {
+        $inheritable = [
+            'retentionDays'    => ['setRetentionDays', static fn ($value): int => max(1, (int) $value)],
+            'auditEnabled'     => ['setAuditEnabled', static fn ($value): bool => (bool) $value],
+            'oversightEnabled' => ['setOversightEnabled', static fn ($value): bool => (bool) $value],
+        ];
+
+        foreach ($inheritable as $key => [$setter, $cast]) {
+            if (array_key_exists($key, $data) === false) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if ($value === null) {
+                $flow->$setter(null);
+                continue;
+            }
+
+            $flow->$setter($cast($value));
+        }
+
+    }//end applyInheritableSettings()
 
     /**
      * Delete a flow the caller owns.

@@ -158,6 +158,39 @@ class FlowEngine
     }//end oversightRefusal()
 
     /**
+     * Raise a FlowStop when an oversight check refuses the next hop.
+     *
+     * Raising rather than returning is deliberate: `run()` already turns a
+     * FlowStop into a terminal `stopped` result, so a veto reuses the semantics
+     * an author's Stop step already has instead of adding a second, parallel way
+     * for a run to end early. The refusing check's id is carried in the reason
+     * because that is what an operator needs in order to know WHICH gate closed.
+     *
+     * @param array  $context The run context.
+     * @param string $name    The transition about to fire.
+     * @param string $type    The node type about to run.
+     *
+     * @return void
+     *
+     * @throws FlowStop When a check refuses the hop.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    private function assertOversightAllows(array $context, string $name, string $type): void
+    {
+        $refusal = $this->oversightRefusal(context: $context, name: $name, type: $type);
+        if ($refusal === null) {
+            return;
+        }
+
+        throw new FlowStop(
+            reason: (string) ($refusal['reason'] ?? 'refused by oversight'),
+            checkId: ($refusal['checkId'] ?? null)
+        );
+
+    }//end assertOversightAllows()
+
+    /**
      * Run a flow document.
      *
      * Fires enabled transitions until none remain. Where several are enabled at
@@ -304,28 +337,6 @@ class FlowEngine
             // rather than only by run.
             $stepType = (string) ($step['type'] ?? '');
 
-            // OVERSIGHT, before the hop. A veto STOPS the run — it never skips
-            // the hop and carries on, because a skipped step in a completed run
-            // is indistinguishable from one that ran and did nothing, which is
-            // exactly the failure this whole change exists to remove.
-            $refusal = $this->oversightRefusal(context: $context, name: $name, type: $stepType);
-            if ($refusal !== null) {
-                $log[] = [
-                    'transition' => $name,
-                    'type'       => $stepType,
-                    'status'     => 'stopped',
-                    'reason'     => $refusal['reason'],
-                    'checkId'    => $refusal['checkId'],
-                ];
-
-                return [
-                    'status'  => self::STATUS_STOPPED,
-                    'log'     => $log,
-                    'context' => $context,
-                    'items'   => $items,
-                ];
-            }
-
             $startedAt = microtime(true);
 
             // Pinned output (n8n's "pin data"): when a run supplies a pin for
@@ -353,6 +364,13 @@ class FlowEngine
             }
 
             try {
+                // OVERSIGHT, before the hop. A veto is raised as a FlowStop so it
+                // travels the same path as an author's Stop step: the run ENDS.
+                // It never skips the hop and carries on, because a skipped step
+                // inside a completed run is indistinguishable from one that ran
+                // and did nothing — the exact failure this change removes.
+                $this->assertOversightAllows(context: $context, name: $name, type: $stepType);
+
                 $produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
                 $items    = FlowItems::normalise(value: $produced);
                 $log[]    = [
@@ -373,6 +391,9 @@ class FlowEngine
                     'type'       => $stepType,
                     'status'     => 'stopped',
                     'reason'     => $stop->getMessage(),
+                    // Null for an author's Stop step; set when an oversight
+                    // gate raised the stop, so the history records WHICH gate.
+                    'checkId'    => $stop->checkId(),
                     'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
 

@@ -59,11 +59,11 @@ class RunFlowOperation implements ISpecificOperation
     /**
      * Constructor.
      *
-     * @param IL10N            $l10n         Translations.
-     * @param IURLGenerator    $urlGenerator Icon path resolver.
-     * @param FlowMapper     $flows  Resolves a flow by the name the rule configured.
-     * @param FlowRunService $runner Queues the run.
-     * @param LoggerInterface  $logger       Logs skipped/failed invocations.
+     * @param IL10N           $l10n         Translations.
+     * @param IURLGenerator   $urlGenerator Icon path resolver.
+     * @param FlowMapper      $flows        Resolves a flow by the name the rule configured.
+     * @param FlowRunService  $runner       Queues the run.
+     * @param LoggerInterface $logger       Logs skipped/failed invocations.
      */
     public function __construct(
         private readonly IL10N $l10n,
