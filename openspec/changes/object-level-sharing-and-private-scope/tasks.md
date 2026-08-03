@@ -316,13 +316,27 @@
       the page would prove only that an owner can read their own object.
       The HTTP sibling mints its OWN link, so it stays green even if the UI control posts to
       the wrong endpoint or renders a token it never received; this drives the control.
-- [ ] 10.4 Email invite delivered and followable
+- [x] 10.4 Email invite FOLLOWABLE — and honestly, not delivered. The invitation is created
+      through the UI, the server reports it as an `email` grant (asserted via the rendered icon,
+      not the label), it is LISTED (it was not, before or#2311), the token it issues is followable
+      by someone with NO account, and revoking it in the UI kills that token.
+      ⚠️ SMTP DELIVERY IS NOT PROVEN. The CI instance has no mail transport and standing up a sink
+      process would make this gate depend on it — a flaky gate is worse than a stated gap. The
+      security-relevant half (followable, and revocable AFTER the mail has gone out) is proven.
 - [ ] 10.5 The Shares tab and the shared-with-me widget both render real data, asserted against a
       direct API call. HALF DONE and the other half is blocked. The TAB half is covered by
       `tests/e2e/ci/object-shares-tab.spec.ts`: it asserts the tab renders the live surface (not
       an empty panel, and not its error branch), and every UI action is verified by a direct API
       call as the OTHER user. The WIDGET half waits on 6.3.
-- [ ] 10.6 Assert on rendered SVGs and measured content, not on the manifest — an unregistered icon renders nothing and a stale bundle serves the pre-fix code
+- [x] 10.6 Assert on rendered SVGs and measured content, not on the manifest. Every grant row's
+      icon is asserted from the DOM class the icon component emits — `.account-icon`,
+      `.account-group-icon`, `.email-icon`, `.link-variant-icon` — for all four grant types.
+      🔑 This is a real DISCRIMINATOR, not decoration: `iconFor()` dispatches on the type the
+      SERVER reported, so a user share named after a group renders `.account-icon` and fails. It
+      is what the group test was missing — the row TEXT renders `sharedWith`, which was the group's
+      name under the broken behaviour too, so it would have passed either way.
+      🔑 An unregistered `:is` name renders NOTHING rather than a fallback, so a DOM-class
+      assertion also proves the icon resolved at all.
 - [x] 10.7 `composer check:strict` in the container (host PHP is too old). Its four constituents
       run as separate CI jobs — phpcs, phpmd, psalm, phpstan — and all four are green on every PR
       in this programme, which is stronger than one local run: they run on PHP 8.3 AND 8.4.
