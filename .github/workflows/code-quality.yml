@@ -31,11 +31,15 @@ concurrency:
   group: quality-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
-# Least privilege for the called quality pipeline: the Quality Report job
-# posts a sticky PR comment (issues/pull-requests write); everything else
-# only reads the checkout.
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so it must cover the maximum
+# any nested job declares: journeydoc-capture (contents+actions write),
+# update-baseline / features-extract (contents write), and the Quality
+# Report PR comment (issues / pull-requests write).
 permissions:
-  contents: read
+  contents: write
+  actions: write
   issues: write
   pull-requests: write
 
