@@ -1490,11 +1490,34 @@ class ImportHandler
                         }
                     }
 
+                    // 🔴 Both branches write to `items.$ref`. The second one used to
+                    // write to `$property['$ref']` — the ARRAY's own ref — which did
+                    // two wrong things at once: it left `items.$ref` as an unmapped
+                    // slug, and it grafted a schema ID (an INT) onto the array
+                    // property as a top-level `$ref`.
+                    //
+                    // That second effect is not cosmetic. `ValidateObject` strips a
+                    // top-level `$ref` from string-typed properties and from
+                    // `items`, but never from an array-typed property, so the int
+                    // survived into the schema handed to Opis. Opis parses a
+                    // property's subschema lazily — only when that property is
+                    // PRESENT in the written data — and then throws
+                    // `$ref must be a non-empty string` because an int is not a
+                    // string. The message names neither the property nor the
+                    // schema, so it reads like a broken register.
+                    //
+                    // Only reachable on the `schemasMap` fallback, i.e. when the
+                    // referenced slug was not part of this import's own
+                    // slug->id map. That is the FIRST install of a configuration
+                    // whose cross-references resolve against already-present
+                    // schemas — which is why it never showed on a long-lived
+                    // instance and surfaced on every clean one (hermiq's `agent`
+                    // schema: skillInstalls / contextRefs / delegationAllowlist).
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
                         } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
-                            $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                            $property['items']['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
 
