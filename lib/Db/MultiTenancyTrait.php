@@ -702,6 +702,12 @@ trait MultiTenancyTrait
         }
 
         // Only set owner if not already set (allow explicit owner assignment).
+        //
+        // The parameter is typed `Entity`, whose owner accessors exist only as
+        // `@method` on the subclasses, so static analysis cannot see them. The
+        // property_exists() guard above is what makes the call safe at runtime;
+        // this is the same false positive SystemEntityObjectAdapter documents.
+        // @phpstan-ignore-next-line Entity::getOwner() is dispatched via __call.
         if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
             return;
         }
@@ -713,6 +719,7 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user !== null) {
+            // @phpstan-ignore-next-line Entity::setOwner() is dispatched via __call.
             $entity->setOwner($user->getUID());
         }
     }//end setOwnerOnCreate()
