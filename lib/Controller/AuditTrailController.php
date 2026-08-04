@@ -329,9 +329,17 @@ class AuditTrailController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @psalm-return JSONResponse<200|401|403, array{error?: string,
-     *     total?: int, create?: int, update?: int, delete?: int, read?: int},
-     *     array<never, never>>
+     * Written as a UNION OF CONCRETE JSONResponse TYPES rather than one
+     * JSONResponse whose template arguments are themselves unions: the
+     * template parameters of JSONResponse are invariant, so a single
+     * `JSONResponse<200|401|403, array{error?: string, total?: int, ...}>`
+     * is satisfied by no return statement at all — not even the ones it
+     * was written to describe. One member per branch is the expressible
+     * form, and each member is the exact type its branch produces.
+     *
+     * @psalm-return JSONResponse<200, array{total: int, create: int, update: int, delete: int, read: int}, array{}>
+     *     |JSONResponse<401, array{error: string}, array{}>
+     *     |JSONResponse<403, array{error: string}, array{}>
      *
      * @spec exclude Read-only aggregation passthrough: delegates straight to
      *     AuditTrailMapper::getActionCounts() behind the shared admin gate and
