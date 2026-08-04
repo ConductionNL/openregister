@@ -577,22 +577,14 @@ class AuditHashService
             if ($computedHash !== $storedHash) {
                 $result->closeCursor();
 
-                $response = [
-                    'valid'             => false,
-                    'entriesVerified'   => $entriesVerified,
-                    'brokenAt'          => (int) $row['id'],
-                    'skippedNullHashes' => $skippedNullHashes,
-                    'purgedTombstones'  => $purgedTombstones,
-                ];
-
-                if ($from !== null || $to !== null) {
-                    $response['range'] = [
-                        'from' => $from ?? (int) $row['id'],
-                        'to'   => $to ?? (int) $row['id'],
-                    ];
-                }
-
-                return $response;
+                return $this->buildChainReport(
+                    brokenAt: (int) $row['id'],
+                    entriesVerified: $entriesVerified,
+                    skippedNullHashes: $skippedNullHashes,
+                    purgedTombstones: $purgedTombstones,
+                    from: $from,
+                    to: $to
+                );
             }
 
             $previousHash = $storedHash;
@@ -601,23 +593,65 @@ class AuditHashService
 
         $result->closeCursor();
 
+        return $this->buildChainReport(
+            brokenAt: null,
+            entriesVerified: $entriesVerified,
+            skippedNullHashes: $skippedNullHashes,
+            purgedTombstones: $purgedTombstones,
+            from: $from,
+            to: $to
+        );
+    }//end verifyChain()
+
+    /**
+     * Assemble the verifyChain() result.
+     *
+     * Both exits of the walk return the same shape, differing only in whether
+     * `brokenAt` is set, so building it in one place keeps them from drifting
+     * apart — which for a tamper-evidence report would mean the "valid" and
+     * "broken" answers disagreeing about what they counted.
+     *
+     * @param int|null $brokenAt          Row id where verification failed, or null when the range is intact.
+     * @param int      $entriesVerified   Rows whose content re-hashed correctly.
+     * @param int      $skippedNullHashes Rows carrying no hash (pre-migration or fail-soft leftovers).
+     * @param int      $purgedTombstones  Rows lawfully purged under a retention policy.
+     * @param int|null $from              Requested range start, or null.
+     * @param int|null $to                Requested range end, or null.
+     *
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     purgedTombstones: int,
+     *     range?: array{from: int|null, to: int|null}
+     * }
+     */
+    private function buildChainReport(
+        ?int $brokenAt,
+        int $entriesVerified,
+        int $skippedNullHashes,
+        int $purgedTombstones,
+        ?int $from,
+        ?int $to
+    ): array {
         $response = [
-            'valid'             => true,
+            'valid'             => ($brokenAt === null),
             'entriesVerified'   => $entriesVerified,
-            'brokenAt'          => null,
+            'brokenAt'          => $brokenAt,
             'skippedNullHashes' => $skippedNullHashes,
             'purgedTombstones'  => $purgedTombstones,
         ];
 
         if ($from !== null || $to !== null) {
             $response['range'] = [
-                'from' => $from,
-                'to'   => $to,
+                'from' => ($from ?? $brokenAt),
+                'to'   => ($to ?? $brokenAt),
             ];
         }
 
         return $response;
-    }//end verifyChain()
+    }//end buildChainReport()
 
     /**
      * Get the hash of the nearest SEALED entry before the given ID.

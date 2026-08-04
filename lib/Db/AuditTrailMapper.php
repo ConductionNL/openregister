@@ -608,6 +608,8 @@ class AuditTrailMapper extends QBMapper
      * @param \DateTime    $createdAt    The audit row's creation instant.
      *
      * @return array{expires: \DateTime|null, source: string|null}
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTime::createFromInterface is the standard immutable-to-mutable bridge
      */
     private function resolveAuditExpiry(ObjectEntity $objectEntity, \DateTime $createdAt): array
     {
