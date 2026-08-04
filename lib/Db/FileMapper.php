@@ -957,4 +957,55 @@ class FileMapper extends QBMapper
 
         return $storageResult > 0;
     }//end setFileOwnership()
+
+    /**
+     * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
+     *
+     * Inverse of the object-attached-files fallback path: an object's attached
+     * files live under a folder node whose `filecache.name` equals the object's UUID.
+     * This looks up the file's parent folder and returns that folder's name.
+     *
+     * Best-effort only: an object with an explicit `folder` property pointing at a
+     * node whose name is NOT the object UUID (e.g. a manually re-parented folder)
+     * will not resolve here. Callers MUST treat a `null` return as "no owning object
+     * found" and skip silently rather than error.
+     *
+     * SECURITY BOUNDARY: this join is intentionally NOT scoped by storage / tenant /
+     * owner — `filecache.fileid` is globally unique across all storages and any
+     * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
+     * multitenancy safety net lives ONE layer up in
+     * {@see \OCA\OpenRegister\Service\Object\ContentSearchHandler::resolveOwningObject()},
+     * which passes the UUID to `MagicMapper::find($uuid, _rbac: true, _multitenancy: true)`;
+     * a UUID that belongs to a table the current user cannot see throws
+     * `DoesNotExistException` there and is caught silently. Do NOT reuse this method
+     * in contexts that bypass that follow-up `MagicMapper::find()` call, or a
+     * low-privileged user could probe cross-tenant chunk-content by guessing
+     * monotonic fileids.
+     *
+     * @param int $fileId The Nextcloud filecache fileid to resolve.
+     *
+     * @return string|null The owning object's UUID, or null when it cannot be resolved.
+     *
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+     */
+    public function findOwningObjectUuid(int $fileId): ?string
+    {
+        $qb = $this->db->getQueryBuilder();
+        // SECURITY: unscoped filecache join — see docblock. Safety comes from
+        // the MagicMapper::find() call in the sole caller (ContentSearchHandler).
+        $qb->select('parentNode.name')
+            ->from('filecache', 'file')
+            ->innerJoin('file', 'filecache', 'parentNode', $qb->expr()->eq('file.parent', 'parentNode.fileid'))
+            ->where($qb->expr()->eq('file.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $name   = $result->fetchOne();
+        $result->closeCursor();
+
+        if ($name === false || $name === null || $name === '') {
+            return null;
+        }
+
+        return (string) $name;
+    }//end findOwningObjectUuid()
 }//end class

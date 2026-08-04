@@ -1,0 +1,184 @@
+[
+  {
+    "slug": "archival-destruction-workflow",
+    "title": "Archival Destruction Workflow",
+    "summary": "Implement a NEN 15489 compliant destruction workflow for register objects, providing automated destruction scheduling via background jobs, multi-step approval workflows with destruction lists, legal hold management, destruction certificate generation, and archiefactiedatum calculation using configurable afleidingswijzen.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/archival-destruction-workflow/spec.md"
+  },
+  {
+    "slug": "archivering-vernietiging",
+    "title": "Archivering Vernietiging",
+    "summary": "Implement archiving and destruction lifecycle management for register objects, conforming to MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie), NEN 2082 records management, and e-Depot export standards.",
+    "status": "soon",
+    "docsUrl": "openspec/specs/archivering-vernietiging/spec.md"
+  },
+  {
+    "slug": "content-versioning",
+    "title": "Content Versioning",
+    "summary": "Content versioning provides a complete lifecycle for register objects, enabling users to track every change as a numbered version, create named draft versions for work-in-progress edits, compare any two versions with field-level diffs, and roll back to any previous state.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/content-versioning/spec.md"
+  },
+  {
+    "slug": "data-import-export",
+    "title": "Data Import and Export",
+    "summary": "Document and extend OpenRegister's existing import/export infrastructure.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/data-import-export/spec.md"
+  },
+  {
+    "slug": "datetime-input-handling",
+    "title": "Datetime Input Handling",
+    "summary": "Defines how OpenRegister converts user-supplied datetime input at every stage of the object lifecycle.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/datetime-input-handling/spec.md"
+  },
+  {
+    "slug": "deep-link-registry",
+    "title": "Deep Link Registry",
+    "summary": "The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/deep-link-registry/spec.md"
+  },
+  {
+    "slug": "deletion-audit-trail",
+    "title": "Deletion Audit Trail",
+    "summary": "Provide a comprehensive audit and lifecycle management system for all deletion operations in OpenRegister, encompassing soft delete (marking objects as deleted without physical removal), configurable retention before permanent purge, restore from soft delete, cascade delete tracking, and full GDPR-compliant audit trail entries.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/deletion-audit-trail/spec.md"
+  },
+  {
+    "slug": "deprecate-published-metadata",
+    "title": "Deprecate Published/Depublished Object Metadata",
+    "summary": "",
+    "status": "stable",
+    "docsUrl": "openspec/specs/deprecate-published-metadata/spec.md"
+  },
+  {
+    "slug": "event-driven-architecture",
+    "title": "Event-Driven Architecture",
+    "summary": "OpenRegister implements a comprehensive event-driven architecture built on Nextcloud's IEventDispatcher (OCP\\EventDispatcher\\IEventDispatcher) that enables loose coupling between internal components and external systems.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/event-driven-architecture/spec.md"
+  },
+  {
+    "slug": "faceting-configuration",
+    "title": "Faceting Configuration",
+    "summary": "Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/faceting-configuration/spec.md"
+  },
+  {
+    "slug": "graphql-api",
+    "title": "GraphQL API",
+    "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/graphql-api/spec.md"
+  },
+  {
+    "slug": "linked-entity-types",
+    "title": "Linked Entity Types",
+    "summary": "Unified system for linking Nextcloud entities (mail, contacts, calendar events, notes, todos, Talk conversations, Deck cards) to OpenRegister objects and entities.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/linked-entity-types/spec.md"
+  },
+  {
+    "slug": "mail-sidebar",
+    "title": "Mail Sidebar",
+    "summary": "Provide a sidebar panel inside the Nextcloud Mail app that displays OpenRegister objects related to the currently viewed email.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/mail-sidebar/spec.md"
+  },
+  {
+    "slug": "mcp-discovery",
+    "title": "MCP Discovery",
+    "summary": "Provides AI agents and MCP-compatible clients with two complementary interfaces to the OpenRegister platform: a tiered REST-based discovery API for token-efficient API exploration, and a full MCP standard protocol endpoint implementing JSON-RPC 2.0 over Streamable HTTP for native tool and resource access.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/mcp-discovery/spec.md"
+  },
+  {
+    "slug": "mock-registers",
+    "title": "Mock Registers",
+    "summary": "Provide self-contained mock registers for the five Dutch base registries, BRP (persons), KVK (businesses), BAG (addresses/buildings), DSO (environmental permits), and ORI (council information), so that Procest, Pipelinq, and other consuming apps can develop and demonstrate integrations without external API credentials, government certificates, or network access.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/mock-registers/spec.md"
+  },
+  {
+    "slug": "notificatie-engine",
+    "title": "Notificatie Engine",
+    "summary": "Extend OpenRegister's existing CloudEvent-based event system with user-facing notification delivery.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/notificatie-engine/spec.md"
+  },
+  {
+    "slug": "object-interactions",
+    "title": "Object Interactions",
+    "summary": "OpenRegister objects require rich interaction capabilities.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/object-interactions/spec.md"
+  },
+  {
+    "slug": "rbac-scopes",
+    "title": "RBAC Scopes",
+    "summary": "Validate and extend OpenRegister's existing three-level RBAC system.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/rbac-scopes/spec.md"
+  },
+  {
+    "slug": "retention-management",
+    "title": "Retention Management",
+    "summary": "Implement retention lifecycle management for register objects: MDTO-compliant archival metadata, selectielijsten, archiefactiedatum calculation, destruction scheduling with approval workflows, legal holds, and notifications per Archiefwet 1995.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/retention-management/spec.md"
+  },
+  {
+    "slug": "schema-driven-read-coercion",
+    "title": "Schema-Driven Read Coercion",
+    "summary": "Defines how OpenRegister coerces database column values to JSON-Schema-typed PHP values when reconstructing an ObjectEntity from a magic-table row.",
+    "status": "beta",
+    "docsUrl": "openspec/specs/schema-driven-read-coercion/spec.md"
+  },
+  {
+    "slug": "schema-hooks",
+    "title": "Schema Hooks",
+    "summary": "Schema hooks enable per-schema configuration of workflow callbacks that fire on object lifecycle events, allowing external systems to validate, enrich, transform, or reject data before or after persistence.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/schema-hooks/spec.md"
+  },
+  {
+    "slug": "webhook-payload-mapping",
+    "title": "Webhook Payload Mapping",
+    "summary": "Extend OpenRegister's existing CloudEvent-based event and webhook infrastructure with configurable payload mapping.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/webhook-payload-mapping/spec.md"
+  },
+  {
+    "slug": "workflow-engine-abstraction",
+    "title": "Workflow Engine Abstraction",
+    "summary": "Provides an engine-agnostic interface for OpenRegister to interact with workflow engines (n8n, Windmill, and future engines), enabling the system to deploy, execute, monitor, and manage workflows without coupling to any specific engine's API.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/workflow-engine-abstraction/spec.md"
+  },
+  {
+    "slug": "workflow-in-import",
+    "title": "Workflow in Import",
+    "summary": "Extends the OpenRegister JSON configuration import pipeline to deploy workflow definitions to external engines (n8n, Windmill), wire them as schema hooks, track them for versioning and idempotent re-import, and include them in configuration exports, all from a single import file.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/workflow-in-import/spec.md"
+  },
+  {
+    "slug": "workflow-integration",
+    "title": "Workflow Integration",
+    "summary": "Integrate BPMN-style workflow automation with register operations via n8n (primary) and other pluggable workflow engines (Windmill, future).",
+    "status": "stable",
+    "docsUrl": "openspec/specs/workflow-integration/spec.md"
+  },
+  {
+    "slug": "zoeken-filteren",
+    "title": "Zoeken en Filteren",
+    "summary": "Provide a comprehensive, backend-agnostic search and filtering system for register objects that supports full-text search with relevance ranking, field-level filtering with comparison operators, faceted drill-down navigation, multi-field sorting, cursor and offset pagination, and saved search trails.",
+    "status": "stable",
+    "docsUrl": "openspec/specs/zoeken-filteren/spec.md"
+  }
+]
