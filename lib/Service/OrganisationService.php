@@ -593,7 +593,7 @@ class OrganisationService
         // Cache the new active organisation immediately.
         $this->cacheActiveOrganisation(organisation: $organisation, userId: $userId);
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[OrganisationService] Set active organisation in user config',
             context: [
                 'file'             => __FILE__,
@@ -979,7 +979,7 @@ class OrganisationService
         self::$defaultOrgCache   = null;
         self::$defaultOrgCacheTs = null;
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[OrganisationService] Cleared default organisation static cache',
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
@@ -1221,7 +1221,7 @@ class OrganisationService
                 // User no longer has access, clear the setting and cache.
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                 $this->clearActiveOrganisationCache(userId: $userId);
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[OrganisationService] Cleared invalid active organisation',
                     context: [
                         'file'             => __FILE__,
@@ -1234,7 +1234,7 @@ class OrganisationService
                 // Active organisation no longer exists, clear from config and cache.
                 $this->config->deleteUserValue($userId, self::APP_NAME, self::CONFIG_ACTIVE_ORGANISATION);
                 $this->clearActiveOrganisationCache(userId: $userId);
-                $this->logger->info(
+                $this->logger->debug(
                     message: '[OrganisationService] Cleared non-existent active organisation',
                     context: [
                         'file'             => __FILE__,

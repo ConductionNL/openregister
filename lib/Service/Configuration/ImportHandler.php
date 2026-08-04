@@ -767,7 +767,7 @@ class ImportHandler
                     _rbac: false,
                     _multitenancy: false
                 );
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Found existing register during import",
                     context: [
                         'file'        => __FILE__,
@@ -779,7 +779,7 @@ class ImportHandler
                 );
             } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
                 // Register doesn't exist, we'll create a new one.
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Register '{$data['slug']}' not found, will create new one",
                     context: ['file' => __FILE__, 'line' => __LINE__, 'appId' => $appId]
                 );
@@ -796,7 +796,7 @@ class ImportHandler
                 // Compare versions using version_compare for proper semver comparison.
                 $existingVersion = $existingRegister->getVersion() ?? '0.0.0';
                 if ($force === false && version_compare($data['version'], $existingVersion, '<=') === true) {
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: '[ImportHandler] Skipping register import as existing version is newer or equal.',
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -917,7 +917,7 @@ class ImportHandler
             $existingVersion = $existingMapping->getVersion() ?? '0.0.0';
 
             if ($force === false && version_compare($importedVersion, $existingVersion, '<=') === true) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Skipping mapping '{$slug}': v{$importedVersion} <= v{$existingVersion}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -1230,7 +1230,7 @@ class ImportHandler
         try {
             $foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
             if ($foreign->getId() !== null) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: sprintf(
                         "[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but ".
                         "not in the target register's schema set; creating this register's OWN schema.",
@@ -1309,10 +1309,10 @@ class ImportHandler
             return $this->schemaMapper->find($data['slug'], _multitenancy: false);
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
             $msg = "Schema '{$data['slug']}' not found, will create new one";
-            $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
         } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
             $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
-            $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
         } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
             $this->handleDuplicateSchemaError(
                 slug: $data['slug'],
@@ -1544,7 +1544,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                 $msg  = 'Register with slug %s not found during schema property import ';
                                 $msg .= '(will be resolved after registers are imported).';
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: '[ImportHandler] '.sprintf($msg, $registerSlug),
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -1572,7 +1572,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found during schema property import ';
                                     $msg .= '(will be resolved after schemas are imported).';
-                                    $this->logger->info(
+                                    $this->logger->debug(
                                         message: '[ImportHandler] '.sprintf($msg, $schemaSlug),
                                         context: ['file' => __FILE__, 'line' => __LINE__]
                                     );
@@ -1614,7 +1614,7 @@ class ImportHandler
                             } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                 $msg  = 'Register with slug %s not found during array items schema property ';
                                 $msg .= 'import (will be resolved after registers are imported).';
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: '[ImportHandler] '.sprintf($msg, $registerSlug),
                                     context: ['file' => __FILE__, 'line' => __LINE__]
                                 );
@@ -1645,7 +1645,7 @@ class ImportHandler
                                 } catch (\OCP\AppFramework\Db\DoesNotExistException | ValidationException $e) {
                                     $msg  = 'Schema with slug %s not found during array items schema ';
                                     $msg .= 'property import (will be resolved after schemas are imported).';
-                                    $this->logger->info(
+                                    $this->logger->debug(
                                         message: '[ImportHandler] '.sprintf($msg, $schemaSlug),
                                         context: ['file' => __FILE__, 'line' => __LINE__]
                                     );
@@ -1722,7 +1722,7 @@ class ImportHandler
                 // skip the no-op case cheaply.
                 $versionSaysSkip = ($force === false && version_compare($incomingVersion, $existingVersion, '<=') === true);
                 if ($versionSaysSkip === true && $this->schemaContentDiffers(data: $data, existing: $existingSchema) === false) {
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: '[ImportHandler] Skipping schema import: version not newer and content unchanged.',
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -1730,6 +1730,8 @@ class ImportHandler
                 }
 
                 if ($versionSaysSkip === true) {
+                    // Info: an update applied against the version ordering.
+                    // Exactly the decision someone re-reads the log to find.
                     $this->logger->info(
                         message: '[ImportHandler] Schema version not newer but content differs; applying update anyway.',
                         context: [
@@ -2011,7 +2013,7 @@ class ImportHandler
             // A never-stored hash ('' on an install predating the hash) also fails
             // it, so those heal on the next run.
             if ($storedHash !== '' && $storedHash === $definitionHash) {
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Skipping {$appId}: config content unchanged (v{$version}, stored v{$storedVersion})",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -2035,7 +2037,7 @@ class ImportHandler
         // Log force import if enabled.
         if ($force === true && $appId !== null && $version !== null) {
             $msg = "Force import enabled for app {$appId} version {$version} - bypassing version check";
-            $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+            $this->logger->debug(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
         }
 
         // Reset the maps for this import.
@@ -2077,7 +2079,7 @@ class ImportHandler
         // then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
         if (($data['components']['schemas'] ?? null) !== null && is_array($data['components']['schemas']) === true) {
             $slugsAndIdsMap = $this->schemaMapper->getSlugToIdMap();
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Starting TWO-PASS schema import process',
                 context: [
                     'file'         => __FILE__,
@@ -2089,7 +2091,7 @@ class ImportHandler
 
             // PASS 1: Create all schemas without resolving objectConfiguration.schema references.
             // This ensures all schema entities exist before we try to look them up.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] PASS 1: Creating all schemas without cross-reference resolution',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -2159,7 +2161,7 @@ class ImportHandler
                 }//end try
             }//end foreach
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Pass 1 completed - all schemas created',
                 context: [
                     'file'           => __FILE__,
@@ -2171,7 +2173,7 @@ class ImportHandler
 
             // PASS 2: Now resolve cross-references (objectConfiguration.schema) for all schemas.
             // All schemas now exist, so find() calls will succeed.
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] PASS 2: Resolving schema cross-references',
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -2253,7 +2255,7 @@ class ImportHandler
                 }//end try
             }//end foreach
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Schema import process completed (TWO-PASS)',
                 context: [
                     'file'            => __FILE__,
@@ -2369,7 +2371,7 @@ class ImportHandler
         ) {
             $slugsAndIdsMap = $this->mappingMapper->getSlugToIdMap(includeNullOrg: true);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Starting mapping import',
                 context: [
                     'file'          => __FILE__,
@@ -2426,7 +2428,7 @@ class ImportHandler
                 }//end try
             }//end foreach
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Mapping import completed',
                 context: [
                     'file'          => __FILE__,
@@ -2745,6 +2747,9 @@ class ImportHandler
             // (#426). Storing it even when the per-entity gates ended up updating nothing
             // is correct: it records "this exact config content has been seen".
             $this->appConfig->setValueString('openregister', "imported_config_{$appId}_hash", $definitionHash);
+            // Info: an app's configuration genuinely changed version. The
+            // far more common "unchanged, skipping" is debug — reporting the
+            // NON-event at info is what made a repair unreadable.
             $this->logger->info(
                 message: "[ImportHandler] Stored version {$version} for app {$appId} after successful import",
                 context: ['file' => __FILE__, 'line' => __LINE__]
@@ -3180,7 +3185,7 @@ class ImportHandler
             return $result;
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[ImportHandler] Starting workflow deployment phase',
             context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($workflows)]
         );
@@ -3373,7 +3378,7 @@ class ImportHandler
             $this->schemaMapper->update($schema);
 
             $msg = "Attached workflow '{$name}' to schema '{$schemaSlug}' on event '{$event}'";
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] '.$msg,
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
@@ -3434,7 +3439,7 @@ class ImportHandler
                 try {
                     $configuration = $this->configurationMapper->findBySourceUrl($sourceUrl, systemLookup: true);
                     if ($configuration !== null) {
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[ImportHandler] Found existing configuration by sourceUrl",
                             context: [
                                 'file'            => __FILE__,
@@ -3457,7 +3462,7 @@ class ImportHandler
                     if (count($configurations) > 0) {
                         // Use the first (most recent) configuration.
                         $configuration = $configurations[0];
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[ImportHandler] Found existing configuration for app {$appId}",
                             context: [
                                 'file'            => __FILE__,
@@ -3477,7 +3482,7 @@ class ImportHandler
                         // The importFromJson method will handle version checks for schemas/registers.
                         if ($force === false && version_compare($newVersion, $existingVersion, '<=') === true) {
                             $msg = "Config version ({$existingVersion}) up-to-date, checking seedData";
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: '[ImportHandler] '.$msg,
                                 context: ['file' => __FILE__, 'line' => __LINE__, 'app' => $appId, 'force' => $force]
                             );
@@ -3486,7 +3491,7 @@ class ImportHandler
                     }//end if
                 } catch (Exception $e) {
                     // No existing configuration found, we'll create a new one.
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[ImportHandler] No existing configuration found for app {$appId}, will create new one",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
@@ -3576,7 +3581,7 @@ class ImportHandler
                 // Insert the configuration to get an ID.
                 $configuration = $this->configurationMapper->insert($configuration);
 
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Created new configuration for app {$appId}",
                     context: [
                         'file'            => __FILE__,
@@ -3688,7 +3693,7 @@ class ImportHandler
 
                 $this->configurationMapper->update($configuration);
 
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Updated configuration entity for app {$appId}",
                     context: [
                         'file'            => __FILE__,
@@ -3948,7 +3953,7 @@ class ImportHandler
                         $slugKey = strtolower($existingSlug);
                         if (isset($newSlugToId[$slugKey]) === true && $newSlugToId[$slugKey] !== $currentId) {
                             $keep = false;
-                            $this->logger->info(
+                            $this->logger->debug(
                                 message: sprintf(
                                     "[ImportHandler] Auto-Register '%s': pruning shadowed schema id %d (slug '%s') in favour of app-owned id %d",
                                     $slug,
@@ -3980,7 +3985,7 @@ class ImportHandler
             $register->setSchemas($unionSchemaIds);
             $register = $this->registerMapper->update($register);
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] Auto-Register reconciled (idempotent re-import)',
                 context: [
                     'file'           => __FILE__,
@@ -4004,6 +4009,7 @@ class ImportHandler
                 ]
             );
 
+            // Info: a register was CREATED. Structural and rare.
             $this->logger->info(
                 message: '[ImportHandler] Auto-Register created from x-openregister.type=application',
                 context: [
@@ -4295,7 +4301,7 @@ class ImportHandler
                 $existingConfig->setObjects(array_unique(array_merge($existingObjectIds, $objectIds)));
 
                 $configuration = $this->configurationMapper->update($existingConfig);
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Updated existing configuration for app {$appId} with version {$version}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -4369,7 +4375,7 @@ class ImportHandler
                 }
 
                 $configuration = $this->configurationMapper->insert($configuration);
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Created new configuration for app {$appId} with version {$version}",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
@@ -4533,7 +4539,7 @@ class ImportHandler
 
         if ($targetRegister !== null) {
             $targetRegisterId = $targetRegister->getId();
-            $this->logger->info(
+            $this->logger->debug(
                 message: '[ImportHandler] SeedData will be imported into register',
                 context: [
                     'file'           => __FILE__,
@@ -4545,7 +4551,7 @@ class ImportHandler
             );
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[ImportHandler] Importing seed data objects',
             context: [
                 'file'            => __FILE__,
@@ -4575,7 +4581,7 @@ class ImportHandler
                         _rbac: false,
                         _multitenancy: false
                     );
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[ImportHandler] Found schema '{$schemaSlug}' in database for seedData",
                         context: [
                             'file'      => __FILE__,
@@ -4602,7 +4608,7 @@ class ImportHandler
                 }//end try
             }//end if
 
-            $this->logger->info(
+            $this->logger->debug(
                 message: "[ImportHandler] Importing seed objects for schema '{$schemaSlug}'",
                 context: ['file' => __FILE__, 'line' => __LINE__, 'count' => count($objects)]
             );
@@ -4661,7 +4667,7 @@ class ImportHandler
                 // Track the Register object for idempotency checks.
                 // If object references external configuration, resolve schema and register from that config.
                 if ($externalConfigUrl !== null) {
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[ImportHandler] SeedData object references external configuration",
                         context: [
                             'file'          => __FILE__,
@@ -4701,7 +4707,7 @@ class ImportHandler
                                 $targetRegId        = $externalRegister->getId();
                                 $objectRegister     = $externalRegister;
                                 // Update for idempotency check.
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[ImportHandler] Resolved external register for seedData object",
                                     context: [
                                         'file'  => __FILE__,
@@ -4750,7 +4756,7 @@ class ImportHandler
 
                             if (empty($externalSchemas) === false) {
                                 $objectSchema = $externalSchemas[0];
-                                $this->logger->info(
+                                $this->logger->debug(
                                     message: "[ImportHandler] Resolved external schema for seedData object",
                                     context: [
                                         'file'  => __FILE__,
@@ -4917,6 +4923,8 @@ class ImportHandler
             }//end foreach
         }//end foreach
 
+        // Info: the summary line, carrying counts. One per import, and the
+        // thing you actually want when asking what an import did.
         $this->logger->info(
             message: '[ImportHandler] Seed data import complete',
             context: [
@@ -5136,7 +5144,7 @@ class ImportHandler
             return;
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[ImportHandler] Ensuring Nextcloud app dependencies for seedData',
             context: [
                 'file'  => __FILE__,
@@ -5169,7 +5177,7 @@ class ImportHandler
                     continue;
                 }
 
-                $this->logger->info(
+                $this->logger->debug(
                     message: "[ImportHandler] Checking Nextcloud app dependency: {$appId}",
                     context: [
                         'file'     => __FILE__,
@@ -5198,28 +5206,28 @@ class ImportHandler
                     }
 
                     if ($appManager->isEnabledForUser($appId) === true) {
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[ImportHandler] Nextcloud app '{$appId}' is already enabled",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
                         continue;
                     }
 
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: "[ImportHandler] Nextcloud app '{$appId}' is not enabled - enabling now",
                         context: ['file' => __FILE__, 'line' => __LINE__]
                     );
 
                     try {
                         $appManager->enableApp($appId);
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[ImportHandler] Successfully enabled Nextcloud app '{$appId}'",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
 
                         // Load the app to ensure its services are available.
                         \OC_App::loadApp($appId);
-                        $this->logger->info(
+                        $this->logger->debug(
                             message: "[ImportHandler] Successfully loaded Nextcloud app '{$appId}'",
                             context: ['file' => __FILE__, 'line' => __LINE__]
                         );
