@@ -213,7 +213,7 @@ import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import axios from '@nextcloud/axios'
-import { navigationStore } from '../../store/store.js'
+import { navigationStore, webhookStore } from '../../store/store.js'
 
 import {
 	NcAppContent,
@@ -261,9 +261,6 @@ export default {
 	},
 	data() {
 		return {
-			webhooksList: [],
-			loading: false,
-			totalWebhooks: 0,
 			limit: 50,
 			offset: 0,
 			sidebarOpen: false,
@@ -272,6 +269,62 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Whether the webhook list is being fetched.
+		 *
+		 * @spec exclude UI plumbing — store loading flag passthrough.
+		 * @return {boolean} True while a fetch is in flight
+		 */
+		loading() {
+			return webhookStore.loading
+		},
+
+		/**
+		 * The store's webhooks narrowed by the sidebar's search and enabled
+		 * filters. Filtering is client-side because the list endpoint returns
+		 * every webhook in one page.
+		 *
+		 * @spec exclude UI plumbing — client-side filter over the store list; webhook contract owned by webhook-payload-mapping.
+		 * @return {Array} Filtered webhooks
+		 */
+		filteredWebhooks() {
+			let webhooks = webhookStore.webhookList
+
+			if (this.searchQuery) {
+				const query = this.searchQuery.toLowerCase()
+				webhooks = webhooks.filter(w =>
+					w.name.toLowerCase().includes(query)
+					|| w.url.toLowerCase().includes(query),
+				)
+			}
+
+			if (this.enabledFilter !== null) {
+				webhooks = webhooks.filter(w => w.enabled === this.enabledFilter)
+			}
+
+			return webhooks
+		},
+
+		/**
+		 * Number of webhooks matching the active filters (pre-pagination).
+		 *
+		 * @spec exclude UI plumbing — derived count for the actions bar.
+		 * @return {number} Filtered webhook count
+		 */
+		totalWebhooks() {
+			return this.filteredWebhooks.length
+		},
+
+		/**
+		 * The webhooks shown on the current page.
+		 *
+		 * @spec exclude UI plumbing — client-side pagination slice; admin list contract owned by admin-list-views.
+		 * @return {Array} Current page of webhooks
+		 */
+		webhooksList() {
+			return this.filteredWebhooks.slice(this.offset, this.offset + this.limit)
+		},
+
 		/**
 		 * Get current page number
 		 *
@@ -344,8 +397,8 @@ export default {
 		 */
 		handleSearchUpdate(query) {
 			this.searchQuery = query
+			// Filtering is a computed over the store list — no refetch needed.
 			this.offset = 0
-			this.loadWebhooks()
 		},
 
 		/**
@@ -357,51 +410,22 @@ export default {
 		 */
 		handleEnabledUpdate(enabled) {
 			this.enabledFilter = enabled
+			// Filtering is a computed over the store list — no refetch needed.
 			this.offset = 0
-			this.loadWebhooks()
 		},
 
 		/**
-		 * Load webhooks from the API
+		 * Load webhooks into the store
 		 *
-		 * @spec exclude UI plumbing — list load + client-side filter/paginate; webhook contract owned by webhook-payload-mapping.
+		 * @spec exclude UI plumbing — delegates the list load to webhookStore.
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
-			this.loading = true
 			try {
-				const response = await axios.get(
-					generateUrl('/apps/openregister/api/webhooks'),
-				)
-
-				if (response.data.results) {
-					let webhooks = response.data.results
-
-					// Apply search filter
-					if (this.searchQuery) {
-						const query = this.searchQuery.toLowerCase()
-						webhooks = webhooks.filter(w =>
-							w.name.toLowerCase().includes(query)
-							|| w.url.toLowerCase().includes(query),
-						)
-					}
-
-					// Apply enabled filter
-					if (this.enabledFilter !== null) {
-						webhooks = webhooks.filter(w => w.enabled === this.enabledFilter)
-					}
-
-					// Apply pagination
-					this.totalWebhooks = webhooks.length
-					const start = this.offset
-					const end = start + this.limit
-					this.webhooksList = webhooks.slice(start, end)
-				}
+				await webhookStore.refreshWebhookList()
 			} catch (error) {
 				console.error('Failed to load webhooks:', error)
 				showError(t('openregister', 'Failed to load webhooks'))
-			} finally {
-				this.loading = false
 			}
 		},
 
@@ -423,8 +447,8 @@ export default {
 		 */
 		previousPage() {
 			if (this.offset > 0) {
+				// Paging is a computed slice over the store list — no refetch needed.
 				this.offset = Math.max(0, this.offset - this.limit)
-				this.loadWebhooks()
 			}
 		},
 
@@ -436,8 +460,8 @@ export default {
 		 */
 		nextPage() {
 			if (this.offset + this.limit < this.totalWebhooks) {
+				// Paging is a computed slice over the store list — no refetch needed.
 				this.offset += this.limit
-				this.loadWebhooks()
 			}
 		},
 
@@ -492,12 +516,8 @@ export default {
 		 */
 		async toggleWebhook(webhook) {
 			try {
-				await axios.put(
-					generateUrl(`/apps/openregister/api/webhooks/${webhook.id}`),
-					{ enabled: !webhook.enabled },
-				)
+				await webhookStore.toggleWebhookEnabled(webhook)
 				showSuccess(t('openregister', 'Webhook updated'))
-				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to toggle webhook:', error)
 				showError(t('openregister', 'Failed to update webhook'))
@@ -513,11 +533,8 @@ export default {
 		 */
 		async deleteWebhook(webhookId) {
 			try {
-				await axios.delete(
-					generateUrl(`/apps/openregister/api/webhooks/${webhookId}`),
-				)
+				await webhookStore.deleteWebhook(webhookId)
 				showSuccess(t('openregister', 'Webhook deleted'))
-				this.loadWebhooks()
 			} catch (error) {
 				console.error('Failed to delete webhook:', error)
 				showError(t('openregister', 'Failed to delete webhook'))

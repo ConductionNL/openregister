@@ -310,6 +310,57 @@ class AuditTrailController extends Controller
     }//end index()
 
     /**
+     * Get lifetime audit trail counts, optionally scoped to a register/schema
+     *
+     * Feeds the audit-trail page's statistics panel. Counts are lifetime (not
+     * windowed) so they line up with the audit-trail list next to them, and
+     * the keys are singular — the windowed, plural-keyed variant lives on the
+     * dashboard surface (`dashboard#getAuditTrailStatistics`).
+     *
+     * Admin-only at the framework level (no @NoAdminRequired), like the rest
+     * of this controller: per-register/schema activity volumes are a recon
+     * signal across tenants. Body `requireAdmin()` stays as defence-in-depth.
+     * Returns 200 on success, 401 when anonymous, 403 when non-admin.
+     *
+     * @param int|null $register Optional register ID to scope the counts to
+     * @param int|null $schema   Optional schema ID to scope the counts to
+     *
+     * @return JSONResponse JSON response containing the counts per action
+     *
+     * @NoCSRFRequired
+     *
+     * Written as a UNION OF CONCRETE JSONResponse TYPES rather than one
+     * JSONResponse whose template arguments are themselves unions: the
+     * template parameters of JSONResponse are invariant, so a single
+     * `JSONResponse<200|401|403, array{error?: string, total?: int, ...}>`
+     * is satisfied by no return statement at all — not even the ones it
+     * was written to describe. One member per branch is the expressible
+     * form, and each member is the exact type its branch produces.
+     *
+     * @psalm-return JSONResponse<200, array{total: int, create: int, update: int, delete: int, read: int}, array{}>
+     *     |JSONResponse<401, array{error: string}, array{}>
+     *     |JSONResponse<403, array{error: string}, array{}>
+     *
+     * @spec exclude Read-only aggregation passthrough: delegates straight to
+     *     AuditTrailMapper::getActionCounts() behind the shared admin gate and
+     *     adds no audit-trail behaviour of its own.
+     */
+    public function statistics(?int $register=null, ?int $schema=null): JSONResponse
+    {
+        $denial = $this->requireAdmin();
+        if ($denial !== null) {
+            return $denial;
+        }
+
+        return new JSONResponse(
+            data: $this->auditTrailMapper->getActionCounts(
+                registerId: $register,
+                schemaId: $schema
+            )
+        );
+    }//end statistics()
+
+    /**
      * Get a specific audit trail log by ID
      *
      * Admin-only at the framework level (no @NoAdminRequired). Body

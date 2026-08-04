@@ -47,7 +47,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import {
 	NcDialog,
 	NcTextField,
@@ -98,12 +97,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * @spec exclude Presentation glue: exposes the translate helper to the template; no standalone behavioural contract.
-		 */
-		t() {
-			return t
-		},
 		/**
 		 * @spec exclude Presentation glue: reuses the pack's denial-grounds enum as the redaction-ground options.
 		 */
