@@ -20,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+ * @spec openspec/specs/runtime-schema-api/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -145,7 +145,7 @@ class PropertyValidatorHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -323,7 +323,7 @@ class PropertyValidatorHandler
      *
      * @return true True if all properties are valid
      *
-     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-13
+     * @spec openspec/specs/runtime-schema-api/spec.md
      */
     public function validateProperties(array $properties, string $path=''): bool
     {

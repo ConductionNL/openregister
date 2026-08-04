@@ -59,6 +59,7 @@ use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\RenderObject;
+use OCA\OpenRegister\Service\Object\BatchOperationStatus;
 use OCA\OpenRegister\Service\Object\SaveObject;
 use OCA\OpenRegister\Service\ObjectServiceMapperAdapter;
 use OCA\OpenRegister\Service\Object\SaveObjects;
@@ -3648,6 +3649,64 @@ class ObjectService
 
         return $bulkResult;
     }//end saveObjects()
+
+    /**
+     * Save many objects one row at a time, keeping reference checks O(1).
+     *
+     * The counterpart to {@see saveObjects()}, and the choice between them is a
+     * real trade-off rather than a preference:
+     *
+     *   saveObjects()          — MagicMapper's ultraFastBulkSave. Fastest
+     *                            writes, but it never consults the
+     *                            reference-validation cache, so a payload whose
+     *                            rows reference each other pays N×M database
+     *                            round-trips resolving them.
+     *   saveObjectsStreaming() — each row goes through the standard saveObject()
+     *                            path, which engages the request-scoped
+     *                            reference cache. Second and later occurrences
+     *                            of any target UUID resolve from memory, and the
+     *                            iterable is consumed lazily so the whole
+     *                            payload never has to be resident.
+     *
+     * So streaming wins on heavily cross-referenced or very large imports and
+     * loses on flat ones. Neither is universally correct, which is why the
+     * caller picks.
+     *
+     * Failure isolation differs too: a row that throws is recorded on the
+     * returned status and the batch continues, rather than failing the call.
+     *
+     * @param array                    $objects  Rows in the shape saveObject() accepts.
+     * @param Register|string|int|null $register Optional register context.
+     * @param Schema|string|int|null   $schema   Optional schema context.
+     *
+     * @return BatchOperationStatus Per-row outcomes plus reference-cache counters.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    public function saveObjectsStreaming(
+        array $objects,
+        Register | string | int | null $register=null,
+        Schema | string | int | null $schema=null
+    ): BatchOperationStatus {
+        if ($register !== null) {
+            $this->setRegister(register: $register);
+        }
+
+        if ($schema !== null) {
+            $this->setSchema(schema: $schema);
+        }
+
+        // The reference cache is request-scoped and this call is a logical
+        // boundary: verdicts from an earlier batch must not decide this one.
+        $this->saveHandler->clearReferenceValidationCache();
+
+        return $this->saveHandler->saveObjectsStreaming(
+            register: $this->currentRegister,
+            schema: $this->currentSchema,
+            rows: $objects
+        );
+
+    }//end saveObjectsStreaming()
 
     /**
      * Transform objects from serialized format to database format

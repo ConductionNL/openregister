@@ -663,7 +663,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function import(int $id): JSONResponse
     {
@@ -729,7 +729,7 @@ class ConfigurationController extends Controller
      *
      * @psalm-return JSONResponse<200|404|500, array, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-14
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function export(int $id): JSONResponse
     {
@@ -786,7 +786,7 @@ class ConfigurationController extends Controller
      *     project_id?: mixed, ref?: 'main'|mixed}|mixed,...},
      *     page?: int, per_page?: int}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function discover(): JSONResponse
     {
@@ -877,7 +877,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with branches list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitHubBranches(): JSONResponse
     {
@@ -1045,7 +1045,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with branches list
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function getGitLabBranches(): JSONResponse
     {
@@ -1501,7 +1501,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromGitHub(): JSONResponse
     {
@@ -1529,7 +1529,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromGitLab(): JSONResponse
     {
@@ -1557,7 +1557,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with import result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importFromUrl(): JSONResponse
     {
@@ -1589,7 +1589,7 @@ class ConfigurationController extends Controller
      *
      * @return JSONResponse JSON response with publish result
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-13
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function publishToGitHub(int $id): JSONResponse
     {

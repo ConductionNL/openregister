@@ -540,7 +540,7 @@ class RegisterService
      *
      * @psalm-return array<int, array{total: int}>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     * @spec openspec/specs/runtime-schema-api/spec.md
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) getSchemaObjectCounts() builds a UNION SQL query
      * across N schema magic-tables with platform-specific CAST syntax (Postgres vs MariaDB/MySQL),

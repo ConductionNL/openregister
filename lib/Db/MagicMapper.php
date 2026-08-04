@@ -4485,7 +4485,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @return array Missing column definitions keyed by property name.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function findMissingColumns(array $currentColumns, array $requiredColumns): array
     {

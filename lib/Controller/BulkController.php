@@ -387,6 +387,45 @@ class BulkController extends Controller
                 $schemaToUse = null;
             }
 
+            // `stream` selects the row-at-a-time path. It is opt-in and defaults
+            // to the existing behaviour, because neither path is universally
+            // better and the caller is the one who knows the payload.
+            //
+            // The default uses ultraFastBulkSave: fastest writes, but it never
+            // consults the reference-validation cache, so rows that reference
+            // each other cost N×M database round-trips resolving them.
+            //
+            // Streaming puts each row through saveObject(), which engages that
+            // cache — repeated targets resolve from memory — and consumes the
+            // payload lazily. It also isolates failures per row rather than
+            // failing the whole call.
+            //
+            // Defaulting it on would silently slow down flat payloads, and
+            // choosing automatically would need a threshold nobody has measured,
+            // so it is a decision the caller makes rather than one inferred here.
+            $useStreaming = filter_var(
+                ($data['stream'] ?? false),
+                FILTER_VALIDATE_BOOLEAN
+            );
+
+            if ($useStreaming === true) {
+                $status = $this->objectService->saveObjectsStreaming(
+                    objects: $objects,
+                    register: $resolved['register'],
+                    schema: $schemaToUse
+                );
+
+                return new JSONResponse(
+                    data: [
+                        'success'         => ($status->getFailedCount() === 0),
+                        'message'         => 'Bulk save operation completed (streaming)',
+                        'saved_count'     => ($status->getCreatedCount() + $status->getUpdatedCount()),
+                        'saved_objects'   => $status->toArray(),
+                        'requested_count' => count($objects),
+                    ]
+                );
+            }
+
             $savedObjects = $this->objectService->saveObjects(
                 objects: $objects,
                 register: $resolved['register'],

@@ -25,8 +25,8 @@
  * @spec openspec/specs/data-import-export/spec.md
  * @spec openspec/specs/data-import-export/spec.md
  * @spec openspec/specs/workflow-in-import/spec.md#requirement-schema-hook-wiring-during-import
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -1354,7 +1354,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      *
-     * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-configuration-import-resolves-a-schema-by-slug-within-the-target-registers-existing-schema-set
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function importSchema(
         array $data,
@@ -4405,9 +4405,9 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-28
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function importSeedData(
         array $configData,
@@ -4954,10 +4954,10 @@ class ImportHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-29
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-3
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-4
-     * @spec openspec/changes/retrofit-2026-05-24-b3a-workflow-seed/tasks.md#task-5
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function processRelatedItems(
         ObjectEntity $object,

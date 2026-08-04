@@ -53,7 +53,7 @@ use Symfony\Component\Uid\Uuid;
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.NPathComplexity)
  *
- * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+ * @spec openspec/specs/saas-multi-tenant/spec.md
  */
 class OrganisationService
 {
@@ -235,7 +235,7 @@ class OrganisationService
      *
      * @return Organisation The default organisation
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function ensureDefaultOrganisation(): Organisation
     {
@@ -274,7 +274,7 @@ class OrganisationService
      * @psalm-return array{organisation: array{default_organisation: mixed|null,
      *               auto_create_default_organisation: mixed|true}}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -307,7 +307,7 @@ class OrganisationService
      *
      * @return string|null Default organisation UUID or null if not set
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -469,7 +469,7 @@ class OrganisationService
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getUserOrganisations(bool $_useCache=true): array
     {
@@ -508,7 +508,7 @@ class OrganisationService
      *
      * @return Organisation|null The active organisation or null.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getActiveOrganisation(?array $preloadedOrgs=null): ?Organisation
     {
@@ -555,7 +555,7 @@ class OrganisationService
      *
      * @throws Exception If user doesn't belong to the organisation
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function setActiveOrganisation(string $organisationUuid): bool
     {
@@ -617,7 +617,7 @@ class OrganisationService
      *
      * @throws Exception If organisation not found, user not logged in, or target user does not exist
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function joinOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
@@ -664,7 +664,7 @@ class OrganisationService
      *
      * @throws Exception If organisation not found, user not logged in, or trying to leave last organisation
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function leaveOrganisation(string $organisationUuid, ?string $targetUserId=null): bool
     {
@@ -751,7 +751,7 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls whether to add current user to organisation
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Organisation creation requires multiple validation steps
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function createOrganisation(
         string $name,
@@ -873,7 +873,7 @@ class OrganisationService
      *
      * @return bool True if user has access
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function hasAccessToOrganisation(string $organisationUuid): bool
     {
@@ -943,7 +943,7 @@ class OrganisationService
      *
      * @return array Statistics with total count, active organisation, and results list.
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getUserOrganisationStats(): array
     {
@@ -1347,7 +1347,7 @@ class OrganisationService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function cacheActiveOrganisation(Organisation $organisation, string $userId): void
     {
@@ -1392,7 +1392,7 @@ class OrganisationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Cache reconstruction requires branches for each organisation property
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple optional properties create many reconstruction paths
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function reconstructOrganisationFromCache(array $cachedData): Organisation
     {
@@ -1475,7 +1475,7 @@ class OrganisationService
      *
      * @return null|string The organisation UUID to use
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getOrganisationForNewEntity(): string|null
     {
@@ -1535,7 +1535,7 @@ class OrganisationService
      *
      * @return string The system identifier (never empty).
      *
-     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getSystemUserId(): string
     {
@@ -1562,7 +1562,7 @@ class OrganisationService
      *
      * @return string[] Normalised list of group IDs (may be empty).
      *
-     * @spec openspec/changes/system-context-owner-attribution/tasks.md#task-1
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getSystemReaderGroups(): array
     {
@@ -1657,7 +1657,7 @@ class OrganisationService
      *
      * @psalm-return list{0?: null|string,...}
      *
-     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-4
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     public function getUserActiveOrganisations(): array
     {
