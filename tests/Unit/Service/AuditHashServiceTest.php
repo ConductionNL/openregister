@@ -31,7 +31,12 @@ class AuditHashServiceTest extends TestCase
         $this->db              = $this->createMock(IDBConnection::class);
         $this->lockingProvider = $this->createMock(ILockingProvider::class);
         $this->logger          = $this->createMock(LoggerInterface::class);
-        $this->service         = new AuditHashService($this->db, $this->lockingProvider, $this->logger);
+        $this->service         = new AuditHashService(
+            $this->db,
+            $this->lockingProvider,
+            $this->logger,
+            $this->createMock(\OCP\IAppConfig::class)
+        );
     }
 
     public function testGetGenesisHash(): void

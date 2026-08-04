@@ -41,6 +41,7 @@ use OCA\OpenRegister\Service\AuditHashService;
 use OCP\DB\IResult;
 use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
+use OCP\IAppConfig;
 use OCP\IDBConnection;
 use OCP\Lock\ILockingProvider;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -101,7 +102,8 @@ class AuditHashVerifyPagingTest extends TestCase
         $this->service = new AuditHashService(
             $this->db,
             $this->createMock(ILockingProvider::class),
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $this->createMock(IAppConfig::class)
         );
 
     }//end setUp()

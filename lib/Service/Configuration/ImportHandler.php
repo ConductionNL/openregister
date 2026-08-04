@@ -2597,7 +2597,10 @@ class ImportHandler
                     }
 
                     if ($existingObject === null) {
-                        $this->logger->info(
+                        // Debug: fires once PER OBJECT during an import, and says
+                        // only that the normal path was taken. The import's
+                        // per-phase summaries are the info-level story.
+                        $this->logger->debug(
                         message: '[ImportHandler] No existing object found - will create new object',
                         context: [
                             'file'       => __FILE__,
@@ -2647,7 +2650,9 @@ class ImportHandler
                         }
 
                         if (version_compare($importedVersion, $existingVersion, '>') <= 0) {
-                            $this->logger->info(
+                            // Debug: per object, and skipping an unchanged object
+                            // is the DESIGNED behaviour of a re-import, not news.
+                            $this->logger->debug(
                             message: '[ImportHandler] Skipped object update: imported version not higher',
                             context: [
                                 'file'            => __FILE__,
@@ -4907,7 +4912,8 @@ class ImportHandler
         $notes = (array) ($relatedItems['notes'] ?? []);
         $tasks = (array) ($relatedItems['tasks'] ?? []);
 
-        $this->logger->info(
+        // Debug: per seed object.
+        $this->logger->debug(
             message: '[ImportHandler] Processing related items for seed object',
             context: [
                 'file'        => __FILE__,

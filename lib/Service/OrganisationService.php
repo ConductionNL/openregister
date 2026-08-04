@@ -1479,28 +1479,27 @@ class OrganisationService
      */
     public function getOrganisationForNewEntity(): string|null
     {
-        $this->logger->info(
-            message: '[OrganisationService] 🔹 OrganisationService: getOrganisationForNewEntity called',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
+        // One debug line, recording the OUTCOME and which branch produced it.
+        // This runs on every object save, and used to emit four info lines to
+        // answer a single question — "called", "found", "no active org",
+        // "got default". Entry traces like those describe the code rather than
+        // the system: they say a function was entered, which the next line
+        // already implies, and at info they crowd out the events an operator is
+        // actually scanning for.
         $activeOrg = $this->getActiveOrganisation();
 
         if ($activeOrg !== null) {
-            $this->logger->info(
-                message: '[OrganisationService] 🔹 OrganisationService: Found active organisation: '.$activeOrg->getUuid(),
+            $this->logger->debug(
+                message: '[OrganisationService] New entity assigned to active organisation '.$activeOrg->getUuid(),
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return $activeOrg->getUuid();
         }
 
-        // Fallback to default organisation.
-        $this->logger->info(
-            message: '[OrganisationService] 🔹 OrganisationService: No active org, calling ensureDefaultOrganisation',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
         $defaultOrg = $this->ensureDefaultOrganisation();
-        $this->logger->info(
-            message: '[OrganisationService] 🔹 OrganisationService: Got default organisation: '.$defaultOrg->getUuid(),
+        $this->logger->debug(
+            message: '[OrganisationService] No active organisation; new entity assigned to default '
+                .$defaultOrg->getUuid(),
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
         return $defaultOrg->getUuid();

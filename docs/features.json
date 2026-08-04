@@ -1,200 +1,31 @@
-[
-  {
-    "slug": "runtime-schema-api",
-    "title": "Schema-driven registers",
-    "summary": "Model your data as registers and object types, without writing code.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/runtime-schema-api/spec.md",
-    "title_nl": "Schemagestuurde registers",
-    "summary_nl": "Je modelleert je data als registers en objecttypen, zonder code te schrijven."
-  },
-  {
-    "slug": "audit-hash-chain",
-    "title": "Immutable audit trail",
-    "summary": "You prove who changed what, with a tamper-evident hash chain.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/audit-hash-chain/spec.md",
-    "title_nl": "Onveranderbaar auditspoor",
-    "summary_nl": "Je bewijst wie wat wijzigde, met een manipulatiebestendige hashketen."
-  },
-  {
-    "slug": "rbac-scopes",
-    "title": "Access control to the property level",
-    "summary": "You grant access per register, per object, or per field.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/rbac-scopes/spec.md",
-    "title_nl": "Toegangsbeheer tot op veldniveau",
-    "summary_nl": "Je verleent toegang per register, per object of per veld."
-  },
-  {
-    "slug": "saas-multi-tenant",
-    "title": "Organisation multi-tenancy",
-    "summary": "You keep each organisation's data isolated, with quotas per tenant.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/saas-multi-tenant/spec.md",
-    "title_nl": "Organisatie-isolatie per huurder",
-    "summary_nl": "Je houdt de data van elke organisatie gescheiden, met quota per huurder."
-  },
-  {
-    "slug": "object-interactions",
-    "title": "REST and bulk API for every object",
-    "summary": "You read and write any record, one at a time or thousands in one call.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/object-interactions/spec.md",
-    "title_nl": "REST- en bulk-API voor elk object",
-    "summary_nl": "Je leest en schrijft elk record, los of met duizenden tegelijk in één aanroep."
-  },
-  {
-    "slug": "graphql-api",
-    "title": "GraphQL API",
-    "summary": "You ask for exactly the fields you need in one round-trip.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/graphql-api/spec.md",
-    "title_nl": "GraphQL-API",
-    "summary_nl": "Je vraagt precies de velden op die je nodig hebt in één aanroep."
-  },
-  {
-    "slug": "content-versioning",
-    "title": "Time-travel and restore",
-    "summary": "You view any past version and roll a record back in seconds.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/content-versioning/spec.md",
-    "title_nl": "Tijdreizen en herstellen",
-    "summary_nl": "Je bekijkt elke eerdere versie en zet een record in seconden terug."
-  },
-  {
-    "slug": "zoeken-filteren",
-    "title": "Full-text search with faceting",
-    "summary": "You find records instantly, with no Elasticsearch to run.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/zoeken-filteren/spec.md",
-    "title_nl": "Zoeken op volledige tekst met facetten",
-    "summary_nl": "Je vindt records direct, zonder een aparte Elasticsearch te draaien."
-  },
-  {
-    "slug": "avg-verwerkingsregister",
-    "title": "AVG processing register and DSAR",
-    "summary": "You meet GDPR duties: processing register, retention, and anonymisation.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/avg-verwerkingsregister/spec.md",
-    "title_nl": "AVG-verwerkingsregister en inzageverzoeken",
-    "summary_nl": "Je voldoet aan de AVG: verwerkingsregister, bewaartermijnen en anonimisering."
-  },
-  {
-    "slug": "edepot-transfer",
-    "title": "Dutch archiving to e-Depot",
-    "summary": "You transfer records to an e-Depot with TMLO and MDTO metadata.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/edepot-transfer/spec.md",
-    "title_nl": "Archiveren naar het e-Depot",
-    "summary_nl": "Je draagt records over aan een e-Depot met TMLO- en MDTO-metadata."
-  },
-  {
-    "slug": "data-sync-harvesting",
-    "title": "Source sync and webhooks",
-    "summary": "You keep data at its source and react to every change with webhooks.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/data-sync-harvesting/spec.md",
-    "title_nl": "Bronsynchronisatie en webhooks",
-    "summary_nl": "Je houdt data bij de bron en reageert met webhooks op elke wijziging."
-  },
-  {
-    "slug": "integration-registry",
-    "title": "Integration registry",
-    "summary": "You link records to Deck, Calendar, Maps, Talk, and more Nextcloud apps.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/integration-registry/spec.md",
-    "title_nl": "Integratieregister",
-    "summary_nl": "Je koppelt records aan Deck, Agenda, Maps, Talk en meer Nextcloud-apps."
-  },
-  {
-    "slug": "schema-import",
-    "title": "Schema import",
-    "summary": "You import Schema.org, OpenAPI, or GGM models with automatic dialect detection.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/schema-import/spec.md",
-    "title_nl": "Schema importeren",
-    "summary_nl": "Je importeert Schema.org-, OpenAPI- of GGM-modellen met automatische dialectherkenning."
-  },
-  {
-    "slug": "oas-generation",
-    "title": "OpenAPI and JSON-LD output",
-    "summary": "Every register self-documents as an OpenAPI spec and as linked data.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/oas-generation/spec.md",
-    "title_nl": "OpenAPI- en JSON-LD-uitvoer",
-    "summary_nl": "Elk register documenteert zichzelf als OpenAPI-spec en als linked data."
-  },
-  {
-    "slug": "ai-mcp",
-    "title": "AI access over MCP",
-    "summary": "You let LLM agents read and act on your register data over MCP.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/ai-mcp/spec.md",
-    "title_nl": "AI-toegang via MCP",
-    "summary_nl": "Je laat AI-assistenten via MCP je registerdata lezen en bewerken."
-  },
-  {
-    "slug": "saved-search-views",
-    "title": "Saved search views",
-    "summary": "You save a search and share it as a named, public view.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/saved-search-views/spec.md",
-    "title_nl": "Opgeslagen zoekweergaven",
-    "summary_nl": "Je bewaart een zoekopdracht en deelt die als benoemde, openbare weergave."
-  },
-  {
-    "slug": "register-i18n",
-    "title": "Translations of stored data",
-    "summary": "You translate records in bulk with built-in AI.",
-    "status": "stable",
-    "docsUrl": "openspec/specs/register-i18n/spec.md",
-    "title_nl": "Vertalingen van opgeslagen data",
-    "summary_nl": "Je vertaalt records in bulk met ingebouwde AI."
-  },
-  {
-    "slug": "vector-embeddings",
-    "title": "Semantic search",
-    "summary": "You find records by meaning using vector embeddings, on PostgreSQL.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/vector-embeddings/spec.md",
-    "title_nl": "Semantisch zoeken",
-    "summary_nl": "Je vindt records op betekenis met vector-embeddings, op PostgreSQL."
-  },
-  {
-    "slug": "rapportage-bi-export",
-    "title": "Reporting and BI export",
-    "summary": "You build dashboards and export data for your BI tooling.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/rapportage-bi-export/spec.md",
-    "title_nl": "Rapportage en BI-export",
-    "summary_nl": "Je bouwt dashboards en exporteert data voor je BI-tooling."
-  },
-  {
-    "slug": "dcat-publishing",
-    "title": "DCAT data catalog publishing",
-    "summary": "You publish registers as an open data catalog in DCAT.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/dcat-publishing/spec.md",
-    "title_nl": "DCAT-datacatalogus publiceren",
-    "summary_nl": "Je publiceert registers als open datacatalogus in DCAT."
-  },
-  {
-    "slug": "no-code-app-builder",
-    "title": "Low-code app builder",
-    "summary": "You build a UI over your register data with the OpenBuild app.",
-    "status": "beta",
-    "docsUrl": "openspec/specs/no-code-app-builder/spec.md",
-    "title_nl": "Low-code app-bouwer",
-    "summary_nl": "Je bouwt een interface over je registerdata met de OpenBuild-app."
-  },
-  {
-    "slug": "stuf-soap-coupling",
-    "title": "StUF and SOAP coupling",
-    "summary": "You connect to StUF/XML and SOAP services for ZGW landscapes.",
-    "status": "soon",
-    "docsUrl": "openspec/specs/stuf-soap-coupling/spec.md",
-    "title_nl": "StUF- en SOAP-koppeling",
-    "summary_nl": "Je koppelt aan StUF/XML- en SOAP-diensten voor ZGW-landschappen."
-  }
-]
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-04T10:47:59.375Z",
+  "features": [
+    {
+      "slug": "avg-verwerkingsregister",
+      "title": "AVG Verwerkingsregister",
+      "summary": "**Tender demand**: 58% of analyzed government tenders require AVG processing register capabilities. Cross-referencing with archivering-vernietiging (77%), audit-trail-immutable (56%), and auth-system (67%) shows that GDPR compliance is a prerequisite capability for nearly all Dutch government tender participation."
+    },
+    {
+      "slug": "deprecate-published-metadata",
+      "title": "Deprecate Published/Depublished Object Metadata",
+      "summary": "Remove the dedicated `published`/`depublished` object metadata system from OpenRegister. The RBAC `$now` dynamic variable replaces this functionality, allowing publication control via authorization rules rather than dedicated metadata columns. This eliminates a parallel publication-state mechanism that overlapped with — and frequently conflicted with — the existing RBAC time-based access controls."
+    },
+    {
+      "slug": "graphql-api",
+      "title": "GraphQL API",
+      "summary": "Provide an auto-generated GraphQL API alongside the existing REST API for register data, enabling clients to request exactly the fields they need in a single round-trip and resolve nested relationships without over-fetching. The GraphQL schema MUST be derived dynamically from register schema definitions at runtime, supporting queries with nested object resolution, mutations for CRUD operations, and subscriptions for real-time updates via Server-Sent Events (SSE)."
+    },
+    {
+      "slug": "rapportage-bi-export",
+      "title": "Rapportage en BI Export",
+      "summary": "**Tender demand**: 89% of analyzed government tenders require reporting and BI export capabilities. Key recurring requirements include management dashboards, KPI tracking, periodic status reports (wekelijkse voortgangsrapportage), WOO transparency reporting, and integration with existing BI tooling (Power BI, Tableau, QlikView)."
+    },
+    {
+      "slug": "saved-search-views",
+      "title": "Saved Search Views",
+      "summary": "Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent."
+    }
+  ]
+}
