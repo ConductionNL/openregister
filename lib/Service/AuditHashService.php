@@ -467,6 +467,33 @@ class AuditHashService
      * Iterates audit trail entries in order and validates that each entry's
      * stored hash matches the recomputed hash.
      *
+     * ## Retention tombstones
+     *
+     * A row purged under a retention policy keeps its `id`, `created`, `hash`
+     * and `previous_hash` and is stamped with `purged_at`; its payload is
+     * blanked (see {@see \OCA\OpenRegister\Db\AuditTrailMapper::clearLogs()}).
+     * Its content therefore no longer re-hashes to the stored value, but the
+     * stored value is still the link the NEXT row committed to — so the chain
+     * is carried forward across it and the row is counted as a declared
+     * tombstone rather than reported as a break.
+     *
+     * This is what makes a lawful purge distinguishable from tampering. Before
+     * tombstoning, a purge physically removed the row and verification failed
+     * at the row AFTER it, producing exactly the symptom an attacker would
+     * (or#2265): the audit trail could not tell the two apart.
+     *
+     * ⚠️ RESIDUAL LIMITATION, stated plainly: `purgedAt` is deliberately not
+     * part of the canonical JSON, because adding any key to it would change
+     * the hash of every row ever written and invalidate the whole existing
+     * chain. So the flag itself is not hash-protected: an attacker with direct
+     * table write access could set `purged_at` and blank a row's payload to
+     * suppress a record without breaking verification. That is strictly
+     * weaker and strictly more VISIBLE than the previous situation — the row,
+     * its timestamp and its position all remain, and `purgedTombstones` is
+     * reported and countable — but it is not cryptographic proof that a
+     * tombstone was lawful. Binding the flag into the hash requires a chain
+     * re-seal and is tracked separately.
+     *
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
@@ -475,6 +502,7 @@ class AuditHashService
      *     entriesVerified: int,
      *     brokenAt: int|null,
      *     skippedNullHashes: int,
+     *     purgedTombstones: int,
      *     range?: array{from: int, to: int}
      * }
      *
@@ -508,6 +536,7 @@ class AuditHashService
 
         $entriesVerified   = 0;
         $skippedNullHashes = 0;
+        $purgedTombstones  = 0;
         $previousHash      = null;
 
         // If starting from a specific ID, get the previous entry's hash.
@@ -521,6 +550,17 @@ class AuditHashService
             // Skip entries without hashes (pre-migration entries).
             if ($storedHash === null || $storedHash === '') {
                 $skippedNullHashes++;
+                continue;
+            }
+
+            // A retention tombstone: the payload was lawfully destroyed, so it
+            // cannot re-hash, but its stored hash is still the link the next
+            // row committed to. Carry it forward and count it. Reporting this
+            // as a break would recreate the exact ambiguity the tombstone
+            // exists to remove.
+            if (($row['purged_at'] ?? null) !== null) {
+                $purgedTombstones++;
+                $previousHash = $storedHash;
                 continue;
             }
 
@@ -542,6 +582,7 @@ class AuditHashService
                     'entriesVerified'   => $entriesVerified,
                     'brokenAt'          => (int) $row['id'],
                     'skippedNullHashes' => $skippedNullHashes,
+                    'purgedTombstones'  => $purgedTombstones,
                 ];
 
                 if ($from !== null || $to !== null) {
@@ -565,6 +606,7 @@ class AuditHashService
             'entriesVerified'   => $entriesVerified,
             'brokenAt'          => null,
             'skippedNullHashes' => $skippedNullHashes,
+            'purgedTombstones'  => $purgedTombstones,
         ];
 
         if ($from !== null || $to !== null) {
