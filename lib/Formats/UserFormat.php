@@ -38,7 +38,6 @@ use Opis\JsonSchema\Format;
  */
 class UserFormat implements Format
 {
-
     /**
      * Constructor.
      *
@@ -70,8 +69,8 @@ class UserFormat implements Format
             return false;
         }
 
-        // userExists() rather than get(): it is the cheaper question, and the
-        // only one being asked. Nothing here needs the user object itself.
+        // Existence is the cheaper question and the only one being asked —
+        // userExists() rather than get(), since nothing here needs the object.
         return $this->userManager->userExists($uid);
 
     }//end validate()

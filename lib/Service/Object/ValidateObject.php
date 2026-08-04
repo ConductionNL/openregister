@@ -241,6 +241,7 @@ class ValidateObject
      * @param SchemaMapper    $schemaMapper Schema mapper.
      * @param IURLGenerator   $urlGenerator URL generator.
      * @param LoggerInterface $logger       Logger for logging operations.
+     * @param IUserManager    $userManager  Backend consulted by the `user` string format.
      *
      * @spec openspec/archive/retrofit-object-lifecycle-2026-04-28/tasks.md
      */

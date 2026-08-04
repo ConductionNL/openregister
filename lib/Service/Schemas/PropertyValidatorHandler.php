@@ -26,7 +26,6 @@
 namespace OCA\OpenRegister\Service\Schemas;
 
 use Exception;
-use Psr\Log\LoggerInterface;
 
 /**
  * Class PropertyValidatorHandler
@@ -38,19 +37,6 @@ use Psr\Log\LoggerInterface;
  */
 class PropertyValidatorHandler
 {
-
-    /**
-     * Constructor.
-     *
-     * The logger is OPTIONAL so the handler keeps constructing with no
-     * arguments, which several tests and callers rely on; the container injects
-     * a real one in normal operation.
-     *
-     * @param LoggerInterface|null $logger Used to report annotations we accept but do not enforce.
-     */
-    public function __construct(private readonly ?LoggerInterface $logger=null)
-    {
-    }//end __construct()
 
     /**
      * Valid JSON Schema types

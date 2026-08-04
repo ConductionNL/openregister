@@ -4227,7 +4227,7 @@ class MagicMapper extends AbstractObjectMapper
      *
      * @throws Exception If insert fails
      *
-     * @return void
+     * @return int The generated `_id` of the inserted row.
      */
     private function insertObjectInRegisterSchemaTable(array $data, string $tableName): int
     {
@@ -5720,8 +5720,8 @@ class MagicMapper extends AbstractObjectMapper
                 _schema: $schema
             );
 
-            // convertRowToObjectEntity() is declared `?ObjectEntity` and does
-            // return null for a row it cannot hydrate. Every other call site
+            // The converter is declared `?ObjectEntity` and does return null
+            // for a row it cannot hydrate. Every other call site
             // checks (see the DoesNotExistException at the union-search path and
             // the warning in the statistics path); this one did not, and the
             // first thing it did with the result was dereference it — inside a
@@ -7206,8 +7206,8 @@ class MagicMapper extends AbstractObjectMapper
             }//end try
         }//end foreach
 
-        $result    = [];
-        $suppress  = $this->suppressLifecycleEvents();
+        $result   = [];
+        $suppress = $this->suppressLifecycleEvents();
         foreach ($completed as $item) {
             if ($suppress === false) {
                 $this->eventDispatcher->dispatchTyped(

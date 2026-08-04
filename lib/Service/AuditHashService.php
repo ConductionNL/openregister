@@ -512,7 +512,7 @@ class AuditHashService
                 $previousHash = $window['previousHash'];
                 $sealed      += $window['rechained'];
                 $afterId      = $window['lastId'];
-            }
+            }//end while
 
             return $sealed;
         } finally {
