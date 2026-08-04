@@ -119,8 +119,15 @@ jobs:
             # phpunit. Install dev deps + a unique autoloader suffix in the copy
             # (the suffix avoids the ComposerAutoloaderInit redeclaration against
             # the live app vendor already loaded by base.php).
+            #
+            # --ignore-platform-req=ext-xsl: the require-dev tool edgedesign/phpqa
+            # declares ext-xsl, which the nextcloud:34 runtime image does not ship
+            # (no docker-php-ext-xsl.ini). phpqa is a static-analysis bundle unused
+            # by phpunit, so skip the platform gate rather than fail the install.
+            # ext-gd is ignored too as a belt-and-suspenders no-op (phpspreadsheet
+            # requires it; the NC image does ship gd, so this is harmless there).
             php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
-            php composer.phar install --no-interaction --no-progress --prefer-dist
+            php composer.phar install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
             OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
           '
 

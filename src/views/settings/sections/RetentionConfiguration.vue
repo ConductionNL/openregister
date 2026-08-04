@@ -7,7 +7,7 @@
 		<!-- Actions slot -->
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -17,7 +17,7 @@
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -54,7 +54,7 @@
 			<div class="trail-switches">
 				<div class="trail-switch-row">
 					<NcCheckboxRadioSwitch
-						:checked.sync="auditTrailsEnabled"
+						v-model="auditTrailsEnabled"
 						:disabled="loading || saving"
 						type="switch">
 						Audit Trails enabled
@@ -66,7 +66,7 @@
 
 				<div class="trail-switch-row">
 					<NcCheckboxRadioSwitch
-						:checked.sync="searchTrailsEnabled"
+						v-model="searchTrailsEnabled"
 						:disabled="loading || saving"
 						type="switch">
 						Search Trails enabled

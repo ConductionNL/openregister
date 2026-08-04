@@ -46,8 +46,23 @@ class ReferentialIntegrityServiceBranchTest extends TestCase
             $this->objectMapper,
             $this->auditTrailMapper,
             $this->logger,
-            $this->createMock(IDBConnection::class)
+            $this->createMock(IDBConnection::class),
+            $this->createNullCacheFactory()
         );
+    }
+
+    /**
+     * Build a cache factory whose cache never reports a hit.
+     *
+     * @return \OCP\ICacheFactory
+     */
+    private function createNullCacheFactory(): \OCP\ICacheFactory
+    {
+        $factory = $this->createMock(\OCP\ICacheFactory::class);
+        $factory->method('createDistributed')
+            ->willReturn($this->createMock(\OCP\ICache::class));
+
+        return $factory;
     }
 
     private function createObjectMock(string $uuid, ?string $schemaId = null): ObjectEntity&MockObject

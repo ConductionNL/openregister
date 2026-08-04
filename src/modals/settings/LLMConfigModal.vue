@@ -27,7 +27,7 @@
 						label="name"
 						:input-label="t('openregister', 'Embedding Provider')"
 						:placeholder="t('openregister', 'Select provider')"
-						@input="handleEmbeddingProviderChange">
+						@update:modelValue="handleEmbeddingProviderChange">
 						<template #option="{ name, description }">
 							<div class="provider-option">
 								<strong>{{ name }}</strong>
@@ -361,7 +361,7 @@
 				<!-- Test Embedding Provider -->
 				<NcButton
 					v-if="selectedEmbeddingProvider && selectedEmbeddingProvider.id !== 'none'"
-					type="secondary"
+					variant="secondary"
 					:disabled="testingEmbedding || !canTestEmbedding"
 					@click="testEmbeddingConnection">
 					<template #icon>
@@ -374,7 +374,7 @@
 				<!-- Test Chat Provider -->
 				<NcButton
 					v-if="selectedChatProvider && selectedChatProvider.id !== 'none'"
-					type="secondary"
+					variant="secondary"
 					:disabled="testingChat || !canTestChat"
 					@click="testChatConnection">
 					<template #icon>
@@ -386,7 +386,7 @@
 
 				<!-- Clear All Embeddings -->
 				<NcButton
-					type="error"
+					variant="error"
 					:disabled="clearingEmbeddings"
 					@click="confirmClearEmbeddings">
 					<template #icon>
@@ -410,7 +410,7 @@
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="saving"
 					@click="saveConfiguration">
 					<template #icon>

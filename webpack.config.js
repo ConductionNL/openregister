@@ -95,19 +95,39 @@ webpackConfig.stats = {
 	modules: false,
 }
 
-// Add TypeScript handling to module rules
-// Use ts-loader for TypeScript files (already in dependencies)
-webpackConfig.module.rules.push({
-	test: /\.(ts|tsx)$/,
-	exclude: /node_modules/,
-	use: {
-		loader: 'ts-loader',
-		options: {
-			transpileOnly: true,
-			appendTsSuffixTo: [/\.vue$/],
+// TypeScript handling.
+//
+// ⚠️ REPLACE the base config's TypeScript rule — do not push a second one.
+// `@nextcloud/webpack-vue-config@5` shipped NO `.ts` rule, which is why this
+// app added its own with `transpileOnly: true`. Version 7 introduced one
+// (`rules.js`, `test: /\.tsx?$/` using a bare `'ts-loader'` with no options),
+// so pushing left TWO rules matching every `.ts` file — and the base one type
+// checks.
+//
+// The effect was 218 `[tsl] ERROR` type errors out of `src/store/modules/search.ts`
+// (TS2345/TS2683/TS7006, all pre-existing under `strict: true`), failing the
+// build. Those are real type debt, but they are NOT Vue 3 work, and a
+// framework migration is the wrong change to smuggle a new 218-error type gate
+// into. Replacing keeps exactly the previous behaviour: one transpile-only rule.
+//
+// Turning the type check on deliberately is worth doing — separately.
+const nonTsRules = webpackConfig.module.rules.filter(
+	(rule) => String(rule.test) !== String(/\.tsx?$/),
+)
+webpackConfig.module.rules = [
+	...nonTsRules,
+	{
+		test: /\.(ts|tsx)$/,
+		exclude: /node_modules/,
+		use: {
+			loader: 'ts-loader',
+			options: {
+				transpileOnly: true,
+				appendTsSuffixTo: [/\.vue$/],
+			},
 		},
 	},
-})
+]
 
 // Add .ts and .tsx to resolve extensions and '@' alias
 webpackConfig.resolve = webpackConfig.resolve || {}
@@ -134,9 +154,34 @@ webpackConfig.resolve.extensions = [
 // present, so a local build can reproduce what CI and production build — they have
 // no sibling, so they always resolve the npm dist.
 const localLib = path.resolve(__dirname, '../nextcloud-vue/src')
-const useLocalLib = fs.existsSync(localLib)
+let useLocalLib = fs.existsSync(localLib)
 	&& !process.env.OR_SKIP_LOCAL_NCVUE
 	&& process.env.USE_LOCAL_LIB !== 'false'
+
+// ⚠️ USE_LOCAL_LIB is opt-OUT, and the shared `apps-extra/nextcloud-vue`
+// checkout sits on the Vue 2 (`beta.*`) line. Silently compiling Vue 2 library
+// sources into this Vue 3 app produces a bundle that builds cleanly and renders
+// nothing, so refuse rather than trust the default: read the sibling checkout's
+// own package.json and abort when its major does not match ours.
+if (useLocalLib) {
+	const siblingPkgPath = path.resolve(__dirname, '../nextcloud-vue/package.json')
+	let siblingVersion = null
+	try {
+		siblingVersion = JSON.parse(fs.readFileSync(siblingPkgPath, 'utf8')).version
+	} catch (e) {
+		siblingVersion = null
+	}
+	// The Vue 3 line is `2.x`; the Vue 2 line is `1.0.0-beta.*`.
+	if (siblingVersion === null || !/^2\./.test(siblingVersion)) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[openregister/webpack] Ignoring the sibling @conduction/nextcloud-vue checkout: '
+			+ `version ${siblingVersion ?? 'unknown'} is not on the Vue 3 (2.x) line. `
+			+ 'Building against the installed npm package instead.',
+		)
+		useLocalLib = false
+	}
+}
 
 webpackConfig.resolve.alias = {
 	...(webpackConfig.resolve.alias || {}),
@@ -144,9 +189,22 @@ webpackConfig.resolve.alias = {
 	...(useLocalLib ? { '@conduction/nextcloud-vue': localLib } : {}),
 	// Deduplicate shared packages so the aliased library source uses
 	// the same instances as the app (prevents dual-Pinia / dual-Vue bugs).
-	vue$: path.resolve(__dirname, 'node_modules/vue'),
-	pinia$: path.resolve(__dirname, 'node_modules/pinia'),
-	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue'),
+	//
+	// ⚠️ `@nextcloud/vue@9`, `@nextcloud/dialogs@7` and `vue-router@5` ship an
+	// `exports` map with NO `main` and NO `module`. webpack applies an exports
+	// map to a PACKAGE REQUEST, never to an already-absolutised path, so a
+	// Vue-2-era DIRECTORY alias resolves to nothing and every import fails with
+	// `Can't resolve '@nextcloud/vue'`. Alias the absolute FILE for those.
+	// `vue`, `pinia` and `vue-router` still carry `main`/`module`, but pinning
+	// the file keeps every consumer on one copy regardless.
+	vue$: path.resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js'),
+	pinia$: path.resolve(__dirname, 'node_modules/pinia/dist/pinia.mjs'),
+	// `dist/vue-router.js` — NOT `.mjs`, which does not exist. This is the file
+	// the package's own `exports['.'].import` (and `module`) names, so the alias
+	// reproduces default resolution exactly while still guaranteeing that
+	// @nextcloud/vue's chunks and this app share ONE router copy.
+	'vue-router$': path.resolve(__dirname, 'node_modules/vue-router/dist/vue-router.js'),
+	'@nextcloud/vue$': path.resolve(__dirname, 'node_modules/@nextcloud/vue/dist/index.mjs'),
 	// Shim for floating-vue compatibility: adds getScrollParents (0.x API) as alias for getOverflowAncestors (1.x API)
 	'@floating-ui/dom$': path.resolve(__dirname, 'src/shims/floating-ui-dom.js'),
 	'@floating-ui/dom-actual': path.resolve(__dirname, 'node_modules/@floating-ui/dom'),
@@ -206,9 +264,10 @@ webpackConfig.entry = {
 const otherPlugins = (webpackConfig.plugins || []).filter((p) => p.constructor.name !== 'VueLoaderPlugin')
 webpackConfig.plugins = [new VueLoaderPlugin(), ...otherPlugins]
 
-// Force @nextcloud/dialogs to resolve from this app's node_modules,
-// preventing the nextcloud-vue submodule's nested deps (Vue 3) from leaking in.
-webpackConfig.resolve.alias['@nextcloud/dialogs'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs')
+// Force @nextcloud/dialogs to resolve from this app's node_modules, preventing
+// a nested copy from a sibling checkout leaking in. v7 is exports-map-only, so
+// this must name the absolute FILE (see the alias block above).
+webpackConfig.resolve.alias['@nextcloud/dialogs$'] = path.resolve(__dirname, 'node_modules/@nextcloud/dialogs/dist/index.mjs')
 
 // The base config sets `output.clean: true`, which wipes js/ on every build.
 // The Web Push Service Worker + opt-in client (openregister-push-client.js /

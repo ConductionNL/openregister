@@ -50,7 +50,7 @@
 
 <script>
 
-import Vue from 'vue'
+import { reactive } from 'vue'
 import { translate as ncT } from '@nextcloud/l10n'
 import { CnAppRoot, CnObjectSidebar } from '@conduction/nextcloud-vue'
 import MainMenu from './navigation/MainMenu.vue'
@@ -112,7 +112,7 @@ export default {
 	},
 	data() {
 		return {
-			objectSidebarState: Vue.observable({
+			objectSidebarState: reactive({
 				active: false,
 				open: true,
 				objectType: '',

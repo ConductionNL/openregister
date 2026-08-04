@@ -718,25 +718,9 @@ class MagicStatisticsHandler
                 $objectEntity->$method($value);
                 // Debug critical fields.
                 if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
-                    $this->logger->debug(
-                        message: '[MagicStatisticsHandler] Set critical metadata field',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'value' => $value]
-                    );
                 }
             }//end foreach
 
-            // Verify entity state after setting metadata.
-            $this->logger->debug(
-                message: '[MagicStatisticsHandler] Entity state after metadata',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'entityId'    => $objectEntity->getId(),
-                    'entityUuid'  => $objectEntity->getUuid(),
-                    'entityOwner' => $objectEntity->getOwner(),
-                ]
-            );
-            // End foreach.
             // Set object data.
             $objectEntity->setObject($objectData);
 
@@ -752,20 +736,6 @@ class MagicStatisticsHandler
             if (isset($metadata['uuid']) === true && $metadata['uuid'] !== null) {
                 $objectEntity->setUuid($metadata['uuid']);
             }
-
-            // Debug logging.
-            $this->logger->debug(
-                message: '[MagicStatisticsHandler] Successfully converted row to ObjectEntity',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'uuid'           => $metadata['uuid'] ?? 'unknown',
-                    'register'       => $metadata['register'] ?? 'missing',
-                    'schema'         => $metadata['schema'] ?? 'missing',
-                    'objectDataKeys' => array_keys($objectData),
-                    'metadataCount'  => count($metadata),
-                ]
-            );
 
             return $objectEntity;
         } catch (Exception $e) {

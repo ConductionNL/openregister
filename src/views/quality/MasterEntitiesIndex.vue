@@ -17,7 +17,7 @@
 						:input-label="t('openregister', 'Sort by')"
 						:clearable="false"
 						label="label"
-						@input="handleSortChange" />
+						@update:modelValue="handleSortChange" />
 				</div>
 
 				<NcEmptyContent
@@ -61,7 +61,7 @@
 							<td>{{ entity.qualityScore ?? '—' }}</td>
 							<td><span :class="'badge badge-status-' + entity.qualityStatus">{{ entity.qualityStatus ?? '—' }}</span></td>
 							<td>
-								<NcButton type="tertiary" data-testid="mdm-view-golden-record" @click="selectEntity(entity)">
+								<NcButton variant="tertiary" data-testid="mdm-view-golden-record" @click="selectEntity(entity)">
 									{{ t('openregister', 'View golden record') }}
 								</NcButton>
 							</td>

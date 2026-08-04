@@ -8,8 +8,8 @@
  * @license EUPL-1.2
  */
 
-import Vue from 'vue'
-import { translate as t } from '@nextcloud/l10n'
+import { createApp, reactive } from 'vue'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import RegisterObjectsTab from './components/files-sidebar/RegisterObjectsTab.vue'
 import ExtractionTab from './components/files-sidebar/ExtractionTab.vue'
@@ -45,30 +45,42 @@ document.addEventListener('DOMContentLoaded', () => {
 		name: t('openregister', 'Register objects'),
 		icon: databaseOutlineIcon,
 
+		// Vue 3: `createApp(Component, rootProps).mount(el)` replaces
+		// `Vue.extend()` + `new View({ propsData }).$mount(el)`.
+		//
+		// The root props object is kept `reactive` and stashed on the element so
+		// `update()` can still push a new fileId into the live instance. Vue 2
+		// allowed `vm.fileId = …` directly on the instance; Vue 3 root props are
+		// read-only on the component, so the mutation has to happen on the
+		// reactive object the app was created with.
+		//
+		// ⚠️ `$mount(el)` REPLACED `el`; Vue 3's `mount(el)` renders INSIDE it.
+		// That is the correct behaviour here — the Files sidebar owns `el`.
 		mount(el, fileInfo, _context) {
-			if (el._registerObjectsVm) {
-				el._registerObjectsVm.$destroy()
+			if (el._registerObjectsApp) {
+				el._registerObjectsApp.unmount()
 			}
 
-			const View = Vue.extend(RegisterObjectsTab)
-			el._registerObjectsVm = new View({
-				propsData: {
-					fileId: fileInfo.id,
-				},
-			})
-			el._registerObjectsVm.$mount(el)
+			el._registerObjectsProps = reactive({ fileId: fileInfo.id })
+			el._registerObjectsApp = createApp(RegisterObjectsTab, el._registerObjectsProps)
+			// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL, so main.js's single call
+			// reached every instance on the page. Vue 3's `app.mixin()` is
+			// per-app — each entry bundle must install `t`/`n` itself.
+			el._registerObjectsApp.mixin({ methods: { t, n } })
+			el._registerObjectsApp.mount(el)
 		},
 
 		async update(el, fileInfo) {
-			if (el._registerObjectsVm) {
-				el._registerObjectsVm.fileId = fileInfo.id
+			if (el._registerObjectsProps) {
+				el._registerObjectsProps.fileId = fileInfo.id
 			}
 		},
 
 		destroy(el) {
-			if (el._registerObjectsVm) {
-				el._registerObjectsVm.$destroy()
-				el._registerObjectsVm = null
+			if (el._registerObjectsApp) {
+				el._registerObjectsApp.unmount()
+				el._registerObjectsApp = null
+				el._registerObjectsProps = null
 			}
 		},
 
@@ -84,29 +96,27 @@ document.addEventListener('DOMContentLoaded', () => {
 		icon: textBoxSearchOutlineIcon,
 
 		mount(el, fileInfo, _context) {
-			if (el._extractionVm) {
-				el._extractionVm.$destroy()
+			if (el._extractionApp) {
+				el._extractionApp.unmount()
 			}
 
-			const View = Vue.extend(ExtractionTab)
-			el._extractionVm = new View({
-				propsData: {
-					fileId: fileInfo.id,
-				},
-			})
-			el._extractionVm.$mount(el)
+			el._extractionProps = reactive({ fileId: fileInfo.id })
+			el._extractionApp = createApp(ExtractionTab, el._extractionProps)
+			el._extractionApp.mixin({ methods: { t, n } })
+			el._extractionApp.mount(el)
 		},
 
 		async update(el, fileInfo) {
-			if (el._extractionVm) {
-				el._extractionVm.fileId = fileInfo.id
+			if (el._extractionProps) {
+				el._extractionProps.fileId = fileInfo.id
 			}
 		},
 
 		destroy(el) {
-			if (el._extractionVm) {
-				el._extractionVm.$destroy()
-				el._extractionVm = null
+			if (el._extractionApp) {
+				el._extractionApp.unmount()
+				el._extractionApp = null
+				el._extractionProps = null
 			}
 		},
 

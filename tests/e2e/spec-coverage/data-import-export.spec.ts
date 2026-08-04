@@ -35,9 +35,12 @@
 import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { resolveBaseUrl } from '../base-url'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
-const BASE_URL = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+// ⚠️ No `|| 'http://localhost:8080'` — that is the SHARED dev container.
+// See ../base-url.ts.
+const BASE_URL = resolveBaseUrl()
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EXCLUDED scenario

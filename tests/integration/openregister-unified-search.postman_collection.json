@@ -112,6 +112,31 @@
       ]
     },
     {
+      "name": "Setup: attach both schemas to the register",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"schemas\":[\"{{schema_id}}\",\"{{hidden_schema_id}}\"]}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('schemas attached to register', function () { pm.expect([200,201]).to.include(pm.response.code); });",
+              "// The unified-search provider only surfaces objects whose schema is",
+              "// registered on a register AND flagged searchable; without this the",
+              "// freshly-created object is not discoverable by the provider."
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Setup: create searchable object (uspjansen term)",
       "request": {
         "method": "POST",
@@ -307,7 +332,7 @@
       "name": "Cleanup: delete searchable schema",
       "request": {
         "method": "DELETE",
-        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}"
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{schema_id}}?force=true"
       },
       "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup schema', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
     },
@@ -315,7 +340,7 @@
       "name": "Cleanup: delete non-searchable schema",
       "request": {
         "method": "DELETE",
-        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{hidden_schema_id}}"
+        "url": "{{base_url}}/index.php/apps/openregister/api/schemas/{{hidden_schema_id}}?force=true"
       },
       "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup hidden schema', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
     },
@@ -323,7 +348,7 @@
       "name": "Cleanup: delete register",
       "request": {
         "method": "DELETE",
-        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}"
+        "url": "{{base_url}}/index.php/apps/openregister/api/registers/{{register_id}}?force=true"
       },
       "event": [{ "listen": "test", "script": { "exec": ["pm.test('cleanup register', function () { pm.expect([200,202,204,404]).to.include(pm.response.code); });"] } }]
     }

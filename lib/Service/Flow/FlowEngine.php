@@ -41,6 +41,7 @@ namespace OCA\OpenRegister\Service\Flow;
 use DateTime;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Workflow\Definition;
 use Symfony\Component\Workflow\MarkingStore\MarkingStoreInterface;
 use Symfony\Component\Workflow\Workflow;
 use Throwable;
@@ -95,15 +96,101 @@ class FlowEngine
     /**
      * Constructor.
      *
-     * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
-     * @param LoggerInterface       $logger  The logger.
+     * @param FlowDefinitionBuilder      $builder   The document -> Petri-net translator.
+     * @param LoggerInterface            $logger    The logger.
+     * @param FlowOversightRegistry|null $oversight The pre-hop gate. Nullable so the
+     *                                              engine stays unit-testable without a
+     *                                              container; absent, nothing objects,
+     *                                              exactly as an empty registry does.
      */
     public function __construct(
         private readonly FlowDefinitionBuilder $builder,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?FlowOversightRegistry $oversight=null
     ) {
 
     }//end __construct()
+
+    /**
+     * Ask the oversight checks whether the next hop may run.
+     *
+     * Consulted BEFORE EACH HOP rather than once per run: a flow that suspends
+     * on a wait node and resumes an hour later, or one walking a long graph,
+     * would otherwise sail straight past a kill switch thrown mid-run — which
+     * is the case the switch exists for.
+     *
+     * NO registry CONSENTS, exactly as an empty registry does. The two are the
+     * same statement — nothing objects — and treating the absent one as a
+     * refusal would make the engine unrunnable wherever it is constructed
+     * without a container, which includes every unit test of the walk itself.
+     *
+     * The fail-closed property that actually matters lives one level down, in
+     * `FlowOversightRegistry::firstRefusal()`: a check that THROWS is a veto,
+     * never consent. That is the case where something was supposed to have an
+     * opinion and could not form one. "Nobody registered an opinion" is not
+     * that case.
+     *
+     * @param array<string, mixed> $context The run context.
+     * @param string               $name    The transition about to fire.
+     * @param string               $type    The step type about to run.
+     *
+     * @return array{checkId: string, reason: string}|null The refusal, or null to proceed.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    private function oversightRefusal(array $context, string $name, string $type): ?array
+    {
+        if (($context['oversight'] ?? true) === false) {
+            return null;
+        }
+
+        if ($this->oversight === null) {
+            return null;
+        }
+
+        return $this->oversight->firstRefusal(
+            context: array_merge(
+                $context,
+                ['transition' => $name, 'nodeType' => $type]
+            )
+        );
+
+    }//end oversightRefusal()
+
+    /**
+     * Raise a FlowStop when an oversight check refuses the next hop.
+     *
+     * Raising rather than returning is deliberate: `run()` already turns a
+     * FlowStop into a terminal `stopped` result, so a veto reuses the semantics
+     * an author's Stop step already has instead of adding a second, parallel way
+     * for a run to end early. The refusing check's id is carried in the reason
+     * because that is what an operator needs in order to know WHICH gate closed.
+     *
+     * @param array  $context The run context.
+     * @param string $name    The transition about to fire.
+     * @param string $type    The node type about to run.
+     *
+     * @return void
+     *
+     * @throws FlowStop When a check refuses the hop.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    private function assertOversightAllows(array $context, string $name, string $type): void
+    {
+        $refusal = $this->oversightRefusal(context: $context, name: $name, type: $type);
+        if ($refusal === null) {
+            return;
+        }
+
+        // Both keys are guaranteed by firstRefusal()'s return type, so no
+        // defaulting here: a `??` would be dead code that reads like a guard.
+        throw new FlowStop(
+            reason: $refusal['reason'],
+            checkId: $refusal['checkId']
+        );
+
+    }//end assertOversightAllows()
 
     /**
      * Run a flow document.
@@ -119,12 +206,20 @@ class FlowEngine
      * item built out of the subject, so a flow that never fans out behaves
      * exactly like the single-object model this replaces.
      *
+     * `$startAt` runs the flow from a chosen node instead of its start — n8n's
+     * "run from here". The seed items land on that node, and the steps before it
+     * do not run; an author pins their output ({@see self::pinnedItems()}) and
+     * re-runs only the part being worked on. It is the initial place overridden,
+     * so a resume — whose marking is already mid-graph and comes from the store —
+     * is unaffected.
+     *
      * @param array                 $flow       The flow document.
      * @param MarkingStoreInterface $store      Where the marking lives (an OR object, in production).
      * @param object                $subject    The object the run is about; holds the marking.
      * @param FlowStepDispatcher    $dispatcher Performs each step's side effect.
      * @param array                 $context    Run-level metadata handed to every step.
      * @param array|null            $items      Seed items; defaults to one item from the subject.
+     * @param string|null           $startAt    Node to start from; defaults to the flow's own start.
      *
      * @return array The run result: `{status, log: [], context: [], items: []}`.
      *
@@ -136,9 +231,11 @@ class FlowEngine
         object $subject,
         FlowStepDispatcher $dispatcher,
         array $context=[],
-        ?array $items=null
+        ?array $items=null,
+        ?string $startAt=null
     ): array {
         $items = ($items ?? FlowItems::fromSubject(subject: $subject));
+        $flow  = $this->withStartNode(flow: $flow, startAt: $startAt);
 
         try {
             $definition = $this->builder->build(flow: $flow);
@@ -161,6 +258,15 @@ class FlowEngine
         $workflow = new Workflow(definition: $definition, markingStore: $store, name: (string) ($flow['id'] ?? 'flow'));
         $log      = [];
         $fired    = 0;
+
+        // Per-place item buffers. Items belong to the PLACES a token sits on,
+        // not to the run globally ({@see self::seedPlaceItems()}).
+        $placeItems = $this->seedPlaceItems(
+            workflow: $workflow,
+            subject: $subject,
+            definition: $definition,
+            items: $items
+        );
 
         while (true) {
             $enabled = $workflow->getEnabledTransitions(subject: $subject);
@@ -199,7 +305,7 @@ class FlowEngine
             $transition = $this->selectTransition(
                 enabled: $enabled,
                 flow: $flow,
-                items: $items,
+                placeItems: $placeItems,
                 context: $context
             );
 
@@ -216,18 +322,66 @@ class FlowEngine
                 ];
             }
 
-            $name    = $transition->getName();
-            $step    = $this->stepFor(flow: $flow, transitionName: $name);
-            $itemsIn = $items;
+            $name = $transition->getName();
+            $step = $this->stepFor(flow: $flow, transitionName: $name);
+
+            // A step reads the items on its input place(s). For a join — several
+            // incoming edges converging on one node — that is the concatenation
+            // of every branch's items, in the froms' declared order, which is
+            // exactly what a Merge node then refines. The Petri net already
+            // holds the join until every input place is marked, so wait-for-both
+            // is the default and needs no code here.
+            $itemsIn = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $items   = $itemsIn;
+
+            // The step's catalogue id, carried onto every log entry so the run
+            // history can be queried BY NODE TYPE ("which node type fails")
+            // rather than only by run.
+            $stepType = (string) ($step['type'] ?? '');
+
+            $startedAt = microtime(true);
+
+            // Pinned output (n8n's "pin data"): when a run supplies a pin for
+            // this step, its stored output is used verbatim and the step is NOT
+            // executed — the side effect is skipped. This is what makes iterating
+            // on a flow cheap: pin the node that hits a real API, then re-run the
+            // downstream steps as often as needed without calling it again. A pin
+            // short-circuits before dispatch, so it also can neither stop,
+            // suspend nor fail — a pinned step always "just produces".
+            $pinned = $this->pinnedItems(flow: $flow, context: $context, transitionName: $name);
+            if ($pinned !== null) {
+                $items = $pinned;
+                $log[] = [
+                    'transition' => $name,
+                    'type'       => $stepType,
+                    'status'     => 'pinned',
+                    'itemsIn'    => count($itemsIn),
+                    'itemsOut'   => count($items),
+                    'durationMs' => 0,
+                ];
+
+                $placeItems = $this->advanceItems(transition: $transition, placeItems: $placeItems, items: $items);
+                $workflow->apply(subject: $subject, transitionName: $name);
+                continue;
+            }
 
             try {
-                $produced = $dispatcher->dispatch(step: $step, items: $items, context: $context);
+                // OVERSIGHT, before the hop. A veto is raised as a FlowStop so it
+                // travels the same path as an author's Stop step: the run ENDS.
+                // It never skips the hop and carries on, because a skipped step
+                // inside a completed run is indistinguishable from one that ran
+                // and did nothing — the exact failure this change removes.
+                $this->assertOversightAllows(context: $context, name: $name, type: $stepType);
+
+                $produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
                 $items    = FlowItems::normalise(value: $produced);
                 $log[]    = [
                     'transition' => $name,
+                    'type'       => $stepType,
                     'status'     => 'completed',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
             } catch (FlowStop $stop) {
                 // A deliberate end, requested by a Stop step. Caught before the
@@ -236,8 +390,13 @@ class FlowEngine
                 // to end, and it ends with their message and their outcome.
                 $log[] = [
                     'transition' => $name,
+                    'type'       => $stepType,
                     'status'     => 'stopped',
                     'reason'     => $stop->getMessage(),
+                    // Null for an author's Stop step; set when an oversight
+                    // gate raised the stop, so the history records WHICH gate.
+                    'checkId'    => $stop->checkId(),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
 
                 $stopStatus = self::STATUS_STOPPED;
@@ -275,31 +434,33 @@ class FlowEngine
                     'resumeAt' => $suspension->getResumeAt(),
                 ];
             } catch (Throwable $e) {
-                $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);
-                $log[]  = ['transition' => $name, 'status' => 'failed', 'error' => $e->getMessage()];
-
-                $this->logger->warning(
-                    message: '[FlowEngine] Flow step failed',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'flow'       => ($flow['id'] ?? null),
-                        'transition' => $name,
-                        'policy'     => $policy,
-                        'error'      => $e->getMessage(),
-                    ]
+                $log[]   = [
+                    'transition' => $name,
+                    'type'       => $stepType,
+                    'status'     => 'failed',
+                    'error'      => $e->getMessage(),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
+                ];
+                $outcome = $this->outcomeForFailedStep(
+                    step: $step,
+                    error: $e,
+                    name: $name,
+                    flow: $flow,
+                    log: $log,
+                    context: $context,
+                    items: $items
                 );
 
-                if ($policy === self::ON_ERROR_DEAD_LETTER) {
-                    return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
-                }
-
-                if ($policy !== self::ON_ERROR_CONTINUE) {
-                    // `stop` is the default: an unknown policy stops rather than
-                    // continues, so a typo fails safe instead of running on.
-                    return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
+                // A terminal outcome ends the run; null means the step's policy
+                // is `continue`, so the walk goes on.
+                if ($outcome !== null) {
+                    return $outcome;
                 }
             }//end try
+
+            // Move the items in lock-step with the token: onto the output
+            // places, off the consumed inputs ({@see self::advanceItems()}).
+            $placeItems = $this->advanceItems(transition: $transition, placeItems: $placeItems, items: $items);
 
             // The marking advances even when a `continue` step failed: the author
             // asked the run to proceed, and leaving the token behind would spin
@@ -308,6 +469,31 @@ class FlowEngine
         }//end while
 
     }//end run()
+
+    /**
+     * Override where a flow starts, for "run from here".
+     *
+     * A non-empty start node replaces the flow's `initial`; the builder then
+     * validates it exists, so an unknown node fails the run exactly as a bad
+     * document does. An empty or absent start leaves the flow untouched, so the
+     * ordinary path is unaffected.
+     *
+     * @param array       $flow    The flow document.
+     * @param string|null $startAt The node to start from, or null/empty for none.
+     *
+     * @return array The flow document, with `initial` overridden when asked.
+     *
+     * @spec openspec/changes/or-flow-partial-run/specs/flow-partial-run/spec.md
+     */
+    private function withStartNode(array $flow, ?string $startAt): array
+    {
+        if (($startAt ?? '') !== '') {
+            $flow['initial'] = $startAt;
+        }
+
+        return $flow;
+
+    }//end withStartNode()
 
     /**
      * Find the step configuration attached to a transition.
@@ -337,6 +523,89 @@ class FlowEngine
     }//end stepFor()
 
     /**
+     * Decide what a failed step does, per its `onError` policy.
+     *
+     * Returns the terminal run result when the policy ends the run
+     * (`dead_letter`, or `stop` — the default, which also catches an unknown
+     * policy so a typo fails safe), or null when the policy is `continue` and
+     * the walk should go on. The failure is logged either way.
+     *
+     * @param array     $step    The step configuration.
+     * @param Throwable $error   The failure.
+     * @param string    $name    The transition name.
+     * @param array     $flow    The flow document (for the log context).
+     * @param array     $log     The run log so far (already holding the failure).
+     * @param array     $context The run context.
+     * @param array     $items   The items in hand at the failure.
+     *
+     * @return array|null The terminal result, or null to continue the walk.
+     *
+     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     */
+    private function outcomeForFailedStep(
+        array $step,
+        Throwable $error,
+        string $name,
+        array $flow,
+        array $log,
+        array $context,
+        array $items
+    ): ?array {
+        $policy = (string) ($step['onError'] ?? self::ON_ERROR_STOP);
+
+        $this->logger->warning(
+            message: '[FlowEngine] Flow step failed',
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'flow'       => ($flow['id'] ?? null),
+                'transition' => $name,
+                'policy'     => $policy,
+                'error'      => $error->getMessage(),
+            ]
+        );
+
+        if ($policy === self::ON_ERROR_DEAD_LETTER) {
+            return ['status' => self::STATUS_DEAD_LETTER, 'log' => $log, 'context' => $context, 'items' => $items];
+        }
+
+        if ($policy !== self::ON_ERROR_CONTINUE) {
+            return ['status' => self::STATUS_STOPPED, 'log' => $log, 'context' => $context, 'items' => $items];
+        }
+
+        return null;
+
+    }//end outcomeForFailedStep()
+
+    /**
+     * The pinned output for a step, or null when it is not pinned.
+     *
+     * Pins are a map of step name to an item list. A run carries them in its
+     * `context` under `pins` (a test/authoring run supplies them without
+     * touching the stored flow); a flow may also carry a `pins` map of its own,
+     * used only as the fallback so a run's pins always win. A step whose name is
+     * absent from both is not pinned and runs normally.
+     *
+     * @param array  $flow           The flow document.
+     * @param array  $context        The run context.
+     * @param string $transitionName The step's transition name.
+     *
+     * @return array<int, mixed>|null The pinned items, or null when not pinned.
+     *
+     * @spec openspec/changes/or-flow-pins/specs/flow-pins/spec.md
+     */
+    private function pinnedItems(array $flow, array $context, string $transitionName): ?array
+    {
+        $pins = (array) ($context['pins'] ?? ($flow['pins'] ?? []));
+        if (array_key_exists($transitionName, $pins) === false) {
+            return null;
+        }
+
+        return FlowItems::normalise(value: $pins[$transitionName]);
+
+    }//end pinnedItems()
+
+    /**
      * Choose which enabled transition to fire, honouring edge conditions.
      *
      * Rules, in order:
@@ -349,28 +618,24 @@ class FlowEngine
      *    condition that did not hold, with no default), null is returned and
      *    the run ends at this choice point.
      *
-     * The condition is evaluated against the first item as the representative
-     * of the list. Per-item routing — sending each item down a different branch
-     * — is a larger feature (it needs the engine to carry more than one item
-     * list across a split) and is not attempted here.
+     * Each candidate's condition is evaluated against the items on ITS input
+     * place — the data the branch would actually carry — not a single global
+     * list. Per-item routing (each item down a different branch) is a larger
+     * feature and is not attempted here; the condition uses the first item as
+     * the branch's representative.
      *
-     * @param array<int, object>   $enabled The enabled transitions.
-     * @param array<string, mixed> $flow    The flow document.
-     * @param array<int, mixed>    $items   The current item list.
-     * @param array<string, mixed> $context Run-level metadata.
+     * @param array<int, object>   $enabled    The enabled transitions.
+     * @param array<string, mixed> $flow       The flow document.
+     * @param array<string, array> $placeItems Items per place.
+     * @param array<string, mixed> $context    Run-level metadata.
      *
      * @return object|null The transition to fire, or null when none is eligible.
      *
      * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
      */
-    private function selectTransition(array $enabled, array $flow, array $items, array $context): ?object
+    private function selectTransition(array $enabled, array $flow, array $placeItems, array $context): ?object
     {
         $fallback = null;
-        $data     = FlowExpression::dataFor(
-            item: ($items[0] ?? []),
-            itemCount: count($items),
-            context: $context
-        );
 
         foreach ($enabled as $transition) {
             $edge      = $this->stepFor(flow: $flow, transitionName: $transition->getName());
@@ -382,12 +647,152 @@ class FlowEngine
                 continue;
             }
 
+            $items = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
+            $data  = FlowExpression::dataFor(
+                item: ($items[0] ?? []),
+                itemCount: count($items),
+                context: $context
+            );
+
             if (FlowExpression::isTrue(logic: $condition, data: $data) === true) {
                 return $transition;
             }
-        }
+        }//end foreach
 
         return $fallback;
 
     }//end selectTransition()
+
+    /**
+     * Gather the items a transition reads: every input place's items, in the
+     * froms' declared order.
+     *
+     * For a normal step this is just its one input place. For a join it is the
+     * concatenation of every incoming branch's items — which is what a Merge
+     * node receives and then combines.
+     *
+     * @param object               $transition The transition.
+     * @param array<string, array> $placeItems Items per place.
+     *
+     * @return array<int, mixed> The gathered input items.
+     *
+     * @spec openspec/changes/or-flow-logic/specs/flow-logic/spec.md
+     */
+    private function itemsForTransition(object $transition, array $placeItems): array
+    {
+        $items = [];
+        foreach ($transition->getFroms() as $from) {
+            foreach (($placeItems[(string) $from] ?? []) as $item) {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
+
+    }//end itemsForTransition()
+
+    /**
+     * Seed the per-place item buffers from the current marking.
+     *
+     * Items belong to the PLACES a token sits on, not to the run globally: a
+     * parallel split hands each branch the items from the split point, and a
+     * join reads the items every incoming branch left on it. A single shared
+     * list cannot express either — the second branch to run would overwrite
+     * the first.
+     *
+     * Seeded from the CURRENT marking, which is what makes resume work: a fresh
+     * run's marking is the initial place, a resumed run's is wherever it
+     * suspended, and either way the stored items land on the place that holds
+     * the token.
+     *
+     * @param Workflow   $workflow   The workflow.
+     * @param object     $subject    The subject holding the marking.
+     * @param Definition $definition The definition (for the initial-place fallback).
+     * @param array      $items      The seed items.
+     *
+     * @return array<string, array> Items keyed by place.
+     *
+     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+     */
+    private function seedPlaceItems(Workflow $workflow, object $subject, Definition $definition, array $items): array
+    {
+        $placeItems = [];
+        foreach (array_keys($workflow->getMarking(subject: $subject)->getPlaces()) as $place) {
+            $placeItems[(string) $place] = $items;
+        }
+
+        if ($placeItems === []) {
+            foreach ($definition->getInitialPlaces() as $place) {
+                $placeItems[(string) $place] = $items;
+            }
+        }
+
+        return $placeItems;
+
+    }//end seedPlaceItems()
+
+    /**
+     * Move a fired transition's items: onto its output places, off its inputs.
+     *
+     * Per-item routing (n8n's If/Switch) lives here. An item that names an output
+     * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
+     * place with that name; an item that names none is broadcast to every output,
+     * which is the ordinary behaviour and what a parallel split relies on. So a
+     * step whose items carry no output tag distributes exactly as before — this
+     * is additive, not a change to any existing flow. The tag is stripped as the
+     * item lands, so it never lingers to misroute a later step.
+     *
+     * Clearing the consumed inputs matters for a loop that re-enters the
+     * transition — it must read fresh items, not a stale copy left behind.
+     *
+     * @param object               $transition The fired transition.
+     * @param array<string, array> $placeItems The current per-place buffers.
+     * @param array                $items      What the step produced.
+     *
+     * @return array<string, array> The updated buffers.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    private function advanceItems(object $transition, array $placeItems, array $items): array
+    {
+        foreach ($transition->getTos() as $to) {
+            $placeItems[(string) $to] = $this->itemsForOutput(items: $items, output: (string) $to);
+        }
+
+        foreach ($transition->getFroms() as $from) {
+            unset($placeItems[(string) $from]);
+        }
+
+        return $placeItems;
+
+    }//end advanceItems()
+
+    /**
+     * The items that belong on one output place: those routed to it, plus the
+     * unrouted ones that go everywhere. The output tag is dropped on the way.
+     *
+     * @param array<int, array> $items  The produced items.
+     * @param string            $output The output place's name.
+     *
+     * @return array<int, array> The items for that output, tag removed.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    private function itemsForOutput(array $items, string $output): array
+    {
+        $out = [];
+        foreach ($items as $item) {
+            $tag = FlowItems::outputOf(member: (array) $item);
+            if ($tag !== null && $tag !== $output) {
+                // Routed elsewhere: not this output's item.
+                continue;
+            }
+
+            unset($item[FlowItems::OUTPUT]);
+            $out[] = $item;
+        }
+
+        return $out;
+
+    }//end itemsForOutput()
 }//end class

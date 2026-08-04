@@ -7,14 +7,14 @@
 			<p v-if="requestedAt">
 				{{ t('openregister', 'Requested at') }}: {{ formatDate(requestedAt) }}
 			</p>
-			<NcButton type="warning" @click="cancelDeactivation">
+			<NcButton variant="warning" @click="cancelDeactivation">
 				{{ t('openregister', 'Cancel deactivation request') }}
 			</NcButton>
 		</div>
 
 		<div v-else class="account-section__active">
 			<p>{{ t('openregister', 'Request account deactivation. This will notify administrators for review.') }}</p>
-			<NcButton type="error" @click="showConfirmModal = true">
+			<NcButton variant="error" @click="showConfirmModal = true">
 				{{ t('openregister', 'Request account deactivation') }}
 			</NcButton>
 		</div>
@@ -39,7 +39,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcButton } from '@nextcloud/vue'
 import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 
 export default {

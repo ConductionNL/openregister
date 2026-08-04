@@ -72,7 +72,7 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcLoadingIcon } from '@nextcloud/vue'
 import CreateConnectedObjectDialog from '../dialogs/CreateConnectedObjectDialog.vue'
 
 export default {
@@ -183,7 +183,7 @@ export default {
 					timeout: 10000,
 				})
 				const results = response.data?.results || response.data || []
-				this.$set(this.searchResults, schema.id, results)
+				this.searchResults[schema.id] = results
 			} catch (err) {
 				console.error('[ActionsTab] Initial load failed for', schema.title, err)
 			}
@@ -192,7 +192,7 @@ export default {
 		 * @spec openspec/specs/mail-sidebar/spec.md
 		 */
 		showResults(schema) {
-			this.$set(this.visibleResults, schema.id, true)
+			this.visibleResults[schema.id] = true
 		},
 		/**
 		 * @spec openspec/specs/mail-sidebar/spec.md
@@ -219,8 +219,8 @@ export default {
 				return
 			}
 
-			this.$set(this.searching, schema.id, true)
-			this.$set(this.visibleResults, schema.id, true)
+			this.searching[schema.id] = true
+			this.visibleResults[schema.id] = true
 			try {
 				const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}', {
 					register: register.id,
@@ -231,11 +231,11 @@ export default {
 					timeout: 10000,
 				})
 				const results = response.data?.results || response.data || []
-				this.$set(this.searchResults, schema.id, results)
+				this.searchResults[schema.id] = results
 			} catch (err) {
 				console.error('[ActionsTab] Search failed:', err)
 			} finally {
-				this.$set(this.searching, schema.id, false)
+				this.searching[schema.id] = false
 			}
 		},
 		/**
@@ -277,7 +277,7 @@ export default {
 			const url = generateUrl('/apps/mail/api/messages/{id}/body', { id: this.messageId })
 			const response = await axios.get(url, { timeout: 10000 })
 			const envelope = response.data?.data || response.data
-			this.$set(this.envelopeCache, this.messageId, envelope)
+			this.envelopeCache[this.messageId] = envelope
 			return envelope
 		},
 		/**
@@ -336,7 +336,7 @@ export default {
 			if (!this.accountId || !this.messageId || this.creating[schema.id]) return
 			if (!this.registerCache[schema.id]) return
 
-			this.$set(this.creating, schema.id, true)
+			this.creating[schema.id] = true
 			try {
 				const envelope = await this.fetchEnvelope()
 				const data = this.applyTemplate(
@@ -348,7 +348,7 @@ export default {
 				showError(t('openregister', 'Could not read this email'))
 				console.error('[ActionsTab] Open create failed:', err)
 			} finally {
-				this.$set(this.creating, schema.id, false)
+				this.creating[schema.id] = false
 			}
 		},
 		/**
@@ -397,7 +397,7 @@ export default {
 			if (!objectUuid || !this.accountId || !this.messageId) return
 
 			const mailRef = `${this.accountId}/${this.messageId}`
-			this.$set(this.linking, schema.id, true)
+			this.linking[schema.id] = true
 			try {
 				const url = generateUrl('/apps/openregister/api/objects/{uuid}/_linked/mail', {
 					uuid: objectUuid,
@@ -406,8 +406,8 @@ export default {
 				showSuccess(t('openregister', 'Connected to {name}', { name: this.objectName(obj) }))
 
 				// Clear search and hide results
-				this.$set(this.searchTerms, schema.id, '')
-				this.$set(this.visibleResults, schema.id, false)
+				this.searchTerms[schema.id] = ''
+				this.visibleResults[schema.id] = false
 				this.loadInitialResults(schema)
 
 				this.$emit('linked')
@@ -415,7 +415,7 @@ export default {
 				showError(t('openregister', 'Failed to connect'))
 				console.error('[ActionsTab] Link failed:', err)
 			} finally {
-				this.$set(this.linking, schema.id, false)
+				this.linking[schema.id] = false
 			}
 		},
 	},

@@ -125,10 +125,6 @@ class MagicOrganizationHandler
             }
 
             if ($saasMode !== true) {
-                $this->logger->debug(
-                    message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
                 return;
             }
         }
@@ -137,11 +133,6 @@ class MagicOrganizationHandler
         $activeOrgUuids = $this->getActiveOrganizationUuids();
 
         if (empty($activeOrgUuids) === true) {
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] No active organization, applying public filter',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
             // No active organization - admins can see null-org objects, others get no results.
             if ($isAdmin !== true) {
                 $qb->andWhere('1 = 0');
@@ -176,16 +167,6 @@ class MagicOrganizationHandler
         // Apply OR of all conditions.
         $qb->andWhere($qb->expr()->orX(...$conditions));
 
-        $this->logger->debug(
-            message: '[MagicOrganizationHandler] Applied organization filter',
-            context: [
-                'file'            => __FILE__,
-                'line'            => __LINE__,
-                'activeOrgUuids'  => $activeOrgUuids,
-                'conditionsCount' => count($conditions),
-                'isAdmin'         => $isAdmin,
-            ]
-                );
     }//end applyOrganizationFilter()
 
     /**
@@ -208,11 +189,6 @@ class MagicOrganizationHandler
             return false;
         }
 
-        $this->logger->debug(
-            message: '[MagicOrganizationHandler] CLI/system context — skipping org filter',
-            context: ['file' => __FILE__, 'line' => __LINE__]
-        );
-
         return true;
     }//end isSystemContext()
 
@@ -233,16 +209,6 @@ class MagicOrganizationHandler
             // Get active organisations including parent chain.
             $orgUuids = $organisationService->getUserActiveOrganisations();
 
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] getUserActiveOrganisations returned',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'orgUuids' => $orgUuids,
-                    'user'     => $this->userSession->getUser()?->getUID(),
-                ]
-                    );
-
             if (empty($orgUuids) === false) {
                 return $orgUuids;
             }
@@ -250,21 +216,9 @@ class MagicOrganizationHandler
             // Fallback: try to get just the active organisation.
             $activeOrg = $organisationService->getActiveOrganisation();
             if ($activeOrg !== null) {
-                $this->logger->debug(
-                    message: '[MagicOrganizationHandler] getActiveOrganisation returned',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'uuid' => $activeOrg->getUuid(),
-                    ]
-                        );
                 return [$activeOrg->getUuid()];
             }
 
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] No active organisation found',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
             return [];
         } catch (\Exception $e) {
             $this->logger->warning(

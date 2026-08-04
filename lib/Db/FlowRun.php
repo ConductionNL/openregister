@@ -80,6 +80,11 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUpdated(?DateTime $updated)
  *
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
+ *
+ * @SuppressWarnings(PHPMD.TooManyFields) One property per column of
+ * `openregister_flow_runs`. An entity's field count IS its table's column
+ * count; "redesigning to keep fields under 15" would mean dropping columns the
+ * run needs to be resumable, not simplifying anything.
  */
 class FlowRun extends Entity implements JsonSerializable
 {
@@ -115,6 +120,22 @@ class FlowRun extends Entity implements JsonSerializable
         self::STATUS_STOPPED,
         self::STATUS_DEAD_LETTER,
         self::STATUS_FAILED,
+    ];
+
+    /**
+     * Statuses a run will still advance from — the complement of TERMINAL.
+     *
+     * This is what "currently running" means to a person watching a dashboard.
+     * `running` on its own is nearly useless as a filter: a run holds it only
+     * while a worker pass is executing it, so a poll almost always misses it,
+     * while `queued` and `suspended` are where a live run actually waits.
+     *
+     * @var array<int, string>
+     */
+    public const ACTIVE = [
+        self::STATUS_QUEUED,
+        self::STATUS_RUNNING,
+        self::STATUS_SUSPENDED,
     ];
 
     /**

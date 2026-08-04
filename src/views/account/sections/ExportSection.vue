@@ -2,7 +2,7 @@
 	<div class="section">
 		<h2>{{ t('openregister', 'Personal Data Export') }}</h2>
 		<p>{{ t('openregister', 'Download a copy of all your personal data stored in OpenRegister (GDPR Article 20).') }}</p>
-		<NcButton type="primary"
+		<NcButton variant="primary"
 			:disabled="loading"
 			@click="exportData">
 			<template v-if="loading">
@@ -22,7 +22,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'ExportSection',

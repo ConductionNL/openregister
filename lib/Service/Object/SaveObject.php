@@ -61,6 +61,7 @@ use OCA\OpenRegister\Event\ReferenceValidatedEvent;
 use OCA\OpenRegister\Event\ReferenceValidationFailedEvent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Exception\CircularReferenceException;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCA\OpenRegister\Exception\ReferenceValidationException;
 use OCA\OpenRegister\Exception\ValidationException;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -2759,10 +2760,12 @@ class SaveObject
      * @param bool                     $_validation   Whether to validate the object (default: true).
      * @param array|null               $uploadedFiles Uploaded files array (optional).
      * @param IUser|null               $currentUser   Explicit acting user for `@self.folder` access checks; falls back to the session user when null.
+     * @param bool                     $failIfExists  Insert-only: throw ObjectExistsException rather than update when taken (default: false).
      *
      * @return ObjectEntity The saved object entity.
      *
      * @throws Exception If there is an error during save.
+     * @throws ObjectExistsException When $failIfExists is true and the identifier is already taken.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Required for flexible save options
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)    Boolean flags needed for flexible save behavior
@@ -2781,7 +2784,8 @@ class SaveObject
         bool $silent=false,
         bool $_validation=true,
         ?array $uploadedFiles=null,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Extract UUID and @self metadata from data.
         [$uuid, $selfData, $data] = $this->extractUuidAndSelfData(
@@ -2896,6 +2900,50 @@ class SaveObject
             );
 
             if ($existingObject !== null) {
+                // INSERT-ONLY GUARD (openregister#2210).
+                //
+                // The default below is an upsert: an existing identifier is
+                // updated, silently and successfully. That is correct for the
+                // overwhelming majority of callers and is untouched.
+                //
+                // It is wrong for a caller that is CLAIMING something — a lock,
+                // a slot, a lease, a queue position. There "it already existed"
+                // is the entire answer, and swallowing it means two callers both
+                // believe they won and the loser is never told. Such a caller
+                // opts in with $failIfExists and gets a 409 instead.
+                //
+                // Deliberately opt-in rather than the default: the current
+                // upsert is silent, so there is no way to discover from the code
+                // which callers depend on it. Flipping the default would change
+                // behaviour fleet-wide with no way to enumerate the blast radius.
+                //
+                // This guard alone is NOT what makes the claim safe — it is a
+                // fast path. It and the write below are two separate
+                // operations, so under concurrency N callers can all reach here
+                // having found nothing. The arbitration that actually closes
+                // the race lives one layer down in
+                // MagicMapper::saveObjectToRegisterSchemaTable(), which refuses
+                // both the update branch and a losing INSERT when this flag is
+                // set (openregister#2215). Verified 6/6 races at 12 concurrent
+                // claimants: 1x201, 11x409. Do not remove that guard on the
+                // assumption that this one covers it.
+                if ($failIfExists === true) {
+                    $this->logger->debug(
+                        message: '[SaveObject] Existing object found and failIfExists is set, refusing the write',
+                        context: [
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
+                            'uuid'     => $uuid,
+                            'objectId' => $existingObject->getId(),
+                        ]
+                    );
+
+                    throw new ObjectExistsException(
+                        message: sprintf('An object with identifier "%s" already exists.', (string) $uuid),
+                        uuid: (string) $uuid
+                    );
+                }
+
                 $this->logger->debug(
                     message: '[SaveObject] Existing object found, proceeding with UPDATE',
                     context: [
@@ -2976,7 +3024,8 @@ class SaveObject
                 persist: $persist,
                 silent: $silent,
                 _multitenancy: $_multitenancy,
-                currentUser: $currentUser
+                currentUser: $currentUser,
+                failIfExists: $failIfExists
             );
         } finally {
             $this->popSaveCallFrame(key: $frameKey);
@@ -3249,6 +3298,7 @@ class SaveObject
      * @param bool        $silent        Whether to skip audit trail
      * @param bool        $_multitenancy Whether to apply multitenancy
      * @param IUser|null  $currentUser   Explicit acting user for `@self.folder` access checks (forwarded to setSelfMetadata)
+     * @param bool        $failIfExists  Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @return ObjectEntity Created object
      *
@@ -3270,7 +3320,8 @@ class SaveObject
         bool $persist,
         bool $silent,
         bool $_multitenancy,
-        ?IUser $currentUser=null
+        ?IUser $currentUser=null,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Create a new object entity.
         $objectEntity = new ObjectEntity();
@@ -3315,7 +3366,14 @@ class SaveObject
 
         // Save the object to database FIRST (so it gets an ID).
         // Use MagicMapper to route to MagicMapper when magic mapping is enabled.
-        $savedEntity = $this->unifiedObjectMapper->insert(entity: $preparedObject, register: $register, schema: $schema);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:pre-insert');
+        $savedEntity = $this->unifiedObjectMapper->insert(
+            entity: $preparedObject,
+            register: $register,
+            schema: $schema,
+            failIfExists: $failIfExists
+        );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INSERT');
 
         // Update the name cache with the saved object's name.
         // This ensures the name is available for subsequent operations and relation resolution.
@@ -3332,11 +3390,37 @@ class SaveObject
             register: $register,
             schema: $schema
         );
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:FILEPROPS');
 
         // Create audit trail if not in silent mode.
+        //
+        // The ACTION comes from the mapper, not from this method's name. We got
+        // here because the service-level existence lookup found nothing — but
+        // the mapper looks again, and between the two lookups a concurrent
+        // writer can land the row, so the mapper may have taken its UPDATE
+        // branch on what we are calling a create.
+        //
+        // Recording `create` regardless is how three audit `create` entries
+        // ended up against a single `_id` that was inserted once (#2212/#2217):
+        // the audit trail said three objects were created, and one was. The
+        // mapper's lookup ran last and therefore matches the row, so it is the
+        // one to believe. `old: null` is kept for a genuine create — there is
+        // no previous version to diff against — while an update is recorded as
+        // an update rather than as a second birth.
         if ($silent === false && $this->isAuditTrailsEnabled() === true) {
-            $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            $action = $this->unifiedObjectMapper->getLastWriteAction();
+            if ($action === 'update') {
+                $log = $this->auditTrailMapper->createAuditTrail(
+                    old: null,
+                    new: $savedEntity,
+                    action: 'update'
+                );
+            } else {
+                $log = $this->auditTrailMapper->createAuditTrail(old: null, new: $savedEntity);
+            }
+
             $savedEntity->setLastLog($log->jsonSerialize());
+            \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:AUDIT');
         }
 
         // Update inverse relations on related objects (bidirectional relationship management).
@@ -3346,6 +3430,7 @@ class SaveObject
         // This optimization significantly improves performance when creating many sub-objects.
         if ($silent === false) {
             $this->updateInverseRelations(savedEntity: $savedEntity, register: $register, schema: $schema);
+            \OCA\OpenRegister\Service\WritePhaseProbe::mark('sv:INVERSE-RELATIONS');
         }
 
         return $savedEntity;

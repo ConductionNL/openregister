@@ -29,7 +29,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:disabled="registerLoading"
 						:input-label="t('openregister', 'Register')"
 						:placeholder="t('openregister', 'Select a register')"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -40,7 +40,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:disabled="!registerStore.registerItem || schemaLoading"
 						:input-label="t('openregister', 'Schema')"
 						:placeholder="t('openregister', 'Select a schema')"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 			</div>
 

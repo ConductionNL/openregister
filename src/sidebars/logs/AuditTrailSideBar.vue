@@ -30,7 +30,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -42,7 +42,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
@@ -54,7 +54,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Actions')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -70,7 +70,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Users')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -82,12 +82,12 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
 					<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
@@ -96,12 +96,12 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						v-model="objectFilter"
 						:label="t('openregister', 'Filter by object ID')"
 						:placeholder="t('openregister', 'Enter object ID')"
-						@update:value="handleObjectFilterChange" />
+						@update:modelValue="handleObjectFilterChange" />
 				</div>
 				<div class="filterGroup">
 					<NcCheckboxRadioSwitch
 						v-model="showOnlyWithChanges"
-						@update:checked="applyFilters">
+						@update:modelValue="applyFilters">
 						{{ t('openregister', 'Show only entries with changes') }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -223,6 +223,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -412,7 +413,7 @@ export default {
 		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		this.$root.$on('audit-trail-filtered-count', (count) => {
+		eventBus.on('audit-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 
@@ -422,8 +423,8 @@ export default {
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
 	},
-	beforeDestroy() {
-		this.$root.$off('audit-trail-filtered-count')
+	beforeUnmount() {
+		eventBus.off('audit-trail-filtered-count')
 	},
 	methods: {
 		/**
@@ -734,7 +735,7 @@ export default {
 
 			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
-			this.$root.$emit('audit-trail-filters-changed', filters)
+			eventBus.emit('audit-trail-filters-changed', filters)
 		},
 		/**
 		 * Clear all filters and sync URL

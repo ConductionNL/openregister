@@ -46,9 +46,9 @@ import { translate as t } from '@nextcloud/l10n'
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="register in registers">
+						<template v-for="register in registers" :key="'reg-' + register.id">
 							<!-- Register Row -->
-							<tr :key="'reg-' + register.id" class="register-row">
+							<tr class="register-row">
 								<td class="name-cell">
 									<button
 										class="expand-toggle"
@@ -72,9 +72,9 @@ import { translate as t } from '@nextcloud/l10n'
 								</td>
 								<td class="action-cell">
 									<NcCheckboxRadioSwitch
-										:checked="isPublicAccess(register.authorization)"
+										:model-value="isPublicAccess(register.authorization)"
 										type="switch"
-										@update:checked="togglePublicAccess(register, $event)" />
+										@update:modelValue="togglePublicAccess(register, $event)" />
 								</td>
 							</tr>
 
@@ -102,9 +102,9 @@ import { translate as t } from '@nextcloud/l10n'
 									</td>
 									<td class="action-cell">
 										<NcCheckboxRadioSwitch
-											:checked="isPublicAccess(getEffectiveAuth(schema, register))"
+											:model-value="isPublicAccess(getEffectiveAuth(schema, register))"
 											type="switch"
-											@update:checked="toggleSchemaPublicAccess(schema, register, $event)" />
+											@update:modelValue="toggleSchemaPublicAccess(schema, register, $event)" />
 									</td>
 								</tr>
 							</template>
@@ -133,7 +133,7 @@ import { translate as t } from '@nextcloud/l10n'
 						:input-label="t('openregister', 'Select group')"
 						class="bulk-select" />
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="!bulkRole[register.id] || !bulkGroup[register.id]"
 						@click="applyBulkRole(register)">
 						{{ t('openregister', 'Apply') }}
@@ -221,7 +221,7 @@ export default {
 		 * @spec exclude settings-matrix row expand/collapse toggle plumbing
 		 */
 		toggleRegister(registerId) {
-			this.$set(this.expandedRegisters, registerId, !this.expandedRegisters[registerId])
+			this.expandedRegisters[registerId] = !this.expandedRegisters[registerId]
 		},
 
 		/**

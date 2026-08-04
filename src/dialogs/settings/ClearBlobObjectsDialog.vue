@@ -18,7 +18,7 @@
 				<NcButton @click="$emit('closing')">
 					Cancel
 				</NcButton>
-				<NcButton type="error"
+				<NcButton variant="error"
 					:disabled="clearing"
 					@click="$emit('confirm')">
 					<template #icon>

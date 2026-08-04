@@ -342,8 +342,12 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('bypass', $result);
         $this->assertArrayHasKey('conditions', $result);
-        // No authorization = bypass
-        $this->assertTrue($result['bypass']);
+        // No authorization used to mean an unconditional bypass. It now means
+        // "open to every NON-PRIVATE row": an individual object may declare
+        // `scope: private` on a schema that configures nothing, and bypassing
+        // here would leak it. See the `private` object scope.
+        $this->assertFalse($result['bypass']);
+        $this->assertStringContainsString('_authorization', implode(' ', $result['conditions']));
     }
 
     public function testBuildRbacConditionsSqlPublicRule(): void
@@ -354,7 +358,10 @@ class MagicRbacHandlerIntegrationTest extends TestCase
 
         $result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
         $this->assertIsArray($result);
-        $this->assertTrue($result['bypass']);
+        // An unconditional `public` grant reaches every non-private row, which
+        // is now expressed as a condition rather than as a bypass.
+        $this->assertFalse($result['bypass']);
+        $this->assertStringContainsString('_authorization', implode(' ', $result['conditions']));
     }
 
     public function testBuildRbacConditionsSqlUnconfiguredAction(): void

@@ -28,7 +28,7 @@ import { schemaStore, navigationStore, objectStore, registerStore } from '../../
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !canDelete"
-				type="error"
+				variant="error"
 				@click="deleteSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

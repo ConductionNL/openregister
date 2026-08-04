@@ -14,7 +14,7 @@
 				<NcButton @click="$emit('closing')">
 					Cancel
 				</NcButton>
-				<NcButton type="error"
+				<NcButton variant="error"
 					:disabled="rebasing"
 					@click="$emit('confirm')">
 					<template #icon>

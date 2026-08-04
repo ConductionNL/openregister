@@ -16,7 +16,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="error"
+				variant="error"
 				@click="deleteApplication">
 				<template #icon>
 					<TrashCanOutline :size="20" />

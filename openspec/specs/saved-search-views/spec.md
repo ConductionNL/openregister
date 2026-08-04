@@ -8,6 +8,7 @@ retrofit: true
 ## Purpose
 
 Lets OpenRegister users save the configuration of an object search — selected registers and schemas, free-text search terms, facet filters, and enabled facets — as a reusable, named **view** backed by `/api/views`. Views can be marked public or default, favorited per user, and re-applied to the live search from the search sidebar. This capability describes the observed frontend contract of `src/sidebars/search/SearchSideBar.vue` and the `viewsStore` it drives. It was retrofitted under ADR-003 on 2026-05-25 (cluster `fe-sidebars`); requirements capture observed behavior rather than original intent.
+
 ## Requirements
 ### Requirement: REQ-001 — Saved view lifecycle through the views store and /api/views
 
