@@ -54,7 +54,17 @@ use Psr\Log\LoggerInterface;
  * behavioural gain. If it grows further it wants decomposing properly, not a
  * wider threshold.
  *
+ * Length is over the 1000-line threshold for the same reason and with the same
+ * caveat. The two long methods it used to carry are gone — rechainAll() and
+ * verifyChain() now delegate their per-window work to rechainWindow() and
+ * readChainWindow() — so what remains is breadth, not depth: one class holding
+ * one property. The honest next step if it grows again is moving the
+ * operator-initiated re-chain repair out to its own service, since a
+ * destructive one-off is genuinely a different concern from the continuous
+ * hash/seal/verify path. That is a refactor, not a threshold change.
+ *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
@@ -596,7 +606,7 @@ class AuditHashService
                 $previousHash         = $window['previousHash'];
                 $rechained           += $window['rechained'];
                 $tombstonesPreserved += $window['tombstonesPreserved'];
-                $afterId              = $window['lastId'];
+                $afterId = $window['lastId'];
             }//end while
 
             $this->logger->warning(
@@ -637,7 +647,7 @@ class AuditHashService
     {
         $rechained           = 0;
         $tombstonesPreserved = 0;
-        $lastId              = 0;
+        $lastId = 0;
 
         foreach ($rows as $row) {
             $lastId = (int) $row['id'];
