@@ -45,12 +45,14 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
- * Complexity is over phpmd's threshold (49 on development; the sweep pass and
- * its backlog counter take it to 53). Suppressed rather than restructured: the
- * concerns here — canonical hashing, chain verification, the seal lock and now
- * the sweep — are one cohesive job, and splitting an audit-INTEGRITY class
- * risks the property it exists to guarantee for no behavioural gain. If it
- * grows further it wants decomposing properly, not a wider threshold.
+ * Complexity is over phpmd's threshold (49 before the self-ownership guard in
+ * acquireSealLock(), 50 with it; the sweep pass, its backlog counter and the
+ * re-chain repair take it higher again). Suppressed rather than restructured:
+ * the concerns here — canonical hashing, chain verification, the seal lock, the
+ * sweep and the re-chain — are one cohesive job, and splitting an
+ * audit-INTEGRITY class risks the property it exists to guarantee for no
+ * behavioural gain. If it grows further it wants decomposing properly, not a
+ * wider threshold.
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  *
@@ -102,6 +104,22 @@ class AuditHashService
      * @var integer
      */
     private const SWEEP_BATCH_SIZE = 500;
+
+    /**
+     * Whether THIS service instance currently holds the seal lock.
+     *
+     * The seal lock is not re-entrant: acquiring it twice without releasing
+     * throws LockedException (verified against DBLockingProvider). So when a
+     * batch seal is in progress and a nested audit insert reaches sealRow(),
+     * the acquisition cannot succeed — the holder is us, and we are further up
+     * our own call stack, so waiting is waiting for ourselves.
+     *
+     * Tracking ownership lets acquireSealLock() answer that case immediately
+     * instead of sleeping through its whole retry budget first.
+     *
+     * @var boolean
+     */
+    private bool $holdsSealLock = false;
 
     /**
      * Constructor for AuditHashService.
@@ -510,13 +528,19 @@ class AuditHashService
      * from the row actually before it, so the result is a single chain by
      * construction rather than by luck.
      *
-     * Re-chains EVERY row, including rows that never had a hash, so a single
-     * run repairs both failure modes at once: the gaps the sweeper exists to
-     * close, and the mis-chained rows it cannot touch.
+     * Re-chains every row that CAN be re-chained, including rows that never had
+     * a hash, so a single run repairs both failure modes at once: the gaps the
+     * sweeper exists to close, and the mis-chained rows it cannot touch.
+     *
+     * The one exception is a retention tombstone. Its payload was lawfully
+     * destroyed, so it cannot re-hash; its stored hash is carried forward as the
+     * next row's predecessor and left untouched, exactly as verifyChain() treats
+     * it. Rewriting it would hash the emptied row and destroy the only evidence
+     * the tombstone still carries.
      *
      * @param int $batchSize Rows re-chained per query window.
      *
-     * @return array{rechained: int} The number of rows rewritten.
+     * @return array{rechained: int, tombstonesPreserved: int} Rows rewritten, and tombstones left alone.
      *
      * @spec openspec/specs/audit-hash-chain/spec.md
      */
@@ -535,13 +559,17 @@ class AuditHashService
                 context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
             );
 
-            return ['rechained' => 0];
+            return [
+                'rechained'           => 0,
+                'tombstonesPreserved' => 0,
+            ];
         }
 
         try {
-            $previousHash = $this->getGenesisHash();
-            $rechained    = 0;
-            $afterId      = 0;
+            $previousHash        = $this->getGenesisHash();
+            $rechained           = 0;
+            $tombstonesPreserved = 0;
+            $afterId             = 0;
 
             while (true) {
                 $qb = $this->db->getQueryBuilder();
@@ -561,6 +589,25 @@ class AuditHashService
 
                 foreach ($rows as $row) {
                     $afterId = (int) $row['id'];
+
+                    // A retention tombstone must NOT be re-chained. Its payload
+                    // was lawfully destroyed, so recomputing its hash would hash
+                    // the emptied row and silently replace the one piece of
+                    // evidence the tombstone still carries — under a banner
+                    // reading "repair". Its stored hash is also the link the
+                    // next row committed to, so carrying it forward keeps the
+                    // chain continuous: verifyChain() treats a tombstone exactly
+                    // this way, and the two must agree or a re-chain would
+                    // manufacture the break it was run to fix.
+                    if (($row['purged_at'] ?? null) !== null) {
+                        $storedHash = ($row['hash'] ?? null);
+                        if ($storedHash !== null && $storedHash !== '') {
+                            $previousHash = $storedHash;
+                        }
+
+                        $tombstonesPreserved++;
+                        continue;
+                    }
 
                     $entry = new AuditTrail();
                     $entry->hydrate(object: $this->mapRowToEntity(row: $row));
@@ -588,13 +635,18 @@ class AuditHashService
 
             $this->logger->warning(
                 message: sprintf(
-                    '[AuditHashService] FULL RE-CHAIN COMPLETE — %d audit row(s) re-chained from genesis.',
-                    $rechained
+                    '[AuditHashService] FULL RE-CHAIN COMPLETE — %d audit row(s) re-chained from genesis, '
+                    .'%d retention tombstone(s) left untouched.',
+                    $rechained,
+                    $tombstonesPreserved
                 ),
                 context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
             );
 
-            return ['rechained' => $rechained];
+            return [
+                'rechained'           => $rechained,
+                'tombstonesPreserved' => $tombstonesPreserved,
+            ];
         } finally {
             $this->releaseSealLock();
         }//end try
@@ -705,12 +757,37 @@ class AuditHashService
      */
     private function acquireSealLock(): bool
     {
+        // We already hold it: refuse WITHOUT waiting.
+        //
+        // The lock is exclusive and not re-entrant, so a second acquisition from
+        // inside our own critical section can never succeed. Retrying means
+        // sleeping SEAL_LOCK_ATTEMPTS x SEAL_LOCK_RETRY_DELAY_USEC — 100 ms —
+        // for a holder that is this same call stack, and which cannot release
+        // until we return.
+        //
+        // This is the common case during a configuration import, not an edge
+        // case: sealRows() takes the lock for a batch, an object write inside
+        // that batch appends its own audit row, and insertHashChained() calls
+        // sealRow() for it. One import produced 1,041 of these, each paying the
+        // full 100 ms — roughly 100 seconds of a repair run spent in usleep(),
+        // which is why the process looked busy while the database sat idle.
+        //
+        // Returning false is the SAME outcome as before, reached immediately.
+        // Sealing is fail-soft by design: the caller logs, leaves the row
+        // unsealed, and a later seal pass chains it.
+        if ($this->holdsSealLock === true) {
+            return false;
+        }
+
         for ($attempt = 1; $attempt <= self::SEAL_LOCK_ATTEMPTS; $attempt++) {
             try {
                 $this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+                $this->holdsSealLock = true;
 
                 return true;
             } catch (LockedException) {
+                // Held by ANOTHER process — a concurrent cron seal pass, say.
+                // That holder can finish and release, so waiting is worthwhile.
                 if ($attempt < self::SEAL_LOCK_ATTEMPTS) {
                     usleep(self::SEAL_LOCK_RETRY_DELAY_USEC);
                 }
@@ -727,6 +804,15 @@ class AuditHashService
      */
     private function releaseSealLock(): void
     {
+        // Ownership is cleared FIRST, and unconditionally.
+        //
+        // Both callers release from a `finally`, so this runs even when sealing
+        // threw. If the flag were cleared only after a successful
+        // releaseLock(), a throwing release would leave it stuck true and every
+        // subsequent seal in this process would refuse instantly — turning a
+        // performance guard into a silent stop-sealing switch.
+        $this->holdsSealLock = false;
+
         $this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
     }//end releaseSealLock()
 
@@ -736,6 +822,33 @@ class AuditHashService
      * Iterates audit trail entries in order and validates that each entry's
      * stored hash matches the recomputed hash.
      *
+     * ## Retention tombstones
+     *
+     * A row purged under a retention policy keeps its `id`, `created`, `hash`
+     * and `previous_hash` and is stamped with `purged_at`; its payload is
+     * blanked (see {@see \OCA\OpenRegister\Db\AuditTrailMapper::clearLogs()}).
+     * Its content therefore no longer re-hashes to the stored value, but the
+     * stored value is still the link the NEXT row committed to — so the chain
+     * is carried forward across it and the row is counted as a declared
+     * tombstone rather than reported as a break.
+     *
+     * This is what makes a lawful purge distinguishable from tampering. Before
+     * tombstoning, a purge physically removed the row and verification failed
+     * at the row AFTER it, producing exactly the symptom an attacker would
+     * (or#2265): the audit trail could not tell the two apart.
+     *
+     * ⚠️ RESIDUAL LIMITATION, stated plainly: `purgedAt` is deliberately not
+     * part of the canonical JSON, because adding any key to it would change
+     * the hash of every row ever written and invalidate the whole existing
+     * chain. So the flag itself is not hash-protected: an attacker with direct
+     * table write access could set `purged_at` and blank a row's payload to
+     * suppress a record without breaking verification. That is strictly
+     * weaker and strictly more VISIBLE than the previous situation — the row,
+     * its timestamp and its position all remain, and `purgedTombstones` is
+     * reported and countable — but it is not cryptographic proof that a
+     * tombstone was lawful. Binding the flag into the hash requires a chain
+     * re-seal and is tracked separately.
+     *
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
@@ -744,6 +857,7 @@ class AuditHashService
      *     entriesVerified: int,
      *     brokenAt: int|null,
      *     skippedNullHashes: int,
+     *     purgedTombstones: int,
      *     range?: array{from: int, to: int}
      * }
      *
@@ -757,6 +871,7 @@ class AuditHashService
     {
         $entriesVerified   = 0;
         $skippedNullHashes = 0;
+        $purgedTombstones  = 0;
         $previousHash      = null;
 
         // If starting from a specific ID, get the previous entry's hash.
@@ -811,6 +926,17 @@ class AuditHashService
                     continue;
                 }
 
+                // A retention tombstone: the payload was lawfully destroyed, so
+                // it cannot re-hash, but its stored hash is still the link the
+                // next row committed to. Carry it forward and count it.
+                // Reporting this as a break would recreate the exact ambiguity
+                // the tombstone exists to remove.
+                if (($row['purged_at'] ?? null) !== null) {
+                    $purgedTombstones++;
+                    $previousHash = $storedHash;
+                    continue;
+                }
+
                 $entry = new AuditTrail();
                 $entry->hydrate(object: $this->mapRowToEntity(row: $row));
 
@@ -822,21 +948,14 @@ class AuditHashService
                 $computedHash = $this->computeHash(entry: $entry, previousHash: $previousHash);
 
                 if ($computedHash !== $storedHash) {
-                    $response = [
-                        'valid'             => false,
-                        'entriesVerified'   => $entriesVerified,
-                        'brokenAt'          => (int) $row['id'],
-                        'skippedNullHashes' => $skippedNullHashes,
-                    ];
-
-                    if ($from !== null || $to !== null) {
-                        $response['range'] = [
-                            'from' => ($from ?? (int) $row['id']),
-                            'to'   => ($to ?? (int) $row['id']),
-                        ];
-                    }
-
-                    return $response;
+                    return $this->buildChainReport(
+                        brokenAt: (int) $row['id'],
+                        entriesVerified: $entriesVerified,
+                        skippedNullHashes: $skippedNullHashes,
+                        purgedTombstones: $purgedTombstones,
+                        from: $from,
+                        to: $to
+                    );
                 }
 
                 $previousHash = $storedHash;
@@ -844,22 +963,65 @@ class AuditHashService
             }//end foreach
         }//end while
 
+        return $this->buildChainReport(
+            brokenAt: null,
+            entriesVerified: $entriesVerified,
+            skippedNullHashes: $skippedNullHashes,
+            purgedTombstones: $purgedTombstones,
+            from: $from,
+            to: $to
+        );
+    }//end verifyChain()
+
+    /**
+     * Assemble the verifyChain() result.
+     *
+     * Both exits of the walk return the same shape, differing only in whether
+     * `brokenAt` is set, so building it in one place keeps them from drifting
+     * apart — which for a tamper-evidence report would mean the "valid" and
+     * "broken" answers disagreeing about what they counted.
+     *
+     * @param int|null $brokenAt          Row id where verification failed, or null when the range is intact.
+     * @param int      $entriesVerified   Rows whose content re-hashed correctly.
+     * @param int      $skippedNullHashes Rows carrying no hash (pre-migration or fail-soft leftovers).
+     * @param int      $purgedTombstones  Rows lawfully purged under a retention policy.
+     * @param int|null $from              Requested range start, or null.
+     * @param int|null $to                Requested range end, or null.
+     *
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     purgedTombstones: int,
+     *     range?: array{from: int|null, to: int|null}
+     * }
+     */
+    private function buildChainReport(
+        ?int $brokenAt,
+        int $entriesVerified,
+        int $skippedNullHashes,
+        int $purgedTombstones,
+        ?int $from,
+        ?int $to
+    ): array {
         $response = [
-            'valid'             => true,
+            'valid'             => ($brokenAt === null),
             'entriesVerified'   => $entriesVerified,
-            'brokenAt'          => null,
+            'brokenAt'          => $brokenAt,
             'skippedNullHashes' => $skippedNullHashes,
+            'purgedTombstones'  => $purgedTombstones,
         ];
 
         if ($from !== null || $to !== null) {
             $response['range'] = [
-                'from' => $from,
-                'to'   => $to,
+                'from' => ($from ?? $brokenAt),
+                'to'   => ($to ?? $brokenAt),
             ];
         }
 
         return $response;
-    }//end verifyChain()
+    }//end buildChainReport()
 
     /**
      * Get the hash of the nearest SEALED entry before the given ID.

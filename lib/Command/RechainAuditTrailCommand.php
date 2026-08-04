@@ -121,7 +121,13 @@ class RechainAuditTrailCommand extends Command
         }
 
         $result = $this->hashes->rechainAll();
-        $output->writeln(sprintf('<info>Re-chained %d row(s).</info>', (int) $result['rechained']));
+        $output->writeln(
+            sprintf(
+                '<info>Re-chained %d row(s); left %d retention tombstone(s) untouched.</info>',
+                (int) $result['rechained'],
+                (int) ($result['tombstonesPreserved'] ?? 0)
+            )
+        );
 
         $after = $this->hashes->verifyChain();
         $output->writeln('<info>After:</info>');
