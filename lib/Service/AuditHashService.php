@@ -478,7 +478,11 @@ class AuditHashService
         $sealed   = ($total - $unsealed);
 
         $qb = $this->db->getQueryBuilder();
-        $qb->select($qb->func()->max('id', 'last_sealed'))
+        // The max() function builder takes only the field — unlike count(), it
+        // has no alias parameter. A second argument is silently swallowed by
+        // PHP rather than aliasing anything, so it reads as intent that never
+        // happened. fetchOne() takes the first column regardless.
+        $qb->select($qb->func()->max('id'))
             ->from('openregister_audit_trails')
             ->where($qb->expr()->isNotNull('hash'));
         $result     = $qb->executeQuery();
@@ -569,7 +573,7 @@ class AuditHashService
             $previousHash        = $this->getGenesisHash();
             $rechained           = 0;
             $tombstonesPreserved = 0;
-            $afterId             = 0;
+            $afterId = 0;
 
             while (true) {
                 $qb = $this->db->getQueryBuilder();
@@ -587,50 +591,12 @@ class AuditHashService
                     break;
                 }
 
-                foreach ($rows as $row) {
-                    $afterId = (int) $row['id'];
+                $window = $this->rechainWindow(rows: $rows, previousHash: $previousHash);
 
-                    // A retention tombstone must NOT be re-chained. Its payload
-                    // was lawfully destroyed, so recomputing its hash would hash
-                    // the emptied row and silently replace the one piece of
-                    // evidence the tombstone still carries — under a banner
-                    // reading "repair". Its stored hash is also the link the
-                    // next row committed to, so carrying it forward keeps the
-                    // chain continuous: verifyChain() treats a tombstone exactly
-                    // this way, and the two must agree or a re-chain would
-                    // manufacture the break it was run to fix.
-                    if (($row['purged_at'] ?? null) !== null) {
-                        $storedHash = ($row['hash'] ?? null);
-                        if ($storedHash !== null && $storedHash !== '') {
-                            $previousHash = $storedHash;
-                        }
-
-                        $tombstonesPreserved++;
-                        continue;
-                    }
-
-                    $entry = new AuditTrail();
-                    $entry->hydrate(object: $this->mapRowToEntity(row: $row));
-
-                    $hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
-
-                    $update = $this->db->getQueryBuilder();
-                    $update->update('openregister_audit_trails')
-                        ->set('hash', $update->createNamedParameter($hash))
-                        ->set('previous_hash', $update->createNamedParameter($previousHash))
-                        ->where(
-                            $update->expr()->eq(
-                                'id',
-                                $update->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)
-                            )
-                        );
-                    $update->executeStatement();
-
-                    // Every row becomes the predecessor of the next, which is
-                    // what makes the result one chain rather than a fan-out.
-                    $previousHash = $hash;
-                    $rechained++;
-                }//end foreach
+                $previousHash         = $window['previousHash'];
+                $rechained           += $window['rechained'];
+                $tombstonesPreserved += $window['tombstonesPreserved'];
+                $afterId              = $window['lastId'];
             }//end while
 
             $this->logger->warning(
@@ -652,6 +618,79 @@ class AuditHashService
         }//end try
 
     }//end rechainAll()
+
+    /**
+     * Re-chain one window of rows, carrying the chain across it.
+     *
+     * Split out of {@see rechainAll()} so the outer method reads as the repair's
+     * shape — acquire the lock, walk windows, report — and this one holds the
+     * per-row rule. The caller holds the seal lock.
+     *
+     * @param array<int, array<string, mixed>> $rows         One window, in id order.
+     * @param string                           $previousHash Hash of the row before this window.
+     *
+     * @return array{previousHash: string, rechained: int, tombstonesPreserved: int, lastId: int}
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function rechainWindow(array $rows, string $previousHash): array
+    {
+        $rechained           = 0;
+        $tombstonesPreserved = 0;
+        $lastId              = 0;
+
+        foreach ($rows as $row) {
+            $lastId = (int) $row['id'];
+
+            // A retention tombstone must NOT be re-chained. Its payload was
+            // lawfully destroyed, so recomputing its hash would hash the emptied
+            // row and silently replace the one piece of evidence the tombstone
+            // still carries — under a banner reading "repair". Its stored hash
+            // is also the link the next row committed to, so carrying it forward
+            // keeps the chain continuous: verifyChain() treats a tombstone
+            // exactly this way, and the two must agree or a re-chain would
+            // manufacture the break it was run to fix.
+            if (($row['purged_at'] ?? null) !== null) {
+                $storedHash = ($row['hash'] ?? null);
+                if ($storedHash !== null && $storedHash !== '') {
+                    $previousHash = $storedHash;
+                }
+
+                $tombstonesPreserved++;
+                continue;
+            }
+
+            $entry = new AuditTrail();
+            $entry->hydrate(object: $this->mapRowToEntity(row: $row));
+
+            $hash = $this->computeHash(entry: $entry, previousHash: $previousHash);
+
+            $update = $this->db->getQueryBuilder();
+            $update->update('openregister_audit_trails')
+                ->set('hash', $update->createNamedParameter($hash))
+                ->set('previous_hash', $update->createNamedParameter($previousHash))
+                ->where(
+                    $update->expr()->eq(
+                        'id',
+                        $update->createNamedParameter($lastId, IQueryBuilder::PARAM_INT)
+                    )
+                );
+            $update->executeStatement();
+
+            // Every row becomes the predecessor of the next, which is what makes
+            // the result one chain rather than a fan-out.
+            $previousHash = $hash;
+            $rechained++;
+        }//end foreach
+
+        return [
+            'previousHash'        => $previousHash,
+            'rechained'           => $rechained,
+            'tombstonesPreserved' => $tombstonesPreserved,
+            'lastId'              => $lastId,
+        ];
+
+    }//end rechainWindow()
 
     /**
      * Seal a batch of rows — body of {@see sealRows()}, caller holds the
@@ -889,28 +928,13 @@ class AuditHashService
         // here as an occ run dying with SIGKILL while PHP still reported a 57 MB
         // peak. Windowing keeps the driver's buffer bounded and, incidentally,
         // cuts a partial walk from ~129 s to under a second.
-        $afterId = ($from - 1);
-        if ($from === null) {
-            $afterId = 0;
+        $afterId = 0;
+        if ($from !== null) {
+            $afterId = ($from - 1);
         }
 
         while (true) {
-            $qb = $this->db->getQueryBuilder();
-            $qb->select('*')
-                ->from('openregister_audit_trails')
-                ->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
-                ->orderBy('id', 'ASC')
-                ->setMaxResults(self::SWEEP_BATCH_SIZE);
-
-            if ($to !== null) {
-                $qb->andWhere(
-                    $qb->expr()->lte('id', $qb->createNamedParameter($to, IQueryBuilder::PARAM_INT))
-                );
-            }
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
+            $rows = $this->readChainWindow(afterId: $afterId, to: $to);
 
             if (empty($rows) === true) {
                 break;
@@ -972,6 +996,44 @@ class AuditHashService
             to: $to
         );
     }//end verifyChain()
+
+    /**
+     * Read one window of the chain, in id order, after the given id.
+     *
+     * Split out of {@see verifyChain()} so the walk reads as the verification
+     * rule rather than as query construction. See verifyChain() for why the walk
+     * is windowed at all: the driver buffers a whole result set in C, so one
+     * unbounded query gets the process OS-killed on a real trail.
+     *
+     * @param int      $afterId Exclusive lower bound on `id`.
+     * @param int|null $to      Inclusive upper bound on `id`, or null for none.
+     *
+     * @return array<int, array<string, mixed>> The window's rows, oldest first.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function readChainWindow(int $afterId, ?int $to): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->gt('id', $qb->createNamedParameter($afterId, IQueryBuilder::PARAM_INT)))
+            ->orderBy('id', 'ASC')
+            ->setMaxResults(self::SWEEP_BATCH_SIZE);
+
+        if ($to !== null) {
+            $qb->andWhere(
+                $qb->expr()->lte('id', $qb->createNamedParameter($to, IQueryBuilder::PARAM_INT))
+            );
+        }
+
+        $result = $qb->executeQuery();
+        $rows   = $result->fetchAll();
+        $result->closeCursor();
+
+        return $rows;
+
+    }//end readChainWindow()
 
     /**
      * Assemble the verifyChain() result.

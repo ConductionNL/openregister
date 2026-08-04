@@ -119,24 +119,35 @@ class AuditSealJob extends TimedJob
                 $sealed += $thisPass;
             }
 
-            if ($sealed === 0) {
+            $remaining = $this->hashes->countUnsealed();
+
+            // Steady state: nothing sealed because nothing needed sealing. The
+            // only case worth no log line at all.
+            if ($sealed === 0 && $remaining === 0) {
                 return;
             }
 
-            $remaining = $this->hashes->countUnsealed();
-
-            $this->logger->info(
-                message: sprintf(
-                    '[AuditSealJob] Sealed %d audit row(s); %d still awaiting a seal.',
-                    $sealed,
-                    $remaining
-                ),
-                context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
-            );
+            if ($sealed > 0) {
+                $this->logger->info(
+                    message: sprintf(
+                        '[AuditSealJob] Sealed %d audit row(s); %d still awaiting a seal.',
+                        $sealed,
+                        $remaining
+                    ),
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'app' => 'openregister']
+                );
+            }
 
             // A backlog that never drains means sealing is failing on the write
             // path AND here, which is the condition that went unnoticed for as
             // long as no sweeper existed. Say so at a level somebody sees.
+            //
+            // 🔴 This warning was DEAD until psalm said so. An earlier
+            // `if ($sealed === 0) { return; }` sat above it, so the one branch
+            // that could reach it had already left the method — the alarm for
+            // "the chain has gaps that are not closing" could never fire, which
+            // is the same silence it exists to break. Reading the backlog before
+            // the early exit is what makes it reachable.
             if ($remaining > 0 && $sealed === 0) {
                 $this->logger->warning(
                     message: sprintf(

@@ -45,7 +45,6 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
  */
 class RechainAuditTrailCommand extends Command
 {
-
     /**
      * Constructor.
      *
@@ -92,15 +91,7 @@ class RechainAuditTrailCommand extends Command
     {
         $before = $this->hashes->verifyChain();
         $output->writeln('<info>Before:</info>');
-        $output->writeln(
-            sprintf(
-                '  valid=%s  verified=%d  brokenAt=%s  unsealed=%d',
-                ($before['valid'] === true ? 'true' : 'false'),
-                (int) ($before['entriesVerified'] ?? 0),
-                var_export(($before['brokenAt'] ?? null), true),
-                $this->hashes->countUnsealed()
-            )
-        );
+        $output->writeln($this->summarise(report: $before));
 
         if ($input->getOption('dry-run') === true) {
             $output->writeln('<comment>Dry run — nothing written.</comment>');
@@ -108,7 +99,7 @@ class RechainAuditTrailCommand extends Command
         }
 
         if ($input->getOption('force') !== true) {
-            $helper   = $this->getHelper('question');
+            $helper   = $this->getHelper(name: 'question');
             $question = new ConfirmationQuestion(
                 '<comment>This REWRITES every stored audit hash. Continue? [y/N] </comment>',
                 false
@@ -131,15 +122,7 @@ class RechainAuditTrailCommand extends Command
 
         $after = $this->hashes->verifyChain();
         $output->writeln('<info>After:</info>');
-        $output->writeln(
-            sprintf(
-                '  valid=%s  verified=%d  brokenAt=%s  unsealed=%d',
-                ($after['valid'] === true ? 'true' : 'false'),
-                (int) ($after['entriesVerified'] ?? 0),
-                var_export(($after['brokenAt'] ?? null), true),
-                $this->hashes->countUnsealed()
-            )
-        );
+        $output->writeln($this->summarise(report: $after));
 
         if ($after['valid'] !== true) {
             $output->writeln('<error>Chain still reports invalid — do not treat this repair as complete.</error>');
@@ -149,4 +132,40 @@ class RechainAuditTrailCommand extends Command
         return Command::SUCCESS;
 
     }//end execute()
+
+    /**
+     * One line describing a verifyChain() report.
+     *
+     * Both ends of the run print the same shape from one place, so a reader
+     * comparing before with after is comparing like with like — a repair whose
+     * two halves reported different fields would be unreadable as evidence.
+     *
+     * @param array<string, mixed> $report A verifyChain() result.
+     *
+     * @return string The formatted summary line.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    private function summarise(array $report): string
+    {
+        $valid = 'false';
+        if (($report['valid'] ?? false) === true) {
+            $valid = 'true';
+        }
+
+        $brokenAt = 'none';
+        if (($report['brokenAt'] ?? null) !== null) {
+            $brokenAt = (string) $report['brokenAt'];
+        }
+
+        return sprintf(
+            '  valid=%s  verified=%d  brokenAt=%s  tombstones=%d  unsealed=%d',
+            $valid,
+            (int) ($report['entriesVerified'] ?? 0),
+            $brokenAt,
+            (int) ($report['purgedTombstones'] ?? 0),
+            $this->hashes->countUnsealed()
+        );
+
+    }//end summarise()
 }//end class
