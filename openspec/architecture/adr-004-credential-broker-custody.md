@@ -54,10 +54,39 @@ reach requires a code review and release.
 
 #### Rule 4 — Four fail-closed guards on every brokered call
 
-`CredentialBrokerService` enforces, in order: owner check → allowed-app check →
+`CredentialBrokerService` enforces, in order: access check → allowed-app check →
 allow-rule (method+path) check → host-lock check. Every denial funnels through
 a single static 403 with the reason logged **secret-free** (credential UUID
 only). Store errors (decrypt/lookup) fail closed to denial.
+
+The access check (Guard 1) has three admit branches, evaluated so that none can
+change another's verdict:
+
+1. **Personal owner** — a `personal` credential is admitted only when the acting
+   identity equals its `owner` (strict equality).
+2. **Organisation member** — an `organisation` credential is admitted for a
+   member of its `organisation`. A session is authoritative; a sessionless
+   trusted in-process caller may assert a matching `actingOrganisationId`.
+3. **Share principal** (`shared-credentials-and-flows`) — a credential is also
+   admitted when the acting identity appears in its `sharedWith[]`, directly or
+   through a group. This branch only ever ADMITS, never denies, so a credential
+   with no `sharedWith[]` is decided exactly as it was before it existed.
+
+Two properties of the share branch are load-bearing:
+
+- **A share grants USE, never disclosure.** The recipient can cause the broker to
+  make calls with the credential; they never receive the secret. Rule 1 keeps it
+  in the vault and out of every projection, export and audit row, and the routed
+  broker path returns only the upstream response. This is what makes sharing a
+  credential safe to offer at all.
+- **A share never crosses a tenant boundary.** When the credential declares an
+  `organisation`, a named principal is admitted only from inside it. Groups are
+  RBAC *permission principals* only and are never a tenant discriminator
+  (ADR-002 Rule 1) — the organisation UUID is.
+
+Guards 2–4 apply unchanged to every call admitted through any branch, so a share
+is not a bypass: a recipient is still refused by `allowedApps`, by the provider
+allow-rules, and by the host lock.
 
 ## Consequences
 

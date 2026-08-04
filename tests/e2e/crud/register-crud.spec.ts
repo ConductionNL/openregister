@@ -31,9 +31,9 @@ import * as path from 'path'
 import { makeRunId } from '../_fixtures'
 
 const STORAGE_STATE = path.resolve(__dirname, '..', '.auth', 'admin.json')
-// The deployed manifest-v2 shell uses PATH routing (/apps/openregister/registers),
-// not hash routing — navigate to the path, not '#/registers'.
-const REGISTERS_ROUTE = '/index.php/apps/openregister/registers'
+// HASH form — the router runs in hash mode (src/main.js); the path-form URL
+// renders the dashboard instead of the registers page.
+const REGISTERS_ROUTE = '/index.php/apps/openregister/#/registers'
 const API = '/index.php/apps/openregister/api'
 
 const RUN_ID = makeRunId()

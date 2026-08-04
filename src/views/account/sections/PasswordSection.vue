@@ -22,8 +22,8 @@
 					:disabled="loading" />
 			</div>
 			<NcButton :disabled="loading || !currentPassword || !newPassword"
-				type="primary"
-				native-type="submit">
+				variant="primary"
+				type="submit">
 				{{ t('openregister', 'Change password') }}
 			</NcButton>
 			<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
@@ -37,8 +37,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'PasswordSection',

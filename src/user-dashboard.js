@@ -18,7 +18,8 @@
  * @license EUPL-1.2
  */
 
-import Vue from 'vue'
+import { createApp, h } from 'vue'
+import { translate as t, translatePlural as n } from '@nextcloud/l10n'
 import { CnIntegrationWidgetGrid } from '@conduction/nextcloud-vue'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 
@@ -51,20 +52,27 @@ function mountUmbrella() {
 	}
 	el.dataset.openregisterMounted = '1'
 
-	const View = Vue.extend({
+	// Vue 3: a plain options object handed to createApp() replaces
+	// Vue.extend(); `h` is imported from 'vue' rather than injected into
+	// render(), and props pass FLAT (no `props:` wrapper).
+	const app = createApp({
 		name: 'IntegrationDashboardUmbrella',
 		components: { CnIntegrationWidgetGrid },
-		render(h) {
-			return h(CnIntegrationWidgetGrid, {
-				props: { surface: 'user-dashboard' },
-			})
+		render() {
+			return h(CnIntegrationWidgetGrid, { surface: 'user-dashboard' })
 		},
 	})
 
-	const app = new View()
+	// ⚠️ Vue 2's `Vue.mixin()` was GLOBAL — one call in main.js gave `t`/`n` to
+	// every Vue instance on the page, including the ones this entry bundle
+	// mounts. Vue 3's `app.mixin()` is scoped to a single app instance, so each
+	// entry now has to install it for itself or `this.t(...)` is undefined in
+	// anything it renders.
+	app.mixin({ methods: { t, n } })
+
 	const target = document.createElement('div')
 	el.appendChild(target)
-	app.$mount(target)
+	app.mount(target)
 
 	return true
 }

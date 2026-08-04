@@ -245,6 +245,7 @@ class DeckCardServiceTest extends TestCase
                 $this->appManager,
                 $this->userSession,
                 $this->logger,
+                $this->urlGenerator,
             ])
             ->onlyMethods(['userCanAccessBoard'])
             ->getMock();

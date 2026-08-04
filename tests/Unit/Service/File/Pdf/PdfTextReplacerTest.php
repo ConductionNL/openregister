@@ -27,7 +27,9 @@ declare(strict_types=1);
 namespace Unit\Service\File\Pdf;
 
 use OCA\OpenRegister\Exception\PdfAnonymisationException;
+use OCA\OpenRegister\Service\File\Pdf\PdfStructureInspector;
 use OCA\OpenRegister\Service\File\Pdf\PdfTextReplacer;
+use OCA\OpenRegister\Service\File\Pdf\StructurePreservation;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -134,6 +136,82 @@ class PdfTextReplacerTest extends TestCase
 
         return $pdf;
     }//end buildFixture()
+
+    /**
+     * Build a minimal one-page PDF carrying a `/StructTreeRoot`,
+     * `/MarkInfo << /Marked true >>` and `$structElemCount` `/StructElem`
+     * objects (tag-preserving-redaction fixture shape — mirrors
+     * {@see \Unit\Service\File\Pdf\PdfStructureInspectorTest::buildTaggedFixture()}).
+     *
+     * @param string $bodyText        The body text to embed in the Tj operand.
+     * @param int    $structElemCount Number of `/StructElem` objects to emit.
+     *
+     * @return string The synthesised PDF bytes.
+     */
+    private static function buildTaggedFixture(string $bodyText, int $structElemCount=3): string
+    {
+        $contentStream = "BT\n/F1 12 Tf\n72 720 Td\n(".$bodyText.") Tj\nET\n";
+        $compressed    = gzcompress($contentStream, 6);
+        if ($compressed === false) {
+            throw new \RuntimeException('gzcompress failed in fixture builder');
+        }
+
+        $obj = static function (int $oid, string $body): string {
+            return $oid." 0 obj\n".$body."\nendobj\n";
+        };
+
+        $structElemRefs = [];
+        for ($i = 0; $i < $structElemCount; $i++) {
+            $structElemRefs[] = (8 + $i).' 0 R';
+        }
+
+        $objects    = [];
+        $objects[1] = $obj(1, "<<\n  /Type /Catalog\n  /Pages 2 0 R\n  /StructTreeRoot 6 0 R\n  /MarkInfo 7 0 R\n>>");
+        $objects[2] = $obj(2, "<<\n  /Type /Pages\n  /Kids [ 3 0 R ]\n  /Count 1\n>>");
+        $objects[3] = $obj(
+            3,
+            "<<\n  /Type /Page\n  /Parent 2 0 R\n"
+            ."  /MediaBox [ 0 0 612 792 ]\n"
+            ."  /Resources <<\n    /Font << /F1 5 0 R >>\n    /ProcSet [ /PDF /Text ]\n  >>\n"
+            ."  /Contents 4 0 R\n  /StructParents 0\n>>"
+        );
+        $objects[4] = $obj(
+            4,
+            "<<\n  /Length ".strlen($compressed)."\n  /Filter /FlateDecode\n>>\n"
+            ."stream\n".$compressed."\nendstream"
+        );
+        $objects[5] = $obj(
+            5,
+            "<<\n  /Type /Font\n  /Subtype /Type1\n  /BaseFont /Helvetica\n  /Encoding /WinAnsiEncoding\n>>"
+        );
+        $objects[6] = $obj(6, "<<\n  /Type /StructTreeRoot\n  /K [ ".implode(' ', $structElemRefs)." ]\n>>");
+        $objects[7] = $obj(7, "<<\n  /Marked true\n>>");
+
+        for ($i = 0; $i < $structElemCount; $i++) {
+            $oid           = (8 + $i);
+            $objects[$oid] = $obj($oid, "<<\n  /Type /StructElem\n  /S /P\n  /P 6 0 R\n  /Pg 3 0 R\n>>");
+        }
+
+        ksort($objects);
+
+        $pdf     = "%PDF-1.7\n%\xE2\xE3\xCF\xD3\n";
+        $offsets = [];
+        foreach ($objects as $oid => $body) {
+            $offsets[$oid] = strlen($pdf);
+            $pdf          .= $body;
+        }
+
+        $maxOid    = max(array_keys($objects));
+        $xrefStart = strlen($pdf);
+        $pdf      .= "xref\n0 ".($maxOid + 1)."\n0000000000 65535 f \n";
+        for ($oid = 1; $oid <= $maxOid; $oid++) {
+            $pdf .= sprintf("%010d 00000 n \n", $offsets[$oid]);
+        }
+
+        $pdf .= "trailer\n<<\n  /Size ".($maxOid + 1)."\n  /Root 1 0 R\n>>\nstartxref\n".$xrefStart."\n%%EOF\n";
+
+        return $pdf;
+    }//end buildTaggedFixture()
 
     /**
      * Happy path: a fixture containing "Jan Jansen" with a clean
@@ -304,4 +382,206 @@ class PdfTextReplacerTest extends TestCase
             actual: PdfTextReplacer::collapseAdjacentDuplicatePlaceholders(text: $input)
         );
     }//end testCollapseAdjacentDuplicatesLeavesDifferentPlaceholdersAlone()
+
+    /**
+     * Tagged input whose redaction does not touch any content stream (the
+     * substitution needle is absent from the fixture) — SAPP has zero
+     * marked-content awareness, so this is the only case the conservative
+     * rule can honestly attest as `preserved: true`.
+     *
+     * @return void
+     */
+    public function testTaggedPreservationAttested(): void
+    {
+        $pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 4);
+
+        $structureResult = null;
+        $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['NietAanwezigeNaam' => '[PERSON: 1]'],
+            preserveStructure: true,
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertTrue($structureResult->requested);
+        self::assertTrue($structureResult->preserved);
+        self::assertSame(4, $structureResult->tagCountBefore);
+        self::assertSame(4, $structureResult->tagCountAfter);
+        self::assertSame([], $structureResult->lossReasons);
+    }//end testTaggedPreservationAttested()
+
+    /**
+     * Tagged input whose redaction DOES mutate content-stream text — the
+     * tag→content correspondence can no longer be guaranteed, so the engine
+     * reports the loss explicitly instead of silently flattening.
+     *
+     * @return void
+     */
+    public function testTaggedLossIsReportedNotSilent(): void
+    {
+        $pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 2);
+
+        $structureResult = null;
+        $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+            preserveStructure: true,
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertTrue($structureResult->requested);
+        self::assertFalse($structureResult->preserved);
+        self::assertSame(2, $structureResult->tagCountBefore);
+        self::assertSame(2, $structureResult->tagCountAfter);
+        self::assertContains(StructurePreservation::LOSS_REASON_MARKED_CONTENT_BROKEN, $structureResult->lossReasons);
+    }//end testTaggedLossIsReportedNotSilent()
+
+    /**
+     * Structure-tree loss on the SAPP rebuild is surfaced, not hidden.
+     *
+     * Real SAPP rebuilds are comprehensive (walk every object oid in the
+     * document, so a well-formed structure tree naturally survives) — this
+     * degradation mode is exercised via an injected {@see PdfStructureInspector}
+     * double that reports the tree gone on the after-measurement, isolating
+     * the attestation branch from SAPP's own (already-tested) rebuild
+     * behaviour.
+     *
+     * @return void
+     */
+    public function testStructTreeDroppedIsReported(): void
+    {
+        // countStructElements is called twice (before + after the in-place
+        // mutation); both return the SAME count (3) so the drop is detected
+        // via the isTagged()-after signal alone — pinning the "StructTreeRoot
+        // survived" leg of the conservative rule independently of the count
+        // leg (design.md D1's third gate condition).
+        $inspector = $this->createMock(originalClassName: PdfStructureInspector::class);
+        $inspector->expects(self::exactly(2))
+            ->method('countStructElements')
+            ->willReturn(3);
+        $inspector->expects(self::once())
+            ->method('isTagged')
+            ->willReturn(false);
+
+        $replacer = new PdfTextReplacer(logger: $this->logger, structureInspector: $inspector);
+
+        $pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 3);
+
+        $structureResult = null;
+        $replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Onbekend' => '[PERSON: 1]'],
+            preserveStructure: true,
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertFalse($structureResult->preserved);
+        self::assertContains(StructurePreservation::LOSS_REASON_STRUCTTREEROOT_DROPPED, $structureResult->lossReasons);
+    }//end testStructTreeDroppedIsReported()
+
+    /**
+     * Default (absent `preserveStructure`) resolves to auto, which preserves
+     * a tagged input without an explicit opt-in.
+     *
+     * @return void
+     */
+    public function testAutoPreservesTaggedByDefault(): void
+    {
+        $pdf = self::buildTaggedFixture(bodyText: 'Aanvraag met tags.', structElemCount: 1);
+
+        $structureResult = null;
+        $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Onbekend' => '[PERSON: 1]'],
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertTrue($structureResult->requested);
+    }//end testAutoPreservesTaggedByDefault()
+
+    /**
+     * Explicit `preserveStructure: false` skips preservation entirely but
+     * still measures and reports the tag count.
+     *
+     * @return void
+     */
+    public function testExplicitFalseSkipsButMeasures(): void
+    {
+        $pdf = self::buildTaggedFixture(bodyText: 'Aanvraag van Jan Jansen.', structElemCount: 3);
+
+        $structureResult = null;
+        $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+            preserveStructure: false,
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertFalse($structureResult->requested);
+        self::assertFalse($structureResult->preserved);
+        self::assertSame([], $structureResult->lossReasons);
+        self::assertSame(3, $structureResult->tagCountBefore);
+    }//end testExplicitFalseSkipsButMeasures()
+
+    /**
+     * An untagged input redacted with preservation requested (default auto)
+     * reports zero counts and `input-not-tagged` — not applicable, not a
+     * failure.
+     *
+     * @return void
+     */
+    public function testUntaggedReportsNotApplicable(): void
+    {
+        $pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
+
+        $structureResult = null;
+        $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+            structureResult: $structureResult
+        );
+
+        self::assertInstanceOf(StructurePreservation::class, $structureResult);
+        self::assertSame(0, $structureResult->tagCountBefore);
+        self::assertSame(0, $structureResult->tagCountAfter);
+        self::assertFalse($structureResult->preserved);
+        self::assertContains(StructurePreservation::LOSS_REASON_INPUT_NOT_TAGGED, $structureResult->lossReasons);
+    }//end testUntaggedReportsNotApplicable()
+
+    /**
+     * Byte-stability guard (REQ-ORTPR-005): introducing structure
+     * preservation MUST NOT change the redacted output of an untagged PDF —
+     * the produced bytes are identical regardless of `$preserveStructure`.
+     *
+     * @return void
+     */
+    public function testUntaggedOutputByteStable(): void
+    {
+        $pdf = self::buildFixture(bodyText: 'Aanvraag van Jan Jansen voor het loket.');
+
+        $outputWithoutOption = $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]']
+        );
+
+        $outputExplicitFalse = $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+            preserveStructure: false
+        );
+
+        $outputExplicitTrue = $this->replacer->replaceInPdf(
+            pdfBytes: $pdf,
+            substitutions: ['Jan Jansen' => '[PERSON: 1]'],
+            preserveStructure: true
+        );
+
+        self::assertSame($outputWithoutOption, $outputExplicitFalse);
+        self::assertSame($outputWithoutOption, $outputExplicitTrue);
+    }//end testUntaggedOutputByteStable()
 }//end class

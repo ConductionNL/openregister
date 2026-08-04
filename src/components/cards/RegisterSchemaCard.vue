@@ -14,7 +14,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 		<!-- Card Header -->
 		<div class="cardHeader">
 			<div class="cardHeaderTitleRow">
-				<div v-tooltip.bottom="item.description || item.title" class="cardTitleClip">
+				<div :title="item.description || item.title" class="cardTitleClip">
 					<h2 class="cardTitleTextWrapper">
 						<DatabaseOutline v-if="type === 'register'" :size="20" class="cardTitleIcon" />
 						<FileTreeOutline v-else :size="20" class="cardTitleIcon" />
@@ -26,7 +26,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						v-tooltip="isManagedByExternalConfig ? 'Cannot edit: This ' + type + ' is managed by external configuration ' + (managingConfiguration?.title || '') : ''"
+						:title="isManagedByExternalConfig ? 'Cannot edit: This ' + type + ' is managed by external configuration ' + (managingConfiguration?.title || '') : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig"
 						@click="openEdit">
@@ -62,7 +62,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							Download API Specification
 						</NcActionButton>
 					</template>
-					<NcActionButton v-tooltip="deleteDisabledTooltip"
+					<NcActionButton :title="deleteDisabledTooltip"
 						close-after-click
 						:disabled="deleteDisabled"
 						@click="openDelete">
@@ -122,18 +122,18 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							<td class="schemaNameCell">
 								<Table
 									v-if="hasMagicMapping(schema)"
-									v-tooltip="'Magic Table'"
+									title="Magic Table"
 									:size="18"
 									class="schemaIcon schemaIcon--magic" />
 								<DatabaseOutline
 									v-else
-									v-tooltip="'Blob Storage'"
+									title="Blob Storage"
 									:size="18"
 									class="schemaIcon schemaIcon--blob" />
 								{{ schema.title }}
 							</td>
 							<td>
-								<span v-if="schema.stats?.objects?.deleted > 0" v-tooltip="t('openregister', '{active} active, {deleted} deleted', { active: (schema.stats.objects.total - schema.stats.objects.deleted), deleted: schema.stats.objects.deleted })">
+								<span v-if="schema.stats?.objects?.deleted > 0" :title="t('openregister', '{active} active, {deleted} deleted', { active: (schema.stats.objects.total - schema.stats.objects.deleted), deleted: schema.stats.objects.deleted })">
 									{{ (schema.stats.objects.total - schema.stats.objects.deleted) || 0 }} <span class="deletedCount">({{ schema.stats?.objects?.deleted || 0 }} deleted)</span>
 								</span>
 								<span v-else>
@@ -158,7 +158,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ !hasMagicMapping(schema) ? '&#10003; ' : '' }}Use Blob Storage
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
+										:title="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
 										:disabled="!hasMagicMapping(schema)"
 										close-after-click
 										@click="syncMagicTable(schema)">
@@ -192,7 +192,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ t('openregister', 'Import') }}
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
+										:title="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
 										:disabled="getSchemaObjectCount(schema) === 0"
 										close-after-click
 										@click="deleteSchemaObjects(schema, false)">
@@ -203,8 +203,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 									</NcActionButton>
 									<NcActionButton
 										v-if="(schema.stats?.objects?.deleted || 0) > 0"
-										v-tooltip="t('openregister', 'Permanently delete all {count} soft-deleted objects. This cannot be undone!', { count: (schema.stats?.objects?.deleted || 0) })"
-										type="error"
+										:title="t('openregister', 'Permanently delete all {count} soft-deleted objects. This cannot be undone!', { count: (schema.stats?.objects?.deleted || 0) })"
 										close-after-click
 										@click="deleteSchemaObjects(schema, true)">
 										<template #icon>
@@ -213,7 +212,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ t('openregister', 'Permanently Delete ({count})', { count: (schema.stats?.objects?.deleted || 0) }) }}
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
+										:title="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
 										:disabled="getSchemaObjectCount(schema) > 0"
 										close-after-click
 										@click="removeSchemaFromRegister(schema)">
@@ -263,7 +262,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 		<!-- View More Button -->
 		<div v-if="remainingItemsCount > 0" class="viewMoreContainer">
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				@click="itemsExpanded = !itemsExpanded">
 				<template #icon>
 					<ChevronDown v-if="!itemsExpanded" :size="20" />
@@ -289,28 +288,28 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						@update:modelValue="v => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						@update:modelValue="v => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:model-value="formData.description || ''"
+						@update:modelValue="v => updateField('description', v)" />
 					<NcSelect
 						input-label="Schemas"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:model-value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="vals => updateField('schemas', vals)" />
 				</div>
 			</template>
 		</CnFormDialog>

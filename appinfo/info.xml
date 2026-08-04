@@ -40,7 +40,7 @@ Open Register drijft apps zoals OpenCatalogi, Procest, Pipelinq en Software Cata
 
 Vrij en open source onder de EUPL-licentie.
     ]]></description>
-    <version>0.2.17-unstable.15</version>
+    <version>0.2.17-unstable.24</version>
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
     <namespace>OpenRegister</namespace>
@@ -71,6 +71,7 @@ Vrij en open source onder de EUPL-licentie.
 
 	<repair-steps>
 		<post-migration>
+			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\MigrateNotificationSubscriptionsToUserConfig</step>
@@ -81,10 +82,12 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</post-migration>
 		<install>
+			<step>OCA\OpenRegister\Repair\ReconcileDeclaredBackgroundJobs</step>
 			<step>OCA\OpenRegister\Repair\RegisterRiskLevelMetadata</step>
 			<step>OCA\OpenRegister\Repair\LogDanglingLinkedTypes</step>
 			<step>OCA\OpenRegister\Repair\SeedDirectoryVirtualSchemas</step>
@@ -94,6 +97,7 @@ Vrij en open source onder de EUPL-licentie.
 			<step>OCA\OpenRegister\Repair\ImportDsarRegisters</step>
 			<step>OCA\OpenRegister\Repair\ImportEdepotTransferRegister</step>
 			<step>OCA\OpenRegister\Repair\ImportTrustConfigurationRegister</step>
+			<step>OCA\OpenRegister\Repair\SeedVocabularyRegister</step>
 			<step>OCA\OpenRegister\Repair\RegisterOpenRegisterWithDoriath</step>
 			<step>OCA\OpenRegister\Repair\SeedZgwZakenMigrationPack</step>
 		</install>
@@ -118,11 +122,15 @@ Vrij en open source onder de EUPL-licentie.
 		<job>OCA\OpenRegister\BackgroundJob\TenantPurgeJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TenantUsageSyncJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ExecutionHistoryCleanupJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\FlowRunRetentionJob</job>
+		<job>OCA\OpenRegister\BackgroundJob\AuditSealJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\AvgRetentionJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarRetentionSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\ReportRenderJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\NotificationQueueFlushJob</job>
 		<job>OCA\OpenRegister\Cron\ArchivalRetentionTask</job>
+		<job>OCA\OpenRegister\Cron\FlowRunWorker</job>
+		<job>OCA\OpenRegister\Cron\FlowScheduleWorker</job>
 		<job>OCA\OpenRegister\Cron\HandoffQueueDrainJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\TemporalCalculationSweepJob</job>
 		<job>OCA\OpenRegister\BackgroundJob\DsarDpiaDetectionJob</job>
@@ -155,16 +163,25 @@ Vrij en open source onder de EUPL-licentie.
 		<!-- Annotation-related commands have light DI graphs (mappers + evaluator). -->
 		<command>OCA\OpenRegister\Command\RematerialiseCalculationsCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillSystemOwnerCommand</command>
+		<command>OCA\OpenRegister\Command\RechainAuditTrailCommand</command>
+		<!-- Backwards remediation for the #2150 cross-app schema-slug collision:
+		     the per-register uniqueness fix is preventive only, so pre-existing
+		     shared rows still need splitting. Reports only unless applied. -->
+		<command>OCA\OpenRegister\Command\DedupCollidedSchemasCommand</command>
 		<command>OCA\OpenRegister\Command\BackfillTranslationSourceLanguageCommand</command>
 		<!-- field-level-object-encryption: encrypt existing plaintext values of a newly-flagged property. -->
 		<command>OCA\OpenRegister\Command\EncryptFieldCommand</command>
 		<command>OCA\OpenRegister\Command\DedupeRegistersCommand</command>
+		<command>OCA\OpenRegister\Command\ReconcileMagicTablesCommand</command>
+		<command>OCA\OpenRegister\Command\DedupeConfigurationsCommand</command>
 		<command>OCA\OpenRegister\Command\ResolverListCommand</command>
 		<command>OCA\OpenRegister\Command\TimeReconcileCommand</command>
 		<!-- Web Push VAPID keypair generation (openregister-web-push-engine). Light DI graph (IAppConfig only). -->
 		<command>OCA\OpenRegister\Command\GenerateVapidKeys</command>
 		<!-- Reconcile the `tables` virtual register with the Nextcloud Tables app. -->
 		<command>OCA\OpenRegister\Command\TablesSyncCommand</command>
+		<!-- Batched Context Chat backfill for opted-in, published objects. -->
+		<command>OCA\OpenRegister\Command\ContextChatReindexCommand</command>
 	</commands>
 
 	<notification>

@@ -83,9 +83,7 @@ use OCA\OpenRegister\Service\Survivorship\SurvivorshipAnnotationValidator;
  * @method Schema update(Entity $entity)
  * @method Schema insertOrUpdate(Entity $entity)
  * @method Schema delete(Entity $entity, bool $force=false)
- * @method Schema find(int|string $id, ?array $_extend=[], bool $_rbac=true, bool $_multitenancy=true)
  * @method Schema findEntity(IQueryBuilder $query)
- * @method Schema[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Schema> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Schema>
@@ -165,6 +163,26 @@ class SchemaMapper extends QBMapper
     private array $findCache = [];
 
     /**
+     * Read-attribution counters, keyed by "<mapper method>|<caller signature>".
+     *
+     * Only populated when {@see self::$perfTrace} is on. Static so the picture
+     * spans every mapper instance in the request.
+     *
+     * @var array<string, int>
+     */
+    private static array $perfCounts = [];
+
+    /**
+     * Whether read attribution is on: null until resolved, then a bool.
+     *
+     * Resolved once per process — reading app config per schema read would
+     * itself be one of the reads we are trying to count.
+     *
+     * @var boolean|null
+     */
+    private static ?bool $perfTrace = null;
+
+    /**
      * User session for current user
      *
      * Used to get current user context for RBAC and multi-tenancy.
@@ -226,6 +244,73 @@ class SchemaMapper extends QBMapper
     }//end __construct()
 
     /**
+     * Record one schema read against its caller, when attribution is enabled.
+     *
+     * A single object create was measured issuing 5,135 sequential scans of
+     * `oc_openregister_schemas` (2026-07-28). The count alone does not say
+     * which path is responsible, and the fix differs per path — a cache key
+     * that is too specific is a different repair from an uncached sibling
+     * method. This records `<mapper method>|<caller signature>` so the answer
+     * is measured rather than guessed.
+     *
+     * Off by default and gated on `openregister perf_trace_schema_reads`,
+     * resolved once per process: reading app config on every schema read would
+     * itself be one of the reads being counted.
+     *
+     * @param string $method The mapper method issuing the read.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.ErrorControlOperator) The trace file is a
+     * best-effort diagnostic written from a shutdown function; a failure to
+     * write it must never surface as a warning on a real request.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+     */
+    private function traceRead(string $method): void
+    {
+        if (self::$perfTrace === null) {
+            self::$perfTrace = ($this->appConfig->getValueString('openregister', 'perf_trace_schema_reads', '') === '1');
+            if (self::$perfTrace === true) {
+                register_shutdown_function(
+                    static function (): void {
+                        if (empty(self::$perfCounts) === true) {
+                            return;
+                        }
+
+                        @file_put_contents(
+                            '/tmp/or-schema-reads.jsonl',
+                            json_encode(self::$perfCounts).PHP_EOL,
+                            (FILE_APPEND | LOCK_EX)
+                        );
+                        self::$perfCounts = [];
+                    }
+                );
+            }
+        }
+
+        if (self::$perfTrace === false) {
+            return;
+        }
+
+        // Four frames past this one is enough to name the responsible path
+        // without paying for a full backtrace on every read.
+        $frames = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
+        $sig    = [];
+        foreach (array_slice($frames, 2, 4) as $frame) {
+            $sig[] = (($frame['class'] ?? '').($frame['type'] ?? '').($frame['function'] ?? '?'));
+        }
+
+        $key = $method.'|'.implode('<', $sig);
+        if (isset(self::$perfCounts[$key]) === false) {
+            self::$perfCounts[$key] = 0;
+        }
+
+        self::$perfCounts[$key]++;
+
+    }//end traceRead()
+
+    /**
      * Finds a schema by id, with optional extension for statistics
      *
      * This method automatically resolves schema extensions. If the schema has
@@ -275,6 +360,9 @@ class SchemaMapper extends QBMapper
             // $this->verifyRbacPermission('read', 'schema');
         }
 
+        $this->traceRead(method: 'find');
+        \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'schema.db.read');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas');
@@ -314,6 +402,41 @@ class SchemaMapper extends QBMapper
             );
         }
 
+        // A bare slug can legitimately match SEVERAL rows. Since
+        // Version1Date20260723000000 widened the unique key from
+        // (organisation, slug) to (organisation, application, slug), two apps
+        // may each own a schema with the same generic slug — that widening was
+        // deliberate, and reverting it would put back the collision it fixed.
+        //
+        // What did NOT land with it is the determinism its own docblock promised
+        // ("resolution is scoped by app (import) and by register (runtime) in
+        // the accompanying code change"). The scoped resolvers exist, but every
+        // one of them falls back HERE when it misses, and here there was no
+        // ORDER BY and no row cap at all: which same-slug schema won was decided
+        // by the storage engine.
+        //
+        // Measured 2026-08-02: schemas 5012 "AgentFlow" (application '') and
+        // 5020 "Agent flow" (application 'hermiq') both carry slug `agentflow`
+        // in one organisation. 5012 holds 1 object, 5020 holds 46. Every
+        // slug-based resolution was a coin flip that happened to keep landing on
+        // the populated one.
+        //
+        // The tie-break, in order. First: a row an app OWNS beats an
+        // unattributed one. The widened key exists precisely to express
+        // ownership, so a leftover row that no app claims must never shadow an
+        // app's real schema. Second: the lowest id, matching
+        // RegisterMapper::find() and the `openregister:schemas:dedup` command's
+        // keep-the-lowest rule.
+        //
+        // Ownership has to come first, and not only for tidiness: on the live
+        // duplicate the unordered query returns the UNATTRIBUTED row first, and
+        // so would a bare `ORDER BY id ASC`.
+        $qb->addOrderBy(
+            $qb->createFunction("CASE WHEN application IS NULL OR application = '' THEN 1 ELSE 0 END"),
+            'ASC'
+        );
+        $qb->addOrderBy('id', 'ASC');
+
         // Apply organisation filter.
         // Set $_multitenancy=false to bypass organization filter (e.g., when expanding schemas for registers).
         $this->applyOrganisationFilter(
@@ -323,9 +446,44 @@ class SchemaMapper extends QBMapper
             multiTenancyEnabled: $_multitenancy
         );
 
+        // Two rows, not one: enough to KNOW the identifier was ambiguous, which
+        // a capped single-row fetch can never tell you. Silence is what let the
+        // agentflow collision run for as long as it did.
+        $qb->setMaxResults(2);
+
         $result = $qb->executeQuery();
-        $row    = $result->fetch();
+        $rows   = $result->fetchAll();
         $result->closeCursor();
+
+        $row = ($rows[0] ?? false);
+        if (count($rows) > 1) {
+            $this->logger->warning(
+                message: sprintf(
+                    '[SchemaMapper] Identifier "%s" matches more than one schema; resolving to #%s ("%s", application "%s"). '
+                    .'Fix the duplicate with `occ openregister:schemas:dedup`.',
+                    (string) $id,
+                    (string) ($rows[0]['id'] ?? '?'),
+                    (string) ($rows[0]['title'] ?? '?'),
+                    (string) ($rows[0]['application'] ?? '')
+                ),
+                context: [
+                    'file'       => __FILE__,
+                    'line'       => __LINE__,
+                    'identifier' => (string) $id,
+                    'candidates' => array_map(
+                        static function (array $candidate): array {
+                            return [
+                                'id'          => ($candidate['id'] ?? null),
+                                'title'       => ($candidate['title'] ?? null),
+                                'slug'        => ($candidate['slug'] ?? null),
+                                'application' => ($candidate['application'] ?? null),
+                            ];
+                        },
+                        $rows
+                    ),
+                ]
+            );
+        }//end if
 
         if ($row === false) {
             // Include diagnostic info in exception message for debugging.
@@ -361,6 +519,110 @@ class SchemaMapper extends QBMapper
 
         return $schema;
     }//end find()
+
+    /**
+     * Resolve a schema by slug, scoped to a single owning application.
+     *
+     * The plain {@see find()} matches a schema by `LOWER(slug)` GLOBALLY across
+     * every application on the instance and returns the FIRST row it fetches.
+     * On a shared instance where ~20 apps live in one OpenRegister, that lets a
+     * generic slug (e.g. `conversation`, `order`, `task`) from app B silently
+     * bind to — or, on import, OVERWRITE — app A's schema that happens to share
+     * the lower(slug). This scoped lookup is the import-side fix: an app only
+     * ever matches (and therefore updates) a schema IT owns, so importing a
+     * colliding slug creates the app's OWN schema instead of clobbering a
+     * foreign one.
+     *
+     * @param string $slug        The schema slug (matched case-insensitively).
+     * @param string $application The owning application id (exact match).
+     *
+     * @return Schema|null The application-owned schema, or null when the app
+     *                     does not (yet) own a schema with this slug.
+     */
+    public function findByApplicationAndSlug(string $slug, string $application): ?Schema
+    {
+        $this->traceRead(method: 'findByApplicationAndSlug');
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->eq(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->andWhere(
+                $qb->expr()->eq('application', $qb->createNamedParameter(value: $application, type: IQueryBuilder::PARAM_STR))
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+    }//end findByApplicationAndSlug()
+
+    /**
+     * Resolve a schema by slug, scoped to a set of schema ids.
+     *
+     * This is the runtime-resolution half of the cross-app slug-collision fix.
+     * When an object operation carries a register context, a schema slug must
+     * resolve to the schema THAT REGISTER references — not to whichever
+     * same-slug row {@see find()} happens to fetch first. Callers pass the
+     * register's own `schemas` id list; the slug is matched only among those.
+     *
+     * @param string $slug      The schema slug (matched case-insensitively).
+     * @param int[]  $schemaIds The candidate schema ids (a register's schemas list).
+     *
+     * @return Schema|null The matching schema within the id set, or null when
+     *                     none of the register's schemas carry this slug.
+     */
+    public function findBySlugInIds(string $slug, array $schemaIds): ?Schema
+    {
+        // Normalise to a list of positive integers; an empty set can never match.
+        $ids = [];
+        foreach ($schemaIds as $candidate) {
+            if (is_numeric($candidate) === true && (int) $candidate > 0) {
+                $ids[] = (int) $candidate;
+            }
+        }
+
+        if ($ids === []) {
+            return null;
+        }
+
+        $this->traceRead(method: 'findBySlugInIds');
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from('openregister_schemas')
+            ->where(
+                $qb->expr()->eq(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: strtolower($slug), type: IQueryBuilder::PARAM_STR)
+                )
+            )
+            ->andWhere(
+                $qb->expr()->in('id', $qb->createNamedParameter(value: $ids, type: IQueryBuilder::PARAM_INT_ARRAY))
+            )
+            ->setMaxResults(1);
+
+        $result = $qb->executeQuery();
+        $row    = $result->fetch();
+        $result->closeCursor();
+
+        if ($row === false) {
+            return null;
+        }
+
+        return $this->resolveSchemaExtension(schema: Schema::fromRow($row));
+    }//end findBySlugInIds()
 
     /**
      * Clear the request-scoped find cache for a specific schema
@@ -450,6 +712,8 @@ class SchemaMapper extends QBMapper
         // list exceeds that. This instance already holds 1,233 schemas, so the
         // registers-with-stats endpoint tripped it on every request. Chunk it.
         foreach (array_chunk($ids, self::MAX_IN_LIST_SIZE) as $chunk) {
+            $this->traceRead(method: 'findMultipleOptimized');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from('openregister_schemas')
@@ -467,7 +731,7 @@ class SchemaMapper extends QBMapper
             }
 
             $result->closeCursor();
-        }
+        }//end foreach
 
         return $schemas;
     }//end findMultipleOptimized()
@@ -497,6 +761,8 @@ class SchemaMapper extends QBMapper
         bool $_rbac=true,
         bool $_multitenancy=true
     ): array {
+        $this->traceRead(method: 'findBySlug');
+
         $qb = $this->db->getQueryBuilder();
 
         $qb->select('*')
@@ -545,7 +811,7 @@ class SchemaMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return                                  list<OCA\OpenRegister\Db\Schema>
+     * @psalm-return                                  list<\OCA\OpenRegister\Db\Schema>
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Flags control security filtering behavior
      */
@@ -564,6 +830,8 @@ class SchemaMapper extends QBMapper
             // @todo: remove this hotfix for solr - uncomment when ready
             // $this->verifyRbacPermission('read', 'schema');
         }
+
+        $this->traceRead(method: 'findAll');
 
         $qb = $this->db->getQueryBuilder();
 
@@ -1577,6 +1845,8 @@ class SchemaMapper extends QBMapper
         $this->verifyOrganisationAccess(entity: $entity);
 
         // Fetch old entity directly without organisation filter for event comparison.
+        $this->traceRead(method: 'update');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from('openregister_schemas')
@@ -1593,6 +1863,27 @@ class SchemaMapper extends QBMapper
 
         // **PERFORMANCE OPTIMIZATION**: Generate facet configuration from schema properties.
         $this->generateFacetConfiguration(schema: $entity);
+
+        /*
+         * **MODIFICATION STAMP**: `updated` was never written on an edit. The
+         * column defaulted to CURRENT_TIMESTAMP at insert and then stayed at
+         * the creation time for the rest of the schema's life, so every
+         * consumer that keys on it was reading a value that could not move:
+         *
+         *  - ContextsController::buildEtag() served a stale JSON-LD context
+         *    ETag after a schema edit, and honoured If-None-Match with a 304.
+         *  - JsonLdContextService::cacheKey() reused a stale context.
+         *  - ReferentialIntegrityService's cross-request relation index treated
+         *    an unchanged stamp as "no schema changed" and could therefore keep
+         *    an index that predates a newly added onDelete relation.
+         *
+         * This is the single mapper choke point every runtime edit passes
+         * through (updateFromArray, the controllers, the tool providers), and
+         * it is set after hydrate() so a client-supplied `updated` cannot
+         * suppress it — the modification time is the server's to state.
+         */
+
+        $entity->setUpdated(new DateTime());
 
         $entity = parent::update(entity: $entity);
 
@@ -1864,6 +2155,61 @@ class SchemaMapper extends QBMapper
 
         return $mappings;
     }//end getSlugToIdMap()
+
+    /**
+     * Resolve a bounded set of schema slugs to their primary-key ids.
+     *
+     * Deliberately NOT `getSlugToIdMap()`: that materialises every schema row
+     * on the instance (1931 on the reference instance) to answer a question
+     * about a handful of slugs. Filtered event subscription runs this on the
+     * object write path, so it must be bounded by the caller's declaration
+     * rather than by the size of the instance.
+     *
+     * A slug is not unique across apps — the same `decision` slug can exist in
+     * two registers — so each slug maps to a LIST of ids and the caller narrows
+     * further (typically by register). Matching is case-insensitive, mirroring
+     * {@see find()}; keys come back lower-cased.
+     *
+     * @param array<int,string> $slugs Schema slugs to resolve.
+     *
+     * @return array<string,array<int,string>> Lower-cased slug => matching ids.
+     *                                         Empty when $slugs is empty.
+     *
+     * @spec openspec/specs/event-driven-architecture/spec.md
+     */
+    public function findIdsBySlugs(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $lowered = array_values(array_unique(array_map('strtolower', $slugs)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $map    = array_fill_keys($lowered, []);
+        while (($row = $result->fetch()) !== false) {
+            $key = strtolower((string) $row['slug']);
+            if (isset($map[$key]) === false) {
+                $map[$key] = [];
+            }
+
+            $map[$key][] = (string) $row['id'];
+        }
+
+        $result->closeCursor();
+
+        return $map;
+    }//end findIdsBySlugs()
 
     /**
      * Find schemas that have properties referencing the given schema
@@ -2357,6 +2703,8 @@ class SchemaMapper extends QBMapper
         // Get the raw schema data from database to see what properties it actually stores.
         // This is necessary because the resolved schema has merged properties.
         try {
+            $this->traceRead(method: 'getPropertySourceMetadata');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('properties')
                 ->from('openregister_schemas')
@@ -2543,6 +2891,8 @@ class SchemaMapper extends QBMapper
     private function loadSchema(string|int $identifier): Schema
     {
         try {
+            $this->traceRead(method: 'loadSchema');
+
             $qb = $this->db->getQueryBuilder();
             $qb->select('*')
                 ->from('openregister_schemas')
@@ -3681,6 +4031,8 @@ class SchemaMapper extends QBMapper
      */
     public function findNonSearchableIds(): array
     {
+        $this->traceRead(method: 'findNonSearchableIds');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_schemas')
@@ -3715,6 +4067,8 @@ class SchemaMapper extends QBMapper
      */
     public function findSearchableIds(): array
     {
+        $this->traceRead(method: 'findSearchableIds');
+
         $qb = $this->db->getQueryBuilder();
         $qb->select('id')
             ->from('openregister_schemas')

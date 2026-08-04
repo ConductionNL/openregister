@@ -181,7 +181,10 @@ class PollLinkServiceTest extends TestCase
         $this->assertSame(99, $rows[0]['pollId']);
         $this->assertSame('Stub Poll', $rows[0]['pollTitle']);
         $this->assertSame('textPoll', $rows[0]['pollType']);
-        $this->assertSame('/index.php/apps/polls/vote/99', $rows[0]['url']);
+        // NC Polls routes votes at /apps/polls/vote/{id} — the legacy
+        // /index.php prefix broke under the SPA's <base href> (doubled to
+        // /apps/polls/index.php/apps/polls/vote/… on navigation).
+        $this->assertSame('/apps/polls/vote/99', $rows[0]['url']);
     }
 
     public function testCreateAndLinkPollThrowsWhenNoUser(): void

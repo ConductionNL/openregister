@@ -120,7 +120,7 @@ test.describe('workflow: audit-trail records create and update', () => {
 		const trails = await getTrails(request)
 		test.skip(trails.length === 0, 'no audit trail entries to render')
 
-		await page.goto(`${APP}/audit-trails`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/#/audit-trails`, { waitUntil: 'domcontentloaded' })
 		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 30_000 })
 
 		// The audit-trail surface renders a real table of entries; at least one
@@ -214,7 +214,7 @@ test.describe('workflow: soft-delete then restore', () => {
 	})
 
 	test('UI: the Deleted view renders', async ({ page }) => {
-		await page.goto(`${APP}/deleted`, { waitUntil: 'domcontentloaded' })
+		await page.goto(`${APP}/#/deleted`, { waitUntil: 'domcontentloaded' })
 		// The Deleted view must at least mount. (BUG-1 is now fixed, so the list
 		// is populated by GET /api/deleted — asserted at the API level above.)
 		await expect(page.locator('main, .app-content').first()).toBeVisible({ timeout: 30_000 })

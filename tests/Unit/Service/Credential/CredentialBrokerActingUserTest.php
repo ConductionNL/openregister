@@ -40,6 +40,7 @@ use OCA\OpenRegister\Service\Credential\DoriathCredentialStore;
 use OCA\OpenRegister\Service\Credential\ProviderCatalogue;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
+use OCA\OpenRegister\Service\Sharing\SharePrincipalDeriver;
 use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -225,7 +226,8 @@ class CredentialBrokerActingUserTest extends TestCase
             $this->createMock(ProviderCatalogue::class),
             $broker,
             $tokenService,
-            $this->createMock(OrganisationService::class)
+            $this->createMock(OrganisationService::class),
+            new SharePrincipalDeriver()
         );
 
         $response = $controller->brokerRequest(self::UUID);

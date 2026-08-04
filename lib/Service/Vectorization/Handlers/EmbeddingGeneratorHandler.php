@@ -295,8 +295,8 @@ class EmbeddingGeneratorHandler
                 $response = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $error    = curl_error($ch);
-                curl_close($ch);
-
+                // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+                // CurlHandle object is freed when it goes out of scope.
                 if ($error !== null && $error !== '') {
                     throw new Exception("Fireworks API request failed: {$error}");
                 }

@@ -109,9 +109,12 @@ class Routes
             // Dashboard page.
             ['name' => 'dashboard#page', 'url' => '/', 'verb' => 'GET'],
 
-            // Settings API.
+            // Settings API. `create` (POST) is the fleet's legacy write verb;
+            // `update` (PUT) is the canonical ADR-066 write. Both dispatch to
+            // the same write path on the generic controllers.
             ['name' => 'settings#index', 'url' => '/api/settings', 'verb' => 'GET'],
             ['name' => 'settings#create', 'url' => '/api/settings', 'verb' => 'POST'],
+            ['name' => 'settings#update', 'url' => '/api/settings', 'verb' => 'PUT'],
             ['name' => 'settings#load', 'url' => '/api/settings/load', 'verb' => 'POST'],
 
             // Generic per-user preferences (shared nextcloud-vue widgets).

@@ -38,8 +38,8 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 						</tr>
 					</thead>
 					<tbody>
-						<template v-for="(sheetSummary, sheetKey) in importResults">
-							<tr :key="sheetKey">
+						<template v-for="(sheetSummary, sheetKey) in importResults" :key="sheetKey">
+							<tr>
 								<td class="sheetName">
 									{{ sheetKey }}
 									<div v-if="sheetSummary.schema" class="schemaInfo">
@@ -108,7 +108,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 								</td>
 							</tr>
 							<!-- Error Details Row -->
-							<tr v-if="expandedErrors[sheetKey] && sheetSummary.errors && sheetSummary.errors.length > 0" :key="`${sheetKey}-errors`" class="errorDetailsRow">
+							<tr v-if="expandedErrors[sheetKey] && sheetSummary.errors && sheetSummary.errors.length > 0" class="errorDetailsRow">
 								<td colspan="8" class="errorDetailsCell">
 									<div class="errorDetailsTable">
 										<table class="errorTable">
@@ -151,7 +151,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</table>
 			</div>
 
-			<NcButton type="secondary"
+			<NcButton variant="secondary"
 				style="margin-top: 1rem;"
 				@click="closeModal">
 				<template #icon>
@@ -211,7 +211,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:disabled="registerLoading"
 				:aria-label-combobox="t('openregister', 'Select a register')"
 				:placeholder="t('openregister', 'Select a register')"
-				@update:model-value="handleRegisterChange" />
+				@update:modelValue="handleRegisterChange" />
 
 			<NcSelect v-if="selectedFile && (getFileExtension(selectedFile?.name) === 'csv')"
 				v-bind="schemaOptions"
@@ -220,7 +220,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				:disabled="!registerStore.registerItem || schemaLoading"
 				:aria-label-combobox="t('openregister', 'Select a schema')"
 				:placeholder="t('openregister', 'Select a schema')"
-				@update:model-value="handleSchemaChange" />
+				@update:modelValue="handleSchemaChange" />
 
 			<div class="fileTypes">
 				<p class="fileTypesTitle">
@@ -255,9 +255,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 
 			<div class="importOptions">
 				<NcCheckboxRadioSwitch
-					:checked="includeObjects"
+					:model-value="includeObjects"
 					type="switch"
-					@update:checked="includeObjects = $event">
+					@update:modelValue="includeObjects = $event">
 					Include objects in the import
 					<template #helper>
 						This will create or update objects on the register
@@ -265,9 +265,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="validation"
+					:model-value="validation"
 					type="switch"
-					@update:checked="validation = $event">
+					@update:modelValue="validation = $event">
 					Enable validation
 					<template #helper>
 						Validate objects against schema definitions before saving. Invalid objects will be excluded from import.
@@ -275,9 +275,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="events"
+					:model-value="events"
 					type="switch"
-					@update:checked="events = $event">
+					@update:modelValue="events = $event">
 					Enable events (experimental)
 					<template #helper>
 						Dispatch object lifecycle events during bulk operations. May impact performance.
@@ -285,9 +285,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="rbac"
+					:model-value="rbac"
 					type="switch"
-					@update:checked="rbac = $event">
+					@update:modelValue="rbac = $event">
 					Enable RBAC (Role-Based Access Control)
 					<template #helper>
 						Apply role-based access control checks during import. Recommended for production environments.
@@ -295,9 +295,9 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 				</NcCheckboxRadioSwitch>
 
 				<NcCheckboxRadioSwitch
-					:checked="multi"
+					:model-value="multi"
 					type="switch"
-					@update:checked="multi = $event">
+					@update:modelValue="multi = $event">
 					Enable Multi-tenancy
 					<template #helper>
 						Apply multi-tenancy filtering during import. Recommended for multi-organization setups.
@@ -315,7 +315,7 @@ import { registerStore, schemaStore, navigationStore, objectStore, dashboardStor
 			</NcButton>
 			<NcButton
 				:disabled="loading || !selectedFile || !isValidFileType || !checkDataCompleted()"
-				type="primary"
+				variant="primary"
 				@click="importRegister">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -722,7 +722,7 @@ export default {
 		 */
 		toggleDetails(sheetName) {
 			// Use Vue.set to ensure reactivity for dynamic object properties
-			this.$set(this.expandedSheets, sheetName, !this.expandedSheets[sheetName])
+			this.expandedSheets[sheetName] = !this.expandedSheets[sheetName]
 		},
 		/**
 		 * Toggle the expanded state for a sheet's error details
@@ -730,7 +730,7 @@ export default {
 		 * @spec exclude UI toggle for sheet error details
 		 */
 		toggleErrorDetails(sheetName) {
-			this.$set(this.expandedErrors, sheetName, !this.expandedErrors[sheetName])
+			this.expandedErrors[sheetName] = !this.expandedErrors[sheetName]
 		},
 		/**
 		 * Get the count of invalid objects from validation errors

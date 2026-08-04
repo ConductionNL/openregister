@@ -3,7 +3,7 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<div class="viewHeaderTitle">
-					<NcButton type="tertiary" @click="$router.push('/reports')">
+					<NcButton variant="tertiary" @click="$router.push('/reports')">
 						<template #icon>
 							<ChevronLeft :size="20" />
 						</template>
@@ -12,7 +12,7 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ dashboard?.titel || t('openregister', 'Dashboard') }}
 					</h1>
-					<NcButton type="tertiary" :disabled="loading" @click="refresh">
+					<NcButton variant="tertiary" :disabled="loading" @click="refresh">
 						<template #icon>
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<Refresh v-else :size="20" />

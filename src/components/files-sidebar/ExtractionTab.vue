@@ -22,7 +22,7 @@
 			</template>
 			<template #action>
 				<NcButton :disabled="extracting"
-					type="primary"
+					variant="primary"
 					@click="triggerExtraction">
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
@@ -125,7 +125,7 @@
 			<!-- Re-extract button for failed extractions -->
 			<div v-if="status.extractionStatus === 'failed'" class="extraction-tab__actions">
 				<NcButton :disabled="extracting"
-					type="primary"
+					variant="primary"
 					@click="triggerExtraction">
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
@@ -141,9 +141,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 

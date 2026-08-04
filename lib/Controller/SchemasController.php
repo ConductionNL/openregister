@@ -546,6 +546,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
@@ -759,6 +760,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true
@@ -1227,6 +1229,7 @@ class SchemasController extends Controller
             if (str_contains($e->getMessage(), 'Invalid') === true
                 || str_contains($e->getMessage(), 'must be') === true
                 || str_contains($e->getMessage(), 'required') === true
+                || str_contains($e->getMessage(), 'requires translatable') === true
                 || str_contains($e->getMessage(), 'format') === true
                 || str_contains($e->getMessage(), 'Property at') === true
                 || str_contains($e->getMessage(), 'authorization') === true

@@ -25,12 +25,11 @@
 
 			<!-- Page number buttons -->
 			<div class="viewPaginationNumbers">
-				<template v-for="page in visiblePages">
-					<span v-if="page === '...'" :key="'ellipsis-' + page" class="viewPaginationEllipsis">...</span>
+				<template v-for="page in visiblePages" :key="page">
+					<span v-if="page === '...'" class="viewPaginationEllipsis">...</span>
 					<NcButton
 						v-else
-						:key="page"
-						:type="page === currentPage ? 'primary' : 'secondary'"
+						:variant="page === currentPage ? 'primary' : 'secondary'"
 						:disabled="page === currentPage"
 						@click="changePage(page)">
 						{{ page }}
@@ -59,7 +58,7 @@
 			<NcSelect
 				id="pageSize"
 				class="pagination-page-size-select"
-				:value="currentPageSizeOption"
+				:model-value="currentPageSizeOption"
 				:options="pageSizeOptions"
 				:clearable="false"
 				input-label="Items per page"

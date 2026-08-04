@@ -56,7 +56,6 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation delete(Entity $entity)
  * @method Organisation find(int|string $id)
  * @method Organisation findEntity(IQueryBuilder $query)
- * @method Organisation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Organisation> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Organisation>
@@ -68,6 +67,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class OrganisationMapper extends QBMapper
 {
+
     /**
      * Request-scoped memo of the active-organisation UUID per user id.
      *
@@ -447,16 +447,25 @@ class OrganisationMapper extends QBMapper
      */
 
     /**
-     * Find all organisations with pagination
+     * Find all organisations with pagination and optional column filters
      *
-     * @param int $limit  Maximum number of results to return (default 50)
-     * @param int $offset Number of results to skip (default 0)
+     * The `$filters` parameter is NOT optional sugar: three tenant-lifecycle
+     * background jobs (TenantDeprovisionJob, TenantPurgeJob, TenantUsageSyncJob)
+     * already call `findAll(filters: ['status' => ...])`. Until this parameter
+     * existed those calls raised `Error: Unknown named parameter $filters`, which
+     * is an `\Error` and therefore slipped straight past their `catch (\Exception)`
+     * — every run of all three jobs died uncaught. See openregister#2282.
+     *
+     * @param int   $limit   Maximum number of results to return (default 50)
+     * @param int   $offset  Number of results to skip (default 0)
+     * @param array $filters Column => value equality filters (also accepts the
+     *                       'IS NULL' / 'IS NOT NULL' sentinels used fleet-wide)
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
-    public function findAll(int $limit=50, int $offset=0): array
+    public function findAll(int $limit=50, int $offset=0, ?array $filters=[]): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -465,6 +474,20 @@ class OrganisationMapper extends QBMapper
             ->orderBy('name', 'ASC')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
+
+        foreach ($filters ?? [] as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+        }
 
         return $this->findEntities(query: $qb);
     }//end findAll()

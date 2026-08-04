@@ -56,7 +56,7 @@
 				:options="failureModes" />
 		</div>
 		<div class="form-group">
-			<NcCheckboxRadioSwitch :checked.sync="form.enabled">
+			<NcCheckboxRadioSwitch v-model="form.enabled">
 				Enabled
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -64,7 +64,7 @@
 			<NcButton @click="$emit('cancel')">
 				Cancel
 			</NcButton>
-			<NcButton type="primary" @click="save">
+			<NcButton variant="primary" @click="save">
 				{{ isEdit ? 'Update' : 'Create' }}
 			</NcButton>
 		</div>

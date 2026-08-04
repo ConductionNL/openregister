@@ -7,7 +7,7 @@ status: done
 
 ## Purpose
 
-Describes the user-facing modal dialog components that mediate create / read / update / delete and bulk operations on first-class register entities (registers, schemas, objects, agents, applications, organisations, configurations, endpoints, sources, views, webhooks, soft-deleted records, audit-trail entries, files). Every register entity in the OpenRegister UI is mutated through a small family of modal Vue components (`Edit{Entity}.vue`, `Delete{Entity}.vue`, `View{Entity}.vue`, plus per-entity bulk variants) that share a consistent open / load / submit / close / error-handling lifecycle driven by the `navigationStore` dialog state and the corresponding entity store.
+Describes the user-facing modal dialog components that mediate create / read / update / delete and bulk operations on first-class register entities (registers, schemas, objects, applications, organisations, configurations, endpoints, sources, views, webhooks, soft-deleted records, audit-trail entries, files). Every register entity in the OpenRegister UI is mutated through a small family of modal Vue components (`Edit{Entity}.vue`, `Delete{Entity}.vue`, `View{Entity}.vue`, plus per-entity bulk variants) that share a consistent open / load / submit / close / error-handling lifecycle driven by the `navigationStore` dialog state and the corresponding entity store.
 
 This is the canonical spec for modal-based entity management UI. Backend CRUD endpoints are specified in their own per-entity capabilities; this spec describes only the modal lifecycle, validation surfacing, and dialog wiring that connects user input to those endpoints.
 
@@ -18,21 +18,21 @@ This is the canonical spec for modal-based entity management UI. Backend CRUD en
 
 ### Requirement: Entity create/edit modals SHALL load context on mount, submit through the entity store, and surface validation errors
 
-Every `Edit{Entity}.vue` modal (e.g. `EditAgent.vue`, `EditApplication.vue`, `EditConfiguration.vue`, `EditEndpoint.vue`, `EditOrganisation.vue`, `EditSource.vue`, `EditView.vue`, `EditWebhook.vue`) MUST:
+Every `Edit{Entity}.vue` modal (e.g. `EditApplication.vue`, `EditConfiguration.vue`, `EditEndpoint.vue`, `EditOrganisation.vue`, `EditSource.vue`, `EditView.vue`, `EditWebhook.vue`) MUST:
 1. Run an `initialize{Entity}()` (or equivalent `loadX()`) method on mount or when the matching `navigationStore.dialog` value is selected, hydrating local form state from the entity store's currently-selected item.
 2. Run an `async save{Entity}()` (or equivalent `update*` / `*from*` action) that delegates persistence to the entity store and awaits the response.
 3. Set `loading=true` before the call and `loading=false` in `finally`, disable the submit button while loading, and surface store-returned errors in a dedicated error state rather than throwing.
 4. Close the dialog by calling `navigationStore.setDialog(null|false)` only on a successful save.
 
 #### Scenario: Open edit modal hydrates from store
-- **GIVEN** `agentStore.agentItem` is set and `navigationStore.dialog === 'editAgent'`
-- **WHEN** `EditAgent.vue` mounts
-- **THEN** `initializeAgent()` MUST copy the store item into the modal's local form state
-- **AND** related collections (`groups`, `views`, `invitedUsers`) MUST be hydrated as arrays
+- **GIVEN** `sourceStore.sourceItem` is set and `navigationStore.dialog === 'editSource'`
+- **WHEN** `EditSource.vue` mounts
+- **THEN** `initializeSourceItem()` MUST copy the store item into the modal's local form state
+- **AND** related collections MUST be hydrated as arrays
 
 #### Scenario: Save success closes the dialog
-- **GIVEN** the user has edited the agent form and clicks Save
-- **WHEN** `saveAgent()` resolves successfully
+- **GIVEN** the user has edited the source form and clicks Save
+- **WHEN** `saveSource()` resolves successfully
 - **THEN** the modal MUST call `navigationStore.setDialog(null)` exactly once
 - **AND** `loading` MUST be reset to `false` in the `finally` block
 
@@ -44,12 +44,12 @@ Every `Edit{Entity}.vue` modal (e.g. `EditAgent.vue`, `EditApplication.vue`, `Ed
 
 ### Requirement: Entity delete and single-object action modals SHALL confirm intent and delegate the mutation to the entity store
 
-Every `Delete{Entity}.vue` modal (e.g. `DeleteAgent.vue`, `DeleteApplication.vue`, `DeleteConfiguration.vue`, `DeleteEndpoint.vue`, `DeleteOrganisation.vue`, `DeleteSource.vue`, `DeleteView.vue`, `DeleteObject.vue`) and the single-object action modals (`CopyObject.vue`, `DownloadObject.vue`, `LockObject.vue`, `PublishConfiguration.vue`, `PreviewConfiguration.vue`) MUST present a confirmation prompt, expose a single async handler (`confirmDelete()`, `delete{Entity}()`, `copyObject()`, `loadPreview()`, etc.), and delegate the actual mutation or fetch to the matching entity store action against the currently-selected item.
+Every `Delete{Entity}.vue` modal (e.g. `DeleteApplication.vue`, `DeleteConfiguration.vue`, `DeleteEndpoint.vue`, `DeleteOrganisation.vue`, `DeleteSource.vue`, `DeleteView.vue`, `DeleteObject.vue`) and the single-object action modals (`CopyObject.vue`, `DownloadObject.vue`, `LockObject.vue`, `PublishConfiguration.vue`, `PreviewConfiguration.vue`) MUST present a confirmation prompt, expose a single async handler (`confirmDelete()`, `delete{Entity}()`, `copyObject()`, `loadPreview()`, etc.), and delegate the actual mutation or fetch to the matching entity store action against the currently-selected item.
 
-#### Scenario: Confirm delete on a single agent
-- **GIVEN** `agentStore.agentItem` is set and the user clicks the delete confirm button on `DeleteAgent.vue`
-- **WHEN** `confirmDelete()` runs
-- **THEN** the modal MUST call `agentStore.deleteAgent(agentStore.agentItem)`
+#### Scenario: Confirm delete on a single source
+- **GIVEN** `sourceStore.sourceItem` is set and the user clicks the delete confirm button on `DeleteSource.vue`
+- **WHEN** the modal's `deleteSource()` confirm handler runs
+- **THEN** the modal MUST call `sourceStore.deleteSource(sourceStore.sourceItem)`
 - **AND** on success it MUST call `closeDialog()` which sets `navigationStore.setDialog(null)`
 
 #### Scenario: Copy single object names the duplicate

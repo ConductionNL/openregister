@@ -320,6 +320,11 @@ class HealthCheckExecutor
     private function resolveAppContainer(string $appId): ContainerInterface
     {
         try {
+            // Reaching ANOTHER app's DI container has no OCP equivalent — \OCP\Server::get()
+            // resolves the server container only. The sniff says this is removed in NC 34,
+            // but it is not: core itself calls it in lib/public/AppFramework/App.php. Scoped
+            // ignore rather than a blanket one, so any OTHER legacy accessor still fails.
+            // phpcs:ignore CustomSniffs.Nextcloud.NoLegacyServerAccessors.LegacyNamedAccessor
             $appContainer = \OC::$server->getRegisteredAppContainer($appId);
             if ($appContainer instanceof ContainerInterface) {
                 return $appContainer;

@@ -32,6 +32,7 @@ use OCP\IURLGenerator;
 use stdClass;
 use Exception;
 use RuntimeException;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -107,6 +108,10 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   One over the threshold, from the
+ * ObjectScopeResolver import — used only for its scope-vocabulary constants, so the
+ * `scope` key is validated against the SAME list the runtime resolves it with rather
+ * than a second copy of the strings here.
  *
  * @psalm-suppress                                PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -903,10 +908,19 @@ class Schema extends Entity implements JsonSerializable
      * Validate an authorization rules array
      *
      * Keys are either CRUD actions (create, read, update, delete) holding rule
-     * arrays, or reserved cascade flags (e.g. inheritFromPublic) holding a
-     * boolean. Reserved flags are behaviour toggles read at runtime by
-     * PermissionHandler, not action rule sets, so they are validated as
-     * booleans and skip the action/array checks.
+     * arrays, or reserved non-action keys. Reserved keys are behaviour toggles
+     * read at runtime, not action rule sets, so they skip the action/array
+     * checks and are validated against their own shape:
+     *
+     * - `inheritFromPublic` — a boolean cascade flag.
+     * - `scope` — the default object scope for this schema, from the
+     *   {@see ObjectScopeResolver} vocabulary.
+     *
+     * `scope` is validated STRICTLY here even though the runtime treats an
+     * unrecognised value as private. The two are not alternatives: strict
+     * validation gives a schema author an error at authoring time, and the
+     * runtime fail-closed still covers a value that arrived some other way — an
+     * import, a direct write, or a version that knew a scope this one does not.
      *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
@@ -939,6 +953,12 @@ class Schema extends Entity implements JsonSerializable
                 continue;
             }
 
+            // The default object scope for this schema.
+            if ($action === ObjectScopeResolver::SCOPE_KEY) {
+                $this->validateScopeValue(scope: $rules, context: $context);
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
@@ -959,6 +979,32 @@ class Schema extends Entity implements JsonSerializable
             }
         }//end foreach
     }//end validateAuthorizationRules()
+
+    /**
+     * Validate a schema's default object scope.
+     *
+     * Strict on purpose, even though the runtime treats an unrecognised value as
+     * private: validation gives a schema author an error at authoring time, and
+     * the runtime fail-closed still covers a value that arrived some other way.
+     *
+     * @param mixed  $scope   The declared scope value.
+     * @param string $context Context for the error message.
+     *
+     * @throws \InvalidArgumentException When the scope is not in the vocabulary.
+     *
+     * @return void
+     */
+    private function validateScopeValue(mixed $scope, string $context): void
+    {
+        $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+
+        if (in_array($scope, $validScopes, true) === false) {
+            $scopeList = implode(', ', $validScopes);
+            throw new InvalidArgumentException(
+                "Authorization scope in {$context} must be one of: {$scopeList}"
+            );
+        }
+    }//end validateScopeValue()
 
     /**
      * Validate property-level authorization
@@ -1793,6 +1839,30 @@ class Schema extends Entity implements JsonSerializable
     }//end getObjectSource()
 
     /**
+     * Check whether this schema's objects are opted into Context Chat indexing.
+     *
+     * Reads the `x-openregister-contextchat` annotation (default OFF). Follows
+     * the same `x-openregister-*` boolean-flag convention as other schema
+     * annotations — objects of this schema are only ever submitted to
+     * `OCP\ContextChat` when this returns true AND the object independently
+     * satisfies the publication predicate (see ContextChatSubmissionListener).
+     *
+     * @return bool True when the schema opted in to Context Chat indexing.
+     *
+     * @spec openspec/specs/context-chat-provider/spec.md
+     */
+    public function isContextChatIndexingEnabled(): bool
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return false;
+        }
+
+        return ($configuration['x-openregister-contextchat'] ?? false) === true;
+    }//end isContextChatIndexingEnabled()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -1896,7 +1966,13 @@ class Schema extends Entity implements JsonSerializable
         // `handoffContract` is the ADR-051 provider-side binding block
         // (contract field → own property, per kind URI); its shape is
         // validated at save time by HandoffContractBindingValidator.
-        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract'];
+        // `importSource` is the schema-import provenance block (dialect,
+        // reference, snapshot version, baseline) written by
+        // SchemaImportService and read back by the reimport / update-from-
+        // source endpoint; without it in the allowlist the provenance is
+        // silently dropped on save and the entire update-from-source feature
+        // is dead (the schema reports "not imported from a standard").
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
 
         foreach ($configuration as $key => $value) {
             // Per-key isolation (#419): a bad VALUE for one config key must never
@@ -2054,7 +2130,9 @@ class Schema extends Entity implements JsonSerializable
         }
 
         if (in_array($key, $boolFields, true) === true) {
-            $this->validateBoolConfigValue(key: $key, value: $value);
+            // $key is int|string because PHP array keys can be ints. The cast is
+            // explicit rather than relying on this file having no strict_types.
+            $this->validateBoolConfigValue(key: (string) $key, value: $value);
             $validatedConfig[$key] = $value;
             return;
         }
@@ -2283,11 +2361,36 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-handoff',
         'x-openregister-mcp',
         'x-openregister-approval-chains',
+        // Per-schema opt-in for OCP\ContextChat content submission (default
+        // OFF — see ContentProvider / ContextChatSubmissionListener). Absent
+        // from the vocabulary means the key round-trips through
+        // setConfiguration() and gets silently dropped, so the opt-in could
+        // never take effect (same or#460/#462-class bug the vocabulary
+        // exists to prevent).
+        'x-openregister-contextchat',
         // Nested write-only dot-paths. Unlike every other entry in this list
         // this key is NOT a plain pass-through: validateConfigurationEntry has
         // a dedicated branch above that validates its shape, and
         // validateConfigurationArray re-throws instead of dropping it.
         self::WRITEONLY_PATHS_ANNOTATION,
+        // Federated configuration sharing (ADR pending): a schema opts its
+        // objects into the shared GitHub sharing engine by carrying either
+        // `true` or an `{id, topic, name}` refinement here. Without this entry
+        // setConfiguration() would silently drop the marker and the schema
+        // would never surface as a shareable type — the same or#460/#462-class
+        // trap the vocabulary exists to catch. Read by
+        // SchemaShareableConfigScanner.
+        'x-openregister-shareable',
+        // Declarative bound on what object data may reach an LLM: the
+        // per-schema allowlist Hermiq's AgentContextBuilder (and its JS twin
+        // src/utils/agentContext.js) reads to build an agent's context.
+        // Absent from this list, setConfiguration() silently DROPPED it, so
+        // every agent leaf on every schema fleet-wide resolved an EMPTY
+        // context — fail-closed, so never a leak, but the capability was
+        // wholly inert while schemas saved with HTTP 200 and no error. Same
+        // or#460/#462-class trap as `x-openregister-processing` and
+        // `x-openregister-contextchat` above. See or#2164.
+        'x-openregister-agent-context',
     ];
 
     /**

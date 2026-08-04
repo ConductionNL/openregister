@@ -15,9 +15,9 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" content-class="mt-3" justified>
 				<!-- Settings Tab -->
-				<BTab active>
+				<AppTab active>
 					<template #title>
 						<Cog :size="16" />
 						<span>{{ t('openregister', 'Settings') }}</span>
@@ -27,15 +27,15 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<NcTextField
 							:label="t('openregister', 'Title *')"
 							:placeholder="t('openregister', 'Enter configuration title')"
-							:value="configurationStore.configurationItem?.title || ''"
+							:model-value="configurationStore.configurationItem?.title || ''"
 							:error="!configurationStore.configurationItem?.title?.trim?.()"
-							@update:value="updateTitle" />
+							@update:modelValue="updateTitle" />
 
 						<NcTextArea
 							:label="t('openregister', 'Description')"
 							:placeholder="t('openregister', 'Enter configuration description (optional)')"
-							:value="configurationStore.configurationItem?.description || ''"
-							@update:value="updateDescription" />
+							:model-value="configurationStore.configurationItem?.description || ''"
+							@update:modelValue="updateDescription" />
 
 						<div class="selectField">
 							<label for="type-select">{{ t('openregister', 'Type') }}</label>
@@ -48,7 +48,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="value"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select configuration type...')"
-								@input="updateType">
+								@update:modelValue="updateType">
 								<template #option="{ label, description }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -64,8 +64,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<NcTextField
 							:label="t('openregister', 'App ID')"
 							:placeholder="t('openregister', 'myapp')"
-							:value="configurationStore.configurationItem?.app || ''"
-							@update:value="updateApp">
+							:model-value="configurationStore.configurationItem?.app || ''"
+							@update:modelValue="updateApp">
 							<template #helper-text-message>
 								<p>{{ t('openregister', 'Application identifier for this configuration (optional)') }}</p>
 							</template>
@@ -73,10 +73,10 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 
 						<!-- Organisation is automatically set to active organisation by backend -->
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- Configuration Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Database :size="16" />
 						<span>{{ t('openregister', 'Configuration') }}</span>
@@ -99,7 +99,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search registers...')"
 								:close-on-select="false"
 								@search-change="searchRegisters"
-								@input="updateRegisters">
+								@update:modelValue="updateRegisters">
 								<template #option="{ title, description }">
 									<div class="option-content">
 										<span class="option-title">{{ title }}</span>
@@ -132,7 +132,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search schemas...')"
 								:close-on-select="false"
 								@search-change="searchSchemas"
-								@input="updateSchemas">
+								@update:modelValue="updateSchemas">
 								<template #option="{ title, description }">
 									<div class="option-content">
 										<span class="option-title">{{ title }}</span>
@@ -166,7 +166,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:close-on-select="false"
 								:disabled="selectedRegisters.length === 0 && selectedSchemas.length === 0"
 								@search-change="searchObjects"
-								@input="updateObjects">
+								@update:modelValue="updateObjects">
 								<template #option="{ title, description }">
 									<div class="option-content">
 										<span class="option-title">{{ title }}</span>
@@ -201,7 +201,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search data sources...')"
 								:close-on-select="false"
 								@search-change="searchSources"
-								@input="updateSources">
+								@update:modelValue="updateSources">
 								<template #option="{ title, description }">
 									<div class="option-content">
 										<span class="option-title">{{ title }}</span>
@@ -234,7 +234,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search agents...')"
 								:close-on-select="false"
 								@search-change="searchAgents"
-								@input="updateAgents">
+								@update:modelValue="updateAgents">
 								<template #option="{ name, description }">
 									<div class="option-content">
 										<span class="option-title">{{ name }}</span>
@@ -267,7 +267,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search views...')"
 								:close-on-select="false"
 								@search-change="searchViews"
-								@input="updateViews">
+								@update:modelValue="updateViews">
 								<template #option="{ name, description }">
 									<div class="option-content">
 										<span class="option-title">{{ name }}</span>
@@ -300,7 +300,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:placeholder="t('openregister', 'Search applications...')"
 								:close-on-select="false"
 								@search-change="searchApplications"
-								@input="updateManagedApplications">
+								@update:modelValue="updateManagedApplications">
 								<template #option="{ name, description }">
 									<div class="option-content">
 										<span class="option-title">{{ name }}</span>
@@ -317,10 +317,10 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							</p>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- Management Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<CloudSync :size="16" />
 						<span>Management</span>
@@ -338,7 +338,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="value"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select source type...')"
-								@input="updateSourceType">
+								@update:modelValue="updateSourceType">
 								<template #option="{ label, description }">
 									<div class="option-content">
 										<span class="option-title">{{ label }}</span>
@@ -355,8 +355,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							v-if="selectedSourceType && selectedSourceType.value !== 'local'"
 							label="Source URL"
 							placeholder="https://raw.githubusercontent.com/..."
-							:value="configurationStore.configurationItem?.sourceUrl || ''"
-							@update:value="updateSourceUrl">
+							:model-value="configurationStore.configurationItem?.sourceUrl || ''"
+							@update:modelValue="updateSourceUrl">
 							<template #helper-text-message>
 								<p>The URL to the remote configuration file (JSON or YAML)</p>
 							</template>
@@ -365,8 +365,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<NcTextField
 							label="Version"
 							placeholder="1.0.0"
-							:value="configurationStore.configurationItem?.version || ''"
-							@update:value="updateVersion">
+							:model-value="configurationStore.configurationItem?.version || ''"
+							@update:modelValue="updateVersion">
 							<template #helper-text-message>
 								<p>Semantic version (e.g., 1.0.0, 2.1.3)</p>
 							</template>
@@ -383,7 +383,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								track-by="id"
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select owner application (optional)...')"
-								@input="updateApplication">
+								@update:modelValue="updateApplication">
 								<template #option="{ name, description }">
 									<div class="option-content">
 										<span class="option-title">{{ name }}</span>
@@ -402,8 +402,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<NcTextField
 							label="Local Version"
 							placeholder="1.0.0"
-							:value="configurationStore.configurationItem?.localVersion || ''"
-							@update:value="updateLocalVersion">
+							:model-value="configurationStore.configurationItem?.localVersion || ''"
+							@update:modelValue="updateLocalVersion">
 							<template #helper-text-message>
 								<p>Current version installed locally (semantic versioning)</p>
 							</template>
@@ -412,7 +412,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 						<NcTextField
 							v-if="configurationStore.configurationItem?.remoteVersion"
 							label="Remote Version (Read-only)"
-							:value="configurationStore.configurationItem?.remoteVersion || '-'"
+							:model-value="configurationStore.configurationItem?.remoteVersion || '-'"
 							:disabled="true">
 							<template #helper-text-message>
 								<p>Last checked version from remote source</p>
@@ -421,8 +421,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 
 						<div class="checkboxField">
 							<NcCheckboxRadioSwitch
-								:checked="configurationStore.configurationItem?.autoUpdate || false"
-								@update:checked="updateAutoUpdate">
+								:model-value="configurationStore.configurationItem?.autoUpdate || false"
+								@update:modelValue="updateAutoUpdate">
 								Enable Auto-Update
 							</NcCheckboxRadioSwitch>
 							<p class="field-hint">
@@ -443,7 +443,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 								:label-outside="true"
 								:placeholder="t('openregister', 'Select groups to notify...')"
 								:close-on-select="false"
-								@input="updateNotificationGroups">
+								@update:modelValue="updateNotificationGroups">
 								<template #option="{ label }">
 									<span>{{ label }}</span>
 								</template>
@@ -461,8 +461,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							v-if="selectedSourceType && selectedSourceType.value === 'github'"
 							label="GitHub Repository"
 							placeholder="owner/repository"
-							:value="configurationStore.configurationItem?.githubRepo || ''"
-							@update:value="updateGithubRepo">
+							:model-value="configurationStore.configurationItem?.githubRepo || ''"
+							@update:modelValue="updateGithubRepo">
 							<template #helper-text-message>
 								<p>Repository in format: owner/repo</p>
 							</template>
@@ -472,8 +472,8 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							v-if="selectedSourceType && selectedSourceType.value === 'github'"
 							label="GitHub Branch"
 							placeholder="main"
-							:value="configurationStore.configurationItem?.githubBranch || 'main'"
-							@update:value="updateGithubBranch">
+							:model-value="configurationStore.configurationItem?.githubBranch || 'main'"
+							@update:modelValue="updateGithubBranch">
 							<template #helper-text-message>
 								<p>Branch to push/pull configurations</p>
 							</template>
@@ -483,15 +483,15 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 							v-if="selectedSourceType && selectedSourceType.value === 'github'"
 							label="GitHub Path"
 							placeholder="configs/configuration.json"
-							:value="configurationStore.configurationItem?.githubPath || ''"
-							@update:value="updateGithubPath">
+							:model-value="configurationStore.configurationItem?.githubPath || ''"
+							@update:modelValue="updateGithubPath">
 							<template #helper-text-message>
 								<p>Path within the repository for the configuration file</p>
 							</template>
 						</NcTextField>
 					</div>
-				</BTab>
-			</BTabs>
+				</AppTab>
+			</AppTabs>
 		</div>
 
 		<template #actions>
@@ -503,7 +503,7 @@ import { configurationStore, navigationStore, organisationStore, applicationStor
 			</NcButton>
 			<NcButton
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="saveConfiguration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -527,7 +527,8 @@ import {
 	NcTextArea,
 } from '@nextcloud/vue'
 
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import ContentSave from 'vue-material-design-icons/ContentSave.vue'
@@ -546,8 +547,8 @@ export default {
 		NcSelect,
 		NcTextField,
 		NcTextArea,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		// Icons
 		Cancel,
 		ContentSave,

@@ -14,7 +14,7 @@
 				</li>
 			</ul>
 		</div>
-		<NcButton type="primary" @click="showCreateForm = !showCreateForm">
+		<NcButton variant="primary" @click="showCreateForm = !showCreateForm">
 			{{ showCreateForm ? 'Cancel' : 'Create Chain' }}
 		</NcButton>
 		<div v-if="showCreateForm" class="create-form">
@@ -26,7 +26,7 @@
 				<label>Status Field</label>
 				<input v-model="newChain.statusField" type="text" class="input-field">
 			</div>
-			<NcButton type="primary" @click="createChain">
+			<NcButton variant="primary" @click="createChain">
 				Save Chain
 			</NcButton>
 		</div>

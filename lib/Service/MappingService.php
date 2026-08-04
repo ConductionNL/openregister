@@ -32,6 +32,7 @@ use OCA\OpenRegister\Db\MappingMapper;
 use Throwable;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICacheFactory;
 use OCP\ICache;
 use Psr\Log\LoggerInterface;
@@ -100,14 +101,18 @@ class MappingService
     /**
      * MappingService constructor
      *
-     * @param MappingMapper   $mappingMapper The mapping mapper for database operations
-     * @param ICacheFactory   $cacheFactory  Cache factory for distributed caching
-     * @param LoggerInterface $logger        Logger for cache diagnostics
+     * @param MappingMapper         $mappingMapper The mapping mapper for database operations
+     * @param ICacheFactory         $cacheFactory  Cache factory for distributed caching
+     * @param LoggerInterface       $logger        Logger for cache diagnostics
+     * @param IEventDispatcher|null $events        Collects Twig functions contributed by other apps.
+     *                                             Nullable so the service still constructs where no
+     *                                             dispatcher is available (tests, early boot).
      */
     public function __construct(
         private readonly MappingMapper $mappingMapper,
         ICacheFactory $cacheFactory,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?IEventDispatcher $events=null
     ) {
         $loader = new ArrayLoader([]);
         // Autoescape disabled — mappings transform data (not HTML), and the
@@ -115,6 +120,17 @@ class MappingService
         // autoescaping injects into every output expression.
         $this->twig = new Environment($loader, ['autoescape' => false]);
         $this->twig->addExtension(new MappingExtension());
+
+        // Functions only another app can provide — `callSource` needs
+        // OpenConnector's CallService, the contract lookups its contract
+        // service. Collected BEFORE the sandbox policy is built, because a
+        // contributed function that is not allowlisted fails as "unknown
+        // function" inside a mapping, nowhere near its registration.
+        $contributed = $this->contributedFunctions();
+        foreach ($contributed['functions'] as $function) {
+            $this->twig->addFunction($function);
+        }
+
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(
                 mappingService: $this,
@@ -164,13 +180,32 @@ class MappingService
             ],
             allowedMethods: [],
             allowedProperties: [],
-            allowedFunctions: [
-                'max',
-                'min',
-                'range',
-                'executeMapping',
-                'generateUuid',
-            ]
+            allowedFunctions: array_merge(
+                [
+                    'max',
+                    'min',
+                    'range',
+                    'executeMapping',
+                    'generateUuid',
+                    // Ported from OpenConnector's copy so its mappings keep
+                    // working once that copy is retired. `json_decode` is the
+                    // name OpenConnector's templates use; OpenRegister's own
+                    // runtime spells it `jsonDecode`. Both are exposed rather
+                    // than renaming either, because a mapping is authored data
+                    // — renaming a function silently breaks stored templates.
+                    'json_decode',
+                    'jsonDecode',
+                    'createSlug',
+                    'getFileContents',
+                    'getFiles',
+                    'b64enc',
+                    'b64dec',
+                    'zgwEnum',
+                    'zgwEnumReverse',
+                    'zgwExtractUuid',
+                ],
+                $contributed['names']
+            )
         );
         $this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
@@ -718,4 +753,44 @@ class MappingService
     {
         return $this->mappingMapper->findAll();
     }//end getMappings()
+
+    /**
+     * Collect Twig functions contributed by other apps.
+     *
+     * Best-effort by design. A contributing app that is absent, or a listener
+     * that throws, must not stop mappings from evaluating at all — the engine
+     * belongs to OpenRegister and has to work on an instance where no other app
+     * is installed. What it must NOT do is pretend a contributed function
+     * exists: an unregistered function fails loudly inside the mapping, which is
+     * the correct place for that failure to surface.
+     *
+     * @return array{functions: array<int, \Twig\TwigFunction>, names: array<int, string>}
+     *         The contributed functions and the names to allowlist.
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+     */
+    private function contributedFunctions(): array
+    {
+        if ($this->events === null) {
+            return ['functions' => [], 'names' => []];
+        }
+
+        try {
+            $event = new RegisterMappingFunctionsEvent();
+            $this->events->dispatchTyped($event);
+
+            return [
+                'functions' => $event->getFunctions(),
+                'names'     => $event->getAllowedNames(),
+            ];
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[MappingService] Could not collect contributed Twig functions: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return ['functions' => [], 'names' => []];
+        }//end try
+
+    }//end contributedFunctions()
 }//end class
