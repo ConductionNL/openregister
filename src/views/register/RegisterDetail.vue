@@ -8,9 +8,9 @@ import formatBytes from '../../services/formatBytes.js'
 	<NcAppContent>
 		<CnDetailPage
 			:title="register?.title || ''"
-			:loading="dashboardStore.loading"
+			:loading="dashboardStore.loading || hydrating"
 			:loading-label="t('openregister', 'Loading register data...')"
-			:error="!!dashboardStore.error || (!dashboardStore.loading && !register)"
+			:error="!!dashboardStore.error || (!dashboardStore.loading && !hydrating && !register)"
 			:error-message="dashboardStore.error || t('openregister', 'Register not found')"
 			:stats-title="registerStats ? t('openregister', 'Register Statistics') : ''"
 			:stats-columns="registerStats ? [
@@ -255,6 +255,9 @@ export default {
 			showEditDialog: false,
 			schemaSelectOptions: [],
 			schemasLoading: false,
+			// True until mounted() has hydrated the register, so a deep link shows
+			// the loading state instead of flashing "Register not found".
+			hydrating: true,
 		}
 	},
 	computed: {
@@ -283,9 +286,14 @@ export default {
 		 * @return {object|undefined}
 		 */
 		register() {
-			// Find the register in the dashboard store using the ID from register store
-			const registerId = registerStore.getRegisterItem?.id
-			return dashboardStore.registers.find(r => r.id === registerId)
+			// Find the register in the dashboard store using the ID from the register
+			// store, falling back to the route param on a deep link / page refresh.
+			const registerId = registerStore.getRegisterItem?.id || this.$route.params.id
+			if (!registerId) {
+				return undefined
+			}
+			// Route params are strings, the API returns numeric ids — compare as strings.
+			return dashboardStore.registers.find(r => String(r.id) === String(registerId))
 		},
 		/**
 		 * ApexCharts options for the audit-trail line chart.
@@ -426,19 +434,34 @@ export default {
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
+		// The active register normally reaches the store from RegistersIndex before
+		// it navigates here. A deep link or page refresh has no such hand-off, so
+		// seed the store from the `:id` route param — without this the page bounced
+		// straight back to /registers.
+		const routeId = this.$route.params.id
+		if (routeId && String(registerStore.getRegisterItem?.id || '') !== String(routeId)) {
+			registerStore.setRegisterItem({ id: routeId })
+		}
+
+		if (!registerStore.getRegisterItem?.id) {
+			// No id in the route and none in the store — nothing to render.
+			this.hydrating = false
+			this.$router.push('/registers')
+			return
+		}
+
 		// If we have a register ID but no data, fetch dashboard data
-		if (registerStore.getRegisterItem?.id && !this.register) {
+		if (!this.register) {
 			try {
 				await dashboardStore.fetchRegisters()
 				await dashboardStore.fetchAllChartData()
 			} catch (error) {
+				// Stay on the page: CnDetailPage surfaces dashboardStore.error with a
+				// "Back to Registers" action, which beats a silent redirect.
 				console.error('Failed to fetch register details:', error)
-				this.$router.push('/registers')
 			}
-		} else if (!registerStore.getRegisterItem?.id) {
-			// If no register ID at all, go back to list
-			this.$router.push('/registers')
 		}
+		this.hydrating = false
 
 		// Load register stats if register is available
 		if (registerStore.getRegisterItem?.id) {
@@ -566,7 +589,7 @@ export default {
 		 * @return {void}
 		 */
 		editSchema(schema) {
-			registerStore.setSchemaItem(schema)
+			schemaStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
 		},
 		/**
@@ -589,40 +612,58 @@ export default {
 			}).catch(() => {})
 		},
 		/**
-		 * Load full schema details from schema IDs
+		 * Normalise one schema for the cards.
+		 *
+		 * @spec exclude UI plumbing — shape fix-up for local schema cards; schema contract owned elsewhere.
+		 * @param {object} schema - schema payload, hydrated or fetched
+		 * @return {object} the schema, with `properties` guaranteed to be an object
+		 */
+		normalizeSchema(schema) {
+			// The backend returns `properties: []` instead of `{}` for a schema with
+			// none. Copy rather than mutate — hydrated entries belong to the store.
+			if (Array.isArray(schema?.properties)) {
+				return { ...schema, properties: {} }
+			}
+			return schema
+		},
+		/**
+		 * Load full schema details for the register's schemas.
 		 *
 		 * @spec exclude UI plumbing — parallel fetch hydrating local schema cards; schema contract owned elsewhere.
 		 * @return {Promise<void>}
 		 */
 		async loadSchemas() {
-			if (!this.register?.schemas || !Array.isArray(this.register.schemas) || this.register.schemas.length === 0) {
+			const schemas = this.register?.schemas
+			if (!Array.isArray(schemas) || schemas.length === 0) {
 				this.loadedSchemas = []
 				return
 			}
 
 			this.loadingSchemas = true
 			try {
-				// Fetch all schemas in parallel
-				const promises = this.register.schemas.map(async schemaId => {
+				// The dashboard endpoint replaces register.schemas with full schema
+				// objects that also carry the per-schema `stats` the cards render and
+				// GET /api/schemas/{id} does not return — so use those as they are.
+				// Only bare ids need fetching (stringifying an object gave us
+				// /api/schemas/[object Object]).
+				const promises = schemas.map(async schema => {
+					if (schema !== null && typeof schema === 'object') {
+						return this.normalizeSchema(schema)
+					}
 					try {
-						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schemaId}`)
+						const response = await fetch(`/index.php/apps/openregister/api/schemas/${schema}`)
 						if (response.ok) {
-							const schema = await response.json()
-							// Convert properties array to object if needed (backend sometimes returns array when empty)
-							if (schema && Array.isArray(schema.properties)) {
-								schema.properties = {}
-							}
-							return schema
+							return this.normalizeSchema(await response.json())
 						}
 						return null
 					} catch (error) {
-						console.error(`Failed to load schema ${schemaId}:`, error)
+						console.error(`Failed to load schema ${schema}:`, error)
 						return null
 					}
 				})
 
-				const schemas = await Promise.all(promises)
-				this.loadedSchemas = schemas.filter(Boolean) // Remove null entries
+				const loaded = await Promise.all(promises)
+				this.loadedSchemas = loaded.filter(Boolean) // Remove null entries
 			} catch (error) {
 				console.error('Error loading schemas:', error)
 				this.loadedSchemas = []

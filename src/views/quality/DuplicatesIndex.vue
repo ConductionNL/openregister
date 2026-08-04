@@ -84,7 +84,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
 import RegisterSchemaSelector from './RegisterSchemaSelector.vue'
@@ -113,16 +112,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
 		/**
 		 * @spec exclude UI plumbing — proxies the store's hasSelection getter, no backend contract of its own
 		 */

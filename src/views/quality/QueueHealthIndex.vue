@@ -79,7 +79,6 @@
 </template>
 
 <script>
-import { translate as t } from '@nextcloud/l10n'
 import { NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import Webhook from 'vue-material-design-icons/Webhook.vue'
 import { qualityStore } from '../../store/store.js'
@@ -95,16 +94,6 @@ export default {
 	},
 
 	computed: {
-		/**
-		 * Expose the l10n translate helper to the template.
-		 *
-		 * @spec exclude UI plumbing — template translation helper
-		 * @return {Function}
-		 */
-		t() {
-			return t
-		},
-
 		/**
 		 * @spec exclude UI plumbing — proxies the store's loading flag, no backend contract of its own
 		 */
