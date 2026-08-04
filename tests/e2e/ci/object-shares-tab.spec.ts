@@ -341,6 +341,15 @@ test.describe('the Shares tab, driven through the browser', () => {
 			'no grant row appeared after clicking Share',
 		).toHaveCount(1, { timeout: 20_000 })
 
+		// Task 10.6 — the RENDERED icon, measured from the DOM. iconFor()
+		// dispatches on the type the SERVER reported, and an unregistered `:is`
+		// name renders nothing at all rather than a fallback, so this also proves
+		// the icon resolved.
+		await expect(
+			panel.locator('.cn-object-access-tab__row .account-icon'),
+			'a user grant is not rendering the user icon',
+		).toHaveCount(1)
+
 		expect(
 			await statusFor(other, registerId, schemaId, uuid),
 			'the granted user still cannot reach the object after a grant made in the UI',
@@ -402,15 +411,31 @@ test.describe('the Shares tab, driven through the browser', () => {
 			'no grant row appeared after granting to a group',
 		).toHaveCount(1, { timeout: 20_000 })
 
-		// A sanity check only, NOT the discriminator: the row renders
-		// `sharedWith`, which was the group's name under the broken behaviour
-		// too — the share went to a nonexistent USER called "e2e-grantees" and
-		// still displayed "e2e-grantees". This line would have passed either way.
+		// The row text is a sanity check only, NOT a discriminator: it renders
+		// `sharedWith`, which was the group's name under the broken behaviour too
+		// — the share went to a nonexistent USER called "e2e-grantees" and still
+		// displayed "e2e-grantees". This line would have passed either way.
 		await expect(panel.locator('.cn-object-access-tab__row')).toContainText(GROUP)
 
-		// THIS is the discriminator. OTHER is named nowhere in the grant and can
-		// only have gained access through group membership, so a user share
-		// spelled like the group leaves them locked out.
+		// The RENDERED ICON is a discriminator, and a measured one (task 10.6).
+		// iconFor() dispatches on the grant's `type` as the SERVER reported it, so
+		// a user share named after a group renders `account-icon`, not
+		// `account-group-icon`. Asserting the DOM class rather than the component
+		// name also catches the icon failing to resolve at all: an unregistered
+		// `:is` name renders nothing, not a fallback.
+		await expect(
+			panel.locator('.cn-object-access-tab__row .account-group-icon'),
+			'the row is not showing the GROUP icon — the server reported a type other than '
+			+ '"group", which is what the shareType-vs-type defect produced',
+		).toHaveCount(1)
+		await expect(
+			panel.locator('.cn-object-access-tab__row .account-icon'),
+			'the row is showing the plain USER icon for a group grant',
+		).toHaveCount(0)
+
+		// And the consequence. OTHER is named nowhere in the grant and can only
+		// have gained access through group membership, so a user share spelled
+		// like the group leaves them locked out.
 		expect(
 			await statusFor(other, registerId, schemaId, uuid),
 			'a member of the granted group cannot reach the object — the grant was probably '
@@ -424,6 +449,88 @@ test.describe('the Shares tab, driven through the browser', () => {
 			await statusFor(other, registerId, schemaId, uuid),
 			'the group member still has access after the group grant was revoked',
 		).toBeGreaterThanOrEqual(400)
+	})
+
+	/*
+	 * Task 10.4 — the email invitation, as far as an instance with no mail
+	 * transport can honestly take it.
+	 *
+	 * What IS proven here: the invitation is created through the UI, the server
+	 * reports it as an `email` grant (asserted via the rendered icon, not the
+	 * label), it is LISTED — which it was not before or#2311 — the token it issues
+	 * is followable by someone with no account, and revoking it in the UI kills
+	 * that token.
+	 *
+	 * What is NOT proven: SMTP delivery. The CI instance has no mail transport, and
+	 * standing up one would make this gate depend on a sink process — a flaky gate
+	 * is worse than an honest gap. "Delivered" therefore remains unproven; the
+	 * FOLLOWABLE half, which is the security-relevant half, is proven.
+	 */
+	test('an email invitation is listed, followable by a stranger, and dies when revoked', async ({ page, browser }) => {
+		const uuid = await newObject()
+
+		const put = await owner.put(
+			`/index.php/apps/openregister/api/objects/${registerId}/${schemaId}/${uuid}/scope`,
+			{ data: { scope: 'private' } },
+		)
+		expect(put.ok(), `could not set the scope: ${await put.text()}`).toBeTruthy()
+
+		const panel = await openSharesTab(page, registerId, schemaId, uuid)
+
+		await panel.getByRole('combobox').click()
+		await page.getByRole('option', { name: 'Email' }).click()
+
+		// The field label changing is how we know the select changed the
+		// component's state rather than only its own display.
+		await panel.getByRole('textbox', { name: 'Email address' }).fill('e2e-invitee@example.org')
+		await panel.getByRole('button', { name: 'Share', exact: true }).click()
+
+		// If the instance refuses the invitation outright, say so in the failure
+		// rather than letting a later selector time out and blame the UI.
+		await expect(
+			panel.locator('.cn-object-access-tab__error'),
+			'the server refused the email invitation',
+		).toHaveCount(0, { timeout: 20_000 })
+
+		await expect(
+			panel.locator('.cn-object-access-tab__row'),
+			'no row appeared for the email invitation — before or#2311 TYPE_EMAIL was not listed '
+			+ 'at all, which is exactly the regression this guards',
+		).toHaveCount(1, { timeout: 20_000 })
+
+		// Task 10.6 — measured icon, so "listed" cannot be satisfied by a row of
+		// the wrong type.
+		await expect(
+			panel.locator('.cn-object-access-tab__row .email-icon'),
+			'the invitation is listed but not as an email grant',
+		).toHaveCount(1)
+
+		const tokenNode = panel.locator('.cn-object-access-tab__link code')
+		await expect(tokenNode, 'no token rendered for the invitation').toBeVisible({ timeout: 20_000 })
+		const token = (await tokenNode.innerText()).trim()
+		expect(token, 'the rendered token is empty').not.toBe('')
+
+		// The recipient has no account here, so no credentials at all.
+		const anon = await browser.newContext({ baseURL: BASE, storageState: undefined })
+		try {
+			const live = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			expect(
+				live.status(),
+				`an invitation token must be followable without an account: ${await live.text()}`,
+			).toBeLessThan(300)
+
+			await panel.getByRole('button', { name: 'Revoke access' }).click()
+			await expect(panel.locator('.cn-object-access-tab__row')).toHaveCount(0, { timeout: 20_000 })
+
+			const dead = await anon.request.get(`/index.php/apps/openregister/api/shared/${token}`)
+			expect(
+				dead.status(),
+				'a revoked invitation still resolves — revoking must work after the mail has gone '
+				+ 'out, which is the whole reason the message carries no object data',
+			).toBe(404)
+		} finally {
+			await anon.close()
+		}
 	})
 
 	/*
@@ -473,6 +580,14 @@ test.describe('the Shares tab, driven through the browser', () => {
 
 		const token = (await tokenNode.innerText()).trim()
 		expect(token, 'the rendered token is empty').not.toBe('')
+
+		// Task 10.6, and it is load-bearing here: a link row only exists at all
+		// because listGrants() reports TYPE_LINK (or#2311). The icon proves the
+		// server reported it as a `link` rather than as some principal type.
+		await expect(
+			panel.locator('.cn-object-access-tab__row .link-variant-icon'),
+			'the link is listed but not as a link — check LISTABLE_TYPES',
+		).toHaveCount(1)
 
 		// ANONYMOUS: a context with no credentials at all, and no shared state
 		// with the authenticated one.
