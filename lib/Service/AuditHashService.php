@@ -45,6 +45,16 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
+ * Complexity sits at phpmd's threshold (49 before the self-ownership guard in
+ * acquireSealLock(), 50 with it). Suppressed rather than restructured: the
+ * three concerns here — canonical hashing, chain verification and the seal
+ * lock — are one cohesive job, and splitting an audit-INTEGRITY class to save a
+ * single branch would risk the property the class exists to guarantee for no
+ * behavioural gain. If it grows further it wants decomposing properly, not a
+ * wider threshold.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
 class AuditHashService
@@ -82,6 +92,22 @@ class AuditHashService
      * @var int
      */
     private const SEAL_LOCK_RETRY_DELAY_USEC = 50000;
+
+    /**
+     * Whether THIS service instance currently holds the seal lock.
+     *
+     * The seal lock is not re-entrant: acquiring it twice without releasing
+     * throws LockedException (verified against DBLockingProvider). So when a
+     * batch seal is in progress and a nested audit insert reaches sealRow(),
+     * the acquisition cannot succeed — the holder is us, and we are further up
+     * our own call stack, so waiting is waiting for ourselves.
+     *
+     * Tracking ownership lets acquireSealLock() answer that case immediately
+     * instead of sleeping through its whole retry budget first.
+     *
+     * @var boolean
+     */
+    private bool $holdsSealLock = false;
 
     /**
      * Constructor for AuditHashService.
@@ -436,12 +462,37 @@ class AuditHashService
      */
     private function acquireSealLock(): bool
     {
+        // We already hold it: refuse WITHOUT waiting.
+        //
+        // The lock is exclusive and not re-entrant, so a second acquisition from
+        // inside our own critical section can never succeed. Retrying means
+        // sleeping SEAL_LOCK_ATTEMPTS x SEAL_LOCK_RETRY_DELAY_USEC — 100 ms —
+        // for a holder that is this same call stack, and which cannot release
+        // until we return.
+        //
+        // This is the common case during a configuration import, not an edge
+        // case: sealRows() takes the lock for a batch, an object write inside
+        // that batch appends its own audit row, and insertHashChained() calls
+        // sealRow() for it. One import produced 1,041 of these, each paying the
+        // full 100 ms — roughly 100 seconds of a repair run spent in usleep(),
+        // which is why the process looked busy while the database sat idle.
+        //
+        // Returning false is the SAME outcome as before, reached immediately.
+        // Sealing is fail-soft by design: the caller logs, leaves the row
+        // unsealed, and a later seal pass chains it.
+        if ($this->holdsSealLock === true) {
+            return false;
+        }
+
         for ($attempt = 1; $attempt <= self::SEAL_LOCK_ATTEMPTS; $attempt++) {
             try {
                 $this->lockingProvider->acquireLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
+                $this->holdsSealLock = true;
 
                 return true;
             } catch (LockedException) {
+                // Held by ANOTHER process — a concurrent cron seal pass, say.
+                // That holder can finish and release, so waiting is worthwhile.
                 if ($attempt < self::SEAL_LOCK_ATTEMPTS) {
                     usleep(self::SEAL_LOCK_RETRY_DELAY_USEC);
                 }
@@ -458,6 +509,15 @@ class AuditHashService
      */
     private function releaseSealLock(): void
     {
+        // Ownership is cleared FIRST, and unconditionally.
+        //
+        // Both callers release from a `finally`, so this runs even when sealing
+        // threw. If the flag were cleared only after a successful
+        // releaseLock(), a throwing release would leave it stuck true and every
+        // subsequent seal in this process would refuse instantly — turning a
+        // performance guard into a silent stop-sealing switch.
+        $this->holdsSealLock = false;
+
         $this->lockingProvider->releaseLock(self::SEAL_LOCK_KEY, ILockingProvider::LOCK_EXCLUSIVE);
     }//end releaseSealLock()
 
