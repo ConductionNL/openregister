@@ -181,12 +181,53 @@ None. This change introduces no schemas, registers or objects, so `lib/Settings/
 
 ## Cherry-pick / Project-branch Port
 
-Lands on `development`, then ports to `test/anonimiseren-bij-de-bron-or`. `DocumentProcessingHandler` diverges heavily: the project branch still has a separate `buildEntityReplacements()` with **no** ordering at all, a per-format ODF range implementation (`computeOdfReplacementRanges`, `rebuildOdfSegmentValues`, `extractOdfConcatenatedText`) and an EML `redactText()` path that `development` does not have. This is a **semantic port, not a cherry-pick** — the same caveat as `anonymisation-placeholder-id-scope` (`proposal.md:40`).
+**The direction is now INVERTED from what this section originally said.** It was
+written expecting the change to land on `development` first and be ported to
+`test/anonimiseren-bij-de-bron-or`. It landed on the test branch instead — that
+is where the running instance is, so it is the only place the code can actually
+be exercised. What remains is the port TO `development`.
 
-Two port-specific notes:
+**Status: blocked on testing (decided 2026-08-03).** Deliberately not started
+until the implementation has been validated on a live instance. It cannot be
+tested on `development` (the instance runs the test branch), and if testing
+changes the design, doing the port first means doing it twice.
 
-1. The project branch's ODF range code is the closest existing analogue of the planner — flatten, claim by longest-first with a `$consumed` map, apply, re-sort by start. It should be **deleted in favour of the planner** during the port, not left in place alongside it.
-2. The project branch's EML `redactText()` is a fifth apply site with no equivalent on `development`; it must consume the planner too, or the port leaves the EML path with the original defect.
+### Measured divergence, so it need not be re-derived
+
+`DocumentProcessingHandler`: **1455 lines on `development` against 2434 here.**
+This is a re-implementation against a different shape, not a cherry-pick.
+
+| | `development` | test branch |
+|---|---|---|
+| Apply sites | 4 | **5** — plus the EML `redactText()` |
+| Office path | `replaceWordsInOfficeContainer` | `replaceWordsInOdtDocument` + its own ODF range code |
+| Map build | inlined in `anonymizeDocument`, **with** a `uksort` | separate `buildEntityReplacements()`, **no sort** |
+| `StructurePreservation` | 9 references | absent |
+| `SanitizationReport` | 12 references | absent |
+| `preserveStructure` | 9 references | absent |
+| `strict` parameter | 15 references | 3 |
+| `PdfTextReplacer` | 634 lines | 327 |
+
+### Tasks that are N/A here but LIVE on `development`
+
+- **5.5** — `development` has the `uksort` this task says to preserve.
+- **7.1** — `development`'s `validateOutput` compares case-**sensitively**, which
+  is a real bug there. This branch already uses `mb_stripos` and is correct.
+- **7.3** — `development` has the defensive `uksort` in `PdfTextReplacer`.
+- **7.4** — `development` carries the stale "Fail CLOSED in strict mode" comment
+  and a `@param $strict` docblock documenting `REASON_VALIDATION_FAILED` for a
+  path that only logs. Correct the comments; do NOT implement what they describe.
+
+### Port notes
+
+- The six `Anonymisation/` classes port **verbatim** — they are pure and depend on
+  neither branch's shape. Only the wiring differs.
+- Delete nothing on `development` that this branch deleted without checking first:
+  the ODF range code removed here has no `development` equivalent, but
+  `replaceWordsInOfficeContainer` will need the same SegmentMap treatment.
+- `development`'s extra machinery (`preserveStructure`, `strict`,
+  `SanitizationReport`) must be threaded through unchanged — none of it interacts
+  with range selection, but all of it is on the call paths being edited.
 
 ## Open Questions
 

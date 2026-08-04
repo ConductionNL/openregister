@@ -259,7 +259,7 @@
     {
       "id": "9.4",
       "title": "Semantic port to test/anonimiseren-bij-de-bron-or",
-      "status": "pending"
+      "status": "blocked-on-testing"
     }
   ]
 }
