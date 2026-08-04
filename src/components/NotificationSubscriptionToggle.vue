@@ -1,6 +1,6 @@
 <template>
 	<NcButton
-		:type="isSubscribed ? 'secondary' : 'tertiary'"
+		:variant="isSubscribed ? 'secondary' : 'tertiary'"
 		:disabled="loading"
 		:title="title"
 		:aria-label="title"
@@ -29,8 +29,7 @@
  * Closes notificatie-engine task: "Users MUST be able to manage their
  * notification preferences".
  */
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import BellIcon from 'vue-material-design-icons/Bell.vue'
 import BellOutlineIcon from 'vue-material-design-icons/BellOutline.vue'
 
@@ -73,27 +72,42 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed numeric coercion of registerId prop, UI plumbing
+		 */
 		registerIdNum() {
 			return this.registerId !== null && this.registerId !== ''
 				? Number(this.registerId)
 				: null
 		},
+		/**
+		 * @spec exclude computed numeric coercion of schemaId prop, UI plumbing
+		 */
 		schemaIdNum() {
 			return this.schemaId !== null && this.schemaId !== ''
 				? Number(this.schemaId)
 				: null
 		},
+		/**
+		 * @spec exclude computed subscription-state read via service helper; subscription contract owned by notificatie-engine
+		 */
 		isSubscribed() {
 			return hasSubscription(this.subscriptions, {
 				registerId: this.registerIdNum,
 				schemaId: this.schemaIdNum,
 			})
 		},
+		/**
+		 * @spec exclude computed button-label display helper, UI plumbing
+		 */
 		buttonLabel() {
 			return this.isSubscribed
 				? t('openregister', 'Subscribed')
 				: t('openregister', 'Subscribe')
 		},
+		/**
+		 * @spec exclude computed tooltip/title display helper, UI plumbing
+		 */
 		title() {
 			return this.isSubscribed
 				? t('openregister', 'Click to unsubscribe from notifications')
@@ -104,6 +118,9 @@ export default {
 		await this.refresh()
 	},
 	methods: {
+		/**
+		 * @spec exclude service passthrough loading subscriptions; subscription contract owned by notificatie-engine
+		 */
 		async refresh() {
 			try {
 				this.subscriptions = await listSubscriptions()
@@ -112,6 +129,9 @@ export default {
 				console.error('Failed to load notification subscriptions:', error)
 			}
 		},
+		/**
+		 * @spec exclude service passthrough toggling subscribe/unsubscribe with optimistic UI; contract owned by notificatie-engine
+		 */
 		async toggle() {
 			if (this.registerIdNum === null && this.schemaIdNum === null) {
 				return

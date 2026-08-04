@@ -12,11 +12,12 @@ use OCA\OpenRegister\Db\ConversationMapper;
 use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\Message;
 use OCA\OpenRegister\Db\MessageMapper;
+use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\DB\IResult;
+use OCP\DB\QueryBuilder\IExpressionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
@@ -71,12 +72,6 @@ class ChatControllerTest extends TestCase
             $l10n,
             'testuser'
         );
-    }
-
-    public function testPage(): void
-    {
-        $result = $this->controller->page();
-        $this->assertInstanceOf(TemplateResponse::class, $result);
     }
 
     public function testSendMessageEmptyMessage(): void
@@ -245,6 +240,12 @@ class ChatControllerTest extends TestCase
 
     public function testGetChatStatsException(): void
     {
+        // An organisation must resolve for the DB to be touched at all —
+        // without one the endpoint short-circuits to zeros (leak fix).
+        $organisation = new Organisation();
+        $organisation->setUuid('org-uuid-err');
+        $this->organisationService->method('getActiveOrganisation')->willReturn($organisation);
+
         $this->db->method('getQueryBuilder')
             ->willThrowException(new \Exception('DB error'));
 
@@ -439,25 +440,103 @@ class ChatControllerTest extends TestCase
 
     // ── getChatStats success path ──
 
-    public function testGetChatStatsSuccess(): void
-    {
-        // Build a mock result that returns a scalar count for fetchOne().
-        $resultMock = $this->createMock(IResult::class);
-        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('3', '7', '42');
-
-        // The func() helper must return something that can be passed to select().
+    /**
+     * Build a mock IQueryBuilder wired for getChatStats(): select/from/where/
+     * andWhere/expr/createNamedParameter all chain or return usable stand-ins,
+     * and func()->count(...) returns a stand-in usable as a select() argument.
+     *
+     * Does NOT configure executeQuery() — callers configure that themselves
+     * (some tests assert an exact call count on it).
+     *
+     * @param array $capturedParams Reference filled with each
+     *                              [$value, $type] passed to createNamedParameter()
+     * @param array $capturedEqCols Reference filled with each column name
+     *                              passed to expr()->eq()
+     *
+     * @return IQueryBuilder&MockObject
+     */
+    private function createChatStatsQueryBuilderMock(
+        array &$capturedParams,
+        array &$capturedEqCols
+    ): MockObject {
         $funcMock = $this->createMock(IQueryFunction::class);
+
+        $exprMock = $this->createMock(IExpressionBuilder::class);
+        $exprMock->method('eq')->willReturnCallback(
+            function (string $col, $val) use (&$capturedEqCols) {
+                $capturedEqCols[] = $col;
+                return 'eq-condition';
+            }
+        );
+        $exprMock->method('in')->willReturn('in-condition');
 
         $qb = $this->createMock(IQueryBuilder::class);
         $qb->method('select')->willReturnSelf();
         $qb->method('from')->willReturnSelf();
+        $qb->method('where')->willReturnSelf();
+        $qb->method('andWhere')->willReturnSelf();
+        $qb->method('expr')->willReturn($exprMock);
+        $qb->method('createNamedParameter')->willReturnCallback(
+            function ($value, $type = IQueryBuilder::PARAM_STR) use (&$capturedParams) {
+                $capturedParams[] = [$value, $type];
+                return ':param';
+            }
+        );
         $qb->method('func')->willReturn(
             new class($funcMock) {
                 private $f;
-                public function __construct($f) { $this->f = $f; }
-                public function count(string $col, string $alias): mixed { return $this->f; }
+                public function __construct($f)
+                {
+                    $this->f = $f;
+                }
+                public function count(string $col, string $alias): mixed
+                {
+                    return $this->f;
+                }
             }
         );
+
+        return $qb;
+    }
+
+    public function testGetChatStatsNoOrganisationReturnsZerosWithoutQuerying(): void
+    {
+        // No active organisation = nothing this caller may count. The
+        // endpoint must return zeros WITHOUT executing any query — the old
+        // behaviour (skip the filter, count instance-wide) was a
+        // multi-tenant information leak (or-chat-engine-decommission).
+        $this->organisationService->method('getActiveOrganisation')->willReturn(null);
+
+        $this->db->expects($this->never())->method('getQueryBuilder');
+
+        $result = $this->controller->getChatStats();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame(0, $data['total_agents']);
+        $this->assertSame(0, $data['total_conversations']);
+        $this->assertSame(0, $data['total_messages']);
+    }
+
+    public function testGetChatStatsScopesCountsToActiveOrganisation(): void
+    {
+        // With an active organisation, every count must be filtered by it —
+        // this is the regression guard for the cross-tenant stats leak.
+        // Organisation is an Entity subclass (magic getters/setters via
+        // __call), so a real instance is used rather than a mock — mirroring
+        // how Conversation/Agent/Message are constructed elsewhere in this
+        // test file.
+        $organisation = new Organisation();
+        $organisation->setUuid('org-uuid-123');
+        $this->organisationService->method('getActiveOrganisation')->willReturn($organisation);
+
+        $resultMock = $this->createMock(IResult::class);
+        $resultMock->method('fetchOne')->willReturnOnConsecutiveCalls('1', '2', '5');
+        $resultMock->method('fetch')->willReturnOnConsecutiveCalls(['id' => '10'], ['id' => '11'], false);
+
+        $capturedParams = [];
+        $capturedEqCols = [];
+        $qb = $this->createChatStatsQueryBuilderMock($capturedParams, $capturedEqCols);
         $qb->method('executeQuery')->willReturn($resultMock);
 
         $this->db->method('getQueryBuilder')->willReturn($qb);
@@ -466,10 +545,27 @@ class ChatControllerTest extends TestCase
 
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
-        $this->assertArrayHasKey('total_agents', $data);
-        $this->assertArrayHasKey('total_conversations', $data);
-        $this->assertArrayHasKey('total_messages', $data);
+        $this->assertSame(1, $data['total_agents']);
+        $this->assertSame(2, $data['total_conversations']);
+        $this->assertSame(5, $data['total_messages']);
+
+        // The active organisation's UUID must have been bound as a query
+        // parameter (agents count + conversations count + conversation id
+        // collection all filter on it).
+        $this->assertContains(['org-uuid-123', IQueryBuilder::PARAM_STR], $capturedParams);
+
+        // The organisation column must be the one being filtered on.
+        $this->assertNotEmpty($capturedEqCols);
+        foreach ($capturedEqCols as $col) {
+            $this->assertSame('organisation', $col);
+        }
     }
+
+    // Note: the former testGetChatStatsWithNoConversationsSkipsMessageQuery
+    // (no-org falls through to instance-wide counting) was removed by
+    // or-chat-engine-decommission — the no-org path now short-circuits to
+    // zeros without any query (see testGetChatStatsNoOrganisationReturnsZerosWithoutQuerying),
+    // closing the multi-tenant stats leak.
 
     // ── sendMessage — new conversation via agentUuid ──
 

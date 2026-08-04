@@ -20,7 +20,9 @@ import axios from '@nextcloud/axios'
 
 			<div class="formGroup">
 				<label>{{ t('openregister', 'Export Format:') }}</label>
-				<NcSelect v-model="exportFormat"
+				<NcSelect
+					v-model="exportFormat"
+					input-label="Export Format"
 					:options="exportFormats"
 					option-label="label"
 					option-value="value"
@@ -37,7 +39,7 @@ import axios from '@nextcloud/axios'
 			</NcButton>
 			<NcButton
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -85,22 +87,34 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed register title for display; UI presentation helper.
+		 */
 		registerTitle() {
 			const item = registerStore.registerItem
 			return item?.title || 'Unknown'
 		},
+		/**
+		 * @spec exclude Computed schema title for display; UI presentation helper.
+		 */
 		schemaTitle() {
 			const item = schemaStore.schemaItem
 			return item?.title || 'Unknown'
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.exportFormat = 'excel'
 		},
+		/**
+		 * @spec exclude Export handler triggering the objects export endpoint download; UI orchestration plumbing.
+		 */
 		async exportObjects() {
 			const register = registerStore.registerItem
 			const schema = schemaStore.schemaItem

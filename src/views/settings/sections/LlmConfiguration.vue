@@ -89,7 +89,7 @@
 				v-model="llmSettings.enabled"
 				:disabled="saving"
 				type="switch"
-				@update:checked="onLlmEnabledChange">
+				@update:modelValue="onLlmEnabledChange">
 				{{ llmSettings.enabled ? t('openregister', 'LLM features enabled') : t('openregister', 'LLM features disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
@@ -132,7 +132,7 @@
 				<div class="card-header">
 					<h5>Vector Storage</h5>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:disabled="refreshingDatabase"
 						:aria-label="t('openregister', 'Refresh database info')"
 						@click="refreshDatabaseInfo">
@@ -162,6 +162,42 @@
 							<li v-for="ext in databaseInfo.extensions" :key="ext.name" class="extension-item">
 								<span class="ext-name">{{ ext.name }}</span>
 								<span class="ext-version">v{{ ext.version }}</span>
+							</li>
+						</ul>
+					</details>
+				</div>
+				<!-- Hybrid search readiness (hybrid-document-search) -->
+				<div v-if="databaseInfo.hybridSearch" class="extensions-section">
+					<details>
+						<summary>{{ t('openregister', 'Hybrid search readiness') }}</summary>
+						<ul class="extensions-list">
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'pgvector ANN sidecar') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.annSidecarTable
+										? '✓' + (databaseInfo.hybridSearch.embeddingVectorDimension ? ' (' + databaseInfo.hybridSearch.embeddingVectorDimension + 'd)' : '')
+										: '✗' }}
+								</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'HNSW index') }}</span>
+								<span class="ext-version">{{ databaseInfo.hybridSearch.hnswIndex ? '✓' : '✗' }}</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Keyword GIN index') }}</span>
+								<span class="ext-version">{{ databaseInfo.hybridSearch.textSearchGinIndex ? '✓' : '✗' }}</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Chunks vectorized') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.chunks.vectorized }}/{{ databaseInfo.hybridSearch.chunks.total }}
+								</span>
+							</li>
+							<li class="extension-item">
+								<span class="ext-name">{{ t('openregister', 'Vectors on pgvector fast path') }}</span>
+								<span class="ext-version">
+									{{ databaseInfo.hybridSearch.vectors.pgvectorPopulated }}/{{ databaseInfo.hybridSearch.vectors.total }}
+								</span>
 							</li>
 						</ul>
 					</details>
@@ -237,7 +273,7 @@
 				<p class="error-message">
 					❌ {{ llmErrorMessage }}
 				</p>
-				<NcButton type="primary" @click="retryConnection">
+				<NcButton variant="primary" @click="retryConnection">
 					<template #icon>
 						<Refresh :size="20" />
 					</template>
@@ -250,7 +286,7 @@
 				<div class="connection-success">
 					<span class="success-icon">✅</span>
 					<span>{{ llmConnectionStatus }}</span>
-					<NcButton type="secondary" @click="retryConnection">
+					<NcButton variant="secondary" @click="retryConnection">
 						<template #icon>
 							<Refresh :size="16" />
 						</template>
@@ -388,6 +424,7 @@ export default {
 				recommendedPlugin: null,
 				performanceNote: null,
 				extensions: [],
+				hybridSearch: null,
 				lastUpdated: null,
 			},
 			refreshingDatabase: false,
@@ -423,6 +460,8 @@ export default {
 
 		/**
 		 * Get connection status CSS class
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
 		 */
 		connectionStatusClass() {
 			if (this.llmConnectionStatus === 'Connected' || this.llmConnectionStatus.includes('✓')) {
@@ -435,6 +474,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load LLM settings and all statistics on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		await this.loadSettings()
 		await this.loadAllStats()
@@ -443,6 +488,8 @@ export default {
 	methods: {
 		/**
 		 * Load LLM configuration settings
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
 			try {
@@ -479,6 +526,7 @@ export default {
 		/**
 		 * Get display name for provider.
 		 * @param {string} providerId - The ID of the provider.
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} The display name for the provider.
 		 */
 		getProviderDisplayName(providerId) {
@@ -492,6 +540,8 @@ export default {
 
 		/**
 		 * Load all statistics (chat, vector, etc.)
+		 * @spec exclude UI plumbing — fans out to other store-backed loaders
+		 * @return {Promise<void>}
 		 */
 		async loadAllStats() {
 			await Promise.all([
@@ -504,6 +554,8 @@ export default {
 
 		/**
 		 * Load chat and agent statistics
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async loadChatStats() {
 			try {
@@ -523,6 +575,8 @@ export default {
 
 		/**
 		 * Refresh database information (force re-query)
+		 * @spec exclude UI plumbing — delegates to the database refresh API
+		 * @return {Promise<void>}
 		 */
 		async refreshDatabaseInfo() {
 			this.refreshingDatabase = true
@@ -541,6 +595,7 @@ export default {
 		/**
 		 * Format date for display
 		 * @param {string} dateString - ISO date string
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
 		 */
 		formatDate(dateString) {
@@ -551,6 +606,8 @@ export default {
 
 		/**
 		 * Load database information
+		 * @spec exclude UI plumbing — fetches database info for display
+		 * @return {Promise<void>}
 		 */
 		async loadDatabaseInfo() {
 			try {
@@ -561,8 +618,8 @@ export default {
 					// Check if a different vector backend is configured
 					let performanceNote = db.performanceNote
 					let vectorSupport = db.vectorSupport
-					let displayType = db.type || 'Unknown'
-					let displayVersion = db.version || 'Unknown'
+					const displayType = db.type || 'Unknown'
+					const displayVersion = db.version || 'Unknown'
 
 					// Check LLM settings for vector backend
 					let recommendedPlugin = db.recommendedPlugin
@@ -570,20 +627,15 @@ export default {
 						const llmResponse = await axios.get(generateUrl('/apps/openregister/api/settings/llm'))
 						const vectorBackend = llmResponse.data.vectorConfig?.backend
 
-						if (vectorBackend === 'solr') {
-							displayType = 'Solr'
-							displayVersion = '9.x (Dense Vector)'
-							performanceNote = '✅ Using Solr for vector search (100-1000x faster than PHP). Database used only for application data.'
-							recommendedPlugin = 'KNN/HNSW Indexing (active ✓)'
-							vectorSupport = true // Solr provides vector support
-						} else if (vectorBackend === 'database' && db.vectorSupport) {
+						if (vectorBackend === 'database' && db.vectorSupport) {
 							performanceNote = `✅ Using ${db.type} with native vector operations for fast similarity search.`
 							recommendedPlugin = db.recommendedPlugin + ' (active ✓)'
 							vectorSupport = true
 						} else if (vectorBackend === 'database' && !db.vectorSupport) {
 							performanceNote = db.performanceNote
 							recommendedPlugin = db.recommendedPlugin
-						} else if (vectorBackend === 'php' || !vectorBackend) {
+						} else {
+							// 'php' / not set — use defaults from db info
 							performanceNote = db.performanceNote
 							recommendedPlugin = db.recommendedPlugin
 						}
@@ -599,6 +651,7 @@ export default {
 						recommendedPlugin: recommendedPlugin || null,
 						performanceNote,
 						extensions: db.extensions || [],
+						hybridSearch: db.hybridSearch || null,
 						lastUpdated: db.lastUpdated || null,
 					}
 				}
@@ -610,6 +663,8 @@ export default {
 
 		/**
 		 * Retry connection - tests LLM connectivity
+		 * @spec exclude UI plumbing — reloads stats and updates status display
+		 * @return {Promise<void>}
 		 */
 		async retryConnection() {
 			this.loadingStats = true
@@ -630,6 +685,8 @@ export default {
 
 		/**
 		 * Handle LLM Config Modal closing - reload stats to show updated backend
+		 * @spec exclude UI plumbing — modal-close callback reloads stats
+		 * @return {void}
 		 */
 		onLLMConfigClosed() {
 			this.showLLMConfigDialog = false
@@ -639,6 +696,8 @@ export default {
 
 		/**
 		 * Save LLM configuration settings
+		 * @spec exclude UI plumbing — save action delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
 			this.saving = true
@@ -653,6 +712,8 @@ export default {
 
 		/**
 		 * Handle LLM enabled toggle change
+		 * @spec exclude UI plumbing — toggle delegates to the settings store
+		 * @return {Promise<void>}
 		 */
 		async onLlmEnabledChange() {
 			// Only send the enabled field via PATCH
@@ -664,6 +725,8 @@ export default {
 
 		/**
 		 * Load vector statistics
+		 * @spec exclude UI plumbing — fetches vector stats for display
+		 * @return {Promise<void>}
 		 */
 		async loadVectorStats() {
 			if (!this.llmSettings.enabled) return
@@ -717,6 +780,8 @@ export default {
 		/**
 		 * Format number with thousands separator
 		 * @param {number} num - The number to format
+		 * @spec exclude UI plumbing — pure presentation helper
+		 * @return {string}
 		 */
 		formatNumber(num) {
 			return new Intl.NumberFormat().format(num)
@@ -724,6 +789,8 @@ export default {
 
 		/**
 		 * Show object vectorization modal
+		 * @spec exclude UI plumbing — modal visibility toggle
+		 * @return {void}
 		 */
 		showVectorizeObjectsDialog() {
 			this.showObjectVectorizationModal = true
@@ -731,6 +798,8 @@ export default {
 
 		/**
 		 * Show dialog to vectorize all files
+		 * @spec exclude UI plumbing — modal visibility toggle
+		 * @return {void}
 		 */
 		showVectorizeFilesDialog() {
 			this.showFileVectorizationModal = true
@@ -738,6 +807,8 @@ export default {
 
 		/**
 		 * Vectorize all files
+		 * @spec exclude UI plumbing — starts a background vectorize job via API
+		 * @return {Promise<void>}
 		 */
 		async vectorizeAllFiles() {
 			this.vectorizing = true

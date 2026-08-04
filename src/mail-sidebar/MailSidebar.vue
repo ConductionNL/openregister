@@ -1,22 +1,22 @@
 <template>
-	<div class="or-mail-sidebar-root">
+	<div class="or-mail-sidebar-root" :class="{ 'or-mail-sidebar-root--connections-disabled': connectionsDisabled }">
 		<NcAppSidebar
 			v-if="!collapsed"
 			:name="sidebarTitle"
 			:subname="sidebarSubname"
 			:compact="true"
-			:active.sync="activeTab"
+			v-model:active="activeTab"
 			class="or-mail-sidebar"
 			@close="toggleCollapsed">
 			<template #description>
 				<div v-if="!isMessageView" class="or-mail-sidebar__hint">
-					{{ t('openregister', 'Select an email to see linked objects') }}
+					{{ t('openregister', 'Select an email to see its connections') }}
 				</div>
 			</template>
 
 			<NcAppSidebarTab
 				id="objects"
-				:name="t('openregister', 'Objects')"
+				:name="t('openregister', 'Connections')"
 				:order="1">
 				<template #icon>
 					<LinkVariant :size="20" />
@@ -25,12 +25,13 @@
 					ref="objectsTab"
 					:account-id="accountId"
 					:message-id="messageId"
+					@count="onObjectsCount"
 					@switch-tab="switchTab" />
 			</NcAppSidebarTab>
 
 			<NcAppSidebarTab
 				id="actions"
-				:name="t('openregister', 'Link')"
+				:name="t('openregister', 'Connect')"
 				:order="2">
 				<template #icon>
 					<Plus :size="20" />
@@ -57,22 +58,22 @@
 		<button
 			v-else
 			class="or-mail-sidebar__collapsed-toggle"
-			:aria-label="t('openregister', 'Open OpenRegister sidebar')"
-			:title="t('openregister', 'Open OpenRegister sidebar')"
+			:aria-label="t('openregister', 'Open connections sidebar')"
+			:title="t('openregister', 'Open connections sidebar')"
 			@click="toggleCollapsed">
 			<LinkVariant :size="16" />
-			<span class="or-mail-sidebar__collapsed-label">OR</span>
+			<span class="or-mail-sidebar__collapsed-label">{{ t('openregister', 'Connections') }}</span>
 		</button>
 	</div>
 </template>
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-49
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
-import NcAppSidebarTab from '@nextcloud/vue/dist/Components/NcAppSidebarTab.js'
+import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
 import ActionsTab from './components/ActionsTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'
@@ -97,6 +98,9 @@ export default {
 		Plus,
 		AccountMultiple,
 	},
+	/**
+	 * @spec openspec/specs/mail-sidebar/spec.md
+	 */
 	setup() {
 		const mailObserver = useMailObserver({ debounceMs: 300 })
 		useAttachmentDrag()
@@ -106,19 +110,49 @@ export default {
 		return {
 			collapsed: false,
 			activeTab: 'objects',
+			// null until the Connections tab reports its first count for the
+			// current message; drives the empty-state auto-select + disabling.
+			objectsCount: null,
+			// true while we still owe an auto-select decision for the current
+			// message (set on every message change, cleared once acted on).
+			autoSelectPending: true,
 		}
 	},
 	computed: {
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		sidebarTitle() {
-			return t('openregister', 'OpenRegister')
+			return t('openregister', 'Connections')
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		sidebarSubname() {
-			if (!this.isMessageView) {
-				return ''
-			}
-			return t('openregister', 'Mail Integration')
+			return ''
+		},
+		/**
+		 * The Connections tab is disabled once we know this email has no
+		 * connections yet — there is nothing to show, so we steer the user
+		 * to the Connect tab instead.
+		 */
+		connectionsDisabled() {
+			return this.objectsCount === 0
 		},
 	},
+	watch: {
+		/**
+		 * A new email is selected: forget the previous count and re-arm the
+		 * auto-select so the next count decides which tab to open.
+		 */
+		messageId() {
+			this.objectsCount = null
+			this.autoSelectPending = true
+		},
+	},
+	/**
+	 * @spec openspec/specs/mail-sidebar/spec.md
+	 */
 	created() {
 		const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY)
 		if (stored === 'true') {
@@ -127,15 +161,40 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		toggleCollapsed() {
 			this.collapsed = !this.collapsed
 			localStorage.setItem(COLLAPSED_STORAGE_KEY, String(this.collapsed))
 		},
+		/**
+		 * @param tabId
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		switchTab(tabId) {
 			this.activeTab = tabId
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-49
+		 * The Connections tab reports how many connections the current email
+		 * has. On a freshly-selected email we auto-open the Connect tab when
+		 * there are none (and the Connections tab is disabled), or the
+		 * Connections tab when there are some. After that first decision we
+		 * leave the user's tab choice alone — only the enabled/disabled state
+		 * keeps tracking the count.
+		 */
+		onObjectsCount(count) {
+			this.objectsCount = count
+			if (this.autoSelectPending) {
+				this.activeTab = count > 0 ? 'objects' : 'actions'
+				this.autoSelectPending = false
+			} else if (count === 0 && this.activeTab === 'objects') {
+				// Connections were all removed while viewing them.
+				this.activeTab = 'actions'
+			}
+		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md#requirement-sidebar-panel-ui-with-linked-objects-display
 		 */
 		onLinked() {
 			if (this.$refs.objectsTab) {
@@ -183,6 +242,7 @@ export default {
 	font-weight: 700;
 	writing-mode: vertical-rl;
 	text-orientation: mixed;
+	letter-spacing: 0.5px;
 }
 
 /* Hint text in description slot */
@@ -190,5 +250,17 @@ export default {
 	padding: 0 16px 8px;
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
+}
+
+/*
+ * When the current email has no connections yet, dim and disable the
+ * Connections tab header so the user is steered to the Connect tab. The
+ * tab button is rendered by NcAppSidebar as a NcCheckboxRadioSwitch whose
+ * wrapper carries the id `tab-button-<tabId>`.
+ */
+.or-mail-sidebar-root--connections-disabled :deep(#tab-button-objects) {
+	opacity: 0.4;
+	pointer-events: none;
+	cursor: not-allowed;
 }
 </style>

@@ -18,7 +18,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 		<div v-if="!success" class="formContainer">
 			<NcTextField :disabled="loading"
 				:label="t('openregister', 'Url')"
-				:value.sync="schema.url" />
+				v-model="schema.url" />
 
 			<div :class="`codeMirrorContainer ${getTheme()}`">
 				<p>{{ t('openregister', 'Schema') }}</p>
@@ -46,7 +46,7 @@ import { schemaStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !schema || !validateJson(schema.json)"
-				type="primary"
+				variant="primary"
 				@click="uploadSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -101,6 +101,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — resets upload form state and closes the modal.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -113,9 +116,15 @@ export default {
 				url: '',
 			}
 		},
+		/**
+		 * @spec exclude UI helper — pretty-prints the JSON in the editor field.
+		 */
 		prettifyJson() {
 			this.schema.json = JSON.stringify(JSON.parse(this.schema.json), null, 2)
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates schema upload to schemaStore.uploadSchema.
+		 */
 		async uploadSchema() {
 			this.loading = true
 
@@ -134,6 +143,10 @@ export default {
 				this.loading = false
 			})
 		},
+		/**
+		 * @param json
+		 * @spec exclude UI validation helper — reports whether a string parses as JSON.
+		 */
 		validateJson(json) {
 			try {
 				JSON.parse(json)

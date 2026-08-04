@@ -6,6 +6,9 @@
  * Exposes CRUD operations on OpenRegister objects as an MCP tool
  * under the namespaced id `openregister.objects`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Mcp
  * @package  OCA\OpenRegister\Mcp\BuiltIn
  *
@@ -17,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#imcptoolprovider-built-in-migration
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);

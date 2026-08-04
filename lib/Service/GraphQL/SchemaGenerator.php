@@ -10,13 +10,17 @@
  * Delegates type mapping to TypeMapperHandler and composition logic to
  * CompositionHandler to keep class complexity manageable.
  *
- * @category Service
- * @package  OCA\OpenRegister\Service\GraphQL
- * @author   Conduction B.V. <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://OpenRegister.app
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+ * @category  Service
+ * @package   OCA\OpenRegister\Service\GraphQL
+ * @author    Conduction B.V. <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://OpenRegister.app
+ *
+ * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -134,7 +138,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function setResolver(GraphQLResolver $resolver): void
     {
@@ -149,7 +153,7 @@ class SchemaGenerator
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Schema generation inherently branches per register+schema
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function generate(): Schema
     {
@@ -217,6 +221,8 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function buildSchemaFields(
         RegisterSchema $schema,
@@ -266,7 +272,7 @@ class SchemaGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function buildQueryFields(
         RegisterSchema $schema,
@@ -313,6 +319,8 @@ class SchemaGenerator
      * @param array<string, mixed> $mutationFields Mutation fields accumulator
      *
      * @return void
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function buildMutationFields(
         RegisterSchema $schema,
@@ -362,6 +370,8 @@ class SchemaGenerator
      * Initialize custom scalar types.
      *
      * @return void
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function initScalars(): void
     {
@@ -379,6 +389,8 @@ class SchemaGenerator
      * Initialize handler classes with callback dependencies.
      *
      * @return void
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function initHandlers(): void
     {
@@ -413,6 +425,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return ObjectType The GraphQL object type
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function getObjectType(RegisterSchema $schema): ObjectType
     {
@@ -454,6 +468,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return array<string, array<string, mixed>> The field configuration
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) JSON Schema composition (allOf/oneOf/anyOf) requires deep branching
      * @SuppressWarnings(PHPMD.NPathComplexity)      Composition + property mapping creates high path count
@@ -533,6 +549,8 @@ class SchemaGenerator
      * @param string $ref The reference string (slug, ID, or URI)
      *
      * @return RegisterSchema|null The resolved schema or null
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function resolveRef(string $ref): ?RegisterSchema
     {
@@ -559,6 +577,8 @@ class SchemaGenerator
      * @param int|null $schemaId Schema ID for deduplication (optional)
      *
      * @return string The PascalCase type name
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function toTypeName(string $slug, ?int $schemaId=null): string
     {
@@ -596,6 +616,8 @@ class SchemaGenerator
      * @param string $slug The slug to convert
      *
      * @return string A valid GraphQL field name
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function toFieldName(string $slug): string
     {
@@ -627,6 +649,8 @@ class SchemaGenerator
      * @param string $plural The plural form
      *
      * @return string The singular form
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function singularize(string $plural): string
     {
@@ -666,6 +690,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function createSingleResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -686,6 +712,8 @@ class SchemaGenerator
      * @param RegisterSchema $schema The register schema
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function createListResolverPlaceholder(RegisterSchema $schema): callable
     {
@@ -707,6 +735,8 @@ class SchemaGenerator
      * @param string         $action The mutation action (create, update, delete)
      *
      * @return callable The resolver function
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     private function createMutationResolverPlaceholder(RegisterSchema $schema, string $action): callable
     {
@@ -731,7 +761,7 @@ class SchemaGenerator
      *
      * @return array<int, RegisterSchema>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function getSchemasById(): array
     {
@@ -744,7 +774,7 @@ class SchemaGenerator
      *
      * @return array<int, Register>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function getRegistersById(): array
     {

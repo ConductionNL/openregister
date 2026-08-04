@@ -1,18 +1,18 @@
 ---
-status: implemented
+status: done
 ---
 # URN Resource Addressing
 
 ## Purpose
+
+@e2e exclude backend URN/URL resolver — covered by PHPUnit
 
 Implement bidirectional URN-URL mapping for system-independent resource identification, enabling Dutch government organisations to address register objects across multi-vendor environments without coupling to specific system URLs or database identifiers. Every register object MUST support a URN identifier following RFC 8141 syntax that can be resolved to an API URL and vice versa, ensuring stable addressing across system migrations, domain changes, and federated deployments. This spec covers URN format definition, resolution APIs, cross-instance federation, NL government identifier mapping, event integration, and human-readable aliases.
 
 **Source**: Gap identified in cross-platform analysis; part of Dutch government standards ecosystem (VNG Common Ground, NL GOV API Design Rules).
 
 **Cross-references**: deep-link-registry (URL template resolution for consuming apps), referential-integrity (URN-based cross-references in `$ref` properties), data-sync-harvesting (URN stability across federated sync sources).
-
 ## Requirements
-
 ### Requirement: Objects MUST have auto-generated URN identifiers following RFC 8141 syntax
 
 Every register object MUST have an auto-generated URN following the pattern `urn:{organisation}:{system}:{component}:{resource}:{uuid}` where each segment maps to register and schema metadata. The URN MUST conform to RFC 8141 (Uniform Resource Names) syntax rules: the NID (Namespace Identifier) is the organisation slug, and the NSS (Namespace Specific String) encodes the system, component (register slug), resource (schema slug), and object UUID. Characters in each segment MUST be limited to RFC 8141 allowed characters: unreserved characters (A-Z, a-z, 0-9, `-`, `.`, `_`, `~`) and percent-encoded characters. The URN MUST be generated at object creation time and stored persistently on the `ObjectEntity`.
@@ -512,6 +512,114 @@ The URN resolution endpoint availability, configured URN namespace, and supporte
 - **WHEN** capabilities are queried
 - **THEN** `federationSupported` MUST be `false`
 - **AND** the `federated=true` query parameter on the resolve endpoint MUST return HTTP 501 Not Implemented
+
+### Requirement: The URN resolver MUST expose resolve, lookup, and bulk operations over a fixed URN grammar
+`UrnController` MUST expose three `@NoAdminRequired` / `@NoCSRFRequired` endpoints backed by
+`UrnService`: `GET /api/urn/resolve?urn=...` (URN → URL), `GET /api/urn/lookup?url=...`
+(URL → URN), and `POST /api/urn/bulk` with body `{ "urns": [...] }` (batch URN → URL). The URN
+grammar is `urn:<DEFAULT_NID>:<instance>:<register>:<schema>:<uuid>` where `<DEFAULT_NID>` is the
+`UrnService::DEFAULT_NID` constant (`nl-or`).
+
+#### Scenario: Resolve a URN to its canonical URL
+- **GIVEN** a syntactically valid URN whose register/schema exist on this instance
+- **WHEN** `GET /api/urn/resolve?urn=<urn>` is called
+- **THEN** the response MUST return HTTP 200 with `{ urn, url, instance, register, schema, uuid }` where `url` is produced by `UrnService::resolveUrl()` and the segment fields come from `UrnService::parse()`
+
+#### Scenario: Missing urn parameter
+- **GIVEN** no `urn` query parameter (null or empty)
+- **WHEN** the resolve endpoint is called
+- **THEN** the response MUST return HTTP 400 with `{ "error": "urn parameter is required" }`
+
+#### Scenario: Malformed URN
+- **GIVEN** a `urn` value that `UrnService::parse()` cannot parse
+- **WHEN** the resolve endpoint is called
+- **THEN** the response MUST return HTTP 400 with an error describing the expected `urn:<nid>:<instance>:<register>:<schema>:<uuid>` shape
+
+#### Scenario: Parsable URN that does not resolve on this instance
+- **GIVEN** a well-formed URN whose register/schema/object is not present on this instance
+- **WHEN** the resolve endpoint is called
+- **THEN** the response MUST return HTTP 404 with `{ "error": "URN does not resolve on this instance", "urn": ..., "parts": ... }`
+
+#### Scenario: Reverse lookup URL to URN
+- **GIVEN** an OpenRegister object URL
+- **WHEN** `GET /api/urn/lookup?url=<url>` is called
+- **THEN** the response MUST return HTTP 200 with `{ url, urn }` where `urn` is produced by `UrnService::urnFromUrl()`
+- **AND** a missing `url` parameter MUST return HTTP 400 with `{ "error": "url parameter is required" }`
+- **AND** a URL that is not an OpenRegister object reference MUST return HTTP 404 with `{ "error": "URL is not an OpenRegister object reference", "url": ... }`
+
+#### Scenario: Bulk resolution returns a urn→url map
+- **GIVEN** a POST body `{ "urns": ["urn:nl-or:...", ...] }`
+- **WHEN** `POST /api/urn/bulk` is called
+- **THEN** the response MUST return HTTP 200 with `{ "count": <n>, "resolved": { <urn>: <url-or-null>, ... } }` from `UrnService::resolveBulk()`
+- **AND** a missing/empty/non-array `urns` MUST return HTTP 400 with `{ "error": "urns array is required" }`
+
+#### Scenario: Bulk resolution enforces a hard input cap
+- **GIVEN** a POST body with more than 1000 URNs
+- **WHEN** `POST /api/urn/bulk` is called
+- **THEN** the response MUST return HTTP 422 with `{ "error": "Too many URNs (max 1000 per request)", "count": <n> }`
+- **AND** this cap MUST NOT be relaxed without an upstream per-user rate limit, because each URN triggers a parse → register-find → schema-find → object-find chain reachable by any authenticated user
+
+### Requirement: URNs MUST be constructed on demand in the shipped `urn:nl-or:{instance}:{register}:{schema}:{uuid}` shape
+
+`UrnService` MUST construct RFC 8141 URNs using a fixed informal NID `nl-or` (per RFC 8141 §5.1) followed by four colon-separated segments: an instance slug, the register slug, the schema slug, and the object UUID. URNs MUST be built on demand and MUST NOT be persisted on the object or auto-generated at object-creation time.
+
+- `build(registerSlug, schemaSlug, uuid)` MUST emit `urn:nl-or:{instance}:{register}:{schema}:{uuid}` with the register slug, schema slug, and uuid lower-cased (URN comparison is case-insensitive per RFC 8141 §3; emitting one canonical case avoids cache mismatches).
+- `buildForObject(ObjectEntity)` MUST return `null` when the object lacks a UUID, or when the register or schema reference cannot be resolved to a slug; otherwise it MUST resolve the register/schema slugs and delegate to `build()`.
+- `getInstanceSlug()` MUST resolve the instance slug in order: (1) the `openregister.urn_instance` app-config value when non-empty, (2) the sanitised host portion of the absolute base URL, (3) the literal `localhost` as a final fallback. Sanitisation MUST lower-case and replace runs of non-alphanumeric characters with single hyphens, trimming leading/trailing hyphens.
+
+#### Scenario: Build a URN from explicit parts
+- **GIVEN** register slug `decidesk`, schema slug `meeting`, and uuid `1C1C970F-D50C-4943-8128-78999E240EEC`
+- **WHEN** `build()` is called
+- **THEN** the result MUST be `urn:nl-or:{instance}:decidesk:meeting:1c1c970f-d50c-4943-8128-78999e240eec` with all three trailing segments lower-cased
+- **AND** the `{instance}` segment MUST equal the value returned by `getInstanceSlug()`
+
+#### Scenario: Build for an object with incomplete identity returns null
+- **GIVEN** an `ObjectEntity` with a null or empty UUID, OR whose register/schema reference does not resolve to a slug
+- **WHEN** `buildForObject()` is called
+- **THEN** the method MUST return `null` rather than emitting a partial URN
+
+#### Scenario: Instance slug honours config override then host then localhost
+- **GIVEN** `openregister.urn_instance` is set to `My Stable ID`
+- **WHEN** `getInstanceSlug()` is called
+- **THEN** it MUST return the sanitised slug `my-stable-id`
+- **AND** when the config value is empty it MUST fall back to the sanitised host of the base URL, and to `localhost` when no host can be derived
+
+### Requirement: The shipped resolver MUST map URN↔URL in-memory for the local instance only
+
+`UrnService` MUST provide in-memory, on-demand resolution between URNs and OpenRegister API URLs for the local instance. Cross-instance / federated resolution is explicitly out of scope of the shipped service and MUST return `null`. There is no `/api/urn/*` HTTP endpoint and no external `UrnMapping` table in the shipped surface.
+
+- `parse(urn)` MUST return `['instance','register','schema','uuid']` only when the string matches the anchored RFC 8141 URN regex AND its NID equals `nl-or` AND the NSS has at least four colon-separated parts; otherwise it MUST return `null`.
+- `resolveUrl(urn)` MUST return `null` when the URN does not parse, when its instance segment differs from the local `getInstanceSlug()`, or when the register/schema cannot be looked up; otherwise it MUST return the absolute API URL `/apps/openregister/api/objects/{register-slug}/{schema-slug}/{uuid}` (each path segment `rawurlencode`d) via `IURLGenerator`.
+- `urnFromUrl(url)` MUST recognise the three URL shapes the Smart Picker `ObjectReferenceProvider` accepts — hash-routed (`#/registers/{id}/schemas/{id}/objects/{uuid}`), API (`/api/objects/{ref}/{ref}/{uuid}`), and direct (`/objects/{ref}/{ref}/{uuid}`) — resolve numeric ids or slugs to canonical slugs, and return the constructed URN, or `null` when the URL does not match or the register/schema does not resolve.
+- `resolveBulk(urns)` MUST return a `{urn => url|null}` map preserving input order, skipping non-string / empty entries, by delegating each entry to `resolveUrl()`. The shipped method imposes no per-request URN cap.
+
+#### Scenario: Parse rejects a foreign NID
+- **GIVEN** a string `urn:isbn:0451450523`
+- **WHEN** `parse()` is called
+- **THEN** it MUST return `null` because the NID is not `nl-or`
+- **AND** a well-formed `urn:nl-or:{instance}:{register}:{schema}:{uuid}` MUST parse into its four named parts
+
+#### Scenario: Resolve a local URN to its API URL
+- **GIVEN** a URN whose instance segment equals the local instance slug and whose register/schema resolve
+- **WHEN** `resolveUrl()` is called
+- **THEN** the result MUST be the absolute `/apps/openregister/api/objects/{register}/{schema}/{uuid}` URL with `rawurlencode`d segments
+
+#### Scenario: Cross-instance or unresolvable URN returns null
+- **GIVEN** a URN whose instance segment differs from the local instance slug, OR whose register/schema cannot be found
+- **WHEN** `resolveUrl()` is called
+- **THEN** it MUST return `null` (federation is out of scope for the shipped service)
+
+#### Scenario: Reverse-resolve a Smart Picker URL
+- **GIVEN** an OpenRegister object URL in the hash-routed, API, or direct shape
+- **WHEN** `urnFromUrl()` is called and the register/schema resolve
+- **THEN** the method MUST return the canonical `urn:nl-or:{instance}:{register-slug}:{schema-slug}:{uuid}` URN
+- **AND** a non-OpenRegister URL MUST yield `null`
+
+#### Scenario: Bulk resolve preserves order and maps misses to null
+- **GIVEN** a list mixing resolvable and unresolvable URNs plus a non-string entry
+- **WHEN** `resolveBulk()` is called
+- **THEN** the result MUST be a `{urn => url|null}` map where resolvable URNs map to their URL and unresolvable ones map to `null`
+- **AND** the non-string / empty entry MUST be skipped (absent from the map)
 
 ## Current Implementation Status
 

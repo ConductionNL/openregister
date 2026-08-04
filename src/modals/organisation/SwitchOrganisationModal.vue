@@ -52,6 +52,10 @@ export default {
 	emits: ['close', 'switch'],
 	methods: {
 		t,
+		/**
+		 * @param org
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		isActive(org) {
 			return this.activeOrganisationUuid != null
 				&& this.activeOrganisationUuid === org.uuid

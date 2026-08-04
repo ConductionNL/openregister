@@ -9,6 +9,9 @@
  *   GET  /api/translations/object/{uuid}      — list slots + completeness
  *   POST /api/translations/object/{uuid}/{property}/{language}/status
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -73,30 +76,64 @@ class TranslationController extends Controller
     /**
      * Search the translations sidecar.
      *
-     * @param string|null $query      Optional full-text query.
-     * @param string|null $language   Optional language filter.
-     * @param string|null $status     Optional status filter.
-     * @param string|null $objectUuid Optional object UUID filter.
-     * @param int|null    $limit      Maximum number of results.
+     * Supports the i18n-source-of-truth filters in addition to the existing
+     * status/language/object filters:
+     * - `?sourceLanguage=<bcp47>` — narrow to rows whose canonical source
+     *   language equals the given tag.
+     * - `?isOutOfDate=true` — narrow to rows in `outdated` status.
+     * - `?compareToSource=true` — return both `value` and `sourceValue`
+     *   side-by-side per matched row so editorial tooling can render the
+     *   source / target pair without a follow-up round trip.
+     *
+     * @param string|null $query           Optional full-text query.
+     * @param string|null $language        Optional language filter.
+     * @param string|null $status          Optional status filter.
+     * @param string|null $objectUuid      Optional object UUID filter.
+     * @param int|null    $limit           Maximum number of results.
+     * @param string|null $sourceLanguage  Optional source-language filter.
+     * @param string|null $isOutOfDate     When set to "true"/"1", restrict to outdated status.
+     * @param string|null $compareToSource When set to "true"/"1", attach `sourceValue` per row.
      *
      * @return JSONResponse JSON response with results and count.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
      */
     public function search(
         ?string $query=null,
         ?string $language=null,
         ?string $status=null,
         ?string $objectUuid=null,
-        ?int $limit=100
+        ?int $limit=100,
+        ?string $sourceLanguage=null,
+        ?string $isOutOfDate=null,
+        ?string $compareToSource=null
     ): JSONResponse {
-        $rows = $this->statusService->search(
-            query: $query,
-            language: $language,
-            status: $status,
-            objectUuid: $objectUuid,
-            limit: max(1, min(1000, (int) ($limit ?? 100)))
-        );
+        $isOutOfDateBool     = $this->isTruthy(value: $isOutOfDate);
+        $compareToSourceBool = $this->isTruthy(value: $compareToSource);
+
+        if ($compareToSourceBool === true) {
+            $rows = $this->statusService->searchWithSourceValues(
+                query: $query,
+                language: $language,
+                status: $status,
+                objectUuid: $objectUuid,
+                limit: max(1, min(1000, (int) ($limit ?? 100))),
+                sourceLanguage: $sourceLanguage,
+                isOutOfDate: $isOutOfDateBool
+            );
+        } else {
+            $rows = $this->statusService->search(
+                query: $query,
+                language: $language,
+                status: $status,
+                objectUuid: $objectUuid,
+                limit: max(1, min(1000, (int) ($limit ?? 100))),
+                sourceLanguage: $sourceLanguage,
+                isOutOfDate: $isOutOfDateBool
+            );
+        }//end if
 
         return new JSONResponse(
                 [
@@ -105,6 +142,23 @@ class TranslationController extends Controller
                 ]
                 );
     }//end search()
+
+    /**
+     * Coerce a string-ish query value to a boolean.
+     *
+     * @param string|null $value Raw query parameter value.
+     *
+     * @return bool True when the value is `1`, `true`, `yes`, or `on`.
+     */
+    private function isTruthy(?string $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        $normalised = strtolower(trim($value));
+        return in_array($normalised, ['1', 'true', 'yes', 'on'], true);
+    }//end isTruthy()
 
     /**
      * List every translation slot for one object + completeness summary.
@@ -118,6 +172,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with translations and completeness.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function showByObject(string $uuid, ?string $schema=null): JSONResponse
     {
@@ -153,6 +209,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with the updated row.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function setStatus(string $uuid, string $property, string $language, ?string $status=null): JSONResponse
     {
@@ -192,6 +250,8 @@ class TranslationController extends Controller
      * @return JSONResponse JSON response with translation result.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function bulkTranslate(
         string $uuid,

@@ -146,17 +146,6 @@ class SettingsControllerDeepTest extends TestCase
         $this->assertEquals(200, $response->getStatus());
     }
 
-    public function testUpdatePublishingOptionsException(): void
-    {
-        $this->request->method('getParams')->willReturn([]);
-        $this->settingsService->method('updatePublishingOptions')
-            ->willThrowException(new Exception('publish fail'));
-
-        $response = $this->controller->updatePublishingOptions();
-
-        $this->assertEquals(500, $response->getStatus());
-    }
-
     public function testGetSearchBackendException(): void
     {
         $this->settingsService->method('getSearchBackendConfig')

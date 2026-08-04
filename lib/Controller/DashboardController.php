@@ -6,6 +6,9 @@
  * This file contains the controller for handling dashboard related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -20,10 +23,14 @@ namespace OCA\OpenRegister\Controller;
 use DateTime;
 use OCA\OpenRegister\Service\DashboardService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -43,6 +50,11 @@ use Psr\Log\LoggerInterface;
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-7
+ * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
  *
  * @psalm-suppress UnusedClass
  */
@@ -77,6 +89,8 @@ class DashboardController extends Controller
      * @param IRequest         $request          The HTTP request object
      * @param DashboardService $dashboardService The dashboard service instance
      * @param LoggerInterface  $logger           Logger instance for error tracking
+     * @param IUserSession     $userSession      Active user session for caller identity
+     * @param IGroupManager    $groupManager     Group manager for admin checks
      *
      * @return void
      */
@@ -84,7 +98,9 @@ class DashboardController extends Controller
         string $appName,
         IRequest $request,
         DashboardService $dashboardService,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -93,6 +109,27 @@ class DashboardController extends Controller
         $this->dashboardService = $dashboardService;
         $this->logger           = $logger;
     }//end __construct()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * The dashboard analytics aggregate object counts, storage sizes and audit
+     * activity across ALL registers/schemas (tenant-wide, no per-register
+     * scoping). Returning them to a non-admin leaks cross-tenant data, so these
+     * endpoints are admin-only — consistent with the SearchTrail/AuditTrail
+     * analytics posture.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * Returns the template of the dashboard page
@@ -107,6 +144,8 @@ class DashboardController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-5
      */
     public function page(): TemplateResponse
     {
@@ -252,9 +291,17 @@ class DashboardController extends Controller
      *     },
      *     array<never, never>
      * >
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-6
      */
+    #[NoAdminRequired]
+    #[NoCSRFRequired]
     public function index(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             // Get all request parameters.
             $params = $this->request->getParams();
@@ -302,9 +349,15 @@ class DashboardController extends Controller
      *     total: array{processed: mixed, failed: mixed}},
      *     summary?: array{total_processed: mixed, total_failed: mixed,
      *     success_rate: float}}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-7
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             // Calculate sizes and statistics using dashboard service.
             // Service handles aggregation of object and log sizes.
@@ -343,6 +396,8 @@ class DashboardController extends Controller
      *     array{error?: string, labels?: list<array-key>,
      *     series?: list<array{data: list<int>, name: string}>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailActionChart(
         ?string $from=null,
@@ -350,6 +405,10 @@ class DashboardController extends Controller
         ?int $registerId=null,
         ?int $schemaId=null
     ): JSONResponse {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $fromDate = null;
             if ($from !== null) {
@@ -388,9 +447,15 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsByRegisterChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsByRegisterChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -414,9 +479,15 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, labels?: array<'Unknown'|mixed>, series?: array<int>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsBySchemaChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsBySchemaChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -442,9 +513,15 @@ class DashboardController extends Controller
      *     labels?: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>,
      *     series?: list<int>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getObjectsBySizeChart(?int $registerId=null, ?int $schemaId=null): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getObjectsBySizeChartData(registerId: $registerId, schemaId: $schemaId);
             return new JSONResponse(data: $data);
@@ -470,9 +547,15 @@ class DashboardController extends Controller
      *     array{error?: string, total?: int, creates?: int,
      *     updates?: int, deletes?: int, reads?: int},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getAuditTrailStatistics(
                 registerId: $registerId,
@@ -501,9 +584,15 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, actions?: list<array{count: int, name: mixed}>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getAuditTrailActionDistribution(
                 registerId: $registerId,
@@ -533,6 +622,8 @@ class DashboardController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, objects?: list<array{count: int, id: mixed, name: string}>},
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-graphql-rt-dash/tasks.md#task-8
      */
     public function getMostActiveObjects(
         ?int $registerId=null,
@@ -540,6 +631,10 @@ class DashboardController extends Controller
         ?int $limit=10,
         ?int $hours=24
     ): JSONResponse {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data = $this->dashboardService->getMostActiveObjects(
                 registerId: $registerId,

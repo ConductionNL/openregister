@@ -6,6 +6,9 @@
  * This file contains the class for handling view related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -47,6 +50,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setIsDefault(bool $isDefault)
  * @method array|null getQuery()
  * @method void setQuery(?array $query)
+ * @method array|null getPresentation()
+ * @method void setPresentation(?array $presentation)
  * @method array|null getFavoritedBy()
  * @method void setFavoritedBy(?array $favoritedBy)
  * @method DateTime|null getCreated()
@@ -123,6 +128,20 @@ class View extends Entity implements JsonSerializable
     protected ?array $query = [];
 
     /**
+     * Presentation configuration stored as JSON (nullable)
+     *
+     * Declares how the view renders: `viewType` (table|kanban|calendar) plus
+     * type-specific config (kanban: groupByField/cardFields/columnOrder;
+     * calendar: dateField/endDateField). Null means "not configured" and MUST
+     * render as `table` (the default) so existing views are unchanged.
+     *
+     * @var array|null Presentation configuration, or null for the default table view
+     *
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     */
+    protected ?array $presentation = null;
+
+    /**
      * Array of user IDs who favorited this view
      *
      * @var array|null User IDs who favorited
@@ -155,6 +174,7 @@ class View extends Entity implements JsonSerializable
         $this->addType(fieldName: 'isPublic', type: 'boolean');
         $this->addType(fieldName: 'isDefault', type: 'boolean');
         $this->addType(fieldName: 'query', type: 'json');
+        $this->addType(fieldName: 'presentation', type: 'json');
         $this->addType(fieldName: 'favoredBy', type: 'json');
         $this->addType(fieldName: 'created', type: 'datetime');
         $this->addType(fieldName: 'updated', type: 'datetime');
@@ -203,7 +223,7 @@ class View extends Entity implements JsonSerializable
      * @psalm-return array{id: int, uuid: null|string, name: null|string,
      *     description: null|string, owner: null|string,
      *     organisation: null|string, isPublic: bool, isDefault: bool,
-     *     query: array|null, favoredBy: array,
+     *     query: array|null, presentation: array, favoredBy: array,
      *     quota: array{storage: null, bandwidth: null, requests: null,
      *     users: null, groups: null},
      *     usage: array{storage: 0, bandwidth: 0, requests: 0,
@@ -226,6 +246,7 @@ class View extends Entity implements JsonSerializable
             'isPublic'               => $this->isPublic,
             'isDefault'              => $this->isDefault,
             'query'                  => $this->query,
+            'presentation'           => $this->getPresentationFormatted(),
             'favoredBy'              => $favoredBy,
             'quota'                  => [
                 'storage'   => null,
@@ -286,6 +307,32 @@ class View extends Entity implements JsonSerializable
     }//end getUpdatedFormatted()
 
     /**
+     * Get the presentation configuration, defaulted to the `table` view.
+     *
+     * A null `presentation` (never configured) MUST render exactly like an
+     * unconfigured legacy view: `viewType: table` and no kanban/calendar
+     * config. This is the single place that applies that default so both
+     * the API response and any internal consumer see the same shape.
+     *
+     * @return array{viewType: string, kanban?: array, calendar?: array} The effective presentation config
+     *
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-views-persist-a-validated-presentation-config-req-view-pres-01
+     */
+    private function getPresentationFormatted(): array
+    {
+        $presentation = $this->presentation;
+        if (is_array($presentation) === false) {
+            return ['viewType' => 'table'];
+        }
+
+        if (empty($presentation['viewType']) === true) {
+            $presentation['viewType'] = 'table';
+        }
+
+        return $presentation;
+    }//end getPresentationFormatted()
+
+    /**
      * Get managed by configuration formatted.
      *
      * @return (int|null|string)[]|null
@@ -318,44 +365,34 @@ class View extends Entity implements JsonSerializable
      */
     public function hydrate(array $object): static
     {
-        $this->setUuid(uuid: null);
-        if (($object['uuid'] ?? null) !== null) {
-            $this->setUuid(uuid: $object['uuid']);
-        }
+        // Map property names to their resolved values (falling back to the
+        // same defaults the pre-existing per-field logic used).
+        //
+        // NOTE: Entity setters are dispatched via OCP\AppFramework\Db\Entity's
+        // magic __call(). Calling them with NAMED arguments (e.g.
+        // `setUuid(uuid: null)`) silently breaks: PHP hands __call an
+        // associative $args array keyed by parameter name, so the setter's
+        // `$args[0]` lookup is undefined (→ null), which either silently
+        // no-ops a nullable property or throws a TypeError on a non-nullable
+        // one (`setIsPublic` did, until this fix). A dynamic `$this->$method()`
+        // call (like Agent::hydrate()) is positional and also falls outside
+        // CustomSniffs.Functions.NamedParameters's reach, which only flags
+        // literal `$this->methodName()` call sites.
+        $fields = [
+            'uuid'         => $object['uuid'] ?? null,
+            'name'         => $object['name'] ?? null,
+            'description'  => $object['description'] ?? null,
+            'owner'        => $object['owner'] ?? null,
+            'isPublic'     => $object['isPublic'] ?? false,
+            'isDefault'    => $object['isDefault'] ?? false,
+            'query'        => $object['query'] ?? [],
+            'presentation' => $object['presentation'] ?? null,
+            'favoredBy'    => $object['favoredBy'] ?? [],
+        ];
 
-        $this->setName(name: null);
-        if (($object['name'] ?? null) !== null) {
-            $this->setName(name: $object['name']);
-        }
-
-        $this->setDescription(description: null);
-        if (($object['description'] ?? null) !== null) {
-            $this->setDescription(description: $object['description']);
-        }
-
-        $this->setOwner(owner: null);
-        if (($object['owner'] ?? null) !== null) {
-            $this->setOwner(owner: $object['owner']);
-        }
-
-        $this->setIsPublic(isPublic: false);
-        if (($object['isPublic'] ?? null) !== null) {
-            $this->setIsPublic(isPublic: $object['isPublic']);
-        }
-
-        $this->setIsDefault(isDefault: false);
-        if (($object['isDefault'] ?? null) !== null) {
-            $this->setIsDefault(isDefault: $object['isDefault']);
-        }
-
-        $this->setQuery(query: []);
-        if (($object['query'] ?? null) !== null) {
-            $this->setQuery(query: $object['query']);
-        }
-
-        $this->setFavoredBy(favoredBy: []);
-        if (($object['favoredBy'] ?? null) !== null) {
-            $this->setFavoredBy(favoredBy: $object['favoredBy']);
+        foreach ($fields as $key => $value) {
+            $method = 'set'.ucfirst($key);
+            $this->$method($value);
         }
 
         return $this;

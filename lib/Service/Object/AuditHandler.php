@@ -6,6 +6,9 @@
  * Handles audit trail and logging operations for objects.
  * Tracks all changes and access to objects for compliance and debugging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -17,8 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
+ * @spec openspec/specs/audit-trail-immutable/spec.md
  */
 
 declare(strict_types=1);
@@ -49,7 +52,7 @@ class AuditHandler
      * @param AuditTrailMapper $auditTrailMapper Audit trail mapper
      * @param LoggerInterface  $logger           PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function __construct(
         private readonly AuditTrailMapper $auditTrailMapper,
@@ -71,8 +74,8 @@ class AuditHandler
      *
      * @psalm-return array<\OCA\OpenRegister\Db\AuditTrail>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/audit-trail-immutable/spec.md
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     public function getLogs(string $uuid, array $filters=[]): array
     {
@@ -119,62 +122,6 @@ class AuditHandler
     }//end getLogs()
 
     /**
-     * Validate object ownership
-     *
-     * Checks if object belongs to specified register and schema.
-     *
-     * @param object|array $object            Object to validate
-     * @param string       $requestedRegister Requested register ID or slug
-     * @param string       $requestedSchema   Requested schema ID or slug
-     *
-     * @return bool True if object belongs to register/schema
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
-     */
-    public function validateObjectOwnership(object|array $object, string $requestedRegister, string $requestedSchema): bool
-    {
-        try {
-            // Get object's register and schema.
-            $objectRegister = $object->getRegister();
-            $objectSchema   = $object->getSchema();
-            if (is_array($object) === true) {
-                $objectRegister = $object['register'] ?? null;
-                $objectSchema   = $object['schema'] ?? null;
-            }
-
-            // Normalize and compare register.
-            $objectRegisterNorm = strtolower((string) $objectRegister);
-            $reqRegisterNorm    = strtolower($requestedRegister);
-            $registerMatch      = ($objectRegisterNorm === $reqRegisterNorm);
-
-            // Normalize schema (handle array/object/string).
-            $objectSchemaId   = $this->extractSchemaId(schema: $objectSchema);
-            $objectSchemaSlug = $this->extractSchemaSlug(schema: $objectSchema);
-
-            $requestedSchemaNorm  = strtolower($requestedSchema);
-            $objectSchemaIdNorm   = strtolower((string) $objectSchemaId);
-            $objectSchemaSlugNorm = null;
-            if ($objectSchemaSlug !== null) {
-                $objectSchemaSlugNorm = strtolower($objectSchemaSlug);
-            }
-
-            // Check schema match (by ID or slug).
-            $schemaMatch = (
-                $requestedSchemaNorm === $objectSchemaIdNorm ||
-                ($objectSchemaSlugNorm && $requestedSchemaNorm === $objectSchemaSlugNorm)
-            );
-
-            return $registerMatch && $schemaMatch;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[AuditHandler] Failed to validate object ownership',
-                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
-            );
-            return false;
-        }//end try
-    }//end validateObjectOwnership()
-
-    /**
      * Prepare filters for audit trail query
      *
      * @param string $uuid    Object UUID
@@ -182,7 +129,7 @@ class AuditHandler
      *
      * @return array Prepared filters for audit trail query.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
      */
     private function prepareFilters(string $uuid, array $filters): array
     {
@@ -220,7 +167,7 @@ class AuditHandler
      *
      * @return string Schema ID
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     private function extractSchemaId(mixed $schema): string
     {
@@ -242,7 +189,7 @@ class AuditHandler
      *
      * @return null|string Schema slug
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-8
+     * @spec openspec/specs/audit-trail-immutable/spec.md
      */
     private function extractSchemaSlug(mixed $schema): string|null
     {

@@ -1,16 +1,16 @@
 ---
-status: implemented
+status: done
 ---
 
 # OpenAPI Generation
 
 ## Purpose
+
+@e2e exclude backend OpenAPI generation — covered by PHPUnit
 Auto-generate OpenAPI 3.1.0 specifications from register and schema definitions stored in OpenRegister, producing complete API documentation that covers every CRUD endpoint, query parameter, authentication scheme, and response model. The generated spec MUST be downloadable in JSON and YAML formats, serveable via an interactive Swagger UI, and MUST regenerate automatically when schemas change so that documentation never drifts from the live API surface. The generation pipeline MUST also support NL API Design Rules compliance markers for Dutch government API interoperability.
 
 **Source**: Gap identified in cross-platform analysis; developer experience improvement. Competitors Strapi (`@strapi/openapi`) and Directus both auto-generate OpenAPI specs from their data models. NocoDB exposes a Swagger endpoint per base.
-
 ## Requirements
-
 ### Requirement: The system MUST auto-generate OpenAPI 3.1.0 specs from register/schema definitions
 Each register MUST have an automatically generated OpenAPI 3.1.0 specification reflecting all schemas belonging to that register, their properties, and all available CRUD operations. The generation MUST be driven by `OasService::createOas()` reading from `RegisterMapper` and `SchemaMapper`, using `BaseOas.json` as the foundation template.
 
@@ -404,6 +404,119 @@ The generated OpenAPI spec MUST support internationalized descriptions for endpo
 - **GIVEN** a schema with `description: "Register voor het opslaan van meldingen"`
 - **WHEN** OAS is generated in any language
 - **THEN** the schema's own description MUST be preserved verbatim (not translated)
+
+### Requirement: Schema Authoring Sub-Resources and Meta-Entity Operational Endpoints
+
+The system MUST expose schema-authoring sub-resources and registry
+meta-entity operational endpoints beyond the uniform resource-CRUD contract.
+
+`SchemasController` MUST provide:
+
+- `download` (`GET /api/schemas/{id}/download`) — return the schema as a JSON
+  document (`404` when the schema does not exist);
+- `upload` (`POST /api/schemas/upload`) and `uploadUpdate`
+  (`PUT /api/schemas/{id}/upload`) — create or update a schema from a JSON
+  document supplied by `file`, `url`, or inline `json`;
+- `related` (`GET /api/schemas/{id}/related`) — return the incoming and
+  outgoing `$ref` relationships of the schema as `{incoming, outgoing, total}`;
+- `explore` (`GET /api/schemas/{id}/explore`) — analyse all objects of the
+  schema to discover properties present in object data but absent from the
+  schema definition; and
+- `updateFromExploration` (`POST /api/schemas/{id}/update-from-exploration`) —
+  apply selected discovered properties back onto the schema.
+
+`RegistersController` MUST provide the register sub-resource lookups
+`schemas` (`GET /api/registers/{id}/schemas`, returning `{results, total}`)
+and `objects` (`GET /api/registers/{id}/objects`).
+
+`EndpointsController::test` (`POST /api/endpoints/{id}/test`) and
+`MappingsController::test` (`POST /api/mappings/test`) MUST execute a dry-run
+of the endpoint or mapping against supplied sample input and return the
+execution result (status code, transformed output, or structured error)
+WITHOUT persisting any side effect.
+
+All of these endpoints MUST return `404` with an `{error}` body for an unknown
+id and MUST respect the same RBAC + multi-tenancy filters as the underlying
+mapper/service.
+
+#### Scenario: Download a schema as JSON
+- **GIVEN** a schema with a known id
+- **WHEN** `GET /api/schemas/{id}/download` is called
+- **THEN** the response MUST return HTTP 200 with the schema's JSON document
+- **AND** an unknown id MUST return HTTP 404 with `{error: "Schema not found"}`
+
+#### Scenario: Explore discovers undeclared properties
+- **GIVEN** a schema whose objects carry properties not present in the schema definition
+- **WHEN** `GET /api/schemas/{id}/explore` is called
+- **THEN** the response MUST list the discovered properties
+- **AND** `POST /api/schemas/{id}/update-from-exploration` MUST be able to apply selected discovered properties onto the schema
+
+#### Scenario: Related returns incoming and outgoing references
+- **GIVEN** schema A is `$ref`-referenced by schema B and itself references schema C
+- **WHEN** `GET /api/schemas/{idA}/related` is called
+- **THEN** the response MUST include B under `incoming` and C under `outgoing` with a `total` count
+
+#### Scenario: Dry-run test does not persist
+- **GIVEN** an endpoint or mapping with a known id
+- **WHEN** its `test` endpoint is called with sample input
+- **THEN** the response MUST return the execution result
+- **AND** no entity or audit side effect MUST be persisted
+
+### Requirement: Registry meta-entity controllers MUST expose a uniform resource-CRUD HTTP contract
+Each registry meta-entity controller MUST expose the same five-verb REST resource contract,
+registered via the `resources` block (plus an explicit `PATCH` route) in `appinfo/routes.php`:
+`index` (GET collection), `show` (GET item), `create` (POST), `update` (PUT), `patch` (PATCH),
+and `destroy` (DELETE). This applies to `RegistersController`, `SchemasController`,
+`SourcesController`, `MappingsController`, `ApplicationsController`, `AgentsController`,
+`EndpointsController`, and `ConsumersController`. The controllers MUST delegate persistence to
+their respective `*Mapper` (`findAll`, `find`, `createFromArray`, `updateFromArray`, `delete`).
+This requirement covers ONLY the resource-CRUD verbs; resource-specific operational methods
+(export, import, publish, stats, test, schemas, objects, logs) are governed by their own
+capability specs.
+
+#### Scenario: List a meta-entity collection
+- **GIVEN** any of the eight registry meta-entity resources (e.g. `sources`)
+- **WHEN** `GET /api/sources` is called
+- **THEN** the response MUST return HTTP 200 with a JSON body containing a `results` array of the matching entities
+- **AND** the controller MUST strip the internal query params (`_limit`, `_offset`, `_page`, `_search`, `_route`) from the filter set before querying
+- **AND** when `_page` and `_limit` are both provided, the offset MUST be computed as `(_page - 1) * _limit`
+
+#### Scenario: Collection responses MAY include a total count
+- **GIVEN** a resource whose controller exposes a count (e.g. `consumers`, `webhooks`-style controllers, `views`)
+- **WHEN** the collection endpoint is called
+- **THEN** the response MAY include a `total` field alongside `results`
+- **AND** controllers that do not compute a count (e.g. `sources`) MUST still return a `results` array
+
+#### Scenario: Fetch a single meta-entity by ID
+- **GIVEN** a source with ID `5` exists
+- **WHEN** `GET /api/sources/5` is called
+- **THEN** the response MUST return HTTP 200 with the entity's JSON serialization
+- **AND** if no entity matches the ID, the response MUST return HTTP 404 with an `{ "error": ... }` body (mapped from `DoesNotExistException`)
+
+#### Scenario: Create a new meta-entity
+- **GIVEN** a POST body of entity properties
+- **WHEN** `POST /api/{resource}` is called
+- **THEN** the controller MUST strip framework-injected and internal params (keys starting with `_`, and any supplied `id`) before persisting
+- **AND** the entity MUST be created via the mapper's `createFromArray()`
+- **AND** the response MUST return the persisted entity (HTTP 201 where the controller sets it explicitly, e.g. `ConsumersController`, otherwise HTTP 200)
+
+#### Scenario: Update a meta-entity (PUT)
+- **GIVEN** a source with ID `5` exists
+- **WHEN** `PUT /api/sources/5` is called with updated properties
+- **THEN** the controller MUST strip internal `_`-prefixed params and immutable fields (`id`, and where applicable `organisation`, `owner`, `created`) from the body
+- **AND** the entity MUST be updated via `updateFromArray()` and returned
+- **AND** updating a non-existent ID MUST return HTTP 404 for controllers that catch `DoesNotExistException`
+
+#### Scenario: Patch delegates to update
+- **GIVEN** any registry meta-entity controller
+- **WHEN** `PATCH /api/{resource}/{id}` is called
+- **THEN** the `patch()` method MUST delegate to `update($id)` (partial update via the same mapper write path)
+
+#### Scenario: Delete a meta-entity
+- **GIVEN** a source with ID `5` exists
+- **WHEN** `DELETE /api/sources/5` is called
+- **THEN** the entity MUST be deleted via the mapper and the response MUST return an empty JSON body
+- **AND** deleting a non-existent ID MUST return HTTP 404 for controllers that catch `DoesNotExistException`
 
 ## Current Implementation Status
 - **Fully implemented -- OAS generation from schemas**: `OasService` (`lib/Service/OasService.php`) generates OpenAPI specs from register/schema definitions via `createOas()`. It maps schema properties to OpenAPI types, generates paths for CRUD operations, and handles multi-register generation with operationId prefixing.

@@ -10,6 +10,9 @@
  * - Cache warming strategies
  * - Memory-efficient cache management
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -30,7 +33,6 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\IndexService;
 use OCP\AppFramework\IAppContainer;
 use OCP\DB\IResult;
 use OCP\ICacheFactory;
@@ -168,7 +170,7 @@ class CacheHandler
      * @param SchemaMapper|null   $schemaMapper       Schema mapper for magic table queries
      * @param IDBConnection|null  $db                 Database connection for magic table queries
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly OrganisationMapper $organisationMapper,
@@ -203,7 +205,7 @@ class CacheHandler
              *
              * @return null
              *
-             * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+             * @spec openspec/specs/object-lifecycle/spec.md
              */
             public function getUser()
             {
@@ -220,7 +222,7 @@ class CacheHandler
      *
      * @throws RuntimeException When container is not available.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getObjectMapper(): MagicMapper
     {
@@ -236,39 +238,6 @@ class CacheHandler
     }//end getObjectMapper()
 
     /**
-     * Get IndexService instance using lazy loading from container
-     *
-     * Lazy loads IndexService from container to break circular dependency.
-     * Returns null if index service is unavailable or disabled.
-     *
-     * @return IndexService|null Index service instance or null
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    private function getIndexService(): ?IndexService
-    {
-        // Lazy-load IndexService from container to break circular dependency.
-        if ($this->container === null) {
-            return null;
-        }
-
-        try {
-            return $this->container->get(\OCA\OpenRegister\Service\IndexService::class);
-        } catch (\Exception $e) {
-            // If IndexService is not available, return null (graceful degradation).
-            $this->logger->debug(
-                message: '[CacheHandler] IndexService not available',
-                context: [
-                    'file'  => __FILE__,
-                    'line'  => __LINE__,
-                    'error' => $e->getMessage(),
-                ]
-            );
-            return null;
-        }
-    }//end getIndexService()
-
-    /**
      * Get an object from cache or database
      *
      * This method first checks the in-memory cache before falling back to the database.
@@ -281,11 +250,16 @@ class CacheHandler
      * @phpstan-return ObjectEntity|null
      * @psalm-return   ObjectEntity|null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getObject(int | string $identifier): ?ObjectEntity
     {
-        $key = (string) $identifier;
+        // BUG-OBJ-6: the in-memory object cache is keyed per active-organisation so a
+        // cached entity loaded under one tenant's context can never be served to a
+        // different tenant within the same request lifecycle. The underlying find()
+        // already applies RBAC + multitenancy on a cache miss; the tenant-scoped key
+        // closes the cache-hit bypass.
+        $key = $this->buildObjectCacheKey(rawKey: (string) $identifier);
 
         // Check cache first.
         if (($this->objectCache[$key] ?? null) !== null) {
@@ -293,7 +267,7 @@ class CacheHandler
             return $this->objectCache[$key];
         }
 
-        // Cache miss - load from database.
+        // Cache miss - load from database (RBAC + multitenancy enforced by find()).
         $this->stats['misses']++;
 
         try {
@@ -308,223 +282,50 @@ class CacheHandler
         }
     }//end getObject()
 
-    // ========================================.
-    // SEARCH INDEX INTEGRATION METHODS.
-    // ========================================.
+    /**
+     * Build a tenant-scoped key for the in-memory object cache (BUG-OBJ-6).
+     *
+     * Prefixes the raw id/uuid with the caller's active organisation so a cached
+     * entity is never shared across tenants. Falls back to a stable sentinel when
+     * no active organisation can be resolved (anonymous / system context).
+     *
+     * @param string $rawKey The raw cache key (object id or uuid)
+     *
+     * @return string The tenant-scoped cache key
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function buildObjectCacheKey(string $rawKey): string
+    {
+        return $this->getActiveOrganisationCacheScope().'|'.$rawKey;
+    }//end buildObjectCacheKey()
 
     /**
-     * Index object in search index when available
+     * Resolve the active-organisation discriminator for object-cache keys (BUG-OBJ-6).
      *
-     * Creates a search document from ObjectEntity matching the ObjectEntity structure.
-     * Metadata fields (name, description, etc.) are at root level, with flexible
-     * object data in a nested 'object' field.
+     * @return string The active organisation UUID, or a sentinel for no/unknown org
      *
-     * @param ObjectEntity $object Object to index
-     * @param bool         $commit Whether to commit immediately
-     *
-     * @return bool True if indexing was successful or index unavailable
-     *
-     * @psalm-suppress UnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function indexObjectInSolr(ObjectEntity $object, bool $commit=false): bool
+    private function getActiveOrganisationCacheScope(): string
     {
-        // Get index service using factory pattern (performance optimized).
-        $indexService = $this->getIndexService();
-
-        if ($indexService === null || $indexService->isAvailable() === false) {
-            return true;
-            // Graceful degradation - index service unavailable.
-        }
-
-        // Index the object.
-        $result = $indexService->indexObject(object: $object, commit: $commit);
-
-        if ($result !== true) {
-            $this->logger->error(
-                message: '[CacheHandler] Object indexing failed',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'object_id' => $object->getId(),
-                    'uuid'      => $object->getUuid(),
-                    'schema'    => $object->getSchema(),
-                    'register'  => $object->getRegister(),
-                ]
-            );
-            return $result;
-        }
-
-        $this->logger->debug(
-            message: '[CacheHandler] 🔍 OBJECT INDEXED',
-            context: [
-                'file'      => __FILE__,
-                'line'      => __LINE__,
-                'object_id' => $object->getId(),
-                'uuid'      => $object->getUuid(),
-                'schema'    => $object->getSchema(),
-                'register'  => $object->getRegister(),
-            ]
-        );
-
-        return $result;
-    }//end indexObjectInSolr()
-
-    /**
-     * Remove object from search index
-     *
-     * @param ObjectEntity $object Object to remove from index
-     * @param bool         $commit Whether to commit immediately
-     *
-     * @return bool True if removal was successful or index unavailable
-     *
-     * @psalm-suppress UnusedReturnValue
-     *
-     * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    private function removeObjectFromSolr(ObjectEntity $object, bool $commit=false): bool
-    {
-        // Get index service using factory pattern (performance optimized).
-        $indexService = $this->getIndexService();
-        if ($indexService === null || $indexService->isAvailable() === false) {
-            return true;
-            // Graceful degradation.
-        }
-
         try {
-            $result = $indexService->deleteObject(objectId: $object->getUuid(), commit: $commit);
-
-            if ($result === true) {
-                $this->logger->debug(
-                    message: '[CacheHandler] 🗑️  OBJECT REMOVED FROM INDEX',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'object_id' => $object->getId(),
-                        'uuid'      => $object->getUuid(),
-                    ]
-                );
+            $user = $this->userSession?->getUser();
+            if ($user === null) {
+                return '__no_org__';
             }
 
-            return $result;
-        } catch (\Exception $e) {
-            $this->logger->warning(
-                message: '[CacheHandler] Failed to remove object from search index',
-                context: [
-                    'file'      => __FILE__,
-                    'line'      => __LINE__,
-                    'object_id' => $object->getId(),
-                    'error'     => $e->getMessage(),
-                ]
-            );
-            return true;
-            // Don't fail the whole operation for index issues.
-        }//end try
-    }//end removeObjectFromSolr()
-
-    /**
-     * Extract dynamic fields from object data for search indexing
-     *
-     * Converts object properties into search dynamic fields with appropriate suffixes.
-     *
-     * @param array  $objectData Object data to extract fields from
-     * @param string $prefix     Field prefix for nested objects
-     *
-     * @return array Dynamic search fields
-     *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
-     * @SuppressWarnings(PHPMD.NPathComplexity)
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    private function extractDynamicFieldsFromObject(array $objectData, string $prefix=''): array
-    {
-        $dynamicFields = [];
-
-        foreach ($objectData as $key => $value) {
-            // Skip meta fields and null values.
-            if ($key === '@self' || $key === 'id' || $value === null) {
-                continue;
+            $organisation = $this->organisationMapper->getActiveOrganisationWithFallback($user->getUID());
+            if ($organisation === null || $organisation === '') {
+                return '__no_org__';
             }
 
-            $fieldName = $prefix.$key;
-
-            if (is_array($value) === true) {
-                if (($value[0] ?? null) === null) {
-                    // Nested object - recurse with dot notation.
-                    $nestedFields  = $this->extractDynamicFieldsFromObject(objectData: $value, prefix: $fieldName.'_');
-                    $dynamicFields = array_merge($dynamicFields, $nestedFields);
-                    continue;
-                }
-
-                // Multi-value array.
-                $dynamicFields[$fieldName.'_ss'] = $value;
-                // Also add as text for searching.
-                $dynamicFields[$fieldName.'_txt'] = implode(' ', array_filter($value, 'is_string'));
-                continue;
-            }
-
-            if (is_string($value) === true) {
-                $dynamicFields[$fieldName.'_s']   = $value;
-                $dynamicFields[$fieldName.'_txt'] = $value;
-            } else if (is_int($value) === true || is_float($value) === true) {
-                $suffix = '_f';
-                if (is_int($value) === true) {
-                    $suffix = '_i';
-                }
-
-                $dynamicFields[$fieldName.$suffix] = $value;
-            } else if (is_bool($value) === true) {
-                $dynamicFields[$fieldName.'_b'] = $value;
-            } else if ($this->isDateString(value: $value) === true) {
-                $dynamicFields[$fieldName.'_dt'] = $this->formatDateForSolr(dateString: $value);
-            }//end if
-        }//end foreach
-
-        return $dynamicFields;
-    }//end extractDynamicFieldsFromObject()
-
-    /**
-     * Check if a string represents a date
-     *
-     * @param mixed $value Value to check
-     *
-     * @return bool True if value is a date string
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    private function isDateString($value): bool
-    {
-        if (is_string($value) === false) {
-            return false;
+            return $organisation;
+        } catch (\Throwable $e) {
+            // Never let cache-key resolution abort a read; isolate on a safe sentinel.
+            return '__no_org__';
         }
-
-        return (bool) strtotime($value);
-    }//end isDateString()
-
-    /**
-     * Format date string for search index
-     *
-     * @param string $dateString Date string to format
-     *
-     * @return string|null Formatted date or null
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    private function formatDateForSolr(string $dateString): ?string
-    {
-        $timestamp = strtotime($dateString);
-        if ($timestamp === false) {
-            return null;
-        }
-
-        return date('Y-m-d\\TH:i:s\\Z', $timestamp);
-    }//end formatDateForSolr()
+    }//end getActiveOrganisationCacheScope()
 
     /**
      * Bulk preload objects to warm the cache
@@ -544,7 +345,7 @@ class CacheHandler
      *
      * @psalm-return array<ObjectEntity>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function preloadObjects(array $identifiers): array
     {
@@ -552,17 +353,17 @@ class CacheHandler
             return [];
         }
 
-        // Filter out already cached objects.
+        // Filter out already cached objects (BUG-OBJ-6: tenant-scoped keys).
         $identifiersToLoad = array_filter(
             array_unique($identifiers),
-            fn($id) => isset($this->objectCache[(string) $id]) === false
+            fn($id) => isset($this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $id)]) === false
         );
 
         if (empty($identifiersToLoad) === true) {
             // All objects already cached.
             return array_filter(
                 array_map(
-                    fn($id) => $this->objectCache[(string) $id] ?? null,
+                    fn($id) => $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $id)] ?? null,
                     $identifiers
                 ),
                 fn($obj) => $obj !== null
@@ -605,23 +406,33 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function cacheObject(ObjectEntity $object): void
     {
         // Check cache size and evict oldest entries if necessary.
+        // PERF-9: unset the oldest keys in a tight loop instead of rebuilding the whole
+        // cache with array_slice() (which reallocates the entire array on every insert
+        // once the cap is reached). PHP arrays preserve insertion order, so the leading
+        // keys returned by array_keys() are the oldest.
         if (count($this->objectCache) >= $this->maxCacheSize) {
-            // Simple cache eviction - remove first 20% of entries.
-            $entriesToRemove   = (int) ($this->maxCacheSize * 0.2);
-            $this->objectCache = array_slice($this->objectCache, $entriesToRemove, null, true);
+            $entriesToRemove = (int) ($this->maxCacheSize * 0.2);
+            if ($entriesToRemove < 1) {
+                $entriesToRemove = 1;
+            }
+
+            $oldestKeys = array_slice(array_keys($this->objectCache), 0, $entriesToRemove);
+            foreach ($oldestKeys as $oldestKey) {
+                unset($this->objectCache[$oldestKey]);
+            }
         }
 
-        // Cache with ID.
-        $this->objectCache[$object->getId()] = $object;
+        // Cache with ID (BUG-OBJ-6: tenant-scoped key).
+        $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $object->getId())] = $object;
 
         // Also cache with UUID if available.
         if (($object->getUuid() !== null) === true) {
-            $this->objectCache[$object->getUuid()] = $object;
+            $this->objectCache[$this->buildObjectCacheKey(rawKey: (string) $object->getUuid())] = $object;
         }
     }//end cacheObject()
 
@@ -645,7 +456,7 @@ class CacheHandler
      *     cache_size: int<0, max>, query_cache_size: int<0, max>,
      *     name_cache_size: int<0, max>}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getStats(): array
     {
@@ -694,7 +505,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearSearchCache(?string $pattern=null): void
     {
@@ -751,7 +562,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function clearSchemaRelatedCaches(?int $schemaId=null, ?int $registerId=null, string $operation='unknown'): void
     {
@@ -836,7 +647,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidateForObjectChange(
         ?ObjectEntity $object=null,
@@ -863,11 +674,13 @@ class CacheHandler
             // Clear individual object from cache.
             $this->clearObjectFromCache(object: $object);
 
-            // **INDEX INTEGRATION**: Index or remove from search index based on operation.
-            if ($operation === 'create' || $operation === 'update') {
-                // Index the object with immediate commit for instant visibility.
-                $this->indexObjectInSolr(object: $object, commit: true);
+            // BUG-OBJ-7: drop any stale cached name for this object up-front, regardless
+            // of the operation label. The create/update branch below re-writes the fresh
+            // name; for any other (or unknown) operation the stale name is at least
+            // invalidated so a rename can never serve a stale value from cache.
+            $this->clearObjectNameFromCache(object: $object);
 
+            if ($operation === 'create' || $operation === 'update') {
                 // Update name cache for the modified object.
                 $name = $object->getName() ?? $object->getUuid();
                 $this->setObjectName(identifier: $object->getUuid(), name: $name);
@@ -875,9 +688,6 @@ class CacheHandler
                     $this->setObjectName(identifier: $object->getId(), name: $name);
                 }
             } else if ($operation === 'delete') {
-                // Remove from search index with immediate commit for instant visibility.
-                $this->removeObjectFromSolr(object: $object, commit: true);
-
                 // Remove from in-memory name cache.
                 unset($this->nameCache[$object->getUuid()]);
                 unset($this->nameCache[(string) $object->getId()]);
@@ -936,19 +746,26 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function clearObjectFromCache(ObjectEntity $object): void
     {
-        // Remove by ID. Ensure ID is string for array key.
-        $objectId    = $object->getId();
-        $objectIdKey = (string) $objectId;
-
-        unset($this->objectCache[$objectIdKey]);
-
-        // Remove by UUID if available.
+        // BUG-OBJ-6: object-cache keys are tenant-scoped ("<org>|<rawKey>"). The active
+        // organisation at invalidation time may differ from the one in effect when the
+        // entry was written, so remove every scope's entry for this id/uuid by matching
+        // the raw-key suffix rather than a single scoped key.
+        $rawKeys = [(string) $object->getId()];
         if (($object->getUuid() !== null) === true) {
-            unset($this->objectCache[$object->getUuid()]);
+            $rawKeys[] = (string) $object->getUuid();
+        }
+
+        foreach ($rawKeys as $rawKey) {
+            $suffix = '|'.$rawKey;
+            foreach (array_keys($this->objectCache) as $cacheKey) {
+                if ($cacheKey === $rawKey || str_ends_with((string) $cacheKey, $suffix) === true) {
+                    unset($this->objectCache[$cacheKey]);
+                }
+            }
         }
 
         $this->logger->debug(
@@ -963,6 +780,50 @@ class CacheHandler
     }//end clearObjectFromCache()
 
     /**
+     * Remove an object's cached name entries (in-memory + distributed) — BUG-OBJ-7.
+     *
+     * Drops the name cached under both the object's UUID and id so a subsequent
+     * read recomputes the current name (fixing stale names after a rename).
+     *
+     * @param ObjectEntity $object The object whose cached name must be cleared
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function clearObjectNameFromCache(ObjectEntity $object): void
+    {
+        $keys = [];
+        if ($object->getUuid() !== null) {
+            $keys[] = (string) $object->getUuid();
+        }
+
+        if ($object->getId() !== null) {
+            $keys[] = (string) $object->getId();
+        }
+
+        foreach ($keys as $key) {
+            unset($this->nameCache[$key]);
+
+            if ($this->nameDistributedCache !== null) {
+                try {
+                    $this->nameDistributedCache->remove('name_'.$key);
+                } catch (\Exception $e) {
+                    $this->logger->warning(
+                        message: '[CacheHandler] Failed to clear object name from distributed cache',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'identifier' => $key,
+                            'error'      => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }//end foreach
+    }//end clearObjectNameFromCache()
+
+    /**
      * Clear all caches (Administrative Operation)
      *
      * **NUCLEAR OPTION**: Removes all cached objects, search results, name caches, and resets statistics.
@@ -970,7 +831,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearAllCaches(): void
     {
@@ -1040,7 +901,7 @@ class CacheHandler
      * @deprecated Use clearAllCaches() instead
      * @return     void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearCache(): void
     {
@@ -1063,7 +924,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function setObjectName(string|int $identifier, string $name, int $ttl=86400): void
     {
@@ -1117,7 +978,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSingleObjectName(string|int $identifier): ?string
     {
@@ -1232,7 +1093,7 @@ class CacheHandler
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * Bulk name retrieval with multiple cache layers requires extensive handling.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getMultipleObjectNames(array $identifiers): array
     {
@@ -1392,7 +1253,7 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getAllObjectNames(bool $forceWarmup=false): array
     {
@@ -1442,7 +1303,7 @@ class CacheHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function warmupNameCache(): int
     {
@@ -1534,7 +1395,7 @@ class CacheHandler
      *
      * @return int Number of names loaded from magic tables.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function loadNamesFromMagicTables(): int
     {
@@ -1636,7 +1497,7 @@ class CacheHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch loading across multiple table types requires branching
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function batchLoadNamesFromMagicTables(array $uuids): array
     {
@@ -1744,7 +1605,7 @@ class CacheHandler
      *
      * @return array<string, string> Map of UUID to name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function queryTableForNames(string $tableName, array $uuids): array
     {
@@ -1809,7 +1670,7 @@ class CacheHandler
      *
      * @return int Number of entries stored in distributed cache.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function persistNameCacheToDistributed(): int
     {
@@ -1858,7 +1719,7 @@ class CacheHandler
      *
      * @return int The number of names in distributed cache, or 0 if unavailable
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getDistributedNameCacheCount(): int
     {
@@ -1886,7 +1747,7 @@ class CacheHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearNameCache(): void
     {
@@ -1914,144 +1775,4 @@ class CacheHandler
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
     }//end clearNameCache()
-
-    // ========================================.
-    // SEARCH INDEX BULK OPERATIONS.
-    // ========================================.
-
-    /**
-     * Get comprehensive search index dashboard statistics
-     *
-     * @return array Dashboard statistics from IndexService
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function getSolrDashboardStats(): array
-    {
-        $indexService = $this->getIndexService();
-        if ($indexService === null) {
-            throw new RuntimeException('Index service is not available');
-        }
-
-        return $indexService->getStats();
-    }//end getSolrDashboardStats()
-
-    /**
-     * Commit search index
-     *
-     * @return (bool|string)[] Commit operation results
-     *
-     * @psalm-return array{success: bool, error?: string, timestamp?: string, message?: 'Commit failed'|'Commit successful'}
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function commitSolr(): array
-    {
-        $indexService = $this->getIndexService();
-        if ($indexService === null) {
-            return ['success' => false, 'error' => 'Index service is not available'];
-        }
-
-        try {
-            $result = $indexService->commit();
-            // Determine message based on result.
-            $message = 'Commit failed';
-            if ($result === true) {
-                $message = 'Commit successful';
-            }
-
-            return [
-                'success'   => $result,
-                'timestamp' => date('c'),
-                'message'   => $message,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success'   => false,
-                'error'     => $e->getMessage(),
-                'timestamp' => date('c'),
-            ];
-        }//end try
-    }//end commitSolr()
-
-    /**
-     * Optimize search index
-     *
-     * @return (bool|string)[] Optimize operation results
-     *
-     * @psalm-return array{success: bool, error?: string, timestamp?: string,
-     *               message?: 'Optimization failed'|'Optimization successful'}
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function optimizeSolr(): array
-    {
-        $indexService = $this->getIndexService();
-        if ($indexService === null) {
-            return ['success' => false, 'error' => 'Index service is not available'];
-        }
-
-        try {
-            $result = $indexService->optimize();
-            // Determine message based on result.
-            $message = 'Optimization failed';
-            if ($result === true) {
-                $message = 'Optimization successful';
-            }
-
-            return [
-                'success'   => $result,
-                'timestamp' => date('c'),
-                'message'   => $message,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success'   => false,
-                'error'     => $e->getMessage(),
-                'timestamp' => date('c'),
-            ];
-        }//end try
-    }//end optimizeSolr()
-
-    /**
-     * Clear search index completely for dashboard
-     *
-     * @return (false|mixed|null|string)[] Clear operation results
-     *
-     * @psalm-return array{success: false|mixed, error: mixed|null|string,
-     *     timestamp?: string, error_details?: mixed|null,
-     *     message?: 'Index clear failed'|'Index cleared successfully'}
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function clearSolrIndexForDashboard(): array
-    {
-        $indexService = $this->getIndexService();
-        if ($indexService === null) {
-            return ['success' => false, 'error' => 'Index service is not available'];
-        }
-
-        try {
-            $result = $indexService->clearIndex();
-            // Determine message based on result.
-            $message = 'Index clear failed';
-            if (($result['success'] === true) === true) {
-                $message = 'Index cleared successfully';
-            }
-
-            return [
-                'success'       => $result['success'],
-                'error'         => $result['error'] ?? null,
-                'error_details' => $result['error_details'] ?? null,
-                'timestamp'     => date('c'),
-                'message'       => $message,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'success'   => false,
-                'error'     => $e->getMessage(),
-                'timestamp' => date('c'),
-            ];
-        }//end try
-    }//end clearSolrIndexForDashboard()
 }//end class

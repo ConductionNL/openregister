@@ -108,7 +108,7 @@ class GitHubGuardsTest extends TestCase
      */
     public function testRepoMismatchReturns403(): void
     {
-        $guards   = $this->buildGuards(repoConfig: 'ConductionNL/openregister', flagEnabled: true);
+        $guards   = $this->buildGuards(repoConfig: 'ConductionNL', flagEnabled: true);
         $response = $guards->enforceRepoAllowlist(repo: 'torvalds/linux', isRead: false);
 
         $this->assertEquals(403, $response->getStatus());
@@ -122,9 +122,39 @@ class GitHubGuardsTest extends TestCase
      */
     public function testRepoMatchPasses(): void
     {
-        $guards = $this->buildGuards(repoConfig: 'ConductionNL/openregister', flagEnabled: true);
+        $guards = $this->buildGuards(repoConfig: 'ConductionNL', flagEnabled: true);
         $this->assertNull($guards->enforceRepoAllowlist(repo: 'ConductionNL/openregister', isRead: true));
     }//end testRepoMatchPasses()
+
+    /**
+     * Owner allowlist matches any repo under the allowed organisation —
+     * the same OR instance can proxy issues for the whole Conduction fleet
+     * without per-repo configuration.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-14
+     */
+    public function testOwnerAllowlistMatchesAnyRepoUnderAllowedOrg(): void
+    {
+        $guards = $this->buildGuards(repoConfig: 'ConductionNL,nextcloud', flagEnabled: true);
+        $this->assertNull($guards->enforceRepoAllowlist(repo: 'ConductionNL/pipelinq', isRead: true));
+        $this->assertNull($guards->enforceRepoAllowlist(repo: 'ConductionNL/openregister', isRead: true));
+        $this->assertNull($guards->enforceRepoAllowlist(repo: 'nextcloud/server', isRead: true));
+    }//end testOwnerAllowlistMatchesAnyRepoUnderAllowedOrg()
+
+    /**
+     * Owner match is case-insensitive — GitHub org slugs are case-preserving
+     * but case-insensitive in URLs and API paths.
+     *
+     * @return void
+     */
+    public function testOwnerAllowlistIsCaseInsensitive(): void
+    {
+        $guards = $this->buildGuards(repoConfig: 'ConductionNL,nextcloud', flagEnabled: true);
+        $this->assertNull($guards->enforceRepoAllowlist(repo: 'conductionnl/anything', isRead: true));
+        $this->assertNull($guards->enforceRepoAllowlist(repo: 'NEXTCLOUD/server', isRead: true));
+    }//end testOwnerAllowlistIsCaseInsensitive()
 
     /**
      * @return void
@@ -203,8 +233,11 @@ class GitHubGuardsTest extends TestCase
     /**
      * Build a GitHubGuards with mocked deps. The user is "alice" by default.
      *
-     * @param string $repoConfig  Value returned by IAppConfig::getValueString for github_repo.
-     * @param bool   $flagEnabled Value returned by IAppConfig::getValueBool for features_roadmap_enabled.
+     * @param string $repoConfig  Value returned by IAppConfig for github_allowed_owners.
+     *                            Treated as the comma-separated allowlist when non-empty;
+     *                            empty string means "config explicitly unset" (the mock
+     *                            returns it as-is, including for the default-value branch).
+     * @param bool   $flagEnabled Value returned by IAppConfig for features_roadmap_enabled.
      *
      * @return GitHubGuards
      */
@@ -229,7 +262,9 @@ class GitHubGuardsTest extends TestCase
         $appConfig = $this->createMock(IAppConfig::class);
         $appConfig->method('getValueString')->willReturnCallback(
             function (string $app, string $key, string $default='') use ($repoConfig): string {
-                if ($key === 'github_repo') {
+                if ($key === 'github_allowed_owners') {
+                    // Empty string in the test fixture means "explicitly unset"
+                    // so the production default ("ConductionNL,nextcloud") is NOT applied.
                     return $repoConfig;
                 }
 

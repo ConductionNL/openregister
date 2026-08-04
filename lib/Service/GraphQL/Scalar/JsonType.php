@@ -5,6 +5,9 @@
  *
  * Handles arbitrary JSON values including objects, arrays, and scalars.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL\Scalar
  *
@@ -54,6 +57,8 @@ class JsonType extends ScalarType
      * @param mixed $value The value to serialize
      *
      * @return mixed The serialized value
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function serialize(mixed $value): mixed
     {
@@ -68,7 +73,7 @@ class JsonType extends ScalarType
      *
      * @return mixed The parsed value
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseValue(mixed $value): mixed
     {
@@ -84,7 +89,7 @@ class JsonType extends ScalarType
      *
      * @return mixed The parsed value
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     public function parseLiteral(\GraphQL\Language\AST\Node $valueNode, ?array $variables=null): mixed
     {

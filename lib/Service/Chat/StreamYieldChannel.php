@@ -30,6 +30,7 @@
  * @link https://OpenRegister.app
  *
  * @spec openspec/changes/ai-chat-companion-streaming/tasks.md#1
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -93,6 +94,9 @@ class StreamYieldChannel
      *                           (the new token delta).
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic
+     *              (the class is self-documented as "pure forwarding").
      */
     public function onToken(callable $callback): void
     {
@@ -107,6 +111,8 @@ class StreamYieldChannel
      *                           payload as a single associative-array argument.
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic.
      */
     public function onToolCall(callable $callback): void
     {
@@ -121,6 +127,8 @@ class StreamYieldChannel
      *                           as a single associative-array argument.
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic.
      */
     public function onToolResult(callable $callback): void
     {
@@ -135,6 +143,8 @@ class StreamYieldChannel
      * @param callable $callback Function invoked with no arguments.
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — registers a callback; carries no business logic.
      */
     public function onHeartbeat(callable $callback): void
     {
@@ -148,6 +158,8 @@ class StreamYieldChannel
      * @param string $delta New token delta from the LLM stream.
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — loops registered callbacks; carries no business logic.
      */
     public function emitToken(string $delta): void
     {
@@ -164,6 +176,8 @@ class StreamYieldChannel
      *                                      `arguments`).
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function emitToolCall(array $payload): void
     {
@@ -180,6 +194,8 @@ class StreamYieldChannel
      *                                      `result`, `isError`).
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function emitToolResult(array $payload): void
     {
@@ -193,6 +209,8 @@ class StreamYieldChannel
      * registration order.
      *
      * @return void
+     *
+     * @spec exclude Pure pub-sub forwarder plumbing — loops registered callbacks; carries no business logic.
      */
     public function emitHeartbeat(): void
     {

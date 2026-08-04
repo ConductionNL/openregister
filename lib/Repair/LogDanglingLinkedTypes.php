@@ -5,11 +5,12 @@
  * references integration ids that the registry can no longer resolve.
  *
  * Per AD-5 of pluggable-integration-registry the registry validates
- * linkedTypes against either the legacy `VALID_LINKED_TYPES` set or
- * the live `IntegrationRegistry::listIds()` output. Existing schemas
- * may carry ids that are valid TODAY (because they appear in the
- * deprecated fallback) but will eventually become invalid as the
- * deprecated map is removed. This repair step scans all schemas at
+ * linkedTypes against either the legacy private allow-list (see
+ * `Schema::legacyLinkedTypeIds()`) or the live
+ * `IntegrationRegistry::listIds()` output. Existing schemas may carry
+ * ids that are valid TODAY (because they appear in the legacy
+ * fallback) but will eventually become invalid as the legacy
+ * fallback is removed. This repair step scans all schemas at
  * install / post-migration time and logs WARNING entries for any
  * linkedTypes value not registered with the registry.
  *
@@ -30,6 +31,7 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-11
+ * @spec openspec/specs/linked-entity-types/spec.md
  */
 
 declare(strict_types=1);
@@ -71,6 +73,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * Human-readable step name surfaced in occ + admin UI.
      *
      * @return string
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function getName(): string
     {
@@ -83,6 +87,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param IOutput $output Migration output handle.
      *
      * @return void
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function run(IOutput $output): void
     {
@@ -105,7 +111,7 @@ class LogDanglingLinkedTypes implements IRepairStep
         foreach ($dangling as $row) {
             $template  = '[OpenRegister] Schema "%s" (id=%s) declares linkedType "%s"';
             $template .= ' which is not registered. Add the matching IntegrationProvider';
-            $template .= ' before the deprecated VALID_LINKED_TYPES fallback is removed.';
+            $template .= ' before the legacy linked-type fallback is removed.';
             $message   = sprintf(
                 $template,
                 $row['slug'],
@@ -125,6 +131,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * isn't wired yet). Callers treat null as "scan skipped".
      *
      * @return array<int, mixed>|null
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function loadSchemas(): ?array
     {
@@ -153,6 +161,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param array<int,string> $registeredIds Ids known to the registry.
      *
      * @return array<int, array{slug: string, id: string, danglingType: string}>
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function scan(array $schemas, array $registeredIds): array
     {
@@ -193,6 +203,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param mixed $schema Schema entity.
      *
      * @return array<int, mixed>
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractLinkedTypes($schema): array
     {
@@ -200,30 +212,68 @@ class LogDanglingLinkedTypes implements IRepairStep
             return [];
         }
 
-        foreach (['getLinkedTypes', 'getConfiguration'] as $accessor) {
-            if (method_exists($schema, $accessor) === false) {
-                continue;
-            }
+        $direct = $this->extractViaGetLinkedTypes(schema: $schema);
+        if ($direct !== null) {
+            return $direct;
+        }
 
-            try {
-                $value = $schema->{$accessor}();
-            } catch (\Throwable $e) {
-                continue;
-            }
-
-            if ($accessor === 'getLinkedTypes' && is_array($value) === true) {
-                return $value;
-            }
-
-            if ($accessor === 'getConfiguration' && is_array($value) === true) {
-                if (isset($value['linkedTypes']) === true && is_array($value['linkedTypes']) === true) {
-                    return $value['linkedTypes'];
-                }
-            }
-        }//end foreach
-
-        return [];
+        return $this->extractViaGetConfiguration(schema: $schema) ?? [];
     }//end extractLinkedTypes()
+
+    /**
+     * Try to read linkedTypes via getLinkedTypes() accessor.
+     *
+     * @param object $schema Schema entity.
+     *
+     * @return array<int,mixed>|null Array when found, null when not available.
+     */
+    private function extractViaGetLinkedTypes(object $schema): ?array
+    {
+        if (method_exists($schema, 'getLinkedTypes') === false) {
+            return null;
+        }
+
+        try {
+            $value = $schema->getLinkedTypes();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
+    }//end extractViaGetLinkedTypes()
+
+    /**
+     * Try to read linkedTypes via getConfiguration() accessor.
+     *
+     * @param object $schema Schema entity.
+     *
+     * @return array<int,mixed>|null Array when found, null when not available.
+     */
+    private function extractViaGetConfiguration(object $schema): ?array
+    {
+        if (method_exists($schema, 'getConfiguration') === false) {
+            return null;
+        }
+
+        try {
+            $value = $schema->getConfiguration();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (is_array($value) === true
+            && isset($value['linkedTypes']) === true
+            && is_array($value['linkedTypes']) === true
+        ) {
+            return $value['linkedTypes'];
+        }
+
+        return null;
+    }//end extractViaGetConfiguration()
 
     /**
      * Call the first available string accessor on a schema entity.
@@ -232,6 +282,8 @@ class LogDanglingLinkedTypes implements IRepairStep
      * @param array<string> $accessors Ordered list of method names to try.
      *
      * @return string|null
+     *
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function safeStringAccessor($schema, array $accessors): ?string
     {

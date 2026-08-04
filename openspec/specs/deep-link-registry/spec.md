@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: done
 reviewed_date: 2026-02-28
 ---
 
@@ -7,15 +7,15 @@ reviewed_date: 2026-02-28
 
 ## Purpose
 
+@e2e exclude backend deep-link registration service — covered by PHPUnit
+
 The Deep Link Registry enables consuming Nextcloud apps (Procest, Pipelinq, OpenCatalogi, etc.) to claim ownership of specific OpenRegister (register, schema) combinations by registering URL templates at boot time. When Nextcloud's unified search returns objects belonging to a claimed combination, results link directly to the consuming app's detail view instead of OpenRegister's generic object view. This decouples object storage (OpenRegister) from object presentation (consuming apps), allowing each app to own its user experience while sharing a common data layer.
 
 The registry is event-driven and in-memory only: OpenRegister dispatches a `DeepLinkRegistrationEvent` during `Application::boot()`, consuming apps listen and call `register()`, and the resulting mappings are used by `ObjectsProvider` (the unified search provider) to resolve URLs and icons for the current request cycle.
-
 ## Requirements
-
 ### Requirement: Apps SHALL register deep link patterns via boot-time events
 
-Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister schema/register combinations via the `DeepLinkRegistryService`. A registration maps a (register, schema) pair to a URL template and optional icon, so that OpenRegister can generate URLs pointing to the consuming app's detail view instead of its own. Registration is event-driven: OpenRegister dispatches a `DeepLinkRegistrationEvent` during its `Application::boot()` phase. Consuming apps listen for this event and call `register()` on the provided `DeepLinkRegistryService` (or use the convenience `register()` method on the event itself).
+Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister schema/register combinations via the `DeepLinkRegistryService`. A registration maps a (register, schema) pair to a URL template and optional icon, so that OpenRegister can generate URLs pointing to the consuming app's detail view instead of its own. Registration is event-driven: OpenRegister dispatches a `DeepLinkRegistrationEvent` during its `Application::boot()` phase. Consuming apps listen for this event and call `register()` on the provided `DeepLinkRegistryService` (or use the convenience `register()` method on the event itself). The event MUST expose the wrapped registry service via `getRegistry()` so listeners can interact with the registry directly.
 
 **Key classes:**
 - `OCA\OpenRegister\Service\DeepLinkRegistryService` -- In-memory registry with `register()`, `resolve()`, `resolveUrl()`, `resolveIcon()`, `hasRegistrations()`, `reset()` methods
@@ -50,6 +50,12 @@ Consuming Nextcloud apps SHALL be able to register URL patterns for OpenRegister
 - **WHEN** Procest is disabled by the admin
 - **THEN** on the next request, Procest's boot listener does not fire
 - **AND** the `case-management::case` pair has no registration, so search results fall back to OpenRegister's default URL
+
+#### Scenario: Listener obtains the registry service from the event
+- **GIVEN** a consuming app's `DeepLinkRegistrationListener` receives a `DeepLinkRegistrationEvent`
+- **WHEN** the listener calls `getRegistry()` on the event
+- **THEN** it MUST receive the live `DeepLinkRegistryService` instance
+- **AND** calling `register()` on that service MUST be equivalent to calling the event's convenience `register()` method
 
 ### Requirement: Deep link registry SHALL resolve URLs for unified search results
 
@@ -316,6 +322,38 @@ When deep links to OpenRegister objects are shared (via chat, email, or social m
 - **GIVEN** a client wants to generate a rich link preview without parsing HTML
 - **WHEN** the client fetches `GET /api/objects/{register}/{schema}/{id}`
 - **THEN** the `@self` metadata in the response provides `name`, `register`, `schema`, and `updated` fields sufficient for constructing a preview
+
+### Requirement: Deep link registrations SHALL carry an optional display name
+
+`DeepLinkRegistration` SHALL accept an optional `displayName` (string,
+default null) alongside appId, registerSlug, schemaSlug, urlTemplate,
+and icon. `DeepLinkRegistryService::register()` and the
+`DeepLinkRegistrationEvent::register()` convenience SHALL accept the
+same optional trailing parameter. The service SHALL expose
+`resolveDisplayName(int $registerId, int $schemaId): ?string`
+returning the registration's `displayName`, falling back to its
+`appId` when no display name was provided, and `null` for unclaimed
+(register, schema) pairs.
+
+#### Scenario: Registration with a display name
+- GIVEN pipelinq registers `pipelinq::client` with `displayName: 'Pipelinq'`
+- WHEN `resolveDisplayName()` is called for that register/schema pair
+- THEN it returns `'Pipelinq'`
+
+#### Scenario: Registration without a display name falls back to the app id
+- GIVEN procest registers `case-management::case` without a display name
+- WHEN `resolveDisplayName()` is called for that pair
+- THEN it returns `'procest'`
+
+#### Scenario: Unclaimed pair resolves to null
+- GIVEN no registration exists for `case-management::audit-log`
+- WHEN `resolveDisplayName()` is called for that pair
+- THEN it returns `null`
+
+#### Scenario: Existing listeners remain source-compatible
+- GIVEN a consuming app's listener calls the event's `register()` with the pre-extension argument list
+- WHEN OpenRegister dispatches `DeepLinkRegistrationEvent` during boot
+- THEN the registration succeeds with `displayName = null` and no deprecation or error
 
 ## Current Implementation Status
 

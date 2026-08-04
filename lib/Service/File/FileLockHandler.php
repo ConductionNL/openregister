@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -115,6 +119,8 @@ class FileLockHandler
      * @return array Lock metadata.
      *
      * @throws Exception If the file is already locked by another user.
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function lockFile(int $fileId, ?int $ttlMinutes=null): array
     {
@@ -149,6 +155,8 @@ class FileLockHandler
      * @throws Exception If the current user is not the lock owner and not admin.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function unlockFile(int $fileId, bool $force=false): array
     {
@@ -171,7 +179,7 @@ class FileLockHandler
         $this->removeLockEntry(fileId: $fileId);
 
         $this->logger->info(
-            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''),
+            message: "[FileLockHandler] File {$fileId} unlocked by {$currentUserId}".($force === true ? ' (force)' : ''), // phpcs:ignore
             context: ['file' => __FILE__, 'line' => __LINE__]
         );
 
@@ -205,6 +213,8 @@ class FileLockHandler
      * @param int $fileId The file ID.
      *
      * @return array|null Lock metadata or null.
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function getLockInfo(int $fileId): ?array
     {
@@ -250,6 +260,8 @@ class FileLockHandler
      * @return void
      *
      * @throws Exception If the file is locked by another user.
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function assertCanModify(int $fileId): void
     {
@@ -312,7 +324,11 @@ class FileLockHandler
     {
         if ($this->cache !== null) {
             $entry = $this->cache->get(self::CACHE_PREFIX.$fileId);
-            return is_array($entry) === true ? $entry : null;
+            if (is_array($entry) === true) {
+                return $entry;
+            }
+
+            return null;
         }
 
         return ($this->localFallback[$fileId] ?? null);

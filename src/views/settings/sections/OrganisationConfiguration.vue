@@ -28,7 +28,7 @@
 					:clearable="false"
 					label-outside
 					:input-label="t('openregister', 'Default Organisation')"
-					@input="handleDefaultOrganisationChange">
+					@update:modelValue="handleDefaultOrganisationChange">
 					<template #option="{ name, users, owner }">
 						<div class="organisation-option">
 							<OfficeBuilding :size="20" />
@@ -56,9 +56,9 @@
 			<div class="setting-control">
 				<NcCheckboxRadioSwitch
 					id="auto-create-default"
-					:checked="autoCreateDefault"
+					:model-value="autoCreateDefault"
 					type="switch"
-					@update:checked="handleAutoCreateDefaultChange">
+					@update:modelValue="handleAutoCreateDefaultChange">
 					{{ t('openregister', 'Enable auto-creation') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -106,7 +106,7 @@
 		<!-- Actions -->
 		<div class="actions-section">
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="saving || !hasChanges"
 				@click="saveSettings">
 				<template #icon>
@@ -118,7 +118,7 @@
 
 			<NcButton
 				v-if="hasChanges"
-				type="secondary"
+				variant="secondary"
 				:disabled="saving"
 				@click="resetSettings">
 				<template #icon>
@@ -128,7 +128,7 @@
 			</NcButton>
 
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				:disabled="saving"
 				@click="refreshData">
 				<template #icon>
@@ -216,6 +216,7 @@ export default {
 		/**
 		 * Format organisations for NcSelect
 		 *
+		 * @spec exclude settings-section select-option formatting helper (computed)
 		 * @return {Array} Formatted organisation options
 		 */
 		organisationOptions() {
@@ -229,6 +230,7 @@ export default {
 		/**
 		 * Check if there are unsaved changes
 		 *
+		 * @spec exclude settings-section dirty-state detection helper (computed)
 		 * @return {boolean} True if there are changes
 		 */
 		hasChanges() {
@@ -246,6 +248,7 @@ export default {
 		/**
 		 * Load all data
 		 *
+		 * @spec exclude settings-section aggregate-load plumbing (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async loadData() {
@@ -259,6 +262,7 @@ export default {
 		/**
 		 * Load organisations list
 		 *
+		 * @spec exclude settings-section API fetch plumbing for organisations
 		 * @return {Promise<void>}
 		 */
 		async loadOrganisations() {
@@ -282,6 +286,7 @@ export default {
 		/**
 		 * Load current settings
 		 *
+		 * @spec exclude settings-section API fetch plumbing for current settings
 		 * @return {Promise<void>}
 		 */
 		async loadSettings() {
@@ -318,6 +323,7 @@ export default {
 		/**
 		 * Load organisation statistics
 		 *
+		 * @spec exclude settings-section API fetch plumbing for non-critical statistics
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -343,6 +349,7 @@ export default {
 		/**
 		 * Handle default organisation change
 		 *
+		 * @spec exclude settings-section select-change state plumbing
 		 * @param {object} organisation - Selected organisation
 		 * @return {void}
 		 */
@@ -355,6 +362,7 @@ export default {
 		/**
 		 * Handle auto-create default change
 		 *
+		 * @spec exclude settings-section toggle-change state plumbing
 		 * @param {boolean} value - New value
 		 * @return {void}
 		 */
@@ -367,6 +375,7 @@ export default {
 		/**
 		 * Save settings
 		 *
+		 * @spec exclude settings-section save plumbing; PUTs organisation settings (tenant-lifecycle contract)
 		 * @return {Promise<void>}
 		 */
 		async saveSettings() {
@@ -405,6 +414,7 @@ export default {
 		/**
 		 * Reset changes to original values
 		 *
+		 * @spec exclude settings-section reset-to-original state plumbing
 		 * @return {void}
 		 */
 		resetSettings() {
@@ -417,6 +427,7 @@ export default {
 		/**
 		 * Refresh all data
 		 *
+		 * @spec exclude settings-section manual refresh plumbing
 		 * @return {Promise<void>}
 		 */
 		async refreshData() {

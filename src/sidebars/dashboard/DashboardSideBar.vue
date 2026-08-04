@@ -29,7 +29,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:disabled="registerLoading"
 						:input-label="t('openregister', 'Register')"
 						:placeholder="t('openregister', 'Select a register')"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -40,7 +40,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore } from '../../s
 						:disabled="!registerStore.registerItem || schemaLoading"
 						:input-label="t('openregister', 'Schema')"
 						:placeholder="t('openregister', 'Select a schema')"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 			</div>
 
@@ -185,10 +185,18 @@ export default {
 			searchQuery: '',
 			activeTab: 'overview-tab',
 			searchTimeout: null,
-			isSidebarOpen: true,
+			// Dashboard opens with the sidebar collapsed; the user can open it
+			// manually via the standard NC toggle (which writes back here).
+			isSidebarOpen: false,
 		}
 	},
 	computed: {
+		/**
+		 * Build the register dropdown options for the dashboard filter.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -204,6 +212,12 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -223,6 +237,12 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -233,6 +253,12 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -243,6 +269,12 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Flatten the object metadata map into column descriptors for display.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} Metadata column descriptors
+		 */
 		metadataColumns() {
 			return Object.entries(objectStore.metadata).map(([id, meta]) => ({
 				id,
@@ -251,6 +283,7 @@ export default {
 		},
 		/**
 		 * Get system totals from dashboardStore
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
 		systemTotals() {
@@ -258,6 +291,7 @@ export default {
 		},
 		/**
 		 * Get orphaned items from dashboardStore
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {object | null}
 		 */
 		orphanedItems() {
@@ -265,6 +299,7 @@ export default {
 		},
 		/**
 		 * Get filtered registers (excluding system and orphaned)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Array}
 		 */
 		filteredRegisters() {
@@ -275,6 +310,7 @@ export default {
 		},
 		/**
 		 * Get total number of schemas in filtered registers
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {number}
 		 */
 		totalSchemas() {
@@ -304,6 +340,10 @@ export default {
 		// Use immediate: true equivalent in mounted
 		// This watcher will update properties when schema changes
 		'$root.schemaStore.schemaItem': {
+			/**
+			 * @param newSchema
+			 * @spec exclude Vue watch handler plumbing; re-initialises object properties when the selected schema changes.
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					objectStore.initializeProperties(newSchema)
@@ -315,6 +355,9 @@ export default {
 			deep: true,
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of register/schema/object lists for the dashboard filter, no domain logic.
+	 */
 	mounted() {
 		objectStore.initializeColumnFilters()
 		this.registerLoading = true
@@ -341,10 +384,25 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * Apply a new register selection and reset the dependent schema state.
+		 *
+		 * @param {object|null} option - The selected register (or null to clear)
+		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-2
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+		/**
+		 * Apply a schema selection: set the schema, initialise its properties, and
+		 * refresh the object list for the new filter context.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - The selected schema (or null to clear)
+		 * @return {Promise<void>}
+		 */
 		async handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {
@@ -352,6 +410,12 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+		/**
+		 * Re-run the object search for the current register/schema with the search term.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		handleSearch() {
 			if (registerStore.registerItem && schemaStore.schemaItem) {
 				objectStore.refreshObjectList({

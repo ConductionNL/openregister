@@ -97,7 +97,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton
 				v-if="!success"
-				type="primary"
+				variant="primary"
 				:disabled="!selectedOrganisation || joining"
 				@click="joinSelectedOrganisation">
 				<template #icon>
@@ -152,6 +152,9 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook loading initial modal data
+	 */
 	async mounted() {
 		// Set default user to current user
 		this.setDefaultUser()
@@ -175,6 +178,7 @@ export default {
 		 * Get the current user information from Nextcloud
 		 *
 		 * @return {object|null} Current user object
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		getCurrentUser() {
 			if (window.OC && window.OC.getCurrentUser) {
@@ -188,6 +192,7 @@ export default {
 		},
 		/**
 		 * Set default user to current user
+		 * @spec exclude form-state default-user initializer
 		 */
 		setDefaultUser() {
 			const currentUser = this.getCurrentUser()
@@ -203,6 +208,7 @@ export default {
 		},
 		/**
 		 * Load initial list of organisations (first 20)
+		 * @spec exclude form-state loader for organisation options
 		 */
 		async loadInitialOrganisations() {
 			try {
@@ -230,6 +236,7 @@ export default {
 		/**
 		 * Load a preselected organisation
 		 * @param {string} uuid - The UUID of the organisation to load
+		 * @spec exclude form-state loader for preselected organisation
 		 */
 		async loadPreselectedOrganisation(uuid) {
 			try {
@@ -268,6 +275,7 @@ export default {
 		/**
 		 * Handle organisation search with pagination
 		 * @param {string} query - The query to search for
+		 * @spec exclude debounced search UI handler delegating to organisationStore
 		 */
 		async handleOrganisationSearch(query) {
 			// Clear previous timeout
@@ -315,6 +323,7 @@ export default {
 		},
 		/**
 		 * Load initial list of users (first 20)
+		 * @spec exclude form-state loader for user options via OCS API
 		 */
 		async loadInitialUsers() {
 			this.loadingUsers = true
@@ -371,6 +380,7 @@ export default {
 		/**
 		 * Handle user search with pagination
 		 * @param {string} query - The query to search for
+		 * @spec exclude debounced user-search UI handler via OCS API
 		 */
 		async handleUserSearch(query) {
 			// Clear previous timeout
@@ -439,6 +449,7 @@ export default {
 		 * @param {object} option - The organisation option to filter
 		 * @param {string} label - The label of the organisation option
 		 * @param {string} search - The search query
+		 * @spec exclude client-side filter helper for organisation select
 		 */
 		filterOrganisation(option, label, search) {
 			return (
@@ -448,6 +459,7 @@ export default {
 		},
 		/**
 		 * Join the selected organisation
+		 * @spec exclude modal submit handler delegating to organisationStore.joinOrganisation
 		 */
 		async joinSelectedOrganisation() {
 			if (!this.selectedOrganisation) {
@@ -486,6 +498,7 @@ export default {
 		},
 		/**
 		 * Close the modal
+		 * @spec exclude modal close + form-state reset handler
 		 */
 		closeModal() {
 			this.success = false
@@ -502,6 +515,7 @@ export default {
 		},
 		/**
 		 * Handle dialog close event
+		 * @spec exclude modal open/close UI handler
 		 */
 		handleDialogClose() {
 			this.closeModal()

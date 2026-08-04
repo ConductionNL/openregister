@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Referential Integrity
 
 ## Purpose
+
+@e2e exclude backend referential integrity enforcer — covered by PHPUnit
 Enforce referential integrity between register objects connected via `$ref` schema properties so that modifications or deletions of referenced objects propagate correctly according to configurable integrity actions (CASCADE, SET_NULL, SET_DEFAULT, RESTRICT, NO_ACTION). The system MUST maintain data consistency across schemas, detect circular reference chains, support cross-register references, and provide auditable, transactional enforcement that prevents orphaned references while respecting performance constraints on deep reference graphs.
 
 **Source**: Core OpenRegister capability for data consistency across related objects. Aligns with SQL standard referential integrity semantics adapted for a document-oriented register model with JSON Schema `$ref` relations.

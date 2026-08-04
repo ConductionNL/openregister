@@ -9,6 +9,9 @@
  * the source text verbatim) so the bulk-translate UI works for testing
  * without provisioning external API keys.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
  *
@@ -41,6 +44,8 @@ interface TranslationProviderInterface
      * @param string $toLang   BCP 47 target language code.
      *
      * @return string|null The translated text, or null on miss/error.
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string;
 
@@ -52,6 +57,8 @@ interface TranslationProviderInterface
      * vs human translations.
      *
      * @return string The provider identifier slug.
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function getIdentifier(): string;
 }//end interface

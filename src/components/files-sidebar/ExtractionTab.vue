@@ -22,7 +22,7 @@
 			</template>
 			<template #action>
 				<NcButton :disabled="extracting"
-					type="primary"
+					variant="primary"
 					@click="triggerExtraction">
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
@@ -125,7 +125,7 @@
 			<!-- Re-extract button for failed extractions -->
 			<div v-if="status.extractionStatus === 'failed'" class="extraction-tab__actions">
 				<NcButton :disabled="extracting"
-					type="primary"
+					variant="primary"
 					@click="triggerExtraction">
 					<template v-if="extracting" #icon>
 						<NcLoadingIcon :size="20" />
@@ -141,9 +141,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import FileSearchOutline from 'vue-material-design-icons/FileSearchOutline.vue'
 
@@ -192,6 +190,7 @@ export default {
 		 * Human-readable extraction status label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed status-label display helper, UI plumbing
 		 */
 		statusLabel() {
 			const labels = {
@@ -208,6 +207,7 @@ export default {
 		 * Human-readable risk level label.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-label display helper, UI plumbing
 		 */
 		riskLabel() {
 			const labels = {
@@ -224,6 +224,7 @@ export default {
 		 * CSS class for risk level badge.
 		 *
 		 * @return {string}
+		 * @spec exclude computed risk-badge CSS-class display helper, UI plumbing
 		 */
 		riskBadgeClass() {
 			const classes = {
@@ -240,6 +241,7 @@ export default {
 		 * Formatted extraction date.
 		 *
 		 * @return {string}
+		 * @spec exclude computed date-format display helper, UI plumbing
 		 */
 		formattedDate() {
 			if (!this.status.extractedAt) {
@@ -255,6 +257,10 @@ export default {
 
 	watch: {
 		fileId: {
+			/**
+			 * @param newVal
+			 * @spec exclude watcher refetching extraction status on fileId change, UI plumbing
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.fetchExtractionStatus()
@@ -269,6 +275,7 @@ export default {
 
 		/**
 		 * Fetch extraction status from the API.
+		 * @spec exclude API passthrough loading extraction status; extraction contract owned by text-extraction capability
 		 */
 		async fetchExtractionStatus() {
 			this.loading = true
@@ -298,6 +305,7 @@ export default {
 
 		/**
 		 * Trigger text extraction for this file.
+		 * @spec exclude API passthrough triggering extraction + refresh; extraction contract owned by text-extraction capability
 		 */
 		async triggerExtraction() {
 			this.extracting = true

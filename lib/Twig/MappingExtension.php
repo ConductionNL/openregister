@@ -5,6 +5,9 @@
  *
  * Registers Twig functions and filters for the mapping engine.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
@@ -42,7 +45,7 @@ class MappingExtension extends AbstractExtension
      *
      * @return TwigFilter[] Array of Twig filters
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getFilters(): array
     {
@@ -61,13 +64,24 @@ class MappingExtension extends AbstractExtension
      *
      * @return TwigFunction[] Array of Twig functions
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getFunctions(): array
     {
         return [
             new TwigFunction(name: 'executeMapping', callable: [MappingRuntime::class, 'executeMapping']),
             new TwigFunction(name: 'generateUuid', callable: [MappingRuntime::class, 'generateUuid']),
+            // Ported from OpenConnector's copy so mappings authored there keep
+            // evaluating once that copy is retired. `json_decode` is the name
+            // those templates use; `jsonDecode` is OpenRegister's own spelling.
+            // BOTH are registered rather than renaming either — a mapping is
+            // authored data, and renaming a function it calls breaks it
+            // silently at evaluation time.
+            new TwigFunction(name: 'json_decode', callable: [MappingRuntime::class, 'json_decode']),
+            new TwigFunction(name: 'jsonDecode', callable: [MappingRuntime::class, 'jsonDecode']),
+            new TwigFunction(name: 'createSlug', callable: [MappingRuntime::class, 'createSlug']),
+            new TwigFunction(name: 'b64enc', callable: [MappingRuntime::class, 'b64enc']),
+            new TwigFunction(name: 'b64dec', callable: [MappingRuntime::class, 'b64dec']),
         ];
     }//end getFunctions()
 }//end class

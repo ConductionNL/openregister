@@ -19,6 +19,9 @@
  * HTTP error response carries the same machine-readable shape and the
  * `Content-Type: application/problem+json` header.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Oas
  *
@@ -28,7 +31,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md "API-46 Problem Details (RFC 7807)"
+ * @spec openspec/specs/oas-validation/spec.md "API-46 Problem Details (RFC 7807)"
+ * @spec openspec/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
+ * @spec openspec/specs/oas-validation/spec.md "API-46 RFC 7807 — retrofit cross-ref"
  */
 
 declare(strict_types=1);
@@ -37,6 +42,9 @@ namespace OCA\OpenRegister\Service\Oas;
 
 /**
  * Builds RFC 7807 problem-details response payloads.
+ *
+ * @spec openspec/specs/oas-validation/spec.md "Error responses include problem details (API-46 / RFC 7807)"
+ * @spec openspec/specs/oas-validation/spec.md "API-46 RFC 7807 — retrofit cross-ref"
  */
 class ProblemDetailsBuilder
 {
@@ -56,6 +64,8 @@ class ProblemDetailsBuilder
      * @param array  $extensions Free-form extension fields (e.g. `errors`, `code`).
      *
      * @return array<string, mixed> The problem-json payload.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function build(
         int $status,
@@ -65,8 +75,13 @@ class ProblemDetailsBuilder
         string $instance='',
         array $extensions=[]
     ): array {
+        $problemType = self::DEFAULT_TYPE;
+        if ($type !== '') {
+            $problemType = $type;
+        }
+
         $problem = [
-            'type'   => ($type !== '' ? $type : self::DEFAULT_TYPE),
+            'type'   => $problemType,
             'title'  => $title,
             'status' => $status,
         ];
@@ -101,6 +116,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function validationFailed(array $errors, string $detail='', string $instance=''): array
     {
@@ -122,6 +139,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function notFound(string $detail='', string $instance=''): array
     {
@@ -141,6 +160,8 @@ class ProblemDetailsBuilder
      * @param string $instance Instance URI, '' = omit.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-10
      */
     public function conflict(string $detail='', string $instance=''): array
     {

@@ -8,6 +8,9 @@
  * blockers (RESTRICT) and cascade targets, and applies mutations (CASCADE, SET_NULL,
  * SET_DEFAULT) when deletion proceeds.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Object
  *
@@ -37,6 +40,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Dto\DeletionAnalysis;
+use OCP\ICacheFactory;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
@@ -63,6 +67,42 @@ class ReferentialIntegrityService
      * @var int
      */
     private const MAX_DEPTH = 10;
+
+    /**
+     * Distributed-cache namespace for the relation index.
+     *
+     * @var string
+     */
+    private const CACHE_PREFIX = 'openregister_refintegrity';
+
+    /**
+     * Cache key holding the versioned relation index.
+     *
+     * @var string
+     */
+    private const CACHE_KEY_INDEX = 'relation_index';
+
+    /**
+     * Lifetime of a cached relation index, in seconds.
+     *
+     * A backstop only: correctness comes from the version token, not expiry.
+     *
+     * @var int
+     */
+    private const CACHE_TTL = 3600;
+
+    /**
+     * How long a schema edit must have aged before the version token is trusted.
+     *
+     * `openregister_schemas.updated` is `timestamp(0)`, so two edits within the
+     * same clock second collapse onto one value and a token computed between
+     * them would wrongly compare equal. Two seconds clears the truncation
+     * boundary with a full second of slack for jitter between the PHP clock
+     * that writes the stamp and the one that reads it back.
+     *
+     * @var int
+     */
+    private const VERSION_SETTLE_SECONDS = 2;
 
     /**
      * Valid onDelete action values.
@@ -108,8 +148,9 @@ class ReferentialIntegrityService
      * @param AuditTrailMapper $auditTrailMapper   Audit trail mapper for integrity action logging.
      * @param LoggerInterface  $logger             Logger for debugging.
      * @param IDBConnection    $db                 Database connection for raw SQL queries.
+     * @param ICacheFactory    $cacheFactory       Distributed cache for the relation index.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly SchemaMapper $schemaMapper,
@@ -117,7 +158,8 @@ class ReferentialIntegrityService
         private readonly MagicMapper $objectEntityMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly LoggerInterface $logger,
-        private readonly IDBConnection $db
+        private readonly IDBConnection $db,
+        private readonly ICacheFactory $cacheFactory
     ) {
     }//end __construct()
 
@@ -130,7 +172,7 @@ class ReferentialIntegrityService
      *
      * @return DeletionAnalysis The analysis result with targets and blockers.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function canDelete(ObjectEntity $object): DeletionAnalysis
     {
@@ -165,7 +207,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple action types require distinct handling paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function applyDeletionActions(
         DeletionAnalysis $analysis,
@@ -220,7 +262,8 @@ class ReferentialIntegrityService
                 cascadeTargets: $cascadeTargets,
                 userId: $userId,
                 cascadeSource: $cascadeSource,
-                triggerSchemaSlug: $triggerSchemaSlug
+                triggerSchemaSlug: $triggerSchemaSlug,
+                organisationId: $organisationId
             );
         }
     }//end applyDeletionActions()
@@ -238,7 +281,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function logRestrictBlock(
         string $objectUuid,
@@ -281,7 +324,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if any schema has onDelete config referencing this schema.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function hasIncomingOnDeleteReferences(string $schemaId): bool
     {
@@ -296,7 +339,7 @@ class ReferentialIntegrityService
      *
      * @return bool True if the value is valid.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function isValidOnDeleteAction(string $value): bool
     {
@@ -313,7 +356,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * Reduced from 19 to ~12 by extracting buildSchemaRegisterMap + indexRelationsForSchema.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function ensureRelationIndex(): void
     {
@@ -321,9 +364,35 @@ class ReferentialIntegrityService
             return;
         }
 
-        $this->relationIndex     = [];
-        $this->schemaCache       = [];
-        $this->schemaRegisterMap = [];
+        // Fast path: the index is a small pure-array derivative of the schema
+        // definitions, which change rarely, so it survives across requests in
+        // the distributed cache. Every delete used to rebuild it, and that
+        // rebuild hydrates EVERY schema on the instance purely to discover
+        // which ones declare an onDelete relation — measured at ~270 ms of an
+        // ~800 ms delete against 1,935 schemas, of which only 121 can
+        // contribute.
+        //
+        // Correctness rests entirely on the version token, and the token is
+        // trusted only when it can be shown to have settled — see
+        // {@see schemaCatalogueVersion()}, which returns null whenever that
+        // cannot be established. A null token bypasses the cache in BOTH
+        // directions: nothing is read, and nothing is written back. This gate
+        // is deliberately asymmetric. A missed cache hit costs milliseconds; a
+        // missed RESTRICT destroys data the user asked the system to protect.
+        $version = $this->schemaCatalogueVersion();
+        $cache   = $this->cacheFactory->createDistributed(self::CACHE_PREFIX);
+        if ($version !== null) {
+            $cached = $cache->get(self::CACHE_KEY_INDEX);
+            if (is_array($cached) === true
+                && ($cached['version'] ?? null) === $version
+                && is_array($cached['index'] ?? null) === true
+            ) {
+                $this->relationIndex = $cached['index'];
+                return;
+            }
+        }
+
+        $this->relationIndex = [];
 
         try {
             $allSchemas = $this->schemaMapper->findAll(
@@ -338,14 +407,156 @@ class ReferentialIntegrityService
             return;
         }
 
+        foreach ($allSchemas as $schema) {
+            $this->indexRelationsForSchema(schema: $schema, allSchemas: $allSchemas);
+        }
+
+        if ($version !== null) {
+            $cache->set(
+                self::CACHE_KEY_INDEX,
+                [
+                    'version' => $version,
+                    'index'   => $this->relationIndex,
+                ],
+                self::CACHE_TTL
+            );
+        }
+
+    }//end ensureRelationIndex()
+
+    /**
+     * Compute a token that changes whenever any schema definition changes.
+     *
+     * A narrow projection — `id`, `version`, `updated` — over the schema table
+     * stands in for hydrating the whole catalogue. It reads three small columns
+     * instead of decoding 1,935 JSON property blobs, and it is folded into one
+     * digest in PHP rather than in SQL so no database-specific aggregate
+     * (`string_agg` / `group_concat`) is required.
+     *
+     * Three independent signals make it move:
+     *
+     *  1. The row set itself — an inserted or deleted schema changes the digest
+     *     regardless of any timestamp.
+     *  2. `version`, which {@see \OCA\OpenRegister\Db\SchemaMapper::updateFromArray()}
+     *     bumps on every edit that does not name a version explicitly.
+     *  3. `updated`, which SchemaMapper::update() now stamps on every edit. It
+     *     previously never moved at all, which is precisely how an edit that
+     *     added an incoming RESTRICT relation could leave this index stale and
+     *     let a protected parent be deleted.
+     *
+     * **The whole-second window.** `updated` is `timestamp(0)`, so two edits in
+     * the same clock second are indistinguishable, and an index built between
+     * them would carry a token that still matches. Signal 2 usually covers
+     * this, but a caller that supplies its own `version` defeats it, so the
+     * window is closed structurally instead: a token whose newest `updated` has
+     * not yet aged past the truncation boundary is refused outright. For the
+     * couple of seconds after any schema edit, deletes take the slow path and
+     * are correct by construction; after that the token is provably settled.
+     *
+     * Returning null on any failure — unreadable table, unparseable timestamp,
+     * a stamp in the future — disables caching for this call rather than
+     * risking a stale referential-integrity index.
+     *
+     * @return string|null The version token, or null when it cannot be trusted.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function schemaCatalogueVersion(): ?string
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->select('id', 'version', 'updated')
+                ->from('openregister_schemas');
+            $result = $qb->executeQuery();
+            $rows   = $result->fetchAll();
+            $result->closeCursor();
+
+            $parts  = [];
+            $newest = null;
+            foreach ($rows as $row) {
+                $stamp   = (string) ($row['updated'] ?? '');
+                $parts[] = ((string) ($row['id'] ?? '')).':'
+                    .((string) ($row['version'] ?? '')).':'.$stamp;
+
+                if ($stamp === '') {
+                    continue;
+                }
+
+                $epoch = strtotime($stamp);
+                if ($epoch === false) {
+                    // An unparseable stamp means the freshness of this row
+                    // cannot be established, so the token cannot be trusted.
+                    return null;
+                }
+
+                if ($newest === null || $epoch > $newest) {
+                    $newest = $epoch;
+                }
+            }
+
+            // Refuse a token that has not settled past the timestamp(0)
+            // truncation boundary. A stamp in the future (clock skew, or a
+            // caller-supplied value) yields a negative age and is refused by
+            // the same comparison.
+            if ($newest !== null && (time() - $newest) < self::VERSION_SETTLE_SECONDS) {
+                return null;
+            }
+
+            sort($parts);
+
+            return count($parts).'|'.md5(implode("\n", $parts));
+        } catch (\Throwable $e) {
+            $this->logger->debug(
+                message: '[ReferentialIntegrity] Could not compute schema catalogue version',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return null;
+        }//end try
+
+    }//end schemaCatalogueVersion()
+
+    /**
+     * Hydrate the schema entities and schema-to-register map on demand.
+     *
+     * Split out of {@see ensureRelationIndex()} because these two structures are
+     * only read while APPLYING an integrity action (cascade / set-null /
+     * required-property checks). The overwhelmingly common delete has no
+     * incoming onDelete references at all and answers from the relation index
+     * alone, so it must not pay for hydrating the schema catalogue.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function ensureSchemaDetail(): void
+    {
+        if ($this->schemaCache !== null) {
+            return;
+        }
+
+        $this->schemaCache       = [];
+        $this->schemaRegisterMap = [];
+
+        try {
+            $allSchemas = $this->schemaMapper->findAll(
+                _rbac: false,
+                _multitenancy: false
+            );
+        } catch (\Exception $e) {
+            $this->logger->warning(
+                message: '[ReferentialIntegrity] Failed to load schemas for detail cache',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+            return;
+        }
+
         $this->buildSchemaRegisterMap();
 
         foreach ($allSchemas as $schema) {
             $this->schemaCache[(string) $schema->getId()] = $schema;
-            $this->indexRelationsForSchema(schema: $schema, allSchemas: $allSchemas);
         }
 
-    }//end ensureRelationIndex()
+    }//end ensureSchemaDetail()
 
     /**
      * Build a map from schema ID to register by scanning magic table names.
@@ -354,7 +565,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function buildSchemaRegisterMap(): void
     {
@@ -376,7 +587,11 @@ class ReferentialIntegrityService
             // in unit tests) degrades to the MySQL syntax rather than fatal-erroring.
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos(get_debug_type($platform), 'PostgreSQL') !== false;
-            $schemaFn   = $isPostgres === true ? 'current_schema()' : 'DATABASE()';
+            $schemaFn   = 'DATABASE()';
+            if ($isPostgres === true) {
+                $schemaFn = 'current_schema()';
+            }//end if
+
             // phpcs:ignore Generic.Files.LineLength.MaxExceeded -- SQL query must stay as single string.
             $sql  = "SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'oc_openregister_table_%' AND table_schema = {$schemaFn}";
             $stmt = $this->db->prepare($sql);
@@ -425,7 +640,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function indexRelationsForSchema(\OCA\OpenRegister\Db\Schema $schema, array $allSchemas): void
     {
@@ -474,7 +689,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The uppercase onDelete action, or null if not set.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function extractOnDelete(array $property): ?string
     {
@@ -494,7 +709,7 @@ class ReferentialIntegrityService
      *
      * @return string|null The $ref value, or null if not a relation property.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function extractTargetRef(array $property): ?string
     {
@@ -523,7 +738,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple resolution strategies needed
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function resolveSchemaRef(string $ref, array $allSchemas): ?string
     {
@@ -566,7 +781,7 @@ class ReferentialIntegrityService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple action types and fallback chains create many paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Core algorithm that handles all 5 action types inline
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function walkDeletionGraph(
         ObjectEntity $object,
@@ -750,7 +965,7 @@ class ReferentialIntegrityService
      *
      * @return ObjectEntity[] Matching objects.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function findReferencingObjects(
         string $sourceSchemaId,
@@ -759,6 +974,8 @@ class ReferentialIntegrityService
         bool $isArray
     ): array {
         $candidates = [];
+
+        $this->ensureSchemaDetail();
 
         // Optimized path: search directly in the specific magic table using the property column.
         $register = $this->schemaRegisterMap[$sourceSchemaId] ?? null;
@@ -871,7 +1088,7 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Handles PostgreSQL/MySQL and array/scalar variants
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function findReferencingInMagicTable(
         Register $register,
@@ -939,7 +1156,12 @@ class ReferentialIntegrityService
                     $decoded = json_decode($deleted, true);
                 }
 
-                $entity->setDeleted(is_array($decoded) === true ? $decoded : []);
+                $deletedValue = [];
+                if (is_array($decoded) === true) {
+                    $deletedValue = $decoded;
+                }
+
+                $entity->setDeleted($deletedValue);
             }
 
             // Set object with at least the property that matched.
@@ -958,10 +1180,12 @@ class ReferentialIntegrityService
      *
      * @return bool True if the property is required.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isRequiredProperty(string $schemaId, string $propertyName): bool
     {
+        $this->ensureSchemaDetail();
+
         $schema = $this->schemaCache[$schemaId] ?? null;
         if ($schema === null) {
             return false;
@@ -978,10 +1202,12 @@ class ReferentialIntegrityService
      *
      * @return mixed The default value, or null if not set.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getDefaultValue(string $schemaId, string $propertyName): mixed
     {
+        $this->ensureSchemaDetail();
+
         $schema = $this->schemaCache[$schemaId] ?? null;
         if ($schema === null) {
             return null;
@@ -1011,7 +1237,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function logIntegrityAction(
         string $action,
@@ -1065,7 +1291,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function applySetNull(array $target): void
     {
@@ -1124,7 +1350,7 @@ class ReferentialIntegrityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function applySetDefault(array $target): void
     {
@@ -1161,13 +1387,275 @@ class ReferentialIntegrityService
     }//end applySetDefault()
 
     /**
-     * Apply CASCADE deletes in batch, grouped by register+schema.
+     * Apply CASCADE deletes with batched resolution, batched soft-delete writes
+     * and one multi-row audit INSERT.
      *
-     * Groups cascade targets by their register+schema pair, resolves entities
-     * once per group, and calls MagicMapper::deleteObjects() in bulk.
-     * Falls back to individual deletion for targets without register info.
+     * PERF: the previous implementation fed every target through
+     * MagicMapper::deleteObjects(), which runs a full cross-magic-table scan
+     * (findAcrossAllSources) PER UUID, and wrote one single-row audit INSERT per
+     * target. For N cascade targets that is ~N cross-table scans + N INSERTs
+     * inside the delete transaction. This method mirrors the legacy-cascade
+     * batch path (DeleteObject::cascadeDeleteObjects): ONE batched cross-table
+     * lookup, one CASE-UPDATE per magic table via
+     * MagicMapper::softDeleteMultipleObjectEntities() (which dispatches the
+     * per-object updating/updated event pairs), and ONE multi-row audit INSERT.
+     *
+     * Targets the uuid-based batch lookup cannot resolve — and every target
+     * when the batched resolve or write fails — fall back to the unchanged
+     * per-object pipeline ({@see applyPerObjectCascadeDelete()}), fail-soft.
      *
      * @param array       $cascadeTargets    The cascade targets from DeletionAnalysis (already reversed).
+     * @param string      $userId            The user performing the deletion.
+     * @param string      $cascadeSource     The UUID of the root object triggering the cascade.
+     * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
+     * @param string|null $organisationId    The active organisation ID for deletion attribution.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function applyBatchCascadeDelete(
+        array $cascadeTargets,
+        string $userId,
+        string $cascadeSource,
+        ?string $triggerSchemaSlug,
+        ?string $organisationId=null
+    ): void {
+        $uuids = [];
+        foreach ($cascadeTargets as $target) {
+            $uuids[] = (string) $target['objectUuid'];
+        }
+
+        $uuids = array_values(array_unique($uuids));
+
+        // 1. Resolve every cascade target in ONE batched cross-table lookup.
+        // Only live rows are wanted: already soft-deleted targets stay on the
+        // per-object fallback, which no-ops their write (prior behaviour).
+        $resolved = [];
+        try {
+            $resolved = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+                uuids: $uuids,
+                includeDeleted: false
+            );
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ReferentialIntegrity] Batched cascade lookup failed; falling back to per-object deletes',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }
+
+        // 2. One soft-delete UPDATE per magic table (+ per-object event pairs).
+        [$handled, $deleted] = $this->batchCascadeSoftDelete(
+            targets: $resolved,
+            userId: $userId,
+            organisationId: $organisationId
+        );
+
+        // 3. One multi-row audit INSERT covering every batch-deleted target.
+        $this->writeBatchCascadeAuditTrails(
+            cascadeTargets: $cascadeTargets,
+            deleted: $deleted,
+            cascadeSource: $cascadeSource,
+            triggerSchemaSlug: $triggerSchemaSlug
+        );
+
+        // 4. Per-object fallback for targets the batch did not take care of.
+        $fallbackTargets = [];
+        foreach ($cascadeTargets as $target) {
+            if (isset($handled[$target['objectUuid']]) === false) {
+                $fallbackTargets[] = $target;
+            }
+        }
+
+        if (empty($fallbackTargets) === false) {
+            $this->applyPerObjectCascadeDelete(
+                cascadeTargets: $fallbackTargets,
+                userId: $userId,
+                cascadeSource: $cascadeSource,
+                triggerSchemaSlug: $triggerSchemaSlug
+            );
+        }
+    }//end applyBatchCascadeDelete()
+
+    /**
+     * Soft-delete a batch of resolved cascade targets.
+     *
+     * Applies the same deletion attribution metadata shape as
+     * DeleteObject::delete() and the legacy-cascade batch write, then persists
+     * via one UPDATE per magic table (MagicMapper::softDeleteMultipleObjectEntities,
+     * which also dispatches the per-object updating/updated event pairs — a
+     * hook stopping propagation skips that target's write and the target is
+     * NOT force-retried per-object).
+     *
+     * @param ObjectEntity[] $targets        The batch-resolved cascade target entities.
+     * @param string         $userId         The user performing the deletion.
+     * @param string|null    $organisationId The active organisation ID for attribution.
+     *
+     * @return array{0: array<string, true>, 1: array<string, ObjectEntity>} Two maps keyed
+     *                             by uuid: [0] every target the batch took care of
+     *                             (deleted OR deliberately skipped by a hook — the
+     *                             caller must not retry these), [1] the targets that
+     *                             were actually soft-deleted (audit rows are written
+     *                             for these). Both empty when the batched write
+     *                             failed entirely — the caller then falls back to
+     *                             the per-object pipeline for every target.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function batchCascadeSoftDelete(array $targets, string $userId, ?string $organisationId): array
+    {
+        if (empty($targets) === true) {
+            return [[], []];
+        }
+
+        $deletedAt = (new DateTime())->format(DateTime::ATOM);
+
+        $handled     = [];
+        $oldEntities = [];
+        foreach ($targets as $entity) {
+            $uuid = $entity->getUuid();
+            if ($uuid === null || $uuid === '') {
+                continue;
+            }
+
+            $handled[$uuid]     = true;
+            $oldEntities[$uuid] = clone $entity;
+            $entity->setDeleted(
+                [
+                    'deletedBy'    => $userId,
+                    'deletedAt'    => $deletedAt,
+                    'objectId'     => $uuid,
+                    'organisation' => $organisationId,
+                ]
+            );
+        }
+
+        try {
+            $deletedEntities = $this->objectEntityMapper->softDeleteMultipleObjectEntities(
+                entities: $targets,
+                oldEntities: $oldEntities
+            );
+        } catch (\Throwable $e) {
+            // Nothing was handled — the caller retries every target via the
+            // per-object pipeline.
+            $this->logger->error(
+                message: '[ReferentialIntegrity] Batched cascade soft delete failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'error' => $e->getMessage(),
+                ]
+            );
+            return [[], []];
+        }
+
+        $deleted = [];
+        foreach ($deletedEntities as $entity) {
+            $uuid = $entity->getUuid();
+            if ($uuid !== null && $uuid !== '') {
+                $deleted[$uuid] = $entity;
+            }
+        }
+
+        return [$handled, $deleted];
+    }//end batchCascadeSoftDelete()
+
+    /**
+     * Write the audit rows for batch-deleted cascade targets in one bulk INSERT.
+     *
+     * One row per analysis target (a target referenced through two properties
+     * gets two rows, matching the per-object path), each pre-built through
+     * AuditTrailMapper::buildAuditTrail() with action
+     * `referential_integrity.cascade_delete` and the canonical cascade-context
+     * fold (triggerObject/triggerSchema/action_type/property). Audit failures
+     * are logged but never abort the cascade — parity with the per-object
+     * path's fail-soft logIntegrityAction().
+     *
+     * @param array                       $cascadeTargets    All cascade targets (already reversed).
+     * @param array<string, ObjectEntity> $deleted           Batch-deleted entities keyed by uuid.
+     * @param string                      $cascadeSource     The UUID of the root object triggering the cascade.
+     * @param string|null                 $triggerSchemaSlug Schema slug of the trigger object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/deletion-audit-trail/spec.md
+     */
+    private function writeBatchCascadeAuditTrails(
+        array $cascadeTargets,
+        array $deleted,
+        string $cascadeSource,
+        ?string $triggerSchemaSlug
+    ): void {
+        if (empty($deleted) === true) {
+            return;
+        }
+
+        $rows = [];
+        foreach ($cascadeTargets as $target) {
+            $entity = ($deleted[$target['objectUuid']] ?? null);
+            if ($entity === null) {
+                continue;
+            }
+
+            try {
+                $rows[] = $this->auditTrailMapper->buildAuditTrail(
+                    old: $entity,
+                    new: null,
+                    action: 'referential_integrity.cascade_delete',
+                    cascadeContext: [
+                        'triggerObject' => $cascadeSource,
+                        'triggerSchema' => $triggerSchemaSlug,
+                        'action_type'   => 'referential_integrity.cascade_delete',
+                        'property'      => ($target['property'] ?? null),
+                    ]
+                );
+            } catch (\Throwable $e) {
+                $this->logger->warning(
+                    message: '[ReferentialIntegrity] Could not build cascade audit row',
+                    context: [
+                        'file'  => __FILE__,
+                        'line'  => __LINE__,
+                        'uuid'  => $target['objectUuid'],
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }//end try
+        }//end foreach
+
+        if (empty($rows) === true) {
+            return;
+        }
+
+        try {
+            $this->auditTrailMapper->insertAuditTrails(entries: $rows);
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[ReferentialIntegrity] Bulk cascade audit insert failed',
+                context: [
+                    'file'  => __FILE__,
+                    'line'  => __LINE__,
+                    'count' => count($rows),
+                    'error' => $e->getMessage(),
+                ]
+            );
+        }//end try
+    }//end writeBatchCascadeAuditTrails()
+
+    /**
+     * Apply CASCADE deletes per object, grouped by register+schema (legacy fallback).
+     *
+     * Preserved verbatim as the fallback pipeline for targets the batched path
+     * cannot handle: groups cascade targets by their register+schema pair and
+     * calls MagicMapper::deleteObjects() in bulk (which re-resolves each uuid
+     * individually). Falls back to individual deletion for targets without
+     * register info. Each target gets its own single-row audit insert with the
+     * legacy changed-shape.
+     *
+     * @param array       $cascadeTargets    The cascade targets needing per-object handling.
      * @param string      $userId            The user performing the deletion.
      * @param string      $cascadeSource     The UUID of the root object triggering the cascade.
      * @param string|null $triggerSchemaSlug Schema slug of the trigger object for logging.
@@ -1176,9 +1664,9 @@ class ReferentialIntegrityService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Groups targets and handles entity resolution per group
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-1
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
-    private function applyBatchCascadeDelete(
+    private function applyPerObjectCascadeDelete(
         array $cascadeTargets,
         string $userId,
         string $cascadeSource,
@@ -1246,5 +1734,5 @@ class ReferentialIntegrityService
                 );
             }
         }//end foreach
-    }//end applyBatchCascadeDelete()
+    }//end applyPerObjectCascadeDelete()
 }//end class

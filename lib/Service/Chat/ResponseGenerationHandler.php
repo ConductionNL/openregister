@@ -16,6 +16,9 @@
  * exactly as before — that branch is load-bearing for the
  * non-streaming endpoint and must not regress.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -26,6 +29,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -34,6 +39,7 @@ use Exception;
 use OCA\OpenRegister\Db\Agent;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Chat\ToolManagementHandler;
+use OCA\OpenRegister\Tool\StreamingToolInstanceWrapper;
 use Psr\Log\LoggerInterface;
 use LLPhant\Chat\OpenAIChat;
 use LLPhant\Chat\OllamaChat;
@@ -41,7 +47,7 @@ use LLPhant\Chat\Message as LLPhantMessage;
 use LLPhant\OpenAIConfig;
 use LLPhant\OllamaConfig;
 use LLPhant\Exception\MissingFeatureException;
-use Psr\Http\Message\StreamInterface;
+use ReflectionClass;
 
 /**
  * ResponseGenerationHandler
@@ -57,6 +63,12 @@ use Psr\Http\Message\StreamInterface;
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   This class is a multi-provider LLM router that
+ *   must reference OpenAI, Ollama, and Fireworks config/chat classes plus the streaming
+ *   infrastructure (StreamYieldChannel, StreamingToolInstanceWrapper, MissingFeatureException).
+ *   Splitting into one class per provider would be the clean long-term solution; for now all
+ *   13 imported types are genuinely load-bearing and cannot be consolidated without an
+ *   architectural refactor tracked as a separate ADR task.
  */
 class ResponseGenerationHandler
 {
@@ -83,6 +95,15 @@ class ResponseGenerationHandler
     private LoggerInterface $logger;
 
     /**
+     * Token/latency usage from the last generateResponse() call, for per-run cost recording
+     * (run-analytics). Populated from the LLPhant chat instance; empty when the provider
+     * does not expose usage. Keys: promptTokens, completionTokens, totalDurationMs, llmSeconds.
+     *
+     * @var array<string, int|float>
+     */
+    public array $lastUsage = [];
+
+    /**
      * Constructor
      *
      * @param SettingsService       $settingsService Settings service for LLM config.
@@ -90,6 +111,8 @@ class ResponseGenerationHandler
      * @param LoggerInterface       $logger          Logger.
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         SettingsService $settingsService,
@@ -143,6 +166,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.NPathComplexity)       Response generation requires many conditional API calls
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) LLM provider configuration cannot be easily split
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateResponse(
         string $userMessage,
@@ -308,9 +333,9 @@ class ResponseGenerationHandler
 
             // Inject the CnAiContext snapshot the widget sends with each
             // message. Without this the LLM has no idea which app the user
-            // is in — so on /apps/openbuilt/ it would call decidesk tools
+            // is in — so on /apps/openbuild/ it would call decidesk tools
             // (or default to OpenRegister-platform language) instead of
-            // routing to openbuilt.*. The snapshot is small and free-form
+            // routing to openbuild.*. The snapshot is small and free-form
             // (typically {app, slug, view, objectId}); we render it as a
             // bullet list so the model can quote individual fields.
             if (empty($cnAiContext) === false) {
@@ -318,9 +343,10 @@ class ResponseGenerationHandler
                 foreach ($cnAiContext as $key => $value) {
                     if (is_scalar($value) === true) {
                         $systemPrompt .= "- {$key}: ".(string) $value."\n";
-                    } else {
-                        $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
+                        continue;
                     }
+
+                    $systemPrompt .= "- {$key}: ".json_encode($value, JSON_UNESCAPED_SLASHES)."\n";
                 }
             }
 
@@ -343,7 +369,7 @@ class ResponseGenerationHandler
                 $functions = $this->toolHandler->convertToolsToFunctions($tools);
             }
 
-            // Initialize $response (and $llmTime) BEFORE entering any
+            // Initialize $response (and $llmTime, $chat) BEFORE entering any
             // provider branch. The Ollama branch skips the OpenAIChat
             // initialisation block; without this default-empty seed the
             // logger access on `$response` below would tank with an
@@ -351,6 +377,9 @@ class ResponseGenerationHandler
             // not to assign — an easy regression vector when a new
             // provider is added. The Fireworks/Ollama branches below
             // overwrite this unconditionally for their own provider.
+            // $chat = null keeps the `instanceof OllamaChat` usage-capture
+            // check below well-defined on every provider path.
+            $chat         = null;
             $response     = '';
             $llmTime      = 0.0;
             $llmStartTime = microtime(true);
@@ -446,6 +475,15 @@ class ResponseGenerationHandler
                 ]
             );
 
+            // Expose the LLM token/latency usage for per-run cost recording (run-analytics).
+            // Only OllamaChat accumulates usage today; other providers leave it empty.
+            $this->lastUsage = [];
+            if ($chat instanceof OllamaChat) {
+                $this->lastUsage = $chat->lastUsage;
+            }
+
+            $this->lastUsage['llmSeconds'] = round($llmTime, 2);
+
             return $response;
         } catch (Exception $e) {
             $this->logger->error(
@@ -497,6 +535,8 @@ class ResponseGenerationHandler
      *
      * @psalm-param  list<\LLPhant\Chat\FunctionInfo\FunctionInfo> $functionInfoObjects
      * @psalm-return list<\LLPhant\Chat\FunctionInfo\FunctionInfo>
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function wrapToolsForStreaming(array $functionInfoObjects, ?StreamYieldChannel $channel): array
     {
@@ -506,7 +546,7 @@ class ResponseGenerationHandler
 
         foreach ($functionInfoObjects as $fi) {
             if (is_object($fi->instance) === true) {
-                $fi->instance = new \OCA\OpenRegister\Tool\StreamingToolInstanceWrapper(
+                $fi->instance = new StreamingToolInstanceWrapper(
                     wrapped: $fi->instance,
                     channel: $channel
                 );
@@ -526,6 +566,8 @@ class ResponseGenerationHandler
      * @param string                  $provider       Provider slug (for logging).
      *
      * @return string The assistant's textual response.
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function invokeChat(
         OpenAIChat|OllamaChat $chat,
@@ -579,11 +621,13 @@ class ResponseGenerationHandler
      * @param OpenAIChat|OllamaChat $chat Configured chat instance
      *
      * @return bool True when the instance has at least one FunctionInfo registered
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function chatHasTools(OpenAIChat|OllamaChat $chat): bool
     {
         try {
-            $refl = new \ReflectionClass($chat);
+            $refl = new ReflectionClass($chat);
             if ($refl->hasProperty(name: 'tools') === false) {
                 return false;
             }
@@ -620,6 +664,8 @@ class ResponseGenerationHandler
      * @return string Assembled assistant text.
      *
      * @throws MissingFeatureException When the provider's streaming surface throws.
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function streamChat(
         OpenAIChat|OllamaChat $chat,
@@ -663,6 +709,8 @@ class ResponseGenerationHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.NPathComplexity)       API call requires handling many response scenarios
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) API error handling requires verbose code
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function callFireworksChatAPIWithHistory(
         string $apiKey,
@@ -744,8 +792,8 @@ class ResponseGenerationHandler
         $response  = curl_exec($ch);
         $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
-
+        // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+        // CurlHandle object is freed when it goes out of scope.
         if ($curlError !== '') {
             throw new Exception("Fireworks API request failed: {$curlError}");
         }

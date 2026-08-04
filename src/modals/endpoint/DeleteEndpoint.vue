@@ -21,7 +21,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				</template>
 				Cancel
 			</NcButton>
-			<NcButton type="error" @click="deleteEndpoint()">
+			<NcButton variant="error" @click="deleteEndpoint()">
 				<template #icon>
 					<TrashCanOutline :size="20" />
 				</template>
@@ -48,6 +48,9 @@ export default {
 		TrashCanOutline,
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		deleteEndpoint() {
 			endpointStore.deleteEndpoint(endpointStore.endpointItem)
 				.then(() => {

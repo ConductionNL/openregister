@@ -81,7 +81,7 @@
 						input-id="extraction-scope"
 						:input-label="t('openregister', 'Extraction Scope')"
 						:options="extractionScopes"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -101,7 +101,7 @@
 						:input-label="t('openregister', 'Text Extraction Engine')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="textExtractors"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
 							<div class="option-item">
 								<span class="option-icon">{{ icon }}</span>
@@ -123,7 +123,7 @@
 							<NcTextField id="dolphin-endpoint"
 								v-model="fileSettings.dolphinApiEndpoint"
 								:placeholder="t('openregister', 'https://api.your-dolphin-instance.com')"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
 								</template>
@@ -139,7 +139,7 @@
 								v-model="fileSettings.dolphinApiKey"
 								type="password"
 								:placeholder="t('openregister', 'Enter your API key')"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<KeyIcon :size="20" />
 								</template>
@@ -149,7 +149,7 @@
 							</p>
 						</div>
 
-						<NcButton type="secondary"
+						<NcButton variant="secondary"
 							@click="testDolphinConnection">
 							<template #icon>
 								<CheckIcon v-if="dolphinConnectionTested === 'success'" :size="20" />
@@ -168,7 +168,7 @@
 						:input-label="t('openregister', 'Extraction Mode')"
 						:disabled="fileSettings.extractionScope.id === 'none'"
 						:options="extractionModes"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -271,7 +271,7 @@
 						<NcCheckboxRadioSwitch
 							v-model="fileSettings.includeInSearch"
 							type="switch"
-							@update:checked="saveSettings">
+							@update:modelValue="saveSettings">
 							Include in Search Results
 						</NcCheckboxRadioSwitch>
 						<p class="setting-description">
@@ -295,7 +295,7 @@
 						input-id="object-extraction-mode"
 						:input-label="t('openregister', 'Object Extraction Mode')"
 						:options="extractionModes"
-						@input="saveObjectSettings">
+						@update:modelValue="saveObjectSettings">
 						<template #option="{ label, description }">
 							<div class="option-item">
 								<span class="option-label">{{ label }}</span>
@@ -322,7 +322,7 @@
 					<NcCheckboxRadioSwitch
 						v-model="fileSettings.entityRecognitionEnabled"
 						type="switch"
-						@update:checked="saveSettings">
+						@update:modelValue="saveSettings">
 						Enable Entity Recognition
 					</NcCheckboxRadioSwitch>
 					<p class="setting-description">
@@ -337,7 +337,7 @@
 						input-id="entity-recognition-method"
 						:input-label="t('openregister', 'Entity Recognition Method')"
 						:options="entityRecognitionMethods"
-						@input="saveSettings">
+						@update:modelValue="saveSettings">
 						<template #option="{ label, description, icon }">
 							<div class="option-item">
 								<span class="option-icon">{{ icon }}</span>
@@ -351,6 +351,71 @@
 					</p>
 				</div>
 
+				<!-- Backend availability (single source of truth: GET backend-state) -->
+				<div v-if="fileSettings.entityRecognitionEnabled && backendState" class="setting-item">
+					<label>{{ t('openregister', 'Detection backends') }}</label>
+					<p class="setting-description backend-summary" role="status">
+						{{ t('openregister', 'Active method: {active}', { active: activeMethodLabel }) }}
+						<span class="backend-summary-sep">·</span>
+						{{ t('openregister', 'Effective: {effective}', { effective: effectiveMethodLabel }) }}
+						<span v-if="effectiveDiffersFromActive" class="backend-badge is-unavailable">
+							{{ t('openregister', 'falling back') }}
+						</span>
+					</p>
+					<ul class="backend-status-list">
+						<li v-for="backend in backendStatusItems"
+							:key="backend.name"
+							class="backend-status-item"
+							:class="{ 'is-active': backend.name === backendState.activeMethod }">
+							<span class="backend-name">{{ backend.label }}</span>
+							<span v-if="backend.name === backendState.activeMethod" class="backend-badge active">
+								{{ t('openregister', 'Active') }}
+							</span>
+							<span v-if="backend.recommended" class="backend-badge recommended">
+								{{ t('openregister', 'Recommended') }}
+							</span>
+							<span class="backend-badge"
+								:class="backend.available ? 'is-available' : 'is-unavailable'">
+								{{ backendStateLabel(backend) }}
+							</span>
+							<span v-if="backend.available && backend.latencyMs !== null" class="backend-latency">
+								{{ backend.latencyMs }} ms
+							</span>
+							<span v-if="backendTestResults[backend.name]"
+								class="backend-test-result"
+								:class="backendTestResults[backend.name]"
+								role="status">
+								<CheckIcon v-if="backendTestResults[backend.name] === 'success'" :size="18" />
+								<AlertCircleIcon v-else :size="18" />
+								<span class="backend-test-text">
+									{{ backendTestResults[backend.name] === 'success' ? t('openregister', 'Reachable') : t('openregister', 'Unreachable') }}
+								</span>
+							</span>
+							<NcButton variant="tertiary"
+								:disabled="testingBackendMethod === backend.name"
+								:aria-label="t('openregister', 'Test connection for {backend}', { backend: backend.label })"
+								@click="testBackend(backend.name)">
+								<template #icon>
+									<NcLoadingIcon v-if="testingBackendMethod === backend.name" :size="20" />
+									<CheckIcon v-else-if="backendTestResults[backend.name] === 'success'" :size="20" />
+									<AlertCircleIcon v-else-if="backendTestResults[backend.name] === 'error'" :size="20" />
+									<RefreshIcon v-else :size="20" />
+								</template>
+								{{ t('openregister', 'Test connection') }}
+							</NcButton>
+						</li>
+					</ul>
+					<p v-if="openAnonymiserHint" class="setting-description backend-hint" role="status">
+						{{ openAnonymiserHint }}
+						<a :href="openAnonymiserInstallLink"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="backend-install-link">
+							{{ t('openregister', 'Install OpenAnonymiser') }}
+						</a>
+					</p>
+				</div>
+
 				<!-- Presidio API Configuration -->
 				<div v-if="fileSettings.entityRecognitionEnabled && showPresidioConfig" class="setting-item api-config">
 					<div class="api-fields">
@@ -359,7 +424,7 @@
 							<NcTextField id="presidio-endpoint"
 								v-model="fileSettings.presidioApiEndpoint"
 								:placeholder="'http://openregister-presidio-analyzer:3000'"
-								@update:value="saveSettings">
+								@update:modelValue="saveSettings">
 								<template #trailing-button-icon>
 									<InformationIcon :size="20" />
 								</template>
@@ -369,7 +434,7 @@
 							</p>
 						</div>
 
-						<NcButton type="secondary"
+						<NcButton variant="secondary"
 							@click="testPresidioConnection">
 							<template #icon>
 								<CheckIcon v-if="presidioConnectionTested === 'success'" :size="20" />
@@ -382,35 +447,83 @@
 					</div>
 				</div>
 
-				<!-- OpenAnonymiser API Configuration -->
+				<!-- OpenAnonymiser source: built-in ExApp (AppAPI) vs external endpoint -->
 				<div v-if="fileSettings.entityRecognitionEnabled && showOpenAnonymiserConfig" class="setting-item api-config">
-					<div class="api-fields">
-						<div class="field-group">
-							<label for="openanonymiser-endpoint">OpenAnonymiser API Endpoint</label>
-							<NcTextField id="openanonymiser-endpoint"
-								v-model="fileSettings.openAnonymiserApiEndpoint"
-								placeholder="http://openregister-openanonymiser:8080"
-								@update:value="saveSettings">
-								<template #trailing-button-icon>
-									<InformationIcon :size="20" />
-								</template>
-							</NcTextField>
+					<fieldset class="openanonymiser-source">
+						<legend>{{ t('openregister', 'OpenAnonymiser source') }}</legend>
+
+						<!-- Internal: detected ExApp via AppAPI -->
+						<NcCheckboxRadioSwitch :model-value="fileSettings.openAnonymiserSource"
+							type="radio"
+							value="internal"
+							name="openanonymiser-source"
+							@update:modelValue="setOpenAnonymiserSource">
+							{{ t('openregister', 'Use the built-in OpenAnonymiser (recommended)') }}
+						</NcCheckboxRadioSwitch>
+
+						<div v-if="fileSettings.openAnonymiserSource === 'internal'" class="source-detail">
 							<p class="field-hint">
-								URL to your OpenAnonymiser instance (Dutch-focused PII detection)
+								{{ t('openregister', 'Calls the installed OpenAnonymiser ExApp directly through AppAPI — no endpoint needed.') }}
 							</p>
+							<p v-if="openAnonymiserHint" class="setting-description backend-hint" role="status">
+								{{ openAnonymiserHint }}
+								<a :href="openAnonymiserInstallLink"
+									target="_blank"
+									rel="noopener noreferrer"
+									class="backend-install-link">
+									{{ t('openregister', 'Install OpenAnonymiser') }}
+								</a>
+							</p>
+							<NcButton variant="secondary"
+								:disabled="testingBackendMethod === 'openanonymiser'"
+								@click="testBackend('openanonymiser')">
+								<template #icon>
+									<NcLoadingIcon v-if="testingBackendMethod === 'openanonymiser'" :size="20" />
+									<CheckIcon v-else-if="backendTestResults.openanonymiser === 'success'" :size="20" />
+									<AlertCircleIcon v-else-if="backendTestResults.openanonymiser === 'error'" :size="20" />
+									<RefreshIcon v-else :size="20" />
+								</template>
+								{{ t('openregister', 'Test connection') }}
+							</NcButton>
 						</div>
 
-						<NcButton type="secondary"
-							@click="testOpenAnonymiserConnection">
-							<template #icon>
-								<CheckIcon v-if="openAnonymiserConnectionTested === 'success'" :size="20" />
-								<AlertCircleIcon v-else-if="openAnonymiserConnectionTested === 'error'" :size="20" />
-								<NcLoadingIcon v-else-if="testingOpenAnonymiser" :size="20" />
-								<RefreshIcon v-else :size="20" />
-							</template>
-							Test Connection
-						</NcButton>
-					</div>
+						<!-- External: operator-entered endpoint -->
+						<NcCheckboxRadioSwitch :model-value="fileSettings.openAnonymiserSource"
+							type="radio"
+							value="external"
+							name="openanonymiser-source"
+							@update:modelValue="setOpenAnonymiserSource">
+							{{ t('openregister', 'Use an external OpenAnonymiser endpoint') }}
+						</NcCheckboxRadioSwitch>
+
+						<div v-if="fileSettings.openAnonymiserSource === 'external'" class="source-detail api-fields">
+							<div class="field-group">
+								<label for="openanonymiser-endpoint">{{ t('openregister', 'OpenAnonymiser API endpoint') }}</label>
+								<NcTextField id="openanonymiser-endpoint"
+									v-model="fileSettings.openAnonymiserApiEndpoint"
+									placeholder="http://openregister-openanonymiser:8080"
+									@update:modelValue="saveSettings">
+									<template #trailing-button-icon>
+										<InformationIcon :size="20" />
+									</template>
+								</NcTextField>
+								<p class="field-hint">
+									{{ t('openregister', 'URL to an external OpenAnonymiser instance (Dutch-focused PII detection)') }}
+								</p>
+							</div>
+
+							<NcButton variant="secondary"
+								@click="testOpenAnonymiserConnection">
+								<template #icon>
+									<CheckIcon v-if="openAnonymiserConnectionTested === 'success'" :size="20" />
+									<AlertCircleIcon v-else-if="openAnonymiserConnectionTested === 'error'" :size="20" />
+									<NcLoadingIcon v-else-if="testingOpenAnonymiser" :size="20" />
+									<RefreshIcon v-else :size="20" />
+								</template>
+								{{ t('openregister', 'Test connection') }}
+							</NcButton>
+						</div>
+					</fieldset>
 				</div>
 			</div>
 		</SettingsCard>
@@ -441,9 +554,9 @@
 				<div class="file-types-grid">
 					<NcCheckboxRadioSwitch v-for="fileType in fileTypes"
 						:key="fileType.extension"
-						:checked.sync="fileType.enabled"
+						v-model="fileType.enabled"
 						type="checkbox"
-						@update:checked="saveSettings">
+						@update:modelValue="saveSettings">
 						<span class="file-type-label">
 							{{ fileType.icon }} {{ fileType.label }}
 							<span class="file-type-extension">(.{{ fileType.extension }})</span>
@@ -546,6 +659,7 @@
 <script>
 import { mapStores } from 'pinia'
 import { translate as t } from '@nextcloud/l10n'
+import { generateUrl } from '@nextcloud/router'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
 import SettingsCard from '../../../components/shared/SettingsCard.vue'
@@ -614,7 +728,17 @@ export default {
 				entityRecognitionMethod: { id: 'regex', label: 'Regex' },
 				presidioApiEndpoint: '',
 				openAnonymiserApiEndpoint: '',
+				// OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (URL).
+				openAnonymiserSource: 'internal',
 			},
+			// Resolved backend state from GET /api/admin/anonymisation/backend-state.
+			backendState: null,
+			// Last probe error code for the openanonymiser backend (drives the install hint).
+			openAnonymiserError: null,
+			// Method name currently being probed via the test-connection endpoint.
+			testingBackendMethod: '',
+			// Persistent per-backend test outcomes: { [method]: 'success' | 'error' }.
+			backendTestResults: {},
 			objectSettings: {
 				extractionMode: { id: 'background', label: 'Background Job' },
 			},
@@ -758,6 +882,8 @@ export default {
 
 		/**
 		 * Check if any file operation is currently running
+		 *
+		 * @spec exclude UI plumbing — derived busy-state for disabling buttons.
 		 */
 		isProcessing() {
 			return this.discoveringFiles || this.extractingFiles || this.retryingFiles
@@ -765,6 +891,8 @@ export default {
 
 		/**
 		 * Show Presidio config when presidio or hybrid is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showPresidioConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
@@ -773,21 +901,141 @@ export default {
 
 		/**
 		 * Show OpenAnonymiser config when openanonymiser is selected
+		 *
+		 * @spec exclude UI plumbing — conditional-render predicate for a settings block.
 		 */
 		showOpenAnonymiserConfig() {
 			const methodId = this.fileSettings.entityRecognitionMethod?.id || 'regex'
 			return methodId === 'openanonymiser'
 		},
+
+		/**
+		 * Per-backend status rows derived from the resolved backend state.
+		 *
+		 * The openanonymiser backend is flagged "recommended" when it is available,
+		 * reflecting ADR-017's auto-select preference even when another method is active.
+		 *
+		 * @spec exclude UI plumbing — derives display rows from backendState.
+		 * @return {Array<object>} Backend status rows.
+		 */
+		backendStatusItems() {
+			if (!this.backendState || !this.backendState.backends) {
+				return []
+			}
+			const labels = {
+				regex: 'Regex',
+				presidio: 'Presidio',
+				openanonymiser: 'OpenAnonymiser',
+				llm: 'LLM',
+				hybrid: 'Hybrid',
+			}
+			return Object.values(this.backendState.backends).map(backend => ({
+				name: backend.name,
+				label: labels[backend.name] || backend.name,
+				available: backend.available,
+				configured: backend.configured,
+				latencyMs: backend.latencyMs,
+				recommended: backend.name === 'openanonymiser' && backend.available,
+			}))
+		},
+
+		/**
+		 * Hint shown when the OpenAnonymiser ExApp is not usable.
+		 *
+		 * @spec exclude UI plumbing — maps the probe error code to a message.
+		 * @return {string|null} The hint text, or null when no hint applies.
+		 */
+		openAnonymiserHint() {
+			switch (this.openAnonymiserError) {
+			case 'appapi_missing':
+				return t('openregister', 'AppAPI is not installed. Install AppAPI and the OpenAnonymiser ExApp to enable Dutch-focused PII detection.')
+			case 'exapp_not_installed':
+				return t('openregister', 'The OpenAnonymiser ExApp is not installed. Install it to enable Dutch-focused PII detection.')
+			case 'exapp_disabled':
+				return t('openregister', 'The OpenAnonymiser ExApp is installed but disabled. Enable it to use it for entity recognition.')
+			default:
+				return null
+			}
+		},
+
+		/**
+		 * Deep link to the OpenAnonymiser ExApp in the App Store discover view.
+		 *
+		 * @spec exclude UI plumbing — static deep link.
+		 * @return {string} The settings deep link.
+		 */
+		openAnonymiserInstallLink() {
+			return generateUrl('/settings/apps/discover/openanonymiser_light')
+		},
+
+		/**
+		 * Map a backend method id to its human-readable label.
+		 *
+		 * @spec exclude UI plumbing — label lookup.
+		 * @return {object} Map of method id to label.
+		 */
+		methodLabels() {
+			return {
+				auto: 'Auto',
+				regex: 'Regex',
+				presidio: 'Presidio',
+				openanonymiser: 'OpenAnonymiser',
+				llm: 'LLM',
+				hybrid: 'Hybrid',
+			}
+		},
+
+		/**
+		 * Human-readable label of the resolved active method.
+		 *
+		 * @spec exclude UI plumbing — derived display label.
+		 * @return {string} The active method label.
+		 */
+		activeMethodLabel() {
+			const active = this.backendState?.activeMethod
+			return this.methodLabels[active] || active || '—'
+		},
+
+		/**
+		 * Human-readable label of the effective method.
+		 *
+		 * @spec exclude UI plumbing — derived display label.
+		 * @return {string} The effective method label.
+		 */
+		effectiveMethodLabel() {
+			const effective = this.backendState?.effectiveMethod
+			return this.methodLabels[effective] || effective || '—'
+		},
+
+		/**
+		 * Whether the effective method differs from the active method (i.e. a fallback occurred).
+		 *
+		 * @spec exclude UI plumbing — derived predicate.
+		 * @return {boolean} True when the effective method falls back.
+		 */
+		effectiveDiffersFromActive() {
+			return Boolean(this.backendState)
+				&& this.backendState.activeMethod !== this.backendState.effectiveMethod
+		},
 	},
 
+	/**
+	 * Load settings and extraction stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to loaders.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		await this.loadSettings()
 		await this.loadExtractionStats()
+		await this.loadBackendState()
 	},
 
 	methods: {
 		/**
 		 * Load file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadSettings() {
 			try {
@@ -840,6 +1088,7 @@ export default {
 					}
 					this.fileSettings.presidioApiEndpoint = settings.presidioApiEndpoint || ''
 					this.fileSettings.openAnonymiserApiEndpoint = settings.openAnonymiserApiEndpoint || ''
+					this.fileSettings.openAnonymiserSource = settings.openAnonymiserSource || 'internal'
 
 					// Load file types
 					if (settings.enabledFileTypes) {
@@ -858,6 +1107,8 @@ export default {
 
 		/**
 		 * Load object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local form state.
 		 */
 		async loadObjectSettings() {
 			try {
@@ -875,7 +1126,110 @@ export default {
 		},
 
 		/**
+		 * Load the resolved anonymisation backend state and capture any ExApp hint.
+		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating backend status.
+		 * @return {Promise<void>}
+		 */
+		async loadBackendState() {
+			try {
+				const state = await this.settingsStore.getAnonymisationBackendState()
+				this.backendState = state
+				this.openAnonymiserError = null
+
+				// Resolve the invisible 'auto' (not-yet-configured) marker to the concrete
+				// recommended method so the dropdown shows a real choice; persisted on save.
+				const currentId = this.fileSettings.entityRecognitionMethod?.id
+				if (state && (currentId === 'auto' || !this.entityRecognitionMethods.some(m => m.id === currentId))) {
+					const resolved = state.activeMethod || 'regex'
+					this.fileSettings.entityRecognitionMethod = this.entityRecognitionMethods.find(m => m.id === resolved)
+						|| this.entityRecognitionMethods[0]
+				}
+
+				// When the ExApp is not available, probe once to capture the precise reason
+				// (appapi_missing / exapp_not_installed / exapp_disabled) for the install hint.
+				if (state && state.backends && state.backends.openanonymiser && state.backends.openanonymiser.available === false) {
+					const probe = await this.settingsStore.testAnonymisationBackend('openanonymiser')
+					this.openAnonymiserError = probe?.error || null
+				}
+			} catch (error) {
+				console.error('Failed to load anonymisation backend state:', error)
+			}
+		},
+
+		/**
+		 * Probe a single backend via the test-connection endpoint and refresh state.
+		 *
+		 * @param {string} method - The backend method to probe.
+		 * @spec exclude UI plumbing — thin store-delegated probe + message.
+		 * @return {Promise<void>}
+		 */
+		async testBackend(method) {
+			try {
+				this.testingBackendMethod = method
+				const probe = await this.settingsStore.testAnonymisationBackend(method)
+
+				if (method === 'openanonymiser') {
+					this.openAnonymiserError = probe?.error || null
+				}
+
+				const reachable = Boolean(probe && probe.reachable)
+				// Persist a per-backend result so the row/button keep showing the outcome.
+				this.backendTestResults = { ...this.backendTestResults, [method]: reachable ? 'success' : 'error' }
+
+				if (reachable) {
+					this.showSaveMessage(t('openregister', 'Connection successful'), 'success')
+				} else {
+					this.showSaveMessage(t('openregister', 'Connection failed: {error}', { error: probe?.error || 'unknown' }), 'error')
+				}
+
+				// Refresh the resolved state so availability indicators reflect the probe.
+				const state = await this.settingsStore.getAnonymisationBackendState()
+				if (state) {
+					this.backendState = state
+				}
+			} catch (error) {
+				console.error('Failed to probe backend:', error)
+				this.backendTestResults = { ...this.backendTestResults, [method]: 'error' }
+				this.showSaveMessage(t('openregister', 'Connection test failed'), 'error')
+			} finally {
+				this.testingBackendMethod = ''
+			}
+		},
+
+		/**
+		 * Set the OpenAnonymiser source (internal ExApp vs external endpoint) and persist.
+		 *
+		 * @param {string} source - 'internal' or 'external'.
+		 * @spec exclude UI plumbing — radio handler delegating to save.
+		 * @return {Promise<void>}
+		 */
+		async setOpenAnonymiserSource(source) {
+			this.fileSettings.openAnonymiserSource = source
+			await this.saveSettings()
+		},
+
+		/**
+		 * Human-readable availability label for a backend status row.
+		 *
+		 * @param {object} backend - A backend status row.
+		 * @spec exclude UI plumbing — formats an availability label.
+		 * @return {string} The label.
+		 */
+		backendStateLabel(backend) {
+			if (backend.available) {
+				return t('openregister', 'Available')
+			}
+			if (backend.configured) {
+				return t('openregister', 'Unavailable')
+			}
+			return t('openregister', 'Not configured')
+		},
+
+		/**
 		 * Save file configuration settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveSettings() {
 			try {
@@ -895,10 +1249,14 @@ export default {
 					entityRecognitionMethod: this.fileSettings.entityRecognitionMethod?.id || 'regex',
 					presidioApiEndpoint: this.fileSettings.presidioApiEndpoint || '',
 					openAnonymiserApiEndpoint: this.fileSettings.openAnonymiserApiEndpoint || '',
+					openAnonymiserSource: this.fileSettings.openAnonymiserSource || 'internal',
 					enabledFileTypes: this.fileTypes
 						.filter(ft => ft.enabled)
 						.map(ft => ft.extension),
 				})
+
+				// Refresh resolved backend state so the active/recommended indicators stay in sync.
+				await this.loadBackendState()
 
 				// Settings saved silently - no success message
 			} catch (error) {
@@ -909,6 +1267,8 @@ export default {
 
 		/**
 		 * Save object text extraction settings
+		 *
+		 * @spec exclude UI plumbing — admin-settings save delegating to the store.
 		 */
 		async saveObjectSettings() {
 			try {
@@ -925,6 +1285,8 @@ export default {
 
 		/**
 		 * Test Dolphin API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testDolphinConnection() {
 			try {
@@ -958,6 +1320,8 @@ export default {
 
 		/**
 		 * Test Presidio API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testPresidioConnection() {
 			try {
@@ -992,6 +1356,8 @@ export default {
 
 		/**
 		 * Test OpenAnonymiser API connection
+		 *
+		 * @spec exclude UI plumbing — thin store-delegated connection test + message.
 		 */
 		async testOpenAnonymiserConnection() {
 			try {
@@ -1026,6 +1392,8 @@ export default {
 
 		/**
 		 * Load extraction statistics
+		 *
+		 * @spec exclude UI plumbing — admin-settings stats load hydrating local display state.
 		 */
 		async loadExtractionStats() {
 			try {
@@ -1049,6 +1417,8 @@ export default {
 
 		/**
 		 * Discover files in Nextcloud that aren't tracked yet
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async discoverFiles() {
 			this.discoveringFiles = true
@@ -1077,6 +1447,8 @@ export default {
 
 		/**
 		 * Extract pending files (files already staged with status='pending')
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async extractAllPendingFiles() {
 			this.extractingFiles = true
@@ -1105,6 +1477,8 @@ export default {
 
 		/**
 		 * Retry failed file extractions
+		 *
+		 * @spec exclude UI plumbing — store-delegated action trigger + feedback message.
 		 */
 		async reprocessFailedFiles() {
 			this.retryingFiles = true
@@ -1133,6 +1507,8 @@ export default {
 
 		/**
 		 * Show save message
+		 *
+		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
 		 * @param {string} message - The message to show
 		 * @param {string} type - The type of message to show
 		 */
@@ -1146,6 +1522,8 @@ export default {
 
 		/**
 		 * Format number with thousands separator
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {number} num - The number to format
 		 */
 		formatNumber(num) {
@@ -1536,5 +1914,111 @@ export default {
 	font-size: 14px;
 	color: var(--color-text-maxcontrast);
 	font-weight: 500;
+}
+
+/* Anonymisation backend availability list */
+.backend-status-list {
+	list-style: none;
+	padding: 0;
+	margin: 8px 0 0;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.backend-status-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-hover);
+}
+
+.backend-status-item.is-active {
+	border-left: 3px solid var(--color-primary-element);
+}
+
+.backend-status-item .backend-name {
+	font-weight: 500;
+	min-width: 130px;
+}
+
+.backend-summary {
+	margin: 4px 0 0;
+	font-weight: 500;
+}
+
+.backend-summary-sep {
+	color: var(--color-text-maxcontrast);
+	font-weight: normal;
+}
+
+.openanonymiser-source {
+	border: none;
+	margin: 0;
+	padding: 0;
+}
+
+.openanonymiser-source legend {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.openanonymiser-source .source-detail {
+	margin: 4px 0 12px 28px;
+}
+
+.backend-test-result {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	font-size: 12px;
+}
+
+.backend-test-result.success {
+	color: var(--color-success-text, var(--color-success));
+}
+
+.backend-test-result.error {
+	color: var(--color-error-text, var(--color-error));
+}
+
+.backend-badge {
+	font-size: 12px;
+	padding: 1px 8px;
+	border-radius: var(--border-radius-pill, 16px);
+	border: 1px solid var(--color-border);
+	color: var(--color-text-maxcontrast);
+}
+
+.backend-badge.is-available {
+	color: var(--color-success-text, var(--color-success));
+	border-color: var(--color-success);
+}
+
+.backend-badge.is-unavailable {
+	color: var(--color-error-text, var(--color-error));
+	border-color: var(--color-error);
+}
+
+.backend-badge.recommended {
+	color: var(--color-primary-element-text);
+	background-color: var(--color-primary-element);
+	border-color: var(--color-primary-element);
+}
+
+.backend-latency {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+}
+
+.backend-hint {
+	margin-top: 8px;
+}
+
+.backend-install-link {
+	color: var(--color-primary-element);
+	text-decoration: underline;
 }
 </style>

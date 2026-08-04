@@ -11,6 +11,9 @@
  * Filter list semantics: AND. A row passes only when every filter
  * matches. Empty filter list = pass-through.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *
@@ -20,7 +23,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
  */
 
 declare(strict_types=1);
@@ -53,6 +57,8 @@ class GeoFilterApplier
      * @param GeoFilter[] $filters The filters to apply.
      *
      * @return array The matching rows, in original order.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function applyAll(array $rows, array $filters): array
     {
@@ -78,6 +84,8 @@ class GeoFilterApplier
      * @param GeoFilter[] $filters The filters.
      *
      * @return bool True when the row passes every filter.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function rowMatchesAll(array $row, array $filters): bool
     {
@@ -99,6 +107,8 @@ class GeoFilterApplier
      * @param ?string $property Property name; null = first GeoJSON-shaped value.
      *
      * @return ?array The GeoJSON geometry, or null when none found.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-geo-metadata-kaart/tasks.md#task-1
      */
     public function extractGeometry(array $row, ?string $property): ?array
     {
@@ -123,6 +133,8 @@ class GeoFilterApplier
      * @param mixed $value The candidate.
      *
      * @return ?array The geometry when shape matches, null otherwise.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     private function coerceGeometry(mixed $value): ?array
     {

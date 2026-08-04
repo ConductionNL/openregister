@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Webhooks') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
@@ -34,7 +34,7 @@
 				</div>
 				<div class="viewActions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						@click="openCreateDialog">
 						<template #icon>
 							<Plus :size="20" />
@@ -197,8 +197,8 @@
 		<!-- Search Sidebar -->
 		<template #details>
 			<WebhooksSidebar
-				:search.sync="searchQuery"
-				:enabled.sync="enabledFilter"
+				v-model:search="searchQuery"
+				v-model:enabled="enabledFilter"
 				@update:search="handleSearchUpdate"
 				@update:enabled="handleEnabledUpdate" />
 		</template>
@@ -207,7 +207,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
  */
 import { t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
@@ -275,6 +275,7 @@ export default {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -284,6 +285,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -295,7 +297,7 @@ export default {
 		 *
 		 * @return {Array} Array of property options
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-80
+		 * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-request-interception-must-support-pre-event-webhooks
 		 */
 		selectedEventProperties() {
 			if (!this.newWebhook.events || this.newWebhook.events.length === 0) {
@@ -326,6 +328,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -335,6 +338,7 @@ export default {
 		/**
 		 * Handle search query update
 		 *
+		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
 		 * @param {string} query - Search query
 		 * @return {void}
 		 */
@@ -347,6 +351,7 @@ export default {
 		/**
 		 * Handle enabled filter update
 		 *
+		 * @spec exclude UI plumbing — local filter state + reload; webhook contract owned by webhook-payload-mapping.
 		 * @param {boolean|null} enabled - Enabled filter
 		 * @return {void}
 		 */
@@ -359,6 +364,7 @@ export default {
 		/**
 		 * Load webhooks from the API
 		 *
+		 * @spec exclude UI plumbing — list load + client-side filter/paginate; webhook contract owned by webhook-payload-mapping.
 		 * @return {Promise<void>}
 		 */
 		async loadWebhooks() {
@@ -402,6 +408,7 @@ export default {
 		/**
 		 * Refresh the webhooks list
 		 *
+		 * @spec exclude UI plumbing — delegates to loadWebhooks.
 		 * @return {void}
 		 */
 		refreshWebhooks() {
@@ -411,6 +418,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		previousPage() {
@@ -423,6 +431,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		nextPage() {
@@ -435,6 +444,7 @@ export default {
 		/**
 		 * Test a webhook
 		 *
+		 * @spec exclude UI plumbing — thin POST + toast + list refresh; delivery contract owned by webhook-payload-mapping.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
@@ -464,6 +474,7 @@ export default {
 		/**
 		 * View logs for a webhook
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + router navigation.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {void}
 		 */
@@ -475,6 +486,7 @@ export default {
 		/**
 		 * Toggle webhook enabled status
 		 *
+		 * @spec exclude UI plumbing — thin PUT + toast + list refresh; webhook contract owned by webhook-payload-mapping.
 		 * @param {object} webhook - Webhook object
 		 * @return {Promise<void>}
 		 */
@@ -495,6 +507,7 @@ export default {
 		/**
 		 * Delete a webhook
 		 *
+		 * @spec exclude UI plumbing — thin DELETE + toast + list refresh; webhook contract owned by webhook-payload-mapping.
 		 * @param {number} webhookId - Webhook ID
 		 * @return {Promise<void>}
 		 */
@@ -514,6 +527,7 @@ export default {
 		/**
 		 * Open create webhook dialog
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
 		 * @return {void}
 		 */
 		openCreateDialog() {
@@ -524,6 +538,7 @@ export default {
 		/**
 		 * Open edit webhook dialog
 		 *
+		 * @spec exclude UI plumbing — transfer-data set + modal dispatch.
 		 * @param {object} webhook - Webhook object to edit
 		 * @return {void}
 		 */
@@ -535,6 +550,7 @@ export default {
 		/**
 		 * Format success rate
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {object} webhook - Webhook object
 		 * @return {string} Formatted success rate
 		 */
@@ -549,6 +565,7 @@ export default {
 		/**
 		 * Truncate URL for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} url - Full URL
 		 * @return {string} Truncated URL
 		 */
@@ -561,6 +578,7 @@ export default {
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

@@ -14,7 +14,7 @@
 				</li>
 			</ul>
 		</div>
-		<NcButton type="primary" @click="showCreateForm = !showCreateForm">
+		<NcButton variant="primary" @click="showCreateForm = !showCreateForm">
 			{{ showCreateForm ? 'Cancel' : 'Create Chain' }}
 		</NcButton>
 		<div v-if="showCreateForm" class="create-form">
@@ -26,7 +26,7 @@
 				<label>Status Field</label>
 				<input v-model="newChain.statusField" type="text" class="input-field">
 			</div>
-			<NcButton type="primary" @click="createChain">
+			<NcButton variant="primary" @click="createChain">
 				Save Chain
 			</NcButton>
 		</div>
@@ -38,6 +38,9 @@ import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+/**
+ * @spec openspec/specs/approval-workflow/spec.md
+ */
 export default {
 	name: 'ApprovalChainPanel',
 	components: { NcButton },
@@ -55,6 +58,9 @@ export default {
 		this.fetchChains()
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		async fetchChains() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')
@@ -64,6 +70,9 @@ export default {
 				console.error('Failed to fetch chains:', error)
 			}
 		},
+		/**
+		 * @spec exclude API passthrough creating chain + refetch; approval-chain contract owned by approval-workflow capability
+		 */
 		async createChain() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-chains')

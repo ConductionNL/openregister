@@ -1,11 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 # Webhook Payload Mapping
 
-
 # Webhook Payload Mapping
 ## Purpose
+
+@e2e exclude backend webhook delivery/mapping — covered by PHPUnit
 Extend OpenRegister's existing CloudEvent-based event and webhook infrastructure with configurable payload mapping. The core webhook delivery (WebhookService, WebhookDeliveryJob, CloudEventFormatter) is already implemented. This spec focuses on the Mapping entity integration for payload transformation, advanced filtering, and delivery management. It documents the complete webhook lifecycle as already implemented: registration with URL/events/secret, payload format selection (standard, CloudEvents, Twig-mapped), delivery retry with exponential backoff, delivery logging, HMAC authentication, event filtering by register/schema/conditions, webhook management API, testing/dry-run, async delivery via background jobs, health monitoring through statistics, multi-tenant webhook isolation via organisation scoping, and request interception for pre-event webhooks. The Mapping entity reference allows any subscriber to receive events in whatever format they require (ZGW notifications, FHIR events, CloudEvents, VNG Notificaties API, custom formats) without any hardcoded format knowledge in OpenRegister.
 
 ## Relationship to Existing Implementation
@@ -21,9 +22,7 @@ This spec documents an already-implemented system and validates its behavior:
 - **Multi-tenancy (fully implemented)**: Organisation scoping via `MultiTenancyTrait` on WebhookMapper.
 - **Database migration (fully implemented)**: `Version1Date20260308120000` adds nullable `mapping` column.
 - **What could be extended**: Batch delivery (multiple events per HTTP request), dead-letter queue with admin UI, payload format versioning.
-
 ## Requirements
-
 ### Requirement: Webhook registration MUST capture URL, events, secret, and delivery configuration
 The Webhook entity MUST store all information needed to deliver events to a subscriber, including the target URL, subscribed event classes, optional HMAC secret, HTTP method, custom headers, timeout, and retry policy.
 
@@ -495,6 +494,122 @@ All existing webhook delivery features (signing, retry, logging, filtering) MUST
 #### Scenario: Webhook logging records mapped payload
 - **GIVEN** a mapped webhook is delivered
 - **THEN** the `WebhookLog.payload` MUST contain the mapped payload (what was actually sent to the subscriber)
+
+### Requirement: Mapping Transformation Engine Semantics
+
+The system MUST transform an input array into an output array according to a `Mapping`
+entity's declarative rules via `MappingService::executeMapping(Mapping $mapping, array
+$input, bool $list = false): array`, independent of any caller (webhook delivery, sync,
+enrichment). The engine MUST support the following semantics:
+
+- **Dot-notation source lookup**: each mapping rule's value is first looked up against the
+  input using dot-notation (`adbario/php-dot-notation`); when the input contains that path,
+  the resolved value is copied to the rule's key.
+- **Twig rendering**: when the rule value is not a present input path, it MUST be rendered
+  as a Twig template against the original input, with HTML entities decoded; a render
+  failure MUST throw an `Exception` naming the mapping, key, and value.
+- **Pass-through**: when the mapping's `passThrough` flag is true, the full input MUST seed
+  the output before rules are applied; otherwise the output starts empty.
+- **Key encoding**: input keys MUST have `.` encoded to a safe token before dot-notation
+  processing so literal dots in keys are not misread as path separators.
+- **List mode**: when `$list` is true, the engine MUST apply the mapping to each element of
+  the input, supporting a `listInput` envelope that carries extra shared values merged into
+  every element.
+
+#### Scenario: Source path is copied via dot-notation
+- **GIVEN** a mapping rule whose value matches a dot-notation path present in the input
+- **WHEN** `executeMapping()` runs
+- **THEN** the input value at that path MUST be copied to the rule's output key
+
+#### Scenario: Missing source path is rendered as Twig
+- **GIVEN** a mapping rule whose value is not a present input path
+- **WHEN** `executeMapping()` runs
+- **THEN** the value MUST be rendered as a Twig template against the original input
+- **AND** a Twig render failure MUST throw an exception naming the mapping, key, and value
+
+#### Scenario: Pass-through seeds the output
+- **GIVEN** a mapping with `passThrough` true
+- **WHEN** `executeMapping()` runs
+- **THEN** the full input MUST be present in the output before the rules overwrite mapped keys
+
+#### Scenario: List mode maps each element
+- **GIVEN** `$list` is true and the input is a collection
+- **WHEN** `executeMapping()` runs
+- **THEN** the mapping MUST be applied to each element and the results returned keyed as the input
+
+### Requirement: Webhook delivery logs MUST be listable per-webhook and globally
+`WebhooksController` MUST expose two delivery-log listing endpoints in addition to the
+already-specified `logStats` endpoint: `GET /api/webhooks/{id}/logs` (per-webhook) and
+`GET /api/webhooks/logs` (all webhooks). Both are `@NoAdminRequired` / `@NoCSRFRequired`, accept
+`limit` (default 50) and `offset` (default 0) query parameters, and return `{ results, total }`.
+The per-webhook endpoint MUST validate webhook existence first and the global endpoint MUST
+support optional `webhook_id` and `success` filtering.
+
+#### Scenario: List logs for a specific webhook
+- **GIVEN** webhook ID `7` exists with delivery history
+- **WHEN** `GET /api/webhooks/7/logs?limit=50&offset=0` is called
+- **THEN** the response MUST return HTTP 200 with `{ "results": [...WebhookLog...], "total": <count> }`
+- **AND** logs MUST be fetched via `WebhookLogMapper::findByWebhook(webhookId, limit, offset)`
+
+#### Scenario: Logs for a non-existent webhook
+- **GIVEN** no webhook exists with ID `999`
+- **WHEN** `GET /api/webhooks/999/logs` is called
+- **THEN** the response MUST return HTTP 404 with `{ "error": "Webhook not found" }`
+
+#### Scenario: Log retrieval failure
+- **GIVEN** the log mapper throws a non-`DoesNotExistException`
+- **WHEN** the logs endpoint is called
+- **THEN** the error MUST be logged and the response MUST return HTTP 500 with `{ "error": "Failed to retrieve webhook logs" }`
+
+#### Scenario: List all logs with default total
+- **WHEN** `GET /api/webhooks/logs` is called with no filters
+- **THEN** the response MUST return paginated logs from `WebhookLogMapper::findAll(limit, offset)`
+- **AND** `total` MUST be the count of all logs (unpaginated)
+
+#### Scenario: Filter all logs by webhook_id
+- **GIVEN** `GET /api/webhooks/logs?webhook_id=7`
+- **WHEN** `webhook_id` is non-empty and not `"0"`
+- **THEN** logs MUST be scoped to webhook `7` via `findByWebhook()` and `total` MUST reflect that webhook's full count
+
+#### Scenario: Filter all logs by success status
+- **GIVEN** `GET /api/webhooks/logs?success=false`
+- **WHEN** `success` is one of `true`/`1`/`false`/`0`
+- **THEN** the returned logs MUST be filtered to entries whose `getSuccess()` matches the boolean
+- **AND** `total` MUST be recomputed against the success-filtered full set
+
+### Requirement: Webhook transport internals MUST configure delivery and normalize event identifiers
+
+The webhook delivery layer MUST initialize an HTTP client tolerant of webhook endpoints, resolve dot-notation filter keys against the payload, and normalize event identifiers between the dotted event-type form and the fully qualified event class form. These helpers underpin filtering, the standard payload, and request interception.
+
+#### Scenario: HTTP client is configured for webhook delivery
+
+- **GIVEN** the webhook service is constructed
+- **WHEN** `initializeHttpClient()` runs
+- **THEN** it MUST build a Guzzle client with `timeout: 30`, `connect_timeout: 10`, `verify: false` (self-signed endpoints allowed), `allow_redirects: true`, and `http_errors: false` so 4xx/5xx responses are handled manually rather than thrown
+
+#### Scenario: Dot-notation filter key resolution
+
+- **GIVEN** a payload and a filter key such as `object.status`
+- **WHEN** `getNestedValue()` traverses the payload
+- **THEN** it MUST descend each dot-separated segment and return the nested value, or `null` when any segment is absent
+
+#### Scenario: Short event name derivation
+
+- **GIVEN** a fully qualified event class such as `OCA\OpenRegister\Event\ObjectCreatedEvent`
+- **WHEN** `getShortEventName()` runs
+- **THEN** it MUST return the trailing class segment `ObjectCreatedEvent`, which is the value enriched onto mapping input as `event`
+
+#### Scenario: Event-type to event-class mapping
+
+- **GIVEN** a dotted interception event type such as `object.creating`
+- **WHEN** `eventTypeToEventClass()` runs
+- **THEN** it MUST return `OCA\OpenRegister\Event\ObjectCreatingEvent`, capitalizing the entity and action segments and defaulting the action to `created` when absent
+
+#### Scenario: CloudEvent datacontenttype derives from the request
+
+- **GIVEN** an intercepted HTTP request being formatted as a CloudEvent
+- **WHEN** `CloudEventFormatter::getContentTypeHeader()` runs
+- **THEN** it MUST return the request's `Content-Type` header when present, otherwise default to `application/json`
 
 ## Current Implementation Status
 

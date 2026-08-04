@@ -6,6 +6,9 @@
  * Implements ICalendar to provide a virtual calendar backed by
  * OpenRegister schema objects with date fields.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Calendar
  * @package  OCA\OpenRegister\Calendar
  *
@@ -17,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 
 declare(strict_types=1);
@@ -135,7 +138,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return string The calendar key
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getKey(): string
     {
@@ -147,7 +150,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return string The calendar URI
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getUri(): string
     {
@@ -159,7 +162,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return string|null The display name
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getDisplayName(): ?string
     {
@@ -171,7 +174,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return string|null The CSS hex color
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getDisplayColor(): ?string
     {
@@ -183,7 +186,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return int The permission bitmask
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getPermissions(): int
     {
@@ -195,7 +198,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return bool Always false for virtual calendars
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function isDeleted(): bool
     {
@@ -219,8 +222,8 @@ class RegisterCalendar implements ICalendar
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function search(
         string $pattern='',
@@ -301,7 +304,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return string|null The user ID or null if not a valid user principal
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function extractUserId(string $principalUri): ?string
     {
@@ -319,7 +322,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return array|null The filters array, or null if no timerange
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function buildTimerangeFilters(array $options): ?array
     {
@@ -371,7 +374,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return array Array of Register entities
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function findRegistersForSchema(Schema $schema): array
     {
@@ -406,7 +409,7 @@ class RegisterCalendar implements ICalendar
      *
      * @return bool True if the event matches
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function matchesPattern(array $event, string $pattern): bool
     {

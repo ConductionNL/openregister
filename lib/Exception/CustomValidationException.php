@@ -5,6 +5,9 @@
  *
  * This file contains the exception class for custom validation errors.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -66,7 +69,7 @@ class CustomValidationException extends Exception
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(string $message, array $errors)
     {
@@ -85,7 +88,7 @@ class CustomValidationException extends Exception
      *
      * @return array<string, string|array<string>> The errors array
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getErrors(): array
     {

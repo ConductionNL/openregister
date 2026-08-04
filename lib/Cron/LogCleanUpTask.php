@@ -6,6 +6,9 @@
  * This file contains the background job for cleaning up expired audit trail logs
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Cron
  * @package   OCA\OpenRegister\Cron
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -60,7 +63,7 @@ class LogCleanUpTask extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-15
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -93,18 +96,22 @@ class LogCleanUpTask extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-15
+     * @spec openspec/specs/retention-management/spec.md
      */
     protected function run($argument): void
     {
         try {
-            // Attempt to clear expired logs.
+            // Tombstone expired audit rows. Since or#2265 this destroys the
+            // payload and stamps `purged_at` rather than deleting the row, so
+            // the hash chain stays verifiable across a lawful purge, and
+            // `expires` now follows the RETENTION OF THE OBJECT the row
+            // describes rather than a flat 30 days.
             $logsCleared = $this->auditTrailMapper->clearLogs();
 
             // Log the result for monitoring purposes.
             if ($logsCleared === true) {
                 $this->logger->info(
-                    message: '[LogCleanUpTask] Successfully cleared expired audit trail logs',
+                    message: '[LogCleanUpTask] Tombstoned expired audit trail rows (payload purged, chain preserved)',
                     context: [
                         'file' => __FILE__,
                         'line' => __LINE__,

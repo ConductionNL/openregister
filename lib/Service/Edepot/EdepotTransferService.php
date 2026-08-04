@@ -6,6 +6,9 @@
  * Orchestrates the full e-Depot transfer pipeline: SIP package building,
  * transport, object status tracking, and audit trail logging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -17,9 +20,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-transfer-list-management
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -39,28 +42,20 @@ use Psr\Log\LoggerInterface;
 /**
  * Orchestrator for e-Depot transfer operations.
  *
- * Coordinates SIP package building, transport execution with retry logic,
- * per-object status tracking, audit trail logging, and notifications.
+ * Coordinates SIP package building, transport execution, per-object status
+ * tracking, audit trail logging, and notifications. One run performs a single
+ * transport attempt per outstanding package; durable retry/backoff is owned by
+ * TransferExecutionJob (no in-process wait).
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  */
 class EdepotTransferService
 {
-
-    /**
-     * Maximum number of transport retries.
-     */
-    private const MAX_RETRIES = 3;
-
-    /**
-     * Retry backoff intervals in seconds: 30s, 120s, 480s.
-     *
-     * @var array<int, int>
-     */
-    private const RETRY_BACKOFF = [30, 120, 480];
 
     /**
      * Available SIP profiles.
@@ -76,17 +71,19 @@ class EdepotTransferService
     /**
      * Constructor.
      *
-     * @param SipPackageBuilder    $sipBuilder          The SIP package builder.
-     * @param TransferListService  $transferListService The transfer list service.
-     * @param MagicMapper          $objectMapper        The object mapper.
-     * @param AuditTrailMapper     $auditTrailMapper    The audit trail mapper.
-     * @param IAppConfig           $appConfig           The app configuration.
-     * @param INotificationManager $notificationManager The notification manager.
-     * @param LoggerInterface      $logger              Logger.
+     * @param SipPackageBuilder     $sipBuilder            The SIP package builder.
+     * @param TransferListService   $transferListService   The transfer list service.
+     * @param TransferRecordService $transferRecordService Durable transfer + proof persistence.
+     * @param MagicMapper           $objectMapper          The object mapper.
+     * @param AuditTrailMapper      $auditTrailMapper      The audit trail mapper.
+     * @param IAppConfig            $appConfig             The app configuration.
+     * @param INotificationManager  $notificationManager   The notification manager.
+     * @param LoggerInterface       $logger                Logger.
      */
     public function __construct(
         private readonly SipPackageBuilder $sipBuilder,
         private readonly TransferListService $transferListService,
+        private readonly TransferRecordService $transferRecordService,
         private readonly MagicMapper $objectMapper,
         private readonly AuditTrailMapper $auditTrailMapper,
         private readonly IAppConfig $appConfig,
@@ -96,51 +93,95 @@ class EdepotTransferService
     }//end __construct()
 
     /**
-     * Execute a transfer for an approved transfer list.
+     * Execute a transfer for an approved transfer list (single attempt).
+     *
+     * Backward-compatible entry point: runs one transport attempt (attempt 1).
+     * Long-horizon cross-request retry is orchestrated by
+     * {@see \OCA\OpenRegister\BackgroundJob\TransferExecutionJob}, which calls
+     * {@see self::executeAttempt()} directly with the current attempt number.
      *
      * @param array<string,mixed> $transferList The approved transfer list data.
      * @param TransportInterface  $transport    The transport to use.
      *
      * @return array<string,mixed> The updated transfer list with results.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-38
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Requirement: One job run performs one transport attempt per package)
      */
     public function executeTransfer(array $transferList, TransportInterface $transport): array
     {
+        return $this->executeAttempt(transferList: $transferList, transport: $transport, attempt: 1);
+    }//end executeTransfer()
+
+    /**
+     * Run ONE transport attempt for a transfer list.
+     *
+     * No in-process `sleep()`: exactly one transport send per outstanding
+     * package. Objects already confirmed on a prior attempt
+     * (`retention.archiefstatus === 'overgebracht'`) are excluded from the
+     * rebuild/resend so a retry never re-ingests them (partial-success
+     * awareness). The attempt (number, timestamp, transport, per-package
+     * outcome, error) is appended to the list's append-only `attempts[]`; the
+     * caller (the job) decides whether to re-enqueue or escalate.
+     *
+     * @param array<string,mixed> $transferList The transfer list data.
+     * @param TransportInterface  $transport    The transport to use.
+     * @param int                 $attempt      The 1-based attempt number.
+     *
+     * @return array<string,mixed> The updated transfer list (status, attempts[], transferResult).
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Requirement: One job run performs one transport attempt per package)
+     */
+    public function executeAttempt(array $transferList, TransportInterface $transport, int $attempt): array
+    {
         $this->logger->info(
-            message: '[EdepotTransferService] Starting transfer execution',
+            message: '[EdepotTransferService] Transfer attempt',
             context: [
-                'transferId' => $transferList['uuid'],
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'transferId' => ($transferList['uuid'] ?? ''),
                 'transport'  => $transport->getName(),
-                'objects'    => count($transferList['objectReferences']),
+                'attempt'    => $attempt,
             ]
         );
 
         $transferList['status'] = TransferListService::STATUS_IN_PROGRESS;
 
-        // Log audit: transfer initiated.
-        $this->logTransferInitiated(transferList: $transferList, transport: $transport->getName());
-
-        // Gather objects and their files.
-        $objectsWithFiles = $this->gatherObjectsWithFiles(objectRefs: $transferList['objectReferences']);
-
-        if (empty($objectsWithFiles) === true) {
-            $transferList['status']         = TransferListService::STATUS_FAILED;
-            $transferList['transferResult'] = [
-                'error'     => 'No valid objects found for transfer',
-                'timestamp' => (new DateTime())->format('c'),
-            ];
-            return $transferList;
+        if ($attempt === 1) {
+            $this->logTransferInitiated(transferList: $transferList, transport: $transport->getName());
         }
 
-        // Build SIP package(s).
+        // Only objects NOT yet confirmed are (re)built/sent — no double ingest.
+        $outstandingRefs  = $this->outstandingObjectRefs(transferList: $transferList);
+        $objectsWithFiles = $this->gatherObjectsWithFiles(objectRefs: $outstandingRefs);
+
+        if (empty($objectsWithFiles) === true) {
+            // Nothing outstanding: either everything already confirmed
+            // (completed) or no loadable objects (failed).
+            $transferList['status'] = $this->terminalStatusForNoOutstanding(transferList: $transferList);
+            return $this->appendAttempt(
+                transferList: $transferList,
+                attempt: $attempt,
+                transport: $transport->getName(),
+                outcome: $transferList['status'],
+                error: null
+            );
+        }
+
+        // Build SIP package(s) in the list's chosen format (zip default | bagit).
+        $format = (string) ($transferList['packageFormat'] ?? 'zip');
         try {
-            $sipFiles = $this->sipBuilder->build($transferList['uuid'], $objectsWithFiles);
+            $sipFiles = $this->sipBuilder->build(
+                transferId: (string) $transferList['uuid'],
+                objectsWithFiles: $objectsWithFiles,
+                maxPackageSize: 0,
+                format: $format
+            );
         } catch (\Exception $e) {
             $this->logger->error(
-                message: '[EdepotTransferService] SIP package build failed',
-                context: ['error' => $e->getMessage()]
+                message: '[EdepotTransferService] SIP package build failed: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
             );
             $transferList['status']         = TransferListService::STATUS_FAILED;
             $transferList['transferResult'] = [
@@ -148,34 +189,183 @@ class EdepotTransferService
                 'timestamp' => (new DateTime())->format('c'),
             ];
             $this->logTransferFailed(transferList: $transferList, error: $e->getMessage(), transport: $transport->getName());
-            return $transferList;
-        }
+            return $this->appendAttempt(
+                transferList: $transferList,
+                attempt: $attempt,
+                transport: $transport->getName(),
+                outcome: TransferListService::STATUS_FAILED,
+                error: 'SIP build failed: '.$e->getMessage()
+            );
+        }//end try
 
-        // Send each SIP package with retry logic.
+        // One transport send per package — no retry loop, no sleep.
         $config     = $this->getTransportConfig();
         $allResults = [];
-
         foreach ($sipFiles as $sipFile) {
-            $result       = $this->sendWithRetry(transport: $transport, sipFilePath: $sipFile, config: $config);
-            $allResults[] = $result;
-
-            // Clean up temp file.
+            $allResults[] = $this->sendOnce(transport: $transport, sipFilePath: $sipFile, config: $config);
             if (file_exists($sipFile) === true) {
                 unlink($sipFile);
             }
         }
 
-        // Process results and update object statuses.
-        $transferList = $this->processResults(transferList: $transferList, results: $allResults, objectsWithFiles: $objectsWithFiles);
+        // Process results: mark confirmed objects + create proofs + set status.
+        $transferList = $this->processResults(
+            transferList: $transferList,
+            results: $allResults,
+            objectsWithFiles: $objectsWithFiles,
+            packageFormat: $format,
+            transportName: $transport->getName()
+        );
 
-        // Send notification.
+        $errorSummary = null;
+        foreach ($allResults as $result) {
+            if ($result->getErrorMessage() !== null) {
+                $errorSummary = $result->getErrorMessage();
+                break;
+            }
+        }
+
+        $transferList = $this->appendAttempt(
+            transferList: $transferList,
+            attempt: $attempt,
+            transport: $transport->getName(),
+            outcome: (string) $transferList['status'],
+            error: $errorSummary
+        );
+
         $this->notifyTransferCompletion(transferList: $transferList);
 
         return $transferList;
-    }//end executeTransfer()
+    }//end executeAttempt()
 
     /**
-     * Send a SIP file with retry logic.
+     * The object references not yet confirmed transferred (partial-success
+     * awareness): objects whose `retention.archiefstatus` is already
+     * `overgebracht` are excluded so a retry never re-ingests them.
+     *
+     * @param array<string,mixed> $transferList The transfer list data.
+     *
+     * @return array<int, array<string,mixed>> The outstanding object references.
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Scenario: Retry excludes already-confirmed objects)
+     */
+    private function outstandingObjectRefs(array $transferList): array
+    {
+        $refs = ($transferList['objectReferences'] ?? []);
+        if (is_array($refs) === false) {
+            return [];
+        }
+
+        $outstanding = [];
+        foreach ($refs as $ref) {
+            if (is_array($ref) === false || empty($ref['uuid']) === true) {
+                continue;
+            }
+
+            try {
+                $object    = $this->objectMapper->find($ref['uuid']);
+                $retention = ($object->getRetention() ?? []);
+                if (($retention['archiefstatus'] ?? '') === 'overgebracht') {
+                    // Already ingested on a prior attempt — never resend.
+                    continue;
+                }
+            } catch (\Throwable $e) {
+                // Unloadable object: keep it in the outstanding set so its
+                // failure is recorded rather than silently dropped.
+                $this->logger->debug(
+                    message: '[EdepotTransferService] outstanding-check could not load object '.((string) $ref['uuid']),
+                    context: ['file' => __FILE__, 'line' => __LINE__]
+                );
+            }
+
+            $outstanding[] = $ref;
+        }//end foreach
+
+        return $outstanding;
+
+    }//end outstandingObjectRefs()
+
+    /**
+     * Terminal status when no objects are outstanding: `completed` when every
+     * declared object is already confirmed, else `failed`.
+     *
+     * @param array<string,mixed> $transferList The transfer list data.
+     *
+     * @return string The terminal status.
+     */
+    private function terminalStatusForNoOutstanding(array $transferList): string
+    {
+        $refs = ($transferList['objectReferences'] ?? []);
+        if (is_array($refs) === false || $refs === []) {
+            return TransferListService::STATUS_FAILED;
+        }
+
+        foreach ($refs as $ref) {
+            if (is_array($ref) === false || empty($ref['uuid']) === true) {
+                continue;
+            }
+
+            try {
+                $object    = $this->objectMapper->find($ref['uuid']);
+                $retention = ($object->getRetention() ?? []);
+                if (($retention['archiefstatus'] ?? '') !== 'overgebracht') {
+                    return TransferListService::STATUS_FAILED;
+                }
+            } catch (\Throwable $e) {
+                return TransferListService::STATUS_FAILED;
+            }
+        }
+
+        return TransferListService::STATUS_COMPLETED;
+
+    }//end terminalStatusForNoOutstanding()
+
+    /**
+     * Append one delivery attempt to the list's append-only `attempts[]`.
+     *
+     * @param array<string,mixed> $transferList The transfer list data.
+     * @param int                 $attempt      The attempt number.
+     * @param string              $transport    The transport name.
+     * @param string              $outcome      The resulting status.
+     * @param string|null         $error        The error message, when any.
+     *
+     * @return array<string,mixed> The transfer list with the appended attempt.
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Requirement: Append-only attempt records)
+     */
+    private function appendAttempt(
+        array $transferList,
+        int $attempt,
+        string $transport,
+        string $outcome,
+        ?string $error
+    ): array {
+        $attempts = ($transferList['attempts'] ?? []);
+        if (is_array($attempts) === false) {
+            $attempts = [];
+        }
+
+        $attempts[] = [
+            'attempt'   => $attempt,
+            'timestamp' => (new DateTime())->format('c'),
+            'transport' => $transport,
+            'outcome'   => $outcome,
+            'error'     => $error,
+        ];
+
+        $transferList['attempts'] = $attempts;
+
+        return $transferList;
+
+    }//end appendAttempt()
+
+    /**
+     * Send a SIP file once (no in-process retry).
+     *
+     * Retained for callers/tests that send a single package; the attempt
+     * orchestration lives in {@see self::executeAttempt()} and the job.
      *
      * @param TransportInterface  $transport   The transport to use.
      * @param string              $sipFilePath The SIP file path.
@@ -183,40 +373,16 @@ class EdepotTransferService
      *
      * @return TransportResult The transport result.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Requirement: One job run performs one transport attempt per package)
      */
-    private function sendWithRetry(
+    private function sendOnce(
         TransportInterface $transport,
         string $sipFilePath,
         array $config
     ): TransportResult {
-        $lastResult = null;
-
-        for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
-            if ($attempt > 0) {
-                $backoff = (self::RETRY_BACKOFF[($attempt - 1)] ?? 480);
-                $this->logger->info(
-                    message: '[EdepotTransferService] Retrying transfer',
-                    context: [
-                        'attempt' => $attempt,
-                        'backoff' => $backoff,
-                    ]
-                );
-                sleep($backoff);
-            }
-
-            $lastResult = $transport->send($sipFilePath, $config);
-
-            if ($lastResult->isSuccess() === true || $lastResult->isPartialSuccess() === true) {
-                return $lastResult;
-            }
-        }
-
-        return $lastResult ?? new TransportResult(
-            success: false,
-            errorMessage: 'All retry attempts exhausted'
-        );
-    }//end sendWithRetry()
+        return $transport->send($sipFilePath, $config);
+    }//end sendOnce()
 
     /**
      * Gather objects and their file metadata for SIP building.
@@ -234,6 +400,8 @@ class EdepotTransferService
      *         isRendition: bool
      *     }>
      * }> Objects with file metadata.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function gatherObjectsWithFiles(array $objectRefs): array
     {
@@ -280,7 +448,8 @@ class EdepotTransferService
      *     isRendition: bool
      * }> File metadata array.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function getObjectFiles(ObjectEntity $object): array
     {
@@ -321,16 +490,23 @@ class EdepotTransferService
      * @param array<string,mixed>            $transferList     The transfer list.
      * @param array<int,TransportResult>     $results          Transport results.
      * @param array<int,array<string,mixed>> $objectsWithFiles The objects with files.
+     * @param string                         $packageFormat    The SIP format used (zip|bagit) — recorded on proofs.
+     * @param string                         $transportName    The transport name — recorded on proofs.
      *
      * @return array<string,mixed> Updated transfer list.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+     *   (Scenario: Proof created on confirmed transfer)
      */
     private function processResults(
         array $transferList,
         array $results,
-        array $objectsWithFiles
+        array $objectsWithFiles,
+        string $packageFormat='zip',
+        string $transportName=''
     ): array {
         $allSuccess = true;
         $anySuccess = false;
@@ -355,15 +531,25 @@ class EdepotTransferService
             }
 
             foreach ($objectsWithFiles as $item) {
-                $uuid = $item['object']->getUuid();
-                $ref  = $results[0]->getTransferReference() ?? '';
+                $uuid           = $item['object']->getUuid();
+                $ref            = $results[0]->getTransferReference() ?? '';
+                $referenceValue = null;
+                if ($overallSuccess === true) {
+                    $referenceValue = $ref;
+                }
+
+                $errorValue = null;
+                if ($overallSuccess !== true) {
+                    $errorValue = $results[0]->getErrorMessage() ?? 'Transfer failed';
+                }
+
                 $mergedObjectResults[$uuid] = [
                     'accepted'  => $overallSuccess,
-                    'reference' => ($overallSuccess === true) ? $ref : null,
-                    'error'     => ($overallSuccess === true) ? null : ($results[0]->getErrorMessage() ?? 'Transfer failed'),
+                    'reference' => $referenceValue,
+                    'error'     => $errorValue,
                 ];
-            }
-        }
+            }//end foreach
+        }//end if
 
         // Update each object's retention status.
         foreach ($objectsWithFiles as $item) {
@@ -373,14 +559,28 @@ class EdepotTransferService
 
             if ($objResult['accepted'] === true) {
                 $anySuccess = true;
-                $this->markObjectTransferred(object: $object, reference: ($objResult['reference'] ?? ''), timestamp: $now);
-                $this->logObjectTransferred(object: $object, transferUuid: $transferList['uuid'], reference: ($objResult['reference'] ?? ''));
+                $reference  = ($objResult['reference'] ?? '');
+                $this->markObjectTransferred(object: $object, reference: $reference, timestamp: $now);
+                $this->logObjectTransferred(object: $object, transferUuid: $transferList['uuid'], reference: $reference);
+                // Durable, immutable proof-of-transfer for the confirmed object
+                // (OR-AD-3) — one per confirmed object, write-once, no proof for
+                // failed objects.
+                $this->createProofRecord(
+                    object: $object,
+                    files: ($item['files'] ?? []),
+                    transferList: $transferList,
+                    reference: (string) $reference,
+                    objResult: $objResult,
+                    packageFormat: $packageFormat,
+                    transportName: $transportName,
+                    confirmedAt: $now
+                );
                 continue;
             }
 
             $allSuccess = false;
             $this->markObjectTransferFailed(object: $object, error: ($objResult['error'] ?? 'Unknown error'), timestamp: $now);
-        }
+        }//end foreach
 
         // Set final transfer list status.
         $transferList['status'] = match (true) {
@@ -420,6 +620,8 @@ class EdepotTransferService
      * @param string       $timestamp The transfer timestamp.
      *
      * @return void
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function markObjectTransferred(ObjectEntity $object, string $reference, string $timestamp): void
     {
@@ -443,6 +645,82 @@ class EdepotTransferService
     }//end markObjectTransferred()
 
     /**
+     * Create the immutable proof-of-transfer record for one confirmed object
+     * (OR-AD-3) and link its UUID onto the object's retention metadata (next
+     * to the existing `eDepotReferentie`, additive). Write-once + best-effort:
+     * a proof-creation failure never unwinds the confirmed transfer.
+     *
+     * @param ObjectEntity         $object        The confirmed object.
+     * @param array<int, mixed>    $files         The object's file metadata (name + checksum).
+     * @param array<string, mixed> $transferList  The transfer list.
+     * @param string               $reference     The e-Depot ingest reference.
+     * @param array<string, mixed> $objResult     The per-object transport result.
+     * @param string               $packageFormat The SIP format (zip|bagit).
+     * @param string               $transportName The transport used.
+     * @param string               $confirmedAt   The confirmation timestamp.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+     *   (Scenario: Proof created on confirmed transfer)
+     */
+    private function createProofRecord(
+        ObjectEntity $object,
+        array $files,
+        array $transferList,
+        string $reference,
+        array $objResult,
+        string $packageFormat,
+        string $transportName,
+        string $confirmedAt
+    ): void {
+        try {
+            $fileChecksums = [];
+            foreach ($files as $file) {
+                if (is_array($file) === true && empty($file['name']) === false) {
+                    $fileChecksums[] = [
+                        'name'   => (string) $file['name'],
+                        'sha256' => (string) ($file['checksum'] ?? ''),
+                    ];
+                }
+            }
+
+            $manifestHash = hash('sha256', (string) json_encode($fileChecksums));
+
+            $proof = $this->transferRecordService->createProof(
+                proof: [
+                    'objectUuid'            => (string) $object->getUuid(),
+                    'transferUuid'          => (string) ($transferList['uuid'] ?? ''),
+                    'eDepotReference'       => $reference,
+                    'transportReceipt'      => (string) ($objResult['receipt'] ?? ($objResult['reference'] ?? '')),
+                    'transportName'         => $transportName,
+                    'packageId'             => (string) ($transferList['uuid'] ?? ''),
+                    'packageFormat'         => $packageFormat,
+                    'packageManifestSha256' => $manifestHash,
+                    'fileChecksums'         => $fileChecksums,
+                    'confirmedAt'           => $confirmedAt,
+                ]
+            );
+
+            // Link the proof UUID onto the object's retention (additive —
+            // existing eDepotReferentie/transferDate readers keep working).
+            $proofUuid = (string) ($proof['uuid'] ?? '');
+            if ($proofUuid !== '') {
+                $retention = ($object->getRetention() ?? []);
+                $retention['transferProof'] = $proofUuid;
+                $object->setRetention($retention);
+                $this->objectMapper->update($object);
+            }
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[EdepotTransferService] proof-of-transfer creation failed for '.((string) $object->getUuid()).': '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+        }//end try
+
+    }//end createProofRecord()
+
+    /**
      * Mark an object's transfer as failed.
      *
      * @param ObjectEntity $object    The object to update.
@@ -450,6 +728,8 @@ class EdepotTransferService
      * @param string       $timestamp The failure timestamp.
      *
      * @return void
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function markObjectTransferFailed(ObjectEntity $object, string $error, string $timestamp): void
     {
@@ -484,7 +764,7 @@ class EdepotTransferService
      *
      * @return array<string,mixed> The transport configuration.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getTransportConfig(): array
     {
@@ -512,7 +792,7 @@ class EdepotTransferService
      *
      * @return array<string, string> Map of profile ID to display name.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getAvailableProfiles(): array
     {
@@ -526,7 +806,7 @@ class EdepotTransferService
      *
      * @return bool True if valid.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function isValidProfile(string $profileName): bool
     {
@@ -541,7 +821,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logTransferInitiated(array $transferList, string $transport): void
     {
@@ -566,7 +846,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logObjectTransferred(ObjectEntity $object, string $transferUuid, string $reference): void
     {
@@ -606,7 +886,7 @@ class EdepotTransferService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-24
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-log-all-transfer-actions-in-the-audit-trail
      */
     private function logTransferFailed(array $transferList, string $error, string $transport): void
     {
@@ -628,6 +908,8 @@ class EdepotTransferService
      * @param array<string,mixed> $transferList The completed transfer list.
      *
      * @return void
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-multiple-transport-protocols-for-sip-delivery
      */
     private function notifyTransferCompletion(array $transferList): void
     {

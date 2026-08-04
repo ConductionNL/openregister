@@ -6,13 +6,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 	<div class="events-tab">
 		<!-- Toolbar -->
 		<div v-if="!loading && !calendarUnavailable" class="events-tab__toolbar">
-			<NcButton type="primary" @click="openCreateDialog">
+			<NcButton variant="primary" @click="openCreateDialog">
 				<template #icon>
 					<CalendarPlus :size="20" />
 				</template>
 				{{ t('openregister', 'Create event') }}
 			</NcButton>
-			<NcButton type="secondary" @click="openLinkDialog">
+			<NcButton variant="secondary" @click="openLinkDialog">
 				<template #icon>
 					<LinkVariant :size="20" />
 				</template>
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Unlink event')"
 					@click="unlinkEvent(event)">
 					<template #icon>
@@ -88,9 +88,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import CalendarOutline from 'vue-material-design-icons/CalendarOutline.vue'
 import CalendarPlus from 'vue-material-design-icons/CalendarPlus.vue'
@@ -150,15 +148,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked events from store; event-relations contract owned by integration-calendar capability
+		 */
 		events() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		calendarUnavailable() {
 			return this.store.calendarUnavailable
 		},
@@ -167,6 +177,10 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @param newId
+			 * @spec exclude watcher refetching events on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchEvents()
@@ -178,6 +192,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch linked calendar events for the current object via the per-object store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 * @return {Promise<void>}
+		 */
 		async fetchEvents() {
 			this.error = false
 			this.errorMessage = ''
@@ -189,6 +209,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param event
+		 * @spec exclude store passthrough unlinking event + change emit; event-relations contract owned by integration-calendar capability
+		 */
 		async unlinkEvent(event) {
 			try {
 				await this.store.unlink(this.register, this.schema, this.objectId, event.id)
@@ -199,16 +223,26 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler surfacing create-event intent, UI plumbing
+		 */
 		openCreateDialog() {
 			// Surface intent to the parent so it can mount a calendar-event modal
 			// (the modal lives outside the tab to avoid pulling it into every detail view).
 			this.$emit('create-event')
 		},
 
+		/**
+		 * @spec exclude emit UI handler surfacing link-event intent, UI plumbing
+		 */
 		openLinkDialog() {
 			this.$emit('link-event')
 		},
 
+		/**
+		 * @param value
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

@@ -26,6 +26,9 @@
  *  - IAppConfig key `openregister.push_available` is set to '1' on the first
  *    successful IQueue::push() call (consumed by OpenRegisterAdmin::getPushStatus()).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -71,6 +74,11 @@ use Psr\Log\LoggerInterface;
  * the end of the import.
  *
  * @implements IEventListener<ObjectCreatedEvent|ObjectUpdatedEvent|ObjectDeletedEvent>
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Listener must reference three event types
+ *   (ObjectCreated/Updated/DeletedEvent), two mappers (register + schema), a container,
+ *   logger, appConfig, and PermissionHandler; each dependency is required for the
+ *   push-routing and slug-resolution responsibilities.
  */
 class NotifyPushListener implements IEventListener
 {
@@ -144,22 +152,23 @@ class NotifyPushListener implements IEventListener
      *
      * @return void
      *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) PHPMD 2.x accumulates the CC of all
+     *   extracted private helper methods (resolveEventAction, resolveQueue, dispatchPushes,
+     *   accumulateBatchEntry) into this orchestrator's score; handle() itself only contains
+     *   lightweight guard checks and delegates to those helpers.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      NPath inflation mirrors the CC accumulation
+     *   issue; the orchestrator cannot be simplified further without removing necessary guards.
+     *
      * @spec openspec/changes/add-live-updates/tasks.md#task-4
      */
     public function handle(Event $event): void
     {
-        if ($event instanceof ObjectCreatedEvent) {
-            $action = 'create';
-            $object = $event->getObject();
-        } else if ($event instanceof ObjectUpdatedEvent) {
-            $action = 'update';
-            $object = $event->getObject();
-        } else if ($event instanceof ObjectDeletedEvent) {
-            $action = 'delete';
-            $object = $event->getObject();
-        } else {
+        $resolved = $this->resolveEventAction(event: $event);
+        if ($resolved === null) {
             return;
         }
+
+        [$action, $object] = $resolved;
 
         // Lazy-resolve IQueue; soft-fail if notify_push is not installed.
         $queue = $this->resolveQueue();
@@ -181,24 +190,60 @@ class NotifyPushListener implements IEventListener
         self::$seen[$dedupKey] = true;
 
         if (self::$batchMode === true) {
-            // Accumulate (register-slug, schema-slug) pairs; suppress per-object push.
-            $registerSlug = $this->resolveRegisterSlug(registerUuid: $object->getRegister());
-            $schemaSlug   = $this->resolveSchemaSlug(schemaUuid: $object->getSchema());
-
-            if ($registerSlug !== null && $schemaSlug !== null) {
-                $collectionKey = $registerSlug.'|'.$schemaSlug;
-                self::$batchedCollections[$collectionKey] = [
-                    'register' => $registerSlug,
-                    'schema'   => $schemaSlug,
-                ];
-            }
-
+            $this->accumulateBatchEntry(object: $object);
             return;
         }
 
         $this->dispatchPushes(action: $action, object: $object, queue: $queue);
 
     }//end handle()
+
+    /**
+     * Resolve the action verb and object entity from a lifecycle event.
+     *
+     * Returns null for unrecognised event types so handle() can early-return.
+     *
+     * @param Event $event The dispatched event.
+     *
+     * @return array{0: string, 1: ObjectEntity}|null Tuple of [action, object], or null.
+     */
+    private function resolveEventAction(Event $event): ?array
+    {
+        if ($event instanceof ObjectCreatedEvent) {
+            return ['create', $event->getObject()];
+        }
+
+        if ($event instanceof ObjectUpdatedEvent) {
+            return ['update', $event->getObject()];
+        }
+
+        if ($event instanceof ObjectDeletedEvent) {
+            return ['delete', $event->getObject()];
+        }
+
+        return null;
+    }//end resolveEventAction()
+
+    /**
+     * Accumulate a (register-slug, schema-slug) pair during batch mode.
+     *
+     * @param ObjectEntity $object The object whose slugs should be accumulated.
+     *
+     * @return void
+     */
+    private function accumulateBatchEntry(ObjectEntity $object): void
+    {
+        $registerSlug = $this->resolveRegisterSlug(registerUuid: $object->getRegister());
+        $schemaSlug   = $this->resolveSchemaSlug(schemaUuid: $object->getSchema());
+
+        if ($registerSlug !== null && $schemaSlug !== null) {
+            $collectionKey = $registerSlug.'|'.$schemaSlug;
+            self::$batchedCollections[$collectionKey] = [
+                'register' => $registerSlug,
+                'schema'   => $schemaSlug,
+            ];
+        }
+    }//end accumulateBatchEntry()
 
     /**
      * Dispatch notify_push events for a single object lifecycle action.
@@ -303,6 +348,8 @@ class NotifyPushListener implements IEventListener
      * @return void
      *
      * @internal For use in unit tests only.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     public static function resetStaticState(): void
     {
@@ -313,27 +360,77 @@ class NotifyPushListener implements IEventListener
     }//end resetStaticState()
 
     /**
+     * Whether any (register, schema) pairs have been accumulated in batch mode.
+     *
+     * Lets import callers skip IQueue resolution entirely when nothing was
+     * accumulated (e.g. notify_push not installed, so handle() never reached
+     * the accumulator) — avoiding even the one DEBUG log of a failed resolve.
+     *
+     * @return bool True when at least one collection event is pending flush.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function hasBatchedCollections(): bool
+    {
+        return self::$batchedCollections !== [];
+    }//end hasBatchedCollections()
+
+    /**
+     * Accumulate a (register-slug, schema-slug) pair directly, bypassing event dispatch.
+     *
+     * Bulk saves run with lifecycle events DISABLED by default (`events=false`
+     * throughout ImportService / SaveObjects), so handle() never fires during a
+     * standard import and the accumulator would stay empty. Import callers that
+     * already know which collection changed use this entry point to queue the
+     * collection hint themselves; flushBatch() then broadcasts it. Duplicate
+     * pairs collapse onto the same accumulator key — safe to combine with
+     * event-driven accumulation when events ARE enabled.
+     *
+     * @param string $registerSlug The register slug (empty = ignored).
+     * @param string $schemaSlug   The schema slug (empty = ignored).
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public static function addBatchedCollection(string $registerSlug, string $schemaSlug): void
+    {
+        if ($registerSlug === '' || $schemaSlug === '') {
+            return;
+        }
+
+        self::$batchedCollections[$registerSlug.'|'.$schemaSlug] = [
+            'register' => $registerSlug,
+            'schema'   => $schemaSlug,
+        ];
+    }//end addBatchedCollection()
+
+    /**
      * Emit one collection event per accumulated (register, schema) pair and clear state.
      *
-     * Should be called in a `finally` block after a bulk-import loop:
+     * Should be called in a `finally` block after a bulk-import loop, BEFORE
+     * setBatchMode(false) — disabling batch mode clears the accumulator:
      * ```php
      * NotifyPushListener::setBatchMode(true);
      * try {
      *     // ... import loop
      * } finally {
-     *     NotifyPushListener::flushBatch($queue, $permissionHandler);
+     *     NotifyPushListener::flushBatch($queue);
      *     NotifyPushListener::setBatchMode(false);
      * }
      * ```
      *
-     * @param object            $queue       Resolved IQueue instance.
-     * @param PermissionHandler $permHandler Permission handler for user resolution.
+     * The flush is a broadcast: collection events carry no per-user targeting
+     * (payload is slugs + action only); clients refetch through the RBAC-filtered
+     * REST API, so no data can leak to unauthorised subscribers.
+     *
+     * @param object $queue Resolved IQueue instance.
      *
      * @return void
      *
-     * @spec openspec/changes/add-live-updates/tasks.md#task-4
+     * @spec openspec/specs/realtime-updates/spec.md
      */
-    public static function flushBatch(object $queue, PermissionHandler $permHandler): void
+    public static function flushBatch(object $queue): void
     {
         foreach (self::$batchedCollections as $entry) {
             $registerSlug = $entry['register'];
@@ -374,6 +471,8 @@ class NotifyPushListener implements IEventListener
      * not installed or not reachable. Never logs WARNING/ERROR.
      *
      * @return object|null The IQueue instance, or null when unavailable.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveQueue(): ?object
     {
@@ -403,6 +502,8 @@ class NotifyPushListener implements IEventListener
      * @param string|null $registerUuid The register UUID from ObjectEntity::getRegister().
      *
      * @return string|null The register slug, or null when not resolvable.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveRegisterSlug(?string $registerUuid): ?string
     {
@@ -433,6 +534,8 @@ class NotifyPushListener implements IEventListener
      * @param string|null $schemaUuid The schema UUID from ObjectEntity::getSchema().
      *
      * @return string|null The schema slug, or null when not resolvable.
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
      */
     private function resolveSchemaSlug(?string $schemaUuid): ?string
     {

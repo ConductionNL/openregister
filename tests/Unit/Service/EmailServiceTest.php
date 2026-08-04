@@ -28,8 +28,7 @@ class EmailServiceTest extends TestCase
     {
         $this->emailLinkMapper = $this->getMockBuilder(EmailLinkMapper::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['findByObjectUuid', 'countByObjectUuid', 'findBySender', 'findByObjectAndMessage', 'deleteByObjectUuid', 'insert', 'delete'])
-            ->addMethods(['find'])
+            ->onlyMethods(['findByObjectUuid', 'countByObjectUuid', 'findBySender', 'findByObjectAndMessage', 'deleteByObjectUuid', 'insert', 'delete', 'find'])
             ->getMock();
         $this->appManager = $this->createMock(IAppManager::class);
         $this->db = $this->createMock(IDBConnection::class);
@@ -148,5 +147,46 @@ class EmailServiceTest extends TestCase
         $count = $this->service->deleteLinksForObject('abc-123');
 
         $this->assertSame(3, $count);
+    }
+
+    // ── IDOR: sender search is scoped to the caller's own Mail accounts ──
+
+    public function testSearchBySenderNewPathScopesToSessionUser(): void
+    {
+        // Legacy table empty → the new Mail-scanning path runs.
+        $this->emailLinkMapper->method('findBySender')->willReturn([]);
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $this->userSession->method('getUser')->willReturn($user);
+
+        // The scan query MUST bind the session UID (scoped to the caller's
+        // accounts); assert the executed params include it.
+        $stmt = $this->createMock(\OCP\DB\IPreparedStatement::class);
+        $stmt->method('fetch')->willReturn(false);
+        $this->db->expects($this->once())
+            ->method('prepare')
+            ->with($this->stringContains('ma.user_id = ?'))
+            ->willReturn($stmt);
+        $stmt->expects($this->once())
+            ->method('execute')
+            ->with(['sender@test.local', 'alice']);
+
+        $result = $this->service->searchBySender('sender@test.local');
+
+        $this->assertSame([], $result);
+    }
+
+    public function testSearchBySenderNewPathRejectsAnonymous(): void
+    {
+        $this->emailLinkMapper->method('findBySender')->willReturn([]);
+        $this->appManager->method('isEnabledForUser')->willReturn(true);
+        $this->userSession->method('getUser')->willReturn(null);
+
+        // No mailbox query is prepared for an anonymous session.
+        $this->db->expects($this->never())->method('prepare');
+
+        $this->assertSame([], $this->service->searchBySender('sender@test.local'));
     }
 }

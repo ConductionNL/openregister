@@ -12,6 +12,9 @@
  * Validation errors are emitted in a flat list of `{ path, message }`
  * tuples ready to be wrapped by `ProblemDetailsBuilder::validationFailed`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Oas
  *
@@ -21,7 +24,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/oas-validation/tasks.md "Request/Response Validation Against OAS Schema"
+ * @spec openspec/specs/oas-validation/spec.md "Request/Response Validation Against OAS Schema"
  */
 
 declare(strict_types=1);
@@ -43,6 +46,8 @@ class OasRequestValidator
      * @param array $schema The JSON-Schema to validate against (decoded).
      *
      * @return array<int, array{path: string, message: string}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-8
      */
     public function validate(mixed $body, array $schema): array
     {
@@ -126,9 +131,19 @@ class OasRequestValidator
             }
         }
 
+        $errorPath = '/';
+        if ($path !== '') {
+            $errorPath = $path;
+        }
+
+        $errorMessage = 'value does not validate';
+        if ($message !== '') {
+            $errorMessage = $message;
+        }
+
         $errors[] = [
-            'path'    => ($path !== '' ? $path : '/'),
-            'message' => ($message !== '' ? $message : 'value does not validate'),
+            'path'    => $errorPath,
+            'message' => $errorMessage,
         ];
 
         if (method_exists($error, 'subErrors') === true) {

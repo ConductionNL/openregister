@@ -1,7 +1,6 @@
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 
 const apiUrl = '/index.php/apps/openregister/api'
@@ -48,73 +47,67 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Set audit trail list
 		 * @param {Array} auditTrailList - The audit trail list to set
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailList(auditTrailList) {
 			// Ensure we have a clean array without reactive references
 			this.auditTrailList = Array.isArray(auditTrailList) ? [...auditTrailList] : []
-			console.info('Audit trail list set to:', this.auditTrailList.length, 'items')
 		},
 
 		/**
 		 * Set audit trail item
 		 * @param {object} auditTrailItem - The audit trail item to set
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailItem(auditTrailItem) {
 			this.auditTrailItem = auditTrailItem
-			console.info('Audit trail item set to:', auditTrailItem)
 		},
 
 		/**
 		 * Set audit trail pagination
 		 * @param {object} pagination - The pagination object
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailPagination(pagination) {
 			this.auditTrailPagination = {
 				...this.auditTrailPagination,
 				...pagination,
 			}
-			console.info('Audit trail pagination set to:', this.auditTrailPagination)
 		},
 
 		/**
 		 * Set statistics
 		 * @param {object} stats - The statistics object
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setStatistics(stats) {
 			this.statistics = {
 				...this.statistics,
 				...stats,
 			}
-			console.info('Statistics set to:', this.statistics)
 		},
 
 		/**
 		 * Set audit trail filters
 		 * @param {object} filters - The filters to set
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailFilters(filters) {
 			this.auditTrailFilters = filters
-			console.info('Audit trail filters set to:', filters)
 		},
 
 		/**
 		 * Set audit trail search
 		 * @param {string} search - The search term
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		setAuditTrailSearch(search) {
 			this.auditTrailSearch = search
-			console.info('Audit trail search set to:', search)
 		},
 
 		/**
@@ -122,14 +115,12 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {object} options - Options for fetching
 		 * @return {Promise<object>} The fetched data
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async fetchAuditTrails(options = {}) {
 			this.auditTrailLoading = true
 
 			try {
-				console.info('Fetching audit trails with options:', options)
-
 				// Build query parameters
 				const params = new URLSearchParams()
 
@@ -160,7 +151,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				}
 
 				const url = `${apiUrl}/audit-trails?${params.toString()}`
-				console.info('Fetching from URL:', url)
 
 				const response = await fetch(url, {
 					method: 'GET',
@@ -171,7 +161,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Audit trail fetch response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch audit trails')
@@ -200,14 +189,12 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Fetch audit trail statistics
 		 * @return {Promise<object>} The statistics data
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async fetchStatistics() {
 			this.statisticsLoading = true
 
 			try {
-				console.info('Fetching audit trail statistics')
-
 				const response = await fetch(`${apiUrl}/audit-trails/statistics`, {
 					method: 'GET',
 					headers: {
@@ -217,7 +204,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Statistics response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to fetch statistics')
@@ -238,12 +224,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {string|number} id - The ID of the audit trail to delete
 		 * @return {Promise<object>} The response data
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async deleteAuditTrail(id) {
 			try {
-				console.info('Deleting audit trail:', id)
-
 				const response = await fetch(`${apiUrl}/audit-trails/${id}`, {
 					method: 'DELETE',
 					headers: {
@@ -253,7 +237,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to delete audit trail')
@@ -274,12 +257,10 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * @param {Array} ids - Array of audit trail IDs to delete
 		 * @return {Promise<object>} The response data
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async deleteMultipleAuditTrails(ids) {
 			try {
-				console.info('Deleting multiple audit trails:', ids)
-
 				const response = await fetch(`${apiUrl}/audit-trails`, {
 					method: 'DELETE',
 					headers: {
@@ -290,7 +271,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 				})
 
 				const data = await response.json()
-				console.info('Bulk delete response:', data)
 
 				if (!response.ok) {
 					throw new Error(data.error || 'Failed to delete audit trails')
@@ -310,7 +290,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Refresh audit trail list with current filters
 		 * @return {Promise} The refresh promise
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async refreshAuditTrailList() {
 			return this.fetchAuditTrails({
@@ -323,7 +303,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get audit trail statistics
 		 * @return {Promise<object>} The statistics
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getStatistics() {
 			try {
@@ -345,7 +325,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get action distribution data
 		 * @return {Promise<Array>} The action distribution
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getActionDistribution() {
 			try {
@@ -371,7 +351,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		 * Get top objects by audit trail count
 		 * @return {Promise<Array>} The top objects
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async getTopObjects() {
 			try {
@@ -401,7 +381,7 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 		/**
 		 * Clear all audit trail store data
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		clearAuditTrailStore() {
 			this.auditTrailList = []
@@ -422,7 +402,6 @@ export const useAuditTrailStore = defineStore('auditTrail', {
 			}
 			this.auditTrailFilters = {}
 			this.auditTrailSearch = ''
-			console.info('Audit trail store cleared')
 		},
 	},
 })

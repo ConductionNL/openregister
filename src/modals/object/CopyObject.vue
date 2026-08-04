@@ -41,7 +41,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || !copyName.trim()"
-				type="primary"
+				variant="primary"
 				@click="copyObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -87,6 +87,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed display helper for default copy name
+		 */
 		defaultCopyName() {
 			const originalName = objectStore.objectItem?.['@self']?.name
 				|| objectStore.objectItem?.name
@@ -107,6 +110,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -115,6 +121,9 @@ export default {
 			this.error = false
 			this.copyName = ''
 		},
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async copyObject() {
 			if (!this.copyName.trim()) {
 				this.error = 'Please provide a name for the copy'

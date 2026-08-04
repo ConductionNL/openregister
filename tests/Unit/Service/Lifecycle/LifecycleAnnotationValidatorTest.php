@@ -122,4 +122,212 @@ class LifecycleAnnotationValidatorTest extends TestCase
         ]);
         $this->assertSame([], $errors);
     }
+
+    public function testPropertyAliasIsAcceptedAsField(): void
+    {
+        // `property` (procest migration shape) is accepted as an alias for `field`.
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'property' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testStringFromIsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => ['indienen' => ['from' => 'concept', 'to' => 'in_parafering']],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testTransitionAuthorizationGroupListIsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => [
+                        'from' => 'in_parafering',
+                        'to' => 'geparafeerd',
+                        'authorization' => ['vergunningverleners', ['role' => 'handler']],
+                    ],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testEmptyTransitionAuthorizationIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd', 'authorization' => []],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-authorization-malformed', $codes);
+    }
+
+    public function testMalformedTransitionAuthorizationEntryIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'lifecycle',
+                'initial' => 'concept',
+                'transitions' => [
+                    'completeren' => ['from' => 'in_parafering', 'to' => 'geparafeerd', 'authorization' => [123]],
+                ],
+            ],
+            'properties' => ['lifecycle' => ['type' => 'string', 'enum' => ['concept','in_parafering','geparafeerd']]],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-authorization-entry-malformed', $codes);
+    }
+
+    // --- Graph mode (fk-graph-lifecycle-transitions) ---------------------
+
+    /**
+     * A well-formed graph block with object-form `initial` passes validation
+     * even though the lifecycle field is a `$ref` with no enum.
+     */
+    public function testValidGraphAnnotationPasses(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field'   => 'status',
+                'initial' => ['from' => 'caseType', 'field' => 'initialStatus'],
+                'graph'   => [
+                    'schema'       => 'statustype',
+                    'parentField'  => 'caseType',
+                    'parentFrom'   => 'caseType',
+                    'orderField'   => 'order',
+                    'finalField'   => 'isFinal',
+                    'allowedMoves' => 'forward',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'string', 'format' => 'uuid']],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    /**
+     * Graph mode relaxes the enum requirement: a $ref field without an enum
+     * is accepted (would be rejected in static mode).
+     */
+    public function testGraphFieldWithoutEnumIsAccepted(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'status',
+                'graph' => [
+                    'schema'       => 'statustype',
+                    'parentField'  => 'caseType',
+                    'parentFrom'   => 'caseType',
+                    'orderField'   => 'order',
+                    'finalField'   => 'isFinal',
+                    'allowedMoves' => 'any',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'object']],
+        ]);
+        $this->assertSame([], $errors);
+    }
+
+    public function testInvalidAllowedMovesIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'status',
+                'graph' => [
+                    'schema'       => 'statustype',
+                    'parentField'  => 'caseType',
+                    'parentFrom'   => 'caseType',
+                    'orderField'   => 'order',
+                    'finalField'   => 'isFinal',
+                    'allowedMoves' => 'sideways',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'string']],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-graph-allowedmoves-invalid', $codes);
+    }
+
+    public function testMissingGraphKeyIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field' => 'status',
+                'graph' => [
+                    'schema'      => 'statustype',
+                    // parentField missing.
+                    'parentFrom'  => 'caseType',
+                    'orderField'  => 'order',
+                    'finalField'  => 'isFinal',
+                    'allowedMoves' => 'forward',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'string']],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-graph-missing-key', $codes);
+    }
+
+    public function testMalformedObjectInitialIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'field'   => 'status',
+                'initial' => ['from' => 'caseType'],
+                // `field` key missing from the object-form initial.
+                'graph'   => [
+                    'schema'       => 'statustype',
+                    'parentField'  => 'caseType',
+                    'parentFrom'   => 'caseType',
+                    'orderField'   => 'order',
+                    'finalField'   => 'isFinal',
+                    'allowedMoves' => 'forward',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'string']],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-initial-malformed', $codes);
+    }
+
+    public function testGraphMissingFieldIsRejected(): void
+    {
+        $errors = $this->v->validate([
+            'x-openregister-lifecycle' => [
+                'graph' => [
+                    'schema'       => 'statustype',
+                    'parentField'  => 'caseType',
+                    'parentFrom'   => 'caseType',
+                    'orderField'   => 'order',
+                    'finalField'   => 'isFinal',
+                    'allowedMoves' => 'forward',
+                ],
+            ],
+            'properties' => ['status' => ['type' => 'string']],
+        ]);
+        $codes = array_column($errors, 'code');
+        $this->assertContains('lifecycle-missing-key', $codes);
+    }
 }

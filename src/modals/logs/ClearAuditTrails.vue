@@ -47,7 +47,7 @@ import { auditTrailStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="clearAuditTrails()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -92,6 +92,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI state helper — reports whether any audit-trail filter is active.
+		 */
 		hasActiveFilters() {
 			return auditTrailStore.filters && Object.keys(auditTrailStore.filters).some(key =>
 				auditTrailStore.filters[key] !== null
@@ -99,6 +102,9 @@ export default {
 				&& auditTrailStore.filters[key] !== '',
 			)
 		},
+		/**
+		 * @spec exclude UI display helper — returns only the non-empty filters for display.
+		 */
 		displayFilters() {
 			if (!auditTrailStore.filters) return {}
 			return Object.fromEntries(
@@ -120,6 +126,8 @@ export default {
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -133,6 +141,8 @@ export default {
 		/**
 		 * Clear the filtered audit trails
 		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-3
 		 */
 		async clearAuditTrails() {
 			this.loading = true
@@ -186,6 +196,7 @@ export default {
 		 * Format filter key for display
 		 * @param {string} key - Filter key
 		 * @return {string} Formatted key
+		 * @spec exclude UI display helper — translates filter keys to human labels.
 		 */
 		formatFilterKey(key) {
 			const keyMap = {
@@ -205,6 +216,7 @@ export default {
 		 * Format filter value for display
 		 * @param {any} value - Filter value
 		 * @return {string} Formatted value
+		 * @spec exclude UI display helper — formats filter values for display.
 		 */
 		formatFilterValue(value) {
 			if (typeof value === 'boolean') {

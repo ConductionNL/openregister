@@ -121,20 +121,26 @@ import formatBytes from '../../services/formatBytes.js'
 						<h3>
 							<FileCodeOutline :size="20" />
 							{{ schema.title }}
-							<span v-if="managingConfiguration" v-tooltip.bottom="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
+							<span v-if="managingConfiguration" :title="'Managed by configuration: ' + managingConfiguration.title" class="managedBadge">
 								<Database :size="16" />
 								Managed
 							</span>
 						</h3>
-						<NcActions v-if="!managingConfiguration" :primary="true" menu-name="Schema Actions">
+						<NcActions :primary="true" menu-name="Schema Actions">
 							<template #icon>
 								<DotsHorizontal :size="20" />
 							</template>
-							<NcActionButton close-after-click @click="editSchema(schema)">
+							<NcActionButton close-after-click @click="viewObjects(schema)">
+								<template #icon>
+									<TableEye :size="20" />
+								</template>
+								{{ t('openregister', 'View objects') }}
+							</NcActionButton>
+							<NcActionButton v-if="!managingConfiguration" close-after-click @click="editSchema(schema)">
 								<template #icon>
 									<Pencil :size="20" />
 								</template>
-								Edit Schema
+								{{ t('openregister', 'Edit Schema') }}
 							</NcActionButton>
 						</NcActions>
 					</div>
@@ -176,28 +182,28 @@ import formatBytes from '../../services/formatBytes.js'
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						@update:modelValue="v => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						@update:modelValue="v => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:model-value="formData.description || ''"
+						@update:modelValue="v => updateField('description', v)" />
 					<NcSelect
 						:input-label="t('openregister', 'Schemas')"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:model-value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="vals => updateField('schemas', vals)" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -207,12 +213,13 @@ import formatBytes from '../../services/formatBytes.js'
 <script>
 import { NcAppContent, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton, NcButton, NcTextField, NcTextArea, NcSelect } from '@nextcloud/vue'
 import { CnDetailPage, CnFormDialog } from '@conduction/nextcloud-vue'
-import VueApexCharts from 'vue-apexcharts'
+import VueApexCharts from 'vue3-apexcharts'
 import FileCodeOutline from 'vue-material-design-icons/FileCodeOutline.vue'
 import FolderOutline from 'vue-material-design-icons/FolderOutline.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Database from 'vue-material-design-icons/Database.vue'
+import TableEye from 'vue-material-design-icons/TableEye.vue'
 import { getTheme } from '@/services/getTheme.js'
 
 export default {
@@ -235,6 +242,7 @@ export default {
 		DotsHorizontal,
 		Pencil,
 		Database,
+		TableEye,
 	},
 	data() {
 		return {
@@ -250,6 +258,12 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Inline JSON-schema describing the register edit form.
+		 *
+		 * @spec exclude UI plumbing — static form-schema for the edit dialog, no observable contract.
+		 * @return {object}
+		 */
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -262,11 +276,23 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+		/**
+		 * Resolve the active register from the dashboard store.
+		 *
+		 * @spec exclude UI plumbing — store lookup; register dashboard contract owned by built-in-dashboards.
+		 * @return {object|undefined}
+		 */
 		register() {
 			// Find the register in the dashboard store using the ID from register store
 			const registerId = registerStore.getRegisterItem?.id
 			return dashboardStore.registers.find(r => r.id === registerId)
 		},
+		/**
+		 * ApexCharts options for the audit-trail line chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		auditTrailChartOptions() {
 			return {
 				chart: {
@@ -302,6 +328,12 @@ export default {
 				},
 			}
 		},
+		/**
+		 * ApexCharts options for the objects-by-schema pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		schemaChartOptions() {
 			return {
 				chart: {
@@ -324,6 +356,12 @@ export default {
 				}],
 			}
 		},
+		/**
+		 * ApexCharts options for the objects-by-size bar chart.
+		 *
+		 * @spec exclude UI plumbing — chart config computed; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		sizeChartOptions() {
 			return {
 				chart: {
@@ -355,6 +393,12 @@ export default {
 	},
 	watch: {
 		register: {
+			/**
+			 * Reload schemas + managing configuration when the register changes.
+			 *
+			 * @spec exclude UI plumbing — watcher delegating to loaders; dashboard contract owned by built-in-dashboards.
+			 * @return {void}
+			 */
 			handler() {
 				// Reload schemas and check configuration when register changes
 				this.loadSchemas()
@@ -362,12 +406,25 @@ export default {
 			},
 			deep: true,
 		},
+		/**
+		 * Lazy-load schema options when the edit dialog opens.
+		 *
+		 * @spec exclude UI plumbing — watcher triggering option load on dialog open.
+		 * @param {boolean} val - dialog visibility
+		 * @return {void}
+		 */
 		showEditDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
 			}
 		},
 	},
+	/**
+	 * Fetch register/dashboard data and stats on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to store loaders; dashboard contract owned by built-in-dashboards.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// If we have a register ID but no data, fetch dashboard data
 		if (registerStore.getRegisterItem?.id && !this.register) {
@@ -395,6 +452,8 @@ export default {
 	methods: {
 		/**
 		 * Load register statistics from the dedicated stats endpoint
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating local stats; dashboard contract owned by built-in-dashboards.
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterStats() {
@@ -414,6 +473,12 @@ export default {
 				this.statsLoading = false
 			}
 		},
+		/**
+		 * ApexCharts options for a per-schema validity pie chart.
+		 *
+		 * @spec exclude UI plumbing — chart config builder; dashboard contract owned by built-in-dashboards.
+		 * @return {object}
+		 */
 		getSchemaChartOptions() {
 			return {
 				chart: {
@@ -427,6 +492,13 @@ export default {
 				colors: ['#41B883', '#E46651', '#00D8FF', '#DD6B20'],
 				tooltip: {
 					y: {
+						/**
+						 * Format a chart tooltip value as an object count.
+						 *
+						 * @spec exclude UI plumbing — inline chart tooltip formatter, no observable contract.
+						 * @param {number} val - data point value
+						 * @return {string}
+						 */
 						formatter(val) {
 							return val + ' objects'
 						},
@@ -435,6 +507,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load schema select options for the edit dialog.
+		 *
+		 * @spec exclude UI plumbing — store delegation hydrating select options.
+		 * @return {Promise<void>}
+		 */
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -446,6 +524,13 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+		/**
+		 * Map schema ids/objects to NcSelect option values.
+		 *
+		 * @spec exclude UI plumbing — select-value normalizer for the edit form.
+		 * @param {Array} schemas - schema ids or objects
+		 * @return {Array} option objects
+		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -454,6 +539,13 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+		/**
+		 * Persist the register edit form and refresh dashboard data.
+		 *
+		 * @spec exclude UI plumbing — store delegation + dialog result; register CRUD contract owned elsewhere.
+		 * @param {object} formData - edited register fields
+		 * @return {Promise<void>}
+		 */
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -466,12 +558,40 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+		/**
+		 * Open the edit-schema modal for a schema row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
 		editSchema(schema) {
 			registerStore.setSchemaItem(schema)
 			navigationStore.setModal('editSchema')
 		},
 		/**
+		 * Drill into this register's objects for the given schema by deep-linking
+		 * to the search/tables view with both ids preselected. The SearchSideBar
+		 * reads `?register=&schema=` and runs the search automatically.
+		 *
+		 * @spec exclude UI plumbing — router navigation to the pre-filtered tables view.
+		 * @param {object} schema - schema row
+		 * @return {void}
+		 */
+		viewObjects(schema) {
+			const registerId = registerStore.getRegisterItem?.id
+			if (!registerId || !schema?.id) {
+				return
+			}
+			this.$router.push({
+				path: '/tables',
+				query: { register: String(registerId), schema: String(schema.id) },
+			}).catch(() => {})
+		},
+		/**
 		 * Load full schema details from schema IDs
+		 *
+		 * @spec exclude UI plumbing — parallel fetch hydrating local schema cards; schema contract owned elsewhere.
 		 * @return {Promise<void>}
 		 */
 		async loadSchemas() {
@@ -512,6 +632,8 @@ export default {
 		},
 		/**
 		 * Check if this register is managed by a configuration
+		 *
+		 * @spec exclude UI plumbing — scans local configuration list to set a managed badge.
 		 * @return {Promise<void>}
 		 */
 		async checkManagingConfiguration() {

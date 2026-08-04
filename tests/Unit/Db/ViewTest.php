@@ -23,6 +23,7 @@ class ViewTest extends TestCase
         $this->assertSame('boolean', $fieldTypes['isPublic']);
         $this->assertSame('boolean', $fieldTypes['isDefault']);
         $this->assertSame('json', $fieldTypes['query']);
+        $this->assertSame('json', $fieldTypes['presentation']);
         $this->assertSame('json', $fieldTypes['favoredBy']);
         $this->assertSame('datetime', $fieldTypes['created']);
         $this->assertSame('datetime', $fieldTypes['updated']);
@@ -38,6 +39,7 @@ class ViewTest extends TestCase
         $this->assertFalse($this->view->getIsPublic());
         $this->assertFalse($this->view->getIsDefault());
         $this->assertSame([], $this->view->getQuery());
+        $this->assertNull($this->view->getPresentation());
         $this->assertSame([], $this->view->getFavoredBy());
         $this->assertNull($this->view->getCreated());
         $this->assertNull($this->view->getUpdated());
@@ -100,6 +102,20 @@ class ViewTest extends TestCase
         $this->assertSame($query, $this->view->getQuery());
     }
 
+    // --- Presentation (object-views-kanban-calendar, REQ-VIEW-PRES-01) ---
+
+    public function testSetAndGetPresentation(): void
+    {
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $this->view->setPresentation($presentation);
+        $this->assertSame($presentation, $this->view->getPresentation());
+    }
+
+    public function testGetPresentationDefaultsToNull(): void
+    {
+        $this->assertNull($this->view->getPresentation());
+    }
+
     public function testSetAndGetFavoredBy(): void
     {
         $users = ['user1', 'user2', 'admin'];
@@ -151,7 +167,7 @@ class ViewTest extends TestCase
 
         $expectedKeys = [
             'id', 'uuid', 'name', 'description', 'owner', 'organisation',
-            'isPublic', 'isDefault', 'query', 'favoredBy', 'quota', 'usage',
+            'isPublic', 'isDefault', 'query', 'presentation', 'favoredBy', 'quota', 'usage',
             'created', 'updated', 'managedByConfiguration',
         ];
 
@@ -173,6 +189,7 @@ class ViewTest extends TestCase
         $this->assertFalse($json['isPublic']);
         $this->assertFalse($json['isDefault']);
         $this->assertSame([], $json['query']);
+        $this->assertSame(['viewType' => 'table'], $json['presentation']);
         $this->assertSame([], $json['favoredBy']);
         $this->assertNull($json['created']);
         $this->assertNull($json['updated']);
@@ -230,6 +247,65 @@ class ViewTest extends TestCase
         $json = $this->view->jsonSerialize();
         $this->assertNull($json['created']);
         $this->assertNull($json['updated']);
+    }
+
+    // --- Presentation defaulting (REQ-VIEW-PRES-01) ---
+
+    /**
+     * A legacy view (presentation never set, i.e. null) MUST read back with
+     * viewType "table" and render exactly as before this change.
+     */
+    public function testJsonSerializeLegacyViewDefaultsToTablePresentation(): void
+    {
+        $json = $this->view->jsonSerialize();
+        $this->assertSame(['viewType' => 'table'], $json['presentation']);
+    }
+
+    public function testJsonSerializeIncludesExplicitKanbanPresentation(): void
+    {
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $this->view->setPresentation($presentation);
+
+        $json = $this->view->jsonSerialize();
+        $this->assertSame($presentation, $json['presentation']);
+    }
+
+    public function testJsonSerializeIncludesExplicitCalendarPresentation(): void
+    {
+        $presentation = ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate', 'endDateField' => 'endDate']];
+        $this->view->setPresentation($presentation);
+
+        $json = $this->view->jsonSerialize();
+        $this->assertSame($presentation, $json['presentation']);
+    }
+
+    /**
+     * A presentation stored without an explicit viewType key still defaults
+     * to table (defensive: the default only truly matters for a null
+     * presentation, but this guards the merge logic too).
+     */
+    public function testJsonSerializeDefaultsMissingViewTypeToTable(): void
+    {
+        $this->view->setPresentation(['kanban' => ['groupByField' => 'status']]);
+
+        $json = $this->view->jsonSerialize();
+        $this->assertSame('table', $json['presentation']['viewType']);
+    }
+
+    // --- hydrate() ---
+
+    public function testHydrateSetsPresentationWhenProvided(): void
+    {
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $this->view->hydrate(['presentation' => $presentation]);
+        $this->assertSame($presentation, $this->view->getPresentation());
+    }
+
+    public function testHydrateDefaultsPresentationToNullWhenAbsent(): void
+    {
+        $this->view->setPresentation(['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]);
+        $this->view->hydrate(['name' => 'No presentation key here']);
+        $this->assertNull($this->view->getPresentation());
     }
 
     // --- getManagedByConfiguration ---

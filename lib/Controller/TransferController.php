@@ -3,7 +3,15 @@
 /**
  * OpenRegister Transfer Controller
  *
- * Handles e-Depot transfer list operations.
+ * Handles e-Depot transfer list operations. Serves the durable transfer
+ * records persisted in the `edepot-transfers` system register (index/show)
+ * and really dispatches an approved transfer to the queued execution path
+ * (create) — the former placeholder responses + never-dispatched
+ * `TransferExecutionJob` are the pre-existing stubs closed by
+ * archival-transfer-hardening (OR-AD-2).
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
@@ -16,133 +24,175 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+ * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Controller;
 
-use OCA\OpenRegister\Service\Edepot\EdepotTransferService;
+use OCA\OpenRegister\BackgroundJob\TransferExecutionJob;
 use OCA\OpenRegister\Service\Edepot\TransferListService;
+use OCA\OpenRegister\Service\Edepot\TransferRecordService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\BackgroundJob\IJobList;
 use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
  * Controller for e-Depot transfer operations.
  *
- * Provides endpoints for transfer list management: create, approve, reject,
- * initiate transfer, and check status.
+ * Provides endpoints for transfer list management: list, show, and initiate
+ * (dispatch to the queued execution path) reading persisted transfer records.
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
  */
 class TransferController extends Controller
 {
     /**
      * Constructor.
      *
-     * @param string                $appName             The app name.
-     * @param IRequest              $request             The request.
-     * @param TransferListService   $transferListService The transfer list service.
-     * @param EdepotTransferService $transferService     The transfer service.
-     * @param LoggerInterface       $logger              Logger.
+     * @param string                $appName               The app name.
+     * @param IRequest              $request               The request.
+     * @param TransferRecordService $transferRecordService Durable transfer-record persistence.
+     * @param IJobList              $jobList               Background-job scheduler (dispatch execution).
+     * @param LoggerInterface       $logger                Logger.
      */
     public function __construct(
         $appName,
         IRequest $request,
-        private readonly TransferListService $transferListService,
-        private readonly EdepotTransferService $transferService,
+        private readonly TransferRecordService $transferRecordService,
+        private readonly IJobList $jobList,
         private readonly LoggerInterface $logger,
     ) {
         parent::__construct(appName: $appName, request: $request);
+
     }//end __construct()
 
     /**
-     * List all transfer lists.
-     *
-     * @NoCSRFRequired
+     * List all durable transfer lists.
      *
      * @return JSONResponse The list of transfer lists.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+     *   (Scenario: Index returns persisted transfer lists)
      */
+    #[NoCSRFRequired]
     public function index(): JSONResponse
     {
-        // Transfer lists are stored as register objects.
-        // This is a placeholder that returns the expected structure.
-        return new JSONResponse(data: ['results' => [], 'total' => 0]);
+        $lists = $this->transferRecordService->listTransferLists();
+
+        return new JSONResponse(data: ['results' => $lists, 'total' => count($lists)]);
+
     }//end index()
 
     /**
-     * Get a specific transfer list.
+     * Get a specific durable transfer list.
      *
      * @param string $id The transfer list UUID.
      *
-     * @return JSONResponse The transfer list data.
+     * @return JSONResponse The transfer list data, or a 404.
      *
-     * @NoCSRFRequired
-     *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-proof-of-transfer/spec.md
+     *   (Scenario: Show returns a persisted transfer list)
      */
+    #[NoCSRFRequired]
     public function show(string $id): JSONResponse
     {
-        // Transfer lists are stored as register objects.
-        // Delegate to the object API for retrieval.
-        return new JSONResponse(
-            data: ['error' => "Transfer list '{$id}' not found"],
-            statusCode: 404
-        );
+        $list = $this->transferRecordService->loadTransferList($id);
+        if ($list === null) {
+            return new JSONResponse(
+                data: ['error' => "Transfer list '{$id}' not found"],
+                statusCode: Http::STATUS_NOT_FOUND
+            );
+        }
+
+        return new JSONResponse(data: $list);
+
     }//end show()
 
     /**
      * Initiate a transfer from an approved transfer list.
      *
-     * @NoCSRFRequired
+     * Loads the persisted list, verifies it is `approved` (client error
+     * otherwise — no enqueue), and dispatches `TransferExecutionJob` with
+     * `{transferListId, attempt: 1}` (the WebhookDeliveryJob argument
+     * convention). Retry / backoff / escalation are the job's concern.
      *
      * @return JSONResponse The transfer initiation result.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-22
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-36
+     * @spec openspec/changes/archival-transfer-hardening/specs/edepot-durable-retry/spec.md
+     *   (Scenario: Create dispatches an approved transfer)
      */
+    #[NoCSRFRequired]
     public function create(): JSONResponse
     {
         try {
             $params           = $this->request->getParams();
-            $transferListUuid = ($params['transferListUuid'] ?? '');
+            $transferListUuid = (string) ($params['transferListUuid'] ?? '');
 
-            if (empty($transferListUuid) === true) {
+            if ($transferListUuid === '') {
                 return new JSONResponse(
                     data: ['error' => 'transferListUuid is required'],
-                    statusCode: 400
+                    statusCode: Http::STATUS_BAD_REQUEST
                 );
             }
 
-            // In a full implementation, we would:
-            // 1. Load the transfer list from the register
-            // 2. Verify it's in 'approved' status
-            // 3. Queue a TransferExecutionJob
-            //
-            // For now, return a structured response indicating the transfer was queued.
-            return new JSONResponse(
+            $list = $this->transferRecordService->loadTransferList($transferListUuid);
+            if ($list === null) {
+                return new JSONResponse(
+                    data: ['error' => "Transfer list '{$transferListUuid}' not found"],
+                    statusCode: Http::STATUS_NOT_FOUND
+                );
+            }
+
+            $status = (string) ($list['status'] ?? '');
+            if ($status !== TransferListService::STATUS_APPROVED) {
+                return new JSONResponse(
                     data: [
-                        'message'          => 'Transfer queued for execution',
-                        'transferListUuid' => $transferListUuid,
-                        'status'           => 'queued',
-                    ]
-                    );
-        } catch (\Exception $e) {
+                        'error'  => "Transfer list must be 'approved' to initiate; current status '{$status}'",
+                        'status' => $status,
+                    ],
+                    statusCode: Http::STATUS_CONFLICT
+                );
+            }
+
+            $this->jobList->add(
+                TransferExecutionJob::class,
+                [
+                    'transferListId' => $transferListUuid,
+                    'attempt'        => 1,
+                ]
+            );
+
+            $this->logger->info(
+                message: '[TransferController] Dispatched transfer execution',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'transferListUuid' => $transferListUuid]
+            );
+
+            return new JSONResponse(
+                data: [
+                    'message'          => 'Transfer queued for execution',
+                    'transferListUuid' => $transferListUuid,
+                    'status'           => 'queued',
+                ],
+                statusCode: Http::STATUS_ACCEPTED
+            );
+        } catch (\Throwable $e) {
             $this->logger->error(
-                message: '[TransferController] Failed to initiate transfer',
-                context: ['error' => $e->getMessage()]
+                message: '[TransferController] Failed to initiate transfer: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return new JSONResponse(
-                data: ['error' => $e->getMessage()],
-                statusCode: 500
+                data: ['error' => 'Failed to initiate transfer.'],
+                statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
             );
         }//end try
+
     }//end create()
 }//end class

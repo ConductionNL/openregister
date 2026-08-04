@@ -6,21 +6,21 @@
 		@closing="$emit('close')">
 		<form class="avgEditForm" @submit.prevent="onSave">
 			<NcTextField
-				:value.sync="form.naam"
-				:label="t('openregister', 'Naam *')"
+				v-model="form.naam"
+				:label="t('openregister', 'Name *')"
 				required />
 
 			<NcTextField
-				:value.sync="form.code"
+				v-model="form.code"
 				:label="t('openregister', 'Code (short readable key, e.g. v-2026-001)')" />
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Beschrijving') }}</span>
+				<span>{{ t('openregister', 'Description') }}</span>
 				<textarea v-model="form.beschrijving" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Doelbinding *') }}</span>
+				<span>{{ t('openregister', 'Purpose limitation *') }}</span>
 				<textarea v-model="form.doelbinding"
 					rows="3"
 					class="avgTextarea"
@@ -31,13 +31,13 @@
 				v-model="form.rechtsgrond"
 				:options="rechtsgrondOptions"
 				:label-outside="false"
-				input-label="Rechtsgrond *"
+				:input-label="t('openregister', 'Legal basis *')"
 				:reduce="(o) => o.value"
 				required />
 
 			<NcTextField
-				:value.sync="form.bewaartermijn"
-				:label="t('openregister', 'Bewaartermijn (ISO-8601 duration, e.g. P10Y, P30D)')" />
+				v-model="form.bewaartermijn"
+				:label="t('openregister', 'Retention period (ISO-8601 duration, e.g. P10Y, P30D)')" />
 
 			<NcSelect
 				v-model="form.status"
@@ -47,22 +47,22 @@
 				:reduce="(o) => o.value" />
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categorieën betrokkenen (één per regel)') }}</span>
+				<span>{{ t('openregister', 'Categories of data subjects (one per line)') }}</span>
 				<textarea v-model="categorieenBetrokkenenText" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Categorieën persoonsgegevens (één per regel)') }}</span>
+				<span>{{ t('openregister', 'Categories of personal data (one per line)') }}</span>
 				<textarea v-model="categorieenPersoonsgegevensText" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Technische maatregelen') }}</span>
+				<span>{{ t('openregister', 'Technical measures') }}</span>
 				<textarea v-model="form.technischeMaatregelen" rows="3" class="avgTextarea" />
 			</label>
 
 			<label class="avgField">
-				<span>{{ t('openregister', 'Organisatorische maatregelen') }}</span>
+				<span>{{ t('openregister', 'Organisational measures') }}</span>
 				<textarea v-model="form.organisatorischeMaatregelen" rows="3" class="avgTextarea" />
 			</label>
 
@@ -71,10 +71,10 @@
 			</NcNoteCard>
 
 			<div class="avgEditActions">
-				<NcButton type="tertiary" :disabled="saving" @click="$emit('close')">
+				<NcButton variant="tertiary" :disabled="saving" @click="$emit('close')">
 					{{ t('openregister', 'Cancel') }}
 				</NcButton>
-				<NcButton type="primary" native-type="submit" :disabled="saving">
+				<NcButton variant="primary" type="submit" :disabled="saving">
 					<template #icon>
 						<NcLoadingIcon v-if="saving" :size="20" />
 					</template>
@@ -129,26 +129,45 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Presentation glue: exposes the translate helper to the template; no standalone behavioural contract.
+		 */
 		t() {
 			return t
 		},
+		/**
+		 * @spec exclude Presentation glue: edit-vs-create dialog title string; no standalone behavioural contract.
+		 */
 		dialogTitle() {
 			return this.activity
-				? t('openregister', 'Edit verwerkingsactiviteit')
-				: t('openregister', 'New verwerkingsactiviteit')
+				? t('openregister', 'Edit processing activity')
+				: t('openregister', 'New processing activity')
 		},
+		/**
+		 * @spec exclude Presentation glue: maps the rechtsgrond vocabulary to select options; no standalone behavioural contract.
+		 */
 		rechtsgrondOptions() {
 			return RECHTSGROND_VOCABULARY.map((v) => ({ value: v, label: v.replace(/_/g, ' ') }))
 		},
+		/**
+		 * @spec exclude Presentation glue: maps the status vocabulary to select options; no standalone behavioural contract.
+		 */
 		statusOptions() {
 			return STATUS_VOCABULARY.map((v) => ({ value: v, label: v }))
 		},
 		categorieenBetrokkenenText: {
+			/**
+			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
+			 */
 			get() {
 				return Array.isArray(this.form.categorieenBetrokkenen)
 					? this.form.categorieenBetrokkenen.join('\n')
 					: ''
 			},
+			/**
+			 * @param value
+			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
+			 */
 			set(value) {
 				this.form.categorieenBetrokkenen = (value ?? '')
 					.split('\n')
@@ -157,11 +176,18 @@ export default {
 			},
 		},
 		categorieenPersoonsgegevensText: {
+			/**
+			 * @spec exclude Presentation glue: textarea getter joining a string array into newline-separated text; no standalone behavioural contract.
+			 */
 			get() {
 				return Array.isArray(this.form.categorieenPersoonsgegevens)
 					? this.form.categorieenPersoonsgegevens.join('\n')
 					: ''
 			},
+			/**
+			 * @param value
+			 * @spec exclude Presentation glue: textarea setter splitting newline text into a trimmed string array; no standalone behavioural contract.
+			 */
 			set(value) {
 				this.form.categorieenPersoonsgegevens = (value ?? '')
 					.split('\n')
@@ -172,6 +198,12 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Seed the form from an existing activity or with Art-30 defaults.
+		 *
+		 * @param activity
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+		 */
 		makeForm(activity) {
 			return {
 				naam: activity?.naam ?? '',
@@ -188,6 +220,11 @@ export default {
 			}
 		},
 
+		/**
+		 * Strip empty optional fields before writing the activity.
+		 *
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+		 */
 		buildPayload() {
 			const payload = { ...this.form }
 			// Strip empty optional fields so we don't override server-side defaults.
@@ -197,6 +234,11 @@ export default {
 			return payload
 		},
 
+		/**
+		 * Dispatch create vs update of the processing activity against avgStore.
+		 *
+		 * @spec openspec/specs/avg-verwerkingsregister/spec.md
+		 */
 		async onSave() {
 			this.saving = true
 			this.error = null

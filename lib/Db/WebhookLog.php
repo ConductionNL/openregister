@@ -5,6 +5,9 @@
  *
  * Entity for logging webhook delivery attempts and results.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -204,12 +207,14 @@ class WebhookLog extends Entity implements JsonSerializable
      */
     public function setPayloadArray(?array $payload): void
     {
+        // phpcs:disable CustomSniffs.Functions.NamedParameters -- Entity __call breaks with named args.
         if ($payload === null) {
-            $this->setPayload(payload: null);
+            $this->setPayload(null);
             return;
         }
 
-        $this->setPayload(payload: json_encode($payload));
+        $this->setPayload(json_encode($payload));
+        // phpcs:enable CustomSniffs.Functions.NamedParameters
     }//end setPayloadArray()
 
     /**

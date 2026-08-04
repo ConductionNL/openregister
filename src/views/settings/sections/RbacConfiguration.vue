@@ -6,7 +6,7 @@
 		:loading-message="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -16,7 +16,7 @@
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -60,7 +60,7 @@
 		<!-- Enable RBAC Toggle -->
 		<div class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="rbacOptions.enabled"
+				v-model="rbacOptions.enabled"
 				:disabled="saving"
 				type="switch">
 				{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
@@ -69,7 +69,7 @@
 			<!-- Admin Override -->
 			<div v-if="rbacOptions.enabled">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.adminOverride"
+					v-model="rbacOptions.adminOverride"
 					:disabled="saving"
 					type="switch">
 					{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}
@@ -139,7 +139,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
  */
 import { mapStores } from 'pinia'
 import { translate as t } from '@nextcloud/l10n'
@@ -167,13 +167,14 @@ export default {
 
 		rbacOptions: {
 			/**
-			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			get() {
 				return this.settingsStore.rbacOptions
 			},
 			/**
-			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+			 * @param value
+			 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 			 */
 			set(value) {
 				this.settingsStore.rbacOptions = value
@@ -181,35 +182,35 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		groupOptions() {
 			return this.settingsStore.groupOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		userOptions() {
 			return this.settingsStore.userOptions
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		rebasing() {
 			return this.settingsStore.rebasing
@@ -218,14 +219,14 @@ export default {
 
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-59
+		 * @spec openspec/specs/rbac-scopes/spec.md#requirement-oas-scope-generation-from-rbac-configuration
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRbacSettings(this.rbacOptions)

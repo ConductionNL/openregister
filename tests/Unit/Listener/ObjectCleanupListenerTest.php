@@ -1,101 +1,114 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Unit\Listener;
 
+use OCA\OpenRegister\BackgroundJob\ObjectCleanupJob;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Listener\ObjectCleanupListener;
-use OCA\OpenRegister\Service\CalendarEventService;
-use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
-use OCA\OpenRegister\Service\EmailService;
-use OCA\OpenRegister\Service\NoteService;
-use OCA\OpenRegister\Service\TaskService;
+use OCA\OpenRegister\Service\Deferral\ListenerDeferralService;
+use OCA\OpenRegister\Service\ObjectRelationCleanupService;
 use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 
+/**
+ * Covers the deferred deleted-object cleanup path.
+ *
+ * The listener no longer calls the six cleanup services itself: it buffers the
+ * deleted object's identity onto ListenerDeferralService and the real work runs
+ * in ObjectCleanupJob, with an inline fallback through
+ * ObjectRelationCleanupService when deferral is switched off. This test was
+ * still written against the pre-deferral seven-service constructor and errored
+ * on every run.
+ */
 class ObjectCleanupListenerTest extends TestCase
 {
-    private NoteService&MockObject $noteService;
-    private TaskService&MockObject $taskService;
-    private EmailService&MockObject $emailService;
-    private CalendarEventService&MockObject $calendarEventService;
-    private ContactService&MockObject $contactService;
-    private DeckCardService&MockObject $deckCardService;
-    private LoggerInterface&MockObject $logger;
+    private ListenerDeferralService&MockObject $deferral;
+    private ObjectRelationCleanupService&MockObject $cleanup;
     private ObjectCleanupListener $listener;
 
     protected function setUp(): void
     {
-        $this->noteService = $this->createMock(NoteService::class);
-        $this->taskService = $this->createMock(TaskService::class);
-        $this->emailService = $this->createMock(EmailService::class);
-        $this->calendarEventService = $this->createMock(CalendarEventService::class);
-        $this->contactService = $this->createMock(ContactService::class);
-        $this->deckCardService = $this->createMock(DeckCardService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        parent::setUp();
+
+        $this->deferral = $this->createMock(ListenerDeferralService::class);
+        $this->cleanup = $this->createMock(ObjectRelationCleanupService::class);
 
         $this->listener = new ObjectCleanupListener(
-            $this->noteService,
-            $this->taskService,
-            $this->emailService,
-            $this->calendarEventService,
-            $this->contactService,
-            $this->deckCardService,
-            $this->logger
+            $this->deferral,
+            $this->cleanup
         );
     }
 
-    private function createDeleteEvent(string $uuid = 'abc-123'): ObjectDeletedEvent
-    {
+    private function createDeleteEvent(
+        string $uuid = 'abc-123',
+        string $register = '7',
+        string $schema = '228'
+    ): ObjectDeletedEvent {
         $object = new ObjectEntity();
         $object->setUuid($uuid);
+        $object->setRegister($register);
+        $object->setSchema($schema);
+
         return new ObjectDeletedEvent($object);
     }
 
-    public function testHandleCallsAllCleanupMethods(): void
+    public function testHandleDefersTheDeletedObject(): void
     {
-        $event = $this->createDeleteEvent();
+        $this->deferral->method('isDeferralEnabled')->willReturn(true);
 
-        $this->noteService->expects($this->once())->method('deleteNotesForObject')->with('abc-123');
-        $this->taskService->expects($this->once())->method('getTasksForObject')->with('abc-123')->willReturn([]);
-        $this->emailService->expects($this->once())->method('deleteLinksForObject')->with('abc-123');
-        $this->calendarEventService->expects($this->once())->method('unlinkEventsForObject')->with('abc-123');
-        $this->contactService->expects($this->once())->method('deleteLinksForObject')->with('abc-123');
-        $this->deckCardService->expects($this->once())->method('deleteLinksForObject')->with('abc-123');
+        $this->deferral->expects($this->once())
+            ->method('defer')
+            ->with(
+                ObjectCleanupJob::class,
+                [
+                    'uuid' => 'abc-123',
+                    'register' => '7',
+                    'schema' => '228',
+                ],
+                $this->anything(),
+                'abc-123'
+            );
 
-        $this->listener->handle($event);
+        $this->cleanup->expects($this->never())->method('cleanup');
+
+        $this->listener->handle($this->createDeleteEvent());
+    }
+
+    public function testHandleCleansInlineWhenDeferralIsDisabled(): void
+    {
+        $this->deferral->method('isDeferralEnabled')->willReturn(false);
+
+        $this->cleanup->expects($this->once())
+            ->method('cleanup')
+            ->with('abc-123');
+
+        $this->deferral->expects($this->never())->method('defer');
+
+        $this->listener->handle($this->createDeleteEvent());
     }
 
     public function testHandleIgnoresNonObjectDeletedEvents(): void
     {
         $event = $this->createMock(Event::class);
 
-        $this->noteService->expects($this->never())->method('deleteNotesForObject');
+        $this->deferral->expects($this->never())->method('defer');
+        $this->cleanup->expects($this->never())->method('cleanup');
 
         $this->listener->handle($event);
     }
 
-    public function testHandleContinuesWhenOneCleanupFails(): void
+    public function testHandleIgnoresAnObjectWithNoUuid(): void
     {
-        $event = $this->createDeleteEvent();
+        $object = new ObjectEntity();
+        $object->setUuid('');
 
-        // Email cleanup throws.
-        $this->emailService->method('deleteLinksForObject')
-            ->willThrowException(new \Exception('DB error'));
+        $this->deferral->expects($this->never())->method('defer');
+        $this->cleanup->expects($this->never())->method('cleanup');
 
-        // Other services should still be called.
-        $this->noteService->expects($this->once())->method('deleteNotesForObject');
-        $this->taskService->expects($this->once())->method('getTasksForObject')->willReturn([]);
-        $this->calendarEventService->expects($this->once())->method('unlinkEventsForObject');
-        $this->contactService->expects($this->once())->method('deleteLinksForObject');
-        $this->deckCardService->expects($this->once())->method('deleteLinksForObject');
-
-        // Logger should log the warning.
-        $this->logger->expects($this->atLeastOnce())->method('warning');
-
-        $this->listener->handle($event);
+        $this->listener->handle(new ObjectDeletedEvent($object));
     }
 }

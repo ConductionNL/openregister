@@ -17,6 +17,9 @@
  *          query: ?registerId=X&schemaId=Y (either may be omitted)
  *          → unsubscribe by tuple
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -26,7 +29,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/tasks.md "Users MUST be able to manage their notification preferences"
+ * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
  */
 
 declare(strict_types=1);
@@ -41,6 +44,18 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IUserSession;
 
+/**
+ * DEPRECATED per-user (register, schema) notification subscription surface.
+ *
+ * Superseded by the override-only model: rules live in the schema annotation
+ * `x-openregister-notifications` and per-user preferences are override-only
+ * Nextcloud user-config values served by NotificationPreferencesController.
+ * Existing rows are migrated by the MigrateNotificationSubscriptionsToUserConfig
+ * repair step; this controller keeps responding during the deprecation window
+ * and is scheduled for removal.
+ *
+ * @deprecated Use NotificationPreferencesController (override-only user-config).
+ */
 class NotificationSubscriptionsController extends Controller
 {
     /**
@@ -72,6 +87,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
      */
     public function index(): JSONResponse
     {
@@ -99,6 +116,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
      */
     public function create(): JSONResponse
     {
@@ -111,15 +130,13 @@ class NotificationSubscriptionsController extends Controller
         $registerId = $this->coerceNullableInt(value: ($params['registerId'] ?? null));
         $schemaId   = $this->coerceNullableInt(value: ($params['schemaId'] ?? null));
 
-        // SECURITY: load the referenced register/schema through the
-        // standard RBAC + multitenancy filter before persisting the
-        // subscription. Without this gate the mapper accepted any
-        // (registerId, schemaId) pair — letting a caller subscribe
-        // themselves to objects in other tenants and confirming the
-        // existence of arbitrary IDs via the success/404 channel.
+        // SECURITY (M2): verify the caller has read access to the referenced
+        // register/schema before persisting the subscription.
+        // Use _multitenancy: true to enforce tenant-scope — a user in org A
+        // must not be allowed to subscribe to org B's register/schema events.
         if ($registerId !== null) {
             try {
-                $this->registerMapper->find($registerId);
+                $this->registerMapper->find($registerId, _multitenancy: true);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Register not found or not accessible'],
@@ -130,7 +147,7 @@ class NotificationSubscriptionsController extends Controller
 
         if ($schemaId !== null) {
             try {
-                $this->schemaMapper->find($schemaId);
+                $this->schemaMapper->find($schemaId, _multitenancy: true);
             } catch (\Throwable $e) {
                 return new JSONResponse(
                     data: ['error' => 'Schema not found or not accessible'],
@@ -162,6 +179,8 @@ class NotificationSubscriptionsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md "Users MUST be able to manage their notification preferences"
      */
     public function destroy(): JSONResponse
     {
@@ -187,6 +206,9 @@ class NotificationSubscriptionsController extends Controller
      * Resolve the current user's UID, or null when anonymous.
      *
      * @return ?string
+     *
+     * @spec exclude Private helper: resolves the session UID (null when anonymous);
+     *              the subscription endpoints are owned by notificatie-engine/tasks.md.
      */
     private function resolveUserId(): ?string
     {
@@ -206,6 +228,8 @@ class NotificationSubscriptionsController extends Controller
      * @param mixed $value Input.
      *
      * @return ?int
+     *
+     * @spec exclude Private helper: coerces a request value to a nullable int; the subscription endpoints are owned by notificatie-engine/tasks.md.
      */
     private function coerceNullableInt(mixed $value): ?int
     {

@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12 https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -74,6 +78,8 @@ class FileValidationHandler
      * @phpstan-return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive list of dangerous extensions requires extensive code
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function blockExecutableFile(string $fileName, string $fileContent): void
     {
@@ -185,6 +191,8 @@ class FileValidationHandler
      *
      * @psalm-return   void
      * @phpstan-return void
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function detectExecutableMagicBytes(string $content, string $fileName): void
     {
@@ -234,36 +242,34 @@ class FileValidationHandler
     }//end detectExecutableMagicBytes()
 
     /**
-     * Check file ownership and repair the OpenRegister owner record when it drifted.
+     * Assert that the current session may access the given file.
      *
-     * Probes read access via `Node::isReadable()` — a pure permission-bitmask
-     * check against `oc_filecache`. It does NOT read file contents and does NOT
-     * acquire a Nextcloud shared lock, so this probe is safe to run in a hot
-     * listing loop against arbitrarily large or actively-locked files. See
-     * `openspec/changes/fix-object-files-listing-lock-and-limit/design.md`
-     * Decision 1 for the rationale (the prior implementation used
-     * `File::getContent()` which forced O(file-size) reads and triggered
-     * `LockedException` on every NC-locked file).
+     * Access is readability-based and ownership-agnostic. An OpenRegister object
+     * may link a file owned by the `openregister` system user, by the uploading
+     * user, or by any other user, and the current session may reach it either
+     * through direct ownership OR through a file share. `Node::isReadable()`
+     * reflects exactly that surface: a pure permission-bitmask check against
+     * `oc_filecache` for the current user's view. It does NOT read file contents
+     * and does NOT acquire a Nextcloud shared lock, so this probe is safe to run
+     * in a hot listing loop against arbitrarily large or actively-locked files.
+     * See `openspec/changes/fix-object-files-listing-lock-and-limit/design.md`
+     * Decision 1 (the prior implementation used `File::getContent()` which forced
+     * O(file-size) reads and triggered `LockedException` on every NC-locked file).
      *
-     * Behaviour:
-     * - If the current session can read the file and the owner record has
-     *   drifted, `ownFile()` is called to repair the DB record (best effort —
-     *   any failure is logged at warning level but does not propagate).
-     * - If the current session cannot read the file at all, a
-     *   `NotPermittedException` is thrown. Ownership is intentionally NOT
-     *   repaired in this branch: repair is only a valid action when the
-     *   session can already observe the file through the user's permission
-     *   surface.
+     * Comparing the file owner against the session user is intentionally NOT done:
+     * it rejects files reachable via a share, which broke linking and viewing of
+     * files owned by users other than the session user. Write and delete paths
+     * additionally assert `isUpdateable()`/`isDeletable()` before mutating, and the
+     * underlying Nextcloud node operations enforce permissions natively, so the
+     * readability gate here does not over-grant.
      *
-     * @param Node $file The file node to check ownership for.
+     * @param Node $file The file node to check access for.
      *
      * @return void
      *
      * @throws NotPermittedException When the file is not readable by the current session.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) The method fans out across
-     * readability, owner-drift detection, and best-effort repair with a nested
-     * try/catch; splitting further would obscure the ownership-repair intent.
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function checkOwnership(Node $file): void
     {
@@ -278,28 +284,6 @@ class FileValidationHandler
 
             throw new NotPermittedException("File {$fileName} is not readable by the current session");
         }
-
-        try {
-            $fileOwner        = $file->getOwner();
-            $openRegisterUser = $this->getUser();
-
-            if ($fileOwner === null || $fileOwner->getUID() !== $openRegisterUser->getUID()) {
-                $this->logger->info(
-                    message: "[FileValidationHandler] checkOwnership: File {$fileName} (ID: {$fileId}) has drifted owner, repairing",
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
-
-                $this->ownFile(file: $file);
-            }
-        } catch (Exception $ownershipException) {
-            // Repair is best-effort: a readable file with an unrecoverable owner
-            // record should not fail the caller. The drift will be re-evaluated
-            // on the next call.
-            $this->logger->warning(
-                message: "[FileValidationHandler] checkOwnership: Could not repair ownership for {$fileName}: ".$ownershipException->getMessage(),
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-        }//end try
     }//end checkOwnership()
 
     /**
@@ -316,6 +300,8 @@ class FileValidationHandler
      *
      * @psalm-return   bool
      * @phpstan-return bool
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function ownFile(Node $file): bool
     {

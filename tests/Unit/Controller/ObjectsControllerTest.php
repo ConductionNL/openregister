@@ -22,6 +22,8 @@ use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IURLGenerator;
+use OCA\OpenRegister\Service\DeepLinkRegistryService;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -76,24 +78,10 @@ class ObjectsControllerTest extends TestCase
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
-        // Register mappers in the DI container that resolveRegisterSchemaIds() resolves
-        // via \OC::$server->get(). These separate mocks default to throwing on find()
-        // so entities stay null (same as old stub behavior). The constructor-injected
-        // $this->registerMapper / $this->schemaMapper remain independent for other tests.
-        $diRegisterMapper = $this->createMock(RegisterMapper::class);
-        $diRegisterMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-        $diSchemaMapper = $this->createMock(SchemaMapper::class);
-        $diSchemaMapper->method('find')
-            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
-
-        \OC::$server->registerService(RegisterMapper::class, function () use ($diRegisterMapper) {
-            return $diRegisterMapper;
-        });
-        \OC::$server->registerService(SchemaMapper::class, function () use ($diSchemaMapper) {
-            return $diSchemaMapper;
-        });
-
+        // resolveRegisterSchemaIds() reuses the entities resolved by
+        // ObjectService::setRegister()/setSchema(); the ObjectService mock
+        // returns null from the entity getters by default, so entities stay
+        // null (same as the old throwing-DI-stub behavior).
         $this->controller = new ObjectsController(
             'openregister',
             $this->request,
@@ -258,6 +246,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturnsUnlockedObject(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('unlockObject')->willReturn(true);
@@ -269,6 +258,33 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['locked']);
         $this->assertSame('uuid-123', $data['uuid']);
         $this->assertSame('Object unlocked successfully', $data['message']);
+    }
+
+    public function testUnlockAnonymousRejected(): void
+    {
+        // Wave-3 C14 regression guard: anonymous callers must not be able
+        // to release a lock.
+        $this->userSession->method('getUser')->willReturn(null);
+        $this->objectService->expects($this->never())->method('unlockObject');
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(401, $result->getStatus());
+    }
+
+    public function testUnlockPermissionDeniedReturns403(): void
+    {
+        // Wave-3 C14 regression guard: when LockHandler raises a permission
+        // error, the controller maps it to 403 (not 500).
+        $this->setupRegularUser();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('unlockObject')
+            ->willThrowException(new \Exception('User does not have permission to unlock this object'));
+
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(403, $result->getStatus());
     }
 
     public function testMergeReturnsMergedObject(): void
@@ -639,16 +655,6 @@ class ObjectsControllerTest extends TestCase
         $this->assertFalse($data['success']);
     }
 
-    public function testClearBlobReturnsRetiredMessage(): void
-    {
-        $result = $this->controller->clearBlob();
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame(0, $data['deleted']);
-    }
-
     public function testContractsReturnsPaginatedResults(): void
     {
         $this->request->method('getParams')->willReturn([]);
@@ -748,62 +754,6 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->canDelete('uuid-123', 'reg1', 'schema1', $this->objectService);
 
         $this->assertSame(403, $result->getStatus());
-    }
-
-    public function testImportReturns400WhenNoFile(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn(null);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('No file uploaded', $result->getData()['error']);
-    }
-
-    public function testImportSuccess(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.csv',
-            'tmp_name' => '/tmp/import.csv',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturn(null);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 10,
-            'failed' => 0,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
-    }
-
-    public function testImportReturns500OnException(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'import.csv',
-            'tmp_name' => '/tmp/import.csv',
-        ]);
-
-        $this->registerMapper->method('find')
-            ->willThrowException(new DBException('Register not found'));
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(500, $result->getStatus());
     }
 
     // --- index() tests: register/schema not found ---
@@ -1122,65 +1072,6 @@ class ObjectsControllerTest extends TestCase
 
     // --- import() register-level additional tests ---
 
-    public function testImportReturnsSuccessWithValidFile(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-            'error' => 0,
-        ]);
-        $this->request->method('getParam')->willReturn(null);
-
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-        $register->setTitle('Test Register');
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
-            'created' => 5,
-            'updated' => 2,
-            'errors' => 0,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertInstanceOf(JSONResponse::class, $result);
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
-    }
-
-    public function testImportCatchesRegisterNotFound(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-            'error' => 0,
-        ]);
-        $this->request->method('getParam')->willReturn(null);
-
-        $this->registerMapper->method('find')
-            ->willThrowException(new Exception('Register not found'));
-
-        // import() catches Exception and returns 500
-        try {
-            $result = $this->controller->import(999);
-            $this->assertInstanceOf(JSONResponse::class, $result);
-            $this->assertSame(500, $result->getStatus());
-        } catch (Exception $e) {
-            // If exception propagates, that is also valid behavior
-            $this->assertSame('Register not found', $e->getMessage());
-        }
-    }
-
     // --- lock() with duration ---
 
     public function testLockWithDurationParameter(): void
@@ -1294,18 +1185,6 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->merge('uuid-123', 'reg1', 'schema1', $this->objectService);
 
         $this->assertSame(400, $result->getStatus());
-    }
-
-    // --- import() with no file returns 400 (duplicate guard) ---
-
-    public function testImportWithNoFileReturns400(): void
-    {
-        $this->request->method('getUploadedFile')->willReturn(null);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(400, $result->getStatus());
-        $this->assertSame('No file uploaded', $result->getData()['error']);
     }
 
     // =========================================================================
@@ -1491,6 +1370,109 @@ class ObjectsControllerTest extends TestCase
         $result = $this->controller->create('1', '2', $this->objectService);
 
         $this->assertSame(403, $result->getStatus());
+    }
+
+    /**
+     * Per the `self-folder-access-control` capability: when the save pipeline
+     * throws `FolderAccessDeniedException`, the controller MUST return HTTP 403
+     * with a minimal structured body `{ "error": "folder_access_denied" }`.
+     *
+     * The body MUST NOT echo the attempted folder ID — doing so would create
+     * an enumeration oracle distinguishing "folder exists but inaccessible"
+     * from "folder does not exist" by response shape.
+     */
+    public function testCreateReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Fail', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->create('1', '2', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body, 'Response body MUST NOT echo the attempted folder ID (enumeration oracle).');
+    }
+
+    /**
+     * update() — same FolderAccessDeniedException → 403 contract as create().
+     *
+     * Regression-tests the catch-block ordering in `update()`: a catch
+     * placed AFTER the generic `\Exception` block would absorb the
+     * denial and return 500, silently breaking the access-control
+     * contract for the update path.
+     */
+    public function testUpdateReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setRegister(1);
+        $existingObject->setSchema(2);
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Updated', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->update('1', '2', 'uuid-123', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body);
+    }
+
+    /**
+     * postPatch() — same FolderAccessDeniedException → 403 contract.
+     *
+     * Regression-tests the catch-block ordering in `postPatch()` for
+     * the third covered save endpoint.
+     */
+    public function testPostPatchReturns403WithStructuredBodyOnFolderAccessDenied(): void
+    {
+        $this->setupAdminUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-123');
+        $existingObject->setRegister(1);
+        $existingObject->setSchema(2);
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Patched', '@self' => ['folder' => '99']]);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')->willThrowException(
+            new \OCA\OpenRegister\Exception\FolderAccessDeniedException(attemptedFolderId: '99')
+        );
+
+        $result = $this->controller->postPatch('1', '2', 'uuid-123', $this->objectService);
+        $body   = $result->getData();
+
+        $this->assertSame(403, $result->getStatus());
+        $this->assertSame('folder_access_denied', $body['error']);
+        $this->assertArrayNotHasKey('folder', $body);
     }
 
     // =========================================================================
@@ -1933,7 +1915,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertSame(500, $result->getStatus());
         $data = $result->getData();
         $this->assertArrayHasKey('error', $data);
-        $this->assertStringContainsString('Database connection lost', $data['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $data['error']);
     }
 
     /**
@@ -2262,15 +2245,26 @@ class ObjectsControllerTest extends TestCase
     }
 
     /**
-     * Test create() with no user session (returns isAdmin=false, rbac=true).
+     * Test create() with no user session — RBAC (not a getUser() guard) is the
+     * sole authorization layer for anonymous callers.
+     *
+     * Historically (pre-#195) create() short-circuited with a 401 the moment
+     * getUser() returned null, before the webhook intercept or saveObject ran.
+     * Commit 54da00a98 ("fix(objects): stop publish/depublish failing with
+     * spurious unlock 403 (#195)") deliberately removed that guard: OpenRegister
+     * enforces its own per-object RBAC, which is the intended sole authorization
+     * layer, and the RBAC schema can legitimately permit anonymous create. This
+     * test now asserts the current contract: an anonymous caller reaches
+     * saveObject() with _rbac=true (RBAC enabled, since isCurrentUserAdmin()
+     * is false for a null user) and a successful save still returns 201.
      */
-    public function testCreateWithNoUserSessionReturns201OnSuccess(): void
+    public function testCreateWithNoUserSessionDelegatesToRbacAndReturns201(): void
     {
         $this->userSession->method('getUser')->willReturn(null);
 
         $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
         $objectEntity->setUuid('new-uuid');
-        $objectEntity->setObject(['title' => 'Created']);
+        $objectEntity->setObject(['title' => 'Public']);
 
         $this->request->method('getParams')->willReturn(['title' => 'Public']);
         $this->request->method('getHeader')->willReturn('application/json');
@@ -2278,7 +2272,23 @@ class ObjectsControllerTest extends TestCase
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('getRegister')->willReturn(1);
         $this->objectService->method('getSchema')->willReturn(2);
-        $this->objectService->method('saveObject')->willReturn($objectEntity);
+        // RBAC is the sole authorization layer: assert saveObject is invoked
+        // with _rbac=true (anonymous is never treated as admin) rather than
+        // asserting a hardcoded 401 short-circuit. saveObject()'s signature is
+        // (object, extend, register, schema, uuid, _rbac, _multitenancy, ...),
+        // so _rbac is the 6th positional argument.
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                true,
+                true
+            )
+            ->willReturn($objectEntity);
 
         $result = $this->controller->create('1', '2', $this->objectService);
 
@@ -2506,13 +2516,15 @@ class ObjectsControllerTest extends TestCase
 
     public function testUnlockReturns404WhenObjectNotFound(): void
     {
+        $this->setupAdminUser();
         $this->objectService->method('setRegister')->willReturnSelf();
         $this->objectService->method('setSchema')->willReturnSelf();
         $this->objectService->method('unlockObject')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
 
-        $this->expectException(\OCP\AppFramework\Db\DoesNotExistException::class);
-        $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+        $result = $this->controller->unlock('reg1', 'schema1', 'uuid-123');
+
+        $this->assertSame(404, $result->getStatus());
     }
 
     // =========================================================================
@@ -2617,54 +2629,6 @@ class ObjectsControllerTest extends TestCase
         $this->assertTrue($data['success']);
         $this->assertSame(50, $data['statistics']['processed']);
         $this->assertArrayHasKey('pagination', $data);
-    }
-
-    // =========================================================================
-    // import() — with schema parameter
-    // =========================================================================
-
-    public function testImportWithSchemaParameter(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        $schema = new \OCA\OpenRegister\Db\Schema();
-        $refS = new \ReflectionClass($schema);
-        $propS = $refS->getProperty('id');
-        $propS->setAccessible(true);
-        $propS->setValue($schema, 5);
-
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturnMap([
-            ['schema', null, '5'],
-            ['validation', false, false],
-            ['events', false, false],
-            ['rbac', true, true],
-            ['multi', true, true],
-            ['publish', false, false],
-        ]);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->schemaMapper->method('find')->willReturn($schema);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 8,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-        $data = $result->getData();
-        $this->assertSame('Import successful', $data['message']);
     }
 
     // =========================================================================
@@ -5295,45 +5259,6 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
-    // import() — with optional boolean parameters
-    // =========================================================================
-
-    public function testImportWithAllBooleanParams(): void
-    {
-        $register = new \OCA\OpenRegister\Db\Register();
-        $ref = new \ReflectionClass($register);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($register, 1);
-
-        $this->request->method('getUploadedFile')->willReturn([
-            'name' => 'data.csv',
-            'tmp_name' => '/tmp/data.csv',
-            'size' => 1024,
-        ]);
-        $this->request->method('getParam')->willReturnMap([
-            ['schema', null, null],
-            ['validation', false, 'true'],
-            ['events', false, 'true'],
-            ['rbac', true, 'false'],
-            ['multi', true, 'false'],
-            ['publish', false, 'true'],
-        ]);
-
-        $this->registerMapper->method('find')->willReturn($register);
-        $this->objectService->method('importObjects')->willReturn([
-            'imported' => 3,
-        ]);
-
-        $user = $this->createMock(\OCP\IUser::class);
-        $this->userSession->method('getUser')->willReturn($user);
-
-        $result = $this->controller->import(1);
-
-        $this->assertSame(200, $result->getStatus());
-    }
-
-    // =========================================================================
     // patch() — with multipart form data normalization
     // =========================================================================
 
@@ -5737,11 +5662,109 @@ class ObjectsControllerTest extends TestCase
     }
 
     // =========================================================================
+    // export() — PDF export path
+    // =========================================================================
+
+    public function testExportReturnsPdfDownloadResponse(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('my-register');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('my-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'pdf']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'pdf';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToPdf')->willReturn("%PDF-1.7\n...fake pdf bytes...");
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\DataDownloadResponse::class, $result);
+        $this->assertSame('application/pdf', $result->getHeaders()['Content-Type'] ?? null);
+        $this->assertStringContainsString('.pdf', $result->getHeaders()['Content-Disposition'] ?? '');
+    }
+
+    public function testExportPdfTooLargeReturns400(): void
+    {
+        $registerEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Register::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $registerEntity->method('getSlug')->willReturn('my-register');
+
+        $schemaEntity = $this->getMockBuilder(\OCA\OpenRegister\Db\Schema::class)
+            ->addMethods(['getSlug'])
+            ->getMock();
+        $schemaEntity->method('getSlug')->willReturn('my-schema');
+
+        $this->registerMapper->method('find')->willReturn($registerEntity);
+        $this->schemaMapper->method('find')->willReturn($schemaEntity);
+
+        $this->request->method('getParams')->willReturn(['format' => 'pdf']);
+        $this->request->method('getParam')->willReturnCallback(function (string $key, $default = null) {
+            if ($key === 'format') {
+                return 'pdf';
+            }
+            return $default;
+        });
+
+        $user = $this->createMock(\OCP\IUser::class);
+        $this->userSession->method('getUser')->willReturn($user);
+
+        $this->exportService->method('exportToPdf')->willThrowException(
+            new \OCA\OpenRegister\Exception\ExportTooLargeException(6000, 5000)
+        );
+
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+
+        $result = $this->controller->export('1', '2', $this->objectService);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertSame(400, $result->getStatus());
+        $this->assertSame('export_too_large', $result->getData()['error']);
+        $this->assertSame(6000, $result->getData()['rowCount']);
+        $this->assertSame(5000, $result->getData()['maxRows']);
+    }
+
+    // =========================================================================
     // index() — cross-table search with comma-separated schemas
     // =========================================================================
 
+    /**
+     * crossTableSearch() resolves entities through the constructor-injected
+     * mappers; make both throw so no valid register+schema pairs remain and
+     * the controller answers 404.
+     */
+    private function makeCrossTableMappersThrow(): void
+    {
+        $this->registerMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+        $this->schemaMapper->method('find')
+            ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('Not found'));
+    }
+
     public function testIndexWithCommaSeparatedSchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => '1,2',
         ]);
@@ -5751,8 +5774,8 @@ class ObjectsControllerTest extends TestCase
         $this->objectService->method('getRegister')->willReturn(1);
         $this->objectService->method('getSchema')->willReturn(1);
 
-        // crossTableSearch uses \OC::$server->get() which returns DI mocks that throw
-        // DoesNotExistException, resulting in a 404 with "No valid magic-mapped register+schema combinations found"
+        // Entity resolution fails for every pair, resulting in a 404 with
+        // "No valid magic-mapped register+schema combinations found".
         $result = $this->controller->index('1', '1', $this->objectService);
 
         $this->assertSame(404, $result->getStatus());
@@ -5767,6 +5790,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithArraySchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => ['1', '2'],
         ]);
@@ -5789,6 +5813,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithMultipleRegistersTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'registers' => '1,2',
         ]);
@@ -5809,6 +5834,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithMultipleSchemasTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'register' => '1',
             'schemas' => '1,2',
@@ -5832,6 +5858,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithMultipleRegistersTriggersCrossTableSearch(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schema' => '1',
             'registers' => ['1', '2'],
@@ -5853,6 +5880,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithUnderscorePrefixedMultiSchemas(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             '_register' => '1',
             'schemas' => '1,2,3',
@@ -6137,7 +6165,8 @@ class ObjectsControllerTest extends TestCase
         $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
         $this->assertSame(500, $result->getStatus());
         $data = $result->getData();
-        $this->assertStringContainsString('Disk full', $data['error']);
+        // SEC-CTRL-7: internal exception detail must not leak; generic envelope only.
+        $this->assertSame('Internal server error', $data['error']);
     }
 
     // =========================================================================
@@ -6630,6 +6659,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testObjectsWithRegistersArrayOverridesRegisterParam(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'register' => '1',
             'schema' => '2',
@@ -6772,6 +6802,7 @@ class ObjectsControllerTest extends TestCase
 
     public function testIndexWithBothMultipleSchemasAndRegisters(): void
     {
+        $this->makeCrossTableMappersThrow();
         $this->request->method('getParams')->willReturn([
             'schemas' => ['1', '2'],
             'registers' => ['3', '4'],
@@ -6952,5 +6983,327 @@ class ObjectsControllerTest extends TestCase
         $data = $result->getData();
         // registerEntity is null (DI mapper throws), so registers is empty and stripped
         $this->assertArrayHasKey('@self', $data);
+    }
+
+    // =========================================================================
+    // Anonymous callers on create()/postPatch(): RBAC is the sole
+    // authorization layer (commit 54da00a98, "fix(objects): stop
+    // publish/depublish failing with spurious unlock 403 (#195)").
+    //
+    // ObjectsController::create() and postPatch() are #[PublicPage] so that
+    // anonymous reads can survive an app-group restriction (per
+    // /openspec/.../register-schema-read-accessibility). An earlier revision
+    // (wave-3-C13) additionally short-circuited anonymous writes with a 401
+    // BEFORE the webhook intercept / RBAC check ran. That guard was
+    // deliberately removed by #195: OpenRegister enforces its own per-object
+    // RBAC, which is the intended sole authorization layer, and a
+    // getUser()===null guard blocked RBAC-configured anonymous mutations
+    // before RBAC was ever consulted (the RBAC schema can legitimately permit
+    // anonymous create/patch). There is no distinct "anonymous short-circuit"
+    // behavior left to regression-guard in this controller; these tests now
+    // verify (a) the webhook intercept and saveObject/findSilent DO run for
+    // anonymous callers, and (b) authorization is delegated to
+    // ObjectService::saveObject via the _rbac/_multitenancy flags (true for
+    // anonymous, since isCurrentUserAdmin() is false for a null user), and
+    // (c) an RBAC denial surfaced by ObjectService as an exception still maps
+    // to the controller's existing error responses.
+    // =========================================================================
+
+    /**
+     * Configure userSession to report an anonymous (no signed-in) caller.
+     */
+    private function setupAnonymousUser(): void
+    {
+        $this->userSession->method('getUser')->willReturn(null);
+    }
+
+    public function testCreateAnonymousInvokesWebhookIntercept(): void
+    {
+        // No pre-webhook short-circuit exists anymore: the webhook intercept
+        // MUST run for anonymous callers exactly like any other caller.
+        $this->setupAnonymousUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Public']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')->willReturn($objectEntity);
+
+        $this->webhookService->expects($this->once())
+            ->method('interceptRequest')
+            ->willReturn(['title' => 'Public']);
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    public function testCreateAnonymousDelegatesAuthorizationToRbacFlags(): void
+    {
+        // Authorization for anonymous callers is delegated entirely to
+        // ObjectService::saveObject via the _rbac/_multitenancy flags, not to
+        // a controller-level identity check. isCurrentUserAdmin() is false
+        // for a null user, so _rbac must be true (RBAC enabled/enforced).
+        $this->setupAnonymousUser();
+
+        $objectEntity = new \OCA\OpenRegister\Db\ObjectEntity();
+        $objectEntity->setUuid('new-uuid');
+        $objectEntity->setObject(['title' => 'Public']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+
+        // saveObject()'s signature is
+        // (object, extend, register, schema, uuid, _rbac, _multitenancy, ...);
+        // _rbac/_multitenancy are the 6th/7th positional arguments.
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                $this->anything(),
+                true,
+                true
+            )
+            ->willReturn($objectEntity);
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(201, $result->getStatus());
+    }
+
+    public function testCreateAnonymousRbacDenialReturns403(): void
+    {
+        // Exercises the real RBAC-denial path: ObjectService::saveObject is
+        // the sole authorization layer, so when RBAC rejects an anonymous
+        // create it throws a generic \Exception, which create()'s existing
+        // catch (\Exception $exception) block (see ObjectsController::create(),
+        // the block after FolderAccessDeniedException) maps to a 403.
+        $this->setupAnonymousUser();
+
+        $this->request->method('getParams')->willReturn(['title' => 'Public']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new Exception('RBAC: anonymous create not permitted for this schema'));
+
+        $result = $this->controller->create('reg', 'schema', $this->objectService);
+
+        $this->assertSame(403, $result->getStatus());
+        $data = $result->getData();
+        $this->assertArrayHasKey('error', $data);
+    }
+
+    public function testPostPatchAnonymousInvokesFindSilentAndSaveObject(): void
+    {
+        // No pre-lookup short-circuit exists anymore: findSilent()/saveObject()
+        // MUST run for anonymous callers exactly like any other caller.
+        $this->setupAnonymousUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-1');
+        $existingObject->setObject(['title' => 'Old']);
+
+        $patchedObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $patchedObject->setUuid('uuid-1');
+        $patchedObject->setObject(['title' => 'PostPatched']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'PostPatched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+
+        $this->objectService->expects($this->once())
+            ->method('findSilent')
+            ->willReturn($existingObject);
+        $this->objectService->expects($this->once())
+            ->method('saveObject')
+            ->willReturn($patchedObject);
+        $this->objectService->method('unlockObject')->willReturn(true);
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(200, $result->getStatus());
+    }
+
+    public function testPostPatchAnonymousRbacDenialReturns500WithoutLeakingDetail(): void
+    {
+        // Exercises the real RBAC-denial path for postPatch(): saveObject()
+        // is the sole authorization layer, so an RBAC rejection surfaces as a
+        // generic \Exception. Unlike create(), postPatch()'s
+        // catch (\Exception $exception) block routes through
+        // HandlesExceptionsTrait::errorResponse() (SEC-CTRL-7): it returns a
+        // generic 500 envelope and never echoes the real exception message to
+        // the client. See ObjectsController::postPatch().
+        $this->setupAnonymousUser();
+
+        $existingObject = new \OCA\OpenRegister\Db\ObjectEntity();
+        $existingObject->setUuid('uuid-1');
+        $existingObject->setObject(['title' => 'Old']);
+
+        $this->request->method('getParams')->willReturn(['title' => 'PostPatched']);
+        $this->request->method('getHeader')->willReturn('application/json');
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->objectService->method('getRegister')->willReturn(1);
+        $this->objectService->method('getSchema')->willReturn(2);
+        $this->objectService->method('findSilent')->willReturn($existingObject);
+        $this->objectService->method('saveObject')
+            ->willThrowException(new Exception('RBAC: anonymous patch not permitted for this schema'));
+
+        $result = $this->controller->postPatch('reg', 'schema', 'uuid-1', $this->objectService);
+
+        $this->assertSame(500, $result->getStatus());
+        $data = $result->getData();
+        $this->assertSame('Internal server error', $data['error']);
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: build a controller wired with a
+     * DeepLinkRegistryService + URL generator so the `/uses` response can be
+     * exercised for `url` stamping.
+     *
+     * @param DeepLinkRegistryService&MockObject $registry The deep-link resolver.
+     * @param IURLGenerator&MockObject           $urlGen   The fallback URL generator.
+     *
+     * @return ObjectsController
+     */
+    private function makeControllerWithDeepLinks(
+        DeepLinkRegistryService&MockObject $registry,
+        IURLGenerator&MockObject $urlGen
+    ): ObjectsController {
+        return new ObjectsController(
+            'openregister',
+            $this->request,
+            $this->config,
+            $this->appManager,
+            $this->container,
+            $this->registerMapper,
+            $this->schemaMapper,
+            $this->auditTrailMapper,
+            $this->objectService,
+            $this->userSession,
+            $this->groupManager,
+            $this->exportService,
+            $this->importService,
+            $this->webhookService,
+            $this->logger,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $registry,
+            $urlGen
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: a related object from `/uses` is stamped
+     * with the `url` returned by the registered DeepLinkRegistryService template.
+     */
+    public function testUsesStampsRegisteredResourceUrl(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([]);
+        $this->objectService->method('getObjectUses')->willReturn(
+            [
+                'results' => [
+                    [
+                        '@self' => [
+                            'id'       => '00000000-0000-0000-0000-000000000000',
+                            'register' => 12,
+                            'schema'   => 34,
+                        ],
+                        'title' => 'Related A',
+                    ],
+                ],
+                'total' => 1,
+            ]
+        );
+
+        $registry = $this->createMock(DeepLinkRegistryService::class);
+        $registry->expects($this->once())
+            ->method('resolveUrl')
+            ->willReturn('/index.php/apps/shillinq/chart-of-accounts/00000000-0000-0000-0000-000000000000');
+        $urlGen = $this->createMock(IURLGenerator::class);
+        $urlGen->expects($this->never())->method('linkToRoute');
+
+        $controller = $this->makeControllerWithDeepLinks($registry, $urlGen);
+        $result = $controller->uses('00000000-0000-0000-0000-000000000000', 'reg', 'schema', $this->objectService);
+
+        $data = $result->getData();
+        $this->assertSame(
+            '/index.php/apps/shillinq/chart-of-accounts/00000000-0000-0000-0000-000000000000',
+            $data['results'][0]['url']
+        );
+    }
+
+    /**
+     * relation-resourceurl-deeplinks: when no app registered a template the
+     * record falls back to OpenRegister's own `openregister.objects.show` route.
+     */
+    public function testUsesFallsBackToObjectsShowRoute(): void
+    {
+        $this->objectService->method('setRegister')->willReturnSelf();
+        $this->objectService->method('setSchema')->willReturnSelf();
+        $this->request->method('getParams')->willReturn([]);
+        $this->objectService->method('getObjectUses')->willReturn(
+            [
+                'results' => [
+                    [
+                        '@self' => [
+                            'id'       => '00000000-0000-0000-0000-000000000000',
+                            'register' => 12,
+                            'schema'   => 34,
+                        ],
+                    ],
+                ],
+                'total' => 1,
+            ]
+        );
+
+        $registry = $this->createMock(DeepLinkRegistryService::class);
+        $registry->method('resolveUrl')->willReturn(null);
+        $urlGen = $this->createMock(IURLGenerator::class);
+        $urlGen->expects($this->once())
+            ->method('linkToRoute')
+            ->with(
+                'openregister.objects.show',
+                [
+                    'register' => 12,
+                    'schema'   => 34,
+                    'id'       => '00000000-0000-0000-0000-000000000000',
+                ]
+            )
+            ->willReturn('/index.php/apps/openregister/api/objects/12/34/00000000-0000-0000-0000-000000000000');
+
+        $controller = $this->makeControllerWithDeepLinks($registry, $urlGen);
+        $result = $controller->uses('00000000-0000-0000-0000-000000000000', 'reg', 'schema', $this->objectService);
+
+        $data = $result->getData();
+        $this->assertSame(
+            '/index.php/apps/openregister/api/objects/12/34/00000000-0000-0000-0000-000000000000',
+            $data['results'][0]['url']
+        );
     }
 }

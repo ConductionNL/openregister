@@ -29,7 +29,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteSource()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -72,6 +72,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -79,6 +82,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Delete-confirm handler delegating to sourceStore.deleteSource; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		async deleteSource() {
 			this.loading = true
 

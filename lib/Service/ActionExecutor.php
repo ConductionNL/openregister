@@ -5,6 +5,9 @@
  *
  * Orchestrates action execution for lifecycle events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,9 +19,11 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-4
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -80,7 +85,7 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-2
+     * @spec openspec/specs/actions/spec.md
      */
     public function executeActions(array $actions, Event $event, array $payload, string $eventType): void
     {
@@ -111,6 +116,8 @@ class ActionExecutor
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     private function executeSingleAction(Action $action, Event $event, array $payload, string $eventType): void
     {
@@ -140,7 +147,10 @@ class ActionExecutor
                         $cloudEventPayload,
                         $action->getTimeout()
                     );
-                    $response = $result instanceof WorkflowResult ? $result->toArray() : (array) $result;
+                    $response = (array) $result;
+                    if ($result instanceof WorkflowResult) {
+                        $response = $result->toArray();
+                    }
                 } catch (Exception $e) {
                     $status = 'failure';
                     $error  = $e->getMessage();
@@ -205,7 +215,7 @@ class ActionExecutor
      *
      * @return array The CloudEvent-formatted payload
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-3
+     * @spec openspec/specs/actions/spec.md
      */
     public function buildCloudEventPayload(Action $action, array $payload, string $eventType): array
     {
@@ -236,6 +246,8 @@ class ActionExecutor
      * @param Event          $event  The original event
      *
      * @return void
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     private function processWorkflowResult(WorkflowResult $result, Action $action, Event $event): void
     {
@@ -268,6 +280,8 @@ class ActionExecutor
      * @param string $error   The error message
      *
      * @return void
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     private function handleFailure(Action $action, array $payload, string $error): void
     {
@@ -307,6 +321,8 @@ class ActionExecutor
      * @return void
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Log entries require many fields
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     private function createLogEntry(
         Action $action,
@@ -323,14 +339,29 @@ class ActionExecutor
             $log->setActionUuid($action->getUuid());
             $log->setEventType($eventType);
             $log->setObjectUuid($payload['data']['object']['uuid'] ?? $payload['objectUuid'] ?? null);
-            $log->setSchemaId(isset($payload['data']['schema']) === true ? (int) $payload['data']['schema'] : null);
-            $log->setRegisterId(isset($payload['data']['register']) === true ? (int) $payload['data']['register'] : null);
+            $schemaId = null;
+            if (isset($payload['data']['schema']) === true) {
+                $schemaId = (int) $payload['data']['schema'];
+            }
+
+            $registerId = null;
+            if (isset($payload['data']['register']) === true) {
+                $registerId = (int) $payload['data']['register'];
+            }
+
+            $log->setSchemaId($schemaId);
+            $log->setRegisterId($registerId);
             $log->setEngine($action->getEngine());
             $log->setWorkflowId($action->getWorkflowId());
             $log->setStatus($status);
             $log->setDurationMs($durationMs);
             $log->setRequestPayload(json_encode($payload));
-            $log->setResponsePayload($response !== null ? json_encode($response) : null);
+            $responsePayload = null;
+            if ($response !== null) {
+                $responsePayload = json_encode($response);
+            }
+
+            $log->setResponsePayload($responsePayload);
             $log->setErrorMessage($error);
 
             $this->actionLogMapper->insert(entity: $log);

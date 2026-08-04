@@ -1549,19 +1549,23 @@ class FilePropertyHandlerTest extends TestCase
     }
 
     // =========================================================================
-    // handleFileProperty — autoPublish from schema configuration
+    // handleFileProperty — autoShare from schema configuration (replaces legacy autoPublish)
     // =========================================================================
 
     public function testHandleFilePropertyAutoPublishFromSchemaConfig(): void
     {
-        $entity = $this->createObjectEntity(1, 'uuid-autopub');
+        // Renamed: autoPublish was renamed to autoShare in 2026.
+        // This test verifies that schema-level autoShare: true causes the file to be shared.
+        // A Schema mock is used so getConfiguration() returns ['autoShare' => true] without
+        // Schema::validateConfigurationArray() stripping the key (it only validates known keys).
+        $entity = $this->createObjectEntity(1, 'uuid-autoshare-schema');
         $entity->setObject([]);
 
-        $schema = new Schema();
-        $schema->setProperties([
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn([
             'document' => ['type' => 'file'],
         ]);
-        $schema->setConfiguration(['autoPublish' => true]);
+        $schema->method('getConfiguration')->willReturn(['autoShare' => true]);
 
         $content = 'some content';
         $dataUri = 'data:text/plain;base64,' . base64_encode($content);
@@ -1589,12 +1593,14 @@ class FilePropertyHandlerTest extends TestCase
 
     public function testHandleFilePropertyAutoPublishAtPropertyLevel(): void
     {
-        $entity = $this->createObjectEntity(1, 'uuid-autopub-prop');
+        // Renamed: autoPublish was renamed to autoShare in 2026.
+        // This test verifies that property-level autoShare: true causes the file to be shared.
+        $entity = $this->createObjectEntity(1, 'uuid-autoshare-prop');
         $entity->setObject([]);
 
         $schema = new Schema();
         $schema->setProperties([
-            'document' => ['type' => 'file', 'autoPublish' => true],
+            'document' => ['type' => 'file', 'autoShare' => true],
         ]);
 
         $content = 'some content';
@@ -2315,5 +2321,72 @@ class FilePropertyHandlerTest extends TestCase
         $this->handler->handleFileProperty($entity, $object, 'document', $schema);
 
         $this->assertSame(70, $object['document']);
+    }
+
+    /**
+     * Schema-based detection: a property declared as `type: file` IS a file property.
+     *
+     * This path had no direct coverage. It is also the hot predicate — called once
+     * per property per object — so it is worth pinning: two debug log lines were
+     * removed from it after they filled a dev instance's disk with 112 GB of
+     * per-property logging during an upgrade.
+     *
+     * @return void
+     */
+    public function testSchemaDeclaredFilePropertyIsDetected(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn(['document' => ['type' => 'file']]);
+
+        $this->assertTrue($this->handler->isFileProperty('anything', $schema, 'document'));
+    }
+
+    /**
+     * A property the schema does not declare is not a file property.
+     *
+     * @return void
+     */
+    public function testPropertyAbsentFromSchemaIsNotAFileProperty(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn(['title' => ['type' => 'string']]);
+
+        $this->assertFalse($this->handler->isFileProperty('anything', $schema, 'nosuchproperty'));
+    }
+
+    /**
+     * A declared non-file property is not a file property, whatever its value.
+     *
+     * Asserted with a value that WOULD pass the value-shape heuristics, so the
+     * schema is shown to win over the shape rather than merely agreeing with it.
+     *
+     * @return void
+     */
+    public function testSchemaTypeWinsOverAFileLookingValue(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn(['title' => ['type' => 'string']]);
+
+        $this->assertFalse(
+            $this->handler->isFileProperty('https://example.com/files/document.pdf', $schema, 'title')
+        );
+    }
+
+    /**
+     * A schema with no properties at all does not crash the predicate.
+     *
+     * Uses an empty array rather than null: getProperties() is typed `array`, so
+     * null is not reachable — which also means the `?? []` guarding it in the
+     * handler is dead. Left in place; noting it here rather than changing
+     * unrelated code in a fix for a logging problem.
+     *
+     * @return void
+     */
+    public function testASchemaWithNoPropertiesIsHandled(): void
+    {
+        $schema = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn([]);
+
+        $this->assertFalse($this->handler->isFileProperty('anything', $schema, 'document'));
     }
 }

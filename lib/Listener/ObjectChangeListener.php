@@ -5,6 +5,9 @@
  *
  * Listens for object creation and update events to queue asynchronous text extraction.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -55,7 +58,7 @@ class ObjectChangeListener implements IEventListener
      * @param IJobList              $jobList         Job list for queuing background jobs
      * @param LoggerInterface       $logger          Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private readonly TextExtractionService $textExtractSvc,
@@ -72,7 +75,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -135,7 +138,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processExtractionMode(string $mode, int $objectId, string $objectUuid): void
     {
@@ -170,7 +173,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processImmediateExtraction(int $objectId, string $objectUuid): void
     {
@@ -211,7 +214,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processBackgroundExtraction(int $objectId, string $objectUuid): void
     {
@@ -251,7 +254,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processCronMode(int $objectId): void
     {
@@ -268,7 +271,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processManualMode(int $objectId): void
     {
@@ -286,7 +289,7 @@ class ObjectChangeListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function processUnknownMode(string $mode, int $objectId): void
     {

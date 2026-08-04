@@ -38,17 +38,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-xwiki/tasks.md
+ * @spec openspec/specs/integration-xwiki/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\Providers;
 
+use OCA\OpenRegister\Db\XwikiLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCP\App\IAppManager;
 use OCP\IL10N;
+use Throwable;
 
 /**
  * XWiki integration provider — external, OpenConnector-backed.
@@ -74,9 +76,14 @@ class XwikiProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param ExternalIntegrationRouter $router     External-call router.
-     * @param IAppManager               $appManager NC app manager (isEnabled check).
-     * @param IL10N                     $l10n       Localisation.
+     * @param ExternalIntegrationRouter $router          External-call router.
+     * @param IAppManager               $appManager      NC app manager (isEnabled check).
+     * @param IL10N                     $l10n            Localisation.
+     * @param XwikiLinkMapper|null      $xwikiLinkMapper Tier-2 local link table
+     *                                                   (nullable so the Tier-1
+     *                                                   external-only wiring + the
+     *                                                   provider unit test keep
+     *                                                   working without it).
      *
      * @return void
      */
@@ -84,6 +91,7 @@ class XwikiProvider extends AbstractIntegrationProvider
         private ExternalIntegrationRouter $router,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private ?XwikiLinkMapper $xwikiLinkMapper=null,
     ) {
     }//end __construct()
 
@@ -183,6 +191,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * to configure it.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function authRequirements(): array
     {
@@ -213,9 +223,24 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional: `_search`, `_limit`, `_page`.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
+        // Tier-2: when a local link table is wired AND we have an object
+        // context, the linked pages are read from the link table first
+        // (so the sidebar tab survives even when the upstream xWiki is
+        // down), then enriched from remote xWiki best-effort. With no
+        // object context (the picker's "browse available pages" call) or
+        // no mapper (Tier-1 wiring / unit test) we delegate straight to
+        // the router, preserving the original external-only behaviour +
+        // the 4-state auth UX (router raises ProviderUnavailableException
+        // which the controller maps to details.cause).
+        if ($this->xwikiLinkMapper !== null && $objectId !== '') {
+            return $this->listLinkedPages(objectId: $objectId, register: $register, schema: $schema);
+        }
+
         $query    = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
         $response = $this->router->call(
             provider: $this,
@@ -226,6 +251,53 @@ class XwikiProvider extends AbstractIntegrationProvider
 
         return $this->normalizeList(response: $response);
     }//end list()
+
+    /**
+     * List the locally-linked xWiki pages for an object, enriching each
+     * row from remote xWiki best-effort.
+     *
+     * The link-table row alone carries `{ reference, title, space, url }`
+     * so the tab renders even when the upstream is unreachable; when the
+     * source responds, the live title/space/url override the cached
+     * values. An upstream failure never breaks the list — the cached row
+     * is used as-is (AD-23).
+     *
+     * @param string $objectId Object uuid.
+     * @param string $register Register slug or numeric id.
+     * @param string $schema   Schema slug or numeric id.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function listLinkedPages(string $objectId, string $register, string $schema): array
+    {
+        $links = $this->xwikiLinkMapper->findByObjectUuid($objectId);
+
+        $out = [];
+        foreach ($links as $link) {
+            $reference = (string) $link->getPageReference();
+            $row       = [
+                'id'         => $reference,
+                'reference'  => $reference,
+                'title'      => (string) $link->getTitle(),
+                'space'      => (string) ($link->getSpace() ?? ''),
+                'url'        => (string) ($link->getUrl() ?? ''),
+                'breadcrumb' => null,
+            ];
+
+            try {
+                $enriched = $this->get(register: $register, schema: $schema, objectId: $objectId, entityId: $reference);
+                // Live values override the cached ones when present.
+                $row = array_merge($row, array_filter($enriched, static fn ($v) => $v !== null && $v !== ''));
+            } catch (Throwable $e) {
+                // Upstream unreachable — fall back to the cached row.
+                $row = $this->normalizeRow(row: $row);
+            }
+
+            $out[] = $row;
+        }//end foreach
+
+        return $out;
+    }//end listLinkedPages()
 
     /**
      * Fetch a single linked XWiki page (with text preview).
@@ -241,6 +313,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param string $entityId Canonical XWiki page reference (e.g. `Space.Page`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -269,6 +343,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  At least `reference` (URL or `space.page`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -297,6 +373,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Fields to update (e.g. `reference`).
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -325,6 +403,8 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param string $entityId Canonical XWiki page reference.
      *
      * @return void
+     *
+     * @spec openspec/specs/integration-xwiki/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -346,6 +426,9 @@ class XwikiProvider extends AbstractIntegrationProvider
      * ok).
      *
      * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe (annotated to
+     *              pluggable-integration-registry task-4); carries no provider-specific health behaviour.
      */
     public function health(): array
     {
@@ -381,6 +464,10 @@ class XwikiProvider extends AbstractIntegrationProvider
      * @param bool $withBody Whether the request carries a JSON body.
      *
      * @return array<string,string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the
+     *     natural toggle for HTTP request headers; a two-method split would
+     *     duplicate the static Accept header
      */
     private function requestHeaders(bool $withBody=false): array
     {
@@ -451,17 +538,25 @@ class XwikiProvider extends AbstractIntegrationProvider
         // strings so we land on whichever piece carries real content.
         $title = (string) ($row['title'] ?? '');
         if ($title === '') {
-            $title = $page !== '' ? $page : $reference;
+            $title = $reference;
+            if ($page !== '') {
+                $title = $page;
+            }
         }
 
         $breadcrumb = $row['breadcrumb'] ?? null;
         if (is_array($breadcrumb) === false || $breadcrumb === []) {
             // Best-effort breadcrumb from the reference if the source
             // didn't supply one — "Space / Page" or just the reference.
+            $spaceSegments = [];
+            if ($space !== '') {
+                $spaceSegments = explode('.', $space);
+            }
+
             $breadcrumb = array_values(
                 array_filter(
                     array_merge(
-                        $space !== '' ? explode('.', $space) : [],
+                        $spaceSegments,
                         [$title]
                     )
                 )

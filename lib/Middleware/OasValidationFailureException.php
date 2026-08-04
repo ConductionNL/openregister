@@ -7,6 +7,9 @@
  * body fails OAS schema validation. Caught by the same middleware's
  * `afterException` method and translated into an RFC 7807 422 response.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
  *

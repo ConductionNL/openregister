@@ -5,6 +5,9 @@
  *
  * Background job for webhook delivery with retries.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,8 +19,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-79
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+ * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-delivery-must-support-async-processing-via-background-jobs
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -122,8 +125,8 @@ class WebhookDeliveryJob extends QueuedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-79
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-85
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#requirement-webhook-delivery-must-support-async-processing-via-background-jobs
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     protected function run($argument): void
     {

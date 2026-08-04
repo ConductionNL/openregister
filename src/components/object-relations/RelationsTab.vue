@@ -8,9 +8,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 		<div v-if="!loading && relations.length > 0" class="relations-tab__filters">
 			<NcCheckboxRadioSwitch v-for="type in availableTypes"
 				:key="type"
-				:checked="selectedTypes.includes(type)"
+				:model-value="selectedTypes.includes(type)"
 				type="button"
-				@update:checked="toggleType(type)">
+				@update:modelValue="toggleType(type)">
 				{{ typeLabels[type] || type }}
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -72,9 +72,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
+import { NcEmptyContent, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import LinkVariant from 'vue-material-design-icons/LinkVariant.vue'
 import LinkVariantOff from 'vue-material-design-icons/LinkVariantOff.vue'
@@ -145,6 +143,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed distinct relation-type list for filters, UI plumbing
+		 */
 		availableTypes() {
 			const set = new Set()
 			for (const r of this.relations) {
@@ -156,6 +157,9 @@ export default {
 			return Array.from(set)
 		},
 
+		/**
+		 * @spec exclude computed type-filtered relation list for display, UI plumbing
+		 */
 		visibleRelations() {
 			if (this.selectedTypes.length === 0) {
 				return this.relations
@@ -168,6 +172,10 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @param newId
+			 * @spec exclude watcher refetching relations on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchRelations()
@@ -179,6 +187,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch the unified relations payload (view=timeline) for the current object.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-3
+		 * @return {Promise<void>}
+		 */
 		async fetchRelations() {
 			this.loading = true
 			this.error = false
@@ -201,6 +215,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param data
+		 * @spec exclude client-side normalisation of timeline/envelope response shapes for display, UI plumbing
+		 */
 		normaliseResponse(data) {
 			// The unified endpoint may return either a flat timeline array
 			// (`view=timeline`) or a typed envelope (`{ emails: [...], events: [...] }`).
@@ -236,6 +254,10 @@ export default {
 			return out
 		},
 
+		/**
+		 * @param raw
+		 * @spec exclude client-side normalisation of a single relation entry for display, UI plumbing
+		 */
 		normaliseEntry(raw) {
 			const type = raw.type || raw.entityType || 'unknown'
 			let title = raw.title || raw.subject || raw.summary || raw.displayName || raw.name || ''
@@ -264,6 +286,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param type
+		 * @spec exclude local type-filter toggle plumbing, UI plumbing
+		 */
 		toggleType(type) {
 			if (this.selectedTypes.includes(type)) {
 				this.selectedTypes = this.selectedTypes.filter(t => t !== type)
@@ -272,6 +298,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param value
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

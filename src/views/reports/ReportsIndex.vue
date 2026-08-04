@@ -19,7 +19,7 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton type="primary" :disabled="loading" @click="refresh">
+					<NcButton variant="primary" :disabled="loading" @click="refresh">
 						<template #icon>
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<Refresh v-else :size="20" />
@@ -93,22 +93,52 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Expose the l10n translate helper to the template.
+		 *
+		 * @spec exclude UI plumbing — template translation helper
+		 * @return {Function}
+		 */
 		t() {
 			return t
 		},
+		/**
+		 * Report dashboards from the store, for list display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {Array<object>}
+		 */
 		dashboards() {
 			return reportsStore.getDashboards ?? []
 		},
+		/**
+		 * Whether the reports store is loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return reportsStore.isLoading
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load the dashboards list on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		this.refresh()
 	},
 
 	methods: {
+		/**
+		 * Reload the dashboards list from the store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the reports store fetch
+		 * @return {Promise<void>}
+		 */
 		async refresh() {
 			try {
 				await reportsStore.fetchDashboards()
@@ -117,6 +147,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Navigate to a dashboard's detail route.
+		 *
+		 * @param {object} dashboard The dashboard to open.
+		 * @spec exclude UI plumbing — router navigation
+		 * @return {void}
+		 */
 		openDashboard(dashboard) {
 			const id = dashboard['@self']?.uuid || dashboard.uuid || dashboard.id
 			if (!id) return

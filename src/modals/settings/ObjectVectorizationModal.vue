@@ -131,7 +131,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="processing || (stats.objectsToProcess === 0)"
 				@click="startVectorization">
 				<template #icon>
@@ -145,11 +145,7 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcProgressBar from '@nextcloud/vue/dist/Components/NcProgressBar.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcDialog, NcButton, NcCheckboxRadioSwitch, NcProgressBar, NcLoadingIcon } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import axios from '@nextcloud/axios'
@@ -196,12 +192,18 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Computed batch-count estimate for display; UI presentation helper.
+		 */
 		estimatedBatches() {
 			if (this.stats.objectsToProcess === 0) return 0
 			const objectCount = this.maxObjects > 0 ? Math.min(this.maxObjects, this.stats.objectsToProcess) : this.stats.objectsToProcess
 			return Math.ceil(objectCount / this.batchSize)
 		},
 
+		/**
+		 * @spec exclude Computed duration estimate for display; UI presentation helper.
+		 */
 		estimatedDuration() {
 			const batches = this.estimatedBatches
 			if (batches === 0) return '~0 seconds'
@@ -214,6 +216,9 @@ export default {
 			return `~${Math.ceil(totalSeconds / 3600)} hours`
 		},
 
+		/**
+		 * @spec exclude Computed rough cost estimate for display; UI presentation helper.
+		 */
 		estimatedCost() {
 			// Rough estimate: $0.008 per 1M tokens, ~500 tokens per object
 			const tokens = this.stats.objectsToProcess * 500
@@ -221,6 +226,9 @@ export default {
 			return `$${cost.toFixed(4)}`
 		},
 
+		/**
+		 * @spec exclude Computed progress percentage for the progress bar; UI presentation helper.
+		 */
 		progress() {
 			if (this.stats.objectsToProcess === 0) return 0
 			return Math.round((this.processed / this.stats.objectsToProcess) * 100)
@@ -228,11 +236,16 @@ export default {
 	},
 
 	watch: {
-		// Reload stats when view selection changes
+		/**
+		 * @spec exclude Watcher reloading stats when the all-views toggle changes; UI reactivity plumbing.
+		 */
 		vectorizeAllViews() {
 			this.loadStats()
 		},
 		selectedViews: {
+			/**
+			 * @spec exclude Watcher reloading stats when the view selection changes; UI reactivity plumbing.
+			 */
 			handler() {
 				this.loadStats()
 			},
@@ -240,6 +253,9 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue mounted() hook loading config/views/stats on open; modal init plumbing.
+	 */
 	mounted() {
 		this.loadConfiguration()
 		this.loadViews()
@@ -247,6 +263,9 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec openspec/specs/platform-administration-modals/spec.md
+		 */
 		async loadConfiguration() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/settings/objects/vectorize'))
@@ -260,6 +279,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Loads views to populate the view selector; UI form-loading plumbing.
+		 */
 		async loadViews() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/views'))
@@ -269,6 +291,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Loads object-count stats for the chosen views; UI form-loading plumbing.
+		 */
 		async loadStats() {
 			try {
 				// Determine which views to use for stats
@@ -298,6 +323,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Start-button handler driving the vectorization job over the chosen views; platform-admin orchestration plumbing.
+		 */
 		async startVectorization() {
 			this.processing = true
 			this.processed = 0

@@ -1,14 +1,14 @@
 ---
-status: in-progress
+status: done
 ---
 # Faceting Configuration
-
-# Faceting Configuration
 ## Purpose
+
+@e2e exclude backend facet config parser — covered by PHPUnit
 Provides a comprehensive, backend-agnostic faceting system for OpenRegister that enables per-property facet definition on schema properties, supports multiple facet types (terms, date histogram, range), and delivers configurable facet metadata (title, description, order, aggregation control) through the REST and GraphQL APIs. The system is designed to solve the fundamental conflict between pagination and facet computation by calculating facets on the full filtered dataset independently of pagination, while maintaining backward compatibility with the legacy boolean `facetable` flag and offering intelligent caching at multiple layers (in-memory, APCu/distributed, and database-persistent) to ensure sub-200ms facet response times even on large datasets.
 
 **OpenSpec changes**
-- `fix-date-histogram-mariadb` (active) — adds explicit cross-DB correctness requirements for `date_histogram` facets: MariaDB platform branching, ISO-week alignment, correct week-bucket bounds.
+- `fix-date-histogram-mariadb` (archived 2026-05-02) — adds explicit cross-DB correctness requirements for `date_histogram` facets: MariaDB platform branching, ISO-week alignment, correct week-bucket bounds.
 ## Requirements
 ### Requirement: Facetable config object support with backward compatibility
 The system MUST accept the `facetable` property on schema properties as either a boolean (`true`/`false`) or a configuration object. When a configuration object is provided, it MUST support the fields `aggregated` (boolean), `title` (string), `description` (string), `order` (integer), `type` (string: `terms`, `date_range`, or `date_histogram`), and `options` (object with type-specific settings). All fields in the configuration object MUST be optional with sensible defaults. The `FacetHandler.normalizeFacetConfig()` method (line ~1119) MUST normalize both formats into a standard internal representation. Boolean `true` MUST be treated as `{ aggregated: true, title: null, description: null, order: null }`.
@@ -501,6 +501,139 @@ When a `date_histogram` facet returns buckets with `interval: 'week'`, each buck
 - **GIVEN** a bucket with key `'2024-01'` from a weekly histogram
 - **WHEN** bounds are computed
 - **THEN** it MUST return `{ from: '2024-01-01', to: '2024-01-07' }` (Monday Jan 1 through Sunday Jan 7, 2024)
+
+### Requirement: Persisted views MUST be managed through an owner-scoped CRUD REST surface
+`ViewsController` MUST expose CRUD endpoints for saved search views at `/api/views`:
+`index` (GET), `show` (GET `/{id}`), `create` (POST), `update` (PUT `/{id}`), `patch`
+(PATCH `/{id}`), and `destroy` (DELETE `/{id}`). All endpoints are `@NoAdminRequired` /
+`@NoCSRFRequired` and MUST be scoped to the current user: every method MUST resolve the user via
+`IUserSession::getUser()` and return HTTP 401 with `{ "error": "User not authenticated" }` when no
+user is present. Persistence is delegated to `ViewService` (`findAll`, `find`, `create`,
+`update`, `delete`).
+
+#### Scenario: List the current user's views
+- **GIVEN** an authenticated user with saved views
+- **WHEN** `GET /api/views` is called
+- **THEN** the response MUST return HTTP 200 with `{ "results": [...serialized views...], "total": <count> }`
+- **AND** when `_limit` (optionally with `_page`) is supplied, results MUST be paginated client-side via `array_slice` while `total` reflects the full unsliced count
+
+#### Scenario: Unauthenticated request rejected
+- **GIVEN** no user is present in the session
+- **WHEN** any `ViewsController` endpoint is called
+- **THEN** the response MUST return HTTP 401 with `{ "error": "User not authenticated" }`
+
+#### Scenario: Fetch a single view
+- **GIVEN** an authenticated user owns view `abc-123`
+- **WHEN** `GET /api/views/abc-123` is called
+- **THEN** the response MUST return HTTP 200 with `{ "view": <serialized view> }`
+- **AND** a missing view MUST return HTTP 404 with `{ "error": "View not found" }` (from `DoesNotExistException`)
+
+#### Scenario: Create a view returns 201
+- **GIVEN** an authenticated user
+- **WHEN** `POST /api/views` is called with a valid body
+- **THEN** the response MUST return HTTP 201 with `{ "view": <serialized view> }`
+- **AND** a missing or empty `name` MUST return HTTP 400 with `{ "error": "View name is required" }`
+
+#### Scenario: Update a view
+- **GIVEN** an authenticated user owns view `abc-123`
+- **WHEN** `PUT /api/views/abc-123` is called with `name` and a query/configuration body
+- **THEN** the response MUST return HTTP 200 with `{ "view": <updated view> }`
+- **AND** a missing view MUST return HTTP 404 with `{ "error": "View not found" }`
+
+#### Scenario: Patch performs a partial update from the existing view
+- **GIVEN** an authenticated user owns view `abc-123`
+- **WHEN** `PATCH /api/views/abc-123` is called with only some fields
+- **THEN** unspecified fields (`name`, `description`, `isPublic`, `isDefault`, `favoredBy`, `query`) MUST fall back to the existing view's current values
+- **AND** the response MUST return HTTP 200 with `{ "view": <updated view> }`
+
+#### Scenario: Delete a view
+- **GIVEN** an authenticated user owns view `abc-123`
+- **WHEN** `DELETE /api/views/abc-123` is called
+- **THEN** the view MUST be deleted via `ViewService::delete()` and the response status code MUST be 204
+- **AND** a missing view MUST return HTTP 404 with `{ "error": "View not found" }`
+
+#### Scenario: Unexpected failures return 500
+- **GIVEN** any `ViewsController` endpoint
+- **WHEN** the underlying `ViewService` throws a non-`DoesNotExistException`
+- **THEN** the error MUST be logged and the response MUST return HTTP 500 with an `{ "error": ..., "message": ... }` body
+
+### Requirement: View create/update/patch MUST normalize the search query from either a query or configuration body
+When persisting a view, `ViewsController` MUST accept the search definition under EITHER a `query`
+key (used verbatim) OR a `configuration` key (the legacy frontend shape), and MUST normalize the
+`configuration` shape into the canonical query envelope. `create` and `update` MUST reject a body
+that provides neither.
+
+#### Scenario: configuration body normalized to canonical query keys
+- **GIVEN** a create/update body with a `configuration` object
+- **WHEN** the view is persisted
+- **THEN** the stored query MUST be built from `configuration` with keys `registers`, `schemas`, `source` (default `"auto"`), `searchTerms`, `facetFilters`, and `enabledFacets`, each defaulting to an empty array when absent
+
+#### Scenario: query body used verbatim
+- **GIVEN** a create/update body that supplies a `query` array (and no `configuration`)
+- **WHEN** the view is persisted
+- **THEN** the supplied `query` array MUST be stored as-is
+
+#### Scenario: Neither query nor configuration provided
+- **GIVEN** a create or update body with neither a valid `query` array nor a `configuration` array
+- **WHEN** the endpoint is called
+- **THEN** the response MUST return HTTP 400 with `{ "error": "View query or configuration is required" }`
+
+#### Scenario: Patch preserves the existing query when none supplied
+- **GIVEN** a `PATCH /api/views/{id}` body with neither `query` nor `configuration`
+- **WHEN** the patch is applied
+- **THEN** the view's existing stored `query` MUST be retained unchanged
+
+### Requirement: Solr facet configuration discovery and management API
+The system SHALL expose an admin-gated API for discovering facetable fields and managing
+the Solr facet configuration. `SolrSettingsController` provides `getSolrFacetConfiguration`
+and `updateSolrFacetConfiguration` for the stored facet config, `discoverSolrFacets` for
+auto-detecting facetable fields from the live index, and the combined
+`getSolrFacetConfigWithDiscovery` / `updateSolrFacetConfigWithDiscovery` endpoints that
+merge stored configuration with live discovery results.
+
+#### Scenario: Discover facetable fields
+- **WHEN** `discoverSolrFacets` is called
+- **THEN** it MUST return the set of facetable fields detected from the active Solr index
+
+#### Scenario: Read facet config merged with discovery
+- **WHEN** `getSolrFacetConfigWithDiscovery` is called
+- **THEN** it MUST return the stored facet configuration enriched with currently discoverable facets
+
+#### Scenario: Persist updated facet configuration
+- **GIVEN** an admin posts an updated facet configuration
+- **WHEN** `updateSolrFacetConfiguration` runs
+- **THEN** it MUST persist the configuration and return the result
+
+### Requirement: Cache invalidation is scoped to the written bucket
+
+An object write SHALL NOT clear the entire distributed query-result cache or the
+entire aggregation cache. Cache keys SHALL carry a `register:schema` (or finer)
+scope so invalidation targets only the affected bucket. Bulk operations SHALL
+collapse invalidation to one call per distinct affected bucket.
+
+#### Scenario: Write to one schema does not evict another's cache
+
+- **WHEN** an object in schema A is created, updated, or deleted
+- **THEN** only schema A's query-cache and aggregation-cache entries are invalidated
+- **AND** a cached list/aggregate for schema B still serves from cache
+
+#### Scenario: Bulk delete invalidates per bucket, not per item
+
+- **WHEN** a bulk delete spans three schemas
+- **THEN** invalidation is issued once per affected schema bucket
+- **AND** the whole cache is not cleared three times
+
+### Requirement: Schemas are cached by a single tier
+
+A schema SHALL be cached by exactly one caching layer. There SHALL NOT be two
+independently-maintained caches each issuing their own DB round trip for the same
+schema.
+
+#### Scenario: One schema cache source
+
+- **WHEN** a schema is resolved repeatedly within and across requests
+- **THEN** it is served from a single cache tier, not fetched from two separate
+  cache tables/round trips
 
 ## Current Implementation Status
 - **Fully implemented -- facetable config object support**: `FacetHandler.normalizeFacetConfig()` (line ~1119) handles both boolean and config object formats with `aggregated`, `title`, `description`, `order` fields. Type and options fields supported.

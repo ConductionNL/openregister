@@ -28,7 +28,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See sources as cards'"
+							title="See sources as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -38,7 +38,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See sources as a table'"
+							title="See sources as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -89,7 +89,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<div class="cardGrid">
 						<div v-for="source in paginatedSources" :key="source.id" class="card">
 							<div class="cardHeader">
-								<h2 v-tooltip.bottom="source.description">
+								<h2 :title="source.description">
 									<DatabaseArrowRightOutline :size="20" />
 									{{ source.title }}
 								</h2>
@@ -147,9 +147,9 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
 									<th>{{ t('openregister', 'Type') }}</th>
@@ -169,8 +169,8 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 									:class="{ viewTableRowSelected: selectedSources.includes(source.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedSources.includes(source.id)"
-											@update:checked="(checked) => toggleSourceSelection(source.id, checked)" />
+											:model-value="selectedSources.includes(source.id)"
+											@update:modelValue="(checked) => toggleSourceSelection(source.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
@@ -273,17 +273,41 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Current page slice of the source list.
+		 *
+		 * @spec exclude UI plumbing — client-side pagination computed; admin list contract owned by admin-list-views.
+		 * @return {Array}
+		 */
 		paginatedSources() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return sourceStore.sourceList.slice(start, end)
 		},
+		/**
+		 * Whether every source is selected.
+		 *
+		 * @spec exclude UI plumbing — header-checkbox state; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		allSelected() {
 			return sourceStore.sourceList.length > 0 && sourceStore.sourceList.every(source => this.selectedSources.includes(source.id))
 		},
+		/**
+		 * Whether a partial selection exists (indeterminate state).
+		 *
+		 * @spec exclude UI plumbing — header-checkbox indeterminate state; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		someSelected() {
 			return this.selectedSources.length > 0 && !this.allSelected
 		},
+		/**
+		 * Empty-state title reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentName() {
 			if (sourceStore.loading) {
 				return t('openregister', 'Loading sources...')
@@ -294,6 +318,12 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * Empty-state description reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentDescription() {
 			if (sourceStore.loading) {
 				return t('openregister', 'Please wait while we fetch your sources.')
@@ -305,11 +335,24 @@ export default {
 			return ''
 		},
 	},
+	/**
+	 * Soft-refresh the source list on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to the store; list contract owned by admin-list-views.
+	 * @return {void}
+	 */
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		sourceStore.refreshSourceList(null, true)
 	},
 	methods: {
+		/**
+		 * Toggle selection state for every source in the current list.
+		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedSources = sourceStore.sourceList.map(source => source.id)
@@ -317,6 +360,14 @@ export default {
 				this.selectedSources = []
 			}
 		},
+		/**
+		 * Toggle selection for a single source row.
+		 *
+		 * @spec exclude UI plumbing — row-selection state mutation; admin list contract owned by admin-list-views.
+		 * @param {string|number} sourceId - row id
+		 * @param {boolean} checked - selected state
+		 * @return {void}
+		 */
 		toggleSourceSelection(sourceId, checked) {
 			if (checked) {
 				this.selectedSources.push(sourceId)
@@ -324,13 +375,34 @@ export default {
 				this.selectedSources = this.selectedSources.filter(id => id !== sourceId)
 			}
 		},
+		/**
+		 * Handle a page change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} page - new page number
+		 * @return {void}
+		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+		/**
+		 * Handle a page-size change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} pageSize - new page size
+		 * @return {void}
+		 */
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+		/**
+		 * Placeholder register-count display for a source.
+		 *
+		 * @spec exclude UI plumbing — unimplemented display placeholder, no observable contract.
+		 * @param {string|number} _sourceId - source id
+		 * @return {string}
+		 */
 		getSourceRegisterCount(_sourceId) {
 			// This would need to be implemented based on how registers are linked to sources
 			// For now, return a placeholder

@@ -1,0 +1,472 @@
+<?php
+
+/**
+ * The flow surface apps consume.
+ *
+ * This is to flows what `ObjectService` is to objects: the one entry point an
+ * app uses, so no app needs its own flow service, controller or store (ADR-022).
+ * Every method here is REQUEST-facing and organisation-scoped. Engine-internal
+ * resolution — the queue worker loading a flow it was handed the id of, the
+ * trigger matcher listing candidates — goes through `FlowMapper` directly,
+ * because those paths run with no session and must not be forced through a
+ * scoping check they can never satisfy.
+ *
+ * Keeping the two apart is deliberate: a single service that took an "internal"
+ * flag would make the guard opt-out, and an opt-out guard is one forgotten
+ * argument away from being no guard.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * @category Service
+ * @package  OCA\OpenRegister\Service\Flow
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+ */
+
+declare(strict_types=1);
+
+namespace OCA\OpenRegister\Service\Flow;
+
+use DateTime;
+use OCA\OpenRegister\Db\Flow;
+use OCA\OpenRegister\Db\FlowMapper;
+use OCA\OpenRegister\Db\FlowRun;
+use OCP\AppFramework\Db\DoesNotExistException;
+use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
+use Throwable;
+
+/**
+ * Reads, writes and runs flows on behalf of a request.
+ *
+ * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+ */
+class FlowService
+{
+    /**
+     * The app id a flow is attributed to when the caller names none.
+     *
+     * @var string
+     */
+    private const DEFAULT_APP = 'openregister';
+
+    /**
+     * Constructor.
+     *
+     * @param FlowMapper         $mapper      Reads and writes flow definitions.
+     * @param FlowRunService     $runner      Queues and executes runs.
+     * @param IUserSession       $userSession Identifies the acting user.
+     * @param LoggerInterface    $logger      Records refusals and failures.
+     * @param ContainerInterface $container   Resolves OrganisationService lazily.
+     */
+    public function __construct(
+        private readonly FlowMapper $mapper,
+        private readonly FlowRunService $runner,
+        private readonly IUserSession $userSession,
+        private readonly LoggerInterface $logger,
+        private readonly ContainerInterface $container
+    ) {
+
+    }//end __construct()
+
+    /**
+     * List the caller's flows, newest first.
+     *
+     * @param string|null  $app     Restrict to one owning app id.
+     * @param boolean|null $enabled Restrict to enabled or disabled flows.
+     * @param integer      $limit   Page size.
+     * @param integer      $offset  Page offset.
+     *
+     * @return array<int, Flow> The flows visible to the caller.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function findAll(?string $app=null, ?bool $enabled=null, int $limit=100, int $offset=0): array
+    {
+        $organisation = $this->activeOrganisation();
+        if ($organisation === null) {
+            // No resolvable tenant means no flows, never every tenant's flows.
+            return [];
+        }
+
+        return $this->mapper->findAllFlows(
+            app: $app,
+            organisation: $organisation,
+            enabled: $enabled,
+            limit: $limit,
+            offset: $offset
+        );
+
+    }//end findAll()
+
+    /**
+     * Count the flows visible to the caller.
+     *
+     * @param string|null $app Restrict to one owning app id.
+     *
+     * @return integer The number of matching flows.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function count(?string $app=null): int
+    {
+        $organisation = $this->activeOrganisation();
+        if ($organisation === null) {
+            return 0;
+        }
+
+        return $this->mapper->countFlows(app: $app, organisation: $organisation);
+
+    }//end count()
+
+    /**
+     * The ids of the flows the acting user owns.
+     *
+     * Used by the run-history visibility rule, which shows a caller the runs
+     * they triggered PLUS the runs of flows they own — the second half matters
+     * because `triggered_by` is null for cron- and trigger-fired runs.
+     *
+     * @return array<int, string> The flow uuids.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function idsOwnedByCaller(): array
+    {
+        $uid = $this->actingUser();
+        if ($uid === null) {
+            return [];
+        }
+
+        try {
+            return $this->mapper->findIdsOwnedBy($uid);
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[FlowService] Could not list the caller\'s owned flows: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return [];
+        }
+
+    }//end idsOwnedByCaller()
+
+    /**
+     * Load one flow the caller is allowed to see.
+     *
+     * A flow the caller may not see raises the SAME exception as a flow that
+     * does not exist. Distinguishing them would turn every read into an oracle
+     * for enumerating other tenants' flow ids.
+     *
+     * @param string $uuid The flow uuid.
+     *
+     * @return Flow The flow.
+     *
+     * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function find(string $uuid): Flow
+    {
+        $flow = $this->mapper->findByUuid($uuid);
+
+        if ($flow->belongsTo($this->activeOrganisation()) === false) {
+            throw new DoesNotExistException('No such flow');
+        }
+
+        return $flow;
+
+    }//end find()
+
+    /**
+     * Create or update a flow.
+     *
+     * `owner` and `organisation` are SERVER-STAMPED on create and never taken
+     * from the payload. Owner is the identity a triggered run executes as, so
+     * accepting a client-supplied one would let any author mint a flow that
+     * runs as somebody else — privilege escalation dressed as a form field. For
+     * the same reason an update carries the stored owner forward rather than
+     * re-reading it from the request.
+     *
+     * @param array<string, mixed> $data The flow's fields.
+     * @param string|null          $uuid The flow to update, or null to create.
+     *
+     * @return Flow The stored flow.
+     *
+     * @throws DoesNotExistException When updating a flow that is not the caller's.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function save(array $data, ?string $uuid=null): Flow
+    {
+        $isCreate = ($uuid === null || $uuid === '');
+        $flow     = $this->flowToSave(data: $data, uuid: $uuid);
+
+        $this->applyEditableFields(flow: $flow, data: $data);
+        $flow->setUpdated(new DateTime());
+
+        if ($isCreate === true) {
+            return $this->mapper->insert($flow);
+        }
+
+        return $this->mapper->update($flow);
+
+    }//end save()
+
+    /**
+     * The flow a save() will write to: a fresh one, or the caller's existing one.
+     *
+     * `owner` and `organisation` are stamped from the server here and are not in
+     * `applyEditableFields`'s allowlist, so a create cannot claim another user's
+     * identity by putting `owner` in the payload.
+     *
+     * @param array<string, mixed> $data The incoming fields.
+     * @param string|null          $uuid The flow uuid, or null to create.
+     *
+     * @return Flow The flow to apply fields to.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function flowToSave(array $data, ?string $uuid): Flow
+    {
+        if ($uuid !== null && $uuid !== '') {
+            // Goes through find(), so an update to a flow the caller cannot see
+            // is refused with the same "no such flow" as a missing one.
+            return $this->find(uuid: $uuid);
+        }
+
+        $flow = new Flow();
+        $flow->setUuid($this->newUuid());
+        $flow->setCreated(new DateTime());
+        $flow->setApp((string) ($data['app'] ?? self::DEFAULT_APP));
+        $flow->setOwner($this->actingUser());
+        $flow->setOrganisation($this->activeOrganisation());
+
+        return $flow;
+
+    }//end flowToSave()
+
+    /**
+     * Copy the client-editable fields onto a flow.
+     *
+     * The allowlist IS the security boundary: `owner`, `organisation`, `uuid`
+     * and the timestamps are deliberately absent, so no payload can reach them.
+     * Only keys actually present are touched, so a partial update does not null
+     * the fields it omitted.
+     *
+     * @param Flow                 $flow The flow to mutate.
+     * @param array<string, mixed> $data The incoming fields.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function applyEditableFields(Flow $flow, array $data): void
+    {
+        $strings = [
+            'name'            => 'setName',
+            'description'     => 'setDescription',
+            'trigger'         => 'setTrigger',
+            'triggerRegister' => 'setTriggerRegister',
+            'triggerSchema'   => 'setTriggerSchema',
+            'cron'            => 'setCron',
+            'executionMode'   => 'setExecutionMode',
+            'notes'           => 'setNotes',
+        ];
+
+        foreach ($strings as $key => $setter) {
+            if (array_key_exists($key, $data) === true) {
+                $value = $data[$key];
+                if ($value === null) {
+                    $flow->$setter(null);
+                    continue;
+                }
+
+                $flow->$setter((string) $value);
+            }
+        }
+
+        $arrays = [
+            'nodes'  => 'setNodes',
+            'edges'  => 'setEdges',
+            'limits' => 'setLimits',
+        ];
+
+        foreach ($arrays as $key => $setter) {
+            if (array_key_exists($key, $data) === true) {
+                $flow->$setter((array) ($data[$key] ?? []));
+            }
+        }
+
+        if (array_key_exists('enabled', $data) === true) {
+            $flow->setEnabled((bool) $data['enabled']);
+        }
+
+        $this->applyInheritableSettings(flow: $flow, data: $data);
+
+    }//end applyEditableFields()
+
+    /**
+     * Apply the three settings a flow may inherit from the administrator default.
+     *
+     * An explicit null is meaningful here — it is how a flow returns to following
+     * the instance default — so null is STORED rather than skipped, and each
+     * value is tested for null BEFORE casting. `(int) null` and `(bool) null`
+     * would quietly turn "inherit the default" into a hard 0/false on the row,
+     * which reads identically to a deliberate choice.
+     *
+     * @param Flow                 $flow The flow to mutate.
+     * @param array<string, mixed> $data The incoming fields.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function applyInheritableSettings(Flow $flow, array $data): void
+    {
+        $inheritable = [
+            'retentionDays'    => ['setRetentionDays', static fn ($value): int => max(1, (int) $value)],
+            'auditEnabled'     => ['setAuditEnabled', static fn ($value): bool => (bool) $value],
+            'oversightEnabled' => ['setOversightEnabled', static fn ($value): bool => (bool) $value],
+        ];
+
+        foreach ($inheritable as $key => [$setter, $cast]) {
+            if (array_key_exists($key, $data) === false) {
+                continue;
+            }
+
+            $value = $data[$key];
+            if ($value === null) {
+                $flow->$setter(null);
+                continue;
+            }
+
+            $flow->$setter($cast($value));
+        }
+
+    }//end applyInheritableSettings()
+
+    /**
+     * Delete a flow the caller owns.
+     *
+     * @param string $uuid The flow uuid.
+     *
+     * @return void
+     *
+     * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function delete(string $uuid): void
+    {
+        $this->mapper->delete($this->find(uuid: $uuid));
+
+    }//end delete()
+
+    /**
+     * Queue a manual run of a flow the caller owns.
+     *
+     * A manual run is attributed to the ACTING user rather than the flow's
+     * owner: the caller is present and authenticated, so there is a real
+     * identity to run as, and using the stored owner instead would let anyone
+     * who can reach the flow borrow that owner's privileges. `canDispatch()`
+     * governs the other direction — a trigger firing with nobody present.
+     *
+     * @param string               $uuid    The flow uuid.
+     * @param array<string, mixed> $subject `{uuid, register, schema}` of the object.
+     * @param array<string, mixed> $context Run-level metadata.
+     *
+     * @return FlowRun The queued run.
+     *
+     * @throws DoesNotExistException When no such flow exists, or it is not the caller's.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    public function run(string $uuid, array $subject=[], array $context=[]): FlowRun
+    {
+        $flow = $this->find(uuid: $uuid);
+
+        return $this->runner->queue(
+            flowId: (string) $flow->getUuid(),
+            subject: $subject,
+            trigger: Flow::TRIGGER_MANUAL,
+            context: $context,
+            user: $this->actingUser()
+        );
+
+    }//end run()
+
+    /**
+     * The acting user's uid, or null when there is no session.
+     *
+     * @return string|null The uid.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function actingUser(): ?string
+    {
+        $uid = $this->userSession->getUser()?->getUID();
+        if ($uid === null || $uid === '') {
+            return null;
+        }
+
+        return (string) $uid;
+
+    }//end actingUser()
+
+    /**
+     * The caller's active organisation uuid, or null when none resolves.
+     *
+     * Resolved lazily through the container for the same reason
+     * `FlowRunService` does it: this service is reachable from paths that run
+     * without a session, and dragging the whole organisation/RBAC graph in to
+     * read a value that will be null there is wasted work.
+     *
+     * @return string|null The organisation uuid.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function activeOrganisation(): ?string
+    {
+        try {
+            $organisationService = $this->container->get('OCA\OpenRegister\Service\OrganisationService');
+            $uuid = $organisationService->getActiveOrganisation()?->getUuid();
+        } catch (Throwable $e) {
+            $this->logger->debug(
+                message: '[FlowService] Could not resolve the active organisation: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            return null;
+        }
+
+        if ($uuid === null || $uuid === '') {
+            return null;
+        }
+
+        return (string) $uuid;
+
+    }//end activeOrganisation()
+
+    /**
+     * Mint a v4 uuid.
+     *
+     * @return string The uuid.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
+     */
+    private function newUuid(): string
+    {
+        $data    = random_bytes(16);
+        $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+        $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+
+    }//end newUuid()
+}//end class

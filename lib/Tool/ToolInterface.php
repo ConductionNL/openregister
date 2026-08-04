@@ -6,6 +6,9 @@
  * Interface for LLphant function tools that agents can use to interact
  * with OpenRegister data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
@@ -40,7 +43,7 @@ interface ToolInterface
      *
      * @return string Tool name (e.g., 'register', 'schema', 'objects')
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getName(): string;
 
@@ -52,7 +55,7 @@ interface ToolInterface
      *
      * @return string Tool description for LLM
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getDescription(): string;
 
@@ -80,7 +83,7 @@ interface ToolInterface
      *
      * @return array Array of function definitions
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getFunctions(): array;
 
@@ -98,7 +101,7 @@ interface ToolInterface
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array;
 
@@ -112,7 +115,7 @@ interface ToolInterface
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function setAgent(?\OCA\OpenRegister\Db\Agent $agent): void;
 }//end interface

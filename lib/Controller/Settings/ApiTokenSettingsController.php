@@ -3,6 +3,9 @@
 /**
  * OpenRegister API Token Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -66,6 +69,8 @@ class ApiTokenSettingsController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{error?: string, github_token?: string, gitlab_token?: string,
      *     gitlab_url?: string}, array<never, never>>
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getApiTokens(): JSONResponse
     {
@@ -108,6 +113,8 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with save result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function saveApiTokens(): JSONResponse
     {
@@ -154,6 +161,8 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function testGitHubToken(): JSONResponse
     {
@@ -194,7 +203,7 @@ class ApiTokenSettingsController extends Controller
                     'scopes'   => $response->getHeader('X-OAuth-Scopes') ?? [],
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,
@@ -211,6 +220,8 @@ class ApiTokenSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Test result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function testGitLabToken(): JSONResponse
     {
@@ -259,7 +270,7 @@ class ApiTokenSettingsController extends Controller
                     'instance' => $apiUrl,
                 ]
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return new JSONResponse(
                 data: [
                     'success' => false,

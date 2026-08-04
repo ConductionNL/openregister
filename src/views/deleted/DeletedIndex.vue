@@ -88,9 +88,9 @@ import formatBytes from '../../services/formatBytes.js'
 						<tr>
 							<th class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="allSelected"
+									:model-value="allSelected"
 									:indeterminate="someSelected"
-									@update:checked="toggleSelectAll" />
+									@update:modelValue="toggleSelectAll" />
 							</th>
 							<th>{{ t('openregister', 'Title') }}</th>
 							<th class="tableColumnConstrained">
@@ -115,8 +115,8 @@ import formatBytes from '../../services/formatBytes.js'
 							@click="handleRowClick(item.id, $event)">
 							<td class="tableColumnCheckbox">
 								<NcCheckboxRadioSwitch
-									:checked="selectedItems.includes(item.id)"
-									@update:checked="(checked) => toggleItemSelection(item.id, checked)" />
+									:model-value="selectedItems.includes(item.id)"
+									@update:modelValue="(checked) => toggleItemSelection(item.id, checked)" />
 							</td>
 							<td class="tableColumnTitle">
 								<div class="titleContent">
@@ -189,6 +189,7 @@ import Refresh from 'vue-material-design-icons/Refresh.vue'
 import FormatListChecks from 'vue-material-design-icons/FormatListChecks.vue'
 
 import PaginationComponent from '../../components/PaginationComponent.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'DeletedIndex',
@@ -212,26 +213,47 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude list-view store passthrough for filtered deleted items (computed; archivering-vernietiging contract)
+		 */
 		filteredItems() {
 			// Items are already filtered by the store based on sidebar filters
 			return deletedStore.deletedList || []
 		},
+		/**
+		 * @spec exclude list-view store passthrough for paginated deleted items (computed)
+		 */
 		paginatedItems() {
 			// Items are already paginated by the store
 			return this.filteredItems
 		},
+		/**
+		 * @spec exclude list-view pagination total-pages helper (computed)
+		 */
 		totalPages() {
 			return deletedStore.deletedPagination.pages || 1
 		},
+		/**
+		 * @spec exclude list-view pagination current-page helper (computed)
+		 */
 		currentPage() {
 			return deletedStore.deletedPagination.page || 1
 		},
+		/**
+		 * @spec exclude list-view select-all checkbox state (computed)
+		 */
 		allSelected() {
 			return this.paginatedItems.length > 0 && this.paginatedItems.every(item => this.selectedItems.includes(item.id))
 		},
+		/**
+		 * @spec exclude list-view indeterminate-selection checkbox state (computed)
+		 */
 		someSelected() {
 			return this.selectedItems.length > 0 && !this.allSelected
 		},
+		/**
+		 * @spec exclude list-view empty-state title text helper (computed)
+		 */
 		emptyContentName() {
 			if (deletedStore.deletedLoading) {
 				return t('openregister', 'Loading deleted items...')
@@ -240,6 +262,9 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * @spec exclude list-view empty-state description text helper (computed)
+		 */
 		emptyContentDescription() {
 			if (deletedStore.deletedLoading) {
 				return t('openregister', 'Please wait while we fetch your deleted items.')
@@ -250,13 +275,22 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @spec exclude list-view watcher; re-emits counts when the selection changes
+		 */
 		selectedItems() {
 			this.updateCounts()
 		},
+		/**
+		 * @spec exclude list-view watcher re-emitting counts when filtered items change
+		 */
 		filteredItems() {
 			this.updateCounts()
 		},
 	},
+	/**
+	 * @spec exclude list-view lifecycle; loads data and registers sidebar/modal event listeners on mount
+	 */
 	async mounted() {
 		// Load initial data
 		await this.loadItems()
@@ -265,26 +299,36 @@ export default {
 		this.updateCounts()
 
 		// Listen for filter changes from sidebar
-		this.$root.$on('deleted-filters-changed', this.handleFiltersChanged)
-		this.$root.$on('deleted-bulk-restore', this.bulkRestore)
-		this.$root.$on('deleted-bulk-delete', this.bulkDelete)
-		this.$root.$on('deleted-export-filtered', this.exportFiltered)
+		eventBus.on('deleted-filters-changed', this.handleFiltersChanged)
+		eventBus.on('deleted-bulk-restore', this.bulkRestore)
+		eventBus.on('deleted-bulk-delete', this.bulkDelete)
+		// Pre-existing typo, surfaced by the move off `$root.$on`: the method is
+		// `exportFilteredItems`. `this.exportFiltered` is undefined, so this
+		// channel had been subscribed to nothing since it was written. (The
+		// target is itself a documented stub, so no behaviour changes — but the
+		// wiring now says what it means instead of silently pointing at
+		// nothing.)
+		eventBus.on('deleted-export-filtered', this.exportFilteredItems)
 
 		// Listen for deletion events from modals
-		this.$root.$on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
-		this.$root.$on('deleted-objects-restored', this.handleObjectsRestored)
+		eventBus.on('deleted-objects-permanently-deleted', this.handleObjectsDeleted)
+		eventBus.on('deleted-objects-restored', this.handleObjectsRestored)
 	},
-	beforeDestroy() {
-		this.$root.$off('deleted-filters-changed')
-		this.$root.$off('deleted-bulk-restore')
-		this.$root.$off('deleted-bulk-delete')
-		this.$root.$off('deleted-export-filtered')
-		this.$root.$off('deleted-objects-permanently-deleted')
-		this.$root.$off('deleted-objects-restored')
+	/**
+	 * @spec exclude list-view lifecycle; tears down sidebar/modal event listeners on destroy
+	 */
+	beforeUnmount() {
+		eventBus.off('deleted-filters-changed')
+		eventBus.off('deleted-bulk-restore')
+		eventBus.off('deleted-bulk-delete')
+		eventBus.off('deleted-export-filtered')
+		eventBus.off('deleted-objects-permanently-deleted')
+		eventBus.off('deleted-objects-restored')
 	},
 	methods: {
 		/**
 		 * Load deleted items from store
+		 * @spec exclude list-view store fetch plumbing (archivering-vernietiging contract)
 		 * @return {Promise<void>}
 		 */
 		async loadItems() {
@@ -304,6 +348,7 @@ export default {
 		},
 		/**
 		 * Handle filter changes from sidebar
+		 * @spec exclude list-view filter-change handler; converts and re-fetches via store
 		 * @param {object} filters - Filter object from sidebar
 		 * @return {void}
 		 */
@@ -328,6 +373,7 @@ export default {
 		},
 		/**
 		 * Convert sidebar filters to API format using @self.deleted notation
+		 * @spec exclude list-view filter-shape mapping helper for display/query only
 		 * @param {object} filters - Sidebar filters
 		 * @return {object} API filters
 		 */
@@ -358,6 +404,7 @@ export default {
 		},
 		/**
 		 * Get item title from object data
+		 * @spec exclude list-view title-resolution display helper
 		 * @param {object} item - The deleted item
 		 * @return {string} The item title
 		 */
@@ -375,6 +422,7 @@ export default {
 		},
 		/**
 		 * Get register name by ID
+		 * @spec exclude list-view id-to-name lookup display helper
 		 * @param {string|number} registerId - The register ID
 		 * @return {string} The register name
 		 */
@@ -386,6 +434,7 @@ export default {
 		},
 		/**
 		 * Get schema name by ID
+		 * @spec exclude list-view id-to-name lookup display helper
 		 * @param {string|number} schemaId - The schema ID
 		 * @return {string} The schema name
 		 */
@@ -397,6 +446,7 @@ export default {
 		},
 		/**
 		 * Toggle selection for all items on current page
+		 * @spec exclude list-view select-all checkbox plumbing
 		 * @param {boolean} checked - Whether to select or deselect all
 		 * @return {void}
 		 */
@@ -418,6 +468,7 @@ export default {
 		},
 		/**
 		 * Toggle selection for individual item
+		 * @spec exclude list-view single-row selection toggle plumbing
 		 * @param {string} itemId - ID of the item to toggle
 		 * @param {boolean} checked - Whether to select or deselect
 		 * @return {void}
@@ -436,6 +487,7 @@ export default {
 		},
 		/**
 		 * Restore selected items using dialog
+		 * @spec exclude list-view bulk-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @return {void}
 		 */
 		bulkRestore() {
@@ -450,6 +502,7 @@ export default {
 		},
 		/**
 		 * Permanently delete selected items using dialog
+		 * @spec exclude list-view bulk-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @return {void}
 		 */
 		bulkDelete() {
@@ -464,6 +517,7 @@ export default {
 		},
 		/**
 		 * Restore individual item using dialog
+		 * @spec exclude list-view row-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @param {object} item - Item to restore
 		 * @return {void}
 		 */
@@ -474,6 +528,7 @@ export default {
 		},
 		/**
 		 * Permanently delete individual item using dialog
+		 * @spec exclude list-view row-action dialog-open plumbing (archivering-vernietiging contract)
 		 * @param {object} item - Item to delete
 		 * @return {void}
 		 */
@@ -485,6 +540,7 @@ export default {
 
 		/**
 		 * Handle multiple objects deletion event
+		 * @spec exclude list-view event handler; clears selection and reloads after modal delete
 		 * @param {Array<string>} objectIds - IDs of deleted objects
 		 * @return {Promise<void>}
 		 */
@@ -502,6 +558,7 @@ export default {
 		},
 		/**
 		 * Handle multiple objects restoration event
+		 * @spec exclude list-view event handler; clears selection and reloads after modal restore
 		 * @param {Array<string>} objectIds - IDs of restored objects
 		 * @return {Promise<void>}
 		 */
@@ -519,6 +576,7 @@ export default {
 		},
 		/**
 		 * Export filtered items with specified options
+		 * @spec exclude list-view export stub (not yet implemented)
 		 * @param {object} options - Export options
 		 * @param _options
 		 * @return {void}
@@ -528,6 +586,7 @@ export default {
 		},
 		/**
 		 * Handle page change from pagination component
+		 * @spec exclude list-view pagination page-change handler
 		 * @param {number} page - The page number to change to
 		 * @return {Promise<void>}
 		 */
@@ -545,6 +604,7 @@ export default {
 		},
 		/**
 		 * Handle page size change from pagination component
+		 * @spec exclude list-view pagination page-size-change handler
 		 * @param {number} pageSize - The new page size
 		 * @return {Promise<void>}
 		 */
@@ -562,6 +622,7 @@ export default {
 		},
 		/**
 		 * Refresh items list
+		 * @spec exclude list-view manual refresh plumbing
 		 * @return {Promise<void>}
 		 */
 		async refreshItems() {
@@ -570,14 +631,16 @@ export default {
 		},
 		/**
 		 * Update counts for sidebar
+		 * @spec exclude list-view count-emit plumbing for the sidebar
 		 * @return {void}
 		 */
 		updateCounts() {
-			this.$root.$emit('deleted-selection-count', this.selectedItems.length)
-			this.$root.$emit('deleted-filtered-count', this.filteredItems.length)
+			eventBus.emit('deleted-selection-count', this.selectedItems.length)
+			eventBus.emit('deleted-filtered-count', this.filteredItems.length)
 		},
 		/**
 		 * Handle row click for selection
+		 * @spec exclude list-view row-click selection plumbing
 		 * @param {string} id - Item ID
 		 * @param {Event} event - Click event
 		 * @return {void}
@@ -595,6 +658,7 @@ export default {
 		},
 		/**
 		 * Handle item selection toggle
+		 * @spec exclude list-view selection toggle plumbing
 		 * @param {string} id - Item ID
 		 * @return {void}
 		 */
@@ -607,6 +671,7 @@ export default {
 		},
 		/**
 		 * Format purge date in ISO format yyyy:mm:dd hh:mm
+		 * @spec exclude list-view date-formatting display helper
 		 * @param {string} timestamp - The purge date timestamp
 		 * @return {string} Formatted purge date
 		 */

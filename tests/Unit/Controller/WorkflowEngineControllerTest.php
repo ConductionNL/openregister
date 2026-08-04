@@ -29,12 +29,22 @@ class WorkflowEngineControllerTest extends TestCase
         $this->registry = $this->createMock(WorkflowEngineRegistry::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // Write endpoints are admin-gated; simulate an authenticated admin.
+        $adminUser = $this->createMock(\OCP\IUser::class);
+        $adminUser->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($adminUser);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new WorkflowEngineController(
             'openregister',
             $this->request,
             $this->registry,
             $this->logger,
-            $this->createMock(IL10N::class)
+            $this->createMock(IL10N::class),
+            $userSession,
+            $groupManager
         );
     }
 
@@ -83,6 +93,47 @@ class WorkflowEngineControllerTest extends TestCase
         $result = $this->controller->show(999);
 
         $this->assertEquals(404, $result->getStatus());
+    }
+
+    private function makeNonAdminController(): WorkflowEngineController
+    {
+        $bob = $this->createMock(\OCP\IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $session = $this->createMock(\OCP\IUserSession::class);
+        $session->method('getUser')->willReturn($bob);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        return new WorkflowEngineController(
+            'openregister',
+            $this->request,
+            $this->registry,
+            $this->logger,
+            $this->createMock(IL10N::class),
+            $session,
+            $groupManager
+        );
+    }
+
+    public function testIndexRejectsNonAdmin(): void
+    {
+        $controller = $this->makeNonAdminController();
+        // Engine registry (internal baseUrl/healthStatus) is never read.
+        $this->registry->expects($this->never())->method('getEngines');
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowRejectsNonAdmin(): void
+    {
+        $controller = $this->makeNonAdminController();
+        $this->registry->expects($this->never())->method('getEngine');
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(403, $result->getStatus());
     }
 
     public function testCreateInvalidType(): void

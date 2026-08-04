@@ -6,6 +6,9 @@
  * Schema-save validation for the `x-openregister-widgets` annotation.
  * Returns a list of errors; empty = valid.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -77,6 +80,8 @@ final class WidgetAnnotationValidator
      * @param array<string, mixed> $schema Full schema definition.
      *
      * @return array<int, array{code: string, message: string}>
+     *
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function validate(array $schema): array
     {

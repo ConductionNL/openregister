@@ -40,7 +40,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
  */
 
 declare(strict_types=1);
@@ -59,7 +61,8 @@ use ZBateson\MailMimeParser\Message\IMessagePart;
 /**
  * Parser for `message/rfc822` files.
  *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects) MIME parsing requires several collaborating types
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   MIME parsing requires several collaborating types
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex MIME/RFC 2822 parsing logic
  */
 class EmlParser
 {
@@ -100,6 +103,8 @@ class EmlParser
      * @return EmlStructure The parsed structure.
      *
      * @throws EmlParseException When the input is irrecoverably malformed.
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parse(File $file, int $depth=0): EmlStructure
     {
@@ -133,6 +138,8 @@ class EmlParser
      * @param int      $depth   Current recursion depth.
      *
      * @return EmlStructure
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parseMessage(IMessage $message, int $depth=0): EmlStructure
     {
@@ -159,6 +166,9 @@ class EmlParser
      * @return string Flat plain-text output.
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Mostly attachment-loop branching
+     * @SuppressWarnings(PHPMD.NPathComplexity)      Nested attachment-tree traversal
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function flatten(EmlStructure $structure, int $depth=0): string
     {
@@ -171,12 +181,11 @@ class EmlParser
                 continue;
             }
 
+            $rendered = (string) $value;
             if ($key === 'date' && $value instanceof DateTimeImmutable) {
                 $rendered = $value->format(DateTimeImmutable::ATOM);
             } else if (is_array($value) === true) {
                 $rendered = implode(', ', $value);
-            } else {
-                $rendered = (string) $value;
             }
 
             $lines[] = ucfirst($key).': '.$rendered;
@@ -225,6 +234,8 @@ class EmlParser
      * @param IMessage $message Parsed message.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractHeaders(IMessage $message): array
     {
@@ -254,6 +265,9 @@ class EmlParser
      * @param string|null $raw Raw header value.
      *
      * @return array<int, string>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RFC 2822 address-list parsing state machine
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RFC 2822 address-list parsing state machine
      */
     private function splitAddressList(?string $raw): array
     {
@@ -267,39 +281,39 @@ class EmlParser
         $inAngle = false;
         $length  = strlen($raw);
         for ($i = 0; $i < $length; $i++) {
-            $ch = $raw[$i];
+            $char = $raw[$i];
 
-            if ($ch === '\\' && $inQuote === true && $i + 1 < $length) {
+            if ($char === '\\' && $inQuote === true && $i + 1 < $length) {
                 // Honour escaped character inside a quoted display name.
-                $buffer .= $ch.$raw[++$i];
+                $buffer .= $char.$raw[++$i];
                 continue;
             }
 
-            if ($ch === '"' && $inAngle === false) {
+            if ($char === '"' && $inAngle === false) {
                 $inQuote = !$inQuote;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === '<' && $inQuote === false) {
+            if ($char === '<' && $inQuote === false) {
                 $inAngle = true;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === '>' && $inQuote === false) {
+            if ($char === '>' && $inQuote === false) {
                 $inAngle = false;
-                $buffer .= $ch;
+                $buffer .= $char;
                 continue;
             }
 
-            if ($ch === ',' && $inQuote === false && $inAngle === false) {
+            if ($char === ',' && $inQuote === false && $inAngle === false) {
                 $tokens[] = trim($buffer);
                 $buffer   = '';
                 continue;
             }
 
-            $buffer .= $ch;
+            $buffer .= $char;
         }//end for
 
         if ($buffer !== '') {
@@ -320,15 +334,27 @@ class EmlParser
      * @param IMessage $message Parsed message.
      *
      * @return EmlBody
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
      */
     private function extractBody(IMessage $message): EmlBody
     {
         $plain = $message->getTextContent();
         $html  = $message->getHtmlContent();
 
+        $plainText = null;
+        if ($plain !== null && $plain !== '') {
+            $plainText = $plain;
+        }
+
+        $htmlText = null;
+        if ($html !== null && $html !== '') {
+            $htmlText = $html;
+        }
+
         return new EmlBody(
-            plainText: ($plain !== null && $plain !== '') ? $plain : null,
-            html: ($html !== null && $html !== '') ? $html : null
+            plainText: $plainText,
+            html: $htmlText
         );
     }//end extractBody()
 
@@ -339,6 +365,8 @@ class EmlParser
      * @param int      $depth   Current recursion depth (root = 0).
      *
      * @return array<int, EmlAttachment>
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractAttachments(IMessage $message, int $depth): array
     {
@@ -366,6 +394,8 @@ class EmlParser
      * @param int          $depth    Current recursion depth.
      *
      * @return EmlAttachment
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function buildAttachment(IMessagePart $part, int $position, int $depth): EmlAttachment
     {
@@ -379,7 +409,9 @@ class EmlParser
         if (strtolower(string: $mimeType) === 'message/rfc822') {
             if ($depth < self::MAX_DEPTH) {
                 $nestedEml = $this->parseNestedEml(bytes: $bytes, depth: ($depth + 1));
-            } else {
+            }
+
+            if ($depth >= self::MAX_DEPTH) {
                 $this->logger->debug(
                     message: '[EmlParser] EML nesting depth limit reached',
                     context: [
@@ -492,6 +524,8 @@ class EmlParser
      * @return EmlStructure|null Null on parse failure (the outer parse
      *                           tolerates a malformed nested EML so the
      *                           rest of the structure is still usable).
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function parseNestedEml(string $bytes, int $depth): ?EmlStructure
     {
@@ -529,7 +563,11 @@ class EmlParser
         }
 
         $trimmed = trim(string: $raw, characters: " \t\n\r\0\x0B<>");
-        return $trimmed === '' ? null : $trimmed;
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return $trimmed;
     }//end stripAngleBrackets()
 
     /**
@@ -538,6 +576,10 @@ class EmlParser
      * @param string|null $raw Raw header value.
      *
      * @return DateTimeImmutable|null Null when the header is missing or unparseable.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) DateTimeImmutable::createFromFormat is idiomatic PHP
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function parseDate(?string $raw): ?DateTimeImmutable
     {
@@ -580,6 +622,8 @@ class EmlParser
      * @param string $html HTML source.
      *
      * @return string Plain text.
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function htmlToText(string $html): string
     {
@@ -619,6 +663,8 @@ class EmlParser
      * @param string $value Possibly-non-UTF-8 string.
      *
      * @return string UTF-8 string (or the raw input when detection fails).
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-non-utf-8-body-parts-must-be-transcoded-to-utf-8-on-a-best-effort-basis
      */
     private function ensureUtf8(string $value): string
     {
@@ -669,6 +715,8 @@ class EmlParser
      * @param string $message Potentially PII-bearing string.
      *
      * @return string Sanitised string safe to log.
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public static function sanitisePiiForLogging(string $message): string
     {

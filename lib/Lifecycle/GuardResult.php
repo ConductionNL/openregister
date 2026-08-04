@@ -6,6 +6,9 @@
  * Value object returned by `LifecycleGuardInterface::check`. Two factory
  * constructors (`allow` and `deny`) plus read-only inspectors.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Lifecycle
  * @package  OCA\OpenRegister\Lifecycle
  *
@@ -58,6 +61,8 @@ final class GuardResult
      * Allow the transition.
      *
      * @return self Allow verdict instance.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function allow(): self
     {
@@ -70,6 +75,8 @@ final class GuardResult
      * @param string $message Human-readable reason. Surfaced to the caller in the 403 response.
      *
      * @return self Deny verdict instance.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function deny(string $message): self
     {
@@ -80,6 +87,8 @@ final class GuardResult
      * Read whether the verdict allows the transition.
      *
      * @return bool True when allowed, false when denied.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function isAllowed(): bool
     {

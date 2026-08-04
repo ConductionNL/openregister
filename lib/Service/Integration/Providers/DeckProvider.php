@@ -4,13 +4,20 @@
  * DeckProvider — exposes Nextcloud Deck cards linked to an OpenRegister
  * object via the IntegrationProvider contract.
  *
- * Backed by the already-shipped DeckCardService — link rows live in
- * `openregister_deck_links`, the cards themselves live in NC Deck and
- * are created via Deck's internal service classes (not OCS) so that
- * board/stack selection is honoured. The provider's `create()` is the
- * shared "link existing OR create new" entry point — callers pass
- * either `cardId` (link existing) or `boardId + stackId + title`
- * (create new), matching DeckCardService::linkOrCreateCard.
+ * Tier-2 (this file): delegates to {@see DeckLinkService} so the picker
+ * UX surface (link existing card / create new card / list boards+stacks)
+ * is available through the registry. The Tier-1 `DeckCardService` is
+ * still wired upstream (RelationsController, ObjectCleanupListener) but
+ * the provider has moved to the Tier-2 service to honour the explicit
+ * `cardId`-keyed unlink + the widened (dueDate/labels/assignees) read
+ * payload.
+ *
+ * Create payload routing:
+ *   - `{ cardId }` only                          → linkCard
+ *   - `{ boardId, stackId, title, ... }`         → createAndLinkCard
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -21,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-deck/tasks.md
+ * @spec openspec/specs/integration-deck/spec.md
  */
 
 declare(strict_types=1);
@@ -30,7 +37,8 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
-use OCA\OpenRegister\Service\DeckCardService;
+use Exception;
+use OCA\OpenRegister\Service\DeckLinkService;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
@@ -52,14 +60,12 @@ class DeckProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param DeckCardService $deckCardService Backing service.
+     * @param DeckLinkService $deckLinkService Tier-2 backing service.
      * @param IAppManager     $appManager      NC app manager.
      * @param IL10N           $l10n            Localisation.
-     *
-     * @return void
      */
     public function __construct(
-        private DeckCardService $deckCardService,
+        private DeckLinkService $deckLinkService,
         private IAppManager $appManager,
         private IL10N $l10n,
     ) {
@@ -97,7 +103,7 @@ class DeckProvider extends AbstractIntegrationProvider
 
     public function isEnabled(): bool
     {
-        return $this->deckCardService->isDeckAvailable();
+        return $this->deckLinkService->isDeckAvailable();
     }//end isEnabled()
 
     /**
@@ -109,42 +115,83 @@ class DeckProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (currently ignored).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+     *
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
         try {
-            $result = $this->deckCardService->getCardsForObject(objectUuid: $objectId);
+            return $this->deckLinkService->getLinkedCards($objectId);
         } catch (Throwable $e) {
             return [];
         }
-
-        return $result['results'] ?? [];
     }//end list()
 
     /**
      * Create or link a Deck card.
      *
-     * Payload shape mirrors DeckCardService::linkOrCreateCard — either
-     * `cardId` (link existing) or `boardId + stackId + title +
-     * description` (create new). `registerId` (numeric) is required.
+     * Payload variants:
+     *   - link existing — `{ cardId, registerId?, schemaId? }`
+     *   - create new    — `{ boardId, stackId, title, description?, duedate?, registerId?, schemaId? }`
      *
      * @param string              $register Register slug or numeric id.
-     * @param string              $schema   Schema slug or numeric id (unused — Deck cards are object-scoped).
+     * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
      * @param array<string,mixed> $payload  Card data (see method docblock).
      *
      * @return array<string,mixed>
+     *
+     * @throws Exception When payload is missing required fields.
+     *
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
         $registerId = (int) ($payload['registerId'] ?? $register);
-        $link       = $this->deckCardService->linkOrCreateCard(
-            objectUuid: $objectId,
-            registerId: $registerId,
-            data: $payload
-        );
+        $schemaId   = (int) ($payload['schemaId'] ?? $schema);
 
-        return $link->jsonSerialize();
+        $hasCardId    = (empty($payload['cardId']) === false);
+        $hasBoardData = (empty($payload['boardId']) === false && empty($payload['stackId']) === false);
+
+        if ($hasCardId === true) {
+            $link = $this->deckLinkService->linkCard(
+                $objectId,
+                $registerId,
+                $schemaId,
+                (int) $payload['cardId']
+            );
+
+            return $link->jsonSerialize();
+        }
+
+        if ($hasBoardData === true) {
+            $description = null;
+            if (isset($payload['description']) === true) {
+                $description = (string) $payload['description'];
+            }
+
+            $duedate = null;
+            if (isset($payload['duedate']) === true) {
+                $duedate = (string) $payload['duedate'];
+            }
+
+            $link = $this->deckLinkService->createAndLinkCard(
+                $objectId,
+                $registerId,
+                $schemaId,
+                (int) $payload['boardId'],
+                (int) $payload['stackId'],
+                (string) ($payload['title'] ?? 'Untitled'),
+                $description,
+                $duedate
+            );
+
+            return $link->jsonSerialize();
+        }//end if
+
+        throw new Exception('Either cardId or boardId+stackId is required', 400);
     }//end create()
 
     /**
@@ -152,23 +199,43 @@ class DeckProvider extends AbstractIntegrationProvider
      *
      * @param string $register Register slug or numeric id (unused).
      * @param string $schema   Schema slug or numeric id (unused).
-     * @param string $objectId Object uuid (unused).
-     * @param string $entityId Numeric link id.
+     * @param string $objectId Object uuid.
+     * @param string $entityId Deck card id (numeric).
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) Provider-contract args.
+     *
+     * @spec openspec/specs/integration-deck/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
-        $this->deckCardService->unlinkCard(linkId: (int) $entityId);
+        $this->deckLinkService->unlinkCard($objectId, (int) $entityId);
     }//end delete()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *       the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
-        $available = $this->deckCardService->isDeckAvailable();
+        $available = $this->deckLinkService->isDeckAvailable();
+
+        $status  = 'unavailable';
+        $message = 'NC Deck app is not installed';
+        if ($available === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Deck app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

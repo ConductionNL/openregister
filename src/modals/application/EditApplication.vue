@@ -18,8 +18,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
+				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
 							<span>Settings</span>
@@ -28,14 +28,14 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Name *')"
-								:value.sync="applicationItem.name"
+								v-model="applicationItem.name"
 								:error="!applicationItem.name.trim()"
 								:placeholder="t('openregister', 'Enter application name')" />
 
 							<NcTextArea
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								:value.sync="applicationItem.description"
+								v-model="applicationItem.description"
 								:placeholder="t('openregister', 'Enter application description (optional)')"
 								:rows="4" />
 
@@ -45,6 +45,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								<label class="groups-label">Nextcloud Groups</label>
 								<NcSelect
 									v-model="selectedGroups"
+									input-label="Selected Groups"
 									:disabled="loading || loadingGroups"
 									:options="availableGroups"
 									label="name"
@@ -54,7 +55,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 									:filterable="false"
 									:placeholder="t('openregister', 'Search groups...')"
 									@search-change="searchGroups"
-									@input="updateGroups">
+									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{ name }}</span>
@@ -70,9 +71,9 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								</p>
 							</div>
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Database :size="16" />
 							<span>Quota</span>
@@ -83,44 +84,44 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								label="Storage Quota (MB)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
+								:model-value="storageQuotaMB"
+								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Bandwidth Quota (MB/month)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
+								:model-value="bandwidthQuotaMB"
+								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
+								:model-value="applicationItem.quota?.requests || 0"
+								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="User Quota"
 								type="number"
 								placeholder="0 = unlimited (not applicable for applications)"
-								:value="applicationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
+								:model-value="applicationItem.quota?.users || 0"
+								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Group Quota"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
+								:model-value="applicationItem.quota?.groups || 0"
+								@update:modelValue="updateGroupQuota" />
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Shield :size="16" />
 							<span>Security</span>
@@ -143,8 +144,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								</div>
 							</div>
 						</div>
-					</BTab>
-				</BTabs>
+					</AppTab>
+				</AppTabs>
 			</div>
 		</div>
 
@@ -157,7 +158,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
-				type="primary"
+				variant="primary"
 				@click="saveApplication()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -180,7 +181,8 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -201,8 +203,8 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		RbacTable,
 		// Icons
 		ContentSaveOutline,
@@ -245,14 +247,23 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — converts storage quota bytes to MB for the form.
+		 */
 		storageQuotaMB() {
 			if (!this.applicationItem.quota?.storage) return 0
 			return Math.round(this.applicationItem.quota.storage / (1024 * 1024))
 		},
+		/**
+		 * @spec exclude UI display helper — converts bandwidth quota bytes to MB for the form.
+		 */
 		bandwidthQuotaMB() {
 			if (!this.applicationItem.quota?.bandwidth) return 0
 			return Math.round(this.applicationItem.quota.bandwidth / (1024 * 1024))
 		},
+		/**
+		 * @spec exclude UI display helper — filters available groups to those assigned to the application.
+		 */
 		filteredAvailableGroups() {
 		// Filter available groups to only show groups assigned to the application
 			if (!this.applicationItem.groups || this.applicationItem.groups.length === 0) {
@@ -261,6 +272,9 @@ export default {
 			return this.availableGroups.filter(group => this.applicationItem.groups.includes(group.id))
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads organisations/groups and hydrates the modal.
+	 */
 	async mounted() {
 		await this.fetchOrganisations()
 		// Use cached Nextcloud groups from store (preloaded on index page)
@@ -273,6 +287,7 @@ export default {
 		 * Fetch available organisations from the store
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		async fetchOrganisations() {
 			await organisationStore.refreshOrganisationList()
@@ -283,16 +298,15 @@ export default {
 		 * Groups are preloaded on the index page for better performance
 		 *
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — reads cached Nextcloud groups from the store.
 		 */
 		loadNextcloudGroupsFromStore() {
 			// If groups are already cached in store, use them immediately
 			if (applicationStore.nextcloudGroups && applicationStore.nextcloudGroups.length > 0) {
 				this.availableGroups = applicationStore.nextcloudGroups
 				this.loadingGroups = false
-				console.info('Using cached Nextcloud groups from application store:', this.availableGroups.length)
 			} else {
 				// Groups not cached yet - load them (fallback for direct navigation)
-				console.info('Groups not cached in application store, loading from API...')
 				this.loadingGroups = true
 				applicationStore.loadNextcloudGroups().then(() => {
 					this.availableGroups = applicationStore.nextcloudGroups
@@ -312,6 +326,7 @@ export default {
 		 *
 		 * @param {string} searchQuery - The search query entered by user
 		 * @return {void}
+		 * @spec exclude Modal data-load plumbing — debounced group search via OCS API.
 		 */
 		searchGroups(searchQuery) {
 			// Clear existing debounce timer
@@ -355,8 +370,6 @@ export default {
 
 							this.availableGroups = mergedGroups
 						}
-					} else {
-						console.warn('Failed to search groups:', response.statusText)
 					}
 				} catch (error) {
 					console.error('Error searching Nextcloud groups:', error)
@@ -370,6 +383,7 @@ export default {
 		 * Initialize application item from store
 		 *
 		 * @return {void}
+		 * @spec exclude Modal hydration plumbing — copies the store's applicationItem into local form state.
 		 */
 		initializeApplicationItem() {
 			if (applicationStore.applicationItem?.uuid) {
@@ -408,6 +422,7 @@ export default {
 		 *
 		 * @param {Array} groups - Selected groups
 		 * @return {void}
+		 * @spec exclude Form-field binding — maps selected groups to id array.
 		 */
 		updateGroups(groups) {
 			this.selectedGroups = groups || []
@@ -420,6 +435,7 @@ export default {
 		 *
 		 * @param {object} groupToRemove - Group to remove
 		 * @return {void}
+		 * @spec exclude Form-field binding — removes a group from the selection.
 		 */
 		removeGroup(groupToRemove) {
 			this.selectedGroups = this.selectedGroups.filter(g => g.id !== groupToRemove.id)
@@ -432,10 +448,10 @@ export default {
 		 *
 		 * @param {object} payload - Permission update payload
 		 * @return {void}
+		 * @spec exclude Form-field binding — toggles a group's CRUD permission in local authorization state.
 		 */
 		updateApplicationPermission(payload) {
 			const { groupId, action, hasPermission } = payload
-			console.info('Updating application permission:', { groupId, action, hasPermission })
 
 			// Initialize authorization if not present
 			if (!this.applicationItem.authorization) {
@@ -457,15 +473,13 @@ export default {
 			if (hasPermission && groupIndex === -1) {
 			// Add the group
 				this.applicationItem.authorization[action].push(groupId)
-				console.info(`Added ${groupId} to ${action}:`, this.applicationItem.authorization[action])
 			} else if (!hasPermission && groupIndex !== -1) {
 			// Remove the group
 				this.applicationItem.authorization[action].splice(groupIndex, 1)
-				console.info(`Removed ${groupId} from ${action}:`, this.applicationItem.authorization[action])
 			}
 
 			// Force Vue to detect the change
-			this.$set(this.applicationItem, 'authorization', { ...this.applicationItem.authorization })
+			this.applicationItem.authorization = { ...this.applicationItem.authorization }
 		},
 
 		/**
@@ -473,6 +487,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets storage quota (MB→bytes) in local state.
 		 */
 		updateStorageQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -488,6 +503,7 @@ export default {
 		 *
 		 * @param {number} value - Quota in MB
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets bandwidth quota (MB→bytes) in local state.
 		 */
 		updateBandwidthQuota(value) {
 		// Convert MB to bytes (0 = unlimited)
@@ -503,6 +519,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets request quota in local state.
 		 */
 		updateRequestQuota(value) {
 			// 0 = unlimited
@@ -517,6 +534,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets user quota in local state.
 		 */
 		updateUserQuota(value) {
 		// 0 = unlimited (not applicable for applications, but kept for consistency)
@@ -531,6 +549,7 @@ export default {
 		 *
 		 * @param {number} value - Quota value
 		 * @return {void}
+		 * @spec exclude Form-field binding — sets group quota in local state.
 		 */
 		updateGroupQuota(value) {
 		// 0 = unlimited
@@ -544,6 +563,7 @@ export default {
 		 * Close the modal and reset state
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close plumbing — resets local state and clears modal/dialog.
 		 */
 		closeModal() {
 			this.success = false
@@ -559,6 +579,7 @@ export default {
 		 * Save the application
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Modal save plumbing — validates name then delegates to applicationStore.saveApplication.
 		 */
 		async saveApplication() {
 			this.loading = true
@@ -596,6 +617,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - Whether the dialog is open
 		 * @return {void}
+		 * @spec exclude UI event handler — closes the modal on dialog dismiss.
 		 */
 		handleDialogOpen(isOpen) {
 			// Only close the modal if the dialog is being closed (isOpen = false)

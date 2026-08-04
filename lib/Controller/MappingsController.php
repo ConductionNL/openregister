@@ -6,6 +6,9 @@
  * Controller for managing mapping operations in the OpenRegister app.
  * Provides endpoints for CRUD operations on mappings used for data transformation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -53,6 +56,8 @@ use Psr\Log\LoggerInterface;
  * @link https://OpenRegister.app
  *
  * @psalm-suppress UnusedClass
+ *
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class MappingsController extends Controller
 {
@@ -94,6 +99,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with array of mappings
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function index(): JSONResponse
     {
@@ -148,6 +155,8 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function show(int|string $id): JSONResponse
     {
@@ -171,6 +180,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with created mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function create(): JSONResponse
     {
@@ -221,6 +232,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated mapping
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function update(int $id): JSONResponse
     {
@@ -280,6 +293,8 @@ class MappingsController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function patch(int $id): JSONResponse
     {
@@ -297,6 +312,8 @@ class MappingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse Empty JSON response on success
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-7
      */
     public function destroy(int $id): JSONResponse
     {
@@ -321,10 +338,14 @@ class MappingsController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt No per-object resource: stateless evaluation of a caller-supplied transient mapping over caller-supplied input;
+     *   nothing is loaded by id.
      *
      * @return JSONResponse JSON response with test results
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/openapi-generation/spec.md#requirement-schema-authoring-sub-resources-and-meta-entity-operational-endpoints
      */
     public function test(): JSONResponse
     {

@@ -3,6 +3,9 @@
 /**
  * OpenRegister FileVersionRestoredEvent
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -30,6 +33,8 @@ class FileVersionRestoredEvent extends Event
      * @param array  $data       Additional event data.
      *
      * @return void
+     *
+     * @spec openspec/specs/content-versioning/spec.md
      */
     public function __construct(
         private readonly string $objectUuid,
@@ -44,7 +49,7 @@ class FileVersionRestoredEvent extends Event
      *
      * @return string The object UUID.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getObjectUuid(): string
     {
@@ -56,7 +61,7 @@ class FileVersionRestoredEvent extends Event
      *
      * @return int The file ID.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getFileId(): int
     {
@@ -68,7 +73,7 @@ class FileVersionRestoredEvent extends Event
      *
      * @return array The event data.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getData(): array
     {

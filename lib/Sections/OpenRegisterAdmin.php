@@ -5,6 +5,9 @@
  *
  * Provides admin settings section for OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Section
  * @package  OCA\OpenRegister\Sections
  *
@@ -52,7 +55,7 @@ class OpenRegisterAdmin implements IIconSection
      * @param IL10N         $l            Localization service
      * @param IURLGenerator $urlGenerator URL generator service
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(IL10N $l, IURLGenerator $urlGenerator)
     {
@@ -65,7 +68,7 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @return string Icon path
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getIcon(): string
     {
@@ -79,7 +82,7 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @psalm-return 'openregister'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getID(): string
     {
@@ -91,7 +94,7 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @return string Section name
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getName(): string
     {
@@ -105,7 +108,7 @@ class OpenRegisterAdmin implements IIconSection
      *
      * @psalm-return 97
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-25
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getPriority(): int
     {

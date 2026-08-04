@@ -27,8 +27,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -45,8 +46,10 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 
 /**
  * Data-Subject Access Request orchestrator.
@@ -95,8 +98,13 @@ class DsarService
      * @param IAppConfig                  $appConfig    App-config reader.
      * @param IUserSession                $userSession  Current user (for
      *                                                  soft-delete
-     *                                                  metadata).
+     *                                                  metadata + the
+     *                                                  in-service
+     *                                                  privilege guard).
      * @param LoggerInterface             $logger       Logger.
+     * @param IGroupManager               $groupManager Group manager used
+     *                                                  by the in-service
+     *                                                  admin guard.
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -104,10 +112,49 @@ class DsarService
         private readonly VerwerkingsactiviteitMapper $vrwMapper,
         private readonly IAppConfig $appConfig,
         private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly IGroupManager $groupManager
     ) {
 
     }//end __construct()
+
+    /**
+     * Fail-closed privilege guard for all DSAR composition entry points.
+     *
+     * DSAR flows load + mutate objects across the entire register
+     * surface with `_rbac:false` and `_multitenancy:false`, deliberately
+     * bypassing per-object access control because a privacy officer must
+     * be able to reach every object referencing a data subject. That
+     * makes this service a cross-tenant amplifier: any caller able to
+     * invoke it can read or erase PII for arbitrary subjects regardless
+     * of tenant.
+     *
+     * `DsarController` already admin-gates every endpoint, but a service
+     * this powerful must not rely solely on its callers. This guard is
+     * defense-in-depth: it throws unless the active user is an admin, so
+     * a future caller that forgets to gate (or a mis-wired route) cannot
+     * silently expose the bypass. Authorized (admin) callers are
+     * unaffected — the response shape is unchanged for them.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the active user is not an admin.
+     */
+    private function assertPrivileged(): void
+    {
+        $user = $this->userSession->getUser();
+        if ($user !== null && $this->groupManager->isAdmin($user->getUID()) === true) {
+            return;
+        }
+
+        $this->logger->warning(
+            message: '[DSAR] Blocked unprivileged DSAR composition call',
+            context: ['user' => $user?->getUID() ?? 'anonymous']
+        );
+
+        throw new RuntimeException('DSAR operations require administrator privileges');
+
+    }//end assertPrivileged()
 
     /**
      * Find every object that contains personal data for the given subject.
@@ -133,9 +180,13 @@ class DsarService
      * @param string      $mode    `exact` (default) or `ilike`.
      *
      * @return array<int, array{object: array, gdprEntities: array}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function findObjectsForSubject(string $subject, ?string $type=null, string $mode='exact'): array
     {
+        $this->assertPrivileged();
+
         $subject = trim($subject);
         if ($subject === '') {
             return [];
@@ -217,9 +268,13 @@ class DsarService
      * @return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function eraseObjectsForSubject(string $subject, ?string $type=null, bool $dryRun=false): array
     {
+        $this->assertPrivileged();
+
         $hits = $this->matchEntities(subject: $subject, type: $type, mode: 'exact');
 
         // Dedupe by canonical key — uuid (preferred) or int id (legacy).
@@ -242,9 +297,14 @@ class DsarService
             'dryRun'       => $dryRun,
             'matchedCount' => count($entries),
             'erased'       => [],
+            // BUG-SVC-2: objects whose erasure failed are collected here so the
+            // caller can report a partial failure instead of a false "complete".
+            'failed'       => [],
         ];
 
         if ($dryRun === true || $entries === []) {
+            $summary['complete']    = true;
+            $summary['failedCount'] = 0;
             return $summary;
         }
 
@@ -260,6 +320,16 @@ class DsarService
         foreach ($entries as $entry) {
             $object = $this->loadObjectByEntry(entry: $entry);
             if ($object === null) {
+                // BUG-SVC-2: a matched object we cannot load was NOT erased —
+                // record it as a failure rather than silently skipping it.
+                $summary['failed'][] = [
+                    'object' => $entry,
+                    'error'  => 'Object could not be loaded for erasure',
+                ];
+                $this->logger->warning(
+                    message: '[DSAR] Matched object could not be loaded during vergetelheid',
+                    context: ['object' => $entry]
+                );
                 continue;
             }
 
@@ -276,12 +346,21 @@ class DsarService
                     'schema'   => $object->getSchema(),
                 ];
             } catch (\Throwable $e) {
+                $summary['failed'][] = [
+                    'object' => $entry,
+                    'error'  => $e->getMessage(),
+                ];
                 $this->logger->warning(
                     message: '[DSAR] Soft-delete failed during vergetelheid',
                     context: ['object' => $entry, 'error' => $e->getMessage()]
                 );
             }
         }//end foreach
+
+        // BUG-SVC-2: surface partial completion so callers don't treat a run
+        // with failures as a fully-successful erasure.
+        $summary['complete']    = ($summary['failed'] === []);
+        $summary['failedCount'] = count($summary['failed']);
 
         return $summary;
 
@@ -327,7 +406,11 @@ class DsarService
      */
     private function loadObjectByEntry(array $entry): ?ObjectEntity
     {
-        $identifier = ($entry['object_uuid'] !== '') ? $entry['object_uuid'] : $entry['object_id'];
+        $identifier = $entry['object_id'];
+        if ($entry['object_uuid'] !== '') {
+            $identifier = $entry['object_uuid'];
+        }
+
         if ($identifier === 0 || $identifier === '') {
             return null;
         }
@@ -362,9 +445,13 @@ class DsarService
      * @param array<string, mixed> $changes  Property → new value map.
      *
      * @return array<string, mixed>|null Updated object envelope or null on miss.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-12
      */
     public function rectifyObjectForSubject(int $objectId, array $changes): ?array
     {
+        $this->assertPrivileged();
+
         try {
             $object = $this->objectMapper->find(
                 $objectId,
@@ -408,6 +495,8 @@ class DsarService
      * defaults in that case.
      *
      * @return string|null Resolved activity uuid, or null.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-11
      */
     public function getDsarProcessingActivityUuid(): ?string
     {

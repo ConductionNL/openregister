@@ -77,7 +77,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								ID: {{ obj.id || obj['@self']?.id }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="`Remove ${obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id}`"
 							@click="removeObject(obj.id)">
 							<template #icon>
@@ -105,11 +105,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<h4>Target Register</h4>
 				<NcSelect
 					v-model="targetRegister"
+					input-label="Target Register"
 					:options="availableRegisters"
 					label="title"
 					track-by="id"
 					:placeholder="t('openregister', 'Select a register...')"
-					@update:model-value="onRegisterChange" />
+					@update:modelValue="onRegisterChange" />
 			</div>
 
 			<!-- Target Schema Selection -->
@@ -117,11 +118,12 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<h4>Target Schema</h4>
 				<NcSelect
 					v-model="targetSchema"
+					input-label="Target Schema"
 					:options="availableSchemas"
 					label="title"
 					track-by="id"
 					:placeholder="t('openregister', 'Select a schema...')"
-					@update:model-value="onSchemaChange" />
+					@update:modelValue="onSchemaChange" />
 			</div>
 		</div>
 
@@ -164,12 +166,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 						<div class="target-property">
 							<NcSelect
 								v-model="uiMappings[sourceProperty.name]"
+								input-label="Ui Mappings[Source Property Name]"
 								:options="targetPropertyOptions"
 								label="label"
 								track-by="value"
 								:placeholder="'Map to target property...'"
 								:clearable="true"
-								@update:model-value="updateMappingFromUI(sourceProperty.name)" />
+								@update:modelValue="updateMappingFromUI(sourceProperty.name)" />
 						</div>
 					</div>
 				</div>
@@ -273,7 +276,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 1"
 				:disabled="selectedObjects.length === 0"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -282,7 +285,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 2"
-				type="secondary"
+				variant="secondary"
 				@click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
@@ -292,7 +295,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 2"
 				:disabled="!targetRegister || !targetSchema"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -301,7 +304,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 3"
-				type="secondary"
+				variant="secondary"
 				@click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
@@ -311,7 +314,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 3"
 				:disabled="loading || !canMigrate"
-				type="primary"
+				variant="primary"
 				@click="performMigration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -378,6 +381,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed dropdown options from target-schema properties; UI presentation helper.
+		 */
 		targetPropertyOptions() {
 			const options = this.targetProperties.map(prop => ({
 				label: `${prop.name} (${prop.type})`,
@@ -391,6 +397,9 @@ export default {
 
 			return options
 		},
+		/**
+		 * @spec exclude Computed enablement guard for the migrate button; UI validation helper.
+		 */
 		canMigrate() {
 			// Check if we have target register/schema and at least one property mapping
 			const hasValidMappings = Object.values(this.uiMappings).some(option => option && option.value)
@@ -401,6 +410,9 @@ export default {
 		this.initializeMigration()
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		initializeMigration() {
 			// Get selected objects from the store or navigation context
 			this.selectedObjects = objectStore.selectedObjects || []
@@ -410,6 +422,9 @@ export default {
 			}
 			this.loadAvailableRegisters()
 		},
+		/**
+		 * @spec exclude Fetches registers to populate the target-register select; UI form-loading plumbing.
+		 */
 		async loadAvailableRegisters() {
 			this.loading = true
 			try {
@@ -423,6 +438,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Reloads target schemas when the register select changes; UI reactivity plumbing.
+		 */
 		async onRegisterChange() {
 			if (!this.targetRegister) {
 				this.availableSchemas = []
@@ -442,18 +460,28 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Loads schema properties when the target-schema select changes; UI reactivity plumbing.
+		 */
 		async onSchemaChange() {
 			if (!this.targetSchema) {
 				return
 			}
 			await this.loadSchemaProperties()
 		},
+		/**
+		 * @param objectId
+		 * @spec exclude Removes one object from the local migration selection; UI selection plumbing.
+		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
 			if (this.selectedObjects.length === 0) {
 				this.closeModal()
 			}
 		},
+		/**
+		 * @spec exclude Wizard forward-navigation guard across migration steps; UI step plumbing.
+		 */
 		nextStep() {
 			if (this.step === 1 && this.selectedObjects.length > 0) {
 				this.step = 2
@@ -461,11 +489,17 @@ export default {
 				this.step = 3
 			}
 		},
+		/**
+		 * @spec exclude Wizard back-navigation across migration steps; UI step plumbing.
+		 */
 		previousStep() {
 			if (this.step > 1) {
 				this.step--
 			}
 		},
+		/**
+		 * @spec exclude Loads source+target schema properties and seeds mappings; UI form-loading plumbing.
+		 */
 		async loadSchemaProperties() {
 			if (!schemaStore.schemaItem || !this.targetSchema) {
 				return
@@ -489,6 +523,10 @@ export default {
 				console.error('Error loading schema properties:', error)
 			}
 		},
+		/**
+		 * @param schema
+		 * @spec exclude Flattens a schema definition into a name/type/required list; UI presentation helper.
+		 */
 		extractSchemaProperties(schema) {
 			// Extract properties from schema definition
 			const properties = []
@@ -503,6 +541,9 @@ export default {
 			}
 			return properties
 		},
+		/**
+		 * @spec exclude Auto-maps same-named source/target properties on load; UI form-init plumbing.
+		 */
 		initializePropertyMappings() {
 			this.mapping = {}
 			this.uiMappings = {}
@@ -524,6 +565,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude Migrate-confirm handler posting the mapping to the /migrate endpoint and refreshing the list; UI orchestration plumbing.
+		 */
 		async performMigration() {
 			if (!this.canMigrate) {
 				return
@@ -570,13 +614,23 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @param _sourceProperty
+		 * @spec exclude UI-change handler re-syncing the mapping object; UI reactivity plumbing.
+		 */
 		updateMappingFromUI(_sourceProperty) {
 			// Convert UI mappings to our simple mapping format
 			this.convertUIToMapping()
 		},
+		/**
+		 * @spec exclude Converts the UI mapping model to the API mapping shape; UI data-shape helper.
+		 */
 		convertUIToMapping() {
 			// Convert from UI format (source -> target option) to our format (target -> source)
 			this.mapping = {}
@@ -587,6 +641,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Converts the API mapping shape back to the UI mapping model; UI data-shape helper.
+		 */
 		convertMappingToUI() {
 			// Convert from our format (target -> source) to UI format (source -> target option)
 			this.uiMappings = {}

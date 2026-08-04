@@ -13,8 +13,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 			<h2>{{ t('openregister', 'Add Attachment') }}</h2>
 
 			<div class="labelAndShareContainer">
-				<NcSelect v-bind="labelOptions"
+				<NcSelect
+					v-bind="labelOptions"
 					v-model="labelOptions.value"
+					input-label="Label Options Value"
 					:disabled="loading || tagsLoading"
 					:loading="tagsLoading"
 					:taggable="true"
@@ -23,7 +25,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 				<NcCheckboxRadioSwitch :disabled="loading"
 					:label="t('openregister', 'Auto share')"
 					type="switch"
-					:checked.sync="share">
+					v-model="share">
 					{{ t('openregister', 'Auto share') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -66,7 +68,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeTitle">
 							<NcButton
 								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
+								variant="primary"
 								@click="openFileUpload()">
 								<template #icon>
 									<Plus :size="20" />
@@ -89,7 +91,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<NcNoteCard type="warning">
 							<p class="folderLink">
 								{{ t('openregister', 'To add files larger than or equal to 512MB, go to the') }}
-								<NcButton type="secondary"
+								<NcButton variant="secondary"
 									class="folderLinkButton"
 									:aria-label="t('openregister', 'Open folder')"
 									@click="openFolder(objectStore.objectItem?.['@self']?.folder)">
@@ -133,7 +135,7 @@ import { navigationStore, objectStore } from '../../store/store.js'
 						<div class="filesListDragDropNoticeTitle">
 							<NcButton
 								:disabled="loading || !labelOptions.value?.length"
-								type="primary"
+								variant="primary"
 								@click="openFileUpload()">
 								<template #icon>
 									<Plus :size="20" />
@@ -206,10 +208,10 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									<!-- Tags Buttons -->
 									<NcButton
 										v-if="editingTags !== file.name"
-										v-tooltip="t('openregister', 'Edit labels')"
+										:title="t('openregister', 'Edit labels')"
 										:disabled="editingTags && editingTags !== file.name || loading || file.status === 'too_large' || tagsLoading"
 										:aria-label="t('openregister', 'Edit tags for {name}', { name: file.name })"
-										type="secondary"
+										variant="secondary"
 										class="editTagsButton"
 										@click="editingTags = file.name, editedTags = file.tags">
 										<template #icon>
@@ -218,8 +220,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="editingTags === file.name"
-										v-tooltip="t('openregister', 'Save labels')"
-										type="primary"
+										:title="t('openregister', 'Save labels')"
+										variant="primary"
 										:aria-label="t('openregister', 'Save tags for {name}', { name: file.name })"
 										class="editTagsButton"
 										@click="saveTags(file, editedTags)">
@@ -230,8 +232,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 
 									<!-- File Actions -->
 									<NcButton v-if="file.status === 'failed'"
-										v-tooltip="t('openregister', 'Retry upload')"
-										type="primary"
+										:title="t('openregister', 'Retry upload')"
+										variant="primary"
 										@click="addAttachments(file)">
 										<template #icon>
 											<Refresh :size="20" />
@@ -239,8 +241,8 @@ import { navigationStore, objectStore } from '../../store/store.js'
 									</NcButton>
 									<NcButton
 										v-if="file.status === 'too_large'"
-										v-tooltip="t('openregister', 'Remove from list')"
-										type="primary"
+										:title="t('openregister', 'Remove from list')"
+										variant="primary"
 										@click="removeFile(file.name)">
 										<template #icon>
 											<Minus :size="20" />
@@ -318,26 +320,46 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing objectStore.objectItem to the template; UI state helper.
+		 */
 		objectItem() {
 			return objectStore.objectItem
 		},
+		/**
+		 * @spec exclude Computed register-id extraction from the object's @self metadata; UI state helper.
+		 */
 		registerId() {
 			const register = this.objectItem?.['@self']?.register
 			return typeof register === 'object' && register !== null ? register.id : register
 		},
+		/**
+		 * @spec exclude Computed schema-id extraction from the object's @self metadata; UI state helper.
+		 */
 		schemaId() {
 			const schema = this.objectItem?.['@self']?.schema
 			return typeof schema === 'object' && schema !== null ? schema.id : schema
 		},
+		/**
+		 * @spec exclude Computed object-id extraction from the object's @self metadata; UI state helper.
+		 */
 		objectId() {
 			return this.objectItem?.['@self']?.id || this.objectItem?.id
 		},
+		/**
+		 * @spec exclude Computed passthrough exposing the upload-queue ref to the template; UI state helper.
+		 */
 		filesComputed() {
 			return files.value
 		},
 	},
 	watch: {
 		filesComputed: {
+			/**
+			 * @param newFiles
+			 * @param _oldFiles
+			 * @spec exclude Watcher auto-triggering upload when files are queued; UI reactivity plumbing.
+			 */
 			handler(newFiles, _oldFiles) {
 				if (newFiles?.length) {
 					this.addAttachments()
@@ -346,6 +368,9 @@ export default {
 			deep: true,
 		},
 		labelOptions: {
+			/**
+			 * @spec exclude UI handler/computed reactive label-options sync
+			 */
 			handler() {
 				setTags(this.getLabels())
 			},
@@ -356,12 +381,19 @@ export default {
 		this.getAllTags()
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close handler resetting upload state and navigationStore.modal; UI plumbing.
+		 */
 		closeModal() {
 			this.success = null
 			this.error = null
 			reset()
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @param bytes
+		 * @spec exclude Human-readable byte-size formatter for file display; UI presentation helper.
+		 */
 		bytesToSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
 			if (bytes === 0) return 'n/a'
@@ -371,6 +403,10 @@ export default {
 			return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i]
 		},
 
+		/**
+		 * @param fullname
+		 * @spec exclude Splits a filename into name + extension for display; UI presentation helper.
+		 */
 		getFileNameAndExtension(fullname) {
 			const lastDot = fullname.lastIndexOf('.')
 			const name = fullname.slice(0, lastDot)
@@ -378,6 +414,10 @@ export default {
 			return { name, extension }
 		},
 
+		/**
+		 * @param files
+		 * @spec exclude Flags over-size files in the queue with a status; UI validation helper.
+		 */
 		checkForTooBigFiles(files) {
 			if (!files) return false
 			const wrongFiles = files.filter(file => {
@@ -395,6 +435,10 @@ export default {
 			return size > 536870480 // 512MB
 		},
 
+		/**
+		 * @param option
+		 * @spec exclude Mutual-exclusion guard for the tag multiselect ("No label" vs real tags); UI selection helper.
+		 */
 		isSelectable(option) {
 			if (this.labelOptions.value?.includes(t('openregister', 'No label')) && option !== t('openregister', 'No label')) {
 				return false
@@ -405,6 +449,9 @@ export default {
 			return true
 		},
 
+		/**
+		 * @spec exclude Maps the "No label" sentinel to null for the tag value; UI selection helper.
+		 */
 		getLabels() {
 			if (this.labelOptions.value?.includes(t('openregister', 'No label'))) {
 				return null
@@ -413,6 +460,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Loads available tags via objectStore.fetchTags to populate the label multiselect; UI form-loading plumbing.
+		 */
 		getAllTags() {
 			this.tagsLoading = true
 			// @TODO - this functionality always calls and therefore always has to wait.
@@ -439,6 +489,7 @@ export default {
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * @spec exclude Opens the Files app at the object's folder in a new tab; UI navigation helper.
 		 */
 		 openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
@@ -455,6 +506,11 @@ export default {
 			window.open(nextcloudUrl, '_blank')
 		},
 
+		/**
+		 * @param file
+		 * @param editedTags
+		 * @spec exclude Applies edited tags to a queued file and re-triggers upload; UI selection plumbing.
+		 */
 		saveTags(file, editedTags) {
 			file.tags = editedTags
 			file.status = 'pending'
@@ -464,17 +520,28 @@ export default {
 			this.editedTags = []
 		},
 
+		/**
+		 * @param fileName
+		 * @spec exclude Removes a file from the upload queue; UI file-picker plumbing.
+		 */
 		removeFile(fileName) {
 			reset(fileName)
 			if (this.editingTags === fileName) {
 				this.editingTags = null
 			}
 		},
+		/**
+		 * @spec exclude Computed-style enablement guard for the upload action; UI state helper.
+		 */
 		checkIfDisabled() {
 			if (this.objectStore.objectItem.downloadUrl || this.objectStore.objectItem.title) return true
 			return false
 		},
 
+		/**
+		 * @param specificFile
+		 * @spec exclude Uploads queued attachments to the object via objectStore; entity-file persistence lives in the store, this is modal orchestration plumbing.
+		 */
 		async addAttachments(specificFile = null) {
 			if (!this.registerId || !this.schemaId || !this.objectId) {
 				this.error = 'Missing object context'

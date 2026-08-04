@@ -31,7 +31,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteRegister()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -82,6 +82,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — closes the delete-register dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -89,6 +92,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to registerStore.deleteRegister.
+		 */
 		async deleteRegister() {
 			if (registerStore.registerItem?.schemas.length > 0) {
 				return

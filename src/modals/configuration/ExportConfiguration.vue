@@ -21,8 +21,8 @@ import axios from '@nextcloud/axios'
 			</p>
 
 			<NcCheckboxRadioSwitch
-				:checked="includeObjects"
-				@update:checked="includeObjects = $event">
+				:model-value="includeObjects"
+				@update:modelValue="includeObjects = $event">
 				Include related objects
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -36,7 +36,7 @@ import axios from '@nextcloud/axios'
 			</NcButton>
 			<NcButton
 				:disabled="loading || !isValid"
-				type="primary"
+				variant="primary"
 				@click="exportConfiguration">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -80,14 +80,23 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — returns the configuration title for the modal heading.
+		 */
 		configTitle() {
 			const item = configurationStore.configurationItem
 			return item?.title || ''
 		},
+		/**
+		 * @spec exclude UI state helper — enables the export button when a configuration is selected.
+		 */
 		isValid() {
 			const item = configurationStore.configurationItem
 			return Boolean(item?.id)
 		},
+		/**
+		 * @spec exclude UI display helper — derives the reactive error message for the modal.
+		 */
 		errorMessage() {
 			// Computed error message that updates reactively
 			if (!configurationStore.configurationItem?.id) {
@@ -97,12 +106,18 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — clears modal state.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false
 			this.error = null
 			this.includeObjects = false
 		},
+		/**
+		 * @spec exclude Modal action plumbing — triggers configuration export download.
+		 */
 		async exportConfiguration() {
 			const item = configurationStore.configurationItem
 			if (!item?.id) {

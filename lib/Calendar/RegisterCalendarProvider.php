@@ -6,6 +6,9 @@
  * Implements ICalendarProvider to register virtual calendars
  * for OpenRegister schemas with calendar-enabled date fields.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Calendar
  * @package  OCA\OpenRegister\Calendar
  *
@@ -17,7 +20,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
+ * @spec openspec/specs/calendar-integration/spec.md
  */
 
 declare(strict_types=1);
@@ -131,8 +134,8 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return array Array of ICalendar instances
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-18
+     * @spec openspec/specs/calendar-integration/spec.md
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     public function getCalendars(string $principalUri, array $calendarUris=[]): array
     {
@@ -188,7 +191,7 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return array Array of ['schema' => Schema, 'config' => array] entries
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function getCalendarEnabledSchemas(): array
     {
@@ -238,7 +241,7 @@ class RegisterCalendarProvider implements ICalendarProvider
      *
      * @return bool True if the principal is a valid user
      *
-     * @spec openspec/changes/retrofit-2026-04-28-calendar-integration/tasks.md#task-1
+     * @spec openspec/specs/calendar-integration/spec.md
      */
     private function isValidUserPrincipal(string $principalUri): bool
     {

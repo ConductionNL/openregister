@@ -58,6 +58,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @param {string|null} from - Start date
 		 * @param {string|null} till - End date
 		 * @return {void}
+		 * @spec exclude store setter (local date-range state; triggers a fetch)
 		 */
 		setDateRange(from = null, till = null) {
 			this.dateRange = { from, till }
@@ -68,6 +69,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Initialize the dashboard store and set up watchers for register and schema changes
 		 * @return {void}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		init() {
 			const registerStore = useRegisterStore()
@@ -90,6 +92,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch audit trail action chart data
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/charts/audit-trail-actions
 		 */
 		async fetchAuditTrailActionChart() {
 			if (this.chartLoading.auditTrailActions) return
@@ -119,6 +122,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch objects by register chart data
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-register
 		 */
 		async fetchObjectsByRegisterChart() {
 			if (this.chartLoading.objectsByRegister) return
@@ -146,6 +150,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch objects by schema chart data
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-schema
 		 */
 		async fetchObjectsBySchemaChart() {
 			if (this.chartLoading.objectsBySchema) return
@@ -173,6 +178,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch objects by size chart data
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/charts/objects-by-size
 		 */
 		async fetchObjectsBySizeChart() {
 			if (this.chartLoading.objectsBySize) return
@@ -200,6 +206,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch all chart data in parallel
 		 * @return {Promise<void>}
+		 * @spec exclude parallel fan-out wrapper over chart-fetch passthroughs
 		 */
 		async fetchAllChartData() {
 			await Promise.all([
@@ -214,6 +221,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * Fetch audit trail statistics
 		 * @param {number|null} hours - Number of hours to look back for recent activity (default: 24)
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail
 		 */
 		async fetchAuditTrailStatistics(hours = 24) {
 			if (this.statisticsLoading.auditTrailStats) return
@@ -243,6 +251,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * Fetch action distribution data
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/statistics/audit-trail-distribution
 		 */
 		async fetchActionDistribution(hours = 24) {
 			if (this.statisticsLoading.actionDistribution) return
@@ -273,6 +282,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @param {number|null} limit - Number of results to return (default: 10)
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @return {Promise<void>}
+		 * @spec exclude API passthrough to GET /api/dashboard/statistics/most-active-objects
 		 */
 		async fetchMostActiveObjects(limit = 10, hours = 24) {
 			if (this.statisticsLoading.mostActiveObjects) return
@@ -304,6 +314,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * @param {number|null} hours - Number of hours to look back (default: 24)
 		 * @param {number|null} limit - Number of results for most active objects (default: 10)
 		 * @return {Promise<void>}
+		 * @spec exclude parallel fan-out wrapper over statistic-fetch passthroughs
 		 */
 		async fetchAllStatistics(hours = 24, limit = 10) {
 			await Promise.all([
@@ -316,6 +327,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Preload dashboard data
 		 * @return {Promise<Array>}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async preload() {
 			if (!this.isInitialized && !this.loading) {
@@ -330,6 +342,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Fetch registers for dashboard, filtered by the current register and schema from the stores
 		 * @return {Promise<Array>}
+		 * @spec exclude API passthrough to GET /api/dashboard (register list)
 		 */
 		async fetchRegisters() {
 			const registerStore = useRegisterStore()
@@ -356,6 +369,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		 * Calculate sizes for a register and refresh
 		 * @param {string} registerId - The ID of the register
 		 * @return {Promise<boolean>}
+		 * @spec exclude API passthrough to POST /api/dashboard/calculate/{registerId}
 		 */
 		async calculateSizes(registerId) {
 			try {
@@ -372,6 +386,7 @@ export const useDashboardStore = defineStore('dashboard', {
 		/**
 		 * Reset dashboard store state
 		 * @return {void}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		reset() {
 			this.registers = []
@@ -409,6 +424,7 @@ export const useDashboardStore = defineStore('dashboard', {
  * Sets up watchers for register and schema changes to refresh dashboard data.
  * Call this function once in your app entry point after creating the stores.
  * @return {void}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
  */
 export function setupDashboardStoreWatchers() {
 	const dashboardStore = useDashboardStore()

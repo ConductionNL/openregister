@@ -19,6 +19,9 @@
  * (`oc_openregister_notification_readstate` table with a unique
  * `(user_id, notification_id)` index) follows exactly these semantics.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -28,7 +31,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/specs/notificatie-engine/spec.md "Read/unread tracking MUST be maintained per user per notification"
+ * @spec openspec/specs/notificatie-engine/spec.md "Read/unread tracking MUST be maintained per user per notification"
  */
 
 declare(strict_types=1);
@@ -55,6 +58,8 @@ class NotificationReadState
      * @param string $notificationId The notification id.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function markRead(string $userId, string $notificationId): void
     {
@@ -69,6 +74,8 @@ class NotificationReadState
      * @param string $notificationId The notification id.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function markUnread(string $userId, string $notificationId): void
     {
@@ -94,6 +101,8 @@ class NotificationReadState
      * Number of "read" rows currently tracked across all users.
      *
      * @return int
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-7
      */
     public function readCount(): int
     {

@@ -5,6 +5,9 @@
  *
  * Listens for file creation and update events to queue asynchronous text extraction.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Listener
  * @package  OCA\OpenRegister\Listener
  *
@@ -22,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Listener;
 
 use OCA\OpenRegister\BackgroundJob\FileTextExtractionJob;
-use OCA\OpenRegister\Service\TextExtractionService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\BackgroundJob\IJobList;
 use OCP\EventDispatcher\Event;
@@ -66,15 +68,13 @@ class FileChangeListener implements IEventListener
     /**
      * Constructor
      *
-     * @param TextExtractionService $textExtractSvc  Text extraction service
-     * @param SettingsService       $settingsService Settings service
-     * @param IJobList              $jobList         Job list for queuing background jobs
-     * @param LoggerInterface       $logger          Logger
+     * @param SettingsService $settingsService Settings service
+     * @param IJobList        $jobList         Job list for queuing background jobs
+     * @param LoggerInterface $logger          Logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
-        private readonly TextExtractionService $textExtractSvc,
         private readonly SettingsService $settingsService,
         private readonly IJobList $jobList,
         private readonly LoggerInterface $logger
@@ -92,7 +92,7 @@ class FileChangeListener implements IEventListener
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) File event handling requires comprehensive case coverage
      * @SuppressWarnings(PHPMD.NPathComplexity)       File event handling requires many conditional checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -148,7 +148,7 @@ class FileChangeListener implements IEventListener
             return;
         }
 
-        $this->logger->info(
+        $this->logger->debug(
             message: '[FileChangeListener] File event detected - processing',
             context: [
                 'file'             => __FILE__,
@@ -168,9 +168,13 @@ class FileChangeListener implements IEventListener
             // Handle different extraction modes.
             switch ($extractionMode) {
                 case 'immediate':
-                    // Process synchronously during upload - direct link between file upload and parsing.
-                    $this->logger->info(
-                        message: '[FileChangeListener] Immediate mode - processing synchronously',
+                    // Previously extracted synchronously on the instance-wide NodeWritten hot
+                    // path, blocking every file write. Enqueue the extraction job instead so
+                    // the write returns immediately; the queued job runs on the next cron tick
+                    // (OPS-14). Behaviour for legitimate callers is unchanged — text still gets
+                    // extracted — only the timing moves off the request path.
+                    $this->logger->debug(
+                        message: '[FileChangeListener] Immediate mode - queueing extraction job',
                         context: [
                             'file'      => __FILE__,
                             'line'      => __LINE__,
@@ -179,14 +183,14 @@ class FileChangeListener implements IEventListener
                         ]
                     );
                     try {
-                        $this->textExtractSvc->extractFile(fileId: $fileId, forceReExtract: false);
-                        $this->logger->info(
-                            message: '[FileChangeListener] Immediate extraction completed',
+                        $this->jobList->add(job: FileTextExtractionJob::class, argument: ['file_id' => $fileId]);
+                        $this->logger->debug(
+                            message: '[FileChangeListener] Immediate-mode extraction job queued',
                             context: ['file' => __FILE__, 'line' => __LINE__, 'file_id' => $fileId]
                         );
                     } catch (\Exception $e) {
                         $this->logger->error(
-                            message: '[FileChangeListener] Immediate extraction failed',
+                            message: '[FileChangeListener] Failed to queue immediate-mode extraction job',
                             context: [
                                 'file'    => __FILE__,
                                 'line'    => __LINE__,
@@ -199,7 +203,7 @@ class FileChangeListener implements IEventListener
 
                 case 'background':
                     // Queue background job for delayed extraction on job stack.
-                    $this->logger->info(
+                    $this->logger->debug(
                         message: '[FileChangeListener] Background mode - queueing extraction job',
                         context: [
                             'file'      => __FILE__,

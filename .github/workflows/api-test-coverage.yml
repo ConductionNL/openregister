@@ -98,6 +98,74 @@ jobs:
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:enable openregister"
           docker exec nextcloud su -s /bin/bash www-data -c "php /var/www/html/occ app:list" | grep openregister
 
+      - name: PHPUnit unit suite (in-container, HARD GATE)
+        # The unit suite requires the full Nextcloud runtime — the OCP stubs
+        # reference Doctrine\DBAL\* and OC\* internals that only resolve once
+        # lib/base.php is bootstrapped, so it CANNOT run in a bare PHP CI
+        # container (see tests/bootstrap.php + TESTING-CI-ROLLOUT.md). Run it
+        # here, inside the booted NC stack, after the app is deployed/enabled.
+        #
+        # Copy the app OUT of /var/www/html first: when phpunit runs from
+        # inside custom_apps, NC's autoloader (already loaded by base.php)
+        # hijacks the bootstrap. A unique COMPOSER_AUTOLOADER_SUFFIX avoids the
+        # ComposerAutoloaderInit redeclaration between the live and copied vendor.
+        run: |
+          docker exec -u www-data nextcloud bash -lc '
+            set -e
+            rm -rf /tmp/ortest
+            cp -r /var/www/html/custom_apps/openregister /tmp/ortest
+            cd /tmp/ortest
+            # The deployed vendor is production-only (--no-dev) so it lacks
+            # phpunit. Install dev deps + a unique autoloader suffix in the copy
+            # (the suffix avoids the ComposerAutoloaderInit redeclaration against
+            # the live app vendor already loaded by base.php).
+            #
+            # --ignore-platform-req=ext-xsl: the require-dev tool edgedesign/phpqa
+            # declares ext-xsl, which the nextcloud:34 runtime image does not ship
+            # (no docker-php-ext-xsl.ini). phpqa is a static-analysis bundle unused
+            # by phpunit, so skip the platform gate rather than fail the install.
+            # ext-gd is ignored too as a belt-and-suspenders no-op (phpspreadsheet
+            # requires it; the NC image does ship gd, so this is harmless there).
+            php -r "\$j=json_decode(file_get_contents(\"composer.json\"),true); \$j[\"config\"][\"autoloader-suffix\"]=\"OrTestCI\"; file_put_contents(\"composer.json\", json_encode(\$j, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES));"
+            php composer.phar install --no-interaction --no-progress --prefer-dist --ignore-platform-req=ext-xsl --ignore-platform-req=ext-gd
+            OPENREGISTER_TEST_NC_ROOT=/var/www/html php vendor/bin/phpunit -c phpunit.xml --no-coverage --colors=never tests/Unit
+          '
+
+      - name: Wait for openregister API to respond
+        run: |
+          # app:enable returns before the magic-mapping repair step + PHP-FPM
+          # opcache warm-up finish. Newman starts firing requests within ~1s
+          # of app:enable, so without a wait the first batch lose to ECONNRESET
+          # while PHP-FPM is still spinning up the openregister code paths.
+          # Poll until the registers endpoint returns a real HTTP status
+          # (200/401/etc.) — anything except connection-level errors (000)
+          # which curl emits when the server isn't reachable yet.
+          #
+          # We need: a single 3-digit code that's a valid HTTP response.
+          # 000 = no response (ECONNRESET/refused/timeout) — must keep waiting.
+          # 5xx = server up but app may be init-erroring — also keep waiting.
+          # 2xx/3xx/4xx = app responding, safe to start tests.
+          for i in $(seq 1 60); do
+            # --max-time guards against curl itself hanging on slow boot.
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 \
+              -u admin:admin \
+              http://localhost:8080/index.php/apps/openregister/api/registers \
+              2>/dev/null | tr -d '\n')
+            # Only accept a strictly-3-digit code between 100 and 499.
+            if [ -n "$code" ] \
+              && [ ${#code} -eq 3 ] \
+              && [ "$code" -ge 100 ] 2>/dev/null \
+              && [ "$code" -lt 500 ]; then
+              echo "✓ openregister API responding (HTTP $code, attempt $i)"
+              # Belt-and-braces: give magic-mapping repair step + opcache a
+              # final 5s to settle before flooding Newman traffic.
+              sleep 5
+              break
+            fi
+            echo "Waiting for openregister API... (attempt $i/60, last='$code')"
+            sleep 2
+          done
+
       - name: Run Newman orchestrator
         env:
           BASE_URL: http://localhost:8080

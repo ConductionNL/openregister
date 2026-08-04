@@ -19,12 +19,13 @@
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/rbac-scopes/tasks.md
+ * @spec openspec/specs/rbac-scopes/spec.md
  */
 
 declare(strict_types=1);
@@ -66,6 +67,8 @@ class CustomScopeEvaluatedEvent extends Event
      * Schema that was evaluated.
      *
      * @return Schema The schema involved in the evaluation.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
      */
     public function getSchema(): Schema
     {
@@ -76,6 +79,8 @@ class CustomScopeEvaluatedEvent extends Event
      * Custom action verb that was evaluated.
      *
      * @return string The custom action verb.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
      */
     public function getAction(): string
     {
@@ -86,6 +91,8 @@ class CustomScopeEvaluatedEvent extends Event
      * User ID under evaluation (null for anonymous requests).
      *
      * @return string|null The user ID, or null when anonymous.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
      */
     public function getUserId(): ?string
     {
@@ -98,6 +105,8 @@ class CustomScopeEvaluatedEvent extends Event
      * @return bool The boolean verdict that the caller received.
      *
      * @SuppressWarnings(PHPMD.BooleanGetMethodName)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
      */
     public function getVerdict(): bool
     {
@@ -109,6 +118,8 @@ class CustomScopeEvaluatedEvent extends Event
      * standard rule chain after no listener voted (false).
      *
      * @return bool True when a listener decided the verdict.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-event-all/tasks.md#task-8
      */
     public function isFromListener(): bool
     {

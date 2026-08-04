@@ -6,6 +6,9 @@
  * Service for managing AI chat conversations with RAG (Retrieval Augmented Generation).
  * This is a thin facade that orchestrates specialized handlers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -17,7 +20,8 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -58,7 +62,12 @@ use Psr\Log\LoggerInterface;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+ * @SuppressWarnings(PHPMD.UnusedFormalParameter)  testChat() declares ($provider, $config, $_testMessage)
+ * matching the public contract expected by callers and the backup implementation; the simplified stub
+ * body doesn't use all three but changing the signature would break callers.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Facade orchestrates eight dependencies
+ * (ConversationMapper, MessageMapper, AgentMapper, and five handler classes); each handler is a
+ * separate concern extracted per SOLID, and removing any would lose a capability.
  */
 class ChatService
 {
@@ -202,7 +211,7 @@ class ChatService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Many optional paths for agent, title generation, and timing
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Full chat orchestration requires comprehensive step handling
      *
-     * @spec openspec/changes/retrofit-2026-04-30-chat-ai/tasks.md#task-1
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function processMessage(
         int $conversationId,
@@ -335,6 +344,8 @@ class ChatService
                     'llm'     => round($llmTime, 2).'s',
                     'total'   => round($totalTime, 2).'s',
                 ],
+                // Per-run LLM token/latency usage for run-cost recording (run-analytics).
+                'usage'     => $this->responseHandler->lastUsage,
             ];
         } catch (Exception $e) {
             $this->logger->error(
@@ -357,6 +368,8 @@ class ChatService
      * @param string $firstMessage First user message.
      *
      * @return string Generated title
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function generateConversationTitle(string $firstMessage): string
     {
@@ -373,6 +386,8 @@ class ChatService
      * @param int    $agentId   Agent ID.
      *
      * @return string Unique title
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function ensureUniqueTitle(string $baseTitle, string $userId, int $agentId): string
     {
@@ -394,6 +409,9 @@ class ChatService
      * @param string $_testMessage Optional test message to send.
      *
      * @return array Test result with success status, message, and optional error.
+     *
+     * @spec exclude Facade plumbing: simplified stub returning a static result; real testing goes through
+     *       ResponseGenerationHandler (chat-ai). No standalone contract.
      */
     public function testChat(
         string $provider,

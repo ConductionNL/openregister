@@ -7,6 +7,9 @@
  * updates, and profile management. It centralizes user operations and provides
  * a clean interface for controllers and other services.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -57,6 +60,8 @@ use Psr\Log\LoggerInterface;
  * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
  */
 class UserService
 {
@@ -171,6 +176,8 @@ class UserService
      * @return array The comprehensive user data array
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function buildUserDataArray(IUser $user): array
     {
@@ -297,6 +304,8 @@ class UserService
      * @param array $data The data array containing updates
      *
      * @return array Result of the update operation including organization changes
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function updateUserProperties(IUser $user, array $data): array
     {
@@ -415,6 +424,8 @@ class UserService
      * @param IUser $user The user object
      *
      * @return array Array containing name fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getCustomNameFields(IUser $user): array
     {
@@ -449,6 +460,8 @@ class UserService
      * @param array $nameFields Array containing name field values
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function setCustomNameFields(IUser $user, array $nameFields): void
     {
@@ -562,10 +575,18 @@ class UserService
 
             $query = $this->db->getQueryBuilder();
 
-            $query->select('s.size')
-                ->from('storages', 's')
-                ->join('s', 'mounts', 'm', $query->expr()->eq('s.id', 'm.storage_id'))
+            // Used space lives in oc_filecache.size for the storage root (path = ''),
+            // NOT in oc_storages (which has no size column). Join the file cache to the
+            // user's home mount on the numeric storage id: oc_filecache.storage and
+            // oc_mounts.storage_id are both BIGINT, so this avoids the
+            // "operator does not exist: character varying = bigint" error that a
+            // storages.id (varchar) = mounts.storage_id (bigint) join throws on PostgreSQL.
+            $query->select('f.size')
+                ->from('filecache', 'f')
+                ->innerJoin('f', 'mounts', 'm', $query->expr()->eq('f.storage', 'm.storage_id'))
                 ->where($query->expr()->eq('m.user_id', $query->createNamedParameter($userId)))
+                ->andWhere($query->expr()->eq('f.path', $query->createNamedParameter('')))
+                ->andWhere($query->expr()->eq('m.mount_point', $query->createNamedParameter('/'.$userId.'/')))
                 ->setMaxResults(1);
 
             $result = $query->execute();
@@ -581,7 +602,12 @@ class UserService
                 context: ['file' => __FILE__, 'line' => __LINE__]
             );
             return 0;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // This is a best-effort, memory-safe helper: any failure (a DB error, a
+            // driver-level Error, or a misconfigured query builder) must degrade to 0
+            // rather than propagate — the contract is "the used space, or 0 if it cannot
+            // be determined safely". Catching \Throwable (not just \Exception) keeps a
+            // stray \Error from escaping into the caller and turning a quota lookup into a 500.
             $this->logger->warning(
                 message: '[UserService] Memory-safe quota calculation failed for user: '.$userId,
                 context: [
@@ -911,6 +937,8 @@ class UserService
      *
      * @throws InvalidArgumentException If inputs are invalid
      * @throws RuntimeException         If password change fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function changePassword(IUser $user, string $currentPassword, string $newPassword): array
     {
@@ -956,6 +984,8 @@ class UserService
      * @return array Result array with success status and avatar URL
      *
      * @throws RuntimeException If upload fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function uploadAvatar(IUser $user, string $data, string $mimeType, int $size): array
     {
@@ -1000,6 +1030,8 @@ class UserService
      * @return array Result array with success status
      *
      * @throws RuntimeException If deletion fails
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function deleteAvatar(IUser $user): array
     {
@@ -1031,6 +1063,8 @@ class UserService
      * @return array The export data structure
      *
      * @throws RuntimeException If rate limited
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function exportPersonalData(IUser $user): array
     {
@@ -1085,6 +1119,8 @@ class UserService
      * @param IUser $user The user to get preferences for
      *
      * @return array The notification preferences
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getNotificationPreferences(IUser $user): array
     {
@@ -1120,6 +1156,8 @@ class UserService
      * @return array The complete updated preferences
      *
      * @throws InvalidArgumentException If invalid preference values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function setNotificationPreferences(IUser $user, array $prefs): array
     {
@@ -1140,7 +1178,15 @@ class UserService
                 continue;
             }
 
-            $storeValue = is_bool($value) === true ? ($value === true ? 'true' : 'false') : (string) $value;
+            $storeValue = (string) $value;
+            if ($value === true) {
+                $storeValue = 'true';
+            }
+
+            if ($value === false) {
+                $storeValue = 'false';
+            }
+
             $this->config->setUserValue($userId, self::APP_NAME, 'notification_'.$key, $storeValue);
         }
 
@@ -1161,6 +1207,8 @@ class UserService
      * @param string|null $to     Optional end date (Y-m-d)
      *
      * @return array Activity results with total count
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getUserActivity(
         IUser $user,
@@ -1213,6 +1261,8 @@ class UserService
      * @return array The created token data (full value shown only once)
      *
      * @throws RuntimeException If maximum tokens reached
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function createApiToken(IUser $user, string $name, ?string $expiresIn=null): array
     {
@@ -1239,7 +1289,7 @@ class UserService
         if ($expiresIn !== null && $expiresIn !== '') {
             $expires = $this->parseExpiration(expiresIn: $expiresIn);
             if ($expires === null) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     'Invalid expiresIn value "'.$expiresIn.'" — expected a number followed by d (days), h (hours), or m (minutes), e.g. "90d".'
                 );
             }
@@ -1274,6 +1324,8 @@ class UserService
      * @param IUser $user The user to list tokens for
      *
      * @return array Array of token objects with masked values
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function listApiTokens(IUser $user): array
     {
@@ -1305,6 +1357,8 @@ class UserService
      * @return array Result array
      *
      * @throws RuntimeException If token not found
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function revokeApiToken(IUser $user, string $tokenId): array
     {
@@ -1335,6 +1389,8 @@ class UserService
      * @return array Result array with status
      *
      * @throws RuntimeException If duplicate request exists
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function requestDeactivation(IUser $user, string $reason=''): array
     {
@@ -1378,6 +1434,8 @@ class UserService
      * @param IUser $user The user to check status for
      *
      * @return array Status information
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function getDeactivationStatus(IUser $user): array
     {
@@ -1406,6 +1464,8 @@ class UserService
      * @return array Result array
      *
      * @throws RuntimeException If no pending request
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-3
      */
     public function cancelDeactivation(IUser $user): array
     {

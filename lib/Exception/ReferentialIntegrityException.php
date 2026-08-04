@@ -6,6 +6,9 @@
  * Exception thrown when an object deletion is blocked by referential integrity constraints.
  * Contains the full DeletionAnalysis with blocker details for structured API error responses.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -48,7 +51,7 @@ class ReferentialIntegrityException extends Exception
      * @param int              $code     The error code.
      * @param Exception|null   $previous The previous exception.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(DeletionAnalysis $analysis, int $code=0, ?Exception $previous=null)
     {
@@ -64,7 +67,7 @@ class ReferentialIntegrityException extends Exception
      *
      * @return DeletionAnalysis The analysis containing blocker and target details.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getAnalysis(): DeletionAnalysis
     {
@@ -76,7 +79,7 @@ class ReferentialIntegrityException extends Exception
      *
      * @return array The structured error response with error code, message, and blockers.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function toResponseBody(): array
     {

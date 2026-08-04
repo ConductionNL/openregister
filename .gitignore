@@ -41,6 +41,15 @@ phpqa_output.log
 *.csv
 *.xls
 *.xlsx
+# Exception: committed Newman fixture consumed by
+# tests/integration/magic-mapper-import.postman_collection.json — the CI
+# Newman job checks out the app fresh (no dev-container state), so the
+# fixture must be tracked, not generated.
+!tests/integration/magic-mapper-data/*.csv
+# Exception: committed CSV fixture consumed by the file-upload requests in
+# tests/integration/openregister-crud.postman_collection.json (referenced by a
+# path relative to the collection, so it resolves on the CI host runner too).
+!tests/integration/test-import.csv
 
 # Files with unusual names (trailing space, no extension) that are likely mistakes.
 # Patterns listed here must NOT match legitimate PHP source filenames.
@@ -49,10 +58,29 @@ phpqa_output.log
 **/implements *
 **/ALL *
 **/endpoints *
+**/*Analysis*
+!**/*Analysis*.php
+**/*references*
+!**/*references*.php
+!**/*references*/
+**/*encoding*
+!**/*encoding*.php
+**/ter
+**/clearCache*
+**/update*Settings*
+**/rebase*
+**/setup*
 
 # Temporary test files that shouldn't be committed
 simple-solr-test.php
 test-solr-connection.php
+
+# Editor / scratch backups should never be committed (issue #1956 part d)
+*.bak
+*.bak2
+*.bak3
+*.orig
+*.backup_*
 
 phpqa/
 
@@ -78,3 +106,7 @@ bom-npm.cdx.json
 tests/e2e/.auth/
 tests/e2e/playwright-report/
 tests/e2e/test-results/
+# The CI subset config writes here, and `test-results/` above does not match it.
+tests/e2e/test-results-ci/
+tests/e2e/.mdm-seed.json
+.hydra

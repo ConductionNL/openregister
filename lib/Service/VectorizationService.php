@@ -6,6 +6,9 @@
  * Generic service for vectorizing any entity type (objects, files, etc).
  * Uses strategy pattern for entity-specific logic.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -89,6 +92,8 @@ class VectorizationService
      * @param VectorizationStrategyInterface $strategy   Strategy implementation
      *
      * @return void
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function registerStrategy(string $entityType, VectorizationStrategyInterface $strategy): void
     {
@@ -120,6 +125,8 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch processing with error handling
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple processing paths with exceptions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive batch processing with progress tracking
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function vectorizeBatch(string $entityType, array $options=[]): array
     {
@@ -260,6 +267,8 @@ class VectorizationService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Complex batch vs serial processing logic
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple embedding and error handling paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive entity vectorization with error handling
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function vectorizeEntity($entity, VectorizationStrategyInterface $strategy, array $options): array
     {
@@ -379,6 +388,8 @@ class VectorizationService
      * @param VectorizationStrategyInterface $strategy      Strategy
      *
      * @return void
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function storeVector($entity, array $item, array $embeddingData, VectorizationStrategyInterface $strategy): void
     {
@@ -405,6 +416,8 @@ class VectorizationService
      * @return VectorizationStrategyInterface
      *
      * @throws \Exception If strategy not registered
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function getStrategy(string $entityType): VectorizationStrategyInterface
     {
@@ -436,6 +449,8 @@ class VectorizationService
      * @throws \Exception If embedding generation fails
      *
      * @psalm-return array{embedding: array<float>, model: string, dimensions: int<0, max>}
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function generateEmbedding(string $text, ?string $provider=null): array
     {
@@ -455,6 +470,8 @@ class VectorizationService
      * @return array<int,array<string,mixed>> Search results
      *
      * @throws \Exception If search fails
+     *
+     * @spec exclude One-line facade delegation to VectorEmbeddings::semanticSearch; no logic of its own.
      */
     public function semanticSearch(
         string $query,
@@ -466,30 +483,33 @@ class VectorizationService
     }//end semanticSearch()
 
     /**
-     * Perform hybrid search combining keyword (SOLR) and semantic (vectors)
+     * Perform hybrid search combining keyword and semantic (vector) results
      *
-     * Delegates to VectorEmbeddings.
+     * Delegates to VectorEmbeddings. Caller supplies keyword search results;
+     * vector search runs against the PostgreSQL database.
      *
-     * @param string      $query       Query text
-     * @param array       $solrFilters SOLR-specific filters
-     * @param int         $limit       Maximum results
-     * @param array       $weights     Weights for each search type ['solr' => 0.5, 'vector' => 0.5]
-     * @param string|null $provider    Embedding provider
+     * @param string      $query          Query text
+     * @param array       $keywordResults Pre-fetched keyword search results to fuse
+     * @param int         $limit          Maximum results
+     * @param array       $weights        Weights for each search type ['keyword' => 0.5, 'vector' => 0.5]
+     * @param string|null $provider       Embedding provider
      *
      * @return array Hybrid search results with combined scores and source breakdown.
      *
      * @throws \Exception If hybrid search fails.
+     *
+     * @spec exclude One-line facade delegation to VectorEmbeddings::hybridSearch; no logic of its own.
      */
     public function hybridSearch(
         string $query,
-        array $solrFilters=[],
+        array $keywordResults=[],
         int $limit=20,
-        array $weights=['solr' => 0.5, 'vector' => 0.5],
+        array $weights=['keyword' => 0.5, 'vector' => 0.5],
         ?string $provider=null
     ): array {
         return $this->vectorService->hybridSearch(
             query: $query,
-            solrFilters: $solrFilters,
+            keywordResults: $keywordResults,
             limit: $limit,
             weights: $weights,
             provider: $provider
@@ -502,6 +522,8 @@ class VectorizationService
      * Delegates to VectorEmbeddings.
      *
      * @return array Vector statistics with totals and breakdowns by type and model.
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getVectorStats(): array
     {
@@ -523,6 +545,8 @@ class VectorizationService
      *     data?: array{provider: string, model: 'unknown'|mixed,
      *     vectorLength: int<0, max>, sampleValues: array<float>,
      *     testText: string}}
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function testEmbedding(string $provider, array $config, string $testText='Test.'): array
     {
@@ -540,6 +564,8 @@ class VectorizationService
      *     message?: string, current_model?: mixed,
      *     existing_models?: list{0?: mixed,...}, total_vectors?: int,
      *     null_model_count?: int, mismatched_models?: list<mixed>}
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function checkEmbeddingModelMismatch(): array
     {
@@ -554,6 +580,8 @@ class VectorizationService
      * @return (bool|int|string)[] Deletion results
      *
      * @psalm-return array{success: bool, error?: string, message: string, deleted?: int}
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function clearAllEmbeddings(): array
     {

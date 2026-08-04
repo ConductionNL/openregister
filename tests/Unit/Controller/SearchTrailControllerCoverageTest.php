@@ -6,7 +6,10 @@ namespace Unit\Controller;
 
 use OCA\OpenRegister\Controller\SearchTrailController;
 use OCA\OpenRegister\Service\SearchTrailService;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +21,8 @@ class SearchTrailControllerCoverageTest extends TestCase
     private SearchTrailController $controller;
     private IRequest&MockObject $request;
     private SearchTrailService&MockObject $searchTrailService;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -25,11 +30,20 @@ class SearchTrailControllerCoverageTest extends TestCase
 
         $this->request = $this->createMock(IRequest::class);
         $this->searchTrailService = $this->createMock(SearchTrailService::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with('admin')->willReturn(true);
 
         $this->controller = new SearchTrailController(
             'openregister',
             $this->request,
-            $this->searchTrailService
+            $this->searchTrailService,
+            $this->userSession,
+            $this->groupManager
         );
     }
 
@@ -112,5 +126,69 @@ class SearchTrailControllerCoverageTest extends TestCase
         $this->assertEquals(500, $result->getStatus());
         $data = $result->getData();
         $this->assertStringContainsString('Deletion failed', $data['error']);
+    }
+
+    // =========================================================================
+    // Read + destructive endpoint authorization (gate-read-endpoint-authorization).
+    // A non-admin caller must get 403 and the service must never be touched.
+    // =========================================================================
+
+    private function buildNonAdminController(): SearchTrailController
+    {
+        $request           = $this->createMock(IRequest::class);
+        $searchTrailService = $this->createMock(SearchTrailService::class);
+        $userSession       = $this->createMock(IUserSession::class);
+        $groupManager      = $this->createMock(IGroupManager::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager->method('isAdmin')->with('alice')->willReturn(false);
+
+        // The service must never be reached once the gate rejects the caller.
+        $searchTrailService->expects($this->never())->method($this->anything());
+        $this->nonAdminService = $searchTrailService;
+
+        return new SearchTrailController(
+            'openregister',
+            $request,
+            $searchTrailService,
+            $userSession,
+            $groupManager
+        );
+    }
+
+    /** @var SearchTrailService&MockObject */
+    private $nonAdminService;
+
+    public static function guardedEndpointProvider(): array
+    {
+        return [
+            'statistics'         => ['statistics', []],
+            'popularTerms'       => ['popularTerms', []],
+            'activity'           => ['activity', []],
+            'registerSchemaStats'=> ['registerSchemaStats', []],
+            'userAgentStats'     => ['userAgentStats', []],
+            'cleanup'            => ['cleanup', []],
+            'destroy'            => ['destroy', [1]],
+            'destroyMultiple'    => ['destroyMultiple', []],
+            'clearAll'           => ['clearAll', []],
+        ];
+    }
+
+    /**
+     * @dataProvider guardedEndpointProvider
+     */
+    public function testGuardedEndpointRejectsNonAdminWith403(string $method, array $args): void
+    {
+        $controller = $this->buildNonAdminController();
+
+        $result = $controller->{$method}(...$args);
+
+        $this->assertEquals(
+            403,
+            $result->getStatus(),
+            sprintf('%s() must reject a non-admin caller with 403', $method)
+        );
     }
 }

@@ -36,7 +36,7 @@
 				v-model="n8nEnabled"
 				:disabled="saving"
 				type="switch"
-				@update:checked="onToggleN8n">
+				@update:modelValue="onToggleN8n">
 				{{ n8nEnabled ? t('openregister', 'n8n integration enabled') : t('openregister', 'n8n integration disabled') }}
 			</NcCheckboxRadioSwitch>
 			<p class="option-description">
@@ -65,7 +65,7 @@
 						id="n8n-url"
 						v-model="n8nUrl"
 						placeholder="http://master-n8n-1:5678"
-						@update:value="updateN8nUrl">
+						@update:modelValue="updateN8nUrl">
 						<template #trailing-button-icon>
 							<Web :size="20" />
 						</template>
@@ -84,7 +84,7 @@
 							v-model="n8nApiKey"
 							placeholder="n8n_api_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateN8nApiKey">
+							@update:modelValue="updateN8nApiKey">
 							<template #trailing-button-icon>
 								<Key :size="20" />
 							</template>
@@ -102,7 +102,7 @@
 						id="n8n-project"
 						v-model="n8nProject"
 						placeholder="openregister"
-						@update:value="updateN8nProject">
+						@update:modelValue="updateN8nProject">
 						<template #trailing-button-icon>
 							<FolderOutline :size="20" />
 						</template>
@@ -115,7 +115,7 @@
 				<!-- Action Buttons -->
 				<div class="action-buttons">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="saving || !hasChanges"
 						@click="saveConfiguration">
 						<template #icon>
@@ -126,7 +126,7 @@
 					</NcButton>
 
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						:disabled="testingConnection || !n8nUrl || !n8nApiKey"
 						@click="testConnection">
 						<template #icon>
@@ -138,7 +138,7 @@
 
 					<NcButton
 						v-if="connectionStatus && connectionStatus.success"
-						type="primary"
+						variant="primary"
 						:disabled="initializing"
 						@click="initializeN8n">
 						<template #icon>
@@ -210,7 +210,7 @@
 
 				<div class="workflow-actions">
 					<NcButton
-						type="primary"
+						variant="primary"
 						:disabled="loadingWorkflows"
 						@click="loadWorkflows">
 						<template #icon>
@@ -221,7 +221,7 @@
 					</NcButton>
 
 					<NcButton
-						type="secondary"
+						variant="secondary"
 						@click="openN8nEditor">
 						<template #icon>
 							<OpenInNew :size="20" />
@@ -342,6 +342,7 @@ export default {
 		/**
 		 * Check if configuration has unsaved changes.
 		 *
+		 * @spec exclude UI plumbing — dirty-state predicate comparing local fields to snapshot.
 		 * @return {boolean} True if there are unsaved changes.
 		 */
 		hasChanges() {
@@ -362,6 +363,7 @@ export default {
 		/**
 		 * Load n8n configuration from backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
 		 * @return {Promise<void>}
 		 */
 		async loadConfiguration() {
@@ -398,6 +400,7 @@ export default {
 		/**
 		 * Update n8n URL value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New URL value.
 		 * @return {void}
 		 */
@@ -408,6 +411,7 @@ export default {
 		/**
 		 * Update n8n API key value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New API key value.
 		 * @return {void}
 		 */
@@ -418,6 +422,7 @@ export default {
 		/**
 		 * Update n8n project value.
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New project value.
 		 * @return {void}
 		 */
@@ -428,6 +433,7 @@ export default {
 		/**
 		 * Handle toggle of n8n integration.
 		 *
+		 * @spec exclude UI plumbing — toggle handler delegating to saveConfiguration.
 		 * @param {boolean} checked New enabled state.
 		 * @return {Promise<void>}
 		 */
@@ -442,6 +448,7 @@ export default {
 		/**
 		 * Save n8n configuration to backend.
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveConfiguration() {
@@ -476,6 +483,7 @@ export default {
 		/**
 		 * Test n8n connection.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display.
 		 * @return {Promise<void>}
 		 */
 		async testConnection() {
@@ -515,6 +523,7 @@ export default {
 		/**
 		 * Initialize n8n project and user.
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display + workflow refresh.
 		 * @return {Promise<void>}
 		 */
 		async initializeN8n() {
@@ -553,6 +562,7 @@ export default {
 		/**
 		 * Load workflows from n8n.
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local workflow list.
 		 * @return {Promise<void>}
 		 */
 		async loadWorkflows() {
@@ -571,11 +581,13 @@ export default {
 		/**
 		 * Open n8n editor in new tab.
 		 *
+		 * @spec exclude UI plumbing — external window.open navigation, no observable contract.
 		 * @return {void}
 		 */
 		openN8nEditor() {
-			if (this.n8nUrl) {
-				window.open(this.n8nUrl, '_blank')
+			// Only open http(s) URLs to prevent javascript:/data: scheme injection
+			if (this.n8nUrl && /^https?:\/\//i.test(this.n8nUrl)) {
+				window.open(this.n8nUrl, '_blank', 'noopener')
 			}
 		},
 	},

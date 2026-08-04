@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # tmlo-query-api Specification
 
 ## Purpose
+
+@e2e exclude backend TMLO query/summary API — covered by Newman
 Provides query and summary API endpoints for filtering and aggregating objects by their TMLO archival metadata. Recovered from the archived tmlo-metadata change on 2026-05-02 — the archive operation created the spec directory but never moved the canonical spec.md across. Sibling specs (tmlo-export, tmlo-auto-populate, tmlo-metadata-schema) landed cleanly; this one was orphaned.
 
 ## Requirements

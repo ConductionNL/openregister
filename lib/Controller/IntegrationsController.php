@@ -85,6 +85,8 @@ class IntegrationsController extends Controller
      *   - enabled=true     filter to isEnabled() === true
      *
      * @return JSONResponse JSON list of integration descriptors.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function index(): JSONResponse
@@ -125,6 +127,8 @@ class IntegrationsController extends Controller
      * @param string $id Integration id (e.g. 'files', 'xwiki').
      *
      * @return JSONResponse Single descriptor or 404.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-11
      */
     #[NoAdminRequired]
     public function show(string $id): JSONResponse

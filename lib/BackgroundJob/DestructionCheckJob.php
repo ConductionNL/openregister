@@ -6,6 +6,9 @@
  * Periodic background job that scans for objects eligible for destruction
  * and generates destruction lists for archivist review.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -17,9 +20,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-63
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-send-pre-destruction-notifications
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -65,7 +68,7 @@ class DestructionCheckJob extends TimedJob
      * @param ITimeFactory  $time Time factory for parent class
      * @param IDBConnection $db   Database connection
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -94,9 +97,9 @@ class DestructionCheckJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-24-archival-destruction-workflow/tasks.md#task-1
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-4
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     protected function run($argument): void
     {
@@ -175,7 +178,7 @@ class DestructionCheckJob extends TimedJob
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-63
+     * @spec openspec/specs/retention-management/spec.md#requirement-the-system-must-send-pre-destruction-notifications
      */
     private function sendPreDestructionNotifications(
         array $settings,
@@ -187,69 +190,94 @@ class DestructionCheckJob extends TimedJob
 
         try {
             $objectMapper = \OC::$server->get(MagicMapper::class);
-            $qb           = $this->db->getQueryBuilder();
-
-            $qb->select('id')->from('openregister_objects')
-                ->where($qb->expr()->isNotNull('retention'));
-
-            $result = $qb->executeQuery();
-            $rows   = $result->fetchAll();
-            $result->closeCursor();
 
             $appConfig    = \OC::$server->get(\OCP\IAppConfig::class);
             $notifiedJson = $appConfig->getValueString('openregister', self::NOTIFIED_KEY, '[]');
             $notified     = json_decode($notifiedJson, true) ?? [];
-            $newCount     = 0;
+            // Track which already-notified UUIDs are still inside the pre-destruction window
+            // this run; anything not re-seen has passed its date (or moved out) and is pruned
+            // below so the appconfig blob stays bounded over time (OPS-7).
+            $stillRelevant = [];
+            $newNotified   = [];
+            $newCount      = 0;
 
-            foreach ($rows as $row) {
-                try {
-                    $object = $objectMapper->find(intval($row['id']), null, null, false, false, false);
-                } catch (Exception $e) {
-                    continue;
-                }
+            // Page the retention scan instead of fetchAll()-ing every retention row into
+            // memory at once (OPS-7). batchSize bounds peak memory on large registers.
+            $batchSize = 500;
+            $offset    = 0;
 
-                $retention = $object->getRetention() ?? [];
-                $status    = $retention['archiefstatus'] ?? null;
-                $actieDate = $retention['archiefactiedatum'] ?? null;
-                $nominatie = $retention['archiefnominatie'] ?? null;
+            do {
+                $qb = $this->db->getQueryBuilder();
+                $qb->select('id')->from('openregister_objects')
+                    ->where($qb->expr()->isNotNull('retention'))
+                    ->setFirstResult($offset)
+                    ->setMaxResults($batchSize);
 
-                if ($actieDate === null || $status !== 'nog_te_archiveren') {
-                    continue;
-                }
+                $result = $qb->executeQuery();
+                $rows   = $result->fetchAll();
+                $result->closeCursor();
 
-                if ($actieDate <= $today || $actieDate > $threshold) {
-                    continue;
-                }
+                foreach ($rows as $row) {
+                    try {
+                        $object = $objectMapper->find(intval($row['id']), null, null, false, false, false);
+                    } catch (Exception $e) {
+                        continue;
+                    }
 
-                $uuid = $object->getUuid();
-                if (in_array($uuid, $notified, true) === true) {
-                    continue;
-                }
+                    $retention = $object->getRetention() ?? [];
+                    $status    = $retention['archiefstatus'] ?? null;
+                    $actieDate = $retention['archiefactiedatum'] ?? null;
+                    $nominatie = $retention['archiefnominatie'] ?? null;
 
-                if (($retention['legalHold']['active'] ?? false) === true) {
-                    continue;
-                }
+                    if ($actieDate === null || $status !== 'nog_te_archiveren') {
+                        continue;
+                    }
 
-                $subject = 'Object approaching destruction date';
-                if ($nominatie === 'bewaren') {
-                    $subject = 'Object requires e-Depot transfer';
-                }
+                    if ($actieDate <= $today || $actieDate > $threshold) {
+                        continue;
+                    }
 
-                $this->sendObjectNotification(
-                    uuid: $uuid,
-                    subject: $subject,
-                    title: $object->getTitle() ?? $uuid,
-                    actieDate: $actieDate,
-                    classificatie: $retention['classificatie'] ?? null,
-                    logger: $logger
-                );
+                    $uuid = $object->getUuid();
 
-                $notified[] = $uuid;
-                $newCount++;
-            }//end foreach
+                    // Object is still inside the notification window — keep it in the
+                    // notified set even if we already alerted on it earlier.
+                    if (in_array($uuid, $notified, true) === true) {
+                        $stillRelevant[$uuid] = true;
+                        continue;
+                    }
 
-            if ($newCount > 0) {
-                $appConfig->setValueString('openregister', self::NOTIFIED_KEY, json_encode($notified));
+                    if (($retention['legalHold']['active'] ?? false) === true) {
+                        continue;
+                    }
+
+                    $subject = 'Object approaching destruction date';
+                    if ($nominatie === 'bewaren') {
+                        $subject = 'Object requires e-Depot transfer';
+                    }
+
+                    $this->sendObjectNotification(
+                        uuid: $uuid,
+                        subject: $subject,
+                        title: $object->getTitle() ?? $uuid,
+                        actieDate: $actieDate,
+                        classificatie: $retention['classificatie'] ?? null,
+                        logger: $logger
+                    );
+
+                    $newNotified[$uuid] = true;
+                    $newCount++;
+                }//end foreach
+
+                $rowCount = count($rows);
+                $offset  += $batchSize;
+            } while ($rowCount === $batchSize);
+
+            // Rebuild the persisted set from only the still-in-window UUIDs plus the freshly
+            // notified ones, dropping any whose destruction date has passed or moved away.
+            $rebuilt = array_values(array_keys($stillRelevant + $newNotified));
+
+            if ($newCount > 0 || count($rebuilt) !== count($notified)) {
+                $appConfig->setValueString('openregister', self::NOTIFIED_KEY, json_encode($rebuilt));
                 $logger->info('[DestructionCheckJob] Sent '.$newCount.' pre-destruction notifications');
             }
         } catch (Exception $e) {
@@ -269,8 +297,8 @@ class DestructionCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-8
-     * @spec openspec/changes/retrofit-2026-04-24-archival-destruction-workflow/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function sendObjectNotification(
         string $uuid,
@@ -320,7 +348,7 @@ class DestructionCheckJob extends TimedJob
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function sendReviewNotification(
         string $listUuid,

@@ -1,0 +1,274 @@
+{
+    "@context": {
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "schema": "https://schema.org/"
+    },
+    "@graph": [
+        {
+            "@id": "https://schema.org/Thing",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Thing",
+            "rdfs:comment": "The most generic type of item."
+        },
+        {
+            "@id": "https://schema.org/Person",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Person",
+            "rdfs:comment": "A person (alive, dead, undead, or fictional).",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/Organization",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Organization",
+            "rdfs:comment": "An organization such as a school, NGO, corporation, club, etc.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/Place",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Place",
+            "rdfs:comment": "Entities that have a somewhat fixed, physical extension.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/PostalAddress",
+            "@type": "rdfs:Class",
+            "rdfs:label": "PostalAddress",
+            "rdfs:comment": "The mailing address.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/ContactPoint",
+            "@type": "rdfs:Class",
+            "rdfs:label": "ContactPoint",
+            "rdfs:comment": "A contact point—for example, a Customer Complaints department.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/CreativeWork",
+            "@type": "rdfs:Class",
+            "rdfs:label": "CreativeWork",
+            "rdfs:comment": "The most generic kind of creative work, including books, movies, photographs, software programs, etc.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+        {
+            "@id": "https://schema.org/Event",
+            "@type": "rdfs:Class",
+            "rdfs:label": "Event",
+            "rdfs:comment": "An event happening at a certain time and location.",
+            "rdfs:subClassOf": { "@id": "https://schema.org/Thing" }
+        },
+
+        {
+            "@id": "https://schema.org/name",
+            "@type": "rdf:Property",
+            "rdfs:label": "name",
+            "rdfs:comment": "The name of the item.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Thing" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/description",
+            "@type": "rdf:Property",
+            "rdfs:label": "description",
+            "rdfs:comment": "A description of the item.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Thing" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/url",
+            "@type": "rdf:Property",
+            "rdfs:label": "url",
+            "rdfs:comment": "URL of the item.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Thing" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/URL" }
+        },
+        {
+            "@id": "https://schema.org/identifier",
+            "@type": "rdf:Property",
+            "rdfs:label": "identifier",
+            "rdfs:comment": "The identifier property represents any kind of identifier.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Thing" },
+            "schema:rangeIncludes": [
+                { "@id": "https://schema.org/Text" },
+                { "@id": "https://schema.org/URL" }
+            ]
+        },
+
+        {
+            "@id": "https://schema.org/givenName",
+            "@type": "rdf:Property",
+            "rdfs:label": "givenName",
+            "rdfs:comment": "Given name. In the U.S., the first name of a Person.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Person" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/familyName",
+            "@type": "rdf:Property",
+            "rdfs:label": "familyName",
+            "rdfs:comment": "Family name. In the U.S., the last name of a Person.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Person" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/additionalName",
+            "@type": "rdf:Property",
+            "rdfs:label": "additionalName",
+            "rdfs:comment": "An additional name for a Person, can be used for a middle name.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Person" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/email",
+            "@type": "rdf:Property",
+            "rdfs:label": "email",
+            "rdfs:comment": "Email address.",
+            "schema:domainIncludes": [
+                { "@id": "https://schema.org/Person" },
+                { "@id": "https://schema.org/Organization" },
+                { "@id": "https://schema.org/ContactPoint" }
+            ],
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/telephone",
+            "@type": "rdf:Property",
+            "rdfs:label": "telephone",
+            "rdfs:comment": "The telephone number.",
+            "schema:domainIncludes": [
+                { "@id": "https://schema.org/Person" },
+                { "@id": "https://schema.org/Organization" },
+                { "@id": "https://schema.org/ContactPoint" },
+                { "@id": "https://schema.org/Place" }
+            ],
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/birthDate",
+            "@type": "rdf:Property",
+            "rdfs:label": "birthDate",
+            "rdfs:comment": "Date of birth.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Person" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Date" }
+        },
+        {
+            "@id": "https://schema.org/gender",
+            "@type": "rdf:Property",
+            "rdfs:label": "gender",
+            "rdfs:comment": "Gender of something, typically a Person.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Person" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/address",
+            "@type": "rdf:Property",
+            "rdfs:label": "address",
+            "rdfs:comment": "Physical address of the item.",
+            "schema:domainIncludes": [
+                { "@id": "https://schema.org/Person" },
+                { "@id": "https://schema.org/Organization" },
+                { "@id": "https://schema.org/Place" }
+            ],
+            "schema:rangeIncludes": [
+                { "@id": "https://schema.org/PostalAddress" },
+                { "@id": "https://schema.org/Text" }
+            ]
+        },
+
+        {
+            "@id": "https://schema.org/legalName",
+            "@type": "rdf:Property",
+            "rdfs:label": "legalName",
+            "rdfs:comment": "The official name of the organization, e.g. the registered company name.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Organization" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/numberOfEmployees",
+            "@type": "rdf:Property",
+            "rdfs:label": "numberOfEmployees",
+            "rdfs:comment": "The number of employees in an organization, e.g. business.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Organization" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Integer" }
+        },
+        {
+            "@id": "https://schema.org/founder",
+            "@type": "rdf:Property",
+            "rdfs:label": "founder",
+            "rdfs:comment": "A person who founded this organization.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Organization" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Person" }
+        },
+
+        {
+            "@id": "https://schema.org/streetAddress",
+            "@type": "rdf:Property",
+            "rdfs:label": "streetAddress",
+            "rdfs:comment": "The street address.",
+            "schema:domainIncludes": { "@id": "https://schema.org/PostalAddress" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/postalCode",
+            "@type": "rdf:Property",
+            "rdfs:label": "postalCode",
+            "rdfs:comment": "The postal code.",
+            "schema:domainIncludes": { "@id": "https://schema.org/PostalAddress" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/addressLocality",
+            "@type": "rdf:Property",
+            "rdfs:label": "addressLocality",
+            "rdfs:comment": "The locality in which the street address is, and which is in the region.",
+            "schema:domainIncludes": { "@id": "https://schema.org/PostalAddress" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+        {
+            "@id": "https://schema.org/addressCountry",
+            "@type": "rdf:Property",
+            "rdfs:label": "addressCountry",
+            "rdfs:comment": "The country.",
+            "schema:domainIncludes": { "@id": "https://schema.org/PostalAddress" },
+            "schema:rangeIncludes": { "@id": "https://schema.org/Text" }
+        },
+
+        {
+            "@id": "https://schema.org/startDate",
+            "@type": "rdf:Property",
+            "rdfs:label": "startDate",
+            "rdfs:comment": "The start date and time of the item.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Event" },
+            "schema:rangeIncludes": [
+                { "@id": "https://schema.org/Date" },
+                { "@id": "https://schema.org/DateTime" }
+            ]
+        },
+        {
+            "@id": "https://schema.org/endDate",
+            "@type": "rdf:Property",
+            "rdfs:label": "endDate",
+            "rdfs:comment": "The end date and time of the item.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Event" },
+            "schema:rangeIncludes": [
+                { "@id": "https://schema.org/Date" },
+                { "@id": "https://schema.org/DateTime" }
+            ]
+        },
+        {
+            "@id": "https://schema.org/location",
+            "@type": "rdf:Property",
+            "rdfs:label": "location",
+            "rdfs:comment": "The location of, for example, where an event is happening.",
+            "schema:domainIncludes": { "@id": "https://schema.org/Event" },
+            "schema:rangeIncludes": [
+                { "@id": "https://schema.org/Place" },
+                { "@id": "https://schema.org/PostalAddress" },
+                { "@id": "https://schema.org/Text" }
+            ]
+        }
+    ]
+}

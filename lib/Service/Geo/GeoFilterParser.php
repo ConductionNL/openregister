@@ -11,6 +11,9 @@
  *
  * Either entry returns a list of GeoFilter; the caller AND-composes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *
@@ -20,7 +23,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
  */
 
 declare(strict_types=1);
@@ -54,6 +58,8 @@ class GeoFilterParser
      * @return GeoFilter[]
      *
      * @throws InvalidArgumentException When `geo.near`/`geo.radius` are mismatched.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function fromQueryParams(array $params): array
     {
@@ -108,6 +114,8 @@ class GeoFilterParser
      * @return GeoFilter[]
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function fromGeoSearchBody(array $body): array
     {

@@ -36,7 +36,7 @@
  * ```js
  * // Check if an app is installed:
  * const isInstalled = await service.isAppInstalled('files')
- * console.log(`"files" is installed:`, isInstalled)
+ * // isInstalled now holds whether "files" is installed
  *
  * // Install an app if it's not already installed:
  * try {
@@ -136,13 +136,13 @@
  * try {
  *   const installResponse = await appInstallService.installApp(appsToInstall)
  *   if (installResponse) {
- *     console.log('Apps installed:', installResponse)
+ *     // Apps installed: installResponse holds the result
  *   } else {
- *     console.log('All requested apps were already installed.')
+ *     // All requested apps were already installed.
  *   }
  * } catch (err) {
  *   if (err.status === 403 && err.data?.message === 'Password confirmation is required') {
- *     console.log('Password confirmation needed before installing apps')
+ *     // Password confirmation needed before installing apps
  *   } else {
  *     console.error('Failed to install apps:', err)
  *   }
@@ -168,12 +168,18 @@ class AppInstallService {
 	 */
 	hasInit = false
 
+	/**
+	 * Capture the Nextcloud request token at construction.
+	 *
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
+	 */
 	constructor() {
 		this.#token = this.#getToken()
 	}
 
 	/**
 	 * Async initializer for the service, ensuring the app list is loaded.
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async init() {
 		await this.#ensureAppListLoaded()
@@ -284,6 +290,7 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the cached app list.
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async invalidateCache() {
 		this.#appList = null
@@ -291,6 +298,7 @@ class AppInstallService {
 
 	/**
 	 * Invalidates the apps list cache and then re-fetches the list and caches it.
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async reloadCacheList() {
 		this.invalidateCache()
@@ -301,6 +309,7 @@ class AppInstallService {
 	 * Check if an app is installed by passing it an app ID.
 	 * @param { string } appId - The app ID
 	 * @return { Promise<boolean> } - True if the app is installed, false otherwise
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async isAppInstalled(appId) {
 		const appData = await this.#findAppInCachedList(appId)
@@ -314,6 +323,7 @@ class AppInstallService {
 	 * Get app data by passing it an app ID
 	 * @param { string } appId - The app ID
 	 * @return { Promise<object> } - The app data
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async getAppData(appId) {
 		const appData = await this.#findAppInCachedList(appId)
@@ -330,6 +340,7 @@ class AppInstallService {
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object|null>} The JSON response or null if no installation was necessary
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async installApp(appIds) {
 		if (!appIds) {
@@ -370,6 +381,7 @@ class AppInstallService {
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final install call
 	 * @throws {RequestError} - If the force calls or install fails, or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async forceInstallApp(appIds) {
 		if (!Array.isArray(appIds)) {
@@ -397,6 +409,7 @@ class AppInstallService {
 	 * @param {string | string[]} appIds - The app ID or an array of app IDs
 	 * @return {Promise<object>} The response from the final uninstall call
 	 * @throws {RequestError} - If the network request fails or password confirmation is required (status 403)
+	 * @spec openspec/specs/frontend-app-bootstrap/spec.md
 	 */
 	async uninstallApp(appIds) {
 		if (!appIds) {
@@ -442,6 +455,7 @@ class RequestError extends Error {
 	 * @param {string} message - Error message
 	 * @param {Response} response - The fetch Response object
 	 * @param {any} [data] - The parsed response body (if available)
+	 * @spec exclude DI constructor
 	 */
 	constructor(message, response, data) {
 		super(message)

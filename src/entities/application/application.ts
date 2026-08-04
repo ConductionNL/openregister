@@ -35,6 +35,10 @@ export class Application implements TApplication {
 	public created?: string
 	public updated?: string
 
+	/**
+	 * @param application
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(application: TApplication) {
 		this.id = application.id
 		this.uuid = application.uuid || ''

@@ -18,7 +18,7 @@
 						<div class="active-filter-header">
 							<span class="active-filter-name">{{ getActiveFacetDisplayName(facetField) }}</span>
 							<NcButton
-								type="tertiary"
+								variant="tertiary"
 								size="small"
 								:aria-label="t('openregister', 'Remove filter')"
 								@click="removeFilter(facetField)">
@@ -43,7 +43,7 @@
 					<!-- Clear all filters button -->
 					<div class="clear-filters">
 						<NcButton
-							type="tertiary-no-background"
+							variant="tertiary-no-background"
 							size="small"
 							@click="clearAllFilters">
 							{{ t('openregister', 'Clear all filters') }}
@@ -87,16 +87,16 @@
 									:model-value="getDateRangeValue(fieldName, 'from')"
 									:placeholder="t('openregister', 'From date')"
 									type="date"
-									@update:model-value="updateDateRange(fieldName, 'from', $event)" />
+									@update:modelValue="updateDateRange(fieldName, 'from', $event)" />
 								<span class="date-separator">{{ t('openregister', 'to') }}</span>
 								<NcDateTimePickerNative
 									:model-value="getDateRangeValue(fieldName, 'to')"
 									:placeholder="t('openregister', 'To date')"
 									type="date"
-									@update:model-value="updateDateRange(fieldName, 'to', $event)" />
+									@update:modelValue="updateDateRange(fieldName, 'to', $event)" />
 								<NcButton
 									v-if="hasDateRange(fieldName)"
-									type="tertiary"
+									variant="tertiary"
 									size="small"
 									:aria-label="t('openregister', 'Clear date range')"
 									@click="clearDateRange(fieldName)">
@@ -131,7 +131,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateMetadataDropdownSelection(fieldName, $event)">
+								@update:modelValue="updateMetadataDropdownSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -152,8 +152,8 @@
 							:key="`meta-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:checked="isActiveFacet(`@self.${fieldName}`)"
-								@update:checked="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
+								:model-value="isActiveFacet(`@self.${fieldName}`)"
+								@update:modelValue="(status) => toggleFacet(`@self.${fieldName}`, field.facet_types[0], status)">
 								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
@@ -185,10 +185,10 @@
 								<NcCheckboxRadioSwitch
 									v-for="bucket in facet.data.buckets"
 									:key="bucket.value"
-									:checked="isDateRangeSelected(fieldName, bucket.value)"
+									:model-value="isDateRangeSelected(fieldName, bucket.value)"
 									type="radio"
 									name="date-range-${fieldName}"
-									@update:checked="selectDateRangeBucket(fieldName, bucket)">
+									@update:modelValue="selectDateRangeBucket(fieldName, bucket)">
 									{{ bucket.label || bucket.value }}
 									<span v-if="bucket.count !== undefined" class="value-count">({{ bucket.count }})</span>
 								</NcCheckboxRadioSwitch>
@@ -202,16 +202,16 @@
 										:model-value="getObjectDateRangeValue(fieldName, 'from')"
 										:placeholder="t('openregister', 'From date')"
 										type="date"
-										@update:model-value="updateObjectDateRange(fieldName, 'from', $event)" />
+										@update:modelValue="updateObjectDateRange(fieldName, 'from', $event)" />
 									<span class="date-separator">{{ t('openregister', 'to') }}</span>
 									<NcDateTimePickerNative
 										:model-value="getObjectDateRangeValue(fieldName, 'to')"
 										:placeholder="t('openregister', 'To date')"
 										type="date"
-										@update:model-value="updateObjectDateRange(fieldName, 'to', $event)" />
+										@update:modelValue="updateObjectDateRange(fieldName, 'to', $event)" />
 									<NcButton
 										v-if="hasObjectDateRange(fieldName)"
-										type="tertiary"
+										variant="tertiary"
 										size="small"
 										:aria-label="t('openregister', 'Clear date range')"
 										@click="clearObjectDateRange(fieldName)">
@@ -245,7 +245,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateDateHistogramSelection(fieldName, $event)">
+								@update:modelValue="updateDateHistogramSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -282,7 +282,7 @@
 								:close-on-select="false"
 								:searchable="true"
 								:loading="objectStore.facetsLoading"
-								@update:model-value="updateDropdownSelection(fieldName, $event)">
+								@update:modelValue="updateDropdownSelection(fieldName, $event)">
 								<template #option="{ option }">
 									<div v-if="option" class="dropdown-option">
 										<span class="option-label">{{ option.label || option.value || '' }}</span>
@@ -303,8 +303,8 @@
 							:key="`checkbox-${fieldName}`"
 							class="facet-item">
 							<NcCheckboxRadioSwitch
-								:checked="isActiveFacet(fieldName)"
-								@update:checked="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
+								:model-value="isActiveFacet(fieldName)"
+								@update:modelValue="(status) => toggleFacet(fieldName, field.facet_types[0], status)">
 								<span :title="field.description">{{ capitalizeFieldName(fieldName) }}</span>
 							</NcCheckboxRadioSwitch>
 							<small class="facet-info">
@@ -328,9 +328,9 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
  */
 import { NcCheckboxRadioSwitch, NcLoadingIcon, NcButton, NcSelect, NcDateTimePickerNative } from '@nextcloud/vue'
 import Close from 'vue-material-design-icons/Close.vue'
@@ -359,7 +359,7 @@ export default {
 		 * Get object fields that support terms faceting (excluding id)
 		 * These will be shown as dropdowns
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-32
+		 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-discovery-via-facetable-parameter
 		 */
 		termsFacetableFields() {
 			const fields = {}
@@ -375,7 +375,7 @@ export default {
 		 * Get object fields that don't support terms faceting (excluding id field)
 		 * These will be shown as checkboxes
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-33
+		 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-request-configuration-via-facets-parameter
 		 */
 		nonTermsObjectFieldFacets() {
 			const fields = {}
@@ -390,31 +390,23 @@ export default {
 		/**
 		 * Get metadata fields that support date range faceting
 		 * These will be shown as date range pickers
+		 * @spec exclude computed filter of store facets for date-range UI, search contract owned by search capability
 		 */
 		metadataDateFields() {
-			// eslint-disable-next-line no-console
-			console.log('metadataDateFields computed - availableMetadataFacets:', this.objectStore.availableMetadataFacets)
-
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
-				// eslint-disable-next-line no-console
-				console.log('Checking field:', fieldName, 'with data:', field)
-
 				// Include fields that are date type and support range faceting
 				if (field.type === 'date' && field.facet_types && field.facet_types.includes('range')) {
-					// eslint-disable-next-line no-console
-					console.log('Adding date field:', fieldName)
 					fields[fieldName] = field
 				}
 			})
 
-			// eslint-disable-next-line no-console
-			console.log('Final metadataDateFields:', fields)
 			return fields
 		},
 		/**
 		 * Get metadata fields that are not date fields (excluding id and uuid)
 		 * These will be shown as checkboxes
+		 * @spec exclude computed filter of store facets for checkbox UI, search contract owned by search capability
 		 */
 		nonDateMetadataFields() {
 			const fields = {}
@@ -436,6 +428,7 @@ export default {
 		/**
 		 * Get object fields that use date_range faceting from current facet results
 		 * @return {object} Date range facet entries keyed by field name
+		 * @spec exclude computed filter of current store facets, search contract owned by search capability
 		 */
 		dateRangeObjectFields() {
 			const fields = {}
@@ -449,6 +442,7 @@ export default {
 		/**
 		 * Get object fields that use date_histogram faceting from current facet results
 		 * @return {object} Date histogram facet entries keyed by field name
+		 * @spec exclude computed filter of current store facets, search contract owned by search capability
 		 */
 		dateHistogramObjectFields() {
 			const fields = {}
@@ -459,6 +453,9 @@ export default {
 			})
 			return fields
 		},
+		/**
+		 * @spec exclude computed filter of store metadata facets for dropdown UI, search contract owned by search capability
+		 */
 		termsMetadataFields() {
 			const fields = {}
 			Object.entries(this.objectStore.availableMetadataFacets).forEach(([fieldName, field]) => {
@@ -478,6 +475,7 @@ export default {
 		 * Check if a facet is currently active
 		 * @param {string} fieldName - Name of the field to check
 		 * @return {boolean} True if facet is active
+		 * @spec exclude computed read of active facet state from store, UI plumbing
 		 */
 		isActiveFacet(fieldName) {
 			if (fieldName.startsWith('@self.')) {
@@ -492,6 +490,7 @@ export default {
 		 * @param {string} fieldName - Name of the field to toggle
 		 * @param {string} facetType - Type of facet
 		 * @param {boolean} enabled - Whether to enable or disable the facet
+		 * @spec exclude store passthrough toggling facet + refreshing list, search contract owned by search capability
 		 */
 		async toggleFacet(fieldName, facetType, enabled) {
 			await this.objectStore.updateActiveFacet(fieldName, facetType, enabled)
@@ -502,6 +501,7 @@ export default {
 		 * Get display name for a facet field
 		 * @param {string} facetField - Name of the facet field
 		 * @return {string} Display name for the facet
+		 * @spec exclude computed display-name helper from store field metadata, UI plumbing
 		 */
 		getFacetDisplayName(facetField) {
 			if (facetField === '@self') {
@@ -525,6 +525,7 @@ export default {
 		 * Get display name for an active facet field
 		 * @param {string} facetField - Name of the facet field
 		 * @return {string} Display name for the active facet
+		 * @spec exclude computed display-name helper, UI plumbing
 		 */
 		getActiveFacetDisplayName(facetField) {
 			// Handle nested facet fields (e.g., '@self' contains multiple sub-facets)
@@ -538,6 +539,7 @@ export default {
 		/**
 		 * Remove a specific filter
 		 * @param {string} facetField - Name of the facet field to remove
+		 * @spec exclude store passthrough removing facet + refreshing list, search contract owned by search capability
 		 */
 		async removeFilter(facetField) {
 			// Remove a specific active filter
@@ -556,6 +558,7 @@ export default {
 		},
 		/**
 		 * Clear all active filters
+		 * @spec exclude store passthrough clearing all facets/filters, search contract owned by search capability
 		 */
 		async clearAllFilters() {
 			// Clear all active facets and filters
@@ -568,6 +571,7 @@ export default {
 		 * Uses facet results if available, otherwise uses sample values
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of dropdown options
+		 * @spec exclude computed dropdown-option builder from store facet buckets, UI plumbing
 		 */
 		getDropdownOptions(fieldName) {
 			const options = []
@@ -625,6 +629,7 @@ export default {
 		 * Get currently selected values for a dropdown
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of selected values
+		 * @spec exclude computed read of selected dropdown values from store filters, UI plumbing
 		 */
 		getSelectedDropdownValues(fieldName) {
 			// Get selected values from active filters
@@ -657,25 +662,17 @@ export default {
 		 * Update dropdown selection for a field
 		 * @param {string} fieldName - Name of the field
 		 * @param {Array} selectedOptions - Array of selected options
+		 * @spec exclude store filter writer + list refresh, search contract owned by search capability
 		 */
 		async updateDropdownSelection(fieldName, selectedOptions) {
-			// eslint-disable-next-line no-console
-			console.log('updateDropdownSelection called:', { fieldName, selectedOptions })
-
 			try {
 				// Extract values from selected options
 				const selectedValues = selectedOptions && selectedOptions.length > 0
 					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
 					: []
 
-				// eslint-disable-next-line no-console
-				console.log('Selected values:', selectedValues)
-
 				// Update the filter (not facet configuration)
 				this.objectStore.updateFilter(fieldName, selectedValues)
-
-				// eslint-disable-next-line no-console
-				console.log('Updated filters:', this.objectStore.activeFilters)
 
 				// Refresh the object list to apply the filter
 				await this.objectStore.refreshObjectList()
@@ -688,15 +685,11 @@ export default {
 		 * Update a field facet with specific configuration
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} facetConfig - Facet configuration object
+		 * @spec exclude store facet-config writer + list refresh, search contract owned by search capability
 		 */
 		async updateFieldFacet(fieldName, facetConfig) {
-			// eslint-disable-next-line no-console
-			console.log('updateFieldFacet called:', { fieldName, facetConfig })
-
 			// Get current active facets
 			const currentFacets = { ...this.objectStore.activeFacets }
-			// eslint-disable-next-line no-console
-			console.log('Current facets before update:', currentFacets)
 
 			// Ensure _facets structure exists
 			if (!currentFacets._facets) {
@@ -705,22 +698,17 @@ export default {
 
 			// Set the field facet configuration
 			currentFacets._facets[fieldName] = facetConfig
-			// eslint-disable-next-line no-console
-			console.log('Current facets after update:', currentFacets)
 
 			// Update store and refresh
 			this.objectStore.setActiveFacets(currentFacets)
-			// eslint-disable-next-line no-console
-			console.log('About to refresh object list...')
 			await this.objectStore.refreshObjectList()
-			// eslint-disable-next-line no-console
-			console.log('Object list refreshed')
 		},
 		/**
 		 * Check if a predefined date range bucket is selected
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bucketValue - The bucket key/value
 		 * @return {boolean} True if selected
+		 * @spec exclude computed read of selected date-range bucket from store filters, UI plumbing
 		 */
 		isDateRangeSelected(fieldName, bucketValue) {
 			const filterKey = `${fieldName}._dateRange`
@@ -730,6 +718,7 @@ export default {
 		 * Select a predefined date range bucket
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} bucket - The bucket with from/to/value/label
+		 * @spec exclude store filter writer for date-range preset + list refresh, search contract owned by search capability
 		 */
 		async selectDateRangeBucket(fieldName, bucket) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -760,6 +749,7 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @return {string|null} Date value
+		 * @spec exclude computed read of object date-range bound from store filters, UI plumbing
 		 */
 		getObjectDateRangeValue(fieldName, bound) {
 			const operator = bound === 'from' ? '>=' : '<='
@@ -774,6 +764,7 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - 'from' or 'to'
 		 * @param {string} value - Date value
+		 * @spec exclude store filter writer for object date-range + list refresh, search contract owned by search capability
 		 */
 		async updateObjectDateRange(fieldName, bound, value) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -795,6 +786,7 @@ export default {
 		 * Check if an object date field has an active custom date range
 		 * @param {string} fieldName - Name of the field
 		 * @return {boolean} True if has active date range
+		 * @spec exclude computed read of object date-range presence from store filters, UI plumbing
 		 */
 		hasObjectDateRange(fieldName) {
 			return Boolean(
@@ -805,6 +797,7 @@ export default {
 		/**
 		 * Clear date range for an object date field
 		 * @param {string} fieldName - Name of the field
+		 * @spec exclude store filter writer clearing object date-range + list refresh, search contract owned by search capability
 		 */
 		async clearObjectDateRange(fieldName) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -819,6 +812,7 @@ export default {
 		 * Get dropdown options for a date histogram facet
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of options with value, label, count, from, to
+		 * @spec exclude computed option builder from store histogram buckets, UI plumbing
 		 */
 		getDateHistogramOptions(fieldName) {
 			const facet = this.objectStore.currentFacets?.[fieldName]
@@ -838,6 +832,7 @@ export default {
 		 * Get currently selected date histogram values
 		 * @param {string} fieldName - Name of the field
 		 * @return {Array} Array of selected options
+		 * @spec exclude computed read of selected histogram buckets from store filters, UI plumbing
 		 */
 		getSelectedDateHistogramValues(fieldName) {
 			// Check for active range filters on this field
@@ -861,6 +856,7 @@ export default {
 		 * Update date histogram selection (using from/to for query params)
 		 * @param {string} fieldName - Name of the field
 		 * @param {Array} selectedOptions - Array of selected options with from/to
+		 * @spec exclude store filter writer for histogram selection + list refresh, search contract owned by search capability
 		 */
 		async updateDateHistogramSelection(fieldName, selectedOptions) {
 			const currentFilters = { ...this.objectStore.activeFilters }
@@ -890,6 +886,7 @@ export default {
 		 * Capitalize field names for display
 		 * @param {string} fieldName - Name of the field to capitalize
 		 * @return {string} Capitalized field name
+		 * @spec exclude pure string-formatting display helper, UI plumbing
 		 */
 		capitalizeFieldName(fieldName) {
 			// Handle common field names and provide proper capitalization
@@ -922,7 +919,7 @@ export default {
 		 * @param {object} dateRange - Date range object with min and max dates
 		 * @return {string} Formatted date range string
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-34
+		 * @spec openspec/specs/faceting-configuration/spec.md#requirement-facet-response-standardized-format
 		 */
 		formatDateRange(dateRange) {
 			if (!dateRange || !dateRange.min || !dateRange.max) {
@@ -944,32 +941,22 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - Bound type ('from' or 'to')
 		 * @return {string|null} Date value or null
+		 * @spec exclude computed read of metadata date-range bound from store facets, UI plumbing
 		 */
 		getDateRangeValue(fieldName, bound) {
-			// eslint-disable-next-line no-console
-			console.log('getDateRangeValue called:', { fieldName, bound })
-
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
-			// eslint-disable-next-line no-console
-			console.log('Active facet data for', fieldName, ':', activeFacetData)
 
 			if (!activeFacetData || activeFacetData.type !== 'range' || !activeFacetData.ranges) {
-				// eslint-disable-next-line no-console
-				console.log('No valid range data found, returning null')
 				return null
 			}
 
 			// Find the range that matches our bound
 			const range = activeFacetData.ranges.find(r => r.from || r.to)
 			if (!range) {
-				// eslint-disable-next-line no-console
-				console.log('No range found, returning null')
 				return null
 			}
 
 			const value = bound === 'from' ? range.from : range.to
-			// eslint-disable-next-line no-console
-			console.log('Returning value:', value)
 			return value
 		},
 		/**
@@ -977,15 +964,11 @@ export default {
 		 * @param {string} fieldName - Name of the field
 		 * @param {string} bound - Bound type ('from' or 'to')
 		 * @param {string} value - Date value
+		 * @spec exclude store facet/filter writer for metadata date-range + list refresh, search contract owned by search capability
 		 */
 		async updateDateRange(fieldName, bound, value) {
-			// eslint-disable-next-line no-console
-			console.log('updateDateRange called:', { fieldName, bound, value })
-
 			// Get current facet configuration
 			const currentFacets = { ...this.objectStore.activeFacets }
-			// eslint-disable-next-line no-console
-			console.log('Current facets before update:', currentFacets)
 
 			// Ensure structure exists
 			if (!currentFacets._facets) {
@@ -1017,8 +1000,6 @@ export default {
 
 			// Set the facet configuration
 			currentFacets._facets['@self'][fieldName] = rangeFacet
-			// eslint-disable-next-line no-console
-			console.log('Updated facets:', currentFacets)
 
 			try {
 				// Update store facets
@@ -1027,11 +1008,7 @@ export default {
 				// IMPORTANT: Also update activeFilters with proper operator-based filters
 				this.updateActiveFiltersFromDateRange(fieldName, rangeFacet)
 
-				// eslint-disable-next-line no-console
-				console.log('About to refresh object list...')
 				await this.objectStore.refreshObjectList()
-				// eslint-disable-next-line no-console
-				console.log('Object list refreshed successfully')
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('Error in updateDateRange:', error)
@@ -1043,11 +1020,9 @@ export default {
 		 * Converts range facets to proper filter parameters like @self[created][>=]=2025-06-24T00:00:00+00:00
 		 * @param {string} fieldName - Name of the field
 		 * @param {object} rangeFacet - Range facet configuration object
+		 * @spec exclude internal helper converting range facet to store filter params, UI plumbing
 		 */
 		updateActiveFiltersFromDateRange(fieldName, rangeFacet) {
-			// eslint-disable-next-line no-console
-			console.log('updateActiveFiltersFromDateRange called:', { fieldName, rangeFacet })
-
 			// Get current active filters
 			const currentFilters = { ...this.objectStore.activeFilters }
 
@@ -1066,8 +1041,6 @@ export default {
 						// Convert to database format (Y-m-d H:i:s)
 						const fromDate = new Date(range.from).toISOString().replace('T', ' ').replace(/\.000Z$/, '')
 						currentFilters[`@self.${fieldName}[>=]`] = [fromDate]
-						// eslint-disable-next-line no-console
-						console.log(`Added filter: @self.${fieldName}[>=] = ${fromDate}`)
 					}
 					if (range.to) {
 						// Convert to database format and set to end of day for the filter
@@ -1075,22 +1048,18 @@ export default {
 						toDate.setHours(23, 59, 59, 999) // End of day
 						const toDateISO = toDate.toISOString().replace('T', ' ').replace(/\.000Z$/, '')
 						currentFilters[`@self.${fieldName}[<=]`] = [toDateISO]
-						// eslint-disable-next-line no-console
-						console.log(`Added filter: @self.${fieldName}[<=] = ${toDateISO}`)
 					}
 				})
 			}
 
 			// Update the store
 			this.objectStore.setActiveFilters(currentFilters)
-
-			// eslint-disable-next-line no-console
-			console.log('updateActiveFiltersFromDateRange - Updated activeFilters:', currentFilters)
 		},
 		/**
 		 * Check if a field has an active date range
 		 * @param {string} fieldName - Name of the field to check
 		 * @return {boolean} True if field has an active date range
+		 * @spec exclude computed read of metadata date-range presence from store facets, UI plumbing
 		 */
 		hasDateRange(fieldName) {
 			const activeFacetData = this.objectStore.activeFacets._facets?.['@self']?.[fieldName]
@@ -1103,6 +1072,7 @@ export default {
 		/**
 		 * Clear date range for a field
 		 * @param {string} fieldName - Name of the field to clear date range for
+		 * @spec exclude store facet/filter writer clearing metadata date-range + list refresh, search contract owned by search capability
 		 */
 		async clearDateRange(fieldName) {
 			// Remove the date range facet
@@ -1131,19 +1101,13 @@ export default {
 		 * Uses facet results if available, otherwise uses sample values
 		 * @param {string} fieldName - Name of the metadata field
 		 * @return {Array} Array of dropdown options
+		 * @spec exclude computed dropdown-option builder from store metadata facets, UI plumbing
 		 */
 		getMetadataDropdownOptions(fieldName) {
 			const options = []
 
-			// eslint-disable-next-line no-console
-			console.log('getMetadataDropdownOptions for:', fieldName)
-			// eslint-disable-next-line no-console
-			console.log('Available facets:', this.objectStore.currentFacets)
-
 			// First, try to get values from current facet results
 			const facetData = this.objectStore.currentFacets?.['@self']?.[fieldName]
-			// eslint-disable-next-line no-console
-			console.log('Facet data for', fieldName, ':', facetData)
 
 			if (facetData && facetData.buckets) {
 				facetData.buckets.forEach(bucket => {
@@ -1155,13 +1119,9 @@ export default {
 						})
 					}
 				})
-				// eslint-disable-next-line no-console
-				console.log('Options from facet data:', options)
 			} else {
 				// Fallback to sample values from facetable fields
 				const fieldInfo = this.objectStore.availableMetadataFacets[fieldName]
-				// eslint-disable-next-line no-console
-				console.log('Field info for', fieldName, ':', fieldInfo)
 
 				if (fieldInfo && fieldInfo.sample_values) {
 					fieldInfo.sample_values.forEach(sampleValue => {
@@ -1184,8 +1144,6 @@ export default {
 							}
 						}
 					})
-					// eslint-disable-next-line no-console
-					console.log('Options from sample values:', options)
 				}
 			}
 
@@ -1199,14 +1157,13 @@ export default {
 					return (a.label || '').localeCompare(b.label || '')
 				})
 
-			// eslint-disable-next-line no-console
-			console.log('Final options for', fieldName, ':', finalOptions)
 			return finalOptions
 		},
 		/**
 		 * Get currently selected values for a metadata dropdown
 		 * @param {string} fieldName - Name of the metadata field
 		 * @return {Array} Array of selected dropdown options
+		 * @spec exclude computed read of selected metadata values from store filters, UI plumbing
 		 */
 		getSelectedMetadataDropdownValues(fieldName) {
 			// Metadata filters use @self. prefix
@@ -1240,26 +1197,18 @@ export default {
 		 * Update metadata dropdown selection for a field
 		 * @param {string} fieldName - Name of the metadata field
 		 * @param {Array} selectedOptions - Array of selected options
+		 * @spec exclude store filter writer for metadata selection + list refresh, search contract owned by search capability
 		 */
 		async updateMetadataDropdownSelection(fieldName, selectedOptions) {
-			// eslint-disable-next-line no-console
-			console.log('updateMetadataDropdownSelection called:', { fieldName, selectedOptions })
-
 			try {
 				// Extract values from selected options
 				const selectedValues = selectedOptions && selectedOptions.length > 0
 					? selectedOptions.map(option => option.value).filter(value => value !== null && value !== undefined)
 					: []
 
-				// eslint-disable-next-line no-console
-				console.log('Selected metadata values:', selectedValues)
-
 				// Update the filter with @self. prefix for metadata fields
 				const metadataKey = `@self.${fieldName}`
 				this.objectStore.updateFilter(metadataKey, selectedValues)
-
-				// eslint-disable-next-line no-console
-				console.log('Updated filters:', this.objectStore.activeFilters)
 
 				// Refresh the object list to apply the filter
 				await this.objectStore.refreshObjectList()

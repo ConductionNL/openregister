@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service\Integration\BuiltinProviders;
 
+use RuntimeException;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Exception\NotImplementedException;
@@ -147,6 +148,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Reserved.
      *
      * @return array<int,array<string,mixed>> Tasks rows.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -183,6 +186,8 @@ class TasksProvider extends AbstractIntegrationProvider
      *
      * @throws \RuntimeException When the register/schema can't be resolved
      *                           or the underlying VTODO write fails.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -203,7 +208,7 @@ class TasksProvider extends AbstractIntegrationProvider
         $data = [
             'summary'     => (string) ($payload['summary'] ?? ''),
             'description' => (string) ($payload['description'] ?? ''),
-            'priority'    => isset($payload['priority']) === true ? (int) $payload['priority'] : 0,
+            'priority'    => (int) ($payload['priority'] ?? 0),
             'status'      => (string) ($payload['status'] ?? 'NEEDS-ACTION'),
         ];
         if (isset($payload['due']) === true) {
@@ -219,7 +224,7 @@ class TasksProvider extends AbstractIntegrationProvider
         );
 
         if ($task === null) {
-            throw new \RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
+            throw new RuntimeException('TaskService::createTask returned null — calendar invalid or auth failure.');
         }
 
         return $task;
@@ -235,6 +240,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Update payload.
      *
      * @return array<string,mixed> Updated task row.
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -242,7 +249,7 @@ class TasksProvider extends AbstractIntegrationProvider
         $updated = $this->taskService->updateTask(calendarId: $calendarId, taskUri: $taskUri, data: $payload);
 
         if ($updated === null) {
-            throw new \RuntimeException('TaskService::updateTask returned null — entity may not exist.');
+            throw new RuntimeException('TaskService::updateTask returned null — entity may not exist.');
         }
 
         return $updated;
@@ -257,6 +264,8 @@ class TasksProvider extends AbstractIntegrationProvider
      * @param string $entityId Composite calendar/task id.
      *
      * @return void
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-14
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {

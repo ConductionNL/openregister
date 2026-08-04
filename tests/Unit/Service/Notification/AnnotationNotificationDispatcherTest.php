@@ -9,9 +9,11 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\NotificationPreferenceService;
 use OCA\OpenRegister\Service\Notification\RecipientResolverInterface;
 use OCP\Activity\IEvent as IActivityEvent;
 use OCP\Activity\IManager as IActivityManager;
+use OCP\App\IAppManager;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\IConfig;
@@ -503,6 +505,112 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $this->assertSame('plain demo', $captured[0]['_text']);
     }//end testLegacyStringSubjectStillRenders()
 
+    public function testExplicitMessageRendersAsLocalisedBody(): void
+    {
+        // An explicit per-locale `message` becomes the notification body
+        // (`_message`), localised + interpolated like the subject, and is
+        // distinct from the title (`_text`).
+        $schema = $this->schemaWithNotification(
+            [
+                'withBody' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['nl-user']]],
+                    'subject'    => [
+                        'nl' => 'Titel {{title}}',
+                        'en' => 'Title {{title}}',
+                    ],
+                    'message'    => [
+                        'nl' => 'Body voor {{title}}',
+                        'en' => 'Body for {{title}}',
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $config = $this->createMock(IConfig::class);
+        $config->method('getUserValue')
+            ->willReturnMap(
+                [
+                    ['nl-user', 'core', 'lang', '', 'nl_NL'],
+                ]
+            );
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher(config: $config);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertCount(1, $captured);
+        $this->assertSame('Titel demo', $captured[0]['_text']);
+        $this->assertSame('Body voor demo', $captured[0]['_message']);
+    }//end testExplicitMessageRendersAsLocalisedBody()
+
+    public function testAutoDerivedBodyWhenActionsButNoMessage(): void
+    {
+        // No `message` but a declared `actions[]` → the engine composes a
+        // default body "Open in {AppName}." using the originApp display name.
+        $schema = $this->schemaWithNotification(
+            [
+                'autoBody' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'originApp'  => 'opentalk',
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'Incoming call from {{title}}',
+                    'actions'    => [
+                        [
+                            'label'  => ['en' => 'Answer'],
+                            'target' => ['kind' => 'url', 'href' => 'https://example.test/call'],
+                        ],
+                    ],
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $appManager = $this->createMock(IAppManager::class);
+        $appManager->method('getAppInfo')->willReturn(['name' => 'OpenTalk']);
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher(appManager: $appManager);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertCount(1, $captured);
+        $this->assertSame('Incoming call from demo', $captured[0]['_text']);
+        $this->assertSame('Open in OpenTalk.', $captured[0]['_message']);
+    }//end testAutoDerivedBodyWhenActionsButNoMessage()
+
+    public function testEmptyBodyWhenNeitherMessageNorActions(): void
+    {
+        // Back-compat: no `message` and no `actions` → empty body.
+        $schema = $this->schemaWithNotification(
+            [
+                'plain' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'Plain {{title}}',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $captured = [];
+        $this->captureNotificationSubjects($captured);
+
+        $dispatcher = $this->makeDispatcher();
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertCount(1, $captured);
+        $this->assertSame('Plain demo', $captured[0]['_text']);
+        $this->assertSame('', $captured[0]['_message']);
+    }//end testEmptyBodyWhenNeitherMessageNorActions()
+
     public function testWebhookBroadcastUsesDefaultLocaleNotRecipientLocale(): void
     {
         // Webhook is fired once per dispatch — recipients' locales
@@ -813,6 +921,154 @@ class AnnotationNotificationDispatcherTest extends TestCase
         $dispatcher->dispatch($object, 'updated');
     }//end testFieldRecipientDroppedWhenUidDoesNotExist()
 
+    public function testPreferenceGateSkipsRecipientWithOffOverride(): void
+    {
+        // Per-recipient merged-preference gate: jan turned the notification
+        // off, piet has no override → only piet receives it. Proves overrides
+        // are isolated per recipient and fall through to the schema default.
+        $schema = $this->schemaWithNotification(
+            [
+                'r1' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['jan', 'piet']]],
+                    'subject'    => 'demo',
+                    'enabled'    => true,
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        // IConfig: jan has an "off" override for (s, r1); piet has none.
+        $config = $this->createMock(IConfig::class);
+        $config->method('getSystemValue')->willReturnCallback(
+            static fn(string $key, mixed $default = null): mixed => $default ?? 'http://localhost'
+        );
+        $config->method('getUserValue')->willReturnCallback(
+            static function (string $uid, string $app, string $key, mixed $default = '') {
+                if ($uid === 'jan' && $key === 'notification_pref/s/r1') {
+                    return '{"enabled":false}';
+                }
+                return $default;
+            }
+        );
+
+        $prefs = new NotificationPreferenceService($config, $this->schemaMapper, $this->logger);
+
+        $delivered = [];
+        $this->expectNotificationManagerCalls($delivered);
+
+        $dispatcher = $this->makeDispatcher(config: $config, preferenceService: $prefs);
+        $dispatcher->dispatch($this->object($schema), 'updated');
+
+        $this->assertSame(['piet'], $delivered);
+    }//end testPreferenceGateSkipsRecipientWithOffOverride()
+
+    /**
+     * Build an `updated` rule carrying a field-change `condition`.
+     *
+     * @param array<string, mixed> $condition The condition sub-document.
+     *
+     * @return Schema
+     */
+    private function schemaWithUpdatedCondition(array $condition): Schema
+    {
+        return $this->schemaWithNotification(
+            [
+                'statusRule' => [
+                    'trigger'    => ['type' => 'updated', 'condition' => $condition],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'changed',
+                ],
+            ]
+        );
+    }//end schemaWithUpdatedCondition()
+
+    public function testUpdatedChangedFiresWhenValueDiffers(): void
+    {
+        $schema = $this->schemaWithUpdatedCondition(['field' => 'status', 'operator' => 'changed']);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $this->makeDispatcher()->dispatch(
+            $this->object($schema),
+            'updated',
+            ['_oldData' => ['status' => 'open'], '_newData' => ['status' => 'closed']]
+        );
+    }//end testUpdatedChangedFiresWhenValueDiffers()
+
+    public function testUpdatedChangedSkipsWhenValueUnchanged(): void
+    {
+        $schema = $this->schemaWithUpdatedCondition(['field' => 'status', 'operator' => 'changed']);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->notificationManager->expects($this->never())->method('createNotification');
+
+        $this->makeDispatcher()->dispatch(
+            $this->object($schema),
+            'updated',
+            ['_oldData' => ['status' => 'open'], '_newData' => ['status' => 'open']]
+        );
+    }//end testUpdatedChangedSkipsWhenValueUnchanged()
+
+    public function testUpdatedEqualsFiresOnTargetValue(): void
+    {
+        $schema = $this->schemaWithUpdatedCondition(['field' => 'status', 'operator' => 'equals', 'value' => 'afgehandeld']);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $this->makeDispatcher()->dispatch(
+            $this->object($schema),
+            'updated',
+            ['_oldData' => ['status' => 'open'], '_newData' => ['status' => 'afgehandeld']]
+        );
+    }//end testUpdatedEqualsFiresOnTargetValue()
+
+    public function testUpdatedEqualsWithFromRequiresPriorValue(): void
+    {
+        $schema = $this->schemaWithUpdatedCondition(
+            ['field' => 'status', 'operator' => 'equals', 'value' => 'afgehandeld', 'from' => 'in_behandeling']
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+        // Prior value is 'open', not the required 'in_behandeling' → no fire.
+        $this->notificationManager->expects($this->never())->method('createNotification');
+
+        $this->makeDispatcher()->dispatch(
+            $this->object($schema),
+            'updated',
+            ['_oldData' => ['status' => 'open'], '_newData' => ['status' => 'afgehandeld']]
+        );
+    }//end testUpdatedEqualsWithFromRequiresPriorValue()
+
+    public function testUpdatedConditionFailsClosedWithoutOldNewData(): void
+    {
+        $schema = $this->schemaWithUpdatedCondition(['field' => 'status', 'operator' => 'changed']);
+        $this->schemaMapper->method('find')->willReturn($schema);
+        // No _oldData/_newData in context → condition cannot be evaluated → no fire.
+        $this->notificationManager->expects($this->never())->method('createNotification');
+
+        $this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+    }//end testUpdatedConditionFailsClosedWithoutOldNewData()
+
+    public function testConditionlessUpdatedStillFires(): void
+    {
+        // Back-compat: an `updated` rule with no condition fires on every update.
+        $schema = $this->schemaWithNotification(
+            [
+                'anyUpdate' => [
+                    'trigger'    => ['type' => 'updated'],
+                    'channels'   => ['nc-notification'],
+                    'recipients' => [['kind' => 'users', 'users' => ['admin']]],
+                    'subject'    => 'any',
+                ],
+            ]
+        );
+        $this->schemaMapper->method('find')->willReturn($schema);
+        $this->notificationManager->expects($this->once())->method('notify');
+
+        $this->makeDispatcher()->dispatch($this->object($schema), 'updated');
+    }//end testConditionlessUpdatedStillFires()
+
     /**
      * @param array<string, mixed> $notifications
      */
@@ -837,7 +1093,9 @@ class AnnotationNotificationDispatcherTest extends TestCase
 
     private function makeDispatcher(
         ?IConfig $config=null,
-        ?NotificationDispatchLogMapper $dispatchLogMapper=null
+        ?NotificationDispatchLogMapper $dispatchLogMapper=null,
+        ?NotificationPreferenceService $preferenceService=null,
+        ?IAppManager $appManager=null
     ): AnnotationNotificationDispatcher {
         return new AnnotationNotificationDispatcher(
             $this->schemaMapper,
@@ -854,7 +1112,14 @@ class AnnotationNotificationDispatcherTest extends TestCase
             null,
             null,
             null,
-            $dispatchLogMapper
+            $dispatchLogMapper,
+            $preferenceService,
+            null,
+            null,
+            null,
+            null,
+            null,
+            $appManager
         );
     }//end makeDispatcher()
 

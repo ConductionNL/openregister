@@ -29,7 +29,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -41,7 +41,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
@@ -52,7 +52,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:placeholder="t('openregister', 'Any user')"
 						:input-label="t('openregister', 'Deleted By')"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -64,12 +64,12 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="date"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="date"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 			</div>
 
@@ -170,6 +170,7 @@ import {
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'DeletedSideBar',
@@ -195,6 +196,11 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Build the register dropdown options for the deleted-items filter.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -210,6 +216,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -229,6 +240,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -239,6 +255,11 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -249,6 +270,11 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Derive the "deleted by" user filter options from the deleted-items list.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} User filter options
+		 */
 		userOptions() {
 			// Get unique users from deleted items or provide default options
 			const users = new Set()
@@ -277,6 +303,9 @@ export default {
 	watch: {
 		// Keep component/store in sync with URL query params (single source of truth)
 		'$route.query': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /deleted.
+			 */
 			handler() {
 				if (this.$route.path !== '/deleted') return
 				this.applyQueryParamsFromRoute()
@@ -291,6 +320,9 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; loads lists/statistics and seeds state from the route, delegating to already-annotated methods.
+	 */
 	async mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -309,23 +341,29 @@ export default {
 		this.applyQueryParamsFromRoute()
 
 		// Listen for filtered count updates
-		this.$root.$on('deleted-filtered-count', (count) => {
+		eventBus.on('deleted-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 	},
-	beforeDestroy() {
-		this.$root.$off('deleted-filtered-count')
+	beforeUnmount() {
+		eventBus.off('deleted-filtered-count')
 	},
 	methods: {
 		/**
-		 * Apply filters and emit to parent components
+		 * Apply filters and emit to parent components.
+		 *
+		 * Delegates to {@link updateRouteQueryFromState} which serialises the current
+		 * sidebar state into the `/deleted` route query (with path + equality guards).
+		 *
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-3
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Load deletion statistics
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -337,6 +375,7 @@ export default {
 		},
 		/**
 		 * Load top deleters statistics
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
 		 * @return {Promise<void>}
 		 */
 		async loadTopDeleters() {
@@ -347,7 +386,8 @@ export default {
 			}
 		},
 		/**
-		 * Handle register change
+		 * Handle register change (cascade: set register, clear schema, re-apply filters).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} register - The selected register object
 		 * @return {void}
 		 */
@@ -357,7 +397,8 @@ export default {
 			this.applyFilters()
 		},
 		/**
-		 * Handle schema change
+		 * Handle schema change (set schema, re-apply filters into the route query).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} schema - The selected schema object
 		 * @return {void}
 		 */
@@ -367,6 +408,7 @@ export default {
 		},
 		/**
 		 * Build URL query object from current sidebar state
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {object}
 		 */
 		buildQueryFromState() {
@@ -387,6 +429,7 @@ export default {
 		},
 		/**
 		 * Compare two shallow query objects (keys and stringified values)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @param {object} a - First query object to compare
 		 * @param {object} b - Second query object to compare
 		 * @return {boolean} Whether the two query objects are equal
@@ -403,6 +446,7 @@ export default {
 		},
 		/**
 		 * Write current state to the router query (only on /deleted)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		updateRouteQueryFromState() {
@@ -416,6 +460,7 @@ export default {
 		},
 		/**
 		 * Apply URL query params to component/store state and emit filters
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		applyQueryParamsFromRoute() {
@@ -465,6 +510,7 @@ export default {
 		},
 		/**
 		 * Build filters from state and emit to parent (legacy compatibility)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		applyFiltersToStore() {
@@ -475,7 +521,7 @@ export default {
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
 			}
-			this.$root.$emit('deleted-filters-changed', filters)
+			eventBus.emit('deleted-filters-changed', filters)
 		},
 	},
 }

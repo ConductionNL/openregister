@@ -6,6 +6,9 @@
  * This file contains the handler class for exporting configurations
  * in OpenAPI format from the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -17,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Configuration;
@@ -188,7 +191,7 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Configuration export has multiple input type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Export logic requires comprehensive data handling
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-35
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-frontend-schema-parameter-for-non-aggregated-facets
      */
     public function exportConfig(
         array|Configuration|Register $input=[],
@@ -413,7 +416,7 @@ class ExportHandler
      *
      * @return array Register data formatted for OpenAPI export without instance-specific properties.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-17
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function exportRegister(Register $register): array
     {

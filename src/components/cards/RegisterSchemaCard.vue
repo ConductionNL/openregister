@@ -14,7 +14,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 		<!-- Card Header -->
 		<div class="cardHeader">
 			<div class="cardHeaderTitleRow">
-				<div v-tooltip.bottom="item.description || item.title" class="cardTitleClip">
+				<div :title="item.description || item.title" class="cardTitleClip">
 					<h2 class="cardTitleTextWrapper">
 						<DatabaseOutline v-if="type === 'register'" :size="20" class="cardTitleIcon" />
 						<FileTreeOutline v-else :size="20" class="cardTitleIcon" />
@@ -26,7 +26,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						v-tooltip="isManagedByExternalConfig ? 'Cannot edit: This ' + type + ' is managed by external configuration ' + (managingConfiguration?.title || '') : ''"
+						:title="isManagedByExternalConfig ? 'Cannot edit: This ' + type + ' is managed by external configuration ' + (managingConfiguration?.title || '') : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig"
 						@click="openEdit">
@@ -34,24 +34,6 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							<Pencil :size="20" />
 						</template>
 						Edit
-					</NcActionButton>
-					<NcActionButton
-						v-if="!item.published || (item.depublished && new Date(item.depublished) <= new Date())"
-						close-after-click
-						@click="publish">
-						<template #icon>
-							<Publish :size="20" />
-						</template>
-						Publish
-					</NcActionButton>
-					<NcActionButton
-						v-if="item.published && (!item.depublished || new Date(item.depublished) > new Date())"
-						close-after-click
-						@click="depublish">
-						<template #icon>
-							<PublishOff :size="20" />
-						</template>
-						Depublish
 					</NcActionButton>
 					<!-- Register-only actions -->
 					<template v-if="type === 'register'">
@@ -80,7 +62,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							Download API Specification
 						</NcActionButton>
 					</template>
-					<NcActionButton v-tooltip="deleteDisabledTooltip"
+					<NcActionButton :title="deleteDisabledTooltip"
 						close-after-click
 						:disabled="deleteDisabled"
 						@click="openDelete">
@@ -140,18 +122,18 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 							<td class="schemaNameCell">
 								<Table
 									v-if="hasMagicMapping(schema)"
-									v-tooltip="'Magic Table'"
+									title="Magic Table"
 									:size="18"
 									class="schemaIcon schemaIcon--magic" />
 								<DatabaseOutline
 									v-else
-									v-tooltip="'Blob Storage'"
+									title="Blob Storage"
 									:size="18"
 									class="schemaIcon schemaIcon--blob" />
 								{{ schema.title }}
 							</td>
 							<td>
-								<span v-if="schema.stats?.objects?.deleted > 0" v-tooltip="t('openregister', '{active} active, {deleted} deleted', { active: (schema.stats.objects.total - schema.stats.objects.deleted), deleted: schema.stats.objects.deleted })">
+								<span v-if="schema.stats?.objects?.deleted > 0" :title="t('openregister', '{active} active, {deleted} deleted', { active: (schema.stats.objects.total - schema.stats.objects.deleted), deleted: schema.stats.objects.deleted })">
 									{{ (schema.stats.objects.total - schema.stats.objects.deleted) || 0 }} <span class="deletedCount">({{ schema.stats?.objects?.deleted || 0 }} deleted)</span>
 								</span>
 								<span v-else>
@@ -176,7 +158,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ !hasMagicMapping(schema) ? '&#10003; ' : '' }}Use Blob Storage
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
+										:title="!hasMagicMapping(schema) ? t('openregister', 'This schema must use magic table configuration to sync') : ''"
 										:disabled="!hasMagicMapping(schema)"
 										close-after-click
 										@click="syncMagicTable(schema)">
@@ -210,7 +192,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ t('openregister', 'Import') }}
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
+										:title="(schema.stats?.objects?.total || 0) === 0 ? t('openregister', 'No objects to delete') : t('openregister', 'Soft delete all objects for this schema ({active} active, {deleted} already deleted)', { active: getSchemaObjectCount(schema), deleted: (schema.stats?.objects?.deleted || 0) })"
 										:disabled="getSchemaObjectCount(schema) === 0"
 										close-after-click
 										@click="deleteSchemaObjects(schema, false)">
@@ -221,8 +203,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 									</NcActionButton>
 									<NcActionButton
 										v-if="(schema.stats?.objects?.deleted || 0) > 0"
-										v-tooltip="t('openregister', 'Permanently delete all {count} soft-deleted objects. This cannot be undone!', { count: (schema.stats?.objects?.deleted || 0) })"
-										type="error"
+										:title="t('openregister', 'Permanently delete all {count} soft-deleted objects. This cannot be undone!', { count: (schema.stats?.objects?.deleted || 0) })"
 										close-after-click
 										@click="deleteSchemaObjects(schema, true)">
 										<template #icon>
@@ -231,7 +212,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 										{{ t('openregister', 'Permanently Delete ({count})', { count: (schema.stats?.objects?.deleted || 0) }) }}
 									</NcActionButton>
 									<NcActionButton
-										v-tooltip="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
+										:title="getSchemaObjectCount(schema) > 0 ? t('openregister', 'Cannot remove schema with existing objects ({count} objects)', { count: getSchemaObjectCount(schema) }) : ''"
 										:disabled="getSchemaObjectCount(schema) > 0"
 										close-after-click
 										@click="removeSchemaFromRegister(schema)">
@@ -281,7 +262,7 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 		<!-- View More Button -->
 		<div v-if="remainingItemsCount > 0" class="viewMoreContainer">
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				@click="itemsExpanded = !itemsExpanded">
 				<template #icon>
 					<ChevronDown v-if="!itemsExpanded" :size="20" />
@@ -307,28 +288,28 @@ import { dashboardStore, registerStore, schemaStore, navigationStore, configurat
 				<div class="formContainer">
 					<NcTextField
 						:label="t('openregister', 'Title') + ' *'"
-						:value="formData.title || ''"
+						:model-value="formData.title || ''"
 						:error="!!errors.title"
 						:helper-text="errors.title"
-						@update:value="v => updateField('title', v)" />
+						@update:modelValue="v => updateField('title', v)" />
 					<NcTextField
 						:label="t('openregister', 'Slug') + ' *'"
-						:value="formData.slug || ''"
+						:model-value="formData.slug || ''"
 						:error="!!errors.slug"
 						:helper-text="errors.slug"
-						@update:value="v => updateField('slug', v)" />
+						@update:modelValue="v => updateField('slug', v)" />
 					<NcTextArea
 						:label="t('openregister', 'Description')"
-						:value="formData.description || ''"
-						@update:value="v => updateField('description', v)" />
+						:model-value="formData.description || ''"
+						@update:modelValue="v => updateField('description', v)" />
 					<NcSelect
 						input-label="Schemas"
 						:options="schemaSelectOptions"
-						:value="getSchemaSelectValue(formData.schemas)"
+						:model-value="getSchemaSelectValue(formData.schemas)"
 						:multiple="true"
 						:close-on-select="false"
 						:loading="schemasLoading"
-						@input="vals => updateField('schemas', vals)" />
+						@update:modelValue="vals => updateField('schemas', vals)" />
 				</div>
 			</template>
 		</CnFormDialog>
@@ -352,8 +333,6 @@ import ChevronDown from 'vue-material-design-icons/ChevronDown.vue'
 import ChevronUp from 'vue-material-design-icons/ChevronUp.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import CloudUploadOutline from 'vue-material-design-icons/CloudUploadOutline.vue'
-import Publish from 'vue-material-design-icons/Publish.vue'
-import PublishOff from 'vue-material-design-icons/PublishOff.vue'
 import Sync from 'vue-material-design-icons/Sync.vue'
 import Table from 'vue-material-design-icons/Table.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
@@ -385,8 +364,6 @@ export default {
 		ChevronUp,
 		CogOutline,
 		CloudUploadOutline,
-		Publish,
-		PublishOff,
 		Sync,
 		// eslint-disable-next-line vue/no-reserved-component-names
 		Table,
@@ -405,6 +382,9 @@ export default {
 		},
 	},
 	emits: ['refresh'],
+	/**
+	 * @spec exclude local data state; showEditRegisterDialog toggles the edit dialog, UI plumbing
+	 */
 	data() {
 		return {
 			itemsExpanded: false,
@@ -415,6 +395,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed lookup of managing configuration from store, UI plumbing
+		 */
 		managingConfiguration() {
 			if (!this.item || !this.item.id) return null
 			if (this.type === 'register') {
@@ -427,11 +410,17 @@ export default {
 				config => config.schemas && config.schemas.some(s => s.id === this.item.id),
 			) || null
 		},
+		/**
+		 * @spec exclude computed external-management display flag, UI plumbing
+		 */
 		isManagedByExternalConfig() {
 			const config = this.managingConfiguration
 			if (!config) return false
 			return (config.sourceType && ['github', 'gitlab', 'url'].includes(config.sourceType)) || config.isLocal === false
 		},
+		/**
+		 * @spec exclude computed local-management display flag, UI plumbing
+		 */
 		isManagedByLocalConfig() {
 			const config = this.managingConfiguration
 			if (!config) return false
@@ -440,18 +429,27 @@ export default {
 		hasObjects() {
 			return this.item.stats?.objects?.total > 0
 		},
+		/**
+		 * @spec exclude computed delete-disabled display flag from object stats, UI plumbing
+		 */
 		deleteDisabled() {
 			if (this.type === 'register') {
 				return this.item.stats?.total > 0
 			}
 			return this.item.stats?.objects?.total > 0
 		},
+		/**
+		 * @spec exclude computed delete-disabled tooltip display helper, UI plumbing
+		 */
 		deleteDisabledTooltip() {
 			if (this.deleteDisabled) {
 				return 'Cannot delete: objects are still attached'
 			}
 			return ''
 		},
+		/**
+		 * @spec exclude computed paginated schema/property list for display, UI plumbing
+		 */
 		displayedItems() {
 			if (this.type === 'register') {
 				if (!this.item.schemas || this.item.schemas.length === 0) return []
@@ -464,6 +462,9 @@ export default {
 			if (this.itemsExpanded) return sorted
 			return Object.fromEntries(entries.slice(0, 5))
 		},
+		/**
+		 * @spec exclude computed remaining-items count for "view more" display, UI plumbing
+		 */
 		remainingItemsCount() {
 			if (this.type === 'register') {
 				const total = this.item.schemas?.length || 0
@@ -472,6 +473,9 @@ export default {
 			const total = Object.keys(this.item.properties || {}).length
 			return Math.max(0, total - 5)
 		},
+		/**
+		 * @spec exclude computed inline form-schema definition for edit dialog, UI plumbing
+		 */
 		registerSchema() {
 			return {
 				title: t('openregister', 'Register'),
@@ -484,6 +488,9 @@ export default {
 				required: ['title', 'slug'],
 			}
 		},
+		/**
+		 * @spec exclude computed order-sorted property list for display, UI plumbing
+		 */
 		sortedProperties() {
 			const properties = this.item.properties || {}
 			return Object.entries(properties)
@@ -504,6 +511,10 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @param val
+		 * @spec exclude UI handler/computed dialog-open trigger
+		 */
 		showEditRegisterDialog(val) {
 			if (val) {
 				this.loadSchemaOptions()
@@ -512,6 +523,9 @@ export default {
 	},
 	methods: {
 		// Common methods
+		/**
+		 * @spec exclude store/modal-dispatch UI handler opening edit, register/schema contract owned by register/schema capability
+		 */
 		openEdit() {
 			if (this.type === 'register') {
 				this.showEditRegisterDialog = true
@@ -520,34 +534,9 @@ export default {
 				navigationStore.setModal('editSchema')
 			}
 		},
-		async publish() {
-			try {
-				if (this.type === 'register') {
-					await registerStore.publishRegister(this.item.id)
-					showSuccess(t('openregister', 'Register published successfully'))
-				} else {
-					await schemaStore.publishSchema(this.item.id)
-					showSuccess(t('openregister', 'Schema published successfully'))
-				}
-			} catch (error) {
-				console.error('Error publishing:', error)
-				showError(t('openregister', 'Failed to publish: {error}', { error: error.message }))
-			}
-		},
-		async depublish() {
-			try {
-				if (this.type === 'register') {
-					await registerStore.depublishRegister(this.item.id)
-					showSuccess(t('openregister', 'Register depublished successfully'))
-				} else {
-					await schemaStore.depublishSchema(this.item.id)
-					showSuccess(t('openregister', 'Schema depublished successfully'))
-				}
-			} catch (error) {
-				console.error('Error depublishing:', error)
-				showError(t('openregister', 'Failed to depublish: {error}', { error: error.message }))
-			}
-		},
+		/**
+		 * @spec exclude store passthrough loading schema select options, UI plumbing
+		 */
 		async loadSchemaOptions() {
 			this.schemasLoading = true
 			try {
@@ -559,6 +548,10 @@ export default {
 				this.schemasLoading = false
 			}
 		},
+		/**
+		 * @param schemas
+		 * @spec exclude computed mapping of schema ids to select options, UI plumbing
+		 */
 		getSchemaSelectValue(schemas) {
 			if (!Array.isArray(schemas)) return []
 			return schemas.map(s => {
@@ -567,6 +560,10 @@ export default {
 					|| { id, label: String(id) }
 			})
 		},
+		/**
+		 * @param formData
+		 * @spec exclude store passthrough saving register from dialog + refresh emit, contract owned by register capability
+		 */
 		async onSaveRegister(formData) {
 			try {
 				await registerStore.saveRegister({
@@ -579,6 +576,9 @@ export default {
 				this.$refs.editRegisterDialog.setResult({ error: error.message })
 			}
 		},
+		/**
+		 * @spec exclude store/dialog-dispatch UI handler opening delete, contract owned by register/schema capability
+		 */
 		openDelete() {
 			if (this.type === 'register') {
 				registerStore.setRegisterItem(this.item)
@@ -595,11 +595,17 @@ export default {
 		},
 
 		// Register-only methods
+		/**
+		 * @spec exclude router-navigation UI handler to register detail, UI plumbing
+		 */
 		viewRegisterDetails() {
 			registerStore.setRegisterItem({ id: this.item.id })
 			this.$router.push(`/registers/${this.item.id}`)
 		},
 
+		/**
+		 * @spec exclude API fetch + browser file-download UI plumbing; OAS contract owned by openapi-generation capability
+		 */
 		async downloadOas() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
@@ -619,12 +625,19 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude window.open to external Redoc viewer, UI plumbing
+		 */
 		viewOasDoc() {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/registers/${this.item.id}/oas`
 			window.open(`https://redocly.github.io/redoc/?url=${encodeURIComponent(apiUrl)}`, '_blank')
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude computed read of schema property table mapping for icon display, UI plumbing
+		 */
 		hasMagicMapping(schema) {
 			if (!schema || !schema.properties) {
 				return false
@@ -634,6 +647,10 @@ export default {
 			)
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude computed active-object count from schema stats for display, UI plumbing
+		 */
 		getSchemaObjectCount(schema) {
 			if (!schema || !schema.stats || !schema.stats.objects) {
 				return 0
@@ -643,6 +660,10 @@ export default {
 			return total - deleted
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude API passthrough triggering magic-table sync with toast; sync contract owned by magic-table capability
+		 */
 		async syncMagicTable(schema) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/tables/sync/${this.item.id}/${schema.id}`
@@ -703,6 +724,11 @@ export default {
 			}
 		},
 
+		/**
+		 * @param schema
+		 * @param configurationType
+		 * @spec exclude API passthrough toggling schema magic/blob config with toast; schema contract owned by schema capability
+		 */
 		async setSchemaConfiguration(schema, configurationType) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/schemas/${schema.id}`
@@ -769,6 +795,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude API passthrough triggering object validation with toast; validation contract owned by oas-validation capability
+		 */
 		async validateSchemaObjects(schema) {
 			const baseUrl = window.location.origin
 			const apiUrl = `${baseUrl}/index.php/apps/openregister/api/objects/validate`
@@ -813,6 +843,11 @@ export default {
 			}
 		},
 
+		/**
+		 * @param schema
+		 * @param hardDelete
+		 * @spec exclude confirm-dialog + bulk-delete API passthrough with toast; bulk-delete contract owned by scoped-object-delete-api capability
+		 */
 		async deleteSchemaObjects(schema, hardDelete = false) {
 			const totalObjects = schema.stats?.objects?.total || 0
 			const activeObjects = this.getSchemaObjectCount(schema)
@@ -901,6 +936,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param schema
+		 * @spec exclude confirm-dialog + schema-delete API passthrough with toast; schema contract owned by schema capability
+		 */
 		async removeSchemaFromRegister(schema) {
 			const objectCount = this.getSchemaObjectCount(schema)
 
@@ -1131,7 +1170,7 @@ export default {
 
 .managedBadge--local {
 	background: var(--color-warning);
-	color: var(--color-main-background);
+	color: var(--color-main-text);
 }
 
 .statusPill {

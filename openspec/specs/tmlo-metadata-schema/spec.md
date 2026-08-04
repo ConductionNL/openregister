@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # tmlo-metadata-schema Specification
 
 ## Purpose
+
+@e2e exclude backend TMLO schema fields — covered by PHPUnit
 TBD - created by archiving change tmlo-metadata. Update Purpose after archive.
 ## Requirements
 ### Requirement: TMLO metadata fields on ObjectEntity

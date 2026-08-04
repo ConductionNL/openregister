@@ -6,6 +6,9 @@
  * This file contains the class for handling schema related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -29,6 +32,7 @@ use OCP\IURLGenerator;
 use stdClass;
 use Exception;
 use RuntimeException;
+use OCA\OpenRegister\Service\Rbac\ObjectScopeResolver;
 use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
 
 /**
@@ -104,6 +108,10 @@ use OCA\OpenRegister\Service\Schemas\PropertyValidatorHandler;
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   One over the threshold, from the
+ * ObjectScopeResolver import — used only for its scope-vocabulary constants, so the
+ * `scope` key is validated against the SAME list the runtime resolves it with rather
+ * than a second copy of the strings here.
  *
  * @psalm-suppress                                PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
  * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
@@ -373,28 +381,6 @@ class Schema extends Entity implements JsonSerializable
     protected ?array $anyOf = null;
 
     /**
-     * Publication timestamp.
-     *
-     * When set, this schema becomes publicly accessible regardless of organisation restrictions
-     * if published bypass is enabled. The schema is considered published when:
-     * - published <= now AND
-     * - (depublished IS NULL OR depublished > now)
-     *
-     * @var DateTime|null Publication timestamp
-     */
-    protected ?DateTime $published = null;
-
-    /**
-     * Depublication timestamp.
-     *
-     * When set, this schema becomes inaccessible after this date/time.
-     * Used together with published to control publication lifecycle.
-     *
-     * @var DateTime|null Depublication timestamp
-     */
-    protected ?DateTime $depublished = null;
-
-    /**
      * Hooks configuration for the schema
      *
      * @var array|null Hooks configuration
@@ -487,8 +473,6 @@ class Schema extends Entity implements JsonSerializable
         $this->addType(fieldName: 'deleted', type: 'datetime');
         $this->addType(fieldName: 'configuration', type: 'json');
         $this->addType(fieldName: 'groups', type: 'json');
-        $this->addType(fieldName: 'published', type: 'datetime');
-        $this->addType(fieldName: 'depublished', type: 'datetime');
         $this->addType(fieldName: 'hooks', type: 'json');
         $this->addType(fieldName: 'mail', type: 'json');
         $this->addType(fieldName: 'contacts', type: 'json');
@@ -654,6 +638,187 @@ class Schema extends Entity implements JsonSerializable
     }//end getPropertiesWithAuthorization()
 
     /**
+     * Check if any property in the schema is declared write-only.
+     *
+     * A property carrying the JSON Schema / OpenAPI keyword `writeOnly: true`
+     * is a write-only secret: it may be written but is NEVER returned on read,
+     * for anyone (including admin). This is used to decide whether the render
+     * path must apply write-only stripping (see PropertyRbacHandler).
+     *
+     * @return bool True if at least one property has writeOnly === true
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     */
+    public function hasWriteOnlyProperties(): bool
+    {
+        if (empty($this->properties) === true) {
+            return false;
+        }
+
+        foreach ($this->properties as $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? null) === true
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasWriteOnlyProperties()
+
+    /**
+     * Get the names of all properties declared write-only (`writeOnly: true`).
+     *
+     * @return array<int, string> List of write-only property names
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-writeonly-properties-must-never-be-returned-on-any-read
+     */
+    public function getWriteOnlyProperties(): array
+    {
+        $result = [];
+
+        if (empty($this->properties) === true) {
+            return $result;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['writeOnly'] ?? null) === true
+            ) {
+                $result[] = (string) $propertyName;
+            }
+        }
+
+        return $result;
+    }//end getWriteOnlyProperties()
+
+    /**
+     * The schema-level annotation declaring nested write-only dot-paths.
+     *
+     * `writeOnly: true` is a JSON Schema keyword and can therefore only be
+     * attached to a property the schema actually DECLARES. A secret nested
+     * inside an untyped `object` property (the canonical case: a Source's
+     * `configuration.authentication.client_secret`, a Rule's
+     * `configuration.authentication.keys`) has no declaration to hang it on —
+     * `configuration` is `type: object` with no `properties` — and marking the
+     * whole `configuration` object writeOnly breaks the editors that
+     * legitimately read the rest of it back. This annotation is the missing
+     * declaration surface: it names individual nested paths as write-only
+     * without touching their untyped parent.
+     *
+     * @var string
+     */
+    public const WRITEONLY_PATHS_ANNOTATION = 'x-openregister-writeonly-paths';
+
+    /**
+     * Whether the schema declares any nested write-only dot-paths.
+     *
+     * Companion to hasWriteOnlyProperties(): that one answers "does a declared
+     * property carry `writeOnly: true`", this one answers "does the schema
+     * declare a nested path as write-only". The render path must strip when
+     * EITHER is true, so every gate checks both.
+     *
+     * @return bool True when at least one nested write-only path is declared.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    public function hasWriteOnlyPaths(): bool
+    {
+        return empty($this->getWriteOnlyPaths()) === false;
+    }//end hasWriteOnlyPaths()
+
+    /**
+     * Get the nested write-only dot-paths declared by this schema.
+     *
+     * Paths are dot-separated and rooted at a declared top-level property,
+     * e.g. `configuration.authentication.client_secret`. A path denotes the
+     * value at that location AND everything beneath it, so declaring
+     * `configuration.authentication` strips the whole sub-tree.
+     *
+     * @return array<int, string> Declared write-only dot-paths (possibly empty).
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    public function getWriteOnlyPaths(): array
+    {
+        $configuration = $this->configuration;
+        if (is_array($configuration) === false) {
+            return [];
+        }
+
+        $paths = ($configuration[self::WRITEONLY_PATHS_ANNOTATION] ?? null);
+        if (is_array($paths) === false) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($paths as $path) {
+            if (is_string($path) === true && $path !== '') {
+                $result[] = $path;
+            }
+        }
+
+        return $result;
+    }//end getWriteOnlyPaths()
+
+    /**
+     * Check if any property in the schema is declared encrypted at rest.
+     *
+     * A property carrying `x-openregister-encrypted: true` (the OpenRegister
+     * vendor-extension convention, sibling to `x-openregister-relations` etc.)
+     * is encrypted at rest via {@see \OCA\OpenRegister\Service\FieldEncryptionHandler}
+     * on save and decrypted for authorized reads on render. Used to decide
+     * whether the save/render path must apply the encryption/decryption step,
+     * and whether the magic-table column builder must skip the property.
+     *
+     * @return bool True if at least one property has x-openregister-encrypted === true
+     *
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     */
+    public function hasEncryptedProperties(): bool
+    {
+        if (empty($this->properties) === true) {
+            return false;
+        }
+
+        foreach ($this->properties as $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['x-openregister-encrypted'] ?? null) === true
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }//end hasEncryptedProperties()
+
+    /**
+     * Get the names of all properties declared encrypted (`x-openregister-encrypted: true`).
+     *
+     * @return array<int, string> List of encrypted property names
+     *
+     * @spec openspec/specs/field-level-encryption/spec.md#requirement-flagged-properties-are-encrypted-on-save
+     */
+    public function getEncryptedProperties(): array
+    {
+        $result = [];
+
+        if (empty($this->properties) === true) {
+            return $result;
+        }
+
+        foreach ($this->properties as $propertyName => $propertyConfig) {
+            if (is_array($propertyConfig) === true
+                && ($propertyConfig['x-openregister-encrypted'] ?? null) === true
+            ) {
+                $result[] = (string) $propertyName;
+            }
+        }
+
+        return $result;
+    }//end getEncryptedProperties()
+
+    /**
      * Get the archive data
      *
      * @return array The archive data or empty array if null
@@ -714,8 +879,10 @@ class Schema extends Entity implements JsonSerializable
      * Validate the authorization structure for RBAC
      *
      * Validates that the authorization array follows the correct structure:
-     * - Keys must be valid CRUD actions (create, read, update, delete)
-     * - Values must be arrays of group IDs (strings)
+     * - Keys are either CRUD actions (create, read, update, delete) or
+     *   reserved cascade flags (e.g. inheritFromPublic)
+     * - Action values must be arrays of group IDs (strings); reserved flag
+     *   values must be booleans
      * - Group IDs must be non-empty strings
      *
      * Also validates property-level authorization if any properties have authorization defined.
@@ -740,6 +907,21 @@ class Schema extends Entity implements JsonSerializable
     /**
      * Validate an authorization rules array
      *
+     * Keys are either CRUD actions (create, read, update, delete) holding rule
+     * arrays, or reserved non-action keys. Reserved keys are behaviour toggles
+     * read at runtime, not action rule sets, so they skip the action/array
+     * checks and are validated against their own shape:
+     *
+     * - `inheritFromPublic` — a boolean cascade flag.
+     * - `scope` — the default object scope for this schema, from the
+     *   {@see ObjectScopeResolver} vocabulary.
+     *
+     * `scope` is validated STRICTLY here even though the runtime treats an
+     * unrecognised value as private. The two are not alternatives: strict
+     * validation gives a schema author an error at authoring time, and the
+     * runtime fail-closed still covers a value that arrived some other way — an
+     * import, a direct write, or a version that knew a scope this one does not.
+     *
      * @param array|null $authorization The authorization rules to validate
      * @param string     $context       Context for error messages (e.g., 'schema' or 'property "fieldName"')
      *
@@ -755,7 +937,28 @@ class Schema extends Entity implements JsonSerializable
 
         $validActions = ['create', 'read', 'update', 'delete'];
 
+        // Reserved non-action authorization flags. These are cascade/behaviour
+        // toggles read at runtime by PermissionHandler, not CRUD rule sets.
+        $reservedFlags = ['inheritFromPublic'];
+
         foreach ($authorization as $action => $rules) {
+            // Reserved flags are validated as booleans, not action rule arrays.
+            if (in_array($action, $reservedFlags, true) === true) {
+                if (is_bool($rules) === false) {
+                    throw new InvalidArgumentException(
+                        "Authorization flag '{$action}' in {$context} must be a boolean"
+                    );
+                }
+
+                continue;
+            }
+
+            // The default object scope for this schema.
+            if ($action === ObjectScopeResolver::SCOPE_KEY) {
+                $this->validateScopeValue(scope: $rules, context: $context);
+                continue;
+            }
+
             // Validate action is a valid CRUD operation.
             if (in_array($action, $validActions) === false) {
                 $validList = implode(', ', $validActions);
@@ -776,6 +979,32 @@ class Schema extends Entity implements JsonSerializable
             }
         }//end foreach
     }//end validateAuthorizationRules()
+
+    /**
+     * Validate a schema's default object scope.
+     *
+     * Strict on purpose, even though the runtime treats an unrecognised value as
+     * private: validation gives a schema author an error at authoring time, and
+     * the runtime fail-closed still covers a value that arrived some other way.
+     *
+     * @param mixed  $scope   The declared scope value.
+     * @param string $context Context for the error message.
+     *
+     * @throws \InvalidArgumentException When the scope is not in the vocabulary.
+     *
+     * @return void
+     */
+    private function validateScopeValue(mixed $scope, string $context): void
+    {
+        $validScopes = [ObjectScopeResolver::SCOPE_ORGANISATION, ObjectScopeResolver::SCOPE_PRIVATE];
+
+        if (in_array($scope, $validScopes, true) === false) {
+            $scopeList = implode(', ', $validScopes);
+            throw new InvalidArgumentException(
+                "Authorization scope in {$context} must be one of: {$scopeList}"
+            );
+        }
+    }//end validateScopeValue()
 
     /**
      * Validate property-level authorization
@@ -941,9 +1170,14 @@ class Schema extends Entity implements JsonSerializable
             return true;
         }
 
-        // If action is not specified in authorization, everyone has permission.
-        if (isset($this->authorization[$action]) === false) {
-            return true;
+        // Fail-closed (rbac-default-deny): once a schema opts into authorization
+        // (non-empty block), an action that is not explicitly listed is denied —
+        // including the `public` pseudo-group. The empty-block open-default above
+        // and the admin/owner bypasses still apply. Kept consistent with the
+        // active enforcement paths (PermissionHandler / MagicRbacHandler) even
+        // though this entity-level helper currently has no lib/ enforcement callers.
+        if (empty($this->authorization[$action]) === true) {
+            return false;
         }
 
         // Check each authorization entry for this action.
@@ -1188,6 +1422,28 @@ class Schema extends Entity implements JsonSerializable
             }
         }
 
+        // Fold a schema-LEVEL top-level `x-schema-org` marker into
+        // `configuration['x-schema-org']` the same way (ADR-048). Fleet
+        // schemas declare the canonical schema.org CURIE (e.g.
+        // `"x-schema-org": "schema:Organization"`) as a sibling of
+        // `properties`, NOT inside `configuration`; without this fold the
+        // marker falls through to a non-existent `setXSchemaOrg()` setter,
+        // is swallowed by the silent-catch below, and the live schema loses
+        // its semantic type — so SemanticTypeResolver can never discover the
+        // provider. Folding it into the configuration column (which is in the
+        // passThrough allowlist and read by
+        // JsonLdContextService::getImplementedTypes) makes the marker survive
+        // save/import. An explicit `configuration['x-schema-org']` already
+        // supplied by the caller wins over the top-level convenience form.
+        if (array_key_exists('x-schema-org', $object) === true) {
+            if (array_key_exists('x-schema-org', $existingConfig) === false) {
+                $existingConfig['x-schema-org'] = $object['x-schema-org'];
+                $annotationsFolded = true;
+            }
+
+            unset($object['x-schema-org']);
+        }
+
         if ($annotationsFolded === true) {
             $object['configuration'] = $existingConfig;
         }
@@ -1240,7 +1496,7 @@ class Schema extends Entity implements JsonSerializable
             }//end if
 
             // Convert datetime strings to DateTime objects for datetime fields.
-            if (in_array($key, ['published', 'depublished', 'created', 'updated', 'deleted'], true) === true) {
+            if (in_array($key, ['created', 'updated', 'deleted'], true) === true) {
                 if (is_string($value) === true && $value !== '') {
                     try {
                         $value = new DateTime($value);
@@ -1291,8 +1547,7 @@ class Schema extends Entity implements JsonSerializable
      *     maxDepth: int, owner: null|string, application: null|string,
      *     organisation: null|string,
      *     groups: array<string, list<string>>|null, authorization: array|null,
-     *     deleted: null|string, published: null|string,
-     *     depublished: null|string, configuration: array|null|string,
+     *     deleted: null|string, configuration: array|null|string,
      *     allOf: array|null, oneOf: array|null, anyOf: array|null}
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
@@ -1330,16 +1585,6 @@ class Schema extends Entity implements JsonSerializable
             $deleted = $this->deleted->format('c');
         }
 
-        $published = null;
-        if (isset($this->published) === true) {
-            $published = $this->published->format('c');
-        }
-
-        $depublished = null;
-        if (isset($this->depublished) === true) {
-            $depublished = $this->depublished->format('c');
-        }
-
         return [
             'id'             => $this->id,
             'uuid'           => $this->uuid,
@@ -1368,8 +1613,6 @@ class Schema extends Entity implements JsonSerializable
             'groups'         => $this->groups,
             'authorization'  => $this->authorization,
             'deleted'        => $deleted,
-            'published'      => $published,
-            'depublished'    => $depublished,
             'configuration'  => $this->configuration,
             'allOf'          => $this->allOf,
             'oneOf'          => $this->oneOf,
@@ -1560,6 +1803,66 @@ class Schema extends Entity implements JsonSerializable
     }//end getCalendarProviderConfig()
 
     /**
+     * Get the object-source declaration from the schema configuration.
+     *
+     * Reads the `x-openregister-object-source` annotation block (folded into the
+     * configuration column at save time). When present and valid, the schema's
+     * objects are served by the named ObjectSourceProvider instead of the magic
+     * table (see GetObject). Returns null when absent or when `provider` is not a
+     * non-empty string.
+     *
+     * @return array{provider: string, readOnly?: bool, config?: array}|null
+     *         The parsed object-source declaration, or null when absent/invalid.
+     *
+     * @spec openspec/changes/object-source-providers/tasks.md#task-2.2
+     */
+    public function getObjectSource(): ?array
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return null;
+        }
+
+        $source = ($configuration['x-openregister-object-source'] ?? null);
+
+        if (is_array($source) === false) {
+            return null;
+        }
+
+        $provider = ($source['provider'] ?? null);
+        if (is_string($provider) === false || $provider === '') {
+            return null;
+        }
+
+        return $source;
+    }//end getObjectSource()
+
+    /**
+     * Check whether this schema's objects are opted into Context Chat indexing.
+     *
+     * Reads the `x-openregister-contextchat` annotation (default OFF). Follows
+     * the same `x-openregister-*` boolean-flag convention as other schema
+     * annotations — objects of this schema are only ever submitted to
+     * `OCP\ContextChat` when this returns true AND the object independently
+     * satisfies the publication predicate (see ContextChatSubmissionListener).
+     *
+     * @return bool True when the schema opted in to Context Chat indexing.
+     *
+     * @spec openspec/specs/context-chat-provider/spec.md
+     */
+    public function isContextChatIndexingEnabled(): bool
+    {
+        $configuration = $this->getConfiguration();
+
+        if ($configuration === null) {
+            return false;
+        }
+
+        return ($configuration['x-openregister-contextchat'] ?? false) === true;
+    }//end isContextChatIndexingEnabled()
+
+    /**
      * Set the configuration for the schema with validation
      *
      * Validates and sets the configuration array for the schema.
@@ -1575,6 +1878,16 @@ class Schema extends Entity implements JsonSerializable
      *   Example: 'profile.avatar' (should contain base64 encoded image data)
      * - 'allowFiles': (bool) Whether this schema allows file attachments
      * - 'allowedTags': (array) Array of allowed file tags/types for file filtering
+     * - 'defaultAutoShare': (bool) Default value for the "Automatically publish"
+     *   toggle on the attachment upload dialog. true seeds the toggle on; absent
+     *   or false keeps it off. Users can always override per upload.
+     *   See: ConductionNL/opencatalogi#577
+     * - 'mailObjectTemplate': (array) Field map used by the Mail-sidebar
+     *   "create from email" action. Keys are schema property names, string
+     *   values may contain {{subject}}/{{sender}}/{{senderName}}/{{date}}/
+     *   {{date30}}/{{datetime}}/{{preview}}/{{messageId}}/{{mailRef}}
+     *   placeholders; non-string values pass through verbatim. Only schemas
+     *   declaring this template get a create-from-email button.
      *
      * @param array|string|null $configuration The configuration array/string to validate and set
      *
@@ -1645,84 +1958,257 @@ class Schema extends Entity implements JsonSerializable
     {
         $validatedConfig = [];
         $stringFields    = ['objectNameField', 'objectDescriptionField', 'objectSummaryField', 'objectImageField'];
-        $boolFields      = ['allowFiles', 'autoPublish'];
-        $passThrough     = ['unique', 'facetCacheTtl', 'calendarProvider'];
+        $boolFields      = ['allowFiles', 'autoPublish', 'defaultAutoShare'];
+        // `implements` + `x-schema-org` carry the cross-app semantic-type
+        // markers (ADR-048); they must round-trip through the configuration
+        // column so SemanticTypeResolver can discover the schema. Their IRI
+        // shape is validated on read by JsonLdContextService::getImplementedTypes.
+        // `handoffContract` is the ADR-051 provider-side binding block
+        // (contract field → own property, per kind URI); its shape is
+        // validated at save time by HandoffContractBindingValidator.
+        // `importSource` is the schema-import provenance block (dialect,
+        // reference, snapshot version, baseline) written by
+        // SchemaImportService and read back by the reimport / update-from-
+        // source endpoint; without it in the allowlist the provenance is
+        // silently dropped on save and the entire update-from-source feature
+        // is dead (the schema reports "not imported from a standard").
+        $passThrough = ['unique', 'facetCacheTtl', 'calendarProvider', 'jsonld', 'implements', 'x-schema-org', 'handoffContract', 'importSource'];
 
         foreach ($configuration as $key => $value) {
-            if (in_array($key, $stringFields, true) === true) {
-                $validatedConfig[$key] = $this->validateStringConfigValue(key: $key, value: $value);
-                continue;
-            }
+            // Per-key isolation (#419): a bad VALUE for one config key must never
+            // lose the whole configuration. Direct API saves surface the throw as
+            // a 400, but on APP IMPORT the throw is silently swallowed upstream and
+            // every OTHER key — x-openregister-mcp, x-openregister-lifecycle,
+            // x-openregister-calculations, mailObjectTemplate — is lost with it
+            // (observed: pipelinq `lead` carried an invalid linkedType and lost its
+            // entire config incl. its MCP tools). Drop the offending key, record it
+            // so SchemaMapper can warn, and keep the rest of the configuration.
+            try {
+                $this->validateConfigurationEntry(
+                    key: $key,
+                    value: $value,
+                    stringFields: $stringFields,
+                    boolFields: $boolFields,
+                    passThrough: $passThrough,
+                    validatedConfig: $validatedConfig
+                );
+            } catch (\InvalidArgumentException $e) {
+                // The write-only path annotation is exempt from per-key
+                // isolation and MUST fail the whole save.
+                //
+                // For every other key, "drop the offending key and keep the
+                // rest" is a safe degradation: the corresponding feature
+                // simply does not fire. For THIS key the failure mode is
+                // inverted — dropping it means the schema saves successfully
+                // with its nested secrets NO LONGER PROTECTED. A typo'd path
+                // (`configuratio.authentication.keys`) would persist a schema
+                // that looks annotated to a reviewer, passes save, and serves
+                // the secret in cleartext on the next read. That is precisely
+                // the phantom-annotation class this repo has been bitten by,
+                // except fail-OPEN instead of merely inert. A security control
+                // must fail closed and loudly: re-throw so a direct API save
+                // 400s and an app import aborts rather than silently shipping
+                // an unprotected schema.
+                if ((string) $key === self::WRITEONLY_PATHS_ANNOTATION) {
+                    throw $e;
+                }
 
-            if (in_array($key, $boolFields, true) === true) {
-                $this->validateBoolConfigValue(key: $key, value: $value);
-                $validatedConfig[$key] = $value;
-                continue;
-            }
-
-            if ($key === 'allowedTags') {
-                $this->validateAllowedTagsValue(value: $value);
-                $validatedConfig[$key] = $value;
-                continue;
-            }
-
-            if ($key === 'linkedTypes') {
-                $this->validateLinkedTypesValue(value: $value);
-                $validatedConfig[$key] = $value;
-                continue;
-            }
-
-            if ($key === 'calendarProvider' && is_array($value) === true) {
-                $this->validateCalendarProviderConfig(config: $value);
-                $validatedConfig[$key] = $value;
-                continue;
-            }
-
-            if (in_array($key, $passThrough, true) === true) {
-                $validatedConfig[$key] = $value;
-                continue;
-            }
-
-            // Allow declarative annotation extensions to round-trip
-            // through the schema's configuration column. Validation of
-            // their shape is done by the dedicated validators (e.g.
-            // LifecycleAnnotationValidator) at schema-save time.
-            //
-            // The key MUST be in the declared vocabulary — unknown
-            // `x-openregister-*` keys are silently dropped to surface
-            // typos at save time rather than persisting them and having
-            // them silently no-op (e.g. `x-openregister-lifecycl` would
-            // otherwise round-trip without ever firing the listener).
-            if (str_starts_with((string) $key, 'x-openregister-') === true) {
-                if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
-                    $validatedConfig[$key] = $value;
-                } else {
-                    // R07: track unknown `x-openregister-*` keys (almost
-                    // always typos like `x-openregister-lifecycl`) so
-                    // SchemaMapper can log them via its structured
-                    // logger after save. The entity has no DI surface
-                    // for a logger and the ADR added in F06 bans the
-                    // `\OC::$server` static accessor — collecting on
-                    // the entity and bridging through the mapper is
-                    // the cleanest path that still surfaces a signal.
-                    $this->droppedAnnotationKeys[] = (string) $key;
-                }//end if
-            }//end if
+                $this->droppedKeys[] = (string) $key;
+            }//end try
         }//end foreach
 
         return $validatedConfig;
     }//end validateConfigurationArray()
 
     /**
-     * R07: dropped `x-openregister-*` keys collected during the most
-     * recent `validateConfigurationArray()` pass. SchemaMapper reads
+     * Validate the `x-openregister-writeonly-paths` annotation value.
+     *
+     * Accepts a list of dot-separated paths rooted at a declared top-level
+     * property. Everything here throws rather than warns, because the caller
+     * re-throws for this key (see validateConfigurationArray): a declaration
+     * that does not parse must never persist as an unenforced no-op.
+     *
+     * Rejects, in order: a non-list value; a non-string / empty entry; a path
+     * with an empty segment (`a..b`, leading/trailing dot); and a path whose
+     * ROOT segment is not a property this schema declares — the last one is
+     * what turns a real-world typo into a 400 instead of a silent leak.
+     *
+     * A path is NOT required to resolve beyond its root, and deliberately so:
+     * the whole point is to name keys inside an untyped `object` property that
+     * the schema cannot describe, so there is nothing to validate them against.
+     *
+     * @param mixed $value The raw annotation value.
+     *
+     * @throws \InvalidArgumentException If the declaration is malformed.
+     *
+     * @return array<int, string> The validated list of paths.
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#requirement-nested-writeonly-paths-must-never-be-returned-on-any-read
+     */
+    private function validateWriteOnlyPathsValue(mixed $value): array
+    {
+        if (is_array($value) === false || array_is_list($value) === false) {
+            throw new \InvalidArgumentException(
+                self::WRITEONLY_PATHS_ANNOTATION.' must be a list of dot-separated path strings'
+            );
+        }
+
+        $declared = [];
+        if (is_array($this->properties) === true) {
+            $declared = array_map('strval', array_keys($this->properties));
+        }
+
+        $validated = [];
+        foreach ($value as $path) {
+            if (is_string($path) === false || trim($path) === '') {
+                throw new \InvalidArgumentException(
+                    self::WRITEONLY_PATHS_ANNOTATION.' entries must be non-empty strings'
+                );
+            }
+
+            $segments = explode('.', $path);
+            foreach ($segments as $segment) {
+                if (trim($segment) === '') {
+                    throw new \InvalidArgumentException(
+                        self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" has an empty segment'
+                    );
+                }
+            }
+
+            // Root-segment existence check. Skipped when the schema declares no
+            // properties at all — an entity built in isolation (unit tests,
+            // partial hydration) has nothing to check against, and failing there
+            // would reject valid declarations for the wrong reason.
+            $rootIsDeclared = (empty($declared) === true || in_array($segments[0], $declared, true) === true);
+            if ($rootIsDeclared === false) {
+                throw new \InvalidArgumentException(
+                    self::WRITEONLY_PATHS_ANNOTATION.' path "'.$path.'" is rooted at "'.$segments[0]
+                    .'", which is not a declared property of this schema'
+                );
+            }
+
+            $validated[] = $path;
+        }//end foreach
+
+        return array_values(array_unique($validated));
+    }//end validateWriteOnlyPathsValue()
+
+    /**
+     * Validate and apply a single configuration entry.
+     *
+     * Extracted from validateConfigurationArray() so each key is validated in
+     * isolation (#419): the caller wraps this in a try/catch, and an invalid
+     * value drops only the offending key instead of the whole configuration.
+     * On success the accepted value is written into $validatedConfig by
+     * reference; unknown keys are simply not written, and unknown
+     * `x-openregister-*` keys are recorded in $this->droppedKeys.
+     *
+     * @param int|string           $key             Configuration key.
+     * @param mixed                $value           Raw value for the key.
+     * @param array<int, string>   $stringFields    String-typed config fields.
+     * @param array<int, string>   $boolFields      Bool-typed config fields.
+     * @param array<int, string>   $passThrough     Keys stored without validation.
+     * @param array<string, mixed> $validatedConfig Accumulator, passed by reference.
+     *
+     * @throws \InvalidArgumentException If the value is invalid for the key.
+     *
+     * @return void
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     */
+    private function validateConfigurationEntry(
+        int|string $key,
+        mixed $value,
+        array $stringFields,
+        array $boolFields,
+        array $passThrough,
+        array &$validatedConfig
+    ): void {
+        if (in_array($key, $stringFields, true) === true) {
+            $validatedConfig[$key] = $this->validateStringConfigValue(key: $key, value: $value);
+            return;
+        }
+
+        if (in_array($key, $boolFields, true) === true) {
+            // $key is int|string because PHP array keys can be ints. The cast is
+            // explicit rather than relying on this file having no strict_types.
+            $this->validateBoolConfigValue(key: (string) $key, value: $value);
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if ($key === 'allowedTags') {
+            $this->validateAllowedTagsValue(value: $value);
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if ($key === 'linkedTypes') {
+            $this->validateLinkedTypesValue(value: $value);
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if ($key === 'mailObjectTemplate') {
+            $this->validateMailObjectTemplateValue(value: $value);
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if ($key === self::WRITEONLY_PATHS_ANNOTATION) {
+            $validatedConfig[$key] = $this->validateWriteOnlyPathsValue(value: $value);
+            return;
+        }
+
+        if ($key === 'calendarProvider' && is_array($value) === true) {
+            $this->validateCalendarProviderConfig(config: $value);
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        if (in_array($key, $passThrough, true) === true) {
+            $validatedConfig[$key] = $value;
+            return;
+        }
+
+        // Allow declarative annotation extensions to round-trip
+        // through the schema's configuration column. Validation of
+        // their shape is done by the dedicated validators (e.g.
+        // LifecycleAnnotationValidator) at schema-save time.
+        //
+        // The key MUST be in the declared vocabulary — unknown
+        // `x-openregister-*` keys are silently dropped to surface
+        // typos at save time rather than persisting them and having
+        // them silently no-op (e.g. `x-openregister-lifecycl` would
+        // otherwise round-trip without ever firing the listener).
+        if (str_starts_with((string) $key, 'x-openregister-') === true) {
+            if (in_array((string) $key, self::ANNOTATION_VOCABULARY, true) === true) {
+                $validatedConfig[$key] = $value;
+                return;
+            }
+
+            // R07: track unknown `x-openregister-*` keys (almost
+            // always typos like `x-openregister-lifecycl`) so
+            // SchemaMapper can log them via its structured
+            // logger after save. The entity has no DI surface
+            // for a logger and the ADR added in F06 bans the
+            // `\OC::$server` static accessor — collecting on
+            // the entity and bridging through the mapper is
+            // the cleanest path that still surfaces a signal.
+            $this->droppedKeys[] = (string) $key;
+        }//end if
+    }//end validateConfigurationEntry()
+
+    /**
+     * Dropped `x-openregister-*` annotation keys collected during the most
+     * recent `validateConfigurationArray()` pass (R07). SchemaMapper reads
      * this after `setConfiguration()` and emits a logger->warning()
      * for each entry so operators see a signal without us having to
      * inject a logger into the entity itself.
      *
      * @var array<int, string>
      */
-    private array $droppedAnnotationKeys = [];
+    private array $droppedKeys = [];
 
     /**
      * Return + reset the list of dropped annotation keys.
@@ -1736,8 +2222,8 @@ class Schema extends Entity implements JsonSerializable
      */
     public function consumeDroppedAnnotationKeys(): array
     {
-        $dropped = $this->droppedAnnotationKeys;
-        $this->droppedAnnotationKeys = [];
+        $dropped           = $this->droppedKeys;
+        $this->droppedKeys = [];
         return $dropped;
     }//end consumeDroppedAnnotationKeys()
 
@@ -1854,55 +2340,76 @@ class Schema extends Entity implements JsonSerializable
         'x-openregister-lifecycle',
         'x-openregister-aggregations',
         'x-openregister-calculations',
+        'x-openregister-references',
+        'x-openregister-aggregate-refs',
         'x-openregister-notifications',
         'x-openregister-widgets',
         'x-openregister-relations',
         'x-openregister-processing-activity',
-    ];
-
-    /**
-     * Valid linked type values for Nextcloud entity integration.
-     *
-     * @deprecated since pluggable-integration-registry — kept as
-     * a backwards-compat fallback so existing schemas with values like
-     * 'mail' / 'calendar' / 'talk' / 'deck' continue to validate
-     * while the matching IntegrationProvider leaves land. Once every
-     * leaf in the umbrella's Wave 1 ships, the registry is the only
-     * authority and this constant is removed by
-     * `cleanup-linked-entity-type-map`. New consumers MUST add a
-     * provider via `IntegrationRegistry::addProvider()` rather than
-     * append to this list.
-     *
-     * @see OCA\OpenRegister\Service\Integration\IntegrationRegistry::listIds()
-     *
-     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-8
-     */
-    private const VALID_LINKED_TYPES = [
-        'files',
-        'mail',
-        'contacts',
-        'notes',
-        'todos',
-        'calendar',
-        'talk',
-        'deck',
+        // Read by ProcessingLogService::ANNOTATION_KEY (the AVG `logReads`
+        // dialect). Was absent from this list, so setConfiguration() silently
+        // DROPPED it and per-schema read-logging could never be enabled —
+        // register-level worked, so the capability looked healthy.
+        'x-openregister-processing',
+        'x-openregister-archival',
+        'x-openregister-object-source',
+        'x-openregister-quality',
+        'x-openregister-dedup',
+        'x-openregister-flows',
+        'x-openregister-survivorship',
+        'x-openregister-merge',
+        'x-openregister-handoff',
+        'x-openregister-mcp',
+        'x-openregister-approval-chains',
+        // Per-schema opt-in for OCP\ContextChat content submission (default
+        // OFF — see ContentProvider / ContextChatSubmissionListener). Absent
+        // from the vocabulary means the key round-trips through
+        // setConfiguration() and gets silently dropped, so the opt-in could
+        // never take effect (same or#460/#462-class bug the vocabulary
+        // exists to prevent).
+        'x-openregister-contextchat',
+        // Nested write-only dot-paths. Unlike every other entry in this list
+        // this key is NOT a plain pass-through: validateConfigurationEntry has
+        // a dedicated branch above that validates its shape, and
+        // validateConfigurationArray re-throws instead of dropping it.
+        self::WRITEONLY_PATHS_ANNOTATION,
+        // Federated configuration sharing (ADR pending): a schema opts its
+        // objects into the shared GitHub sharing engine by carrying either
+        // `true` or an `{id, topic, name}` refinement here. Without this entry
+        // setConfiguration() would silently drop the marker and the schema
+        // would never surface as a shareable type — the same or#460/#462-class
+        // trap the vocabulary exists to catch. Read by
+        // SchemaShareableConfigScanner.
+        'x-openregister-shareable',
+        // Declarative bound on what object data may reach an LLM: the
+        // per-schema allowlist Hermiq's AgentContextBuilder (and its JS twin
+        // src/utils/agentContext.js) reads to build an agent's context.
+        // Absent from this list, setConfiguration() silently DROPPED it, so
+        // every agent leaf on every schema fleet-wide resolved an EMPTY
+        // context — fail-closed, so never a leak, but the capability was
+        // wholly inert while schemas saved with HTTP 200 and no error. Same
+        // or#460/#462-class trap as `x-openregister-processing` and
+        // `x-openregister-contextchat` above. See or#2164.
+        'x-openregister-agent-context',
     ];
 
     /**
      * Validate the linkedTypes configuration value.
      *
      * Registry-driven validation per AD-5 of pluggable-integration-registry:
-     * an id is valid when it appears in EITHER the registry's listIds()
-     * OR the legacy VALID_LINKED_TYPES fallback. The legacy fallback
-     * keeps existing schemas (e.g. linkedTypes=['mail','calendar'])
-     * working while the matching providers ship. New ids (e.g. 'xwiki')
-     * become valid the moment their provider is registered.
+     * an id is valid when it appears in the registry's `listIds()`
+     * output OR in the legacy-id allow-list returned by
+     * `legacyLinkedTypeIds()` (see that method for the rationale — it
+     * preserves backwards-compat for `linkedTypes` values that were
+     * created before the matching provider was renamed/added).
      *
-     * When the integration registry isn't available — i.e. the entity
-     * is constructed outside a request context (unit tests building
-     * Schema instances directly) — validation falls back to
-     * VALID_LINKED_TYPES alone. This preserves the existing test
-     * surface while letting production code benefit from the registry.
+     * When the integration registry isn't reachable (entity built
+     * outside a request context, e.g. unit tests constructing Schema
+     * directly), validation falls back to the legacy allow-list alone.
+     *
+     * Per `cleanup-linked-entity-type-map`, the public linked-types
+     * constant was removed; the surviving allow-list lives inside
+     * `legacyLinkedTypeIds()` as an implementation detail.
      *
      * @param mixed $value The linkedTypes value to validate.
      *
@@ -1911,6 +2418,7 @@ class Schema extends Entity implements JsonSerializable
      * @return void
      *
      * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-7
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Registry-Driven Behaviour Unchanged"
      */
     private function validateLinkedTypesValue(mixed $value): void
     {
@@ -1923,17 +2431,18 @@ class Schema extends Entity implements JsonSerializable
         }
 
         $registryIds = $this->resolveIntegrationRegistryIds();
+        $legacyIds   = self::legacyLinkedTypeIds();
 
         foreach ($value as $type) {
             if (is_string($type) === false) {
                 throw new InvalidArgumentException("All values in 'linkedTypes' must be strings");
             }
 
-            $valid = in_array($type, self::VALID_LINKED_TYPES, true)
+            $valid = in_array($type, $legacyIds, true)
                 || in_array($type, $registryIds, true);
 
             if ($valid === false) {
-                $combined = array_unique(array_merge(self::VALID_LINKED_TYPES, $registryIds));
+                $combined = array_unique(array_merge($legacyIds, $registryIds));
                 sort($combined);
                 throw new InvalidArgumentException(
                     "Invalid linked type '$type'. Valid values: ".implode(', ', $combined)
@@ -1943,13 +2452,83 @@ class Schema extends Entity implements JsonSerializable
     }//end validateLinkedTypesValue()
 
     /**
+     * Validate the mailObjectTemplate configuration value
+     *
+     * The template is a flat map of schema property name => prefill value
+     * used by the Mail-sidebar "create from email" action. String values
+     * may contain {{placeholder}} tokens; scalar non-string values pass
+     * through verbatim.
+     *
+     * @param mixed $value The mailObjectTemplate value to validate
+     *
+     * @throws InvalidArgumentException If the template is not a flat map of scalar values
+     *
+     * @return void
+     */
+    private function validateMailObjectTemplateValue(mixed $value): void
+    {
+        if ($value === null) {
+            return;
+        }
+
+        if (is_array($value) === false) {
+            throw new InvalidArgumentException("Configuration 'mailObjectTemplate' must be an object or null");
+        }
+
+        foreach ($value as $field => $template) {
+            if (is_string($field) === false || $field === '') {
+                throw new InvalidArgumentException("All keys in 'mailObjectTemplate' must be non-empty property names");
+            }
+
+            if (is_scalar($template) === false) {
+                throw new InvalidArgumentException("Value for '$field' in 'mailObjectTemplate' must be a scalar");
+            }
+        }
+    }//end validateMailObjectTemplateValue()
+
+    /**
+     * Legacy linked-type id allow-list — internal implementation detail.
+     *
+     * Returns the set of legacy `linkedTypes` ids that were valid
+     * before the IntegrationRegistry became the authoritative source.
+     * Preserved so existing schemas declaring `linkedTypes: ['mail',
+     * 'todos', ...]` keep validating after the public linked-types
+     * constant was removed by `cleanup-linked-entity-type-map`.
+     * New consumers SHOULD register
+     * a provider via `IntegrationRegistry::addProvider()`; this
+     * allow-list MUST NOT grow.
+     *
+     * NOT exposed as a public constant — the public symbol was the
+     * removal target. Method form keeps the values reachable from
+     * tests and inspectable in PHPStan without making them part of OR's
+     * API surface.
+     *
+     * @return array<int, string>
+     *
+     * @spec openspec/specs/cleanup-linked-entity-type-map/spec.md "Constants Removed"
+     */
+    private static function legacyLinkedTypeIds(): array
+    {
+        return [
+            'files',
+            'mail',
+            'contacts',
+            'notes',
+            'todos',
+            'calendar',
+            'talk',
+            'deck',
+        ];
+    }//end legacyLinkedTypeIds()
+
+    /**
      * Resolve the current set of registered integration ids.
      *
      * Schema is a Nextcloud Entity, not a service — DI doesn't
      * reach it. We pull the registry from the server container at
      * validation time. Failures (tests without a booted container,
      * missing service binding) fall through to an empty list so the
-     * legacy VALID_LINKED_TYPES path keeps working.
+     * legacy allow-list path keeps working.
      *
      * @return array<int,string> Registered integration ids, possibly empty.
      */
@@ -2312,60 +2891,6 @@ class Schema extends Entity implements JsonSerializable
         $this->anyOf = $anyOf;
         $this->markFieldUpdated(attribute: 'anyOf');
     }//end setAnyOf()
-
-    /**
-     * Get the publication timestamp
-     *
-     * @return DateTime|null Publication timestamp
-     */
-    public function getPublished(): ?DateTime
-    {
-        return $this->published;
-    }//end getPublished()
-
-    /**
-     * Set the publication timestamp
-     *
-     * @param DateTime|string|null $published Publication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setPublished(DateTime|string|null $published): void
-    {
-        if (is_string($published) === true) {
-            $published = new DateTime($published);
-        }
-
-        $this->published = $published;
-        $this->markFieldUpdated(attribute: 'published');
-    }//end setPublished()
-
-    /**
-     * Get the depublication timestamp
-     *
-     * @return DateTime|null Depublication timestamp
-     */
-    public function getDepublished(): ?DateTime
-    {
-        return $this->depublished;
-    }//end getDepublished()
-
-    /**
-     * Set the depublication timestamp
-     *
-     * @param DateTime|string|null $depublished Depublication timestamp (DateTime object or ISO 8601 string)
-     *
-     * @return void
-     */
-    public function setDepublished(DateTime|string|null $depublished): void
-    {
-        if (is_string($depublished) === true) {
-            $depublished = new DateTime($depublished);
-        }
-
-        $this->depublished = $depublished;
-        $this->markFieldUpdated(attribute: 'depublished');
-    }//end setDepublished()
 
     /**
      * Check if this schema is managed by any configuration

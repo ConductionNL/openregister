@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # MariaDB Support & Dual-Database CI Matrix
 
 ## Purpose
+
+@e2e exclude CI infrastructure spec — no UI surface
 
 OpenRegister SHALL be fully tested on both PostgreSQL and MariaDB through a cost-efficient 2-line CI matrix that piggybacks the database difference onto the PHP version split, ensuring that database-specific code paths (JSONB vs JSON, GIN indexes vs B-tree, pg_trgm vs LIKE, PostgreSQL containment operators vs JSON_CONTAINS) are exercised in CI rather than only discovered in production. Blob storage (Normal mode) is removed — only MagicMapper (dedicated SQL tables per schema) is supported.
 

@@ -76,6 +76,9 @@ export default {
 			closeModalTimeout: null,
 		}
 	},
+	/**
+	 * @spec exclude Vue mounted() hook auto-starting the download when an object is set; modal init plumbing.
+	 */
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.downloadObject()
@@ -85,6 +88,9 @@ export default {
 		json,
 		jsonParseLinter,
 		getTheme,
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -92,6 +98,9 @@ export default {
 			this.loading = false
 			this.error = false
 		},
+		/**
+		 * @spec exclude Download handler delegating to objectStore.downloadObject; entity export lives in the store, this is modal orchestration plumbing.
+		 */
 		async downloadObject() {
 			this.loading = true
 

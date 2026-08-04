@@ -1,16 +1,18 @@
 ---
 status: implemented
+retrofit_extensions:
+  - REQ-001
 ---
 
 # Authentication and Authorization System
 
 ## Purpose
+
+@e2e exclude authentication/authorization backend — covered by PHPUnit
 Define the authentication and authorization system for OpenRegister, supporting Nextcloud session auth, Basic Auth for API consumers, JWT bearer tokens for external systems, API key auth for MCP and service-to-service integration, and SSO integration via SAML/OIDC. The auth system MUST map all external identities to Nextcloud users via the Consumer entity and enforce consistent RBAC across every access method (REST, GraphQL, MCP, public endpoints), ensuring that a single identity model drives schema-level, property-level, and row-level security decisions.
 
 **Source**: Core OpenRegister capability; 67% of tenders require SSO/identity integration; 86% require RBAC per zaaktype.
-
 ## Requirements
-
 ### Requirement: The system MUST support multiple authentication methods with unified identity resolution
 OpenRegister MUST accept authentication via Nextcloud session cookies, HTTP Basic Auth, Bearer JWT tokens, OAuth2 bearer tokens, and API keys. All methods MUST resolve to a Nextcloud user identity (via `OCP\IUserSession::setUser()`) before any RBAC evaluation occurs, ensuring that authorization decisions are independent of the authentication method used.
 
@@ -425,6 +427,430 @@ The `SecurityService` MUST sanitize all user inputs to prevent cross-site script
 - **GIVEN** a login attempt with a password exceeding 1000 characters
 - **WHEN** `SecurityService::validateLoginCredentials()` processes the input
 - **THEN** the validation MUST return `{ valid: false, error: "Password is too long" }`
+
+### REQ-001: The system SHALL provide an idempotent OCC command to backfill the `__system__` owner sentinel on legacy magic-table rows
+The system MUST provide an idempotent OCC command (`occ openregister:backfill-system-owner`) to backfill the `__system__` owner sentinel on legacy magic-table rows. *(Added by retrofit-2026-05-24-2b-command-repair-middleware, archived.)*
+
+`occ openregister:backfill-system-owner` is a one-shot operational command that scans every magic table reachable by combining (register, schema) pairs and, for each row where `_owner = ''`, sets `_owner` to `OrganisationService::SYSTEM_USER_ID_DEFAULT` (the `__system__` sentinel). The command is idempotent by design: re-running on already-backfilled tables produces a per-table `scanned=N updated=0` line and the grand total returns `0` updates.
+
+The command is implemented in `OCA\OpenRegister\Command\BackfillSystemOwnerCommand`, registered through Nextcloud's symfony console wiring. Its three options are: `--dry-run` (count without writing), `--register=<slug|uuid|id>` (limit scope to one register), `--schema=<slug|uuid|id>` (limit scope to one schema). Both mappers are resolved via `RegisterMapper::find()` / `findAll()` and `SchemaMapper::find()` / `findAll()` with `_rbac: false, _multitenancy: false` — the command bypasses RBAC and tenancy so legacy rows belonging to suspended/inactive tenants are still backfilled. Magic-table existence is verified per (register, schema) via `MagicMapper::tableExistsForRegisterSchema()`; missing tables are silently skipped. The actual DML uses `IDBConnection::getQueryBuilder()` with a count query (selecting rows where `_owner = ''`) followed (unless `--dry-run`) by an UPDATE that sets `_owner = OrganisationService::SYSTEM_USER_ID_DEFAULT` on the same predicate.
+
+On failure to resolve a register or schema, the command writes the error message to stderr in `<error>...</error>` tags and exits with `Command::FAILURE`. On success (including the no-op idempotent case) it exits with `Command::SUCCESS`. A final `<info>Done. Tables=N scanned=M updated=K (dry run — no writes performed)</info>` summary is always written; the `(dry run — no writes performed)` suffix is conditional on the `--dry-run` flag.
+
+#### Scenario: Run backfill across all tables
+- **GIVEN** an OpenRegister deployment with 3 magic tables, some carrying rows from before #1645 (i.e. `_owner = ''`)
+- **WHEN** an admin runs `occ openregister:backfill-system-owner`
+- **THEN** the command iterates every register × every schema in the register's `getSchemas()` allow-list
+- **AND** for each (register, schema) pair where `MagicMapper::tableExistsForRegisterSchema()` returns true, the rows with `_owner = ''` are counted and then UPDATEd to `_owner = '__system__'` via the query builder
+- **AND** for each table a `register-slug/schema-slug (table-name): scanned=N updated=N` line is written
+- **AND** the final summary reports `Tables=<count> scanned=<grand-total> updated=<grand-total>`
+- **AND** the command exits with `Command::SUCCESS` (0)
+
+#### Scenario: Idempotent re-run on a fully backfilled deployment
+- **GIVEN** an OpenRegister deployment where the backfill command was already executed and every magic table now has `_owner != ''`
+- **WHEN** the admin re-runs `occ openregister:backfill-system-owner`
+- **THEN** every table's count query returns `scanned=0`
+- **AND** the UPDATE statement is skipped (early return on `$scanned === 0`)
+- **AND** the summary reports `Tables=<count> scanned=0 updated=0`
+
+#### Scenario: Scope to a single register
+- **GIVEN** a deployment with 5 registers
+- **WHEN** the admin runs `occ openregister:backfill-system-owner --register=meldingen`
+- **THEN** `resolveRegisters()` returns the single register matching slug/uuid/id `meldingen` via `RegisterMapper::find()`
+- **AND** only that register's tables are scanned
+- **AND** unrelated registers are not touched
+
+#### Scenario: Dry-run reports counts without writing
+- **GIVEN** a magic table with 100 rows where `_owner = ''`
+- **WHEN** the admin runs `occ openregister:backfill-system-owner --dry-run`
+- **THEN** `backfillTable()` runs the count query and returns `[100, 0]`
+- **AND** the UPDATE statement is NOT executed
+- **AND** the per-table line reports `scanned=100 updated=0`
+- **AND** the summary suffix is `(dry run — no writes performed)`
+
+#### Scenario: Register or schema lookup failure
+- **GIVEN** the admin runs `occ openregister:backfill-system-owner --register=does-not-exist`
+- **WHEN** `RegisterMapper::find('does-not-exist', _multitenancy: false)` throws (entity not found)
+- **THEN** the throwable's message is written to stderr wrapped in `<error>...</error>`
+- **AND** the command exits with `Command::FAILURE` (1)
+- **AND** no writes are performed
+
+### Requirement: Register and schema read endpoints MUST remain reachable when OpenRegister is restricted to a user group
+When an administrator limits OpenRegister to specific Nextcloud groups (the *"Limit app to groups"* setting, i.e. `occ app:enable openregister --groups <group>`), Nextcloud blocks every non-`#[PublicPage]` route for users outside those groups (dispatch is gated by `IAppManager::isEnabledForUser()`). Because OpenRegister's register, schema, and object **read** endpoints are consumed by other apps on behalf of every user, those read endpoints MUST be marked `#[PublicPage]` so they survive the app-group restriction. Write/management endpoints MUST remain non-public so that the same restriction continues to limit management to the group.
+
+#### Scenario: A user outside the restriction group can read registers and schemas
+- **GIVEN** OpenRegister is enabled only for group `data-engineers`
+- **AND** user `alice` is authenticated but is **not** a member of `data-engineers`
+- **WHEN** `alice` calls `GET /api/registers` and `GET /api/schemas`
+- **THEN** both requests MUST succeed (HTTP 200), returning the registers/schemas she is permitted to see under RBAC
+- **AND** `GET /api/objects/{register}/{schema}` MUST also succeed, scoped by `ObjectService` RBAC/multitenancy
+
+#### Scenario: A user outside the restriction group cannot manage registers or schemas
+- **GIVEN** OpenRegister is enabled only for group `data-engineers`
+- **AND** user `alice` is authenticated but is **not** a member of `data-engineers`
+- **WHEN** `alice` calls `POST`, `PUT`, `PATCH`, or `DELETE` on `/api/registers` or `/api/schemas`
+- **THEN** the request MUST NOT succeed — it is either blocked by the Nextcloud app-group restriction (non-public route) or rejected by the register/schema write authorization check (HTTP 403)
+
+### Requirement: Public read endpoints MUST require an authenticated user except for published resources
+Marking register/schema read endpoints `#[PublicPage]` also exposes them to fully anonymous callers. Register and schema **definitions** MUST NOT be served to anonymous callers unless the specific resource is published. A resource is *published* when its `published` field is set (non-null) and its `depublished` field is null. Authenticated users are unaffected and continue to receive results scoped by the existing RBAC / multitenancy rules.
+
+#### Scenario: Anonymous list returns only published registers/schemas
+- **GIVEN** no Nextcloud user is resolved on the request (anonymous)
+- **WHEN** the caller requests `GET /api/registers` or `GET /api/schemas`
+- **THEN** the response MUST contain only resources whose `published` is non-null and `depublished` is null
+- **AND** unpublished resources MUST be absent from the result set
+
+#### Scenario: Anonymous show of an unpublished resource is rejected
+- **GIVEN** no Nextcloud user is resolved on the request (anonymous)
+- **AND** register/schema `X` is not published
+- **WHEN** the caller requests `GET /api/registers/X` or `GET /api/schemas/X`
+- **THEN** the response MUST be HTTP 401 (authentication required)
+
+#### Scenario: Anonymous show of a published resource succeeds
+- **GIVEN** no Nextcloud user is resolved on the request (anonymous)
+- **AND** register/schema `Y` is published (`published` set, `depublished` null)
+- **WHEN** the caller requests `GET /api/registers/Y` or `GET /api/schemas/Y`
+- **THEN** the response MUST be HTTP 200 with the resource definition
+
+#### Scenario: Authenticated read is unaffected by the published gate
+- **GIVEN** user `bob` is authenticated
+- **WHEN** `bob` reads registers/schemas
+- **THEN** the published/unpublished gate MUST NOT apply — `bob` receives every resource permitted by his RBAC scope, published or not
+
+### Requirement: The published-visibility gate MUST derive from server-side entity state
+The decision to expose a register or schema to an anonymous caller MUST be derived from the persisted `published`/`depublished` fields on the entity, never from client-supplied request parameters. This prevents an anonymous caller from bypassing the gate by asserting visibility in the request.
+
+#### Scenario: Client cannot assert published state
+- **GIVEN** an anonymous caller requests an unpublished register `X` with a query/body parameter claiming `published=true`
+- **WHEN** the read-visibility guard evaluates the request
+- **THEN** the guard MUST ignore the client-supplied value and use the entity's persisted `published`/`depublished` fields
+- **AND** the request MUST be rejected with HTTP 401
+
+### Requirement: Object write operations MUST fail closed for anonymous callers
+Creating or updating an object MUST be denied for an anonymous caller (no resolved Nextcloud user) unless the target schema's `authorization` explicitly grants the `public` group the requested write action. A schema with no `authorization` block, or no entry for the action, MUST NOT permit anonymous writes by default. Authenticated callers are out of scope of this requirement (their write authorization is governed by the existing schema RBAC rules).
+
+#### Scenario: Anonymous write to a schema with no authorization rule is denied
+- **GIVEN** a schema with no `authorization` block (or no `create`/`update` entry)
+- **WHEN** an anonymous caller sends `POST`/`PUT /api/objects/{register}/{schema}`
+- **THEN** the request MUST be rejected with HTTP 403
+- **AND** no object is created or modified
+
+#### Scenario: Anonymous write to a schema that declares public write is allowed
+- **GIVEN** a schema whose `authorization` grants the `public` group the `create` action
+- **WHEN** an anonymous caller sends `POST /api/objects/{register}/{schema}`
+- **THEN** the request MUST be allowed (the schema opted in to public submissions)
+
+#### Scenario: Authenticated write behaviour is unchanged
+- **GIVEN** an authenticated user
+- **WHEN** they create or update an object
+- **THEN** the authorization outcome MUST be identical to before this change (this requirement only constrains anonymous writes)
+
+### Requirement: SQL/list RBAC match evaluation MUST fail closed on unresolved dynamic variables
+When a schema `authorization` rule carries a `match` clause referencing a dynamic variable (e.g. `$organisation`, `$userId`, `$now`) that resolves to `null` for the current principal, the SQL/list-path evaluator MUST treat that match property as unsatisfiable (emit an impossible predicate, `1 = 0`) rather than dropping it. The list path and the single-object find path MUST produce identical authorization verdicts for the same rule and principal.
+
+#### Scenario: Multi-condition match with a null dynamic variable denies on both list and find
+- **GIVEN** a read rule `{ "group": "public", "match": { "name": "X", "organisation": "$organisation" } }`
+- **AND** a principal for whom `$organisation` resolves to `null`
+- **WHEN** the principal lists objects (`GET /api/objects/{register}/{schema}`) and fetches the single object (`GET /api/objects/{register}/{schema}/{uuid}`)
+- **THEN** BOTH requests MUST deny access to the object (the unresolved `organisation` predicate is not silently dropped on the list path)
+
+#### Scenario: Rules whose dynamic variables resolve are unaffected
+- **GIVEN** the same rule and a principal for whom `$organisation` resolves to a concrete value
+- **WHEN** the principal lists and finds objects
+- **THEN** access is granted exactly as before — the fail-closed change introduces no new denials for resolvable rules
+
+#### Scenario: Single-condition match parity is preserved
+- **GIVEN** a single-condition `match` rule on a dynamic variable that resolves to null
+- **WHEN** evaluated on the list and find paths
+- **THEN** both paths MUST deny (the SQL path no longer differs from the PHP path)
+
+### Requirement: Schema and register METADATA-READ lookups MUST bypass multi-tenancy; metadata WRITE lookups MUST enforce it
+
+OpenRegister's multi-tenancy isolation lives at the OBJECT-row level via `MultiTenancyTrait` on `MagicMapper` queries (see existing requirement "Multi-tenancy isolation MUST restrict data access to the user's active organisation"). Schema and register **definitions** are a globally-visible catalog — this is already the established contract via `@PublicPage` on `SchemasController::index`/`show`, both of which pass `_multitenancy: false` to `SchemaMapper::find`/`findAll`.
+
+To eliminate inconsistent inheritance of the `_multitenancy: true` default, every code path whose **purpose** is to **resolve a schema or register entity for reading metadata, computing over its data, or rendering it to a consumer** MUST pass `_multitenancy: false` to `SchemaMapper::find` / `SchemaMapper::findAll` / `RegisterMapper::find` / `RegisterMapper::findAll`. Conversely, every code path whose **purpose** is to **authorize an administrative mutation against the entity** (create, update, patch, delete, upload-as-update) MUST keep the default `_multitenancy: true`. The mapper's default of `true` is intentionally the safe-for-mutation default; the policy is per-caller, not per-mapper.
+
+The `Schema "%s" not found.` / `Register "%s" not found.` 404 path is preserved: an unknown ref still results in `DoesNotExistException` regardless of the tenancy argument; nothing else about lookup semantics changes.
+
+#### Scenario: Tenant user lists schemas via the public catalog endpoint
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schemas exist with `organisation = 'org-uuid-1'`, `organisation = 'org-uuid-2'`, and `organisation IS NULL`
+- **WHEN** `jan` calls `GET /api/schemas`
+- **THEN** the request MUST succeed (HTTP 200)
+- **AND** the response MUST contain schemas from all three groups, scoped only by the existing read-accessibility published gate (not by tenancy)
+- **AND** `SchemaMapper::findAll(..., _multitenancy: false)` MUST be the underlying call
+
+#### Scenario: Admin without active organisation runs an aggregation that resolves a schema by ref
+- **GIVEN** an admin user (in the `admin` Nextcloud group) with NO active organisation set
+- **AND** a schema `meldingen` exists with `organisation = 'org-uuid-1'`
+- **WHEN** the admin calls an aggregation endpoint whose runner invokes `AggregationRunner::loadSchema(schemaRef: 'meldingen')`
+- **THEN** the schema MUST resolve via `SchemaMapper::find('meldingen', _multitenancy: false)`
+- **AND** the aggregation runner MUST proceed (no `Schema "meldingen" not found.` 404)
+- **AND** any object-row enumeration the runner performs subsequently MUST still be tenant-filtered by `MultiTenancyTrait` against `MagicMapper`, per the existing object-row multi-tenancy requirement
+
+#### Scenario: Background job (system actor) resolves a register for aggregation
+- **GIVEN** a scheduled job running as the system actor (no Nextcloud session, no active organisation)
+- **AND** a register `zaken` exists with `organisation = 'org-uuid-2'`
+- **WHEN** the job invokes `AggregationRunner::loadRegister(registerRef: 'zaken')`
+- **THEN** the register MUST resolve via `RegisterMapper::find('zaken', _multitenancy: false)`
+- **AND** the job MUST proceed without a `Register "zaken" not found.` 404
+
+#### Scenario: Tenant user reads a single schema (download, related, stats, publish/depublish lookups)
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schema `producten` exists with `organisation = 'org-uuid-2'`
+- **WHEN** `jan` calls `GET /api/schemas/producten/download`, `/related`, `/stats`, or hits the GET lookup inside the publish/depublish flow
+- **THEN** the schema MUST resolve via `SchemaMapper::find('producten', ..., _multitenancy: false)`
+- **AND** the response MUST be HTTP 200 (subject to the existing read-accessibility published gate when the caller is anonymous)
+
+#### Scenario: Tenant user attempts to UPDATE a schema owned by another tenant
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schema `producten` exists with `organisation = 'org-uuid-2'`
+- **AND** `jan` does NOT have schema-manage permission on `producten`
+- **WHEN** `jan` calls `PUT /api/schemas/producten`
+- **THEN** the underlying lookup MUST be `SchemaMapper::find('producten')` with default `_multitenancy: true` (mutation-gating lookup MUST NOT bypass tenancy)
+- **AND** the mutation MUST be rejected with HTTP 404 (the schema is not in `jan`'s tenant scope and is therefore unresolvable for the purpose of authorizing a mutation) OR HTTP 403 (if the schema is resolvable but `checkSchemaManagePermission` denies)
+- **AND** no schema record MUST be modified
+
+#### Scenario: Tenant user attempts to DELETE a schema owned by another tenant
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schema `interne-notities` exists with `organisation = 'org-uuid-2'`
+- **WHEN** `jan` calls `DELETE /api/schemas/interne-notities`
+- **THEN** the underlying lookup MUST be `SchemaMapper::find('interne-notities')` with default `_multitenancy: true`
+- **AND** the mutation MUST be rejected (404 or 403 per `checkSchemaManagePermission`)
+- **AND** no schema record MUST be deleted
+
+#### Scenario: Tenant user attempts to UPLOAD-AS-UPDATE a schema owned by another tenant
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schema `bezwaarschriften` exists with `organisation = 'org-uuid-2'`
+- **WHEN** `jan` calls `POST /api/schemas/bezwaarschriften/upload` with a JSON body
+- **THEN** the underlying existing-schema lookup MUST be `SchemaMapper::find($id)` with default `_multitenancy: true`
+- **AND** the mutation MUST be rejected (the existing-schema branch fails to resolve, OR the manage-permission check denies)
+
+#### Scenario: Unknown schema ref returns 404 regardless of tenancy state
+- **GIVEN** no schema with ref `does-not-exist` is persisted
+- **WHEN** any caller (tenant user, admin, or background job) invokes `AggregationRunner::loadSchema(schemaRef: 'does-not-exist')`
+- **THEN** `SchemaMapper::find('does-not-exist', _multitenancy: false)` MUST throw `DoesNotExistException`
+- **AND** the runner MUST rethrow as `RuntimeException` with message `Schema "does-not-exist" not found.`
+- **AND** `AggregationController` MUST translate that into HTTP 404
+
+#### Scenario: Object-row data remains tenant-isolated independently of metadata read
+- **GIVEN** user `jan` has active organisation `org-uuid-1`
+- **AND** schema `meldingen` is resolvable to `jan` via the metadata-read bypass (regardless of the schema's own `organisation`)
+- **WHEN** `jan` lists objects under that schema (`GET /api/objects/{register}/meldingen`)
+- **THEN** the OBJECT-row query MUST be tenant-filtered by `MultiTenancyTrait` (see the existing object-row multi-tenancy requirement)
+- **AND** only objects with `_organisation = 'org-uuid-1'` (plus RBAC matches) MUST be returned
+- **AND** schema-definition metadata reads (now bypassing tenancy) MUST NOT widen object-row access in any way
+
+#### Scenario: The metadata-read bypass MUST NOT change the in-memory mapper default
+- **GIVEN** a new caller is added that calls `SchemaMapper::find($id)` without specifying `_multitenancy`
+- **THEN** the call MUST continue to use the default `_multitenancy: true` (the safe-for-mutation default)
+- **AND** the new caller MUST explicitly opt into `_multitenancy: false` if it is a metadata-read path, per this requirement
+
+### Requirement: The system MUST provide a public self-service login and logout surface with brute-force protection
+
+`UserController` MUST expose `login` and `logout` as `@PublicPage` endpoints that complement the Consumer/API authentication methods with an interactive, session-based self-service flow. `login` MUST: validate and sanitize credentials via `SecurityService::validateLoginCredentials()`; enforce per-username and per-IP rate limiting via `SecurityService::checkLoginRateLimit()` (returning HTTP 429 with `retry_after`/`lockout_until` and applying any progressive delay); authenticate via `IUserManager::checkPassword()`; reject disabled accounts; record success/failure via `SecurityService`; on success call `IUserSession::setUser()` and return the sanitized user data with `session_created: true`. A pre-auth memory guard MUST return HTTP 503 when usage already exceeds 80% of the memory limit. Failed authentication MUST return a generic HTTP 401 ("Invalid username or password") that does not reveal whether the username exists. `logout` MUST end the session via `IUserSession::logout()`. Every response MUST pass through `SecurityService::addSecurityHeaders()`.
+
+#### Scenario: Successful login creates a session
+- **GIVEN** valid credentials for an enabled user that is not rate-limited
+- **WHEN** `login` processes the request
+- **THEN** the user MUST be set on the session via `IUserSession::setUser()`
+- **AND** the response MUST contain `{message: "Login successful", user, session_created: true}` with security headers
+
+#### Scenario: Rate limit returns 429
+- **GIVEN** the username/IP combination is over the failed-attempt threshold
+- **WHEN** `login` checks `SecurityService::checkLoginRateLimit()`
+- **THEN** the response MUST be HTTP 429 with `retry_after` / `lockout_until`
+- **AND** any specified progressive delay MUST be applied before responding
+
+#### Scenario: Failure does not leak username existence
+- **GIVEN** an invalid password (or unknown username)
+- **WHEN** authentication fails
+- **THEN** the response MUST be a generic HTTP 401 "Invalid username or password"
+- **AND** the failed attempt MUST be recorded via `SecurityService::recordFailedLoginAttempt()`
+
+#### Scenario: Disabled account is rejected
+- **GIVEN** valid credentials for a disabled account
+- **THEN** the response MUST be HTTP 401 "Account is disabled" and the failure MUST be recorded
+
+### Requirement: The system MUST let an authenticated user manage their own profile, credentials, and avatar
+
+`UserController` MUST provide self-service profile management gated by an authenticated session (HTTP 401 when `UserService::getCurrentUser()` is null). `me` MUST return the current user's profile (`UserService::buildUserDataArray()`). `updateMe` MUST sanitize the payload, strip leading-underscore internal keys and the immutable `id`/`uid`/`created` fields, and persist via `UserService::updateUserProperties()`. `changePassword` MUST require `currentPassword` and `newPassword`, apply login rate limiting, delegate to `UserService::changePassword()`, and on a 403 ("incorrect current password") record a failed attempt for brute-force protection. `uploadAvatar` MUST read the raw request body, reject an empty body with HTTP 400, and delegate to `UserService::uploadAvatar()`; `deleteAvatar` MUST delegate to `UserService::deleteAvatar()`. All responses MUST carry security headers.
+
+#### Scenario: Unauthenticated access is rejected
+- **GIVEN** no authenticated session
+- **WHEN** any of `me`, `updateMe`, `changePassword`, `uploadAvatar`, `deleteAvatar` is called
+- **THEN** the response MUST be HTTP 401 with `{error: "Not authenticated"}`
+
+#### Scenario: Profile update drops immutable and internal fields
+- **GIVEN** an `updateMe` payload containing `id`, `uid`, `created`, and `_internal`
+- **WHEN** the controller prepares the data
+- **THEN** those keys MUST be removed before `UserService::updateUserProperties()` is called
+- **AND** the remaining values MUST be sanitized via `SecurityService::sanitizeInput()`
+
+#### Scenario: Wrong current password is rate-limit tracked
+- **GIVEN** `changePassword` with an incorrect `currentPassword` (service throws with code 403)
+- **THEN** the response MUST surface the 403
+- **AND** a failed attempt MUST be recorded via `SecurityService::recordFailedLoginAttempt()` with reason `password_change_incorrect`
+
+#### Scenario: Avatar upload requires a body
+- **GIVEN** an `uploadAvatar` request with an empty body
+- **THEN** the response MUST be HTTP 400 with `{error: "No image data provided"}`
+
+### Requirement: The system MUST provide personal-data, activity, notification, token, and account-deactivation self-service
+
+`UserController` MUST expose the remaining authenticated self-service operations, each rejecting an unauthenticated caller with HTTP 401 and carrying security headers:
+
+- `exportData` (GDPR) MUST return the user's personal data as a downloadable JSON attachment (`DataDownloadResponse`, filename `openregister-export-{uid}-{date}.json`); a rate-limit (service code 429) MUST surface as HTTP 429.
+- `getActivity` MUST return paginated personal activity history (`_limit`/`_offset`, optional `type`/`_from`/`_to` filters).
+- `getNotificationPreferences` / `updateNotificationPreferences` MUST read and write the user's notification preferences (internal `_`-prefixed keys stripped on write; invalid input → HTTP 400).
+- `listTokens`, `createToken`, `revokeToken` MUST manage the user's personal API tokens; `createToken` MUST require a non-empty `name` (HTTP 400 otherwise) and return HTTP 201.
+- `requestDeactivation`, `getDeactivationStatus`, `cancelDeactivation` MUST drive the account-deactivation lifecycle; a conflicting request (service code 409) MUST surface as HTTP 409.
+
+#### Scenario: Personal data export is a download
+- **GIVEN** an authenticated user calls `exportData`
+- **WHEN** the export is generated
+- **THEN** the response MUST be a `DataDownloadResponse` with `application/json` and filename `openregister-export-{uid}-{date}.json`
+
+#### Scenario: Token creation requires a name
+- **GIVEN** a `createToken` request with an empty `name`
+- **THEN** the response MUST be HTTP 400 with `{error: "Token name is required"}`
+- **AND** a valid request MUST return HTTP 201 with the created token
+
+#### Scenario: Deactivation conflict
+- **GIVEN** `requestDeactivation` when a request already exists (service throws code 409)
+- **THEN** the response MUST be HTTP 409 with the service's conflict payload
+
+#### Scenario: Notification preference update rejects invalid input
+- **GIVEN** `updateNotificationPreferences` with invalid input (service throws `InvalidArgumentException`)
+- **THEN** the response MUST be HTTP 400 with the exception message
+
+### Requirement: The system MUST let a user manage their own GitHub personal access token without exposing it
+
+`UserSettingsController` MUST provide per-user GitHub PAT management, each endpoint requiring an authenticated session (HTTP 401 otherwise). `getGitHubTokenStatus` MUST report `{hasToken, isValid, message}` and MUST NOT return the token value itself; when a token exists it MUST be validated via `GitHubHandler::validateToken()`. `setGitHubToken` MUST require a non-empty `token`, validate it via `GitHubHandler` before considering it saved, and reject an invalid token with HTTP 400 ("Invalid GitHub token"). `removeGitHubToken` MUST clear the user's token. The token MUST be stored and validated per `userId` so one user's token is never resolvable by another.
+
+#### Scenario: Status never echoes the token
+- **GIVEN** the user has a stored GitHub token
+- **WHEN** `getGitHubTokenStatus` is called
+- **THEN** the response MUST contain only `{hasToken: true, isValid, message}` and MUST NOT contain the token string
+
+#### Scenario: Invalid token is rejected on save
+- **GIVEN** a `setGitHubToken` request whose token fails `GitHubHandler::validateToken()`
+- **THEN** the response MUST be HTTP 400 with `{error: "Invalid GitHub token"}`
+- **AND** an empty/missing token MUST return HTTP 400 with `{error: "Token is required"}`
+
+#### Scenario: Token operations require authentication
+- **GIVEN** no authenticated session
+- **WHEN** any of `getGitHubTokenStatus`, `setGitHubToken`, `removeGitHubToken` is called
+- **THEN** the response MUST be HTTP 401 with `{error: "User not authenticated"}`
+
+### Requirement: Writes without an active user session MUST be attributed to a system identifier
+When an OpenRegister object is created via `ObjectService::saveObject()` and `IUserSession::getUser()` returns `null` (cron job, queue worker, internal service call), the system MUST set `_owner` on the new row to a configured system identifier instead of leaving it empty. The identifier is read from the `openregister.systemUserId` app-config key. The default value is `__system__`, which Nextcloud's user-ID validator rejects for real user creation, guaranteeing the identifier cannot collide with any logged-in user.
+
+#### Scenario: Cron-job write gets system owner
+- **GIVEN** a background job (no `IUserSession` user) calls `ObjectService::saveObject(...)` on a register/schema it is allowed to write
+- **WHEN** `SaveObject::prepareObjectForCreation()` runs
+- **THEN** the persisted `ObjectEntity` MUST have `_owner = '__system__'` (or the configured `openregister.systemUserId` value)
+- **AND** the object MUST still receive an `_organisation` value via the existing `OrganisationService::getOrganisationForNewEntity()` fallback to the default organisation
+
+#### Scenario: Logged-in writes are unchanged
+- **GIVEN** a user `alice` is in the active `IUserSession`
+- **WHEN** `SaveObject::prepareObjectForCreation()` runs
+- **THEN** `_owner` MUST be set to `alice` (NOT the system identifier)
+
+#### Scenario: Operator can override the system identifier
+- **GIVEN** an operator sets `openregister.systemUserId` to `cron-bot` via OCC or app-config
+- **WHEN** a session-less write happens
+- **THEN** the persisted row MUST have `_owner = 'cron-bot'`
+
+### Requirement: System-owned rows MUST be visible to admin readers in the RBAC filter
+Both `MagicRbacHandler::applyRbacFilters()` and `MagicRbacHandler::buildRbacConditionsSql()` MUST treat rows where `_owner` equals the configured system identifier as visible to:
+- any user in the `admin` Nextcloud group (in addition to the existing full RBAC bypass for admins), AND
+- any user in any group listed in `openregister.systemReaderGroups` (comma-separated, default empty).
+
+For other users, system-owned rows MUST remain subject to the usual RBAC rule evaluation. The organisation/multitenancy filter is NOT modified — system rows MUST carry an `_organisation` and tenant boundaries hold independently of this carve-out.
+
+#### Scenario: Admin lists call_log and sees system-written rows
+- **GIVEN** a `call_log` row exists with `_owner = '__system__'` and `_organisation = <default-org-uuid>`
+- **AND** admin user has the default-org-uuid as their active organisation
+- **WHEN** admin GETs `/api/objects/openregister/api/objects/openconnector/call_log`
+- **THEN** the response `total` MUST include the system-written row
+- **AND** the row MUST appear in `results[]`
+
+#### Scenario: Non-admin without reader group does not see system rows from other authorization rules
+- **GIVEN** user `bob` is not in `admin` and not in any group listed in `openregister.systemReaderGroups`
+- **AND** the schema's `authorization.read` rule does NOT grant `bob` access by group
+- **AND** a row exists with `_owner = '__system__'`
+- **WHEN** `bob` lists that register/schema
+- **THEN** the response MUST NOT include the system-owned row (only rows matching `_owner = 'bob'` or the schema's group rules, exactly as before)
+
+#### Scenario: Configured reader-group member sees system rows
+- **GIVEN** `openregister.systemReaderGroups = "log-readers"` and user `carol` is in `log-readers`
+- **AND** a row exists with `_owner = '__system__'` in carol's active organisation
+- **WHEN** `carol` lists the schema
+- **THEN** the system row MUST be visible
+
+#### Scenario: Cross-organisation isolation still holds
+- **GIVEN** admin-of-org-A and a system-owned row exists in org-B
+- **AND** admin bypass is disabled (SaaS mode) so admin cannot see other orgs
+- **WHEN** admin-of-org-A lists the schema
+- **THEN** the row MUST NOT appear (the organisation filter excludes it before RBAC evaluates)
+
+### Requirement: The system identifier MUST be discoverable via a single service method
+A dedicated service method MUST expose the system identifier so that both `SaveObject` and `MagicRbacHandler` read the same value. The method MUST read `openregister.systemUserId` via `IAppConfig`, falling back to the constant default `__system__` when the key is unset or empty. The companion method MUST return the configured reader groups as a normalised `string[]` (trimmed, no empty entries).
+
+#### Scenario: Default identifier when unset
+- **GIVEN** `openregister.systemUserId` is unset
+- **WHEN** the service method is called
+- **THEN** it MUST return `__system__`
+
+#### Scenario: Reader-groups parse
+- **GIVEN** `openregister.systemReaderGroups = " log-readers , audit-readers ,, "`
+- **WHEN** the reader-groups method is called
+- **THEN** it MUST return `['log-readers', 'audit-readers']` (trimmed, empties removed)
+
+### Requirement: JWT verification algorithm is pinned server-side
+
+When verifying a JWT presented for authorization, OpenRegister SHALL determine
+the verification algorithm exclusively from the consumer's stored
+`authorizationConfiguration`. It SHALL NOT fall back to the algorithm declared
+in the attacker-supplied JWT header. If the consumer configuration does not pin
+an algorithm, the token SHALL be rejected.
+
+#### Scenario: Algorithm-confusion attack is rejected
+
+- **WHEN** a consumer is configured for an asymmetric algorithm (RS/PS) with an
+  RSA public key, and no explicit `algorithm` override
+- **AND** an attacker submits a token with header `alg: HS256` signed using the
+  public key as an HMAC secret
+- **THEN** verification fails and the request is not authenticated
+
+#### Scenario: Header algorithm must match the pinned class
+
+- **WHEN** the pinned algorithm class is asymmetric (RS/PS)
+- **AND** a presented token's header `alg` is an HMAC algorithm (or vice versa)
+- **THEN** the token is rejected before signature verification
+
+#### Scenario: Asymmetric tokens are verified asymmetrically
+
+- **WHEN** a consumer is configured for RS256 with a valid RSA public key
+- **AND** a correctly RS256-signed token is presented
+- **THEN** the signature is verified with the public key via asymmetric
+  verification (not HMAC) and authentication succeeds
+
+### Requirement: Basic-auth header parsing is defensive
+
+Parsing of an HTTP Basic authorization header SHALL guard against malformed
+base64 input and SHALL preserve passwords that contain a colon.
+
+#### Scenario: Malformed basic header fails cleanly
+
+- **WHEN** a Basic auth header contains invalid base64
+- **THEN** the request fails authentication without raising a runtime error
+
+#### Scenario: Colon in password is preserved
+
+- **WHEN** a Basic auth credential's password contains one or more `:` characters
+- **THEN** the full password (after the first `:`) is used, not a truncated prefix
 
 ## Current Implementation Status
 - **Fully implemented:**

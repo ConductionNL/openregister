@@ -37,6 +37,10 @@ export class ObjectEntity implements TObject {
 
 	[key: string]: unknown
 
+	/**
+	 * @param object
+	 * @spec exclude Entity model field-copy boilerplate: copies typed @self fields off the input with || defaults plus an extra-key passthrough; no standalone behavioural contract (validate() carries the schema contract).
+	 */
 	constructor(object: TObject) {
 		this['@self'] = {
 			id: object['@self']?.id || '',

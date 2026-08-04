@@ -5,6 +5,9 @@
  *
  * Strategy for vectorizing OpenRegister objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -84,6 +87,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\ObjectEntity[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\ObjectEntity>
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function fetchEntities(array $options): array
     {
@@ -141,11 +146,16 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @return (int|string)[][] Array with single item containing serialized object
      *
      * @psalm-return list{array{text: string, index: 0}}
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function extractVectorizationItems($entity): array
     {
         // Get object data.
-        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
+        $objectData = $entity->jsonSerialize();
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        }
 
         // Get vectorization config.
         $config = $this->settingsService->getObjectSettingsOnly();
@@ -193,11 +203,20 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex metadata extraction with multiple fallbacks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field extraction paths
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function prepareVectorMetadata($entity, array $item): array
     {
-        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
-        $objectId   = ($objectData['id'] ?? null) !== null ? $objectData['id'] : 'unknown';
+        $objectData = $entity->jsonSerialize();
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        }
+
+        $objectId = 'unknown';
+        if (($objectData['id'] ?? null) !== null) {
+            $objectId = $objectData['id'];
+        }
 
         // DEBUG: Log what we're receiving.
         $this->logger->debug(
@@ -267,6 +286,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $objectData Object data
      *
      * @return array<string> Array of @self keys
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function extractSelfKeys(array $objectData): array
     {
@@ -289,6 +310,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple field type checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple field validation paths
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function extractFirstStringField(array $objectData): ?string
     {
@@ -321,10 +344,15 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param mixed $entity ObjectEntity
      *
      * @return string|int Object ID
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getEntityIdentifier($entity)
     {
-        $objectData = is_array($entity) === true ? $entity : $entity->jsonSerialize();
+        $objectData = $entity->jsonSerialize();
+        if (is_array($entity) === true) {
+            $objectData = $entity;
+        }
 
         if (($objectData['id'] ?? null) !== null) {
             return $objectData['id'];
@@ -340,6 +368,8 @@ class ObjectVectorizationStrategy implements VectorizationStrategyInterface
      * @param array $config Vectorization configuration
      *
      * @return false|string Serialized text
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function serializeObject(array $object, array $config): string|false
     {

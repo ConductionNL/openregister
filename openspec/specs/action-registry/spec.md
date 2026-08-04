@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # action-registry Specification
 
 ## Purpose
+
+@e2e exclude backend service/entity — covered by PHPUnit
 TBD - created by archiving change action-registry. Update Purpose after archive.
 ## Requirements
 ### Requirement: Action MUST be a first-class Nextcloud database entity with full CRUD lifecycle

@@ -5,6 +5,9 @@
  *
  * Service for publishing OpenRegister activity events to the Nextcloud activity stream.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -43,7 +46,7 @@ class ActivityService
      * @param IURLGenerator   $urlGenerator    The URL generator.
      * @param LoggerInterface $logger          The logger.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private IManager $activityManager,
@@ -60,7 +63,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishObjectCreated(ObjectEntity $object): void
     {
@@ -89,7 +92,7 @@ class ActivityService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) — $oldObject reserved for future diff support
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishObjectUpdated(ObjectEntity $newObject, ?ObjectEntity $oldObject=null): void
     {
@@ -115,7 +118,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishObjectDeleted(ObjectEntity $object): void
     {
@@ -140,7 +143,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishRegisterCreated(Register $register): void
     {
@@ -166,7 +169,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishRegisterUpdated(Register $register): void
     {
@@ -192,7 +195,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishRegisterDeleted(Register $register): void
     {
@@ -217,7 +220,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishSchemaCreated(Schema $schema): void
     {
@@ -243,7 +246,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishSchemaUpdated(Schema $schema): void
     {
@@ -269,7 +272,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function publishSchemaDeleted(Schema $schema): void
     {
@@ -294,7 +297,7 @@ class ActivityService
      *
      * @return string The absolute URL to the object.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function buildObjectLink(ObjectEntity $object): string
     {
@@ -313,7 +316,7 @@ class ActivityService
      *
      * @return string The absolute URL to the register.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function buildRegisterLink(Register $register): string
     {
@@ -329,7 +332,7 @@ class ActivityService
      *
      * @return string The absolute URL to the schema.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function buildSchemaLink(Schema $schema): string
     {
@@ -355,7 +358,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -445,7 +448,7 @@ class ActivityService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function publishEvent(
         string $subject,
@@ -482,7 +485,7 @@ class ActivityService
      *
      * @return string The resolved title.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function resolveTitle(?string $primary, ?string $fallback): string
     {

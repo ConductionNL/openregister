@@ -14,6 +14,9 @@
  * - CRUD operations on objects
  * - Audit trails and data aggregation
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -90,6 +93,8 @@ class UploadService
      *
      * @throws \Exception If file processing fails
      * @throws \GuzzleHttp\Exception\GuzzleException If URL fetching fails
+     *
+     * @spec exclude Source-dispatch helper routing to per-source (file/url/json) processors; no business rule of its own.
      */
     public function getUploadedJson(array $data): array | JSONResponse
     {
@@ -241,9 +246,18 @@ class UploadService
      */
     private function getJSONfromURL(string $url): array | JSONResponse
     {
+        // Anti-SSRF: reject non-public/loopback/private hosts before fetching (SEC-SVC-1).
+        try {
+            SecurityService::assertSafeFetchUrl($url);
+        } catch (\InvalidArgumentException $e) {
+            return new JSONResponse(data: ['error' => 'URL is not allowed: '.$e->getMessage()], statusCode: 400);
+        }
+
         try {
             // Step 1: Make HTTP GET request to fetch data from URL.
-            $response = $this->client->request('GET', $url);
+            // Redirects are disabled so the validated host cannot be swapped
+            // for a private/internal target via a 3xx Location header.
+            $response = $this->client->request('GET', $url, ['allow_redirects' => false]);
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             // Return error response if HTTP request fails.
             $errorMsg = 'Failed to do a GET api-call on url: '.$url.' '.$e->getMessage();

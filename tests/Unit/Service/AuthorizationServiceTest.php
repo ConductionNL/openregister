@@ -45,6 +45,27 @@ class AuthorizationServiceTest extends TestCase
 
     private AuthorizationService $service;
 
+    /**
+     * Invoke a protected authorize* method on the service under test.
+     *
+     * The authorize{Jwt,OAuth,Basic,ApiKey}() methods are intentionally
+     * `protected` in the service (only the public dispatcher is callable
+     * from outside). These unit tests exercise each scheme in isolation,
+     * so we reach the protected method through reflection rather than
+     * weakening production visibility.
+     *
+     * @param string $method The protected method name.
+     * @param mixed  ...$args Positional arguments for the method.
+     *
+     * @return mixed The method's return value.
+     */
+    private function callAuth(string $method, ...$args)
+    {
+        $ref = new \ReflectionMethod($this->service, $method);
+        $ref->setAccessible(true);
+        return $ref->invokeArgs($this->service, $args);
+    }
+
     protected function setUp(): void
     {
         $this->userManager = $this->createMock(IUserManager::class);
@@ -303,7 +324,7 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('admin:password');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
     }
 
     public function testAuthorizeBasicThrowsOnInvalidCredentials(): void
@@ -317,7 +338,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectExceptionMessage('Invalid username or password');
 
         $header = 'Basic ' . base64_encode('wrong:creds');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
     }
 
     public function testAuthorizeBasicWithUsersAndGroupsParams(): void
@@ -336,17 +357,19 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('testuser:testpass');
-        $this->service->authorizeBasic($header, ['testuser'], ['testgroup']);
+        $this->callAuth('authorizeBasic',$header, ['testuser'], ['testgroup']);
     }
 
     public function testAuthorizeBasicWithPasswordContainingColon(): void
     {
         $user = $this->createMock(IUser::class);
 
+        // The full password after the first colon is preserved (explode limit 2),
+        // not truncated at the second colon.
         $this->userManager
             ->expects($this->once())
             ->method('checkPassword')
-            ->with('admin', 'pass')
+            ->with('admin', 'pass:extra')
             ->willReturn($user);
 
         $this->userSession
@@ -355,7 +378,27 @@ class AuthorizationServiceTest extends TestCase
             ->with($user);
 
         $header = 'Basic ' . base64_encode('admin:pass:extra');
-        $this->service->authorizeBasic($header);
+        $this->callAuth('authorizeBasic',$header);
+    }
+
+    public function testAuthorizeBasicRejectsMalformedBase64(): void
+    {
+        // Invalid base64 (strict) must fail authentication, not raise a TypeError.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic @@not-valid-base64@@');
+    }
+
+    public function testAuthorizeBasicRejectsMissingColon(): void
+    {
+        // A decoded credential with no colon separator is malformed.
+        $this->userManager->expects($this->never())->method('checkPassword');
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->callAuth('authorizeBasic', 'Basic ' . base64_encode('nocolonhere'));
     }
 
     public function testAuthorizeBasicEmptyDetailsOnFailure(): void
@@ -366,7 +409,7 @@ class AuthorizationServiceTest extends TestCase
 
         try {
             $header = 'Basic ' . base64_encode('bad:creds');
-            $this->service->authorizeBasic($header);
+            $this->callAuth('authorizeBasic',$header);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -384,7 +427,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('isLoggedIn')
             ->willReturn(true);
 
-        $this->service->authorizeOAuth('Bearer sometoken');
+        $this->callAuth('authorizeOAuth','Bearer sometoken');
         $this->assertTrue(true);
     }
 
@@ -393,7 +436,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('Token sometoken');
+        $this->callAuth('authorizeOAuth','Token sometoken');
     }
 
     public function testAuthorizeOAuthThrowsWhenNotLoggedIn(): void
@@ -406,7 +449,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Not authorized');
 
-        $this->service->authorizeOAuth('Bearer sometoken');
+        $this->callAuth('authorizeOAuth','Bearer sometoken');
     }
 
     public function testAuthorizeOAuthThrowsWithBasicPrefix(): void
@@ -414,7 +457,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('Basic dXNlcjpwYXNz');
+        $this->callAuth('authorizeOAuth','Basic dXNlcjpwYXNz');
     }
 
     public function testAuthorizeOAuthThrowsWithEmptyString(): void
@@ -422,13 +465,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid method');
 
-        $this->service->authorizeOAuth('');
+        $this->callAuth('authorizeOAuth','');
     }
 
     public function testAuthorizeOAuthInvalidMethodDetailsContainReason(): void
     {
         try {
-            $this->service->authorizeOAuth('Token abc');
+            $this->callAuth('authorizeOAuth','Token abc');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -443,7 +486,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn(false);
 
         try {
-            $this->service->authorizeOAuth('Bearer sometoken');
+            $this->callAuth('authorizeOAuth','Bearer sometoken');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -458,7 +501,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('isLoggedIn')
             ->willReturn(true);
 
-        $this->service->authorizeOAuth('Bearertoken');
+        $this->callAuth('authorizeOAuth','Bearertoken');
         $this->assertTrue(true);
     }
 
@@ -482,7 +525,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeApiKey('valid-key-123', $keys);
+        $this->callAuth('authorizeApiKey','valid-key-123', $keys);
     }
 
     public function testAuthorizeApiKeyThrowsForInvalidKey(): void
@@ -490,7 +533,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('bad-key', ['valid-key' => 'admin']);
+        $this->callAuth('authorizeApiKey','bad-key', ['valid-key' => 'admin']);
     }
 
     public function testAuthorizeApiKeyThrowsWhenUserNotFound(): void
@@ -506,7 +549,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('valid-key', $keys);
+        $this->callAuth('authorizeApiKey','valid-key', $keys);
     }
 
     public function testAuthorizeApiKeyWithMultipleKeys(): void
@@ -529,7 +572,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeApiKey('key-two', $keys);
+        $this->callAuth('authorizeApiKey','key-two', $keys);
     }
 
     public function testAuthorizeApiKeyWithEmptyKeysMap(): void
@@ -537,13 +580,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('Invalid API key');
 
-        $this->service->authorizeApiKey('any-key', []);
+        $this->callAuth('authorizeApiKey','any-key', []);
     }
 
     public function testAuthorizeApiKeyEmptyDetailsOnInvalidKey(): void
     {
         try {
-            $this->service->authorizeApiKey('bad', ['good' => 'admin']);
+            $this->callAuth('authorizeApiKey','bad', ['good' => 'admin']);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -557,7 +600,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn(null);
 
         try {
-            $this->service->authorizeApiKey('key', ['key' => 'ghost']);
+            $this->callAuth('authorizeApiKey','key', ['key' => 'ghost']);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -573,7 +616,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('No token has been provided');
 
-        $this->service->authorizeJwt('Bearer ');
+        $this->callAuth('authorizeJwt','Bearer ');
     }
 
     public function testAuthorizeJwtThrowsWhenEmptyBearer(): void
@@ -581,13 +624,13 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('No token has been provided');
 
-        $this->service->authorizeJwt('Bearer');
+        $this->callAuth('authorizeJwt','Bearer');
     }
 
     public function testAuthorizeJwtEmptyTokenDetails(): void
     {
         try {
-            $this->service->authorizeJwt('Bearer ');
+            $this->callAuth('authorizeJwt','Bearer ');
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertSame([], $e->getDetails());
@@ -608,7 +651,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenEmptyIssuer(): void
@@ -626,7 +669,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtNoIssuerDetailsContainReason(): void
@@ -638,7 +681,7 @@ class AuthorizationServiceTest extends TestCase
         $token = $this->buildHmacJwt($payload, $secret);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -664,7 +707,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('not supported');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtInvalidAlgorithmDetailsContainReason(): void
@@ -680,7 +723,7 @@ class AuthorizationServiceTest extends TestCase
         $this->consumerMapper->method('findAll')->willReturn([$consumer]);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('algorithm', $e->getDetails());
@@ -707,7 +750,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('issuer was not found');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs256(): void
@@ -740,7 +783,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs384(): void
@@ -773,7 +816,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithHs512(): void
@@ -806,7 +849,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenSignatureInvalid(): void
@@ -831,7 +874,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('could not be validated');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSignatureInvalidDetailsContainReason(): void
@@ -853,7 +896,7 @@ class AuthorizationServiceTest extends TestCase
             ->willReturn([$consumer]);
 
         try {
-            $this->service->authorizeJwt('Bearer ' . $token);
+            $this->callAuth('authorizeJwt','Bearer ' . $token);
             $this->fail('Expected AuthenticationException');
         } catch (AuthenticationException $e) {
             $this->assertArrayHasKey('reason', $e->getDetails());
@@ -882,7 +925,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('expired');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenTokenMissingIat(): void
@@ -904,7 +947,7 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('no time of creation');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtSucceedsWithDefaultExpiry(): void
@@ -936,7 +979,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     public function testAuthorizeJwtThrowsWhenUnsupportedAlgorithm(): void
@@ -949,7 +992,16 @@ class AuthorizationServiceTest extends TestCase
             'exp' => $now + 3600,
         ];
 
-        $token = $this->buildHmacJwt($payload, $secret, 'HS256');
+        // Token header algorithm matches the issuer's pinned algorithm (EdDSA)
+        // so the header/config mismatch guard passes and the unsupported-algorithm
+        // path is exercised. EdDSA is neither HMAC nor a supported asymmetric alg,
+        // so verification must reject it as unsupported. Built manually because the
+        // HMAC helper cannot sign a non-HMAC algorithm; the token is rejected
+        // before signature verification, so a dummy signature is sufficient.
+        $b64url = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        $token = $b64url(json_encode(['typ' => 'JWT', 'alg' => 'EdDSA']))
+            . '.' . $b64url(json_encode($payload))
+            . '.' . $b64url('dummy-signature');
         $consumer = $this->createHmacConsumer('test-unsupported', $secret, 'EdDSA');
 
         $this->consumerMapper
@@ -960,7 +1012,124 @@ class AuthorizationServiceTest extends TestCase
         $this->expectException(AuthenticationException::class);
         $this->expectExceptionMessage('not supported');
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
+    }
+
+    /**
+     * Algorithm-confusion attack: an issuer configured for an asymmetric
+     * algorithm (RS256) stores an RSA *public* key. An attacker forges an HS256
+     * token, signing it with that public key as the HMAC secret. The fix pins
+     * the algorithm server-side and rejects the header/config mismatch, so the
+     * forged token is refused rather than HMAC-verified against the public key.
+     */
+    public function testAuthorizeJwtRejectsAlgorithmConfusionHsWithAsymmetricConfig(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'confusion-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        // The "public key" is public knowledge; the attacker uses it as an HMAC
+        // secret to forge a valid-looking HS256 token.
+        $publicKey = 'public-rsa-key-material-not-secret-value-here';
+        $token = $this->buildHmacJwt($payload, $publicKey, 'HS256');
+
+        $consumer = new Consumer();
+        $consumer->setName('confusion-issuer');
+        $consumer->setUserId('admin');
+        $consumer->setAuthorizationConfiguration([
+            'publicKey' => $publicKey,
+            'algorithm' => 'RS256',
+        ]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        // Must NOT authenticate the attacker.
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
+    }
+
+    /**
+     * The verification algorithm must be pinned in the issuer configuration.
+     * When it is absent, the token is rejected rather than falling back to the
+     * attacker-supplied header algorithm.
+     */
+    public function testAuthorizeJwtRejectsWhenNoAlgorithmConfigured(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'no-alg-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        $secret = 'some-shared-secret-value-at-least-32-bytes-long';
+        $token = $this->buildHmacJwt($payload, $secret, 'HS256');
+
+        $consumer = new Consumer();
+        $consumer->setName('no-alg-issuer');
+        $consumer->setUserId('admin');
+        // No 'algorithm' pinned in the configuration.
+        $consumer->setAuthorizationConfiguration(['publicKey' => $secret]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
+    }
+
+    /**
+     * An asymmetric-configured issuer (RS256) with a matching-header token must
+     * fail closed until real asymmetric verification is implemented — it must
+     * never fall through to HMAC verification with the public key.
+     */
+    public function testAuthorizeJwtFailsClosedForAsymmetricAlgorithm(): void
+    {
+        $now = time();
+        $payload = [
+            'iss' => 'rs256-issuer',
+            'iat' => $now,
+            'exp' => $now + 3600,
+        ];
+
+        $b64url = static fn (string $raw): string => rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        $token = $b64url(json_encode(['typ' => 'JWT', 'alg' => 'RS256']))
+            . '.' . $b64url(json_encode($payload))
+            . '.' . $b64url('dummy-signature');
+
+        $consumer = new Consumer();
+        $consumer->setName('rs256-issuer');
+        $consumer->setUserId('admin');
+        $consumer->setAuthorizationConfiguration([
+            'publicKey' => 'some-rsa-public-key',
+            'algorithm' => 'RS256',
+        ]);
+
+        $this->consumerMapper
+            ->expects($this->once())
+            ->method('findAll')
+            ->willReturn([$consumer]);
+
+        $this->userSession->expects($this->never())->method('setUser');
+
+        $this->expectException(AuthenticationException::class);
+        $this->expectExceptionMessage('not supported');
+
+        $this->callAuth('authorizeJwt', 'Bearer ' . $token);
     }
 
     public function testAuthorizeJwtWithMultipleConsumersReturnsFirst(): void
@@ -995,7 +1164,7 @@ class AuthorizationServiceTest extends TestCase
             ->method('setUser')
             ->with($user);
 
-        $this->service->authorizeJwt('Bearer ' . $token);
+        $this->callAuth('authorizeJwt','Bearer ' . $token);
     }
 
     // ==========================================

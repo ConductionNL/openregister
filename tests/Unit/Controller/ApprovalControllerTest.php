@@ -40,7 +40,8 @@ class ApprovalControllerTest extends TestCase
             $this->stepMapper,
             $this->approvalService,
             $this->userSession,
-            $logger
+            $logger,
+            $this->createMock(\OCP\IGroupManager::class)
         );
     }
 

@@ -52,8 +52,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import DatabaseOffOutline from 'vue-material-design-icons/DatabaseOffOutline.vue'
 
@@ -85,6 +84,10 @@ export default {
 
 	watch: {
 		fileId: {
+			/**
+			 * @param newVal
+			 * @spec exclude watcher refetching objects on fileId change, UI plumbing
+			 */
 			handler(newVal) {
 				if (newVal) {
 					this.fetchObjects()
@@ -99,6 +102,7 @@ export default {
 
 		/**
 		 * Fetch objects referencing this file from the API.
+		 * @spec exclude API passthrough loading file-referencing objects; object contract owned by object capability
 		 */
 		async fetchObjects() {
 			this.loading = true
@@ -132,6 +136,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} The absolute URL to the object detail page
+		 * @spec exclude computed object-detail URL builder, UI plumbing
 		 */
 		getObjectUrl(obj) {
 			return generateUrl(
@@ -149,6 +154,7 @@ export default {
 		 *
 		 * @param {object} obj The object data
 		 * @return {string} Accessible label text
+		 * @spec exclude computed aria-label display helper, UI plumbing
 		 */
 		getAriaLabel(obj) {
 			return t('openregister', '{title} in {register} / {schema}', {

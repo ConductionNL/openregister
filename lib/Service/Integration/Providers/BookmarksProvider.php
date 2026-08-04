@@ -2,14 +2,23 @@
 
 /**
  * BookmarksProvider — exposes NC Bookmarks linked to an OpenRegister
- * object via a tag convention.
+ * object via the IntegrationProvider contract.
  *
- * Bookmarks are linked by tagging them `or:{objectUuid}` in NC
- * Bookmarks. The provider queries BookmarkMapper::findAll filtered by
- * that tag; rows are normalised into the shared leaf row contract.
+ * Tier-2: backed by the `openregister_bookmark_links` table via
+ * {@see BookmarkLinkMapper}. Replaces the original tag-marker convention
+ * (`or:{objectUuid}` tag on the bookmark in NC Bookmarks) with a proper
+ * persistence layer so links survive Bookmarks tag edits and don't
+ * pollute Bookmarks' UX.
  *
- * `link-table` storage strategy — the link lives in NC Bookmarks' own
- * tag table, not in OR.
+ * Each link row caches title/url/description/tags/added so the sidebar
+ * tab can render without a per-bookmark roundtrip to NC Bookmarks; the
+ * wrapping `BookmarkLinkService` refreshes the cache lazily. Returns an
+ * empty list when Bookmarks is uninstalled.
+ *
+ * `link-table` storage strategy — the link lives in OR's own table.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -18,12 +27,9 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-bookmarks/tasks.md
+ * @spec openspec/specs/integration-bookmarks/spec.md
  */
 
 declare(strict_types=1);
@@ -32,23 +38,20 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use DateTime;
+use OCA\OpenRegister\Db\BookmarkLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IL10N;
-use OCP\IUserSession;
-use Psr\Container\ContainerInterface;
-use Throwable;
 
 class BookmarksProvider extends AbstractIntegrationProvider
 {
 
     private const REQUIRED_APP = 'bookmarks';
-    private const TAG_PREFIX   = 'or:';
 
     public function __construct(
-        private ContainerInterface $container,
+        private BookmarkLinkMapper $bookmarkLinkMapper,
         private IAppManager $appManager,
-        private IUserSession $userSession,
         private IL10N $l10n,
     ) {
     }//end __construct()
@@ -89,11 +92,22 @@ class BookmarksProvider extends AbstractIntegrationProvider
     }//end isEnabled()
 
     /**
-     * List bookmarks tagged with `or:{objectId}` for the current user.
+     * List bookmarks linked to an OR object.
      *
-     * BookmarkMapper::findAll honours QueryParameters::setTags; we
-     * inject the per-object tag and normalise the response rows into
-     * the registry leaf row shape (id, title, description, url, tags).
+     * Reads link rows from `openregister_bookmark_links` and normalises
+     * each into the registry leaf row shape consumed by CnBookmarksTab +
+     * CnBookmarksCard. Returns an empty array when Bookmarks is
+     * uninstalled.
+     *
+     * Payload contract per row:
+     *   id          : string — NC Bookmarks numeric id, cast to string
+     *   bookmarkId  : int    — NC Bookmarks numeric id
+     *   title       : string — bookmark title (falls back to url)
+     *   description : string — user-entered description
+     *   url         : string — canonical URL
+     *   tags        : string[] — Bookmarks-side tags (`or:*` stripped)
+     *   added       : int|null — unix timestamp the bookmark was saved
+     *   linkId      : int    — OR link-row id
      *
      * @param string              $register Register slug or numeric id (unused).
      * @param string              $schema   Schema slug or numeric id (unused).
@@ -101,6 +115,11 @@ class BookmarksProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (unused).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter) register/schema/filters
+     *     are part of the IntegrationProvider::list() contract.
+     *
+     * @spec openspec/specs/integration-bookmarks/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -108,48 +127,62 @@ class BookmarksProvider extends AbstractIntegrationProvider
             return [];
         }
 
-        $user = $this->userSession->getUser();
-        if ($user === null) {
+        $links = $this->bookmarkLinkMapper->findByObjectUuid($objectId);
+        if ($links === []) {
             return [];
         }
 
-        $userId = $user->getUID();
-        $tag    = self::TAG_PREFIX.$objectId;
+        $out = [];
+        foreach ($links as $link) {
+            $bookmarkId = (int) $link->getBookmarkId();
+            $addedAt    = $link->getAddedAt();
 
-        try {
-            $mapper          = $this->container->get('OCA\\Bookmarks\\Db\\BookmarkMapper');
-            $queryParameters = new \OCA\Bookmarks\QueryParameters();
-            $queryParameters->setTags([$tag]);
-            $bookmarks = $mapper->findAll($userId, $queryParameters);
-        } catch (Throwable $e) {
-            // Bookmarks app schema mismatch or missing tag column on
-            // older installs degrades to an empty list — AD-23.
-            return [];
+            $addedTimestamp = null;
+            if ($addedAt instanceof DateTime) {
+                $addedTimestamp = $addedAt->getTimestamp();
+            }
+
+            $out[] = [
+                'id'          => (string) $bookmarkId,
+                'bookmarkId'  => $bookmarkId,
+                'title'       => (string) ($link->getTitle() ?? ($link->getUrl() ?? '')),
+                'description' => (string) ($link->getDescription() ?? ''),
+                'url'         => (string) ($link->getUrl() ?? ''),
+                'tags'        => ($link->getTags() ?? []),
+                'added'       => $addedTimestamp,
+                'linkId'      => $link->getId(),
+            ];
         }
 
-        return array_map(
-                static function ($bookmark): array {
-                    $arr = method_exists($bookmark, 'toArray') === true ? $bookmark->toArray() : (array) $bookmark;
-                    return [
-                        'id'          => (string) ($arr['id'] ?? ''),
-                        'title'       => (string) ($arr['title'] ?? ($arr['url'] ?? '')),
-                        'description' => (string) ($arr['description'] ?? ''),
-                        'url'         => (string) ($arr['url'] ?? ''),
-                        'tags'        => $arr['tags'] ?? [],
-                        'added'       => isset($arr['added']) === true ? (int) $arr['added'] : null,
-                    ];
-                },
-                $bookmarks
-                );
+        return $out;
     }//end list()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+
+        $status = 'unavailable';
+        if ($installed === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Bookmarks app is not installed';
+        if ($installed === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Bookmarks app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

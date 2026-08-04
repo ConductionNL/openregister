@@ -6,6 +6,9 @@
  * Handles object export, import, and file download operations.
  * Coordinates between controller and specialized export/import services.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Objects\Handlers
  *
@@ -17,7 +20,7 @@
  *
  * @link https://www.OpenRegister.nl
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-15
+ * @spec openspec/specs/data-import-export/spec.md
  */
 
 declare(strict_types=1);
@@ -73,7 +76,7 @@ class ExportHandler
      * @param FileService     $fileService        File service
      * @param LoggerInterface $logger             PSR-3 logger
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -98,7 +101,7 @@ class ExportHandler
      *
      * @throws \Exception If export fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function export(
         Register $register,
@@ -214,7 +217,7 @@ class ExportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Multiple file type handlers require conditional branching
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Import orchestration requires comprehensive error handling
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-15
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function import(
         Register $register,
@@ -341,7 +344,7 @@ class ExportHandler
      *
      * @throws \Exception If download fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-11
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function downloadObjectFiles(string $objectId)
     {

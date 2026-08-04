@@ -5,6 +5,9 @@
  *
  * Handles database operations for destruction list entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -168,6 +171,6 @@ class DestructionListMapper extends QBMapper
     {
         $entity->setUpdated(new DateTime());
 
-        return $this->update(objectId: $entity);
+        return $this->update(entity: $entity);
     }//end updateEntry()
 }//end class

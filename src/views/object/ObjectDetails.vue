@@ -1,8 +1,3 @@
-<script setup>
-import { translate as t } from '@nextcloud/l10n'
-import { objectStore, navigationStore } from '../../store/store.js'
-</script>
-
 <template>
 	<div class="detailContainer">
 		<div id="app-content">
@@ -64,38 +59,38 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					until {{ new Date(objectStore.objectItem.locked.expiration).toLocaleString() }}
 				</NcNoteCard>
 
-				<span><b>Uri:</b> {{ objectStore.objectItem.uri }}</span>
+				<span><b>Uri:</b> {{ objectStore.objectItem['@self']?.uri || objectStore.objectItem.uri }}</span>
 				<div class="detailGrid">
 					<div class="gridContent gridFullWidth">
 						<b>Register:</b>
-						<p>{{ objectStore.objectItem.register }}</p>
+						<p>{{ objectStore.objectItem['@self']?.register || objectStore.objectItem.register }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Schema:</b>
-						<p>{{ objectStore.objectItem.schema }}</p>
+						<p>{{ objectStore.objectItem['@self']?.schema || objectStore.objectItem.schema }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Folder:</b>
-						<p>{{ objectStore.objectItem.folder || '-' }}</p>
+						<p>{{ objectStore.objectItem['@self']?.folder || objectStore.objectItem.folder || '-' }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Updated:</b>
-						<p>{{ objectStore.objectItem.updated }}</p>
+						<p>{{ objectStore.objectItem['@self']?.updated || objectStore.objectItem.updated }}</p>
 					</div>
 					<div class="gridContent gridFullWidth">
 						<b>Created:</b>
-						<p>{{ objectStore.objectItem.created }}</p>
+						<p>{{ objectStore.objectItem['@self']?.created || objectStore.objectItem.created }}</p>
 					</div>
 				</div>
 
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
-						<BTab :title="t('openregister', 'Data')" active>
+					<AppTabs content-class="mt-3" justified>
+						<AppTab :title="t('openregister', 'Data')" active>
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
-						</BTab>
-						<BTab :title="t('openregister', 'Uses')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.objectItem?.relations && Object.keys(objectStore.objectItem.relations).length > 0">
 								<NcListItem v-for="(relation, key) in objectStore.objectItem?.relations"
 									:key="key"
@@ -114,8 +109,8 @@ import { objectStore, navigationStore } from '../../store/store.js'
 							<div v-else class="tabPanel">
 								{{ t('openregister', 'No relations found') }}
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Used by')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.relations?.length">
 								<NcListItem v-for="(relation, key) in objectStore.relations"
 									:key="key"
@@ -130,17 +125,21 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										{{ relation.uri }}
 									</template>
 								</NcListItem>
-								<BPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
-									v-model="pagination.relations.currentPage"
+								<CnPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
 									class="tabPagination"
-									:total-rows="objectStore.relations?.total"
-									:per-page="pagination.relations.limit" />
+									:current-page="pagination.relations.currentPage"
+									:total-pages="relationsTotalPages"
+									:total-items="objectStore.relations?.total"
+									:current-page-size="pagination.relations.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.relations.currentPage = $event"
+									@page-size-changed="onRelationsPageSizeChanged" />
 							</div>
 							<div v-else class="tabPanel">
 								No relations found
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Files')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Files')">
 							<NcButton @click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
 									<FolderOutline :size="20" />
@@ -190,11 +189,15 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									</template>
 								</NcListItem>
 
-								<BPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
-									v-model="pagination.files.currentPage"
+								<CnPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
 									class="tabPagination"
-									:total-rows="objectStore.files?.total"
-									:per-page="pagination.files.limit" />
+									:current-page="pagination.files.currentPage"
+									:total-pages="filesTotalPages"
+									:total-items="objectStore.files?.total"
+									:current-page-size="pagination.files.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.files.currentPage = $event"
+									@page-size-changed="onFilesPageSizeChanged" />
 							</div>
 
 							<div v-if="objectStore.files?.results?.length === 0">
@@ -208,64 +211,90 @@ import { objectStore, navigationStore } from '../../store/store.js'
 									appearance="dark"
 									name="Bijlagen aan het laden" />
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Syncs')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Syncs')">
 							<div class="tabPanel">
 								{{ t('openregister', 'No synchronizations found') }}
 							</div>
-						</BTab>
-						<BTab v-if="relationContext" title="Emails">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Emails">
 							<EmailsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Events">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Events">
 							<EventsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Contacts">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Contacts">
 							<ContactsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Deck">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Deck">
 							<DeckTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Relations">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Relations">
 							<RelationsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
+						</AppTab>
+						<AppTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
 							<!--
-								Registry-driven integration surface. One inner tab per advertised
-								IntegrationProvider (5 built-ins + xwiki + 18 leaves). OR dogfoods
-								the registry on its own object-detail page so every leaf becomes a
-								deterministic Playwright target — no consumer-app wiring needed
-								to verify a provider end-to-end.
+								Registry-driven integration surface. Renders the tabbed
+								CnIntegrationWidget (nc-vue, ADR-019/024) — one app-faithful
+								tab per advertised IntegrationProvider, with the app icon +
+								brand accent on the active tab, the bespoke per-leaf content
+								(provider.tab) in the active panel, and an NcEmptyContent
+								set-up state (app icon + "{App} not available" + docs link)
+								for any integration whose backing app is missing or
+								unconfigured (Phase J-B availability capability).
+
+								This SUPERSEDES the previous hand-rolled BTabs pills +
+								`provider.tab || CnIntegrationTab` dispatch, which rendered a
+								flat generic surface that erased each app's visual identity.
+								The widget reads the same useIntegrationRegistry() singleton
+								that OR's bootstrap (main.js) populates, so every registered
+								leaf (5 built-ins + xwiki + 18 leaves) still becomes a
+								deterministic Playwright target with no consumer-app wiring.
 							-->
-							<BTabs content-class="mt-2" pills small>
-								<BTab v-for="provider in integrationProviders"
-									:key="provider.id"
-									:title="provider.label || provider.id"
-									:title-attr="`${provider.id} (${provider.group || 'integration'})`">
-									<CnIntegrationTab
-										:integration-id="provider.id"
-										:register="String(relationContext.register)"
-										:schema="String(relationContext.schema)"
-										:object-id="String(relationContext.id)" />
-								</BTab>
-							</BTabs>
-						</BTab>
-						<BTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
+							<CnIntegrationWidget
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								:object-id="String(relationContext.id)"
+								surface="detail-page" />
+						</AppTab>
+						<!--
+							Shares (group 6.2). The tab is gated on relationContext
+							rather than rendered unconditionally: CnObjectAccessTab
+							declares register / schema / objectId as REQUIRED, and it
+							issues its first GET on mount. Rendered against a
+							half-populated object it would both throw the missing-prop
+							warnings and fire a request at
+							`/api/objects/undefined/undefined/undefined/shares`.
+
+							The component owns the scope switch as well as the grant
+							list, so this one tab is the whole per-object access
+							surface — the ceiling rule (a share never exceeds the
+							sharer's own access) and the file coupling (a grant on the
+							object also reaches the files in its folder) are enforced
+							server-side and explained in the component's own hints.
+						-->
+						<AppTab v-if="relationContext" :title="t('openregister', 'Shares')">
+							<CnObjectAccessTab
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								:object-id="String(relationContext.id)" />
+						</AppTab>
+						<AppTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails?.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails?.results"
 									:key="key"
@@ -290,17 +319,21 @@ import { objectStore, navigationStore } from '../../store/store.js'
 										</NcActionButton>
 									</template>
 								</NcListItem>
-								<BPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
-									v-model="pagination.auditTrails.currentPage"
+								<CnPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
 									class="tabPagination"
-									:total-rows="objectStore.auditTrails?.total"
-									:per-page="pagination.auditTrails.limit" />
+									:current-page="pagination.auditTrails.currentPage"
+									:total-pages="auditTrailsTotalPages"
+									:total-items="objectStore.auditTrails?.total"
+									:current-page-size="pagination.auditTrails.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.auditTrails.currentPage = $event"
+									@page-size-changed="onAuditTrailsPageSizeChanged" />
 							</div>
 							<div v-if="!objectStore.auditTrails?.results?.length">
 								No audit trails found
 							</div>
-						</BTab>
-					</BTabs>
+						</AppTab>
+					</AppTabs>
 				</div>
 			</div>
 		</div>
@@ -317,7 +350,8 @@ import {
 	NcCounterBubble,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import { BTabs, BTab, BPagination } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -337,7 +371,9 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
-import { CnIntegrationTab, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { CnIntegrationWidget, CnObjectAccessTab, CnPagination, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { translate as t } from '@nextcloud/l10n'
+import { objectStore, navigationStore } from '../../store/store.js'
 
 export default {
 	name: 'ObjectDetails',
@@ -348,8 +384,10 @@ export default {
 		NcNoteCard,
 		NcButton,
 		NcCounterBubble,
-		BTabs,
-		BTab,
+		NcLoadingIcon,
+		AppTabs,
+		AppTab,
+		CnPagination,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -360,27 +398,64 @@ export default {
 		LockOpenOutline,
 		FolderOutline,
 		FileOutline,
+		ExclamationThick,
+		OpenInNew,
 		EmailsTab,
 		EventsTab,
 		ContactsTab,
 		DeckTab,
 		RelationsTab,
-		CnIntegrationTab,
+		CnIntegrationWidget,
+		CnObjectAccessTab,
 	},
+	/**
+	 * Composition-API setup: expose the integration-provider registry and
+	 * template helpers to the Options-API template.
+	 *
+	 * @spec exclude UI plumbing — registry snapshot and template helper exposure
+	 * @return {object}
+	 */
 	setup() {
 		// Reactive snapshot of every IntegrationProvider registered through
 		// nc-vue's in-page registry — drained from window.OCA.OpenRegister
 		// once main.js has called installIntegrationRegistry() +
 		// registerBuiltinIntegrations() + registerLeafIntegrations(). Used
-		// by the "Integrations" BTab below to render one inner sub-tab per
-		// advertised provider.
+		// ONLY by the "Integrations" BTab's v-if guard, so the tab is hidden
+		// when no provider is registered; CnIntegrationWidget reads the same
+		// singleton itself to render the tab strip + per-leaf panels.
+		//
+		// IMPORTANT: This setup() block lives in the Options-API <script>
+		// block. A previous version of this file also had a leading
+		// <script setup> block — Vue's SFC compiler silently drops the
+		// Options-API setup() when both co-exist, so useIntegrationRegistry()
+		// never ran and integrationProviders stayed empty. The duplicate
+		// block has been removed; the template-level helpers (t / objectStore
+		// / navigationStore) that previously lived in <script setup> are now
+		// re-exposed here so the template keeps working.
 		const { integrations } = useIntegrationRegistry()
 		const integrationProviders = computed(() => integrations.value || [])
-		return { integrationProviders }
+		return {
+			integrationProviders,
+			t,
+			objectStore,
+			navigationStore,
+		}
 	},
 	data() {
 		return {
 			currentActiveObject: undefined,
+			// Live-updates handle for the or-object-{uuid} subscription of the
+			// currently opened object (adopt-live-updates-ui). Managed by
+			// syncLiveSubscription(); liveKey is `${type}::${uuid}` so a
+			// re-render for the same object is a no-op. livePendingKey marks
+			// an in-flight subscribe so a concurrent same-key call doesn't
+			// double-subscribe; liveEpoch invalidates in-flight resolutions
+			// after a release (object switch / destroy).
+			liveHandle: null,
+			liveKey: '',
+			livePendingKey: '',
+			liveEpoch: 0,
+			liveUnwatch: null,
 			auditTrailLoading: false,
 			auditTrails: [],
 			relationsLoading: false,
@@ -398,17 +473,14 @@ export default {
 				files: {
 					limit: 200,
 					currentPage: objectStore.files?.page || 1,
-					totalPages: objectStore.files?.total || 1,
 				},
 				auditTrails: {
 					limit: 200,
 					currentPage: objectStore.auditTrails?.page || 1,
-					totalPages: objectStore.auditTrails?.total || 1,
 				},
 				relations: {
 					limit: 200,
 					currentPage: objectStore.relations?.page || 1,
-					totalPages: objectStore.relations?.total || 1,
 				},
 			},
 		}
@@ -420,6 +492,7 @@ export default {
 		 * any of the three is missing, so the tabs only render once a saved
 		 * object is being viewed.
 		 *
+		 * @spec exclude UI plumbing — derived view state gating relation tabs
 		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
 		 */
 		relationContext() {
@@ -438,24 +511,77 @@ export default {
 
 			return { register, schema, id }
 		},
+		/**
+		 * Total page count for the Files tab paginator. CnPagination does not
+		 * derive this from totalItems/pageSize, unlike bootstrap-vue's
+		 * BPagination which took row/per-page counts only.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		filesTotalPages() {
+			return Math.ceil((objectStore.files?.total || 0) / this.pagination.files.limit) || 1
+		},
+		/**
+		 * Total page count for the Audit Trails tab paginator.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		auditTrailsTotalPages() {
+			return Math.ceil((objectStore.auditTrails?.total || 0) / this.pagination.auditTrails.limit) || 1
+		},
+		/**
+		 * Total page count for the Used by (relations) tab paginator.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		relationsTotalPages() {
+			return Math.ceil((objectStore.relations?.total || 0) / this.pagination.relations.limit) || 1
+		},
 	},
 	watch: {
 		'pagination.files.currentPage': {
+			/**
+			 * Reload files when the files page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getFiles()
 			},
 		},
 		'pagination.auditTrails.currentPage': {
+			/**
+			 * Reload audit trails when the audit-trails page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getAuditTrails()
 			},
 		},
 		'pagination.relations.currentPage': {
+			/**
+			 * Reload relations when the relations page changes.
+			 *
+			 * @spec exclude UI plumbing — pagination watch handler
+			 * @return {void}
+			 */
 			handler() {
 				this.getRelations()
 			},
 		},
 	},
+	/**
+	 * Lifecycle hook: load files, audit trails and relations on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		if (objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
@@ -463,22 +589,142 @@ export default {
 			this.getAuditTrails()
 			this.getRelations()
 		}
+		this.syncLiveSubscription()
 	},
+	/**
+	 * Lifecycle hook: reload sub-resources when the viewed object changes.
+	 *
+	 * @spec exclude UI plumbing — re-fetch on active-object change
+	 * @return {void}
+	 */
 	updated() {
 		if (this.currentActiveObject !== objectStore.objectItem?.id) {
 			this.currentActiveObject = objectStore.objectItem?.id
 			this.getFiles()
 			this.getAuditTrails()
 			this.getRelations()
+			this.syncLiveSubscription()
 		}
 	},
+	/**
+	 * Lifecycle hook: release the live object subscription on unmount.
+	 *
+	 * @spec openspec/specs/realtime-updates/spec.md
+	 * @return {void}
+	 */
+	beforeUnmount() {
+		this.releaseLiveSubscription()
+	},
 	methods: {
+		/**
+		 * Subscribe to live updates for the currently opened object
+		 * (adopt-live-updates-ui): or-object-{uuid} via notify_push with
+		 * polling fallback. Events are refetch hints only — the
+		 * liveUpdatesPlugin re-runs fetchObject(type, uuid), which lands in
+		 * the package store's objects[type][uuid] cache; the watcher installed
+		 * here bridges that fresh data into objectStore.objectItem so this
+		 * detail view re-renders. Idempotent per (type, uuid); releases the
+		 * previous subscription when another object is opened.
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {Promise<void>}
+		 */
+		async syncLiveSubscription() {
+			if (typeof objectStore.subscribe !== 'function') {
+				return
+			}
+			const ctx = this.relationContext
+			const item = objectStore.objectItem
+			// The push event key is or-object-{uuid} — prefer the uuid over a
+			// numeric id when both are present.
+			const uuid = item?.['@self']?.uuid ?? item?.uuid ?? ctx?.id
+			if (!ctx || !uuid) {
+				this.releaseLiveSubscription()
+				return
+			}
+			const type = `${ctx.register}-${ctx.schema}`
+			const key = `${type}::${uuid}`
+			if (this.liveHandle && this.liveKey === key) {
+				return
+			}
+			if (this.livePendingKey === key) {
+				// A subscribe for this exact object is already in flight —
+				// re-subscribing here would leak the first handle + watcher.
+				return
+			}
+			this.releaseLiveSubscription()
+			try {
+				// Subscription is independent of the list view's registration
+				// timing: register the type ourselves when it is not known yet.
+				if (!objectStore.objectTypes.includes(type)) {
+					objectStore.registerObjectType(type, ctx.schema, ctx.register)
+				}
+				const epoch = this.liveEpoch
+				this.livePendingKey = key
+				this.liveKey = key
+				const handle = await objectStore.subscribe(type, uuid)
+				if (this.livePendingKey === key) {
+					this.livePendingKey = ''
+				}
+				if (this.liveEpoch !== epoch) {
+					// Released while awaiting (another object opened, or the
+					// component was destroyed) — drop the stale subscription.
+					objectStore.unsubscribe(handle)
+					return
+				}
+				this.liveHandle = handle
+				// Bridge: event → plugin refetch → objects[type][uuid] cache →
+				// objectItem (which this template renders).
+				this.liveUnwatch = this.$watch(
+					() => objectStore.getObject(type, uuid),
+					(fresh) => {
+						if (fresh && this.liveKey === key) {
+							objectStore.setObjectItem(fresh)
+						}
+					},
+				)
+			} catch (e) {
+				if (this.livePendingKey === key) {
+					this.livePendingKey = ''
+				}
+				this.liveHandle = null
+				this.liveKey = ''
+				console.warn('[ObjectDetails] live subscription failed:', e?.message ?? e)
+			}
+		},
+		/**
+		 * Release the current live object subscription and its cache watcher,
+		 * and invalidate any in-flight subscribe (its resolution unsubscribes
+		 * itself via the epoch check).
+		 *
+		 * @spec openspec/specs/realtime-updates/spec.md
+		 * @return {void}
+		 */
+		releaseLiveSubscription() {
+			this.liveEpoch += 1
+			this.livePendingKey = ''
+			if (this.liveUnwatch) {
+				this.liveUnwatch()
+				this.liveUnwatch = null
+			}
+			if (this.liveHandle && typeof objectStore.unsubscribe === 'function') {
+				objectStore.unsubscribe(this.liveHandle)
+			}
+			this.liveHandle = null
+			this.liveKey = ''
+		},
 		// Race-safe sub-resource fetches. Deep-link navigation primes
 		// objectStore.objectItem from the REST API before the plugins
 		// that own these actions (filesPlugin / auditTrailsPlugin /
 		// relationsPlugin) have installed them. Calling a method that
 		// doesn't exist on the store throws TypeError mid-mount and
 		// aborts the whole render — guard each call.
+		/**
+		 * Fetch the object's attached files for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getFiles() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getFiles !== 'function') {
 				return
@@ -492,6 +738,12 @@ export default {
 				this.fileLoading = false
 			})
 		},
+		/**
+		 * Fetch the object's audit trails for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getAuditTrails() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getAuditTrails !== 'function') {
 				return
@@ -510,6 +762,12 @@ export default {
 					this.auditTrailLoading = false
 				})
 		},
+		/**
+		 * Fetch the object's relations for display (race-safe).
+		 *
+		 * @spec exclude UI plumbing — delegates to the object store fetch
+		 * @return {void}
+		 */
 		getRelations() {
 			if (!objectStore.objectItem?.id || typeof objectStore.getRelations !== 'function') {
 				return
@@ -528,9 +786,60 @@ export default {
 					this.relationsLoading = false
 				})
 		},
+		// Page-size handlers. Each mirrors the other paginated views'
+		// onPageSizeChanged: set the new limit, reset to page 1, refetch. The
+		// refetch normally rides the `pagination.<tab>.currentPage` watcher, so
+		// it is only issued directly when the page is already 1 and that
+		// watcher would not fire — issuing it unconditionally would double-fetch.
+		/**
+		 * Apply a new page size to the Files tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onFilesPageSizeChanged(pageSize) {
+			this.pagination.files.limit = pageSize
+			if (this.pagination.files.currentPage !== 1) {
+				this.pagination.files.currentPage = 1
+				return
+			}
+			this.getFiles()
+		},
+		/**
+		 * Apply a new page size to the Audit Trails tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onAuditTrailsPageSizeChanged(pageSize) {
+			this.pagination.auditTrails.limit = pageSize
+			if (this.pagination.auditTrails.currentPage !== 1) {
+				this.pagination.auditTrails.currentPage = 1
+				return
+			}
+			this.getAuditTrails()
+		},
+		/**
+		 * Apply a new page size to the Used by (relations) tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onRelationsPageSizeChanged(pageSize) {
+			this.pagination.relations.limit = pageSize
+			if (this.pagination.relations.currentPage !== 1) {
+				this.pagination.relations.currentPage = 1
+				return
+			}
+			this.getRelations()
+		},
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format
 		 * @param {string} url - The encoded folder URL to open (e.g. "Open Registers\/Publicatie Register\/Publicatie\/123")
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFolder(url) {
 			// Parse the encoded URL by replacing escaped characters
@@ -549,6 +858,7 @@ export default {
 		/**
 		 * Opens a file in the Nextcloud Files app
 		 * @param {object} file - The file object containing id, path, and other metadata
+		 * @spec exclude UI plumbing — opens the Nextcloud Files app in a new tab
 		 */
 		openFile(file) {
 			// Extract the directory path without the filename
@@ -566,6 +876,7 @@ export default {
 		/**
 		 * Formats a file size in bytes to a human readable string
 		 * @param {number} bytes - The file size in bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted file size (e.g. "1.5 MB")
 		 */
 		 formatFileSize(bytes) {

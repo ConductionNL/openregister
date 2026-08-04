@@ -10,6 +10,9 @@
  * response) and `?strict=true` (returns HTTP 422 with the validation report when
  * any validation error is detected, instead of auto-correcting).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
@@ -21,8 +24,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-generation/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -83,7 +87,7 @@ class OasController extends Controller
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-1
+     * @spec openspec/specs/oas-generation/spec.md
      */
     public function generateAll(): JSONResponse
     {
@@ -105,7 +109,7 @@ class OasController extends Controller
      *
      * @psalm-return JSONResponse<200|422|500, array<string, mixed>, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-05-01-oas-generation/tasks.md#task-2
+     * @spec openspec/specs/oas-generation/spec.md
      */
     public function generate(string $id): JSONResponse
     {
@@ -121,6 +125,8 @@ class OasController extends Controller
      * @param string|null $registerId Register slug/identifier or null for all registers.
      *
      * @return JSONResponse
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function generateInternal(?string $registerId): JSONResponse
     {

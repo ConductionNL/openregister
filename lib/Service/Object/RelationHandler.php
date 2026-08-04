@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -18,6 +22,7 @@ use Adbar\Dot;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Object\PerformanceHandler;
@@ -58,15 +63,17 @@ class RelationHandler
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param RegisterMapper     $registerMapper     Mapper for registers.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly PerformanceHandler $performanceHandler,
         private readonly MagicRbacHandler $rbacHandler,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly RegisterMapper $registerMapper
     ) {
     }//end __construct()
 
@@ -92,7 +99,7 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional paths for schema property handling
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Inverse filter resolution requires comprehensive handling
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function applyInversedByFilter(array &$filters, callable $findAllCallback): array|null
     {
@@ -207,7 +214,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flags control optional extraction features
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -239,7 +246,7 @@ class RelationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple execution paths for relationship extraction limits
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Circuit breaker logic requires comprehensive safeguards
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function extractAllRelationshipIds(array $objects, array $_extend): array
     {
@@ -350,7 +357,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Batch processing with error handling requires multiple conditions
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function bulkLoadRelationshipsBatched(array $relationshipIds): array
     {
@@ -462,7 +469,7 @@ class RelationHandler
      * @psalm-return   list<ObjectEntity>
      * @phpstan-return array<int, ObjectEntity>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function loadRelationshipChunkOptimized(array $relationshipIds): array
     {
@@ -500,7 +507,7 @@ class RelationHandler
      *
      * @psalm-return array{results: array|mixed, total: int<0, max>, limit: 30|mixed, offset: 0|mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function getContracts(string $objectId, array $filters=[]): array
     {
@@ -564,7 +571,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function getUses(
         string $objectId,
@@ -582,7 +589,7 @@ class RelationHandler
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
-                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $registerMapper = $this->registerMapper;
                     $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
                     $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
@@ -655,8 +662,8 @@ class RelationHandler
             }
 
             // Get all register+schema pairs that have magic mapping enabled.
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
-            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
+            $registerMapper = $this->registerMapper;
+            $magicMapper    = $this->objectEntityMapper;
             $registers      = $registerMapper->findAll();
 
             $registerSchemaPairs = [];
@@ -777,7 +784,7 @@ class RelationHandler
      *
      * @return ObjectEntity[] Filtered objects the user has access to.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function filterByRbac(array $objects): array
     {
@@ -825,7 +832,9 @@ class RelationHandler
                 schema: $schema,
                 action: 'read',
                 objectOwner: $object->getOwner(),
-                objectData: $objectData
+                objectData: $objectData,
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;
@@ -856,7 +865,7 @@ class RelationHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) RBAC/multitenancy flags follow established API patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function getUsedBy(
         string $objectId,
@@ -873,7 +882,7 @@ class RelationHandler
             $schema   = null;
             if ($_registerId !== null && $_schemaId !== null) {
                 try {
-                    $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+                    $registerMapper = $this->registerMapper;
                     $register       = $registerMapper->find($_registerId, _rbac: false, _multitenancy: false);
                     $schema         = $this->schemaMapper->find($_schemaId, _rbac: false, _multitenancy: false);
                 } catch (\Exception $e) {
@@ -894,8 +903,8 @@ class RelationHandler
 
             // Search across all magic tables for objects that reference this UUID in their _relations.
             $results        = [];
-            $magicMapper    = \OC::$server->get(\OCA\OpenRegister\Db\MagicMapper::class);
-            $registerMapper = \OC::$server->get(\OCA\OpenRegister\Db\RegisterMapper::class);
+            $magicMapper    = $this->objectEntityMapper;
+            $registerMapper = $this->registerMapper;
             $magicTables    = $magicMapper->getExistingRegisterSchemaTables();
             $limit          = $query['_limit'] ?? 30;
             $offset         = $query['_offset'] ?? 0;

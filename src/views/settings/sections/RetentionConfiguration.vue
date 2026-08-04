@@ -7,7 +7,7 @@
 		<!-- Actions slot -->
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -17,7 +17,7 @@
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -54,7 +54,7 @@
 			<div class="trail-switches">
 				<div class="trail-switch-row">
 					<NcCheckboxRadioSwitch
-						:checked.sync="auditTrailsEnabled"
+						v-model="auditTrailsEnabled"
 						:disabled="loading || saving"
 						type="switch">
 						Audit Trails enabled
@@ -66,13 +66,28 @@
 
 				<div class="trail-switch-row">
 					<NcCheckboxRadioSwitch
-						:checked.sync="searchTrailsEnabled"
+						v-model="searchTrailsEnabled"
 						:disabled="loading || saving"
 						type="switch">
 						Search Trails enabled
 					</NcCheckboxRadioSwitch>
 					<p class="trail-description">
 						Record search queries and analytics for performance monitoring and usage insights
+					</p>
+				</div>
+
+				<div v-if="searchTrailsEnabled" class="trail-switch-row">
+					<NcSelect v-model="selectedRecordingMode"
+						:options="recordingModeOptions"
+						:clearable="false"
+						:disabled="loading || saving"
+						:input-label="t('openregister', 'Search recording mode')"
+						label="label"
+						class="recording-mode-select" />
+					<p class="trail-description">
+						Which searches are recorded: <strong>All searches</strong> logs every list and query,
+						<strong>Text searches only</strong> logs free-text searches (default), and
+						<strong>Disabled</strong> records nothing.
 					</p>
 				</div>
 			</div>
@@ -276,12 +291,12 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+ * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
  */
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon, NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import Save from 'vue-material-design-icons/ContentSave.vue'
 
@@ -289,6 +304,7 @@ export default {
 	name: 'RetentionConfiguration',
 
 	components: {
+		NcSelect,
 		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
@@ -301,64 +317,193 @@ export default {
 		...mapStores(useSettingsStore),
 
 		retentionOptions: {
+			/**
+			 * Read retention options from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {object}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions
 			},
+			/**
+			 * Write retention options to the store.
+			 *
+			 * @param {object} value The new retention options.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions = value
 			},
 		},
 
 		auditTrailsEnabled: {
+			/**
+			 * Read the audit-trails-enabled flag from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {boolean}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions.auditTrailsEnabled ?? true
 			},
+			/**
+			 * Write the audit-trails-enabled flag to the store.
+			 *
+			 * @param {boolean} value The new value.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions.auditTrailsEnabled = value
 			},
 		},
 
 		searchTrailsEnabled: {
+			/**
+			 * Read the search-trails-enabled flag from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {boolean}
+			 */
 			get() {
 				return this.settingsStore.retentionOptions.searchTrailsEnabled ?? true
 			},
+			/**
+			 * Write the search-trails-enabled flag to the store.
+			 *
+			 * @param {boolean} value The new value.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.retentionOptions.searchTrailsEnabled = value
 			},
 		},
+		searchTrailRecordingMode: {
+			/**
+			 * Read the search-trail recording mode from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {string} One of 'all', '_search', 'none'.
+			 */
+			get() {
+				return this.settingsStore.retentionOptions.searchTrailRecordingMode ?? '_search'
+			},
+			/**
+			 * Write the search-trail recording mode to the store.
+			 *
+			 * @param {string} value The new mode.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
+			set(value) {
+				this.settingsStore.retentionOptions.searchTrailRecordingMode = value
+			},
+		},
+		/**
+		 * Options for the search-trail recording-mode select.
+		 *
+		 * @spec exclude UI plumbing — static option list for display
+		 * @return {Array<object>}
+		 */
+		recordingModeOptions() {
+			return [
+				{ value: 'all', label: this.t('openregister', 'All searches') },
+				{ value: '_search', label: this.t('openregister', 'Text searches only') },
+				{ value: 'none', label: this.t('openregister', 'Disabled') },
+			]
+		},
+		/**
+		 * The currently selected recording-mode option object (for NcSelect).
+		 *
+		 * @spec exclude UI plumbing — maps the stored value to its option object
+		 * @return {object}
+		 */
+		selectedRecordingMode: {
+			get() {
+				return this.recordingModeOptions.find(o => o.value === this.searchTrailRecordingMode) || this.recordingModeOptions[1]
+			},
+			set(option) {
+				this.searchTrailRecordingMode = option ? option.value : '_search'
+			},
+		},
 
+		/**
+		 * Whether the settings store is loading, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Whether retention settings are saving, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * Whether a rebase is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
 
+		/**
+		 * Retention status CSS class from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
+		 */
 		retentionStatusClass() {
 			return this.settingsStore.retentionStatusClass
 		},
 
+		/**
+		 * Retention status text CSS class from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status-styling helper
+		 * @return {string}
+		 */
 		retentionStatusTextClass() {
 			return this.settingsStore.retentionStatusTextClass
 		},
 
+		/**
+		 * Retention status message from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived status message
+		 * @return {string}
+		 */
 		retentionStatusMessage() {
 			return this.settingsStore.retentionStatusMessage
 		},
 	},
 
 	methods: {
+		/**
+		 * Show the rebase confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		showRebaseDialog() {
 			this.settingsStore.showRebaseDialog()
 		},
 
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-64
+		 * @spec openspec/specs/retention-management/spec.md#requirement-retention-settings-must-be-configurable-via-api
 		 */
 		async saveSettings() {
 			await this.settingsStore.updateRetentionSettings(this.retentionOptions)
@@ -367,6 +512,7 @@ export default {
 		 * Format retention period from milliseconds to human readable format
 		 *
 		 * @param {number} ms Milliseconds
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted period
 		 */
 		formatRetentionPeriod(ms) {

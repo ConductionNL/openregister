@@ -1,16 +1,16 @@
 ---
-status: implemented
+status: done
 ---
 
 # Row and Field Level Security
 
 ## Purpose
+
+@e2e exclude backend RLS/FLS enforcement — covered by PHPUnit
 Implement dynamic per-record access rules based on field values (row-level security / RLS) and per-field visibility and editability rules based on user roles (field-level security / FLS). Beyond schema-level RBAC that controls access to entire object types, the system MUST support row-level security where access to individual objects depends on the object's own properties (e.g., department, classification level, owner), and field-level security where different users see different fields of the same object. Both security layers MUST be enforced consistently across REST, GraphQL, search, export, and MCP access methods, evaluated at the database query level where possible for performance, and composable with schema-level RBAC and multi-tenancy isolation.
 
 **Source**: Gap identified in cross-platform analysis; Directus implements comprehensive row/field-level security with filter-based permissions and dynamic variables ($CURRENT_USER, $CURRENT_ROLE, $NOW). NocoDB provides view-level permissions. 86% of analyzed government tenders require RBAC per zaaktype; 67% require SSO/identity integration with fine-grained data compartmentalization.
-
 ## Requirements
-
 ### Requirement: Schemas MUST support row-level security rules via conditional authorization matching
 Schema authorization blocks MUST accept conditional rules that filter objects based on the current user's context (group membership, identity, organisation) and the object's own field values. Conditional rules use the structure `{ "group": "<group>", "match": { "<property>": "<value-or-operator>" } }` where the user must qualify for the group AND the object must satisfy all match conditions.
 
@@ -433,6 +433,192 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - **THEN** it MUST return `open` from the direct property
 - **AND** it MUST NOT check `@self` (only underscore-prefixed properties fall back to `@self`)
 
+### Requirement: writeOnly properties MUST never be returned on any read
+A property declared `writeOnly: true` MUST be stripped from every read response for every caller, including admin, while remaining writable. This is the field-level read mechanism for secrets and tokens (standard JSON Schema / OpenAPI keyword) and is fully backward compatible: a property without `writeOnly` is returned exactly as before. It closes openregister#380 at the platform level so ADR-063 MCP tools inherit the redaction without per-dialect field projection.
+
+#### Scenario: writeOnly property stripped from single get for admin and non-admin
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **AND** object `cred-1` has `apiToken: "s3cr3t"` and `name: "prod"`
+- **WHEN** admin reads `cred-1` via the object read path
+- **THEN** the rendered response MUST contain `name` but MUST NOT contain `apiToken`
+- **WHEN** a non-admin reads `cred-1`
+- **THEN** the rendered response MUST NOT contain `apiToken`
+
+#### Scenario: writeOnly property stripped from list responses
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** any user lists `credential` objects
+- **THEN** no object in the list response MUST contain `apiToken`
+
+#### Scenario: writeOnly property remains stored and writable
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** a user writes `apiToken: "new-secret"` to `cred-1`
+- **THEN** the value MUST be persisted on the stored object
+- **AND** a subsequent read MUST still omit `apiToken` from the response
+
+### Requirement: Read-time field stripping MUST be fail-safe against caller field re-widening
+Property-level read stripping (both `writeOnly` and property `authorization.read`) MUST be applied server-side after any caller-supplied `fields`, `extend`, or `unset` selection, so a caller can never re-surface a stripped property by naming it. Stripping MUST apply to single get, list, and nested/related object expansion, all of which flow through the single render choke point.
+
+#### Scenario: fields query cannot re-surface a stripped property
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** a caller reads `cred-1` with `fields=apiToken`
+- **THEN** the response MUST NOT contain `apiToken`
+
+#### Scenario: Stripping applies to nested expanded objects
+- **GIVEN** object `case-1` expands a related `credential` object via `_extend`
+- **AND** the `credential` schema has a `writeOnly` property `apiToken`
+- **WHEN** `case-1` is read with the relation expanded
+- **THEN** the expanded `credential` MUST NOT contain `apiToken`
+
+### Requirement: Property authorization stripping MUST bypass for trusted internal reads
+Property `authorization.read` (group-based) stripping MUST be bypassed when the render is invoked with `_rbac === false` or while `SystemOperationContext::isActive()` is true, mirroring `PermissionHandler::hasPermission()`. This guarantees the application's own service and repair-step reads receive the full object.
+
+This bypass MUST NOT extend to `writeOnly` (see the requirement below): `_rbac === false` is not a secret-bearing trust boundary, because an admin HTTP read renders with `_rbac: false`. Internal code that needs a raw `writeOnly` value MUST read with `_render: false` (or take `ObjectEntity::getObject()` off the mapper), which never enters the render path at all.
+
+#### Scenario: Internal render with _rbac false returns group-restricted properties
+- **GIVEN** schema `case` has property `internalNote` with `authorization.read` restricted to group `staff`
+- **WHEN** an internal caller renders `case-1` with `_rbac: false`
+- **THEN** the rendered object MUST contain `internalNote`
+
+#### Scenario: System operation context returns group-restricted properties
+- **GIVEN** `SystemOperationContext::isActive()` is true
+- **AND** schema `case` has a group-restricted property `internalNote`
+- **WHEN** `case-1` is rendered
+- **THEN** the rendered object MUST contain `internalNote`
+
+### Requirement: writeOnly stripping MUST NOT be bypassed by _rbac or system context
+`writeOnly` stripping is a hard render-boundary rule: it MUST apply on every read regardless of `_rbac`, `SystemOperationContext`, or admin status. An admin HTTP read renders with `_rbac: false`, so gating `writeOnly` on `_rbac` returns plaintext secrets to admin-context reads (openregister#389). The only supported way for internal code to obtain a `writeOnly` value is to not render: `ObjectService::find(_render: false)` returns the raw entity before `renderEntity()` is reached, which is how the credential migration and `CallService` re-resolve secrets.
+
+This rule binds BOTH read paths, which are separate code paths that MUST agree:
+1. the single-object path (`RenderObject::renderEntity()`), and
+2. the list/search cheap path (`RenderObject::redactWriteOnlyFromRows()`), which lists take when no `_extend`/`_fields`/`_filter`/`_unset` is requested and which therefore never enters `renderEntity()` at all.
+
+Applying the rule to only one of them is a live disclosure, not a partial fix: `ObjectsController` derives `_rbac` as `($isAdmin === false)`, so an ADMIN list/search read arrives on path 2 with `_rbac: false`. Gating the strip there returned every `writeOnly` secret in cleartext for admin list reads even while path 1 was correctly hardened (openregister#460 — the list half of openregister#389). `_rbac: false` on an HTTP read means "this caller bypasses WHICH OBJECTS it may see"; it never means "this caller may see secrets". Conflating those two is the defect both issues describe.
+
+Both paths MUST decide via the same schema-level predicate (top-level `writeOnly` OR a declared `x-openregister-writeonly-paths` entry) and strip via the same choke point, so a rule added to one is enforced by the other. The `@self.relations` mirror (openregister#429) MUST be stripped on the same boundary on both paths.
+
+#### Scenario: writeOnly is stripped even when _rbac is false
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** a caller renders `cred-1` with `_rbac: false`
+- **THEN** the rendered object MUST NOT contain `apiToken`
+- **AND** `@self.relations` MUST NOT contain `apiToken`
+
+#### Scenario: An admin list read does not return writeOnly secrets
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **AND** the caller is an admin, so the controller derives `_rbac: false`
+- **WHEN** the admin lists `credential` objects on the cheap path (no `_extend`/`_fields`/`_filter`/`_unset`)
+- **THEN** no row in the response MUST contain `apiToken`
+- **AND** no row's `@self.relations` MUST contain `apiToken`
+
+#### Scenario: An admin list read does not return a nested writeOnly path
+- **GIVEN** schema `source` declares `x-openregister-writeonly-paths: ["configuration.authentication.client_secret"]`
+- **AND** the caller is an admin, so the controller derives `_rbac: false`
+- **WHEN** the admin lists `source` objects on the cheap path
+- **THEN** no row MUST contain `configuration.authentication.client_secret`
+- **AND** each row MUST still contain the non-secret siblings under `configuration`
+
+#### Scenario: A system-context list read does not return writeOnly secrets
+- **GIVEN** `SystemOperationContext::isActive()` is true
+- **AND** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** `credential` objects are listed on the cheap path
+- **THEN** no row in the result MUST contain `apiToken`
+
+#### Scenario: _render false returns the raw value for the engine
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** an internal caller reads `cred-1` with `_render: false`
+- **THEN** the returned entity's `getObject()` MUST contain `apiToken`
+
+### Requirement: Nested writeOnly paths MUST never be returned on any read
+A secret nested inside an untyped `object` property cannot be declared with `writeOnly: true`, because JSON Schema keywords attach only to properties the schema declares — and marking the whole parent object `writeOnly` would break the editors that legitimately read the rest of it back. Schemas MUST therefore be able to declare individual nested dot-paths as write-only via the schema-level annotation `x-openregister-writeonly-paths`, a list of dot-separated paths rooted at a declared property (e.g. `configuration.authentication.client_secret`).
+
+A declared path MUST be stripped from the value at that location AND its entire sub-tree, on the same hard render boundary as top-level `writeOnly`: unconditionally, for every caller including admin, on single get, list (including the cheap path), and nested expansion, after any caller-supplied `fields`/`extend`/`unset` selection, and from the `@self.relations` search-index mirror — which `SaveObject::scanForRelations()` populates with flattened literal dot-path keys, so a nested secret is mirrored there under its full path. `_render: false` remains the internal bypass.
+
+This closes openconnector#235 (`source.configuration.authentication.*`) and the openconnector#147 residual (`rule.configuration.authentication.keys`) at the platform level. It is strictly opt-in: a schema without the annotation is unaffected.
+
+#### Scenario: A declared nested path is stripped for admin
+- **GIVEN** schema `source` declares `x-openregister-writeonly-paths: ["configuration.authentication.client_secret"]`
+- **AND** object `src-1` has `configuration.authentication.client_secret: "s3cr3t"` and `configuration.endpoint: "https://api.example.gov"`
+- **WHEN** an admin reads `src-1`
+- **THEN** the response MUST NOT contain `configuration.authentication.client_secret`
+- **AND** the response MUST still contain `configuration.endpoint`
+
+#### Scenario: A declared path strips its whole sub-tree
+- **GIVEN** schema `rule` declares `x-openregister-writeonly-paths: ["configuration.authentication.keys"]`
+- **AND** `configuration.authentication.keys` is a map whose leaf keys are caller-supplied apiKeys
+- **WHEN** any user reads the rule
+- **THEN** the response MUST NOT contain `keys` nor any entry beneath it
+
+#### Scenario: The relations mirror does not leak a nested path
+- **GIVEN** `@self.relations` holds the flattened key `configuration.authentication.client_secret`
+- **WHEN** the object is rendered
+- **THEN** `@self.relations` MUST NOT contain that key nor any key prefixed by a declared path
+
+#### Scenario: A caller cannot re-widen a nested path via fields
+- **GIVEN** schema `source` declares a nested write-only path under `configuration`
+- **WHEN** a caller reads with `fields=configuration`
+- **THEN** the returned `configuration` MUST NOT contain the declared path
+
+#### Scenario: An invalid path declaration fails loudly at save
+- **GIVEN** a schema whose `x-openregister-writeonly-paths` contains a malformed path or one rooted at an undeclared property
+- **WHEN** the schema is saved
+- **THEN** the save MUST fail with an error naming the offending path
+- **AND** the annotation MUST NOT be silently dropped, because a dropped write-only declaration would persist a schema whose secrets are unprotected while appearing annotated
+
+### Requirement: An omitted writeOnly value MUST be preserved on save
+The read-side strip has a mandatory save-side counterpart. `writeOnly`'s semantic — "a client may SEND this, the server never returns it" — tacitly assumes the client re-sends the value on update. **A client that was never given the value cannot re-send it.** Since object update is PUT-semantic (a schema property absent from the payload is nulled so the mapper issues an explicit `SET column=NULL`), the natural round-trip destroys the secret: GET returns the object with the secret stripped (correct), the client edits one field and PUTs the body back without the secret it never saw, and the save nulls it. A read boundary that is airtight while the write boundary silently deletes is not a partial implementation of `writeOnly`; it is data destruction (openregister#463, observed live in openconnector#245, and the blocker on openconnector#147).
+
+Therefore, when persisting an update to an EXISTING object: for each top-level `writeOnly: true` property AND each declared `x-openregister-writeonly-paths` dot-path, if the incoming payload OMITS that location, the stored value MUST be carried forward instead of nulled. Creates have no stored value and are a no-op. The rule is opt-in and fail-safe: a schema declaring neither is unaffected.
+
+Both declaration surfaces MUST be honoured by the same rule, and the set of locations preserved on save MUST be the same set stripped on read — a value the server refuses to return but does not protect on write is the exact defect above.
+
+**Absent and explicit `null` MUST NOT be treated alike.** Only an ABSENT location is preserved; a location present with an explicit `null` clears the stored value. Conflating them would make clearing a secret impossible — settable and rotatable but never removable, leaving a decommissioned credential permanently undeletable. Absent is the accidental case (the client was never shown the value); explicit null is an act a client can only perform deliberately. This also keeps PUT consistent with PATCH, which already merges the payload over the stored object: an omitted key is backfilled from storage, an explicit null overwrites. Both verbs therefore agree — **omit to keep, send null to clear.**
+
+The preserved value MUST be read from the RAW stored object (`ObjectEntity::getObject()`, or a `_render: false` read). `_rbac: false` is NOT sufficient: the writeOnly strip is schema-gated and deliberately ignores `_rbac`, so an `_rbac: false` read still returns the object with the secret already stripped and the preserve would silently no-op.
+
+#### Scenario: An omitted writeOnly property keeps its stored value
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **AND** object `cred-1` has `apiToken: "s3cr3t"` and `name: "prod"`
+- **WHEN** a client updates `cred-1` with a payload containing only `name: "prod-renamed"`
+- **THEN** the stored `apiToken` MUST still be `"s3cr3t"`
+- **AND** the stored `name` MUST be `"prod-renamed"`
+
+#### Scenario: The rendered body fed back as an update payload does not destroy the secret
+- **GIVEN** schema `source` declares `x-openregister-writeonly-paths: ["configuration.authentication.client_secret"]`
+- **AND** a client GETs `src-1`, receiving a body with the secret stripped
+- **WHEN** the client edits an unrelated field and PUTs that same body back
+- **THEN** the stored `configuration.authentication.client_secret` MUST be unchanged
+- **AND** the edited field MUST be persisted
+
+#### Scenario: An omitted nested path is preserved without clobbering sibling edits
+- **GIVEN** schema `source` declares `configuration.authentication.client_secret` write-only
+- **AND** `src-1` has `configuration.endpoint: "https://old.example.gov"` and `configuration.authentication: {username: "svc", client_secret: "s3cr3t"}`
+- **WHEN** a client updates with `configuration.endpoint: "https://new.example.gov"` and `configuration.authentication: {username: "new-user"}`
+- **THEN** the stored `client_secret` MUST still be `"s3cr3t"`
+- **AND** `configuration.endpoint` MUST be `"https://new.example.gov"`
+- **AND** `configuration.authentication.username` MUST be `"new-user"`
+- **BECAUSE** the preserved leaf is merged back into the incoming sub-tree, never restored as a whole parent object
+
+#### Scenario: A new writeOnly value still overwrites
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true` and `cred-1` has `apiToken: "old-secret"`
+- **WHEN** an operator updates `cred-1` with `apiToken: "rotated-secret"`
+- **THEN** the stored value MUST be `"rotated-secret"`
+- **BECAUSE** a preserve rule that is too eager makes secrets unsettable
+
+#### Scenario: An explicit null clears the secret
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true` and `cred-1` has `apiToken: "s3cr3t"`
+- **WHEN** a client updates `cred-1` with `apiToken: null` explicitly present in the payload
+- **THEN** the stored `apiToken` MUST be null
+
+#### Scenario: An ordinary omitted property is still nulled
+- **GIVEN** schema `credential` has a non-write-only property `name`
+- **WHEN** a client updates `cred-1` with a payload omitting `name`
+- **THEN** the stored `name` MUST be null
+- **BECAUSE** the preserve rule is scoped to write-only locations and MUST NOT turn PUT into PATCH for ordinary fields
+
+#### Scenario: A create has nothing to preserve
+- **GIVEN** schema `credential` has property `apiToken` with `writeOnly: true`
+- **WHEN** a client creates a new object without `apiToken`
+- **THEN** the save MUST succeed and MUST NOT invent an `apiToken` key
+
 ## Current Implementation Status
 
 **Substantially implemented.** The row-level and field-level security system is production-ready with the following components:
@@ -447,6 +633,8 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - `ConditionMatcher` (`lib/Service/ConditionMatcher.php`) — Evaluates match conditions with dynamic variable resolution (`$organisation`, `$userId`, `$now`), `@self` property lookup for system fields, and delegation to `OperatorEvaluator`.
 - `OperatorEvaluator` (`lib/Service/OperatorEvaluator.php`) — MongoDB-style operator evaluation for PHP-level condition matching (`$eq`, `$ne`, `$in`, `$nin`, `$exists`, `$gt`, `$gte`, `$lt`, `$lte`).
 - `Schema` entity (`lib/Db/Schema.php`) — `hasPropertyAuthorization()`, `getPropertyAuthorization()`, `getPropertiesWithAuthorization()` methods for inspecting property-level authorization rules.
+- Write-only secrets (`lib/Db/Schema.php`, `lib/Service/PropertyRbacHandler.php`) — top-level `writeOnly: true` via `hasWriteOnlyProperties()`/`getWriteOnlyProperties()`, and nested dot-paths via the `x-openregister-writeonly-paths` annotation (`Schema::WRITEONLY_PATHS_ANNOTATION`, `hasWriteOnlyPaths()`, `getWriteOnlyPaths()`). Both are enforced by `PropertyRbacHandler::stripWriteOnlyProperties()`, which strips the object body and the flattened `@self.relations` mirror. Enforcement is unconditional at the render boundary (`RenderObject::renderEntity()` and the list cheap path `redactWriteOnlyFromRows()`), gated only by `RenderObject::schemaHasWriteOnlyRule()`. The annotation is validated at save time by `Schema::validateWriteOnlyPathsValue()` and is the one configuration key exempt from per-key isolation: a malformed declaration aborts the save rather than being dropped, because a dropped write-only declaration is fail-open.
+- Save-side preservation (`lib/Service/PropertyRbacHandler.php`, `lib/Service/Object/SaveObject.php`) — the counterpart to the read-side strip (openregister#463). `collectOmittedWriteOnlyPaths()` reports which declared locations an incoming update payload omits, and `restoreWriteOnlyValues()` carries the stored values forward, both honouring top-level `writeOnly` and nested dot-paths under one rule (a top-level property is treated as a single-segment path). `SaveObject::prepareObjectForUpdate()` detects omissions against the raw payload before `setDefaultValues()` can materialise a key, and restores after `prepareObjectData()` (so an encrypted stored value is not double-encrypted) but before `fillMissingSchemaPropertiesWithNull()` (which would otherwise erase the absent-vs-explicit-null distinction). Absent preserves; explicit `null` clears. The stored value is read from the raw `ObjectEntity::getObject()` snapshot, never a rendered read.
 
 **Fully integrated across access methods:**
 - REST API: `RenderObject` calls `PropertyRbacHandler::filterReadableProperties()` during object rendering (line ~1065).
@@ -457,6 +645,7 @@ When evaluating property-level authorization match conditions, `ConditionMatcher
 - Search: `MagicRbacHandler::applyRbacFilters()` is called before search query execution, ensuring facet counts reflect accessible data.
 
 **Partially implemented:**
+- Save-side write-only preservation covers the single-object path only (`SaveObject::prepareObjectForUpdate()`, which also serves `saveObjectsStreaming()` since it delegates per row). The **bulk** path does not have it: `SaveObjects::saveObjects()` builds payloads via `extractBusinessData()` and persists through `MagicMapper::ultraFastBulkSave()` as an upsert-by-UUID (`INSERT ... ON CONFLICT DO UPDATE`), never reading the existing row (`existingObjects: []`), so a bulk update omitting a declared write-only location overwrites it. This is a narrower vector than the single-object round-trip — bulk payloads originate from import files rather than from a stripped GET — and closing it requires a chunk-level batched existing-row fetch gated on the schema declaring write-only. Tracked separately.
 - Audit logging of RLS/FLS decisions exists at debug level via `LoggerInterface` but is not integrated with Nextcloud's audit log (`OCP\Log\ILogFactory`) for production compliance visibility.
 - No dedicated security rule management API (rules are configured as part of the schema definition JSON, not via a separate CRUD endpoint).
 - No security rule testing/dry-run endpoint to preview what a user would see without executing the actual query.

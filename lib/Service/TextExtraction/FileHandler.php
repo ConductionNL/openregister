@@ -5,6 +5,9 @@
  *
  * Handles text extraction from Nextcloud files.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -13,6 +16,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/text-extraction/spec.md
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -85,6 +90,8 @@ class FileHandler implements TextExtractionHandlerInterface
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Force parameter follows interface contract
+     *
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array
     {
@@ -154,6 +161,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @return bool True if extraction is needed.
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Force parameter follows interface contract
+     *
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function needsExtraction(int $sourceId, int $sourceTimestamp, bool $force): bool
     {
@@ -187,6 +196,8 @@ class FileHandler implements TextExtractionHandlerInterface
      *     permissions: int, checksum: string, share_token: null|string,
      *     share_stime: int|null, storage_id: null|string, owner: null|string,
      *     accessUrl: null|string, downloadUrl: null|string, published: null|string}
+     *
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceMetadata(int $sourceId): array
     {
@@ -204,6 +215,8 @@ class FileHandler implements TextExtractionHandlerInterface
      * @param int $sourceId File ID.
      *
      * @return int Unix timestamp.
+     *
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function getSourceTimestamp(int $sourceId): int
     {
@@ -239,7 +252,6 @@ class FileHandler implements TextExtractionHandlerInterface
 
             // For other types, we'd need to use the extraction methods
             // From TextExtractionService (PDF, DOCX, etc.).
-            // This should be refactored to use IndexService if needed.
             $this->logger->warning(
                 message: '[FileHandler] Complex extraction not yet implemented',
                 context: [

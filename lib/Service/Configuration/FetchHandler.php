@@ -6,6 +6,9 @@
  * This file contains the handler class for fetching configuration data
  * from remote sources (URLs, GitHub, GitLab).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -94,7 +97,7 @@ class FetchHandler
      *
      * @throws \Exception If the request fails or parsing fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function getJSONfromURL(string $url): array|JSONResponse
     {
@@ -146,7 +149,7 @@ class FetchHandler
      *
      * @return array|JSONResponse The fetched configuration data or error response.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     public function fetchRemoteConfiguration(Configuration $configuration): array|JSONResponse
     {
@@ -219,7 +222,7 @@ class FetchHandler
      *
      * @return array|null The decoded array or null on failure.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-29
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-non-aggregated-facet-isolation
      */
     private function decode(string $data, string $type): ?array
     {

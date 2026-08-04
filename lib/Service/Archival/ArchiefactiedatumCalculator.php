@@ -6,6 +6,9 @@
  * Calculates the archive action date (archiefactiedatum) using configurable
  * derivation methods (afleidingswijzen) as defined by the ZGW API standard.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Archival
  *
@@ -17,8 +20,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-2
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 declare(strict_types=1);
@@ -80,8 +84,8 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The calculated archiefactiedatum, or null if calculation is not possible.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function calculate(array $archiveConfig, array $objectData, ?DateTime $closureDate=null): ?DateTime
     {
@@ -161,7 +165,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The determined base date.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function determineBrondatum(
         string $afleidingswijze,
@@ -199,7 +203,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The closure date or null if not provided.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function brondatumFromClosure(?DateTime $closureDate): ?DateTime
     {
@@ -221,6 +225,8 @@ class ArchiefactiedatumCalculator
      * @param array<string, mixed> $objectData    The object data.
      *
      * @return DateTime|null The date from the property value, or null.
+     *
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function brondatumFromProperty(array $archiveConfig, array $objectData): ?DateTime
     {
@@ -270,7 +276,7 @@ class ArchiefactiedatumCalculator
      *
      * @return DateTime|null The base date (closure + procestermijn), or null.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function brondatumFromTermijn(array $archiveConfig, ?DateTime $closureDate): ?DateTime
     {

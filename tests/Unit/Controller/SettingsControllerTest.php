@@ -166,24 +166,6 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * Test updatePublishingOptions returns proper JSON structure
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsReturnsValidJson(): void
-    {
-        $this->settingsService
-            ->method('updatePublishingOptions')
-            ->willReturn(['success' => true]);
-
-        $response = $this->controller->updatePublishingOptions();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $data = $response->getData();
-        $this->assertIsArray($data);
-    }
-
-    /**
      * Test rebase endpoint returns proper JSON structure
      *
      * @return void
@@ -456,25 +438,6 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * Test updatePublishingOptions handles service exceptions gracefully
-     *
-     * @return void
-     */
-    public function testUpdatePublishingOptionsHandlesServiceExceptions(): void
-    {
-        $this->settingsService
-            ->method('updatePublishingOptions')
-            ->willThrowException(new \Exception('Publish options error'));
-
-        $response = $this->controller->updatePublishingOptions();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $data = $response->getData();
-        $this->assertIsArray($data);
-        $this->assertArrayHasKey('error', $data);
-    }
-
-    /**
      * Test load handles service exceptions gracefully
      *
      * @return void
@@ -623,112 +586,6 @@ class SettingsControllerTest extends TestCase
     }
 
     /**
-     * Test testSetupHandler returns 400 when SOLR is disabled
-     *
-     * @return void
-     */
-    public function testSetupHandlerReturnsSolrDisabled(): void
-    {
-        $this->settingsService
-            ->method('getSolrSettings')
-            ->willReturn(['enabled' => false]);
-
-        $response = $this->controller->testSetupHandler();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(400, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('disabled', $data['message']);
-    }
-
-    /**
-     * Test testSetupHandler returns 422 when getSolrSettings throws
-     *
-     * @return void
-     */
-    public function testSetupHandlerReturns422OnException(): void
-    {
-        $this->settingsService
-            ->method('getSolrSettings')
-            ->willThrowException(new \Exception('Config error'));
-
-        $response = $this->controller->testSetupHandler();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-    }
-
-    /**
-     * Test reindexSpecificCollection returns 400 for invalid batch size
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionInvalidBatchSize(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 10],
-                ['batchSize', 1000, 10000],
-            ]);
-
-        $response = $this->controller->reindexSpecificCollection('test-collection');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(400, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertSame('test-collection', $data['collection']);
-    }
-
-    /**
-     * Test reindexSpecificCollection returns 400 for negative maxObjects
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionNegativeMaxObjects(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, -5],
-                ['batchSize', 1000, 100],
-            ]);
-
-        $response = $this->controller->reindexSpecificCollection('test-collection');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(400, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-    }
-
-    /**
-     * Test reindexSpecificCollection returns 422 when container throws
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionException(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 100],
-            ]);
-        $this->container->method('get')
-            ->willThrowException(new \Exception('IndexService unavailable'));
-
-        $response = $this->controller->reindexSpecificCollection('my-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertSame('my-col', $data['collection']);
-    }
-
-    /**
      * Test getDatabaseInfo returns cached data
      *
      * @return void
@@ -854,7 +711,6 @@ class SettingsControllerTest extends TestCase
         // Mock all service methods to return valid data.
         $this->settingsService->method('getSettings')->willReturn(['settings' => []]);
         $this->settingsService->method('updateSettings')->willReturn(['success' => true]);
-        $this->settingsService->method('updatePublishingOptions')->willReturn(['success' => true]);
         $this->settingsService->method('rebase')->willReturn(['success' => true]);
         $this->settingsService->method('getStats')->willReturn(['total' => 0]);
         $this->settingsService->method('getVersionInfoOnly')->willReturn(['version' => '1.0.0']);
@@ -865,7 +721,6 @@ class SettingsControllerTest extends TestCase
             'index',
             'load',
             'update',
-            'updatePublishingOptions',
             'rebase',
             'stats',
             'getStatistics',
@@ -897,37 +752,6 @@ class SettingsControllerTest extends TestCase
                 }
             }
         }
-    }
-
-    // ── testSchemaMapping tests ────────────────────────────────────────
-
-    public function testSchemaMappingContainerThrows(): void
-    {
-        // testSchemaMapping calls container->get(IndexService::class)
-        // When it throws, returns 422
-        $this->container->method('get')
-            ->willThrowException(new \Exception('IndexService not available'));
-
-        $response = $this->controller->testSchemaMapping();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('IndexService', $data['error']);
-    }
-
-    public function testSchemaMappingReturns422OnException(): void
-    {
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service unavailable'));
-
-        $response = $this->controller->testSchemaMapping();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
     }
 
     // ── debugTypeFiltering tests ───────────────────────────────────────
@@ -1003,253 +827,6 @@ class SettingsControllerTest extends TestCase
 
         $this->assertInstanceOf(JSONResponse::class, $response);
         $this->assertSame(500, $response->getStatus());
-    }
-
-    // ── testSetupHandler with SOLR enabled ───────────────────────────
-
-    public function testSetupHandlerWithSolrEnabledButServiceUnavailable(): void
-    {
-        // When SOLR is enabled but IndexService fails to load, we get 422
-        $this->settingsService
-            ->method('getSolrSettings')
-            ->willReturn(['enabled' => true, 'host' => 'localhost', 'port' => 8983]);
-
-        // The controller internally uses OC class for container resolution
-        // which is not available in unit tests. The exception propagates as 422.
-        try {
-            $response = $this->controller->testSetupHandler();
-            // If we get a response, verify it
-            $this->assertInstanceOf(JSONResponse::class, $response);
-        } catch (\Error $e) {
-            // OC class not found is expected in unit test environment
-            $this->assertStringContainsString('OC', $e->getMessage());
-        }
-    }
-
-    // ── reindexSpecificCollection with valid params ──────────────────
-
-    public function testReindexSpecificCollectionValidParams(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 100],
-                ['batchSize', 1000, 500],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => true,
-            'stats' => ['indexed' => 50, 'errors' => 0],
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('my-collection');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(200, $response->getStatus());
-    }
-
-    // ── Additional tests for uncovered methods/branches ─────────────
-
-    /**
-     * Test reindexSpecificCollection returns 422 when reindexAll returns success=false
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionReturns422WhenReindexFails(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 500],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => false,
-            'message' => 'Collection not found',
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('nonexistent-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertSame('Collection not found', $data['message']);
-        $this->assertSame('nonexistent-col', $data['collection']);
-    }
-
-    /**
-     * Test reindexSpecificCollection returns 422 when reindexAll fails without message
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionReturns422WithDefaultMessage(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 500],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => false,
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('my-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertSame('Failed to reindex collection', $data['message']);
-    }
-
-    /**
-     * Test reindexSpecificCollection returns 400 for batchSize of 0 (below minimum)
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionBatchSizeZero(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 0],
-            ]);
-
-        $response = $this->controller->reindexSpecificCollection('test-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(400, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('batch size', strtolower($data['message']));
-    }
-
-    /**
-     * Test reindexSpecificCollection with boundary batchSize=1 (valid minimum)
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionBatchSizeMinBoundary(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 1],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => true,
-            'stats' => [],
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('test-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(200, $response->getStatus());
-    }
-
-    /**
-     * Test reindexSpecificCollection with boundary batchSize=5000 (valid maximum)
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionBatchSizeMaxBoundary(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 5000],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => true,
-            'stats' => [],
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('test-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(200, $response->getStatus());
-    }
-
-    /**
-     * Test reindexSpecificCollection with batchSize=5001 (above maximum, returns 400)
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionBatchSizeAboveMax(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 5001],
-            ]);
-
-        $response = $this->controller->reindexSpecificCollection('test-col');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(400, $response->getStatus());
-    }
-
-    /**
-     * Test reindexSpecificCollection success path includes stats in response
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionSuccessIncludesStats(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 50],
-                ['batchSize', 1000, 100],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => true,
-            'stats' => ['indexed' => 50, 'errors' => 2],
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('my-collection');
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(200, $response->getStatus());
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame('Reindex completed successfully', $data['message']);
-        $this->assertSame('my-collection', $data['collection']);
-        $this->assertArrayHasKey('stats', $data);
-        $this->assertSame(50, $data['stats']['indexed']);
-    }
-
-    /**
-     * Test reindexSpecificCollection success without stats key defaults to empty array
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionSuccessWithoutStats(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 100],
-            ]);
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-        $mockIndexService->method('reindexAll')->willReturn([
-            'success' => true,
-        ]);
-        $this->container->method('get')->willReturn($mockIndexService);
-
-        $response = $this->controller->reindexSpecificCollection('my-col');
-
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-        $this->assertSame([], $data['stats']);
     }
 
     /**
@@ -1939,218 +1516,6 @@ class SettingsControllerTest extends TestCase
         $this->assertSame('Rebase error', $data['error']);
     }
 
-    /**
-     * Test reindexSpecificCollection exception message is included in response
-     *
-     * @return void
-     */
-    public function testReindexSpecificCollectionExceptionMessageInResponse(): void
-    {
-        $this->request->method('getParam')
-            ->willReturnMap([
-                ['maxObjects', 0, 0],
-                ['batchSize', 1000, 100],
-            ]);
-        $this->container->method('get')
-            ->willThrowException(new \Exception('Service crashed'));
-
-        $response = $this->controller->reindexSpecificCollection('col-1');
-
-        $data = $response->getData();
-        $this->assertStringContainsString('Service crashed', $data['message']);
-        $this->assertStringContainsString('Reindex failed', $data['message']);
-    }
-
-    /**
-     * Test testSetupHandler exception message includes 'SOLR setup error' prefix
-     *
-     * @return void
-     */
-    public function testSetupHandlerExceptionMessageFormat(): void
-    {
-        $this->settingsService
-            ->method('getSolrSettings')
-            ->willThrowException(new \Exception('Connection refused'));
-
-        $response = $this->controller->testSetupHandler();
-
-        $data = $response->getData();
-        $this->assertStringContainsString('SOLR setup error', $data['message']);
-        $this->assertStringContainsString('Connection refused', $data['message']);
-    }
-
-    // ── testSchemaMapping success path ──────────────────────────────────
-
-    /**
-     * Test testSchemaMapping returns results when all services resolve.
-     *
-     * Uses an anonymous class because testSchemaAwareMapping is not defined on
-     * IndexService. The controller calls it with named parameters, so addMethods
-     * (which creates a parameterless method) does not work.
-     *
-     * @return void
-     */
-    public function testSchemaMappingReturnsResultsOnSuccess(): void
-    {
-        $expectedResults = [
-            'success'  => true,
-            'mappings' => ['field1' => 'text', 'field2' => 'integer'],
-            'total'    => 2,
-        ];
-
-        // Anonymous class with the correct method signature.
-        $mockIndexService = new class ($expectedResults) extends \OCA\OpenRegister\Service\IndexService {
-            private array $returnValue;
-
-            /**
-             * @param array $returnValue Value to return.
-             */
-            public function __construct(array $returnValue)
-            {
-                // Skip parent constructor.
-                $this->returnValue = $returnValue;
-            }
-
-            /**
-             * Mock testSchemaAwareMapping with named params.
-             *
-             * @param mixed $objectMapper Object mapper.
-             * @param mixed $schemaMapper Schema mapper.
-             *
-             * @return array Test results.
-             *
-             * @suppressWarnings(PHPMD.UnusedFormalParameter)
-             */
-            public function testSchemaAwareMapping($objectMapper=null, $schemaMapper=null): array
-            {
-                return $this->returnValue;
-            }
-        };
-
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-        $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-
-        $this->container->method('get')
-            ->willReturnCallback(
-                function (string $id) use ($mockIndexService, $mockObjectMapper, $mockSchemaMapper) {
-                    if ($id === \OCA\OpenRegister\Service\IndexService::class) {
-                        return $mockIndexService;
-                    }
-
-                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
-                        return $mockObjectMapper;
-                    }
-
-                    if ($id === \OCA\OpenRegister\Db\SchemaMapper::class) {
-                        return $mockSchemaMapper;
-                    }
-
-                    throw new \Exception("Unknown service: $id");
-                }
-            );
-
-        $response = $this->controller->testSchemaMapping();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(200, $response->getStatus());
-        $data = $response->getData();
-        $this->assertTrue($data['success']);
-        $this->assertArrayHasKey('mappings', $data);
-        $this->assertSame(2, $data['total']);
-    }
-
-    /**
-     * Test testSchemaMapping returns 422 when testSchemaAwareMapping throws
-     *
-     * @return void
-     */
-    public function testSchemaMappingReturns422WhenMappingThrows(): void
-    {
-        // Anonymous class that throws on testSchemaAwareMapping.
-        $mockIndexService = new class extends \OCA\OpenRegister\Service\IndexService {
-            /**
-             * Skip parent constructor.
-             */
-            public function __construct()
-            {
-                // No-op.
-            }
-
-            /**
-             * Mock testSchemaAwareMapping that throws.
-             *
-             * @param mixed $objectMapper Object mapper.
-             * @param mixed $schemaMapper Schema mapper.
-             *
-             * @return array Never returns.
-             *
-             * @throws \Exception Always.
-             *
-             * @suppressWarnings(PHPMD.UnusedFormalParameter)
-             */
-            public function testSchemaAwareMapping($objectMapper=null, $schemaMapper=null): array
-            {
-                throw new \Exception('Mapping error: field not found');
-            }
-        };
-
-        $mockObjectMapper = $this->createMock(\OCA\OpenRegister\Db\MagicMapper::class);
-        $mockSchemaMapper = $this->createMock(\OCA\OpenRegister\Db\SchemaMapper::class);
-
-        $this->container->method('get')
-            ->willReturnCallback(
-                function (string $id) use ($mockIndexService, $mockObjectMapper, $mockSchemaMapper) {
-                    if ($id === \OCA\OpenRegister\Service\IndexService::class) {
-                        return $mockIndexService;
-                    }
-
-                    if ($id === \OCA\OpenRegister\Db\MagicMapper::class) {
-                        return $mockObjectMapper;
-                    }
-
-                    if ($id === \OCA\OpenRegister\Db\SchemaMapper::class) {
-                        return $mockSchemaMapper;
-                    }
-
-                    throw new \Exception("Unknown service: $id");
-                }
-            );
-
-        $response = $this->controller->testSchemaMapping();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-        $this->assertStringContainsString('Mapping error', $data['error']);
-    }
-
-    /**
-     * Test testSchemaMapping returns 422 when objectMapper resolution fails
-     *
-     * @return void
-     */
-    public function testSchemaMappingReturns422WhenObjectMapperFails(): void
-    {
-        $mockIndexService = $this->createMock(\OCA\OpenRegister\Service\IndexService::class);
-
-        $this->container->method('get')
-            ->willReturnCallback(function (string $id) use ($mockIndexService) {
-                if ($id === \OCA\OpenRegister\Service\IndexService::class) {
-                    return $mockIndexService;
-                }
-
-                throw new \Exception('MagicMapper not available');
-            });
-
-        $response = $this->controller->testSchemaMapping();
-
-        $this->assertInstanceOf(JSONResponse::class, $response);
-        $this->assertSame(422, $response->getStatus());
-        $data = $response->getData();
-        $this->assertFalse($data['success']);
-    }
-
     // ── debugTypeFiltering success path ─────────────────────────────────
 
     /**
@@ -2180,6 +1545,14 @@ class SettingsControllerTest extends TestCase
             private array $rows;
 
             /**
+             * Cursor position for fetch() — mirrors a real IResult, which
+             * hands back rows one at a time and `false` once exhausted.
+             *
+             * @var int
+             */
+            private int $cursor = 0;
+
+            /**
              * Constructor.
              *
              * @param array $rows Rows to return.
@@ -2200,15 +1573,24 @@ class SettingsControllerTest extends TestCase
             }
 
             /**
-             * Fetch one row.
+             * Fetch one row, advancing the internal cursor.
+             *
+             * The controller iterates results via `fetch()` in a while loop
+             * (NC 32 compat — fetchAllAssociative() is not on every
+             * supported server's IResult), so this stub must behave like a
+             * real cursor: return the next row, or `false` once exhausted.
              *
              * @param int $fetchMode Fetch mode.
              *
-             * @return mixed False (no rows).
+             * @return mixed The next row, or false when exhausted.
              */
             public function fetch(int $fetchMode = \PDO::FETCH_ASSOC)
             {
-                return false;
+                if ($this->cursor >= count($this->rows)) {
+                    return false;
+                }
+
+                return $this->rows[$this->cursor++];
             }
 
             /**
@@ -2261,6 +1643,69 @@ class SettingsControllerTest extends TestCase
             public function fetchAllAssociative(): array
             {
                 return $this->rows;
+            }
+
+            /**
+             * Fetch the next row as an associative array (Doctrine DBAL).
+             *
+             * Added for Nextcloud 34's expanded OCP\DB\IResult. This is a
+             * row-less stub (parity with fetch()/fetchOne()).
+             *
+             * @return array|false False — no cursor rows in this stub.
+             */
+            public function fetchAssociative(): array|false
+            {
+                return false;
+            }
+
+            /**
+             * Fetch the next row as a numeric array (Doctrine DBAL).
+             *
+             * @return array|false False — no cursor rows in this stub.
+             */
+            public function fetchNumeric(): array|false
+            {
+                return false;
+            }
+
+            /**
+             * Fetch all rows as numeric-indexed arrays (Doctrine DBAL).
+             *
+             * @return array Numeric-indexed copies of the rows.
+             */
+            public function fetchAllNumeric(): array
+            {
+                return array_map(static fn ($row): array => array_values((array) $row), $this->rows);
+            }
+
+            /**
+             * Fetch the first column of every row (Doctrine DBAL).
+             *
+             * @return array First-column values.
+             */
+            public function fetchFirstColumn(): array
+            {
+                return array_map(static fn ($row) => (array_values((array) $row)[0] ?? null), $this->rows);
+            }
+
+            /**
+             * Iterate rows as numeric arrays (Doctrine DBAL).
+             *
+             * @return \Traversable Iterator over numeric-indexed rows.
+             */
+            public function iterateNumeric(): \Traversable
+            {
+                return new \ArrayIterator(array_map(static fn ($row): array => array_values((array) $row), $this->rows));
+            }
+
+            /**
+             * Iterate rows as associative arrays (Doctrine DBAL).
+             *
+             * @return \Traversable Iterator over the associative rows.
+             */
+            public function iterateAssociative(): \Traversable
+            {
+                return new \ArrayIterator($this->rows);
             }
         };
     }

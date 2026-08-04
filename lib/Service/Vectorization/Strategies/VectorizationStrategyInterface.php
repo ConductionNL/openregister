@@ -5,6 +5,9 @@
  *
  * Defines contract for entity-specific vectorization logic.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -40,6 +43,8 @@ interface VectorizationStrategyInterface
      * @param array $options Strategy-specific options
      *
      * @return array Array of entities to vectorize
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function fetchEntities(array $options): array;
 
@@ -57,6 +62,8 @@ interface VectorizationStrategyInterface
      * @param mixed $entity Entity to extract items from
      *
      * @return array Array of items, each with 'text' and other data
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function extractVectorizationItems($entity): array;
 
@@ -75,6 +82,8 @@ interface VectorizationStrategyInterface
      * @param array $item   Vectorization item (from extractVectorizationItems)
      *
      * @return array Metadata for vector storage
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function prepareVectorMetadata($entity, array $item): array;
 
@@ -84,6 +93,8 @@ interface VectorizationStrategyInterface
      * @param mixed $entity Entity
      *
      * @return string|int Identifier
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getEntityIdentifier($entity);
 }//end interface

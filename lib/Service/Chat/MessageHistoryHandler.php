@@ -5,6 +5,9 @@
  *
  * Handler for message storage and history management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
@@ -77,6 +82,8 @@ class MessageHistoryHandler
      * @param LoggerInterface    $logger             Logger.
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         MessageMapper $messageMapper,
@@ -101,6 +108,8 @@ class MessageHistoryHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         LLPhantMessage factory methods are standard LLPhant pattern
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Message role handling requires multiple conditional branches
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function buildMessageHistory(int $conversationId): array
     {
@@ -198,6 +207,8 @@ class MessageHistoryHandler
      *                                   sent with the message (orchestrator §8).
      *
      * @return Message Stored message entity
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function storeMessage(
         int $conversationId,

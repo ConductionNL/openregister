@@ -6,6 +6,9 @@
  * This file contains the service class for handling dashboard related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -23,6 +26,7 @@ namespace OCA\OpenRegister\Service;
 use DateTime;
 use Exception;
 use RuntimeException;
+use Throwable;
 use stdClass;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -51,6 +55,8 @@ use Psr\Log\LoggerInterface;
  * @link https://www.OpenRegister.app
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
  */
 class DashboardService
 {
@@ -147,6 +153,8 @@ class DashboardService
      * @param int|null $schemaId   The schema ID (optional)
      *
      * @return array Statistics with objects, logs, webhookLogs, and files totals and sizes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     private function getStats(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -294,6 +302,8 @@ class DashboardService
      * @throws \Exception If there is an error getting the registers with schemas
      *
      * @return array Registers with their schemas and statistics for dashboard display.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function getRegistersWithSchemas(
         ?int $registerId=null,
@@ -322,35 +332,26 @@ class DashboardService
                 'schemas'     => [],
             ];
 
-            // For each register, get its schemas and statistics.
+            // For each register, get its schemas and statistics. Each register
+            // is processed in its own try/catch: a single register whose
+            // schemas fail to hydrate (e.g. a cross-app schema-format conflict,
+            // openregister#2087) must degrade to a flagged entry, not blank the
+            // whole dashboard for every register and every user.
             foreach ($registers as $register) {
-                $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+                try {
+                    $result[] = $this->buildRegisterEntry(register: $register, schemaId: $schemaId);
+                } catch (Throwable $registerError) {
+                    $this->logger->warning(
+                        message: '[DashboardService] Skipping a register whose schemas could not be loaded: '.$registerError->getMessage(),
+                        context: ['file' => __FILE__, 'line' => __LINE__, 'register' => $register->getId()]
+                    );
 
-                // Get register-level statistics.
-                $registerStats = $this->getStats(registerId: $register->getId());
-
-                // Convert register to array and add statistics.
-                $registerArray          = $register->jsonSerialize();
-                $registerArray['stats'] = $registerStats;
-
-                // Process schemas.
-                $schemasArray = [];
-                foreach ($schemas as $schema) {
-                    if ($schemaId !== null &&  $schema->getId() !== $schemaId) {
-                        continue;
-                    }
-
-                    // Get schema-level statistics.
-                    $schemaStats = $this->getStats(registerId: $register->getId(), schemaId: $schema->getId());
-
-                    // Convert schema to array and add statistics.
-                    $schemaArray          = $schema->jsonSerialize();
-                    $schemaArray['stats'] = $schemaStats;
-                    $schemasArray[]       = $schemaArray;
-                }
-
-                $registerArray['schemas'] = $schemasArray;
-                $result[] = $registerArray;
+                    $registerArray            = $register->jsonSerialize();
+                    $registerArray['stats']   = [];
+                    $registerArray['schemas'] = [];
+                    $registerArray['error']   = $registerError->getMessage();
+                    $result[] = $registerArray;
+                }//end try
             }//end foreach
 
             // Add orphaned items statistics as a special "register".
@@ -374,6 +375,45 @@ class DashboardService
     }//end getRegistersWithSchemas()
 
     /**
+     * Build one register's dashboard entry: its stats plus each schema's stats.
+     *
+     * Split out of {@see self::getRegistersWithSchemas()} so a failure here is
+     * caught per register rather than aborting the whole dashboard. Any throw
+     * (a schema-hydration conflict, a stats query error) is the caller's to
+     * turn into a flagged entry.
+     *
+     * @param \OCA\OpenRegister\Db\Register $register The register.
+     * @param int|null                      $schemaId Restrict to one schema, or null for all.
+     *
+     * @return array<string, mixed> The register entry, with `stats` and `schemas`.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
+     */
+    private function buildRegisterEntry(\OCA\OpenRegister\Db\Register $register, ?int $schemaId): array
+    {
+        $schemas = $this->registerMapper->getSchemasByRegisterId($register->getId());
+
+        $registerArray          = $register->jsonSerialize();
+        $registerArray['stats'] = $this->getStats(registerId: $register->getId());
+
+        $schemasArray = [];
+        foreach ($schemas as $schema) {
+            if ($schemaId !== null && $schema->getId() !== $schemaId) {
+                continue;
+            }
+
+            $schemaArray          = $schema->jsonSerialize();
+            $schemaArray['stats'] = $this->getStats(registerId: $register->getId(), schemaId: $schema->getId());
+            $schemasArray[]       = $schemaArray;
+        }
+
+        $registerArray['schemas'] = $schemasArray;
+
+        return $registerArray;
+
+    }//end buildRegisterEntry()
+
+    /**
      * Recalculate sizes for objects in specified registers and/or schemas
      *
      * @param int|null $registerId The register ID to filter by (optional)
@@ -382,6 +422,8 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed objects
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -437,6 +479,8 @@ class DashboardService
      * @return int[] Array containing counts of processed and failed logs
      *
      * @psalm-return array{processed: 0|1|2, failed: 0|1|2}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateLogSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -490,6 +534,8 @@ class DashboardService
      * @param int|null $schemaId   The schema ID to filter by (optional)
      *
      * @return array Results with objects, logs, and total processed and failed counts.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function recalculateAllSizes(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -530,6 +576,8 @@ class DashboardService
      *     total: array{processed: mixed, failed: mixed}},
      *     summary: array{total_processed: mixed, total_failed: mixed,
      *     success_rate: float}}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function calculate(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -679,6 +727,8 @@ class DashboardService
      * @return ((int[]|string)[]|(int|string))[][]
      *
      * @psalm-return array{labels: list<array-key>, series: list<array{data: list<int>, name: string}>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-compute-profile-org/tasks.md#task-5
      */
     public function getAuditTrailActionChartData(
         ?\DateTime $from=null,
@@ -714,6 +764,8 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by register
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getRegisterChartData with degraded-empty fallback; chart shaping owned by the mapper.
      */
     public function getObjectsByRegisterChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -740,6 +792,8 @@ class DashboardService
      * @return (int|mixed|string)[][] Array containing chart data for objects by schema
      *
      * @psalm-return array{labels: array<'Unknown'|mixed>, series: array<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getSchemaChartData with degraded-empty fallback; chart shaping owned by the mapper.
      */
     public function getObjectsBySchemaChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -766,6 +820,9 @@ class DashboardService
      * @return (int|string)[][] Array containing chart data for objects by size
      *
      * @psalm-return array{labels: list<'0-1 KB'|'1-10 KB'|'10-100 KB'|'100 KB-1 MB'|'> 1 MB'>, series: list<int>}
+     *
+     * @spec exclude Thin try/catch delegation to ObjectMapper::getSizeDistributionChartData with degraded-empty
+     *              fallback; chart shaping owned by the mapper.
      */
     public function getObjectsBySizeChartData(?int $registerId=null, ?int $schemaId=null): array
     {
@@ -793,6 +850,8 @@ class DashboardService
      * @return int[]
      *
      * @psalm-return array{total: int, creates: int, updates: int, deletes: int, reads: int}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getDetailedStatistics with degraded-empty fallback.
      */
     public function getAuditTrailStatistics(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -827,6 +886,8 @@ class DashboardService
      * @return (int|mixed)[][][]
      *
      * @psalm-return array{actions: list<array{count: int, name: mixed}>}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getActionDistribution with degraded-empty fallback.
      */
     public function getAuditTrailActionDistribution(?int $registerId=null, ?int $schemaId=null, ?int $hours=24): array
     {
@@ -858,6 +919,8 @@ class DashboardService
      * @return (int|mixed|string)[][][]
      *
      * @psalm-return array{objects: list<array{count: int, id: mixed, name: string}>}
+     *
+     * @spec exclude Thin try/catch delegation to AuditTrailMapper::getMostActiveObjects with degraded-empty fallback.
      */
     public function getMostActiveObjects(?int $registerId=null, ?int $schemaId=null, ?int $limit=10, ?int $hours=24): array
     {

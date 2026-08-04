@@ -4,6 +4,8 @@ status: redirect
 # DSO Omgevingsloket Integration
 
 ## Purpose
+
+@e2e exclude redirect stub owned by Procest — no UI in OR
 This spec is a redirect stub. The canonical specification for DSO Omgevingsloket integration is owned by the Procest app at `procest/openspec/specs/dso-omgevingsloket/spec.md`. This stub exists to preserve the spec slug locally and MUST NOT be treated as authoritative.
 
 ## Requirements

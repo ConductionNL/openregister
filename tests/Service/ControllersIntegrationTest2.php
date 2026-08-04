@@ -33,7 +33,6 @@ use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
 use OCA\OpenRegister\Controller\Settings\FileSettingsController;
 use OCA\OpenRegister\Controller\Settings\LlmSettingsController;
 use OCA\OpenRegister\Controller\Settings\N8nSettingsController;
-use OCA\OpenRegister\Controller\Settings\SolrSettingsController;
 use OCA\OpenRegister\Db\AgentMapper;
 use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\ConversationMapper;
@@ -42,17 +41,21 @@ use OCA\OpenRegister\Db\FeedbackMapper;
 use OCA\OpenRegister\Db\GdprEntityMapper;
 use OCA\OpenRegister\Db\MessageMapper;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TenantUsageMapper;
 use OCA\OpenRegister\Db\WebhookLogMapper;
 use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\ChatService;
 use OCA\OpenRegister\Service\FileService;
-use OCA\OpenRegister\Service\IndexService;
+use OCA\OpenRegister\Service\File\ManualEntityService;
 use OCA\OpenRegister\Service\Mcp\McpProtocolService;
 use OCA\OpenRegister\Service\Mcp\McpResourcesService;
 use OCA\OpenRegister\Service\Mcp\McpToolsService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TenantLifecycleService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCA\OpenRegister\Service\Settings\ConfigurationSettingsHandler;
 use OCA\OpenRegister\Service\TextExtractionService;
@@ -64,7 +67,13 @@ use OCP\Http\Client\IClientService;
 use OCP\IAppConfig;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
+use OCP\Files\Node;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -167,19 +176,6 @@ class ControllersIntegrationTest2 extends TestCase
     }//end tearDown()
 
     // ─── ChatController ──────────────────────────────────────────────────
-
-    /**
-     * Test ChatController::page returns TemplateResponse
-     *
-     * @return void
-     */
-    public function testChatControllerPage(): void
-    {
-        $controller = $this->buildChatController();
-        $response   = $controller->page();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testChatControllerPage()
 
     /**
      * Test ChatController::sendMessage with empty message
@@ -1139,21 +1135,6 @@ class ControllersIntegrationTest2 extends TestCase
         $this->assertArrayHasKey('stats', $data);
     }//end testFileTextControllerGetStats()
 
-    /**
-     * Test FileTextController::getChunkingStats
-     *
-     * @return void
-     */
-    public function testFileTextControllerGetChunkingStats(): void
-    {
-        $controller = $this->buildFileTextController();
-        $response   = $controller->getChunkingStats();
-        $data       = $response->getData();
-
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($data['success']);
-    }//end testFileTextControllerGetChunkingStats()
-
     // ─── FileExtractionController ────────────────────────────────────────
 
     /**
@@ -1415,14 +1396,14 @@ class ControllersIntegrationTest2 extends TestCase
     }//end testBulkControllerDeleteRegisterNonNumeric()
 
     /**
-     * Test BulkController::validateSchema with non-numeric schema
+     * Test BulkController::runSchemaValidation with non-numeric schema
      *
      * @return void
      */
     public function testBulkControllerValidateSchemaNonNumeric(): void
     {
         $controller = $this->buildBulkController();
-        $response   = $controller->validateSchema('not-numeric');
+        $response   = $controller->runSchemaValidation('not-numeric');
         $data       = $response->getData();
 
         $this->assertSame(400, $response->getStatus());
@@ -1951,48 +1932,6 @@ class ControllersIntegrationTest2 extends TestCase
         $this->assertFalse($data['success']);
     }//end testApiTokenSettingsControllerTestGitLabTokenEmpty()
 
-    /**
-     * Test SolrSettingsController::getSolrSettings
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetSettings(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrSettings();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testSolrSettingsControllerGetSettings()
-
-    /**
-     * Test SolrSettingsController::getSolrFacetConfiguration
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetFacetConfig(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrFacetConfiguration();
-
-        $this->assertSame(200, $response->getStatus());
-    }//end testSolrSettingsControllerGetFacetConfig()
-
-    /**
-     * Test SolrSettingsController::getSolrInfo
-     *
-     * @return void
-     */
-    public function testSolrSettingsControllerGetSolrInfo(): void
-    {
-        $controller = $this->buildSolrSettingsController();
-        $response   = $controller->getSolrInfo();
-        $data       = $response->getData();
-
-        $this->assertSame(200, $response->getStatus());
-        $this->assertTrue($data['success']);
-        $this->assertArrayHasKey('solr', $data);
-    }//end testSolrSettingsControllerGetSolrInfo()
-
     // ─── Builder methods ─────────────────────────────────────────────────
 
     /**
@@ -2051,7 +1990,10 @@ class ControllersIntegrationTest2 extends TestCase
             \OC::$server->get(GdprEntityMapper::class),
             \OC::$server->get(EntityRelationMapper::class),
             $this->db,
-            $this->logger
+            $this->logger,
+            \OC::$server->get(\OCP\IUserSession::class),
+            \OC::$server->get(\OCP\IGroupManager::class),
+            \OC::$server->get(OrganisationService::class)
         );
     }//end buildGdprEntitiesController()
 
@@ -2084,7 +2026,11 @@ class ControllersIntegrationTest2 extends TestCase
             $this->request,
             \OC::$server->get(OrganisationService::class),
             \OC::$server->get(OrganisationMapper::class),
-            $this->logger
+            $this->logger,
+            \OC::$server->get(TenantLifecycleService::class),
+            \OC::$server->get(TenantUsageMapper::class),
+            \OC::$server->get(IUserSession::class),
+            \OC::$server->get(IGroupManager::class)
         );
     }//end buildOrganisationController()
 
@@ -2099,11 +2045,14 @@ class ControllersIntegrationTest2 extends TestCase
             'openregister',
             $this->request,
             \OC::$server->get(TextExtractionService::class),
-            \OC::$server->get(IndexService::class),
             \OC::$server->get(FileService::class),
             \OC::$server->get(EntityRelationMapper::class),
             $this->logger,
-            $this->appConfig
+            $this->appConfig,
+            \OC::$server->get(ManualEntityService::class),
+            $this->buildAccessibleUserSession(),
+            $this->buildAccessibleRootFolder(),
+            $this->buildAdminGroupManager()
         );
     }//end buildFileTextController()
 
@@ -2121,9 +2070,61 @@ class ControllersIntegrationTest2 extends TestCase
             \OC::$server->get(VectorizationService::class),
             \OC::$server->get(ChunkMapper::class),
             \OC::$server->get(EntityRelationMapper::class),
-            \OC::$server->get(RiskLevelService::class)
+            \OC::$server->get(RiskLevelService::class),
+            $this->buildAccessibleRootFolder(),
+            $this->buildAccessibleUserSession(),
+            $this->buildAdminGroupManager()
         );
     }//end buildFileExtractionController()
+
+    /**
+     * Build a mocked IUserSession that resolves to an authenticated admin
+     * user, so the new per-file access guards on FileTextController /
+     * FileExtractionController pass by default.
+     *
+     * @return IUserSession&MockObject
+     */
+    private function buildAccessibleUserSession(): IUserSession
+    {
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($admin);
+
+        return $userSession;
+    }//end buildAccessibleUserSession()
+
+    /**
+     * Build a mocked IRootFolder whose user folder resolves any file id,
+     * so the new per-file access guards pass by default.
+     *
+     * @return IRootFolder&MockObject
+     */
+    private function buildAccessibleRootFolder(): IRootFolder
+    {
+        $userFolder = $this->createMock(Folder::class);
+        $userFolder->method('getById')->willReturn([$this->createMock(Node::class)]);
+
+        $rootFolder = $this->createMock(IRootFolder::class);
+        $rootFolder->method('getUserFolder')->willReturn($userFolder);
+
+        return $rootFolder;
+    }//end buildAccessibleRootFolder()
+
+    /**
+     * Build a mocked IGroupManager that reports the caller as admin, so
+     * the new bulkExtract() admin-only guard passes by default.
+     *
+     * @return IGroupManager&MockObject
+     */
+    private function buildAdminGroupManager(): IGroupManager
+    {
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
+        return $groupManager;
+    }//end buildAdminGroupManager()
 
     /**
      * Build BulkController with real services
@@ -2135,7 +2136,11 @@ class ControllersIntegrationTest2 extends TestCase
         return new BulkController(
             'openregister',
             $this->request,
-            \OC::$server->get(ObjectService::class)
+            \OC::$server->get(ObjectService::class),
+            \OC::$server->get(RegisterMapper::class),
+            \OC::$server->get(SchemaMapper::class),
+            \OC::$server->get(IUserSession::class),
+            \OC::$server->get(IGroupManager::class)
         );
     }//end buildBulkController()
 
@@ -2201,7 +2206,6 @@ class ControllersIntegrationTest2 extends TestCase
             'openregister',
             $this->request,
             \OC::$server->get(SettingsService::class),
-            \OC::$server->get(IndexService::class),
             $this->logger,
             \OC::$server->get(Factory::class),
             $this->appConfig
@@ -2224,20 +2228,4 @@ class ControllersIntegrationTest2 extends TestCase
         );
     }//end buildApiTokenSettingsController()
 
-    /**
-     * Build SolrSettingsController with real services
-     *
-     * @return SolrSettingsController
-     */
-    private function buildSolrSettingsController(): SolrSettingsController
-    {
-        return new SolrSettingsController(
-            'openregister',
-            $this->request,
-            \OC::$server->get(SettingsService::class),
-            \OC::$server->get(IndexService::class),
-            \OC::$server->get(ContainerInterface::class),
-            $this->logger
-        );
-    }//end buildSolrSettingsController()
 }//end class

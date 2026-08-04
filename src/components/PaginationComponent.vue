@@ -25,12 +25,11 @@
 
 			<!-- Page number buttons -->
 			<div class="viewPaginationNumbers">
-				<template v-for="page in visiblePages">
-					<span v-if="page === '...'" :key="'ellipsis-' + page" class="viewPaginationEllipsis">...</span>
+				<template v-for="page in visiblePages" :key="page">
+					<span v-if="page === '...'" class="viewPaginationEllipsis">...</span>
 					<NcButton
 						v-else
-						:key="page"
-						:type="page === currentPage ? 'primary' : 'secondary'"
+						:variant="page === currentPage ? 'primary' : 'secondary'"
 						:disabled="page === currentPage"
 						@click="changePage(page)">
 						{{ page }}
@@ -59,7 +58,7 @@
 			<NcSelect
 				id="pageSize"
 				class="pagination-page-size-select"
-				:value="currentPageSizeOption"
+				:model-value="currentPageSizeOption"
 				:options="pageSizeOptions"
 				:clearable="false"
 				input-label="Items per page"
@@ -154,6 +153,7 @@ export default {
 		/**
 		 * Get current page size option object
 		 * @return {object} Current page size option object
+		 * @spec exclude computed lookup of current page-size option, UI plumbing
 		 */
 		currentPageSizeOption() {
 			return this.pageSizeOptions.find(option => option.value === this.currentPageSize) || this.pageSizeOptions[1]
@@ -161,6 +161,7 @@ export default {
 		/**
 		 * Calculate visible page numbers for pagination
 		 * @return {Array} Array of page numbers and ellipsis
+		 * @spec exclude computed ellipsis-aware page-number list for display, UI plumbing
 		 */
 		visiblePages() {
 			const current = this.currentPage
@@ -208,6 +209,7 @@ export default {
 		 * Change to a specific page
 		 * @param {number} page - The page number to change to
 		 * @return {void}
+		 * @spec openspec/specs/shared-ui-components/spec.md
 		 */
 		changePage(page) {
 			if (page !== this.currentPage && page >= 1 && page <= this.totalPages) {
@@ -223,6 +225,7 @@ export default {
 		 * Change page size
 		 * @param {object} option - Selected page size option
 		 * @return {void}
+		 * @spec exclude emit page-size-changed UI plumbing
 		 */
 		changePageSize(option) {
 			if (option.value !== this.currentPageSize) {

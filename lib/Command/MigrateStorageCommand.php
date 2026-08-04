@@ -5,6 +5,9 @@
  *
  * OCC command for migrating objects between blob storage and magic tables.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Command
  * @package   OCA\OpenRegister\Command
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -44,7 +47,7 @@ class MigrateStorageCommand extends Command
      *
      * @param MigrationService $migrationService Migration service instance.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MigrationService $migrationService,
@@ -57,7 +60,7 @@ class MigrateStorageCommand extends Command
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function configure(): void
     {
@@ -127,7 +130,7 @@ class MigrateStorageCommand extends Command
      *
      * @return int Command exit code.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-21
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

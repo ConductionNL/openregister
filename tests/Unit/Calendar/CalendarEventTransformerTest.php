@@ -372,4 +372,177 @@ class CalendarEventTransformerTest extends TestCase
 
         $this->assertSame('20260410', $result['objects'][0]['DTEND'][0]);
     }
+
+    public function testNaiveDateTimeKeepsZSuffix(): void
+    {
+        // Backward-compatibility: a naive ISO-8601 string (no zone marker)
+        // is still treated as UTC and emitted with `Z`.
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertSame('DATE-TIME', $result['objects'][0]['DTSTART'][1]['VALUE']);
+        $this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
+    }
+
+    public function testExplicitUtcSuffixEmitsZ(): void
+    {
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00Z',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
+    }
+
+    public function testZeroOffsetIsTreatedAsUtc(): void
+    {
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00+00:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
+    }
+
+    public function testPositiveOffsetIsConvertedToUtc(): void
+    {
+        // 14:00 in +02:00 == 12:00 UTC. The previous implementation
+        // emitted `20260325T140000Z`, mis-stating the instant by two
+        // hours — this is the regression the fix addresses.
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00+02:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T120000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertSame('DATE-TIME', $result['objects'][0]['DTSTART'][1]['VALUE']);
+        $this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
+    }
+
+    public function testNegativeOffsetIsConvertedToUtc(): void
+    {
+        // 09:00 in -05:00 == 14:00 UTC.
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T09:00:00-05:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T140000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertArrayNotHasKey('TZID', $result['objects'][0]['DTSTART'][1]);
+    }
+
+    public function testDefaultDtendPreservesNonUtcOffset(): void
+    {
+        // DTSTART carries `+02:00`; default DTEND is start + 1 hour and
+        // must also be UTC-converted, not slapped with a literal `Z`.
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00+02:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        // 14:00 +02:00 + 1h == 13:00 UTC.
+        $this->assertSame('20260325T130000Z', $result['objects'][0]['DTEND'][0]);
+    }
+
+    public function testConfiguredDtendFieldHonoursOffset(): void
+    {
+        $object = $this->createObjectEntity([
+            'startdatum' => '2026-03-25T14:00:00+02:00',
+            'einddatum'  => '2026-03-25T16:30:00+02:00',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'dtend'         => 'einddatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        $this->assertSame('20260325T120000Z', $result['objects'][0]['DTSTART'][0]);
+        $this->assertSame('20260325T143000Z', $result['objects'][0]['DTEND'][0]);
+    }
+
+    public function testMalformedDatetimeFallsBackSafely(): void
+    {
+        $object = $this->createObjectEntity([
+            'startdatum' => 'not-a-date',
+            'naam'       => 'Test',
+        ]);
+
+        $config = [
+            'enabled'       => true,
+            'dtstart'       => 'startdatum',
+            'titleTemplate' => '{naam}',
+            'allDay'        => false,
+        ];
+
+        $result = $this->transformer->transform($object, $this->schema, $config);
+
+        // Falls back to the epoch as a UTC instant rather than throwing.
+        $this->assertNotNull($result);
+        $this->assertSame('19700101T000000Z', $result['objects'][0]['DTSTART'][0]);
+    }
 }

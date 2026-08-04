@@ -28,7 +28,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as cards'"
+							title="See configurations as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -38,7 +38,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See configurations as a table'"
+							title="See configurations as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -114,9 +114,9 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
 									<th>{{ t('openregister', 'Source') }}</th>
@@ -136,8 +136,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 									:class="{ viewTableRowSelected: selectedConfigurations.includes(configuration.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedConfigurations.includes(configuration.id)"
-											@update:checked="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
+											:model-value="selectedConfigurations.includes(configuration.id)"
+											@update:modelValue="(checked) => toggleConfigurationSelection(configuration.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">
@@ -307,17 +307,41 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Current page slice of the configuration list.
+		 *
+		 * @spec exclude UI plumbing — client-side pagination computed; admin list contract owned by admin-list-views.
+		 * @return {Array} configurations on the active page
+		 */
 		paginatedConfigurations() {
 			const start = ((this.pagination.page || 1) - 1) * (this.pagination.limit || 20)
 			const end = start + (this.pagination.limit || 20)
 			return configurationStore.configurationList.slice(start, end)
 		},
+		/**
+		 * Whether every configuration is selected.
+		 *
+		 * @spec exclude UI plumbing — header-checkbox state derived from selection; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		allSelected() {
 			return configurationStore.configurationList.length > 0 && configurationStore.configurationList.every(configuration => this.selectedConfigurations.includes(configuration.id))
 		},
+		/**
+		 * Whether a partial selection exists (indeterminate state).
+		 *
+		 * @spec exclude UI plumbing — header-checkbox indeterminate state; admin list contract owned by admin-list-views.
+		 * @return {boolean}
+		 */
 		someSelected() {
 			return this.selectedConfigurations.length > 0 && !this.allSelected
 		},
+		/**
+		 * Empty-state title reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentName() {
 			if (configurationStore.loading) {
 				return t('openregister', 'Loading configurations...')
@@ -328,6 +352,12 @@ export default {
 			}
 			return ''
 		},
+		/**
+		 * Empty-state description reflecting loading/error/empty.
+		 *
+		 * @spec exclude UI plumbing — derived empty-state copy, no observable contract.
+		 * @return {string}
+		 */
 		emptyContentDescription() {
 			if (configurationStore.loading) {
 				return t('openregister', 'Please wait while we fetch your configurations.')
@@ -339,11 +369,24 @@ export default {
 			return ''
 		},
 	},
+	/**
+	 * Soft-refresh the configuration list on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook delegating to the store; list contract owned by admin-list-views.
+	 * @return {void}
+	 */
 	mounted() {
 		// Use soft reload (no loading spinner) since data is hot-loaded at app startup
 		configurationStore.refreshConfigurationList(null, true)
 	},
 	methods: {
+		/**
+		 * Toggle selection state for every configuration in the current list.
+		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
+		 * @param {boolean} checked - true selects all, false clears the selection
+		 * @return {void}
+		 */
 		toggleSelectAll(checked) {
 			if (checked) {
 				this.selectedConfigurations = configurationStore.configurationList.map(configuration => configuration.id)
@@ -351,6 +394,14 @@ export default {
 				this.selectedConfigurations = []
 			}
 		},
+		/**
+		 * Toggle selection for a single configuration row.
+		 *
+		 * @spec exclude UI plumbing — row-selection state mutation; admin list contract owned by admin-list-views.
+		 * @param {string|number} configurationId - row id
+		 * @param {boolean} checked - selected state
+		 * @return {void}
+		 */
 		toggleConfigurationSelection(configurationId, checked) {
 			if (checked) {
 				this.selectedConfigurations.push(configurationId)
@@ -358,13 +409,34 @@ export default {
 				this.selectedConfigurations = this.selectedConfigurations.filter(id => id !== configurationId)
 			}
 		},
+		/**
+		 * Handle a page change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} page - new page number
+		 * @return {void}
+		 */
 		onPageChanged(page) {
 			this.pagination.page = page
 		},
+		/**
+		 * Handle a page-size change from the paginator.
+		 *
+		 * @spec exclude UI plumbing — pagination state mutation; admin list contract owned by admin-list-views.
+		 * @param {number} pageSize - new page size
+		 * @return {void}
+		 */
 		onPageSizeChanged(pageSize) {
 			this.pagination.page = 1
 			this.pagination.limit = pageSize
 		},
+		/**
+		 * Whether a configuration has a remote update available.
+		 *
+		 * @spec exclude UI plumbing — display badge predicate comparing local vs remote version.
+		 * @param {object} configuration - configuration row
+		 * @return {boolean}
+		 */
 		hasUpdateAvailable(configuration) {
 			if (!configuration.localVersion || !configuration.remoteVersion) {
 				return false
@@ -378,6 +450,13 @@ export default {
 		isManualConfiguration(configuration) {
 			return !configuration.sourceType || configuration.sourceType === 'local'
 		},
+		/**
+		 * Map a source-type id to a human label.
+		 *
+		 * @spec exclude UI plumbing — static label lookup for display.
+		 * @param {string} sourceType - source type id
+		 * @return {string} display label
+		 */
 		getSourceTypeLabel(sourceType) {
 			const labels = {
 				local: 'Local',
@@ -387,6 +466,13 @@ export default {
 			}
 			return labels[sourceType] || 'Unknown'
 		},
+		/**
+		 * Check a configuration's remote version and refresh the list.
+		 *
+		 * @spec exclude UI plumbing — thin POST + toast + list refresh; configuration sync contract owned elsewhere.
+		 * @param {object} configuration - configuration row
+		 * @return {Promise<void>}
+		 */
 		async checkVersion(configuration) {
 			try {
 				const response = await axios.post(
@@ -408,27 +494,69 @@ export default {
 				showError(t('openregister', 'Failed to check version: {error}', { error: error.response?.data?.error || error.message }))
 			}
 		},
+		/**
+		 * Open the view-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleView(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('viewConfiguration')
 		},
+		/**
+		 * Open the edit-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleEdit(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('editConfiguration')
 		},
+		/**
+		 * Open the export-configuration modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleExport(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('exportConfiguration')
 		},
+		/**
+		 * Open the delete-configuration dialog for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + dialog dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		handleDelete(configuration) {
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setDialog('deleteConfiguration')
 		},
+		/**
+		 * Open the preview-update modal for a row.
+		 *
+		 * @spec exclude UI plumbing — store-set + modal dispatch.
+		 * @param {object} configuration - configuration row
+		 * @return {void}
+		 */
 		previewUpdate(configuration) {
 			// Set the configuration and open preview modal
 			configurationStore.setConfigurationItem(configuration)
 			navigationStore.setModal('previewConfiguration')
 		},
+		/**
+		 * Build a relative sync-status label for a configuration.
+		 *
+		 * @spec exclude UI plumbing — display formatter computing relative time.
+		 * @param {object} configuration - configuration row
+		 * @return {string} display label
+		 */
 		getSyncStatusText(configuration) {
 			if (configuration.syncStatus === 'success' && configuration.lastSyncDate) {
 				const now = new Date()

@@ -68,7 +68,34 @@ class MappingExtensionTest extends TestCase
     {
         $functions = $this->extension->getFunctions();
         $this->assertIsArray($functions);
-        $this->assertCount(2, $functions);
+
+        // Asserted BY NAME, not by count. The count assertion that used to be
+        // here broke the moment mapping consolidated — which told us a number
+        // had changed, not whether anything was missing. These names are the
+        // contract: a stored mapping calls them, so losing one breaks authored
+        // data at evaluation time with nothing at author time to warn you.
+        $names = array_map(static fn ($fn): string => $fn->getName(), $functions);
+
+        foreach (['executeMapping', 'generateUuid', 'json_decode', 'jsonDecode', 'createSlug', 'b64enc', 'b64dec'] as $expected) {
+            $this->assertContains($expected, $names, sprintf('mapping templates call %s()', $expected));
+        }
+    }
+
+    /**
+     * `json_decode` must be reachable as BOTH a function and a filter.
+     *
+     * OpenConnector's templates call `json_decode(x)`; OpenRegister's own use
+     * `x|json_decode`. Consolidation kept both rather than picking one, because
+     * a mapping is authored data and dropping either form breaks stored
+     * templates silently.
+     */
+    public function testJsonDecodeIsReachableAsFunctionAndFilter(): void
+    {
+        $functionNames = array_map(static fn ($fn): string => $fn->getName(), $this->extension->getFunctions());
+        $filterNames   = array_map(static fn ($f): string => $f->getName(), $this->extension->getFilters());
+
+        $this->assertContains('json_decode', $functionNames, 'OpenConnector templates call json_decode()');
+        $this->assertContains('json_decode', $filterNames, 'OpenRegister templates use |json_decode');
     }
 
     public function testGetFunctionsAreTwigFunctions(): void

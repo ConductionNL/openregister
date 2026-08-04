@@ -3,6 +3,9 @@
 /**
  * OpenRegister WorkflowExecutionController
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -14,7 +17,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
  */
 
 declare(strict_types=1);
@@ -58,7 +61,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
      */
     public function index(): JSONResponse
     {
@@ -122,7 +125,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
      */
     public function show(int $id): JSONResponse
     {
@@ -142,7 +145,7 @@ class WorkflowExecutionController extends Controller
      *
      * @return JSONResponse
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+     * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
      */
     public function destroy(int $id): JSONResponse
     {

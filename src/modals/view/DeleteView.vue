@@ -34,7 +34,7 @@
 			<NcButton
 				v-if="!success"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="deleteView()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -85,6 +85,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			clearTimeout(this.closeModalTimeout)
 			this.success = false
@@ -92,6 +95,9 @@ export default {
 			this.error = null
 			this.$emit('close')
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to viewsStore.deleteView.
+		 */
 		async deleteView() {
 			if (!this.view) return
 

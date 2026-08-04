@@ -236,40 +236,64 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude detail-view active-organisation flag (computed; tenant-lifecycle contract)
+		 */
 		isActiveOrganisation() {
 			return organisationStore.userStats.active
 				   && organisationStore.userStats.active.uuid === organisationStore.organisationItem?.uuid
 		},
+		/**
+		 * @spec exclude detail-view edit-permission gate (computed)
+		 */
 		canEdit() {
 			// Only owner can edit (or system for default org)
 			return organisationStore.organisationItem?.owner === 'system'
 				   || organisationStore.organisationItem?.owner === this.getCurrentUser()
 		},
+		/**
+		 * @spec exclude detail-view leave-permission gate (computed)
+		 */
 		canLeave() {
 			// Can't leave if it's your only organisation, you're the owner, or it's default
 			return organisationStore.userStats.total > 1
 				   && !organisationStore.organisationItem?.isDefault
 				   && organisationStore.organisationItem?.owner !== this.getCurrentUser()
 		},
+		/**
+		 * @spec exclude detail-view delete-permission gate (computed)
+		 */
 		canDelete() {
 			// Only owners can delete, and can't delete default organisation
 			return !organisationStore.organisationItem?.isDefault
 				   && organisationStore.organisationItem?.owner === this.getCurrentUser()
 		},
+		/**
+		 * @spec exclude detail-view manage-members permission gate (computed)
+		 */
 		canManageMembers() {
 			// Only owners can manage members
 			return organisationStore.organisationItem?.owner === this.getCurrentUser()
 		},
 	},
+	/**
+	 * @spec exclude detail-view lifecycle; loads organisation statistics on mount
+	 */
 	async mounted() {
 		// Load organisation statistics (would need API endpoint)
 		await this.loadOrganisationStats()
 	},
 	methods: {
+		/**
+		 * @spec exclude detail-view current-user resolution helper from route meta
+		 */
 		getCurrentUser() {
 			// Implementation would depend on how you get current user
 			return this.$route.meta?.user?.uid || 'unknown'
 		},
+		/**
+		 * @spec exclude detail-view action; delegates to store to set the active organisation (tenant-lifecycle contract)
+		 */
 		async setActiveOrganisation() {
 			try {
 				await organisationStore.setActiveOrganisationById(organisationStore.organisationItem.uuid)
@@ -278,6 +302,9 @@ export default {
 				showError(t('openregister', 'Failed to set active organisation: {error}', { error: error.message }))
 			}
 		},
+		/**
+		 * @spec exclude detail-view action; confirms then delegates to store leave + navigates back (tenant-lifecycle contract)
+		 */
 		async leaveOrganisation() {
 			if (!confirm(t('openregister', 'Are you sure you want to leave \'{name}\'?', { name: organisationStore.organisationItem.name }))) {
 				return
@@ -292,6 +319,10 @@ export default {
 				showError(t('openregister', 'Failed to leave organisation: {error}', { error: error.message }))
 			}
 		},
+		/**
+		 * @param userId
+		 * @spec exclude detail-view member-removal stub (confirm + toast; API endpoint not yet implemented)
+		 */
 		async removeMember(userId) {
 			if (!confirm(t('openregister', 'Remove {userId} from this organisation?', { userId }))) {
 				return
@@ -305,6 +336,9 @@ export default {
 				showError(t('openregister', 'Failed to remove member: {error}', { error: error.message }))
 			}
 		},
+		/**
+		 * @spec exclude detail-view stats placeholder; populates mock organisation statistics for display
+		 */
 		async loadOrganisationStats() {
 			// This would load organisation-specific statistics
 			// For now, using mock data
@@ -315,6 +349,10 @@ export default {
 				storage: Math.floor(Math.random() * 1000000000), // bytes
 			}
 		},
+		/**
+		 * @param text
+		 * @spec exclude detail-view clipboard helper with success/error toast
+		 */
 		async copyToClipboard(text) {
 			try {
 				await navigator.clipboard.writeText(text)
@@ -324,6 +362,10 @@ export default {
 				showError(t('openregister', 'Failed to copy to clipboard'))
 			}
 		},
+		/**
+		 * @param dateString
+		 * @spec exclude detail-view date-formatting display helper
+		 */
 		formatDate(dateString) {
 			return new Date(dateString).toLocaleDateString({
 				day: '2-digit',
@@ -334,6 +376,10 @@ export default {
 				minute: '2-digit',
 			})
 		},
+		/**
+		 * @param bytes
+		 * @spec exclude detail-view byte-size formatting display helper
+		 */
 		formatBytes(bytes) {
 			if (bytes === 0) return '0 Bytes'
 
@@ -344,14 +390,23 @@ export default {
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 		// Organisation Action Methods
+		/**
+		 * @spec exclude detail-view action; opens the public publication page in a new tab
+		 */
 		viewOrganisation() {
 			const publicationUrl = `https://www.softwarecatalogus.nl/publicatie/${organisationStore.organisationItem.uuid}`
 			window.open(publicationUrl, '_blank')
 		},
+		/**
+		 * @spec exclude detail-view action; opens the edit-organisation modal
+		 */
 		editOrganisation() {
 			// organisationStore.organisationItem is already set by the page
 			navigationStore.setModal('editOrganisation')
 		},
+		/**
+		 * @spec exclude detail-view action; opens the join-organisation modal with transfer data
+		 */
 		openJoinModal() {
 			// Set the transfer data with the current organisation UUID
 			navigationStore.setTransferData({
@@ -360,10 +415,16 @@ export default {
 			// Open the join organisation modal
 			navigationStore.setModal('joinOrganisation')
 		},
+		/**
+		 * @spec exclude detail-view action; opens the manage-roles modal
+		 */
 		openManageRolesModal() {
 			// Open the manage organisation roles modal
 			navigationStore.setModal('manageOrganisationRoles')
 		},
+		/**
+		 * @spec exclude detail-view action; opens the organisation website in a new tab
+		 */
 		goToOrganisation() {
 			if (organisationStore.organisationItem?.website) {
 				let websiteUrl = organisationStore.organisationItem.website

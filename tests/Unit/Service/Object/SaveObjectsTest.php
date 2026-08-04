@@ -473,49 +473,59 @@ class SaveObjectsTest extends TestCase
     }
 
     // =========================================================================
-    // isReference
+    // isRecordableReference (RelationDetectionTrait)
     // =========================================================================
 
-    public function testIsReferenceWithUuid(): void
+    public function testIsRecordableReferenceWithUuid(): void
     {
-        $result = $this->invokePrivate('isReference', ['12345678-1234-1234-1234-123456789012']);
+        $result = $this->invokePrivate('isRecordableReference', ['12345678-1234-1234-1234-123456789012']);
         $this->assertTrue($result);
     }
 
-    public function testIsReferenceWithPrefixedUuid(): void
+    public function testIsRecordableReferenceWithPrefixedUuid(): void
     {
-        $result = $this->invokePrivate('isReference', ['id-12345678-1234-1234-1234-123456789012']);
+        $result = $this->invokePrivate('isRecordableReference', ['id-12345678-1234-1234-1234-123456789012']);
         $this->assertTrue($result);
     }
 
-    public function testIsReferenceWithUrl(): void
+    public function testIsRecordableReferenceWithUrl(): void
     {
-        $result = $this->invokePrivate('isReference', ['https://example.com/api/objects/123']);
+        $result = $this->invokePrivate('isRecordableReference', ['https://example.com/api/objects/123']);
         $this->assertTrue($result);
     }
 
-    public function testIsReferenceWithPlainText(): void
+    public function testIsRecordableReferenceWithPlainText(): void
     {
-        $result = $this->invokePrivate('isReference', ['Hello World']);
+        $result = $this->invokePrivate('isRecordableReference', ['Hello World']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithEmpty(): void
+    public function testIsRecordableReferenceWithEmpty(): void
     {
-        $result = $this->invokePrivate('isReference', ['']);
+        $result = $this->invokePrivate('isRecordableReference', ['']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithCommonWord(): void
+    public function testIsRecordableReferenceWithCommonWord(): void
     {
-        $result = $this->invokePrivate('isReference', ['open-source']);
+        $result = $this->invokePrivate('isRecordableReference', ['open-source']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithIdLikeString(): void
+    public function testIsRecordableReferenceWithIdLikeString(): void
     {
-        // ID-like pattern with hyphen and 8+ chars should be detected as reference.
-        $result = $this->invokePrivate('isReference', ['my-entity-12345']);
+        // The tightened heuristic (RelationDetectionTrait) intentionally no
+        // longer records "8+ chars with a hyphen" values as relations — only
+        // UUIDs, prefixed UUIDs, URLs, or schema-declared references qualify.
+        $result = $this->invokePrivate('isRecordableReference', ['my-entity-12345']);
+        $this->assertFalse($result);
+    }
+
+    public function testIsRecordableReferenceWithSchemaDeclaredReference(): void
+    {
+        // A schema-declared reference property is authoritative even when the
+        // value itself does not match a UUID/URL pattern.
+        $result = $this->invokePrivate('isRecordableReference', ['my-entity-12345', ['type' => 'object']]);
         $this->assertTrue($result);
     }
 
@@ -1002,30 +1012,30 @@ class SaveObjectsTest extends TestCase
     }
 
     // =========================================================================
-    // isReference — additional patterns
+    // isRecordableReference — additional patterns
     // =========================================================================
 
-    public function testIsReferenceWithWhitespace(): void
+    public function testIsRecordableReferenceWithWhitespace(): void
     {
-        $result = $this->invokePrivate('isReference', ['  ']);
+        $result = $this->invokePrivate('isRecordableReference', ['  ']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithShortString(): void
+    public function testIsRecordableReferenceWithShortString(): void
     {
-        $result = $this->invokePrivate('isReference', ['abc']);
+        $result = $this->invokePrivate('isRecordableReference', ['abc']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithHttpUrl(): void
+    public function testIsRecordableReferenceWithHttpUrl(): void
     {
-        $result = $this->invokePrivate('isReference', ['http://example.com/objects/123']);
+        $result = $this->invokePrivate('isRecordableReference', ['http://example.com/objects/123']);
         $this->assertTrue($result);
     }
 
-    public function testIsReferenceWithFtpUrl(): void
+    public function testIsRecordableReferenceWithFtpUrl(): void
     {
-        $result = $this->invokePrivate('isReference', ['ftp://files.example.com/data']);
+        $result = $this->invokePrivate('isRecordableReference', ['ftp://files.example.com/data']);
         $this->assertTrue($result);
     }
 
@@ -1359,25 +1369,25 @@ class SaveObjectsTest extends TestCase
     }
 
     // =========================================================================
-    // isReference — additional patterns
+    // isRecordableReference — non-reference identifiers
     // =========================================================================
 
-    public function testIsReferenceWithLongIdNoHyphenOrUnderscore(): void
+    public function testIsRecordableReferenceWithLongIdNoHyphenOrUnderscore(): void
     {
-        // 8+ chars alphanumeric but no hyphen/underscore — not a reference.
-        $result = $this->invokePrivate('isReference', ['abcdefgh12345']);
+        // 8+ chars alphanumeric but no UUID/URL shape — not a reference.
+        $result = $this->invokePrivate('isRecordableReference', ['abcdefgh12345']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithSystemsoftwareCommonWord(): void
+    public function testIsRecordableReferenceWithSystemsoftwareCommonWord(): void
     {
-        $result = $this->invokePrivate('isReference', ['systeemsoftware']);
+        $result = $this->invokePrivate('isRecordableReference', ['systeemsoftware']);
         $this->assertFalse($result);
     }
 
-    public function testIsReferenceWithClosedSourceCommonWord(): void
+    public function testIsRecordableReferenceWithClosedSourceCommonWord(): void
     {
-        $result = $this->invokePrivate('isReference', ['closed-source']);
+        $result = $this->invokePrivate('isRecordableReference', ['closed-source']);
         $this->assertFalse($result);
     }
 

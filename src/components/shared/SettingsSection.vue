@@ -33,7 +33,7 @@
 			<p class="error-message">
 				❌ {{ errorMessage }}
 			</p>
-			<NcButton v-if="onRetry" type="primary" @click="onRetry">
+			<NcButton v-if="onRetry" variant="primary" @click="onRetry">
 				<template #icon>
 					<Refresh :size="20" />
 				</template>
@@ -60,6 +60,7 @@
 
 <script>
 import { NcSettingsSection, NcLoadingIcon, NcButton } from '@nextcloud/vue'
+import DOMPurify from 'dompurify'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 
@@ -197,13 +198,21 @@ export default {
 	},
 
 	methods: {
-		// quick and dirty way to sanitize HTML.
-		// this guarantees that no dangerous HTML is rendered, though it'll make the output ugly.
-		// @TODO: Implement production ready sanitization.
+		/**
+		 * Sanitize HTML for the detailedDescription slot using an allowlist.
+		 *
+		 * Uses DOMPurify with a narrow allowlist so basic inline formatting is
+		 * preserved while all scripting/dangerous markup is stripped.
+		 *
+		 * @param {string} html Untrusted markup
+		 * @return {string} Sanitized HTML safe for v-html
+		 * @spec openspec/specs/shared-ui-components/spec.md
+		 */
 		sanitizeHtml(html) {
-			const div = document.createElement('div')
-			div.textContent = html
-			return div.innerHTML
+			return DOMPurify.sanitize(html, {
+				ALLOWED_TAGS: ['a', 'strong', 'em', 'code', 'br', 'p'],
+				ALLOWED_ATTR: ['href', 'target', 'rel'],
+			})
 		},
 	},
 }

@@ -468,9 +468,116 @@ class NotifyPushListenerTest extends TestCase
         $this->queue->expects($this->once())
             ->method('push');
 
-        NotifyPushListener::flushBatch($this->queue, $this->permissionHandler);
+        NotifyPushListener::flushBatch($this->queue);
         NotifyPushListener::setBatchMode(false);
     }//end testFlushBatchEmitsOneCollectionEvent()
+
+    /**
+     * Test that flushBatch() deduplicates per (register, schema) pair, broadcasts
+     * without per-user targeting, and emits zero per-object events.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public function testFlushBatchBroadcastsDeduplicatedCollectionEventsOnly(): void
+    {
+        $this->expectQueueResolvable();
+        $this->expectSlugLookups(registerSlug: 'reg', schemaSlug: 'schema');
+
+        $this->permissionHandler
+            ->method('getReadableByUsers')
+            ->willReturn(['user1', 'user2']);
+
+        NotifyPushListener::setBatchMode(true);
+
+        // 5 creates + 5 updates, all in the same (register, schema) pair.
+        for ($i = 0; $i < 5; $i++) {
+            $this->listener->handle(new ObjectCreatedEvent($this->buildObject(uuid: 'uuid-c-'.$i)));
+            $this->listener->handle(new ObjectUpdatedEvent($this->buildObject(uuid: 'uuid-u-'.$i)));
+        }
+
+        $pushCalls = [];
+        $this->queue
+            ->method('push')
+            ->willReturnCallback(
+                    function (string $type, array $payload) use (&$pushCalls): void {
+                        $pushCalls[] = [$type, $payload];
+                    }
+                    );
+
+        NotifyPushListener::flushBatch($this->queue);
+        NotifyPushListener::setBatchMode(false);
+
+        // Exactly one deduplicated collection event — despite 10 saves and 2 readers.
+        $this->assertCount(1, $pushCalls, 'Flush must emit exactly one event per (register, schema) pair');
+
+        [$type, $payload] = $pushCalls[0];
+        $this->assertSame('notify_custom', $type);
+        $this->assertSame('or-collection-reg-schema', $payload['message']);
+        $this->assertArrayNotHasKey('user', $payload, 'Batch flush is a broadcast — no per-user targeting');
+        $this->assertSame(
+                ['action' => 'batch', 'register' => 'reg', 'schema' => 'schema'],
+                $payload['body'],
+                'Batch payload carries slugs + action only'
+                );
+    }//end testFlushBatchBroadcastsDeduplicatedCollectionEventsOnly()
+
+    /**
+     * Test that flushBatch() emits one event per distinct (register, schema) pair
+     * and that hasBatchedCollections() reflects the accumulator state.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/realtime-updates/spec.md
+     */
+    public function testFlushBatchEmitsOneEventPerDistinctPair(): void
+    {
+        $this->expectQueueResolvable();
+
+        // Distinct slugs per register/schema UUID.
+        $registerA = $this->getMockBuilder(Register::class)->addMethods(['getSlug'])->getMock();
+        $registerA->method('getSlug')->willReturn('reg-a');
+        $registerB = $this->getMockBuilder(Register::class)->addMethods(['getSlug'])->getMock();
+        $registerB->method('getSlug')->willReturn('reg-b');
+        $this->registerMapper->method('find')
+            ->willReturnCallback(fn (string $id) => $id === 'reg-uuid-a' ? $registerA : $registerB);
+
+        $schema = $this->getMockBuilder(Schema::class)->addMethods(['getSlug'])->getMock();
+        $schema->method('getSlug')->willReturn('items');
+        $this->schemaMapper->method('find')->willReturn($schema);
+
+        $this->assertFalse(NotifyPushListener::hasBatchedCollections());
+
+        NotifyPushListener::setBatchMode(true);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->listener->handle(
+                    new ObjectCreatedEvent($this->buildObject(uuid: 'a-'.$i, registerUuid: 'reg-uuid-a'))
+                    );
+            $this->listener->handle(
+                    new ObjectCreatedEvent($this->buildObject(uuid: 'b-'.$i, registerUuid: 'reg-uuid-b'))
+                    );
+        }
+
+        $this->assertTrue(NotifyPushListener::hasBatchedCollections());
+
+        $channels = [];
+        $this->queue
+            ->method('push')
+            ->willReturnCallback(
+                    function (string $type, array $payload) use (&$channels): void {
+                        $channels[] = $payload['message'];
+                    }
+                    );
+
+        NotifyPushListener::flushBatch($this->queue);
+        NotifyPushListener::setBatchMode(false);
+
+        sort($channels);
+        $this->assertSame(['or-collection-reg-a-items', 'or-collection-reg-b-items'], $channels);
+        $this->assertFalse(NotifyPushListener::hasBatchedCollections(), 'Flush must clear the accumulator');
+    }//end testFlushBatchEmitsOneEventPerDistinctPair()
 
     /**
      * Test that AppConfig::setValueString('openregister', 'push_available', '1') is called

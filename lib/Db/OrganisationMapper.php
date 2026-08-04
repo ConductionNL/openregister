@@ -7,6 +7,9 @@
  * Handles database operations for Organisation entities including
  * multi-tenancy user-organisation relationships.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -53,7 +56,6 @@ use Symfony\Component\Uid\Uuid;
  * @method Organisation delete(Entity $entity)
  * @method Organisation find(int|string $id)
  * @method Organisation findEntity(IQueryBuilder $query)
- * @method Organisation[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Organisation> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Organisation>
@@ -65,6 +67,24 @@ use Symfony\Component\Uid\Uuid;
  */
 class OrganisationMapper extends QBMapper
 {
+
+    /**
+     * Request-scoped memo of the active-organisation UUID per user id.
+     *
+     * `getActiveOrganisationUuidForUser()` is called on the hot tenant-filter path
+     * (`MultiTenancyTrait::getActiveOrganisationUuid()` runs for every mapper query),
+     * which bypasses `OrganisationService`'s session cache. A single object write fans
+     * out to ~1,000 tenant-filtered operations, each issuing an identical
+     * `SELECT configvalue FROM preferences` — ~29% of the queries for one create. This
+     * mapper is a per-request DI singleton, so this instance cache is request-scoped:
+     * one read per user per request instead of hundreds. `array_key_exists` (not
+     * `isset`) distinguishes a cached `null` (no active org) from "not yet looked up",
+     * and {@see setActiveOrganisationForUser()} keeps it coherent with in-request writes.
+     *
+     * @var array<string, string|null>
+     */
+    private array $activeOrgUuidCache = [];
+
     /**
      * OrganisationMapper constructor
      *
@@ -427,16 +447,25 @@ class OrganisationMapper extends QBMapper
      */
 
     /**
-     * Find all organisations with pagination
+     * Find all organisations with pagination and optional column filters
      *
-     * @param int $limit  Maximum number of results to return (default 50)
-     * @param int $offset Number of results to skip (default 0)
+     * The `$filters` parameter is NOT optional sugar: three tenant-lifecycle
+     * background jobs (TenantDeprovisionJob, TenantPurgeJob, TenantUsageSyncJob)
+     * already call `findAll(filters: ['status' => ...])`. Until this parameter
+     * existed those calls raised `Error: Unknown named parameter $filters`, which
+     * is an `\Error` and therefore slipped straight past their `catch (\Exception)`
+     * — every run of all three jobs died uncaught. See openregister#2282.
+     *
+     * @param int   $limit   Maximum number of results to return (default 50)
+     * @param int   $offset  Number of results to skip (default 0)
+     * @param array $filters Column => value equality filters (also accepts the
+     *                       'IS NULL' / 'IS NOT NULL' sentinels used fleet-wide)
      *
      * @return Organisation[]
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Organisation>
+     * @psalm-return list<\OCA\OpenRegister\Db\Organisation>
      */
-    public function findAll(int $limit=50, int $offset=0): array
+    public function findAll(int $limit=50, int $offset=0, ?array $filters=[]): array
     {
         $qb = $this->db->getQueryBuilder();
 
@@ -445,6 +474,20 @@ class OrganisationMapper extends QBMapper
             ->orderBy('name', 'ASC')
             ->setMaxResults($limit)
             ->setFirstResult($offset);
+
+        foreach ($filters ?? [] as $filter => $value) {
+            if ($value === 'IS NOT NULL') {
+                $qb->andWhere($qb->expr()->isNotNull($filter));
+                continue;
+            }
+
+            if ($value === 'IS NULL') {
+                $qb->andWhere($qb->expr()->isNull($filter));
+                continue;
+            }
+
+            $qb->andWhere($qb->expr()->eq($filter, $qb->createNamedParameter($value)));
+        }
 
         return $this->findEntities(query: $qb);
     }//end findAll()
@@ -889,6 +932,16 @@ class OrganisationMapper extends QBMapper
      */
     public function getActiveOrganisationUuidForUser(string $userId): ?string
     {
+        // Request-scoped memo: this runs on the hot tenant-filter path (once per mapper
+        // query), so an object write would otherwise re-issue this identical preference
+        // read hundreds of times. array_key_exists (not isset) so a cached null — the user
+        // has no active organisation — is honoured as a hit and does not re-query.
+        if (array_key_exists($userId, $this->activeOrgUuidCache) === true) {
+            return $this->activeOrgUuidCache[$userId];
+        }
+
+        $activeOrganisationUuid = null;
+
         $qb = $this->db->getQueryBuilder();
 
         // Query the preferences table for active organisation.
@@ -904,16 +957,21 @@ class OrganisationMapper extends QBMapper
             $result->closeCursor();
 
             if ($row !== false && isset($row['configvalue']) === true) {
-                return $row['configvalue'];
+                $activeOrganisationUuid = $row['configvalue'];
             }
         } catch (Exception $e) {
             $this->logger->warning(
                 message: '[OrganisationMapper] Failed to get active organisation for user: '.$e->getMessage(),
                 context: ['file' => __FILE__, 'line' => __LINE__, 'userId' => $userId]
             );
+
+            // Do NOT cache a transient DB failure — leave it uncached so a later call retries.
+            return null;
         }
 
-        return null;
+        $this->activeOrgUuidCache[$userId] = $activeOrganisationUuid;
+
+        return $activeOrganisationUuid;
     }//end getActiveOrganisationUuidForUser()
 
     /**
@@ -1018,6 +1076,9 @@ class OrganisationMapper extends QBMapper
                 ->andWhere($qb->expr()->eq('appid', $qb->createNamedParameter('openregister')))
                 ->andWhere($qb->expr()->eq('configkey', $qb->createNamedParameter('active_organisation')));
             $qb->executeStatement();
+
+            // Keep the request-scoped memo coherent with this in-request write.
+            $this->activeOrgUuidCache[$userId] = $organisationUuid;
             return;
         }
 
@@ -1033,6 +1094,9 @@ class OrganisationMapper extends QBMapper
                 ]
             );
         $qb->executeStatement();
+
+        // Keep the request-scoped memo coherent with this in-request write.
+        $this->activeOrgUuidCache[$userId] = $organisationUuid;
     }//end setActiveOrganisationForUser()
 
     /**

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import { Application } from '../../entities/index.js'
 
@@ -23,16 +22,22 @@ export const useApplicationStore = defineStore('application', {
 		getViewMode: (state) => state.viewMode,
 	},
 	actions: {
+		/**
+		 * @param mode
+		 * @spec exclude Pure client UI-state setter — list/card view-mode toggle. No backend contract.
+		 */
 		setViewMode(mode) {
 			this.viewMode = mode
-			console.log('View mode set to:', mode)
 		},
+		/**
+		 * @param applicationItem
+		 * @spec exclude Client state mutator — wraps the active application in an entity. No backend contract.
+		 */
 		setApplicationItem(applicationItem) {
 			try {
 				this.loading = true
 				this.error = null
 				this.applicationItem = applicationItem ? new Application(applicationItem) : null
-				console.log('Active application item set to ' + (applicationItem?.name || 'null'))
 			} catch (error) {
 				console.error('Error setting application item:', error)
 				this.error = error.message
@@ -40,28 +45,33 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param applicationList
+		 * @spec exclude Client state mutator — maps the application list to entities. No backend contract.
+		 */
 		setApplicationList(applicationList) {
 			this.applicationList = applicationList.map(
 				(applicationItem) => new Application(applicationItem),
 			)
-			console.log('Application list set to ' + applicationList.length + ' items')
 		},
 		/**
 		 * Set pagination details
 		 * @param {number} page - The current page number for pagination
 		 * @param {number} limit - The number of items to display per page
+		 *
+		 * @spec exclude Pure client UI-state setter — list pagination cursor. No backend contract.
 		 */
 		setPagination(page, limit = 20) {
 			this.pagination = { page, limit }
-			console.info('Pagination set to', { page, limit })
 		},
 		/**
 		 * Set query filters for application list
 		 * @param {object} filters - The filter criteria to apply to the application list
+		 *
+		 * @spec exclude Pure client UI-state setter — list filter criteria. No backend contract.
 		 */
 		setFilters(filters) {
 			this.filters = { ...this.filters, ...filters }
-			console.info('Query filters set to', this.filters)
 		},
 		/**
 		 * Refresh the application list from the API
@@ -69,11 +79,11 @@ export const useApplicationStore = defineStore('application', {
 		 * @param {string|null} search - Optional search term
 		 * @param {boolean} soft - If true, don't show loading state (default: false)
 		 * @return {Promise} Promise with response and data
+		 *
+		 * @spec exclude Thin API passthrough — GET /api/applications list; observable contract owned by the applications backend capability.
 		 */
 		/* istanbul ignore next */
 		async refreshApplicationList(search = null, soft = false) {
-			console.log('ApplicationStore: Starting refreshApplicationList (soft=' + soft + ')')
-
 			// Only set loading state for hard reloads
 			if (!soft) {
 				this.loading = true
@@ -97,7 +107,6 @@ export const useApplicationStore = defineStore('application', {
 				const data = (await response.json()).results
 
 				this.setApplicationList(data)
-				console.log('ApplicationStore: refreshApplicationList completed, got', data.length, 'applications')
 
 				return { response, data }
 			} catch (error) {
@@ -110,6 +119,10 @@ export const useApplicationStore = defineStore('application', {
 				}
 			}
 		},
+		/**
+		 * @param id
+		 * @spec exclude Thin API passthrough — GET /api/applications/{id}; observable contract owned by the applications backend capability.
+		 */
 		async getApplication(id) {
 			const endpoint = `/index.php/apps/openregister/api/applications/${id}`
 			try {
@@ -133,12 +146,15 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param applicationItem
+		 * @spec exclude Thin API passthrough — DELETE /api/applications/{id}; observable contract owned by the applications backend capability.
+		 */
 		async deleteApplication(applicationItem) {
 			if (!applicationItem.id) {
 				throw new Error('No application to delete')
 			}
 
-			console.log('Deleting application...')
 			this.loading = true
 
 			const endpoint = `/index.php/apps/openregister/api/applications/${applicationItem.id}`
@@ -164,12 +180,15 @@ export const useApplicationStore = defineStore('application', {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param applicationItem
+		 * @spec exclude Thin API passthrough — POST/PUT /api/applications; observable contract owned by the applications backend capability.
+		 */
 		async saveApplication(applicationItem) {
 			if (!applicationItem) {
 				throw new Error('No application to save')
 			}
 
-			console.log('Saving application...')
 			this.loading = true
 
 			const isNewApplication = !applicationItem.id
@@ -213,6 +232,10 @@ export const useApplicationStore = defineStore('application', {
 			}
 		},
 		// Clean application data for saving - remove read-only fields
+		/**
+		 * @param applicationItem
+		 * @spec exclude Client-side payload sanitiser — strips read-only fields before save. No standalone backend contract.
+		 */
 		cleanApplicationForSave(applicationItem) {
 			const cleaned = { ...applicationItem }
 
@@ -236,6 +259,8 @@ export const useApplicationStore = defineStore('application', {
 		 * This should be called on the applications index page to preload groups
 		 *
 		 * @return {Promise<void>}
+		 *
+		 * @spec exclude Thin passthrough to the Nextcloud OCS groups API; observable contract owned by Nextcloud core, not OpenRegister.
 		 */
 		async loadNextcloudGroups() {
 			try {
@@ -255,10 +280,7 @@ export const useApplicationStore = defineStore('application', {
 							name: groupId,
 							userCount: 0, // Could be fetched separately if needed
 						}))
-						console.log('Loaded', this.nextcloudGroups.length, 'Nextcloud groups into application store')
 					}
-				} else {
-					console.warn('Failed to load Nextcloud groups:', response.statusText)
 				}
 			} catch (error) {
 				console.error('Error loading Nextcloud groups:', error)

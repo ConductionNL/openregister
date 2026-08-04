@@ -23,6 +23,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableRegisters.length > 1" class="field-group">
 								<label for="register-select">{{ t('openregister', 'Register') }}</label>
 								<NcSelect
+									input-label="Selected Register For New Object"
 									id="register-select"
 									v-model="selectedRegisterForNewObject"
 									:options="availableRegisters"
@@ -35,6 +36,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							<div v-if="availableSchemas.length > 1" class="field-group">
 								<label for="schema-select">{{ t('openregister', 'Schema') }}</label>
 								<NcSelect
+									input-label="Selected Schema For New Object"
 									id="schema-select"
 									v-model="selectedSchemaForNewObject"
 									:options="availableSchemas"
@@ -45,7 +47,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 							</div>
 
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="!canProceedToProperties"
 								@click="confirmRegisterSchemaSelection">
 								<template #icon>
@@ -60,8 +62,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				<!-- Display Object -->
 				<div v-else>
 					<div class="tabContainer">
-						<BTabs v-model="activeTab" content-class="mt-3" justified>
-							<BTab :title="t('openregister', 'Properties')" active>
+						<AppTabs v-model="activeTab" content-class="mt-3" justified>
+							<AppTab :title="t('openregister', 'Properties')" active>
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -89,23 +91,23 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												<td class="tableColumnConstrained prop-cell">
 													<div class="prop-cell-content">
 														<AlertCircle v-if="getPropertyValidationClass(key, value) === 'property-invalid'"
-															v-tooltip="getPropertyErrorMessage(key, value)"
+															:title="getPropertyErrorMessage(key, value)"
 															class="validation-icon error-icon"
 															:size="16" />
 														<Alert v-else-if="getPropertyValidationClass(key, value) === 'property-warning'"
-															v-tooltip="getPropertyWarningMessage(key, value)"
+															:title="getPropertyWarningMessage(key, value)"
 															class="validation-icon warning-icon"
 															:size="16" />
 														<Plus v-else-if="getPropertyValidationClass(key, value) === 'property-new'"
-															v-tooltip="getPropertyNewMessage(key)"
+															:title="getPropertyNewMessage(key)"
 															class="validation-icon new-icon"
 															:size="16" />
 														<LockOutline v-else-if="!isPropertyEditable(key, formData[key] !== undefined ? formData[key] : value)"
-															v-tooltip="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
+															:title="getEditabilityWarning(key, formData[key] !== undefined ? formData[key] : value)"
 															class="validation-icon lock-icon"
 															:size="16" />
 														<span
-															v-tooltip="getPropertyTooltip(key)">
+															:title="getPropertyTooltip(key)">
 															{{ getPropertyDisplayName(key) }}
 														</span>
 													</div>
@@ -115,58 +117,58 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<!-- Boolean properties -->
 														<NcCheckboxRadioSwitch
 															v-if="getPropertyInputComponent(key) === 'NcCheckboxRadioSwitch'"
-															:checked="formData[key] !== undefined ? formData[key] : value"
+															:model-value="formData[key] !== undefined ? formData[key] : value"
 															type="switch"
-															@update:checked="updatePropertyValue(key, $event)">
+															@update:modelValue="updatePropertyValue(key, $event)">
 															{{ getPropertyDisplayName(key) }}
 														</NcCheckboxRadioSwitch>
 
 														<!-- Date/Time properties -->
 														<NcDateTimePickerNative
 															v-else-if="getPropertyInputComponent(key) === 'NcDateTimePickerNative'"
-															:value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
+															:model-value="stringToDate(formData[key] !== undefined ? formData[key] : value, currentSchema.properties[key].format) || undefined"
 															:type="getPropertyInputType(key)"
 															:label="getPropertyDisplayName(key)"
-															@input="updatePropertyValue(key, $event)" />
+															@update:modelValue="updatePropertyValue(key, $event)" />
 
 														<!-- Text/Number properties -->
 														<NcTextField
 															v-else
 															ref="propertyValueInput"
-															:value="String(formData[key] !== undefined ? formData[key] : value || '')"
+															:model-value="String(formData[key] !== undefined ? formData[key] : value || '')"
 															:type="getPropertyInputType(key)"
 															:placeholder="getPropertyDisplayName(key)"
 															:min="getPropertyMinimum(key)"
 															:max="getPropertyMaximum(key)"
 															:step="getPropertyStep(key)"
-															@update:value="updatePropertyValue(key, $event)" />
+															@update:modelValue="updatePropertyValue(key, $event)" />
 													</div>
 													<div v-else>
 														<template v-if="formData[key] !== undefined">
 															<!-- Show edited value -->
 															<pre
 																v-if="typeof formData[key] === 'object' && formData[key] !== null"
-																v-tooltip="'JSON object (edited)'"
+																title="JSON object (edited)"
 																class="json-value">{{ formatValue(formData[key]) }}</pre>
 															<span
 																v-else-if="isValidDate(formData[key])"
-																v-tooltip="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
+																:title="`Date: ${new Date(formData[key]).toISOString()} (edited)`">{{ new Date(formData[key]).toLocaleString() }}</span>
 															<span
 																v-else
-																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
+																:title="currentSchema?.properties?.[key]?.description || `Property: ${key} (edited)`">{{ getDisplayValue(key, value) }}</span>
 														</template>
 														<template v-else>
 															<!-- Show original value -->
 															<pre
 																v-if="typeof value === 'object' && value !== null"
-																v-tooltip="'JSON object'"
+																title="JSON object"
 																class="json-value">{{ formatValue(value) }}</pre>
 															<span
 																v-else-if="isValidDate(value)"
-																v-tooltip="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
+																:title="`Date: ${new Date(value).toISOString()}`">{{ new Date(value).toLocaleString() }}</span>
 															<span
 																v-else
-																v-tooltip="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
+																:title="currentSchema?.properties?.[key]?.description || `Property: ${key}`">{{ getDisplayValue(key, value) }}</span>
 														</template>
 													</div>
 												</td>
@@ -174,8 +176,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Metadata')">
 								<div class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
@@ -219,8 +221,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										</tbody>
 									</table>
 								</div>
-							</BTab>
-							<BTab :title="t('openregister', 'Data')">
+							</AppTab>
+							<AppTab :title="t('openregister', 'Data')">
 								<NcNoteCard v-if="success" type="success" class="note-card">
 									<p>{{ t('openregister', 'Object successfully modified') }}</p>
 								</NcNoteCard>
@@ -238,7 +240,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 											style="height: 400px" />
 										<NcButton
 											class="format-json-button"
-											type="secondary"
+											variant="secondary"
 											size="small"
 											@click="formatJSON">
 											Format JSON
@@ -248,8 +250,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										Invalid JSON format
 									</span>
 								</div>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Uses')">
 								<div v-if="objectStore.uses.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -284,8 +286,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No uses found for this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Used by')">
 								<div v-if="objectStore.used.results.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -320,8 +322,8 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No objects are using this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Contracts')">
 								<div v-if="objectStore.contracts.length > 0" class="search-list-table">
 									<table class="table">
 										<thead>
@@ -356,17 +358,17 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 								<NcNoteCard v-else type="info">
 									<p>No contracts found for this object</p>
 								</NcNoteCard>
-							</BTab>
-							<BTab v-if="!isNewObject" :title="t('openregister', 'Files')">
+							</AppTab>
+							<AppTab v-if="!isNewObject" :title="t('openregister', 'Files')">
 								<div v-if="paginatedFiles.length > 0" class="viewTableContainer">
 									<table class="viewTable">
 										<thead>
 											<tr class="viewTableRow">
 												<th class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:checked="allFilesSelected"
+														:model-value="allFilesSelected"
 														:indeterminate="someFilesSelected"
-														@update:checked="toggleSelectAllFiles" />
+														@update:modelValue="toggleSelectAllFiles" />
 												</th>
 												<th class="tableColumnExpanded">
 													Name
@@ -389,24 +391,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 														<template #icon>
 															<FormatListChecks :size="20" />
 														</template>
-														<NcActionButton
-															:disabled="publishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="publishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.length > 0" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
-														<NcActionButton
-															:disabled="depublishLoading.length > 0 || selectedAttachments.length === 0"
-															@click="depublishSelectedFiles">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.length > 0" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish {{ selectedAttachments.length }} file{{ selectedAttachments.length > 1 ? 's' : '' }}
-														</NcActionButton>
 														<NcActionButton
 															:disabled="fileIdsLoading.length > 0 || selectedAttachments.length === 0"
 															@click="deleteSelectedFiles">
@@ -431,13 +415,13 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 												}">
 												<td class="tableColumnCheckbox">
 													<NcCheckboxRadioSwitch
-														:checked="selectedAttachments.includes(attachment.id)"
-														@update:checked="(checked) => toggleFileSelection(attachment.id, checked)" />
+														:model-value="selectedAttachments.includes(attachment.id)"
+														@update:modelValue="(checked) => toggleFileSelection(attachment.id, checked)" />
 												</td>
 												<td class="tableColumnExpanded table-row-title">
 													<!-- Show warning icon if file is not shared -->
 													<ExclamationThick v-if="!attachment.accessUrl && !attachment.downloadUrl"
-														v-tooltip="'Not shared'"
+														title="Not shared"
 														class="warningIcon"
 														:size="20" />
 													<!-- Show published icon if file is shared -->
@@ -465,7 +449,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 															:disabled="labelsLoading"
 															:input-label="t('openregister', 'Labels')" />
 														<div class="fileLabelsEditActions">
-															<NcButton :disabled="labelsLoading" type="primary" @click="saveFileLabels(attachment)">
+															<NcButton :disabled="labelsLoading" variant="primary" @click="saveFileLabels(attachment)">
 																<template #icon>
 																	<NcLoadingIcon v-if="labelsLoading" :size="20" />
 																	<Check v-else :size="20" />
@@ -492,26 +476,6 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 																<Tag :size="20" />
 															</template>
 															Labels
-														</NcActionButton>
-														<NcActionButton
-															v-if="!attachment.accessUrl && !attachment.downloadUrl"
-															:disabled="publishLoading.includes(attachment.id)"
-															@click="publishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="publishLoading.includes(attachment.id)" :size="20" />
-																<FileOutline v-else :size="20" />
-															</template>
-															Publish
-														</NcActionButton>
-														<NcActionButton
-															v-else
-															:disabled="depublishLoading.includes(attachment.id)"
-															@click="depublishFile(attachment)">
-															<template #icon>
-																<NcLoadingIcon v-if="depublishLoading.includes(attachment.id)" :size="20" />
-																<LockOutline v-else :size="20" />
-															</template>
-															Depublish
 														</NcActionButton>
 														<NcActionButton
 															:disabled="fileIdsLoading.includes(attachment.id)"
@@ -546,38 +510,38 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 									:min-items-to-show="5"
 									@page-changed="onFilesPageChanged"
 									@page-size-changed="onFilesPageSizeChanged" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Emails">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Emails">
 								<EmailsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Events">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Events">
 								<EventsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Contacts">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Contacts">
 								<ContactsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Deck">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Deck">
 								<DeckTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-							<BTab v-if="!isNewObject && relationContext" title="Relations">
+							</AppTab>
+							<AppTab v-if="!isNewObject && relationContext" title="Relations">
 								<RelationsTab
 									:register="relationContext.register"
 									:schema="relationContext.schema"
 									:object-id="relationContext.id" />
-							</BTab>
-						</BTabs>
+							</AppTab>
+						</AppTabs>
 					</div>
 				</div>
 			</div>
@@ -601,7 +565,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					</template>
 					Audit Trails
 				</NcButton>
-				<NcButton type="primary" :disabled="isSaving" @click="saveObject">
+				<NcButton variant="primary" :disabled="isSaving" @click="saveObject">
 					<template #icon>
 						<NcLoadingIcon v-if="isSaving" :size="20" />
 						<ContentSave v-else :size="20" />
@@ -630,7 +594,8 @@ import {
 } from '@nextcloud/vue'
 import { json, jsonParseLinter } from '@codemirror/lang-json'
 import CodeMirror from 'vue-codemirror6'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 import { getTheme } from '../../services/getTheme.js'
 import { updateFileLabels } from '../../services/fileMetadata.js'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -658,6 +623,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { stringToDate, dateToString } from '../../services/dateUtils.js'
+import { showWarning } from '@nextcloud/dialogs'
 export default {
 	name: 'ViewObject',
 	components: {
@@ -674,8 +640,8 @@ export default {
 		NcEmptyContent,
 		NcSelect,
 		CodeMirror,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		Cancel,
 		FileOutline,
 		OpenInNew,
@@ -715,11 +681,16 @@ export default {
 			jsonData: '',
 			activeTab: 0,
 			isInternalUpdate: false, // Flag to prevent infinite loops during synchronization
+			// Vue 3 initialises `instance.update` to null and only assigns the render
+			// effect in setupRenderEffect, i.e. AFTER the `immediate: true` watchers
+			// below have already run. Calling $forceUpdate() in that window makes Vue
+			// queue a null job and throw `Cannot read properties of null (reading
+			// 'flags')`. Vue 2's $forceUpdate() guarded on `vm._watcher &&` so the same
+			// call was a silent no-op there. Gate the call on this flag instead.
+			isMounted: false,
 			objectEditors: {},
 			tabOptions: ['Properties', 'Metadata', 'Data', 'Uses', 'Used by', 'Contracts', 'Files'],
 			selectedAttachments: [],
-			publishLoading: [],
-			depublishLoading: [],
 			fileIdsLoading: [],
 			editingLabelsFileId: null,
 			editingLabels: [],
@@ -739,6 +710,9 @@ export default {
 	},
 	computed: {
 		// Check if we need to show register/schema selection
+		/**
+		 * @spec exclude computed gate for register/schema selection step
+		 */
 		showRegisterSchemaSelection() {
 			return this.isNewObject
 				&& !this.registerSchemaSelectionConfirmed
@@ -746,40 +720,42 @@ export default {
 		},
 
 		// Available registers for selection
+		/**
+		 * @spec exclude computed display helper exposing store registers
+		 */
 		availableRegisters() {
 			return objectStore.availableRegistersForNewObject || []
 		},
 
 		// Available schemas for selection
+		/**
+		 * @spec exclude computed display helper exposing store schemas
+		 */
 		availableSchemas() {
 			return objectStore.availableSchemasForNewObject || []
 		},
 
 		// Can proceed to properties if selections are made
+		/**
+		 * @spec exclude computed form-validation gate
+		 */
 		canProceedToProperties() {
 			const hasRegister = this.availableRegisters.length === 1 || this.selectedRegisterForNewObject
 			const hasSchema = this.availableSchemas.length === 1 || this.selectedSchemaForNewObject
 			return hasRegister && hasSchema
 		},
 
+		/**
+		 * @spec exclude computed display helper building property rows from schema
+		 */
 		objectProperties() {
-			console.info('objectProperties computed called:', {
-				objectItem: objectStore?.objectItem,
-				currentSchema: this.currentSchema,
-				isNewObject: this.isNewObject,
-				schemaId: this.currentSchema?.id,
-				schemaProperties: this.currentSchema?.properties,
-			})
-
 			// For new objects, show schema properties with default values
 			if (!objectStore?.objectItem) {
 				const schemaProperties = this.currentSchema?.properties
 				if (!schemaProperties) {
-					console.info('No schema properties available')
 					return []
 				}
 
-				console.info('Schema properties found:', Object.keys(schemaProperties))
 				const defaultProperties = []
 
 				for (const [key, schemaProperty] of Object.entries(schemaProperties)) {
@@ -808,7 +784,6 @@ export default {
 					defaultProperties.push([key, defaultValue])
 				}
 
-				console.info('objectProperties returning default properties:', defaultProperties)
 				return defaultProperties
 			}
 
@@ -852,12 +827,21 @@ export default {
 			// Combine existing properties and missing schema properties
 			return [...existingProperties, ...missingSchemaProperties]
 		},
+		/**
+		 * @spec exclude computed JSON display helper
+		 */
 		editorContent() {
 			return JSON.stringify(objectStore.objectItem, null, 2)
 		},
+		/**
+		 * @spec exclude computed accessor for active register from store
+		 */
 		currentRegister() {
 			return registerStore.registerItem
 		},
+		/**
+		 * @spec exclude computed accessor merging inherited schema properties for display
+		 */
 		currentSchema() {
 			const schema = schemaStore.schemaItem
 			if (!schema) return schema
@@ -877,75 +861,44 @@ export default {
 			}
 			return { ...schema, properties: { ...inherited, ...(schema.properties || {}) } }
 		},
-		selectedPublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-
-				return !!found.published
-			}).length
-		},
-		selectedUnpublishedCount() {
-			return this.selectedAttachments.filter((a) => {
-				const found = objectStore.files.results
-					?.find(item => item.id === a)
-				if (!found) return false
-				return found.published === null
-			}).length
-		},
-		allPublishedSelected() {
-			const published = objectStore.files.results
-				?.filter(item => !!item.published)
-				.map(item => item.id) || []
-
-			if (!published.length) {
-				return false
-			}
-			return published.every(pubId => this.selectedAttachments.includes(pubId))
-		},
-		allUnpublishedSelected() {
-			const unpublished = objectStore.files.results
-				?.filter(item => !item.published)
-				.map(item => item.id) || []
-
-			if (!unpublished.length) {
-				return false
-			}
-			return unpublished.every(unpubId => this.selectedAttachments.includes(unpubId))
-		},
+		/**
+		 * @spec exclude computed aggregate loading flag for file actions
+		 */
 		loading() {
-			return this.publishLoading.length > 0 || this.depublishLoading.length > 0 || this.fileIdsLoading.length > 0
+			return this.fileIdsLoading.length > 0
 		},
-		filesHasPublished() {
-			return objectStore.files.results?.some(item => !!item.published)
-		},
-		filesHasUnpublished() {
-			return objectStore.files.results?.some(item => !item.published)
-		},
+		/**
+		 * @spec exclude computed pagination slice of files
+		 */
 		paginatedFiles() {
 			const files = objectStore.files?.results || []
 			const start = (this.filesCurrentPage - 1) * this.filesPerPage
 			const end = start + this.filesPerPage
 			return files.slice(start, end)
 		},
+		/**
+		 * @spec exclude computed total page count for files pagination
+		 */
 		filesTotalPages() {
 			const totalFiles = objectStore.files?.results?.length || 0
 			return Math.ceil(totalFiles / this.filesPerPage)
 		},
+		/**
+		 * @spec exclude computed select-all state for current files page
+		 */
 		allFilesSelected() {
 			return this.paginatedFiles.length > 0 && this.paginatedFiles.every(file => this.selectedAttachments.includes(file.id))
 		},
+		/**
+		 * @spec exclude computed indeterminate-selection state for files
+		 */
 		someFilesSelected() {
 			return this.selectedAttachments.length > 0 && !this.allFilesSelected
 		},
+		/**
+		 * @spec exclude computed display helper merging schema + object fields
+		 */
 		formFields() {
-			console.info('formFields computed called:', {
-				currentSchema: this.currentSchema,
-				hasProperties: this.currentSchema?.properties,
-				propertiesCount: this.currentSchema?.properties ? Object.keys(this.currentSchema.properties).length : 0,
-			})
-
 			// Combine schema properties and object properties
 			const fields = {}
 
@@ -981,9 +934,11 @@ export default {
 				}
 			}
 
-			console.info('formFields returning:', fields)
 			return fields
 		},
+		/**
+		 * @spec exclude computed display helper building metadata rows
+		 */
 		metadataProperties() {
 			// Return array of [key, value, hasAction] for metadata display
 			// Use formData instead of objectStore.objectItem to reflect real-time changes
@@ -1078,6 +1033,7 @@ export default {
 		 * object is being viewed.
 		 *
 		 * @return {{register:(string|number), schema:(string|number), id:string}|null}
+		 * @spec exclude computed context object for relation tabs
 		 */
 		relationContext() {
 			const self = objectStore?.objectItem?.['@self']
@@ -1098,6 +1054,9 @@ export default {
 	},
 	watch: {
 		objectStore: {
+			/**
+			 * @spec exclude watcher re-initializing data on store change
+			 */
 			handler(newValue) {
 				if (newValue) {
 					this.initializeData()
@@ -1107,9 +1066,10 @@ export default {
 		},
 		// Watch for schema changes to re-initialize data
 		currentSchema: {
+			/**
+			 * @spec exclude watcher re-resolving schema and re-initializing data
+			 */
 			async handler(newSchema) {
-				console.info('Schema changed in ViewObject:', newSchema)
-
 				// The schema list endpoint returns un-resolved schemas — for schemas
 				// using composition (allOf/oneOf/anyOf) `properties` is empty until
 				// the detail endpoint merges in the parent's properties. When the
@@ -1124,8 +1084,8 @@ export default {
 						try {
 							await schemaStore.getSchema(newSchema.id, { setItem: true })
 							return
-						} catch (error) {
-							console.warn('Failed to fetch resolved schema:', error)
+						} catch {
+							// Fall through to use the un-resolved schema if the detail fetch fails
 						}
 					}
 				}
@@ -1134,15 +1094,20 @@ export default {
 					// Re-initialize data when schema becomes available for new objects
 					this.initializeData()
 				}
-				// Force Vue to re-evaluate computed properties
-				this.$forceUpdate()
+				// Force Vue to re-evaluate computed properties. Only legal once the
+				// render effect exists — see the `isMounted` note in data().
+				if (this.isMounted) {
+					this.$forceUpdate()
+				}
 			},
 			immediate: true,
 		},
 		// Watch for register changes to re-initialize data
 		currentRegister: {
+			/**
+			 * @spec exclude watcher re-initializing data on register change
+			 */
 			handler(newRegister) {
-				console.info('Register changed in ViewObject:', newRegister)
 				if (newRegister && this.isNewObject) {
 					// Re-initialize data when register becomes available for new objects
 					this.initializeData()
@@ -1151,6 +1116,9 @@ export default {
 			immediate: true,
 		},
 		jsonData: {
+			/**
+			 * @spec exclude watcher syncing form from JSON editor
+			 */
 			handler(newValue) {
 				if (!this.isInternalUpdate && this.isValidJson(newValue)) {
 					this.updateFormFromJson()
@@ -1158,6 +1126,9 @@ export default {
 			},
 		},
 		formData: {
+			/**
+			 * @spec exclude watcher syncing JSON editor from form
+			 */
 			handler(_newValue) {
 				if (!this.isInternalUpdate) {
 					this.updateJsonFromForm()
@@ -1166,15 +1137,10 @@ export default {
 			deep: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook initializing modal data
+	 */
 	async mounted() {
-		// Debug: Log current state when modal opens
-		console.info('ViewObject mounted:', {
-			objectItem: objectStore.objectItem,
-			schemaItem: schemaStore.schemaItem,
-			registerItem: registerStore.registerItem,
-			isNewObject: this.isNewObject,
-		})
-
 		// Refetch the active schema by id so the store holds the resolved version
 		// (with allOf/oneOf/anyOf composition merged in by the backend). The schema
 		// list endpoint returns raw schemas with empty properties for extended
@@ -1182,15 +1148,21 @@ export default {
 		if (schemaStore.schemaItem?.id) {
 			try {
 				await schemaStore.getSchema(schemaStore.schemaItem.id, { setItem: true })
-			} catch (error) {
-				console.warn('Failed to fetch resolved schema:', error)
+			} catch {
+				// Fall through to use the un-resolved schema if the detail fetch fails
 			}
 		}
 
 		// Initialize data when modal opens
 		this.initializeData()
 		this.loadTitles()
+
+		// The render effect exists from here on, so $forceUpdate() is safe.
+		this.isMounted = true
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook re-loading data on update
+	 */
 	updated() {
 		if (!this.isUpdated && navigationStore.modal === 'viewObject') {
 			this.isUpdated = true
@@ -1202,6 +1174,8 @@ export default {
 		/**
 		 * Returns { type, objectId } needed for all file store operations.
 		 * Handles both string IDs and embedded register/schema objects.
+		 *
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		_getFileParams() {
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1215,6 +1189,9 @@ export default {
 			}
 			return { type, objectId }
 		},
+		/**
+		 * @spec exclude modal step transition handler for register/schema selection
+		 */
 		confirmRegisterSchemaSelection() {
 			// Set the selected register and schema in the store
 			const selectedRegister = this.selectedRegisterForNewObject || this.availableRegisters[0]
@@ -1223,11 +1200,6 @@ export default {
 			registerStore.setRegisterItem(selectedRegister)
 			schemaStore.setSchemaItem(selectedSchema)
 
-			console.info('Register and schema selected:', {
-				register: selectedRegister?.title,
-				schema: selectedSchema?.title,
-			})
-
 			// Confirm selection so we show the properties
 			this.registerSchemaSelectionConfirmed = true
 
@@ -1235,6 +1207,9 @@ export default {
 			this.initializeData()
 		},
 
+		/**
+		 * @spec exclude computed display helper for modal title
+		 */
 		getModalTitle() {
 			if (!objectStore?.objectItem || !objectStore.objectItem['@self']?.id) {
 				return 'Add Object'
@@ -1250,6 +1225,9 @@ export default {
 
 			return `${name} (${schemaName})`
 		},
+		/**
+		 * @spec exclude form-state loader resolving register/schema titles for display
+		 */
 		async loadTitles() {
 			// Only load titles if we have an existing object with @self data
 			if (!objectStore.objectItem || !objectStore.objectItem['@self']) {
@@ -1264,6 +1242,9 @@ export default {
 			this.registerTitle = register?.title || 'Not set'
 			this.schemaTitle = schema?.title || 'Not set'
 		},
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeModal() {
 			// Clear state first
 			this.isUpdated = false
@@ -1297,6 +1278,9 @@ export default {
 			navigationStore.setModal(null)
 			navigationStore.setDialog(null)
 		},
+		/**
+		 * @spec exclude modal open/close UI handler
+		 */
 		handleDialogClose(isOpen) {
 			if (!isOpen) {
 				this.closeModal()
@@ -1305,6 +1289,7 @@ export default {
 		/**
 		 * Open a file in the Nextcloud Files app
 		 * @param {object} file - The file object to open
+		 * @spec exclude opens file in Nextcloud Files app (UI navigation)
 		 */
 		openFile(file) {
 			const dirPath = file.path.substring(0, file.path.lastIndexOf('/'))
@@ -1316,6 +1301,7 @@ export default {
 		 * Format file size for display
 		 * @param {number} bytes - The file size in bytes
 		 * @return {string} The formatted file size
+		 * @spec exclude display helper formatting file size
 		 */
 		formatFileSize(bytes) {
 			const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
@@ -1329,22 +1315,32 @@ export default {
 		 * Truncate file name to prevent dialog alignment issues
 		 * @param {string} fileName - The file name to truncate
 		 * @return {string} The truncated file name (22 chars + ... if longer than 25)
+		 * @spec exclude display helper truncating file name
 		 */
 		truncateFileName(fileName) {
 			if (!fileName) return ''
 			if (fileName.length <= 25) return fileName
 			return fileName.substring(0, 22) + '...'
 		},
+		/**
+		 * @spec exclude client-side date validation helper
+		 */
 		isValidDate(value) {
 			if (!value) return false
 			const date = new Date(value)
 			return date instanceof Date && !isNaN(date)
 		},
+		/**
+		 * @spec exclude display helper formatting value as JSON
+		 */
 		formatValue(val) {
 			return JSON.stringify(val, null, 2)
 		},
 
 		getTheme,
+		/**
+		 * @spec exclude clipboard UI helper
+		 */
 		async copyToClipboard(text) {
 			try {
 				await navigator.clipboard.writeText(text)
@@ -1354,16 +1350,10 @@ export default {
 				console.error('Failed to copy text:', err)
 			}
 		},
+		/**
+		 * @spec exclude form-state initializer seeding formData/jsonData
+		 */
 		initializeData() {
-			console.info('initializeData called:', {
-				objectItem: objectStore.objectItem,
-				currentSchema: this.currentSchema,
-				currentSchemaProperties: this.currentSchema?.properties,
-				currentRegister: this.currentRegister,
-				hasSchema: !!this.currentSchema,
-				hasRegister: !!this.currentRegister,
-			})
-
 			// Initialize with empty data for new objects
 			if (!objectStore.objectItem) {
 				const initialData = {
@@ -1385,7 +1375,6 @@ export default {
 
 				// Add schema properties with default values
 				if (this.currentSchema?.properties) {
-					console.info('Adding schema properties to initial data:', Object.keys(this.currentSchema.properties))
 					for (const [key, property] of Object.entries(this.currentSchema.properties)) {
 						// Set default value based on property type
 						let defaultValue = null
@@ -1407,7 +1396,6 @@ export default {
 
 				this.formData = initialData
 				this.jsonData = JSON.stringify(initialData, null, 2)
-				console.info('Initialized new object with data:', initialData)
 				return
 			}
 
@@ -1432,6 +1420,9 @@ export default {
 
 		},
 
+		/**
+		 * @spec exclude modal submit handler delegating to objectStore.saveObject
+		 */
 		async saveObject() {
 			if (!this.currentRegister || !this.currentSchema) {
 				this.error = 'Register and schema are required'
@@ -1462,7 +1453,6 @@ export default {
 				if (data) objectStore.setObjectItem(data)
 				await objectStore.refreshObjectList({ register: this.currentRegister.id, schema: this.currentSchema.id })
 				objectStore.refetchSearchCollection()
-				console.info('Save object data:', data)
 				this.success = !!data
 				if (this.success) {
 					// Re-initialize data to refresh jsonData with the newly created object
@@ -1478,6 +1468,9 @@ export default {
 				this.isSaving = false
 			}
 		},
+		/**
+		 * @spec exclude form/JSON sync helper (JSON editor to form)
+		 */
 		updateFormFromJson() {
 			if (this.isInternalUpdate) return
 
@@ -1494,6 +1487,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude form/JSON sync helper (form to JSON editor)
+		 */
 		updateJsonFromForm() {
 			if (this.isInternalUpdate) return
 
@@ -1509,6 +1505,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude client-side JSON validation helper
+		 */
 		isValidJson(str) {
 			if (!str || !str.trim()) {
 				return false
@@ -1521,6 +1520,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude JSON formatting UI helper
+		 */
 		formatJSON() {
 			try {
 				if (this.jsonData) {
@@ -1535,26 +1537,44 @@ export default {
 		setFieldValue(key, value) {
 			this.formData[key] = value
 		},
+		/**
+		 * @spec exclude form-state helper updating an array item
+		 */
 		updateArrayItem(key, index, value) {
 			if (!this.formData[key]) {
 				this.formData[key] = []
 			}
 			this.formData[key][index] = value
 		},
+		/**
+		 * @spec exclude display/payload coercion helper for null values
+		 */
 		toDisplay(v) { return v === null ? '' : v },
+		/**
+		 * @spec exclude display/payload coercion helper for empty values
+		 */
 		toPayload(v) { return v === '' ? null : v },
 
+		/**
+		 * @spec exclude form-state helper adding an array item
+		 */
 		addArrayItem(key) {
 			if (!this.formData[key] || !Array.isArray(this.formData[key])) {
 				this.formData[key] = []
 			}
 			this.formData[key].push('')
 		},
+		/**
+		 * @spec exclude form-state helper removing an array item
+		 */
 		removeArrayItem(key, i) {
 			if (this.formData[key] && Array.isArray(this.formData[key])) {
 				this.formData[key].splice(i, 1)
 			}
 		},
+		/**
+		 * @spec exclude form-state helper updating an object-typed field
+		 */
 		updateObjectField(key, val) {
 			this.objectEditors[key] = val
 			try {
@@ -1563,6 +1583,9 @@ export default {
 				console.error('Invalid JSON format:', e)
 			}
 		},
+		/**
+		 * @spec exclude file-selection UI toggle (select all)
+		 */
 		toggleSelectAllFiles(checked) {
 			if (checked) {
 				// Add all current page files to selection
@@ -1577,6 +1600,9 @@ export default {
 				this.selectedAttachments = this.selectedAttachments.filter(id => !currentPageIds.includes(id))
 			}
 		},
+		/**
+		 * @spec exclude file-selection UI toggle (single file)
+		 */
 		toggleFileSelection(fileId, checked) {
 			if (checked) {
 				if (!this.selectedAttachments.includes(fileId)) {
@@ -1586,13 +1612,22 @@ export default {
 				this.selectedAttachments = this.selectedAttachments.filter(id => id !== fileId)
 			}
 		},
+		/**
+		 * @spec exclude files pagination UI handler
+		 */
 		onFilesPageChanged(page) {
 			this.filesCurrentPage = page
 		},
+		/**
+		 * @spec exclude files page-size UI handler
+		 */
 		onFilesPageSizeChanged(pageSize) {
 			this.filesPerPage = pageSize
 			this.filesCurrentPage = 1
 		},
+		/**
+		 * @spec exclude router navigation UI handler to audit trails
+		 */
 		viewAuditTrails() {
 			// Close the current modal and navigate to audit trails
 			this.closeModal()
@@ -1602,8 +1637,9 @@ export default {
 		// shared-store batchFiles action (one POST to /files/batch); falls
 		// back to N sequential single-file calls when the runtime store
 		// doesn't expose batchFiles yet (older @conduction/nextcloud-vue).
-		// Per-action callbacks let callers swap in publishFile / unpublishFile
-		// / deleteFile for the legacy fallback path.
+		/**
+		 * @spec exclude file batch-action dispatch helper delegating to objectStore.batchFiles
+		 */
 		async _runBatchAction(action, perFileFallback) {
 			if (this.selectedAttachments.length === 0) return
 			const { type, objectId } = this._getFileParams()
@@ -1619,40 +1655,9 @@ export default {
 				await perFileFallback(type, objectId, fileId)
 			}
 		},
-		async publishSelectedFiles() {
-			if (this.selectedAttachments.length === 0) return
-
-			try {
-				this.publishLoading = [...this.selectedAttachments]
-				await this._runBatchAction(
-					'publish',
-					(type, objectId, fileId) => objectStore.publishFile(type, objectId, fileId),
-				)
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error publishing files:', error)
-			} finally {
-				this.publishLoading = []
-			}
-		},
-		async depublishSelectedFiles() {
-			if (this.selectedAttachments.length === 0) return
-
-			try {
-				this.depublishLoading = [...this.selectedAttachments]
-				await this._runBatchAction(
-					'depublish',
-					(type, objectId, fileId) => objectStore.unpublishFile(type, objectId, fileId),
-				)
-				this.selectedAttachments = []
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Error depublishing files:', error)
-			} finally {
-				this.depublishLoading = []
-			}
-		},
+		/**
+		 * @spec exclude bulk file-delete handler delegating to objectStore
+		 */
 		async deleteSelectedFiles() {
 			if (this.selectedAttachments.length === 0) return
 
@@ -1670,30 +1675,9 @@ export default {
 				this.fileIdsLoading = []
 			}
 		},
-		async publishFile(file) {
-			try {
-				this.publishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.publishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to publish file:', error)
-			} finally {
-				this.publishLoading = this.publishLoading.filter(id => id !== file.id)
-			}
-		},
-		async depublishFile(file) {
-			try {
-				this.depublishLoading.push(file.id)
-				const { type, objectId } = this._getFileParams()
-				await objectStore.unpublishFile(type, objectId, file.id)
-			} catch (error) {
-				// eslint-disable-next-line no-console
-				console.error('Failed to depublish file:', error)
-			} finally {
-				this.depublishLoading = this.depublishLoading.filter(id => id !== file.id)
-			}
-		},
+		/**
+		 * @spec exclude single file-delete handler delegating to objectStore.deleteFile
+		 */
 		async deleteFile(file) {
 			try {
 				this.fileIdsLoading.push(file.id)
@@ -1706,12 +1690,18 @@ export default {
 				this.fileIdsLoading = this.fileIdsLoading.filter(id => id !== file.id)
 			}
 		},
+		/**
+		 * @spec exclude form-state handler entering file-label edit mode
+		 */
 		async editFileLabels(file) {
 			this.editingLabelsFileId = file.id
 			this.editingLabels = [...(file.labels || [])]
 			const tags = await objectStore.fetchTags()
 			this.availableLabels = Array.isArray(tags) ? tags : objectStore.getTags || []
 		},
+		/**
+		 * @spec exclude form-state handler cancelling file-label edit
+		 */
 		cancelFileLabels() {
 			this.editingLabelsFileId = null
 			this.editingLabels = []
@@ -1722,6 +1712,9 @@ export default {
 		// reverts on error so the UI never lies if the request fails.
 		// API call shape is implemented in services/fileMetadata.js so it
 		// can be unit-tested without mounting this modal.
+		/**
+		 * @spec exclude file-label save handler delegating to services/fileMetadata
+		 */
 		async saveFileLabels(file) {
 			const { type, objectId } = this._getFileParams()
 			const rawRegister = objectStore.objectItem['@self']?.register
@@ -1759,6 +1752,9 @@ export default {
 				this.labelsLoading = false
 			}
 		},
+		/**
+		 * @spec exclude computed CSS-class helper for property validation state
+		 */
 		getPropertyValidationClass(key, value) {
 			// Skip @self as it's metadata
 			if (key === '@self') {
@@ -1788,6 +1784,9 @@ export default {
 				return 'property-invalid'
 			}
 		},
+		/**
+		 * @spec exclude client-side property-value validation helper
+		 */
 		isValidPropertyValue(key, value, schemaProperty) {
 			// Handle null/undefined values
 			if (value === null || value === undefined || value === '') {
@@ -1826,6 +1825,9 @@ export default {
 				return true // Unknown type, assume valid
 			}
 		},
+		/**
+		 * @spec exclude display helper building property error message
+		 */
 		getPropertyErrorMessage(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -1869,6 +1871,7 @@ export default {
 		 * Convert any value to a string suitable for NcTextField
 		 * @param {*} value - The value to convert
 		 * @return {string} The string representation
+		 * @spec exclude display helper coercing value to string
 		 */
 		getStringValue(value) {
 			if (value === null || value === undefined) {
@@ -1890,6 +1893,9 @@ export default {
 			}
 			return String(value)
 		},
+		/**
+		 * @spec exclude table-row click UI handler for inline edit
+		 */
 		handleRowClick(key, event) {
 			// Don't select if clicking on an input or button
 			if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.closest('.value-input-container')) {
@@ -1907,7 +1913,7 @@ export default {
 				// Show warning for non-editable properties
 				const warning = this.getEditabilityWarning(key, value)
 				if (warning) {
-					this.showWarningNotification(warning)
+					showWarning(warning)
 				}
 				return
 			}
@@ -1921,9 +1927,12 @@ export default {
 				this.selectProperty(key)
 			} else {
 				// Show info for unsupported types
-				this.showWarningNotification(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
+				showWarning(`Property '${this.getPropertyDisplayName(key)}' has type '${schemaProperty.type}' which is not supported for inline editing. Use the Data tab for complex types.`)
 			}
 		},
+		/**
+		 * @spec exclude form-state handler selecting/focusing a property for edit
+		 */
 		selectProperty(key) {
 			this.selectedProperty = key
 
@@ -1938,6 +1947,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude form-state handler updating a property value with type coercion
+		 */
 		updatePropertyValue(key, newValue) {
 			// Get the old value for comparison
 			const oldValue = this.formData[key] !== undefined
@@ -2001,6 +2013,7 @@ export default {
 		},
 		/**
 		 * Remove all existing toast notifications
+		 * @spec exclude toast cleanup UI helper
 		 */
 		clearAllToasts() {
 			const toasts = document.querySelectorAll('.property-change-toast, .property-warning-toast')
@@ -2010,6 +2023,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude toast notification UI helper for property changes
+		 */
 		showPropertyChangeNotification(key, oldValue, newValue) {
 			// Clear any existing toasts before showing a new one
 			this.clearAllToasts()
@@ -2041,10 +2057,16 @@ export default {
 				}
 			}, 3000)
 		},
+		/**
+		 * @spec exclude display helper checking string-typed property
+		 */
 		isStringProperty(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			return schemaProperty?.type === 'string'
 		},
+		/**
+		 * @spec exclude display helper checking property editability (const/immutable)
+		 */
 		isPropertyEditable(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -2063,6 +2085,9 @@ export default {
 
 			return true
 		},
+		/**
+		 * @spec exclude display helper building editability warning text
+		 */
 		getEditabilityWarning(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -2076,9 +2101,15 @@ export default {
 
 			return null
 		},
+		/**
+		 * @spec exclude display helper delegating to dateUtils.stringToDate
+		 */
 		stringToDate(value, format) {
 			return stringToDate(value, format)
 		},
+		/**
+		 * @spec exclude display helper mapping schema type to input type
+		 */
 		getPropertyInputType(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'text'
@@ -2105,6 +2136,9 @@ export default {
 				return 'text'
 			}
 		},
+		/**
+		 * @spec exclude display helper mapping schema type to input component
+		 */
 		getPropertyInputComponent(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 			if (!schemaProperty) return 'NcTextField'
@@ -2132,6 +2166,7 @@ export default {
 		 * Get the display name for a property (title if available, otherwise key)
 		 * @param {string} key - The property key
 		 * @return {string} The display name
+		 * @spec exclude display helper for property display name
 		 */
 		getPropertyDisplayName(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2141,6 +2176,7 @@ export default {
 		 * Get the tooltip text for a property
 		 * @param {string} key - The property key
 		 * @return {string} The tooltip text
+		 * @spec exclude display helper for property tooltip text
 		 */
 		getPropertyTooltip(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2161,6 +2197,7 @@ export default {
 		 * Get the minimum value for a property
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The minimum value
+		 * @spec exclude display helper exposing schema minimum
 		 */
 		getPropertyMinimum(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2170,6 +2207,7 @@ export default {
 		 * Get the maximum value for a property
 		 * @param {string} key - The property key
 		 * @return {number|undefined} The maximum value
+		 * @spec exclude display helper exposing schema maximum
 		 */
 		getPropertyMaximum(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2179,6 +2217,7 @@ export default {
 		 * Get the step value for a property
 		 * @param {string} key - The property key
 		 * @return {string|undefined} The step value
+		 * @spec exclude display helper exposing input step
 		 */
 		getPropertyStep(key) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
@@ -2190,6 +2229,9 @@ export default {
 			}
 			return undefined
 		},
+		/**
+		 * @spec exclude display helper resolving value to show for a property
+		 */
 		getDisplayValue(key, value) {
 			const schemaProperty = this.currentSchema?.properties?.[key]
 
@@ -2210,45 +2252,6 @@ export default {
 
 			// Otherwise use the original value
 			return value
-		},
-		showWarningNotification(warning) {
-			// Clear any existing toasts before showing a new one
-			this.clearAllToasts()
-
-			// Create a warning notification
-			const notification = document.createElement('div')
-			notification.className = 'property-warning-toast'
-			notification.style.cssText = `
-				position: fixed;
-				top: 20px;
-				right: 20px;
-				background: var(--color-warning);
-				color: white;
-				padding: 12px 16px;
-				border-radius: 6px;
-				box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-				z-index: 10000;
-				font-size: 14px;
-				max-width: 350px;
-				line-height: 1.4;
-			`
-			notification.innerHTML = `
-				<div style="display: flex; align-items: center; gap: 8px;">
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,7A1.25,1.25 0 0,1 13.25,8.25A1.25,1.25 0 0,1 12,9.5A1.25,1.25 0 0,1 10.75,8.25A1.25,1.25 0 0,1 12,7M11,11H13V17H11V11Z"/>
-					</svg>
-					<span>${warning}</span>
-				</div>
-			`
-
-			document.body.appendChild(notification)
-
-			// Remove notification after 5 seconds (longer for warnings)
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.parentNode.removeChild(notification)
-				}
-			}, 5000)
 		},
 	},
 }

@@ -6,6 +6,9 @@
  * This file contains the class for handling source mapper related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -48,7 +51,6 @@ use Symfony\Component\Uid\Uuid;
  * @method Source delete(Entity $entity)
  * @method Source find(int|string $id)
  * @method Source findEntity(IQueryBuilder $query)
- * @method Source[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Source> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Source>
@@ -68,18 +70,18 @@ class SourceMapper extends QBMapper
     // Private OrganisationService $organisationService.
 
     /**
-     * User session for current user
+     * User session for current user (read by MultiTenancyTrait via isset guards)
      *
      * @var IUserSession
      */
-    private IUserSession $userSession;
+    protected IUserSession $userSession;
 
     /**
-     * Group manager for RBAC
+     * Group manager for RBAC (read by MultiTenancyTrait via isset guards)
      *
      * @var IGroupManager
      */
-    private IGroupManager $groupManager;
+    protected IGroupManager $groupManager;
 
     /**
      * Event dispatcher for dispatching source events
@@ -168,7 +170,7 @@ class SourceMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Source>
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
      */
     public function findAll(
         ?int $limit=null,
@@ -213,6 +215,87 @@ class SourceMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findAll()
+
+    /**
+     * Find all sources that have scheduled sync enabled.
+     *
+     * Intended for the SyncDataJob background context which runs as the
+     * system actor across all organisations; therefore RBAC and the
+     * organisation filter are intentionally NOT applied here. Each
+     * returned source still carries its `organisation` field so the
+     * harvest pipeline can scope the objects it creates.
+     *
+     * @return Source[] Sources with sync_enabled = true
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Source>
+     *
+     * @spec openspec/specs/data-sync-harvesting/spec.md
+     */
+    public function findBySyncEnabled(): array
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from('openregister_sources')
+            ->where(
+                $qb->expr()->eq('sync_enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL))
+            );
+
+        return $this->findEntities(query: $qb);
+    }//end findBySyncEnabled()
+
+    /**
+     * Load a Source by id or uuid for a trusted, code-initiated system lookup —
+     * intentionally WITHOUT RBAC verification and WITHOUT the organisation filter.
+     *
+     * A `Source` is shared infrastructure config (a database connection), not
+     * tenant-owned data. Its ONLY current caller,
+     * `DbalObjectSourceProvider::resolveSource()`, resolves the `sourceId`
+     * named in an already-authorized schema's `x-openregister-object-source`
+     * config — `ObjectService::paginateObjectSource()` enforces the schema's
+     * own read RBAC (`checkPermission()`) BEFORE the provider (and therefore
+     * this lookup) ever runs. Filtering this row by the caller's active
+     * organisation adds no isolation — the caller never sees the Source row
+     * itself, only the objects it serves for a schema they were already
+     * cleared to read — and instead breaks every dbal-backed schema whose
+     * Source is configured in a different organisation than the reader's
+     * active one, most visibly under `saasMode: true` where admin override is
+     * unconditionally disabled (openregister#2089: `resolveSource()` returned
+     * null and every downstream find/count on the schema silently emptied,
+     * logged only as a warning).
+     *
+     * Mirrors the same rationale as {@see findBySyncEnabled()} (system-actor
+     * lookup, no tenant scoping) rather than the SystemOperationContext RBAC
+     * bypass: this method skips the ORGANISATION FILTER on the Source row
+     * itself, a query-builder concern `SystemOperationContext` does not touch.
+     *
+     * SECURITY: this method MUST NOT be exposed to any caller that has not
+     * already authorized the request at the schema/object level, and MUST
+     * NOT be used to serve Source data (credentials, connection config)
+     * directly to a client — only to locate the row so its provider can serve
+     * the schema's own RBAC-gated objects.
+     *
+     * @param string $sourceId The Source id (digits) or uuid.
+     *
+     * @return Source|null The source, or null when not found.
+     *
+     * @spec openspec/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
+     */
+    public function findForSystem(string $sourceId): ?Source
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')->from('openregister_sources');
+
+        if (ctype_digit($sourceId) === true) {
+            $qb->where($qb->expr()->eq('id', $qb->createNamedParameter((int) $sourceId, IQueryBuilder::PARAM_INT)));
+        } else {
+            $qb->where($qb->expr()->eq('uuid', $qb->createNamedParameter($sourceId)));
+        }
+
+        return $this->findEntity(query: $qb);
+    }//end findForSystem()
 
     /**
      * Insert a new source

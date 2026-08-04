@@ -74,6 +74,8 @@ final class QueryTimeContract
      *                                               (for the details payload).
      *
      * @return array{message: string, code: int, details: array<string,string>}
+     *
+     * @spec openspec/changes/pluggable-integration-registry/tasks.md#task-6
      */
     public static function buildHttpBody(NotImplementedException $exception, string $integrationId): array
     {

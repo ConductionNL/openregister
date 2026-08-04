@@ -7,6 +7,9 @@
  * status checks before controller execution. Uses APCu for high-performance
  * counter management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Middleware
  * @package  OCA\OpenRegister\Middleware
  *
@@ -16,9 +19,9 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+ * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+ * @spec openspec/specs/tenant-quotas/spec.md
+ * @spec openspec/specs/tenant-quotas/spec.md
  */
 
 declare(strict_types=1);
@@ -93,8 +96,8 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-79
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function beforeController(string|Controller $controller, string $methodName): void
     {
@@ -164,8 +167,8 @@ class TenantQuotaMiddleware extends Middleware
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-78
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function afterController(string|Controller $controller, string $methodName, Response $response): Response
     {
@@ -189,8 +192,12 @@ class TenantQuotaMiddleware extends Middleware
         // Estimate from headers or use 0 for non-JSON responses.
         $contentLength = 0;
         if ($response instanceof JSONResponse) {
-            $encoded       = json_encode($response->getData());
-            $content       = ($encoded !== false) ? $encoded : '';
+            $encoded = json_encode($response->getData());
+            $content = '';
+            if ($encoded !== false) {
+                $content = $encoded;
+            }
+
             $contentLength = strlen($content);
         }
 
@@ -219,6 +226,8 @@ class TenantQuotaMiddleware extends Middleware
      * @return Response|null A JSON error response or null to re-throw
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/specs/tenant-quotas/spec.md
      */
     public function afterException(string|Controller $controller, string $methodName, \Exception $exception): ?Response
     {
@@ -261,7 +270,7 @@ class TenantQuotaMiddleware extends Middleware
      *
      * @SuppressWarnings(PHPMD.UndefinedVariable)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-75
+     * @spec openspec/specs/tenant-quotas/spec.md#requirement-request-quota-must-be-enforced-via-middleware-before-controller-execution
      */
     private function checkRequestQuota(object $organisation): void
     {

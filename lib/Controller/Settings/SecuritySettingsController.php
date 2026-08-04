@@ -3,6 +3,9 @@
 /**
  * OpenRegister Security Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -62,6 +65,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearIpRateLimits(): JSONResponse
     {
@@ -112,6 +117,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearUserRateLimits(): JSONResponse
     {
@@ -162,6 +169,8 @@ class SecuritySettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearAllRateLimits(): JSONResponse
     {

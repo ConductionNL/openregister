@@ -16,6 +16,9 @@
  * - This service is an internal server-side API only; it is not wired
  *   into any HTTP controller.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -171,6 +174,8 @@ class TenantKeyService
      * @param string $tenantId Tenant identifier
      *
      * @return array<string,mixed>|null Database row or null
+     *
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function fetchActiveRow(string $tenantId): ?array
     {
@@ -197,7 +202,11 @@ class TenantKeyService
         $row    = $result->fetch();
         $result->closeCursor();
 
-        return ($row === false) ? null : $row;
+        if ($row === false) {
+            return null;
+        }
+
+        return $row;
     }//end fetchActiveRow()
 
     /**
@@ -244,6 +253,8 @@ class TenantKeyService
      * @param string $rotatedAt ISO-8601 timestamp
      *
      * @return void
+     *
+     * @spec openspec/specs/saas-multi-tenant/spec.md
      */
     private function insertKey(string $tenantId, string $rawKey, string $rotatedAt): void
     {

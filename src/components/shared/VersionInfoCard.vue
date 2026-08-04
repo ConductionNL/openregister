@@ -10,7 +10,7 @@
 			<!-- Update Button -->
 			<NcButton
 				v-if="showUpdateButton"
-				:type="updateButtonType"
+				:variant="updateButtonType"
 				:disabled="updateButtonDisabled"
 				@click="handleUpdateClick">
 				<template #icon>
@@ -217,6 +217,7 @@ export default {
 		 * Update button type based on status
 		 *
 		 * @return {string}
+		 * @spec exclude computed button-type display helper, UI plumbing
 		 */
 		updateButtonType() {
 			if (this.isUpToDate) {
@@ -229,6 +230,7 @@ export default {
 		 * Update button should be disabled if up to date or updating
 		 *
 		 * @return {boolean}
+		 * @spec exclude computed button-disabled display flag, UI plumbing
 		 */
 		updateButtonDisabled() {
 			return this.isUpToDate || this.updating
@@ -238,6 +240,7 @@ export default {
 		 * Update button text based on status
 		 *
 		 * @return {string}
+		 * @spec exclude computed button-text display helper, UI plumbing
 		 */
 		updateButtonText() {
 			if (this.updating) {
@@ -255,6 +258,7 @@ export default {
 		 * Handle update button click
 		 *
 		 * @return {void}
+		 * @spec exclude emit UI handler dispatching update event, UI plumbing
 		 */
 		handleUpdateClick() {
 			if (!this.updateButtonDisabled) {

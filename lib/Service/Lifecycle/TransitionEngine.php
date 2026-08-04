@@ -9,6 +9,9 @@
  * eventing, and audit machinery runs unchanged), and dispatches the
  * typed ObjectTransitionedEvent.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
@@ -26,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -33,8 +37,11 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -47,6 +54,16 @@ use RuntimeException;
 class TransitionEngine
 {
     /**
+     * App-config key opting an instance into the documented slug contract.
+     *
+     * Default 'no' — see {@see transitionEventScope()} for why a contract fix
+     * ships disabled.
+     *
+     * @var string
+     */
+    public const SLUG_CONTRACT_FLAG = 'transition_event_slug_contract';
+
+    /**
      * Constructor.
      *
      * @param ObjectService     $objectService     Object CRUD service used to load + save the entity.
@@ -54,15 +71,162 @@ class TransitionEngine
      * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+     * @param RegisterMapper    $registerMapper    Mapper used to resolve the register slug.
+     * @param IAppConfig        $appConfig         App config, for the slug-contract opt-in.
+     * @param LoggerInterface   $logger            Logger for post-commit listener failures.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ObjectService $objectService,
         private readonly SchemaMapper $schemaMapper,
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IUserSession $userSession,
-        private readonly PermissionHandler $permissionHandler
+        private readonly PermissionHandler $permissionHandler,
+        private readonly RegisterMapper $registerMapper,
+        private readonly IAppConfig $appConfig,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Dispatch `ObjectTransitionedEvent` without letting a listener undo the write.
+     *
+     * `ObjectTransitionedEvent` is a POST event: by the time it is dispatched the
+     * lifecycle mutation has already been saved and committed. Propagating a
+     * listener's exception out of here therefore reports failure for work that
+     * succeeded — the caller sees a 500 (or a 422 "transition refused", when the
+     * listener happens to throw a `RuntimeException` that
+     * {@see \OCA\OpenRegister\Controller\TransitionController::transition()}
+     * maps to that status) while the object sits in its NEW state. Retrying then
+     * fails a second time with "not allowed from the current state", because the
+     * transition it is being asked to repeat has in fact already happened.
+     *
+     * So a post-event listener MUST NOT be able to fail a committed transition.
+     * That is deliberately NOT extended to the pre-event (`*ing`) family: those
+     * exist precisely so a listener can veto, they are dispatched before the
+     * save, and their exceptions must keep propagating. Nothing here touches
+     * them — the veto path for a transition is `HookStoppedException` raised
+     * inside `saveObject()`, which is upstream of this method and unaffected.
+     *
+     * Swallowing silently would trade a loud wrong answer for a quiet one, so
+     * the failure is logged at ERROR with the exception attached: a listener
+     * that throws here is a real bug, and the side effect it owns (a legal hold,
+     * a ledger posting, an outbound notification) did not happen.
+     *
+     * @param ObjectEntity $object The saved object, in its post-transition state.
+     * @param string       $action The transition action that was applied.
+     * @param string       $from   The lifecycle value before the transition.
+     * @param string       $to     The lifecycle value after the transition.
+     * @param string|null  $userId The acting user, when there is a session.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function dispatchTransitioned(
+        ObjectEntity $object,
+        string $action,
+        string $from,
+        string $to,
+        ?string $userId
+    ): void {
+        $scope = $this->transitionEventScope(object: $object);
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectTransitionedEvent(
+                    object: $object,
+                    action: $action,
+                    from: $from,
+                    to: $to,
+                    userId: $userId,
+                    register: $scope['register'],
+                    schema: $scope['schema']
+                )
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                '[TransitionEngine] A listener threw on ObjectTransitionedEvent. '
+                .'The transition itself is COMMITTED; the listener\'s side effect did not run.',
+                [
+                    'app'       => 'openregister',
+                    'uuid'      => $object->getUuid(),
+                    'register'  => $scope['register'],
+                    'schema'    => $scope['schema'],
+                    'action'    => $action,
+                    'from'      => $from,
+                    'to'        => $to,
+                    'exception' => $e,
+                ]
+            );
+        }//end try
+
+    }//end dispatchTransitioned()
+
+    /**
+     * Resolve the register/schema pair to advertise on ObjectTransitionedEvent.
+     *
+     * ObjectTransitionedEvent documents both params as SLUGS, but this engine has
+     * always passed `(string) $object->getRegister()` / `getSchema()`, which are
+     * numeric ids. Every listener comparing them to a slug literal has therefore
+     * never matched and never run — 44 of them across scholiq, shillinq and
+     * openbuild.
+     *
+     * Honouring the documented contract is a one-line change and a very large
+     * behaviour change: it simultaneously activates dormant general-ledger
+     * posting, outbound HTTP to external parties, and bulk-write handlers that
+     * have never executed against this data. So the corrected contract ships
+     * DISABLED and is opted into per instance, after that instance has assessed
+     * its own listeners. See `docs/transition-event-slug-contract.md`.
+     *
+     * Resolution failures fall back to the id rather than throwing: a lifecycle
+     * transition must not start failing because a slug lookup missed.
+     *
+     * @param ObjectEntity $object The object being transitioned.
+     *
+     * @return array{register: string, schema: string} Values for the event.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function transitionEventScope(ObjectEntity $object): array
+    {
+        $registerRef = (string) $object->getRegister();
+        $schemaRef   = (string) $object->getSchema();
+
+        if ($this->appConfig->getValueString('openregister', self::SLUG_CONTRACT_FLAG, 'no') !== 'yes') {
+            return [
+                'register' => $registerRef,
+                'schema'   => $schemaRef,
+            ];
+        }
+
+        try {
+            $register = $this->registerMapper->find($registerRef);
+            $slug     = $register->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $registerRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaRef, _multitenancy: false);
+            $slug   = $schema->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $schemaRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        return [
+            'register' => $registerRef,
+            'schema'   => $schemaRef,
+        ];
+
+    }//end transitionEventScope()
 
     /**
      * Apply a named transition to an object.
@@ -75,6 +239,11 @@ class TransitionEngine
      * @throws RuntimeException When the object/schema/transition is missing,
      *                          the action is not allowed from the current
      *                          state, or the underlying save is rejected.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Linear resolve→guard→mutate→save flow; splitting would obscure the transition contract.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function transition(string $objectId, string $action): ObjectEntity
     {
@@ -122,8 +291,23 @@ class TransitionEngine
             );
         }
 
-        $field       = (string) ($annotation['field'] ?? '');
+        $field       = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
         $transitions = (array) ($annotation['transitions'] ?? []);
+
+        // Static transitions take precedence. Graph mode applies only when no
+        // non-empty static `transitions` map is declared (design: mode
+        // selection & precedence — zero regression for static schemas).
+        if ($transitions === []) {
+            $graph = (array) ($annotation['graph'] ?? []);
+            if ($graph !== []) {
+                return $this->applyGraphTransition(
+                    object: $object,
+                    graph: $graph,
+                    field: $field,
+                    action: $action
+                );
+            }
+        }
 
         if (isset($transitions[$action]) === false || is_array($transitions[$action]) === false) {
             throw new RuntimeException(
@@ -131,9 +315,9 @@ class TransitionEngine
             );
         }
 
-        $spec = $transitions[$action];
-        $to   = (string) ($spec['to'] ?? '');
-        $from = (array) ($spec['from'] ?? []);
+        $spec        = $transitions[$action];
+        $targetState = (string) ($spec['to'] ?? '');
+        $from        = (array) ($spec['from'] ?? []);
 
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
@@ -150,27 +334,31 @@ class TransitionEngine
 
         // Mutate the lifecycle field. The validator listener will re-check
         // the transition on save; the guard (if any) will run there too.
-        $data[$field] = $to;
+        $data[$field] = $targetState;
+
+        // Snapshot the session user at the transition boundary and forward it
+        // explicitly to the save path, so the @self.folder check uses the SAME
+        // identity that authorised this transition. Note this does NOT rescue
+        // the null-session case: with no session user $actingUser is null and
+        // the downstream check default-denies — as intended (PR #1431 4th-pass).
+        $actingUser = $this->userSession->getUser();
 
         $saved = $this->objectService->saveObject(
             object: $data,
             register: $object->getRegister(),
             schema: $object->getSchema(),
-            uuid: $object->getUuid()
+            uuid: $object->getUuid(),
+            currentUser: $actingUser
         );
 
-        $userId = $this->userSession->getUser()?->getUID();
+        $userId = $actingUser?->getUID();
 
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectTransitionedEvent(
-                object: $saved,
-                action: $action,
-                from: $currentValue,
-                to: $to,
-                userId: $userId,
-                register: (string) $object->getRegister(),
-                schema: (string) $object->getSchema()
-            )
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $currentValue,
+            to: $targetState,
+            userId: $userId
         );
 
         return $saved;
@@ -182,6 +370,16 @@ class TransitionEngine
      * @param string $objectId Object id/uuid/slug.
      *
      * @return array<int, array{action: string, to: string, requires: ?string, description: ?string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      RBAC check + missing-object guard + annotation-absent
+     * guard + per-transition from/requires/description checks each add one branch; none can be removed
+     * without losing safety or fidelity.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
      */
     public function availableActions(string $objectId): array
     {
@@ -221,8 +419,19 @@ class TransitionEngine
             return [];
         }
 
-        $field        = (string) ($annotation['field'] ?? '');
-        $transitions  = (array) ($annotation['transitions'] ?? []);
+        $field       = (string) ($annotation['field'] ?? ($annotation['property'] ?? ''));
+        $transitions = (array) ($annotation['transitions'] ?? []);
+
+        // Static transitions take precedence. When no non-empty static map is
+        // declared but a `graph` block is, derive actions from FK-scoped
+        // siblings at runtime (design: mode selection & precedence).
+        if ($transitions === []) {
+            $graph = (array) ($annotation['graph'] ?? []);
+            if ($graph !== []) {
+                return $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+            }
+        }
+
         $data         = $object->getObject() ?? [];
         $currentValue = (string) ($data[$field] ?? '');
 
@@ -237,16 +446,285 @@ class TransitionEngine
                 continue;
             }
 
+            $requires    = null;
+            $description = null;
+            if (isset($spec['requires']) === true) {
+                $requires = (string) $spec['requires'];
+            }
+
+            if (isset($spec['description']) === true) {
+                $description = (string) $spec['description'];
+            }
+
             $available[] = [
                 'action'      => (string) $action,
                 'to'          => (string) ($spec['to'] ?? ''),
-                'requires'    => isset($spec['requires']) === true ? (string) $spec['requires'] : null,
-                'description' => isset($spec['description']) === true ? (string) $spec['description'] : null,
+                'requires'    => $requires,
+                'description' => $description,
             ];
-        }
+        }//end foreach
 
         return $available;
     }//end availableActions()
+
+    /**
+     * Derive the candidate transitions for a graph-mode object.
+     *
+     * Reads the parent reference off the object, fetches the ordered sibling
+     * set of the related schema scoped to that parent (through the standard
+     * ObjectService read path, so RBAC + multitenancy apply), locates the
+     * object's current state, and returns the candidate targets permitted by
+     * `allowedMoves`. Terminal states (`finalField` true) are sinks unless
+     * `allowedMoves` is `any`. An orphaned current value (not among the
+     * siblings) recovers to the first sibling. The SAME method backs both
+     * `availableActions()` and the validation inside `transition()`, so a
+     * client can only apply a `move-to-<uuid>` the graph currently offers.
+     *
+     * @param ObjectEntity         $object The transitioning object.
+     * @param array<string, mixed> $graph  The `graph` block off the annotation.
+     * @param string               $field  The lifecycle field name on the object.
+     *
+     * @return array<int, array{action: string, to: string, label: string, requires: ?string, description: ?string}>
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) FK read + sibling fetch + current-state
+     * location + per-move-policy branching are each irreducible steps of the derivation.
+     * @SuppressWarnings(PHPMD.NPathComplexity)      FK read + sibling fetch + current-state
+     * location + per-move-policy branching are each irreducible steps of the derivation.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function deriveGraphActions(ObjectEntity $object, array $graph, string $field): array
+    {
+        $parentFromKey = (string) ($graph['parentFrom'] ?? '');
+        $data          = $object->getObject() ?? [];
+        $parentValue   = (string) ($data[$parentFromKey] ?? '');
+
+        // No parent reference → nothing to scope the graph to.
+        if ($parentValue === '') {
+            return [];
+        }
+
+        $siblings = $this->fetchOrderedSiblings(graph: $graph, parentValue: $parentValue);
+        if ($siblings === []) {
+            return [];
+        }
+
+        $finalField = (string) ($graph['finalField'] ?? '');
+        $allowed    = (string) ($graph['allowedMoves'] ?? '');
+
+        $currentUuid  = (string) ($data[$field] ?? '');
+        $currentIndex = null;
+        foreach ($siblings as $i => $sibling) {
+            if ((string) $sibling->getUuid() === $currentUuid && $currentUuid !== '') {
+                $currentIndex = $i;
+                break;
+            }
+        }
+
+        // Orphaned / unset current value → recover-to-start: offer the first
+        // sibling only (design decision, Ruben 2026-07-08).
+        if ($currentIndex === null) {
+            return [$this->buildGraphAction(sibling: $siblings[0])];
+        }
+
+        // Terminal lockout: a final state is a sink for forward/adjacent.
+        $currentData  = $siblings[$currentIndex]->getObject() ?? [];
+        $currentFinal = (bool) ($currentData[$finalField] ?? false);
+        if ($currentFinal === true && $allowed !== 'any') {
+            return [];
+        }
+
+        $targets = [];
+        switch ($allowed) {
+            case 'forward':
+                if (isset($siblings[($currentIndex + 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex + 1)];
+                }
+                break;
+            case 'adjacent':
+                if ($currentIndex > 0 && isset($siblings[($currentIndex - 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex - 1)];
+                }
+
+                if (isset($siblings[($currentIndex + 1)]) === true) {
+                    $targets[] = $siblings[($currentIndex + 1)];
+                }
+                break;
+            case 'any':
+                foreach ($siblings as $i => $sibling) {
+                    if ($i !== $currentIndex) {
+                        $targets[] = $sibling;
+                    }
+                }
+                break;
+            default:
+                return [];
+        }//end switch
+
+        $actions = [];
+        foreach ($targets as $target) {
+            $actions[] = $this->buildGraphAction(sibling: $target);
+        }
+
+        return $actions;
+    }//end deriveGraphActions()
+
+    /**
+     * Fetch the ordered sibling set for a graph derivation.
+     *
+     * Uses `ObjectService::findAll` (the standard read path) filtered by the
+     * sibling schema and the parent FK, then sorts ascending by `orderField`
+     * with a deterministic UUID tiebreak so derivation never depends on
+     * database row order.
+     *
+     * @param array<string, mixed> $graph       The `graph` block off the annotation.
+     * @param string               $parentValue The resolved parent reference.
+     *
+     * @return array<int, ObjectEntity> The ordered sibling entities (0-indexed, re-keyed).
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function fetchOrderedSiblings(array $graph, string $parentValue): array
+    {
+        $schemaSlug  = (string) ($graph['schema'] ?? '');
+        $parentField = (string) ($graph['parentField'] ?? '');
+        $orderField  = (string) ($graph['orderField'] ?? '');
+        if ($schemaSlug === '' || $parentField === '') {
+            return [];
+        }
+
+        $siblings = $this->objectService->findAll(
+            config: [
+                'filters' => [
+                    'schema'     => $schemaSlug,
+                    $parentField => $parentValue,
+                ],
+                'sort'    => [$orderField => 'ASC'],
+            ]
+        );
+
+        // Keep only ObjectEntity results and re-index.
+        $entities = [];
+        foreach ($siblings as $sibling) {
+            if ($sibling instanceof ObjectEntity) {
+                $entities[] = $sibling;
+            }
+        }
+
+        // Deterministic sort (ascending order, UUID tiebreak) — do not rely on
+        // the storage layer's ordering.
+        usort(
+            $entities,
+            function (ObjectEntity $a, ObjectEntity $b) use ($orderField): int {
+                $aOrder = (float) (($a->getObject() ?? [])[$orderField] ?? 0);
+                $bOrder = (float) (($b->getObject() ?? [])[$orderField] ?? 0);
+                if ($aOrder === $bOrder) {
+                    return strcmp((string) $a->getUuid(), (string) $b->getUuid());
+                }
+
+                return ($aOrder <=> $bOrder);
+            }
+        );
+
+        return $entities;
+    }//end fetchOrderedSiblings()
+
+    /**
+     * Build a derived graph action envelope for a target sibling.
+     *
+     * @param ObjectEntity $sibling The target sibling to move to.
+     *
+     * @return array{action: string, to: string, label: string, requires: ?string, description: ?string}
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function buildGraphAction(ObjectEntity $sibling): array
+    {
+        $uuid = (string) $sibling->getUuid();
+        $data = $sibling->getObject() ?? [];
+        $name = $sibling->getName();
+        if ($name === null || trim((string) $name) === '') {
+            $name = (string) ($data['name'] ?? ($data['title'] ?? $uuid));
+        }
+
+        return [
+            'action'      => 'move-to-'.$uuid,
+            'to'          => $uuid,
+            'label'       => (string) $name,
+            'requires'    => null,
+            'description' => null,
+        ];
+    }//end buildGraphAction()
+
+    /**
+     * Apply a graph-mode transition.
+     *
+     * Re-runs the SAME derivation as `availableActions()`, accepts the posted
+     * action only when it is a current candidate, mutates the lifecycle field
+     * to the target UUID, saves through the unchanged ObjectService path, and
+     * dispatches `ObjectTransitionedEvent`. Rejection never mutates the object.
+     *
+     * @param ObjectEntity         $object The transitioning object.
+     * @param array<string, mixed> $graph  The `graph` block off the annotation.
+     * @param string               $field  The lifecycle field name on the object.
+     * @param string               $action The requested `move-to-<uuid>` action.
+     *
+     * @return ObjectEntity The saved object after the transition.
+     *
+     * @throws RuntimeException When the action is not a current candidate.
+     *
+     * @spec openspec/changes/fk-graph-lifecycle-transitions/specs/object-lifecycle/spec.md
+     */
+    private function applyGraphTransition(
+        ObjectEntity $object,
+        array $graph,
+        string $field,
+        string $action
+    ): ObjectEntity {
+        $candidates = $this->deriveGraphActions(object: $object, graph: $graph, field: $field);
+
+        $match = null;
+        foreach ($candidates as $candidate) {
+            if ($candidate['action'] === $action) {
+                $match = $candidate;
+                break;
+            }
+        }
+
+        if ($match === null) {
+            throw new RuntimeException(
+                sprintf('Transition "%s" is not allowed from the current state.', $action)
+            );
+        }
+
+        $targetState = (string) $match['to'];
+        $data        = $object->getObject() ?? [];
+        $from        = (string) ($data[$field] ?? '');
+
+        $data[$field] = $targetState;
+
+        // Snapshot the session user at the transition boundary and forward it
+        // explicitly to the save path, mirroring the static-mode contract.
+        $actingUser = $this->userSession->getUser();
+
+        $saved = $this->objectService->saveObject(
+            object: $data,
+            register: $object->getRegister(),
+            schema: $object->getSchema(),
+            uuid: $object->getUuid(),
+            currentUser: $actingUser
+        );
+
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $from,
+            to: $targetState,
+            userId: $actingUser?->getUID()
+        );
+
+        return $saved;
+    }//end applyGraphTransition()
 
     /**
      * Load the schema referenced by an object, returning null on failure.
@@ -280,6 +758,10 @@ class TransitionEngine
     {
         $config     = ($schema->getConfiguration() ?? []);
         $annotation = ($config['x-openregister-lifecycle'] ?? null);
-        return is_array($annotation) === true ? $annotation : null;
+        if (is_array($annotation) === true) {
+            return $annotation;
+        }
+
+        return null;
     }//end getLifecycleAnnotation()
 }//end class

@@ -7,6 +7,9 @@
  * This allows the TextExtractionService to be generic and extensible
  * for future source types (agenda, email, etc.).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\TextExtraction
  *
@@ -15,6 +18,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/text-extraction/spec.md
  */
 
 namespace OCA\OpenRegister\Service\TextExtraction;
@@ -53,6 +58,8 @@ interface TextExtractionHandlerInterface
      * }
      *
      * @throws \Exception When extraction fails.
+     *
+     * @spec openspec/specs/text-extraction/spec.md
      */
     public function extractText(int $sourceId, array $sourceMeta, bool $force=false): array;
 

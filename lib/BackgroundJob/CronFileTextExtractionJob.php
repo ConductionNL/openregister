@@ -6,6 +6,9 @@
  * Recurring background job that periodically processes files for text extraction.
  * This job runs at configurable intervals to handle files when extraction mode is set to 'cron'.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -63,7 +66,7 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @param ITimeFactory $time Time factory for parent class
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(ITimeFactory $time)
     {
@@ -81,7 +84,7 @@ class CronFileTextExtractionJob extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     protected function run($argument): void
     {
@@ -265,7 +268,7 @@ class CronFileTextExtractionJob extends TimedJob
      *
      * @return array<int, array<string, mixed>> List of pending files with metadata.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getPendingFiles(
         FileMapper $fileMapper,

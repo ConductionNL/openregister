@@ -26,7 +26,6 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ImportService;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Translation\TranslationCsvCodec;
-use OCP\BackgroundJob\IJobList;
 use OCP\IGroupManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -54,8 +53,6 @@ class ImportServiceErrorsCsvTest extends TestCase
         $logger = $this->createMock(LoggerInterface::class);
         /** @var IGroupManager&MockObject $groupManager */
         $groupManager = $this->createMock(IGroupManager::class);
-        /** @var IJobList&MockObject $jobList */
-        $jobList = $this->createMock(IJobList::class);
         /** @var TranslationCsvCodec&MockObject $translationCsvCodec */
         $translationCsvCodec = $this->createMock(TranslationCsvCodec::class);
 
@@ -64,9 +61,11 @@ class ImportServiceErrorsCsvTest extends TestCase
             $objectService,
             $logger,
             $groupManager,
-            $jobList,
             $translationCsvCodec,
-            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class)
+            $this->createMock(\OCA\OpenRegister\Db\AuditTrailMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\MigrationPack\MappingEngine::class),
+            $this->createMock(\OCA\OpenRegister\Service\Object\ValidateObject::class),
+            $this->createMock(\Psr\Container\ContainerInterface::class)
         );
 
     }//end setUp()

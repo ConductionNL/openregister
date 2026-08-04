@@ -1,10 +1,12 @@
 ---
-status: in-progress
+status: done
 ---
 
 # Schema-Driven Read Coercion
 
 ## Purpose
+
+@e2e exclude backend type coercion service — covered by PHPUnit
 Defines how OpenRegister coerces database column values to JSON-Schema-typed PHP values when reconstructing an `ObjectEntity` from a magic-table row. Establishes a single canonical converter (`SchemaTypeConverter`) that all read paths delegate to, eliminating the class of bugs where the schema declares one type but the API returns another — `boolean` properties arriving as `int 0`/`1` from MariaDB, or `string` properties whose values look like JSON literals being silently decoded back into the original primitive.
 
 **OpenSpec changes**
@@ -175,4 +177,33 @@ Format-specific normalization (e.g. `format: date`, `format: date-time`) SHALL N
 - **WHEN** the schema property is `{ "type": "string", "format": "date" }` and the row contains the string `"2026-04-30T10:00:00+02:00"`
 - **THEN** the converter returns the string unchanged
 - **AND** the handler applies `DateTimeNormalizer::normalize` and produces `"2026-04-30"` on the resulting `ObjectEntity`
+
+### Requirement: Object display-name cache resolution endpoints
+The system SHALL expose ultra-fast, aggressively cached endpoints that resolve object
+UUIDs/ids to their display names so frontends can render names instead of raw UUIDs.
+`NamesController` provides `index` (all names, or a subset via an `ids` query param that
+accepts a comma-separated string, a JSON-array string, or a PHP array), `create` (POST
+with a JSON `ids` array for sets too large for the URL), `show` (single id, HTTP 404 when
+not found), `stats` (cache statistics and performance metrics), and `warmup` (clears and
+re-populates the name cache). All endpoints are `@PublicPage` + `@NoAdminRequired` +
+`@NoCSRFRequired` and return execution timing in the response.
+
+#### Scenario: Bulk name lookup by ids query param
+- **GIVEN** a caller requests `GET /names?ids=uuid-1,uuid-2`
+- **WHEN** `NamesController::index` runs
+- **THEN** it MUST return `{names: {uuid-1: ..., uuid-2: ...}, total, cached, execution_time}` from the cache handler
+
+#### Scenario: POST bulk lookup requires an ids array
+- **GIVEN** a caller POSTs a body without an `ids` array
+- **WHEN** `NamesController::create` runs
+- **THEN** it MUST return HTTP 400 with an example payload
+
+#### Scenario: Single name not found
+- **GIVEN** a caller requests a name for an unknown id
+- **WHEN** `NamesController::show` runs
+- **THEN** it MUST return HTTP 404 with `{found: false}`
+
+#### Scenario: Manual cache warmup
+- **WHEN** `NamesController::warmup` runs
+- **THEN** it MUST clear the name cache, re-populate it, and return old/new cache statistics with a loaded-names count
 

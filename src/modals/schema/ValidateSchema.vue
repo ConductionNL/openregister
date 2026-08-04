@@ -155,7 +155,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			</NcButton>
 			<NcButton v-if="!validationResults && !loading && !error"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="startValidation()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -210,6 +210,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — flattens/filters validation results for the table.
+		 */
 		filteredResults() {
 			if (!this.validationResults) return []
 
@@ -228,8 +231,11 @@ export default {
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
+			/**
+			 * @param newSchemaItem
+			 * @spec exclude UI watcher — reloads the object count when the schema item changes.
+			 */
 			handler(newSchemaItem) {
-				console.info('Schema item changed in ValidateSchema:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
@@ -238,44 +244,46 @@ export default {
 		},
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
+			/**
+			 * @param newDialog
+			 * @spec exclude UI watcher — loads the object count when the dialog opens.
+			 */
 			handler(newDialog) {
-				console.info('Dialog changed to:', newDialog)
 				if (newDialog === 'validateSchema' && schemaStore.schemaItem?.id) {
-					console.info('ValidateSchema dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
 			immediate: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads the object count on mount.
+	 */
 	async mounted() {
-		console.info('ValidateSchema dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches schema object-count stats.
+		 */
 		async loadObjectCount() {
-			console.info('loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.info('Received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('Set objectCount to:', this.objectCount)
-					console.info('Set objectStats to:', this.objectStats)
-				} else {
-					console.info('No schema item ID available')
 				}
 			} catch (err) {
 				console.error('Error in loadObjectCount:', err)
-				console.warn('Could not load object count:', err)
 				this.objectCount = 0
 				this.objectStats = null
 			}
 		},
 
+		/**
+		 * @spec exclude Modal action plumbing — posts to the bulk schema-validate endpoint.
+		 */
 		async startValidation() {
 			this.loading = true
 			this.error = false
@@ -312,12 +320,18 @@ export default {
 			}
 		},
 
-		viewObjectDetails(object) {
+		/**
+		 * @param object
+		 * @spec exclude UI navigation stub — placeholder for viewing an object's details.
+		 */
+		viewObjectDetails(_object) {
 			// Navigate to object details view
 			// This would need to be implemented based on your navigation structure
-			console.info('View object details:', object)
 		},
 
+		/**
+		 * @spec exclude Modal close plumbing — closes the dialog and resets validation state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.loading = false

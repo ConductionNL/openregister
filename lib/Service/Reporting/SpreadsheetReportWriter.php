@@ -13,8 +13,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service\Reporting
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -44,6 +45,8 @@ class SpreadsheetReportWriter
      * @param string                                             $format          csv|xlsx|ods.
      *
      * @return string Rendered bytes.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-report-import-link/tasks.md#task-5
      */
     public function write(array $dashboard, array $resolvedWidgets, string $format): string
     {
@@ -236,7 +239,10 @@ class SpreadsheetReportWriter
             return $bytes;
         }
 
-        $writer = $format === 'ods' ? new Ods($spreadsheet) : new Xlsx($spreadsheet);
+        $writer = new Xlsx($spreadsheet);
+        if ($format === 'ods') {
+            $writer = new Ods($spreadsheet);
+        }
 
         ob_start();
         $writer->save('php://output');

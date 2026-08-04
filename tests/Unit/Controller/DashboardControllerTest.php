@@ -8,7 +8,10 @@ use OCA\OpenRegister\Controller\DashboardController;
 use OCA\OpenRegister\Service\DashboardService;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -19,6 +22,8 @@ class DashboardControllerTest extends TestCase
     private IRequest&MockObject $request;
     private DashboardService&MockObject $dashboardService;
     private LoggerInterface&MockObject $logger;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -27,13 +32,56 @@ class DashboardControllerTest extends TestCase
         $this->request = $this->createMock(IRequest::class);
         $this->dashboardService = $this->createMock(DashboardService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        // The dashboard analytics aggregate tenant-wide data and are admin-only;
+        // default to an admin so the happy-path tests exercise the payloads.
+        $admin = $this->createMock(IUser::class);
+        $admin->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($admin);
+        $this->groupManager->method('isAdmin')->willReturn(true);
 
         $this->controller = new DashboardController(
             'openregister',
             $this->request,
             $this->dashboardService,
-            $this->logger
+            $this->logger,
+            $this->userSession,
+            $this->groupManager
         );
+    }
+
+    public function testAnalyticsEndpointsRejectNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $session = $this->createMock(IUserSession::class);
+        $session->method('getUser')->willReturn($bob);
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $controller = new DashboardController(
+            'openregister',
+            $this->request,
+            $this->dashboardService,
+            $this->logger,
+            $session,
+            $groupManager
+        );
+
+        // None of the tenant-wide aggregations must be computed for a non-admin.
+        $this->dashboardService->expects($this->never())->method($this->anything());
+
+        $this->assertEquals(403, $controller->index()->getStatus());
+        $this->assertEquals(403, $controller->calculate()->getStatus());
+        $this->assertEquals(403, $controller->getAuditTrailActionChart()->getStatus());
+        $this->assertEquals(403, $controller->getObjectsByRegisterChart()->getStatus());
+        $this->assertEquals(403, $controller->getObjectsBySchemaChart()->getStatus());
+        $this->assertEquals(403, $controller->getObjectsBySizeChart()->getStatus());
+        $this->assertEquals(403, $controller->getAuditTrailStatistics()->getStatus());
+        $this->assertEquals(403, $controller->getAuditTrailActionDistribution()->getStatus());
+        $this->assertEquals(403, $controller->getMostActiveObjects()->getStatus());
     }
 
     public function testPage(): void

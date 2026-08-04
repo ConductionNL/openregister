@@ -15,6 +15,9 @@
  * already accommodates this degradation, so no client change is needed
  * when token streaming lands later.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -26,7 +29,8 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream
+ * @spec openspec/specs/chat-ai/spec.md
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 declare(strict_types=1);
@@ -61,7 +65,11 @@ use Throwable;
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @psalm-suppress UnusedClass
+ * @psalm-suppress                                 UnusedClass
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) SSE controller composes ChatService +
+ * ConversationMapper + AgentMapper + IUserSession + IDBConnection + LoggerInterface; each handles a
+ * separate concern of the streaming pipeline (auth, DB commit safety, conversation routing, message
+ * processing) and cannot be removed without losing functionality.
  */
 class ChatStreamController extends Controller
 {
@@ -193,6 +201,19 @@ class ChatStreamController extends Controller
      * @NoAdminRequired
      *
      * @return Response Never returned — emitAndExit() always terminates.
+     *
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  stream() is the single SSE dispatch path: auth
+     * check, body parse, agent/conversation resolution, heartbeat, channel wiring, and error handling
+     * are sequential guards that cannot be split into sub-methods without leaking the exit-based flow
+     * control across multiple layers.
+     * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple independent early-exit paths (unauthenticated,
+     * missing message, missing agent, forbidden conversation, stream failure) must all terminate via
+     * emitAndExit(); collapsing them would hide the distinct SSE error codes.
+     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) The method coordinates the full SSE lifecycle in
+     * one readable sequence; extracting sub-stages would split the exit-based control flow across
+     * multiple methods and make the error-path analysis harder.
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     #[NoAdminRequired]
     public function stream(): Response
@@ -278,7 +299,10 @@ class ChatStreamController extends Controller
             // MessageHistoryHandler::storeMessage(). Reject anything other
             // than an associative array so a bad client payload doesn't
             // overflow the column or break the JSON encoding.
-            $contextArr = is_array($context) === true ? $context : [];
+            $contextArr = [];
+            if (is_array($context) === true) {
+                $contextArr = $context;
+            }
 
             // Emit a heartbeat right after headers so the client knows we're alive
             // (the synchronous LLM call may take >15s on cold-load).
@@ -382,6 +406,14 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return never
+     *
+     * @SuppressWarnings(PHPMD.ExitExpression) SSE streaming contract requires process termination after
+     * the final frame; exit cannot be replaced by a return because the calling loop in stream() must
+     * stop unconditionally.
+     *
+     * @spec exclude SSE-framing helper: emits one frame, finalises the DB transaction, and exits;
+     *              the streaming endpoint contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitAndExit(string $eventType, array $payload): never
     {
@@ -411,9 +443,10 @@ class ChatStreamController extends Controller
             if ($this->db->inTransaction() === true) {
                 if ($rollback === true) {
                     $this->db->rollBack();
-                } else {
-                    $this->db->commit();
+                    return;
                 }
+
+                $this->db->commit();
             }
         } catch (Throwable $e) {
             $this->logger->warning(
@@ -437,6 +470,10 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   JSON-encodable payload.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: writes one `event:`/`data:` frame and flushes;
+     *              the streaming endpoint contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitSseEvent(string $eventType, array $payload): void
     {
@@ -450,6 +487,10 @@ class ChatStreamController extends Controller
      * `microtime(true)`; tests override to drive a fake clock.
      *
      * @return float Seconds since the Unix epoch.
+     *
+     * @spec exclude SSE-framing helper: test-overridable wall-clock used by the heartbeat interleave;
+     *              the streaming endpoint contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function now(): float
     {
@@ -474,6 +515,10 @@ class ChatStreamController extends Controller
      * @param array<string, mixed> $payload   Frame payload.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: interleaves a heartbeat frame before forwarding when >15s elapsed;
+     *              the streaming endpoint contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function forwardWithHeartbeat(string $eventType, array $payload): void
     {
@@ -494,6 +539,10 @@ class ChatStreamController extends Controller
      * buffer trips its "risky" detector.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: clears output buffers so the first frame flushes immediately;
+     *              the streaming endpoint contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function clearOutputBuffers(): void
     {
@@ -503,17 +552,37 @@ class ChatStreamController extends Controller
     }//end clearOutputBuffers()
 
     /**
-     * Emit the three SSE response headers. Extracted so tests can skip
-     * (header() emits a "headers already sent" warning under PHPUnit
-     * because the test runner has already written output).
+     * Emit the three SSE response headers, plus the or-chat-proxy-deprecation
+     * compat-window headers. Extracted so tests can skip (header() emits a
+     * "headers already sent" warning under PHPUnit because the test runner
+     * has already written output).
+     *
+     * The three deprecation headers are added here — rather than relying on
+     * ChatCompatMiddleware::afterController() the way every other
+     * chat-family controller does — because this method always terminates
+     * via `exit;` (see stream()'s docblock) and bypasses the AppFramework
+     * Response/middleware pipeline entirely on the local-serving path.
+     * ChatCompatMiddleware still covers the *proxied* path (its
+     * beforeController() redirect short-circuits before stream() ever runs,
+     * so afterController() applies there as normal); this is only the
+     * local-serving fallback.
      *
      * @return void
+     *
+     * @spec exclude SSE-framing helper: emits the three text/event-stream response headers
+     *              plus the or-chat-proxy-deprecation compat headers; the streaming endpoint
+     *              contract is owned by
+     *              ai-chat-companion-orchestrator/specs/chat-ai/spec.md#sse-streaming-endpoint-post-apichatstream.
      */
     protected function emitSseHeaders(): void
     {
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache');
         header('X-Accel-Buffering: no');
+        // Or-chat-proxy-deprecation compat window — see ChatCompatMiddleware.
+        header('Deprecation: Mon, 06 Jul 2026 00:00:00 GMT');
+        header('Sunset: Wed, 06 Jan 2027 00:00:00 GMT');
+        header('Link: </apps/hermiq/api/chat>; rel="successor-version"');
     }//end emitSseHeaders()
 
     /**
@@ -571,6 +640,8 @@ class ChatStreamController extends Controller
      *                          (message === self::ERROR_FORBIDDEN); the
      *                          stream() entry point translates this into the
      *                          `forbidden` SSE error.
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function resolveConversation(string $conversationUuid, string $agentUuid, string $userId): Conversation
     {

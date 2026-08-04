@@ -6,6 +6,9 @@
  * This file contains the event class dispatched when an organisation is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -63,7 +66,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation after update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getOrganisation(): Organisation
     {
@@ -75,7 +78,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation after update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getNewOrganisation(): Organisation
     {
@@ -87,7 +90,7 @@ class OrganisationUpdatedEvent extends Event
      *
      * @return Organisation The organisation before update.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getOldOrganisation(): Organisation
     {

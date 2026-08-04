@@ -33,7 +33,7 @@
 		<p v-else>
 			No scheduled workflows configured.
 		</p>
-		<NcButton type="primary" @click="showForm = !showForm">
+		<NcButton variant="primary" @click="showForm = !showForm">
 			{{ showForm ? 'Cancel' : 'Add Schedule' }}
 		</NcButton>
 		<div v-if="showForm" class="create-form">
@@ -53,7 +53,7 @@
 				<label>Interval (seconds)</label>
 				<input v-model.number="form.interval" type="number" class="input-field">
 			</div>
-			<NcButton type="primary" @click="createSchedule">
+			<NcButton variant="primary" @click="createSchedule">
 				Save
 			</NcButton>
 		</div>
@@ -79,6 +79,9 @@ export default {
 		this.fetchSchedules()
 	},
 	methods: {
+		/**
+		 * @spec exclude API passthrough loading schedules; scheduled-workflow contract owned by workflow-operations capability
+		 */
 		async fetchSchedules() {
 			try {
 				const url = generateUrl('/apps/openregister/api/scheduled-workflows')
@@ -88,6 +91,9 @@ export default {
 				console.error('Failed to fetch schedules:', error)
 			}
 		},
+		/**
+		 * @spec exclude API passthrough creating schedule + refetch; scheduled-workflow contract owned by workflow-operations capability
+		 */
 		async createSchedule() {
 			try {
 				const url = generateUrl('/apps/openregister/api/scheduled-workflows')
@@ -98,6 +104,10 @@ export default {
 				console.error('Failed to create schedule:', error)
 			}
 		},
+		/**
+		 * @param seconds
+		 * @spec exclude computed interval-format display helper, UI plumbing
+		 */
 		formatInterval(seconds) {
 			if (seconds >= 86400) return `${Math.floor(seconds / 86400)}d`
 			if (seconds >= 3600) return `${Math.floor(seconds / 3600)}h`

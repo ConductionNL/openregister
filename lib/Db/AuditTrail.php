@@ -6,6 +6,9 @@
  * This file contains the class for handling audit trail related operations
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -55,6 +58,8 @@ use OCP\AppFramework\Db\Entity;
  * @method void setUser(?string $user)
  * @method string|null getUserName()
  * @method void setUserName(?string $userName)
+ * @method string|null getSession()
+ * @method void setSession(?string $session)
  * @method DateTime|null getCreated()
  * @method void setCreated(?DateTime $created)
  * @method string|null getOrganisation()
@@ -65,6 +70,16 @@ use OCP\AppFramework\Db\Entity;
  * @method void setHash(?string $hash)
  * @method string|null getPreviousHash()
  * @method void setPreviousHash(?string $previousHash)
+ * @method DateTime|null getPurgedAt()
+ * @method void setPurgedAt(?DateTime $purgedAt)
+ * @method string|null getRetentionPeriod()
+ * @method void setRetentionPeriod(?string $retentionPeriod)
+ * @method string|null getToolId()
+ * @method void setToolId(?string $toolId)
+ * @method string|null getParamsDigest()
+ * @method void setParamsDigest(?string $paramsDigest)
+ * @method array|null getResultSummary()
+ * @method void setResultSummary(?array $resultSummary)
  *
  * @psalm-suppress PossiblyUnusedMethod
  * @psalm-suppress PropertyNotSetInConstructor $id is set by Nextcloud's Entity base class
@@ -277,6 +292,30 @@ class AuditTrail extends Entity implements JsonSerializable
     protected ?string $previousHash = null;
 
     /**
+     * When this row's payload was purged, leaving a chain tombstone.
+     *
+     * Retention purges used to HARD-delete rows. Because the chain is walked
+     * in id order and each hash covers the previous row's hash, removing a row
+     * mid-chain makes the next row fail verification — so a lawful purge and a
+     * tampering event produced the identical symptom (or#2265).
+     *
+     * A purge now blanks the payload columns and stamps this timestamp,
+     * keeping the row's `id`, `created`, `hash` and `previousHash`. The link
+     * survives, and {@see \OCA\OpenRegister\Service\AuditHashService::verifyChain()}
+     * can report the row as a declared tombstone rather than as a break.
+     *
+     * ⚠️ Deliberately ABSENT from {@see self::jsonSerialize()}, which is what
+     * `getCanonicalJson()` hashes. Adding a key to the canonical form would
+     * change the hash of every row ever written and invalidate the entire
+     * existing chain. The consequence is that this field is not itself
+     * covered by the hash — see the residual-limitation note on
+     * `verifyChain()`.
+     *
+     * @var DateTime|null Purge timestamp, or null while the row is intact.
+     */
+    protected ?DateTime $purgedAt = null;
+
+    /**
      * Import-job tag attached to every `create` audit row generated
      * during a bulk import. Powers the import-rollback contract: when
      * a critical failure (or an explicit rollback request) hits, every
@@ -287,6 +326,43 @@ class AuditTrail extends Entity implements JsonSerializable
      * @var string|null UUID of the import job that produced this row.
      */
     protected ?string $importJobId = null;
+
+    /**
+     * The full namespaced MCP tool id this row records an invocation of
+     * (e.g. `pipelinq.lead.search`), when this row is an MCP tool-invocation
+     * audit entry (ADR-063 chain 2/3). Null on ordinary object-CRUD rows.
+     *
+     * @var string|null Namespaced MCP tool id.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     */
+    protected ?string $toolId = null;
+
+    /**
+     * A digest (never the raw values) of the MCP tool invocation's
+     * arguments — a SHA-256 hex digest of their canonical JSON form.
+     * Deliberately excludes raw argument values so this immutable row never
+     * persists PII (ADR-063 chain 2/3, EU AI Act art.12/14).
+     *
+     * @var string|null SHA-256 hex digest of the invocation arguments.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — A params digest, not raw params, is stored)
+     */
+    protected ?string $paramsDigest = null;
+
+    /**
+     * A small structured summary of an MCP tool invocation's outcome
+     * (e.g. object count / affected ids / `isError` + error class). Null on
+     * ordinary object-CRUD rows.
+     *
+     * @var array|null Result summary of an MCP tool invocation.
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     *   (Requirement: REQ-DERIVED-006 — Every invocation is audited)
+     */
+    protected ?array $resultSummary = null;
 
     /**
      * Constructor for the AuditTrail class
@@ -323,7 +399,21 @@ class AuditTrail extends Entity implements JsonSerializable
         $this->addType(fieldName: 'hash', type: 'string');
         $this->addType(fieldName: 'previousHash', type: 'string');
         $this->addType(fieldName: 'importJobId', type: 'string');
+        $this->addType(fieldName: 'toolId', type: 'string');
+        $this->addType(fieldName: 'paramsDigest', type: 'string');
+        $this->addType(fieldName: 'resultSummary', type: 'json');
+        $this->addType(fieldName: 'purgedAt', type: 'datetime');
     }//end __construct()
+
+    /**
+     * Whether this row is a purge tombstone rather than an intact audit record.
+     *
+     * @return bool True when the payload has been purged under a retention policy.
+     */
+    public function isPurged(): bool
+    {
+        return $this->purgedAt !== null;
+    }//end isPurged()
 
     /**
      * Get the changed data
@@ -421,7 +511,10 @@ class AuditTrail extends Entity implements JsonSerializable
      *     size: int|null,
      *     expires: null|string,
      *     hash: null|string,
-     *     previousHash: null|string
+     *     previousHash: null|string,
+     *     toolId: null|string,
+     *     paramsDigest: null|string,
+     *     resultSummary: array|null
      * }
      */
     public function jsonSerialize(): array
@@ -465,6 +558,9 @@ class AuditTrail extends Entity implements JsonSerializable
             'expires'               => $expires,
             'hash'                  => $this->hash,
             'previousHash'          => $this->previousHash,
+            'toolId'                => $this->toolId,
+            'paramsDigest'          => $this->paramsDigest,
+            'resultSummary'         => $this->resultSummary,
         ];
     }//end jsonSerialize()
 

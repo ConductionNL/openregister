@@ -5,6 +5,9 @@
  *
  * This file contains the service class for managing applications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -94,6 +97,8 @@ class ApplicationService
      * @return Application[] Array of application entities
      *
      * @psalm-return array<int, Application>
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::findAll, no standalone behavioral contract.
      */
     public function findAll(?int $limit=null, ?int $offset=null, array $filters=[]): array
     {
@@ -118,6 +123,8 @@ class ApplicationService
      * @throws DoesNotExistException If application not found with the given ID
      *
      * @psalm-return Application
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::find, no standalone behavioral contract.
      */
     public function find(int $id): Application
     {
@@ -136,6 +143,8 @@ class ApplicationService
      * @return Application The created application entity with assigned ID
      *
      * @psalm-return Application
+     *
+     * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::createFromArray, no standalone behavioral contract.
      */
     public function create(array $data): Application
     {
@@ -180,6 +189,8 @@ class ApplicationService
      * @throws DoesNotExistException If application not found with the given ID
      *
      * @psalm-return Application
+     *
+     * @spec exclude Facade plumbing: log + delegate to ApplicationMapper::updateFromArray, no standalone behavioral contract.
      */
     public function update(int $id, array $data): Application
     {
@@ -223,6 +234,8 @@ class ApplicationService
      * @return void
      *
      * @throws DoesNotExistException If application not found with the given ID
+     *
+     * @spec exclude Facade plumbing: find-then-delete delegation to ApplicationMapper, no standalone behavioral contract.
      */
     public function delete(int $id): void
     {
@@ -262,6 +275,8 @@ class ApplicationService
      * @return int Total number of applications
      *
      * @psalm-return int
+     *
+     * @spec exclude Facade plumbing: thin delegation to ApplicationMapper::countAll, no standalone behavioral contract.
      */
     public function countAll(): int
     {

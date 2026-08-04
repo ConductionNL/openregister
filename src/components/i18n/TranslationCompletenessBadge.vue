@@ -46,6 +46,9 @@ export default {
 		},
 	},
 	computed: {
+		/**
+		 * @spec exclude computed ordered language list from completeness prop, UI plumbing
+		 */
 		languages() {
 			const present = Object.keys(this.completeness)
 			if (this.languageOrder?.length) {
@@ -55,6 +58,9 @@ export default {
 			}
 			return present.slice().sort()
 		},
+		/**
+		 * @spec exclude computed tooltip display helper from completeness prop, UI plumbing
+		 */
 		tooltipText() {
 			const parts = this.languages.map((lang) => {
 				const c = this.completeness[lang]
@@ -64,11 +70,19 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @param lang
+		 * @spec exclude computed percent display helper; completeness contract owned by register-i18n capability
+		 */
 		ratioPercent(lang) {
 			const c = this.completeness[lang]
 			if (!c || typeof c.ratio !== 'number') return '?'
 			return `${Math.round(c.ratio * 100)}%`
 		},
+		/**
+		 * @param lang
+		 * @spec exclude computed pill CSS-class display helper, UI plumbing
+		 */
 		completenessClassFor(lang) {
 			const ratio = this.completeness[lang]?.ratio ?? 0
 			if (ratio >= 1) return 'translation-completeness-badge__pill--complete'

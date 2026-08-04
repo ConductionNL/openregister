@@ -10,6 +10,9 @@
  * Cache per request — multiple transitions on the same object during one
  * request reuse the resolved instance.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Lifecycle
  *
@@ -56,6 +59,8 @@ final class LifecycleGuardRegistry
      * @param ContainerInterface $container       OR app container used to resolve guard services first.
      * @param IServerContainer   $serverContainer NC server container used as fallback for FQCN-tagged guards (F06).
      * @param LoggerInterface    $logger          Logger for guard resolution diagnostics.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly ContainerInterface $container,
@@ -72,6 +77,8 @@ final class LifecycleGuardRegistry
      * @return LifecycleGuardInterface
      *
      * @throws RuntimeException When the tag is not registered or the resolved service does not implement the interface.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function resolve(string $tag): LifecycleGuardInterface
     {

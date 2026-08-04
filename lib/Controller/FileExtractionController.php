@@ -6,6 +6,9 @@
  * This controller handles file operations and text extraction endpoints.
  * Provides core file extraction functionality accessible via API.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -29,8 +32,11 @@ use OCA\OpenRegister\Db\ChunkMapper;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\Files\IRootFolder;
 use OCP\Files\NotFoundException;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUserSession;
 
 /**
  * FileExtractionController
@@ -62,8 +68,11 @@ class FileExtractionController extends Controller
      * @param ChunkMapper           $chunkMapper          Chunk mapper for text chunks
      * @param EntityRelationMapper  $entityRelationMapper Entity relation mapper
      * @param RiskLevelService      $riskLevelService     Risk level computation service
+     * @param IRootFolder           $rootFolder           Root folder for per-user file access checks
+     * @param IUserSession          $userSession          Active user session for caller identity
+     * @param IGroupManager         $groupManager         Group manager for admin checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         string $appName,
@@ -72,10 +81,55 @@ class FileExtractionController extends Controller
         private readonly VectorizationService $vectorizationService,
         private readonly ChunkMapper $chunkMapper,
         private readonly EntityRelationMapper $entityRelationMapper,
-        private readonly RiskLevelService $riskLevelService
+        private readonly RiskLevelService $riskLevelService,
+        private readonly IRootFolder $rootFolder,
+        private readonly IUserSession $userSession,
+        private readonly IGroupManager $groupManager
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
+
+    /**
+     * Whether the current session user can access the given Nextcloud file.
+     *
+     * Resolves the file through the caller's own user folder so Nextcloud's
+     * share/permission ACLs apply. A file the user cannot access resolves to
+     * no node — preventing IDOR where a caller extracts/inspects arbitrary
+     * file IDs they do not own.
+     *
+     * @param int $fileId Nextcloud file ID.
+     *
+     * @return bool True when the file is reachable in the caller's user folder.
+     */
+    private function hasFileAccess(int $fileId): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        $userFolder = $this->rootFolder->getUserFolder($user->getUID());
+        return empty($userFolder->getById($fileId)) === false;
+    }//end hasFileAccess()
+
+    /**
+     * Check whether the currently authenticated user is a Nextcloud administrator.
+     *
+     * The instance-wide extraction maintenance operations (discover/extractAll/
+     * retryFailed/cleanup/vectorizeBatch) act on every file in the instance, so
+     * they are admin-only.
+     *
+     * @return bool True if a user is signed in and belongs to the admin group.
+     */
+    private function isCurrentUserAdmin(): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        return $this->groupManager->isAdmin($user->getUID());
+    }//end isCurrentUserAdmin()
 
     /**
      * Get all files tracked in the extraction system.
@@ -89,7 +143,7 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function index(): JSONResponse
     {
@@ -220,7 +274,7 @@ class FileExtractionController extends Controller
      *     sourceType: null|string, startOffset: int, updatedAt: null|string,
      *     uuid: null|string, vectorized: bool}>}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -284,10 +338,23 @@ class FileExtractionController extends Controller
      *
      * @suppressWarnings(PHPMD.BooleanArgumentFlag) Force flag allows re-extraction bypass
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extract(int $id, bool $forceReExtract=false): JSONResponse
     {
+        // IDOR guard: only extract files the caller can actually access. 404
+        // (not 403) so a non-owner cannot probe which file IDs exist.
+        if ($this->hasFileAccess(fileId: $id) === false) {
+            return new JSONResponse(
+                data: [
+                    'success' => false,
+                    'error'   => 'File not found in Nextcloud',
+                    'message' => 'File not found or access denied',
+                ],
+                statusCode: 404
+            );
+        }
+
         try {
             // ExtractFile returns void, not an object.
             $this->textExtractor->extractFile(fileId: $id, forceReExtract: $forceReExtract);
@@ -349,10 +416,14 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function discover(int $limit=100): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $stats = $this->textExtractor->discoverUntrackedFiles($limit);
 
@@ -400,10 +471,14 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractAll(int $limit=100): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $stats = $this->textExtractor->extractPendingFiles($limit);
 
@@ -448,10 +523,14 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function retryFailed(int $limit=50): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $stats = $this->textExtractor->retryFailedExtractions($limit);
 
@@ -483,6 +562,9 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt No per-object resource: returns aggregate extraction
+     *   counters (TextExtractionService::getStats); takes no caller-supplied file id.
+     *
      * @psalm-return JSONResponse<
      *     200|500,
      *     array{
@@ -500,7 +582,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function stats(): JSONResponse
     {
@@ -548,10 +630,14 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cleanup(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+        }
+
         try {
             // Note: cleanupInvalidEntries not available in TextExtractionService.
             return new JSONResponse(
@@ -588,6 +674,9 @@ class FileExtractionController extends Controller
      *
      * @NoCSRFRequired
      *
+     * @no-admin-idor-exempt No per-object resource: returns aggregate file-type
+     *   counts (currently an empty stub); takes no caller-supplied file id.
+     *
      * @psalm-return JSONResponse<
      *     200|500,
      *     array{
@@ -599,7 +688,7 @@ class FileExtractionController extends Controller
      *     array<never, never>
      * >
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function fileTypes(): JSONResponse
     {
@@ -637,10 +726,14 @@ class FileExtractionController extends Controller
      *
      * @return JSONResponse JSON response with vectorization result
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-20
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function vectorizeBatch(): JSONResponse
     {
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(['success' => false, 'error' => 'Admin privileges required'], 403);
+        }
+
         try {
             $data      = $this->request->getParams();
             $mode      = $data['mode'] ?? 'serial';

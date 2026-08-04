@@ -3,11 +3,17 @@
 		<h3>{{ isEdit ? 'Edit Hook' : 'Add Hook' }}</h3>
 		<div class="form-group">
 			<label>Event Type</label>
-			<NcSelect v-model="form.event" :options="eventTypes" />
+			<NcSelect
+				v-model="form.event"
+				input-label="Form Event"
+				:options="eventTypes" />
 		</div>
 		<div class="form-group">
 			<label>Engine</label>
-			<NcSelect v-model="form.engine" :options="engineOptions" />
+			<NcSelect
+				v-model="form.engine"
+				input-label="Form Engine"
+				:options="engineOptions" />
 		</div>
 		<div class="form-group">
 			<label>Workflow ID</label>
@@ -15,7 +21,10 @@
 		</div>
 		<div class="form-group">
 			<label>Mode</label>
-			<NcSelect v-model="form.mode" :options="['sync', 'async']" />
+			<NcSelect
+				v-model="form.mode"
+				input-label="Form Mode"
+				:options="['sync', 'async']" />
 		</div>
 		<div class="form-group">
 			<label>Order</label>
@@ -27,18 +36,27 @@
 		</div>
 		<div class="form-group">
 			<label>On Failure</label>
-			<NcSelect v-model="form.onFailure" :options="failureModes" />
+			<NcSelect
+				v-model="form.onFailure"
+				input-label="Form On Failure"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Timeout</label>
-			<NcSelect v-model="form.onTimeout" :options="failureModes" />
+			<NcSelect
+				v-model="form.onTimeout"
+				input-label="Form On Timeout"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
 			<label>On Engine Down</label>
-			<NcSelect v-model="form.onEngineDown" :options="failureModes" />
+			<NcSelect
+				v-model="form.onEngineDown"
+				input-label="Form On Engine Down"
+				:options="failureModes" />
 		</div>
 		<div class="form-group">
-			<NcCheckboxRadioSwitch :checked.sync="form.enabled">
+			<NcCheckboxRadioSwitch v-model="form.enabled">
 				Enabled
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -46,7 +64,7 @@
 			<NcButton @click="$emit('cancel')">
 				Cancel
 			</NcButton>
-			<NcButton type="primary" @click="save">
+			<NcButton variant="primary" @click="save">
 				{{ isEdit ? 'Update' : 'Create' }}
 			</NcButton>
 		</div>
@@ -86,11 +104,17 @@ export default {
 		isEdit() {
 			return this.hook !== null
 		},
+		/**
+		 * @spec exclude computed select-option mapping from engines prop, UI plumbing
+		 */
 		engineOptions() {
 			return this.engines.map(e => e.engineType || e.name || e)
 		},
 	},
 	methods: {
+		/**
+		 * @spec exclude emit UI handler dispatching save event with form data, UI plumbing
+		 */
 		save() {
 			this.$emit('save', { ...this.form })
 		},

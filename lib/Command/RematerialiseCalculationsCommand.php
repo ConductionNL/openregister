@@ -8,6 +8,9 @@
  * expression changes so existing objects reflect the new shape without
  * waiting for the next user-driven save.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Command
  * @package  OCA\OpenRegister\Command
  *
@@ -18,6 +21,11 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ *
+ * @spec openspec/specs/computed-fields/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +37,9 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Calculation\AggregateReferenceResolver;
 use OCA\OpenRegister\Service\Calculation\CalculationEvaluator;
+use OCA\OpenRegister\Service\Calculation\ReferenceResolver;
 use OCA\OpenRegister\Service\ObjectService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -47,20 +57,28 @@ class RematerialiseCalculationsCommand extends Command
     /**
      * Wire the mappers, evaluator, and object service used by the command.
      *
-     * @param RegisterMapper       $registerMapper Register lookup mapper.
-     * @param SchemaMapper         $schemaMapper   Schema lookup mapper.
-     * @param MagicMapper          $magicMapper    Magic table mapper for objects.
-     * @param ObjectService        $objectService  Object persistence service.
-     * @param CalculationEvaluator $evaluator      Expression evaluator.
+     * @param RegisterMapper             $registerMapper Register lookup mapper.
+     * @param SchemaMapper               $schemaMapper   Schema lookup mapper.
+     * @param MagicMapper                $magicMapper    Magic table mapper for objects.
+     * @param ObjectService              $objectService  Object persistence service.
+     * @param CalculationEvaluator       $evaluator      Expression evaluator.
+     * @param ReferenceResolver          $references     Cross-object reference pre-resolver.
+     * @param AggregateReferenceResolver $aggregates     Aggregate-reference pre-resolver.
      *
      * @return void
+     *
+     * @spec openspec/specs/computed-fields/spec.md
+     * @spec openspec/changes/calc-engine-reference-lookup/tasks.md#task-2
+     * @spec openspec/changes/calc-engine-aggregate-reference/tasks.md#task-2
      */
     public function __construct(
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
         private readonly MagicMapper $magicMapper,
         private readonly ObjectService $objectService,
-        private readonly CalculationEvaluator $evaluator
+        private readonly CalculationEvaluator $evaluator,
+        private readonly ReferenceResolver $references,
+        private readonly AggregateReferenceResolver $aggregates
     ) {
         parent::__construct();
     }//end __construct()
@@ -69,6 +87,8 @@ class RematerialiseCalculationsCommand extends Command
      * Define command name, description, and arguments.
      *
      * @return void
+     *
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function configure(): void
     {
@@ -92,6 +112,8 @@ class RematerialiseCalculationsCommand extends Command
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/specs/computed-fields/spec.md
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -125,13 +147,18 @@ class RematerialiseCalculationsCommand extends Command
             return Command::SUCCESS;
         }
 
+        $dryRunLabel = '';
+        if ($dryRun === true) {
+            $dryRunLabel = ' (dry run)';
+        }
+
         $output->writeln(
                 sprintf(
             '<info>Rematerialising %d calculation(s) on %s/%s%s</info>',
             count($materialiseNames),
             $register->getSlug() ?? $register->getId(),
             $schema->getSlug() ?? $schema->getId(),
-            $dryRun === true ? ' (dry run)' : ''
+            $dryRunLabel
         )
                 );
 
@@ -141,6 +168,21 @@ class RematerialiseCalculationsCommand extends Command
             limit: 100000
         );
 
+        // Declared cross-object references are pre-resolved per object so the
+        // recompute path refreshes references the same way the save path does.
+        $referenceSpecs = ($schema->getConfiguration()['x-openregister-references'] ?? null);
+        if (is_array($referenceSpecs) === false || count($referenceSpecs) === 0) {
+            $referenceSpecs = null;
+        }
+
+        // Declared aggregate-references are pre-resolved per object so the
+        // recompute path refreshes save-time aggregate snapshots the same way
+        // the save path does.
+        $aggregateSpecs = ($schema->getConfiguration()['x-openregister-aggregate-refs'] ?? null);
+        if (is_array($aggregateSpecs) === false || count($aggregateSpecs) === 0) {
+            $aggregateSpecs = null;
+        }
+
         $touched   = 0;
         $unchanged = 0;
         $failed    = 0;
@@ -148,6 +190,22 @@ class RematerialiseCalculationsCommand extends Command
         foreach ($entities as $entity) {
             $data    = $entity->getObject() ?? [];
             $payload = $this->withSelf(data: $data, entity: $entity);
+
+            if ($referenceSpecs !== null) {
+                $payload['@ref'] = $this->references->resolveAll(
+                    payload: $payload,
+                    references: $referenceSpecs,
+                    register: $entity->getRegister()
+                );
+            }
+
+            if ($aggregateSpecs !== null) {
+                $payload['@aggregate'] = $this->aggregates->resolveAll(
+                    payload: $payload,
+                    aggregates: $aggregateSpecs,
+                    registerRef: $entity->getRegister()
+                );
+            }
 
             $changed = false;
             foreach ($calcs as $name => $spec) {
@@ -213,7 +271,12 @@ class RematerialiseCalculationsCommand extends Command
             $failed
         )
                 );
-        return $failed > 0 ? Command::FAILURE : Command::SUCCESS;
+        $exitCode = Command::SUCCESS;
+        if ($failed > 0) {
+            $exitCode = Command::FAILURE;
+        }
+
+        return $exitCode;
     }//end execute()
 
     /**
@@ -223,19 +286,31 @@ class RematerialiseCalculationsCommand extends Command
      * @param \OCA\OpenRegister\Db\ObjectEntity $entity Object entity providing metadata.
      *
      * @return array<string, mixed> Payload with `@self` injected.
+     *
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function withSelf(array $data, \OCA\OpenRegister\Db\ObjectEntity $entity): array
     {
-        $created       = $entity->getCreated();
-        $updated       = $entity->getUpdated();
+        $created          = $entity->getCreated();
+        $updated          = $entity->getUpdated();
+        $createdFormatted = null;
+        if ($created !== null) {
+            $createdFormatted = $created->format(DateTimeInterface::ATOM);
+        }
+
+        $updatedFormatted = null;
+        if ($updated !== null) {
+            $updatedFormatted = $updated->format(DateTimeInterface::ATOM);
+        }
+
         $data['@self'] = [
             'id'       => $entity->getUuid(),
             'uuid'     => $entity->getUuid(),
             'register' => $entity->getRegister(),
             'schema'   => $entity->getSchema(),
             'owner'    => $entity->getOwner(),
-            'created'  => $created !== null ? $created->format(DateTimeInterface::ATOM) : null,
-            'updated'  => $updated !== null ? $updated->format(DateTimeInterface::ATOM) : null,
+            'created'  => $createdFormatted,
+            'updated'  => $updatedFormatted,
         ];
         return $data;
     }//end withSelf()
@@ -246,11 +321,17 @@ class RematerialiseCalculationsCommand extends Command
      * @param Schema $schema Schema to inspect.
      *
      * @return array<string, mixed>|null Calculations map, or null when absent.
+     *
+     * @spec openspec/specs/computed-fields/spec.md
      */
     private function getCalculations(Schema $schema): ?array
     {
         $config = ($schema->getConfiguration() ?? []);
         $value  = ($config['x-openregister-calculations'] ?? null);
-        return is_array($value) === true ? $value : null;
+        if (is_array($value) === true) {
+            return $value;
+        }
+
+        return null;
     }//end getCalculations()
 }//end class

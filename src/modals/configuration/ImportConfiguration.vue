@@ -19,9 +19,9 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 		</NcNoteCard>
 
 		<div class="tabContainer">
-			<BTabs v-model="activeTab" content-class="mt-3" justified>
+			<AppTabs v-model="activeTab" content-class="mt-3" justified>
 				<!-- Discover Tab -->
-				<BTab active>
+				<AppTab active>
 					<template #title>
 						<Magnify :size="16" />
 						<span>Discover</span>
@@ -46,7 +46,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<div class="searchContainer">
 							<NcTextField
-								:value.sync="searchQuery"
+								v-model="searchQuery"
 								:label="t('openregister', 'Search configurations')"
 								:placeholder="t('openregister', 'Enter search terms or leave empty to browse all')"
 								@keyup.enter="searchConfigurations">
@@ -111,10 +111,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							</template>
 						</NcEmptyContent>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- GitHub/GitLab Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<Github :size="16" />
 						<span>GitHub / GitLab</span>
@@ -131,18 +131,18 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 
 						<NcTextField
 							v-if="repoSource === 'GitHub'"
-							:value.sync="repoOwner"
+							v-model="repoOwner"
 							label="Repository Owner"
 							placeholder="e.g., ConductionNL" />
 
 						<NcTextField
 							v-if="repoSource === 'GitLab'"
-							:value.sync="repoNamespace"
+							v-model="repoNamespace"
 							label="Namespace"
 							placeholder="e.g., conduction" />
 
 						<NcTextField
-							:value.sync="repoName"
+							v-model="repoName"
 							:label="repoSource === 'GitHub' ? 'Repository Name' : 'Project Name'"
 							placeholder="e.g., openregister" />
 
@@ -156,11 +156,11 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</NcButton>
 
 						<NcSelect
-							v-if="branches.length > 0"
+							v-if="branches.length !== 0"
 							v-model="selectedBranch"
 							:options="branches"
 							input-label="Branch"
-							@change="fetchConfigurationFiles" />
+							@update:modelValue="fetchConfigurationFiles" />
 
 						<div v-if="configFiles.length > 0" class="filesGrid">
 							<div
@@ -178,10 +178,10 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							</div>
 						</div>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- URL Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<LinkVariant :size="16" />
 						<span>Import from URL</span>
@@ -192,19 +192,19 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 						</p>
 
 						<NcTextField
-							:value.sync="importUrl"
+							v-model="importUrl"
 							label="Configuration URL"
 							placeholder="https://example.com/config.json"
-							@input="urlError = null" />
+							@update:modelValue="urlError = null" />
 
 						<NcNoteCard v-if="urlError" type="warning">
 							<p>{{ urlError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
+				</AppTab>
 
 				<!-- File Upload Tab -->
-				<BTab>
+				<AppTab>
 					<template #title>
 						<FileUpload :size="16" />
 						<span>Import from File</span>
@@ -254,23 +254,23 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 							<p>{{ fileError }}</p>
 						</NcNoteCard>
 					</div>
-				</BTab>
-			</BTabs>
+				</AppTab>
+			</AppTabs>
 		</div>
 
 		<!-- Synchronization Settings - Always Visible -->
 		<div v-if="!success" class="syncSettings">
 			<h4>{{ t('openregister', 'Synchronization Settings') }}</h4>
 			<NcCheckboxRadioSwitch
-				:checked="syncEnabled"
+				:model-value="syncEnabled"
 				type="switch"
-				@update:checked="syncEnabled = $event">
+				@update:modelValue="syncEnabled = $event">
 				{{ t('openregister', 'Enable automatic synchronization') }}
 			</NcCheckboxRadioSwitch>
 
 			<NcTextField
 				v-if="syncEnabled"
-				:value.sync="syncInterval"
+				v-model="syncInterval"
 				type="number"
 				label="Sync Interval (hours)"
 				placeholder="24"
@@ -291,7 +291,7 @@ import { configurationStore, navigationStore, registerStore, schemaStore } from 
 			</NcButton>
 			<NcButton
 				:disabled="loading || !canImport"
-				type="primary"
+				variant="primary"
 				@click="performImport">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -315,7 +315,8 @@ import {
 	NcEmptyContent,
 } from '@nextcloud/vue'
 
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import Import from 'vue-material-design-icons/Import.vue'
@@ -341,8 +342,8 @@ export default {
 		NcLoadingIcon,
 		NcNoteCard,
 		NcCheckboxRadioSwitch,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		NcTextField,
 		NcSelect,
 		NcEmptyContent,
@@ -404,15 +405,24 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude Computed deep-link to the admin api-tokens settings page; UI presentation helper.
+		 */
 		settingsUrl() {
 			return window.location.origin + '/index.php/settings/admin/openregister#api-tokens'
 		},
+		/**
+		 * @spec exclude Computed form-enablement guard for the fetch-branches button; UI validation helper.
+		 */
 		canFetchBranches() {
 			if (this.repoSource === 'GitHub') {
 				return this.repoOwner && this.repoName
 			}
 			return this.repoNamespace && this.repoName
 		},
+		/**
+		 * @spec exclude Computed per-tab form-enablement guard for the import button; UI validation helper.
+		 */
 		canImport() {
 		// Tab 0: Discover (imports are handled per-card, not via main button)
 		// Tab 1: GitHub/GitLab
@@ -437,6 +447,8 @@ export default {
 	methods: {
 		/**
 		 * Check if API tokens are configured
+		 *
+		 * @spec exclude On-mount fetch of masked api-token presence to toggle UI warnings; modal init plumbing.
 		 */
 		async checkTokenAvailability() {
 			try {
@@ -459,6 +471,7 @@ export default {
 		 * Get token warning title based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner title string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningTitle() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -474,6 +487,7 @@ export default {
 		 * Get token warning message based on which tokens are missing
 		 *
 		 * @return {string}
+		 * @spec exclude Computes a warning-banner message string from token-presence flags; UI presentation helper.
 		 */
 		getTokenWarningMessage() {
 			if (!this.hasGithubToken && !this.hasGitlabToken) {
@@ -485,10 +499,16 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and form state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.resetForm()
 		},
+		/**
+		 * @spec exclude Resets all local form/search/upload state to defaults; UI plumbing.
+		 */
 		resetForm() {
 			this.loading = false
 			this.success = false
@@ -513,6 +533,9 @@ export default {
 			this.syncEnabled = true
 			this.syncInterval = 24
 		},
+		/**
+		 * @spec exclude Discover-tab search handler delegating to configurationStore.discoverConfigurations; UI search plumbing.
+		 */
 		async searchConfigurations() {
 			this.searchLoading = true
 			this.hasSearched = true
@@ -535,6 +558,10 @@ export default {
 				this.searchLoading = false
 			}
 		},
+		/**
+		 * @param result
+		 * @spec exclude Per-card import handler dispatching to configurationStore.importFromGitHub/GitLab and refreshing lists; UI orchestration plumbing.
+		 */
 		async importDiscoveredConfiguration(result) {
 			this.loading = true
 			this.error = null
@@ -589,6 +616,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Fetches repo branches via configurationStore.getBranches to populate the branch select; UI form-loading plumbing.
+		 */
 		async fetchBranches() {
 			this.loading = true
 			this.error = null
@@ -620,6 +650,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Fetches config files for the selected branch via configurationStore.getConfigurationFiles; UI form-loading plumbing.
+		 */
 		async fetchConfigurationFiles() {
 			if (!this.selectedBranch) return
 
@@ -643,6 +676,9 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Main import-button handler dispatching per-tab to configurationStore import actions and refreshing lists; UI orchestration plumbing.
+		 */
 		async performImport() {
 			this.loading = true
 			this.error = null
@@ -716,12 +752,20 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param event
+		 * @spec exclude File-input change handler passing the picked file to validateAndSetFile; UI file-picker plumbing.
+		 */
 		handleFileSelect(event) {
 			const file = event.target.files[0]
 			if (file) {
 				this.validateAndSetFile(file)
 			}
 		},
+		/**
+		 * @param event
+		 * @spec exclude Drag-drop handler passing the dropped file to validateAndSetFile; UI file-picker plumbing.
+		 */
 		handleFileDrop(event) {
 			this.isDragging = false
 			const file = event.dataTransfer.files[0]
@@ -729,6 +773,10 @@ export default {
 				this.validateAndSetFile(file)
 			}
 		},
+		/**
+		 * @param file
+		 * @spec exclude Client-side JSON-type/size validation before accepting an upload file; UI validation helper.
+		 */
 		validateAndSetFile(file) {
 			this.fileError = null
 
@@ -746,6 +794,9 @@ export default {
 
 			this.selectedUploadFile = file
 		},
+		/**
+		 * @spec exclude Clears the selected upload file and resets the file input; UI file-picker plumbing.
+		 */
 		clearFileSelection() {
 			this.selectedUploadFile = null
 			this.fileError = null
@@ -753,11 +804,18 @@ export default {
 				this.$refs.fileInput.value = ''
 			}
 		},
+		/**
+		 * @param bytes
+		 * @spec exclude Human-readable byte-size formatter for the file display; UI presentation helper.
+		 */
 		formatFileSize(bytes) {
 			if (bytes < 1024) return bytes + ' B'
 			if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
 			return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 		},
+		/**
+		 * @spec exclude Uploads the selected JSON file to the configurations/import endpoint; modal-local import call, list refresh handled by performImport.
+		 */
 		async importFromFile() {
 			const formData = new FormData()
 			formData.append('file', this.selectedUploadFile)
@@ -780,6 +838,10 @@ export default {
 
 			return response.data
 		},
+		/**
+		 * @param configuration
+		 * @spec exclude Triggers the configurations check-version endpoint and surfaces update toasts; UI orchestration plumbing.
+		 */
 		async handleCheckVersion(configuration) {
 			// Handle check version for already imported configurations
 			try {

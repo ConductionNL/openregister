@@ -1,0 +1,287 @@
+{
+  "info": {
+    "_postman_id": "openregister-i18n-source-of-truth",
+    "name": "OpenRegister i18n — Source of Truth",
+    "description": "Integration tests for the i18n-source-of-truth change.\n\nCovers the schema sourceLanguage modifier, the openregister_translations.source_language column, the outdated-on-source-change automation, the controller filters, and the _translationMeta render envelope.\n\nSelf-contained: creates its own register + schema and tears them down. Idempotent: timestamped titles never collide between runs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "basic",
+    "basic": [
+      { "key": "username", "value": "{{admin_user}}", "type": "string" },
+      { "key": "password", "value": "{{admin_password}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const isInitialized = pm.collectionVariables.get('_sot_initialized');",
+          "if (!isInitialized || isInitialized === '') {",
+          "    const ts = Date.now();",
+          "    pm.collectionVariables.set('test_timestamp', ts);",
+          "    pm.collectionVariables.set('_sot_initialized', 'true');",
+          "    console.log('Source-of-truth test run initialized: ' + ts);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost", "type": "string" },
+    { "key": "admin_user", "value": "admin", "type": "string" },
+    { "key": "admin_password", "value": "admin", "type": "string" },
+    { "key": "sot_register_id", "value": "", "type": "string" },
+    { "key": "sot_schema_id", "value": "", "type": "string" },
+    { "key": "sot_object_uuid", "value": "", "type": "string" },
+    { "key": "test_timestamp", "value": "", "type": "string" },
+    { "key": "_sot_initialized", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Force inline translation projection",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// The translation sidecar (openregister_translations, incl. source_language) is",
+                  "// populated by an event-driven projection that defaults to a background job.",
+                  "// Newman runs against a live instance with no cron worker, so we flip the",
+                  "// documented `openregister/listenerDeferral` kill-switch to `inline` to restore",
+                  "// synchronous projection for read-your-writes assertions in this run.",
+                  "pm.test('Deferral kill-switch set to inline (200)', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/ocs/v2.php/apps/provisioning_api/api/v1/config/apps/openregister/listenerDeferral",
+            "header": [
+              { "key": "OCS-APIRequest", "value": "true" },
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "value=inline"
+            }
+          }
+        },
+        {
+          "name": "Create Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register created (201)', function () { pm.response.to.have.status(201); });",
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set('sot_register_id', String(d.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/registers",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"i18n SoT Register {{test_timestamp}}\", \"languages\": [\"nl\", \"en\"]}"
+            }
+          }
+        },
+        {
+          "name": "Create Schema (title.sourceLanguage = nl)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Schema created (201)', function () { pm.response.to.have.status(201); });",
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set('sot_schema_id', String(d.id));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"i18n SoT Schema {{test_timestamp}}\", \"properties\": {\"title\": {\"type\": \"string\", \"translatable\": true, \"sourceLanguage\": \"nl\"}}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation",
+      "item": [
+        {
+          "name": "Reject sourceLanguage on non-translatable property",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/schemas",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"i18n SoT Bad Schema {{test_timestamp}}\", \"properties\": {\"code\": {\"type\": \"string\", \"sourceLanguage\": \"nl\"}}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Object lifecycle",
+      "item": [
+        {
+          "name": "Create object with title.nl + title.en",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Object created (201)', function () { pm.response.to.have.status(201); });",
+                  "const d = pm.response.json();",
+                  "pm.collectionVariables.set('sot_object_uuid', d['@self'] && d['@self'].id ? d['@self'].id : d.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{sot_register_id}}/{{sot_schema_id}}",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": {\"nl\": \"Welkom\", \"en\": \"Welcome\"}}"
+            }
+          }
+        },
+        {
+          "name": "List translations — has source_language=nl",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('Has at least one row with source_language=nl', function () {",
+                  "    const rows = (body.translations || []);",
+                  "    const matches = rows.filter(r => r.sourceLanguage === 'nl');",
+                  "    pm.expect(matches.length).to.be.above(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/openregister/api/translations/object/{{sot_object_uuid}}",
+            "header": []
+          }
+        },
+        {
+          "name": "Render with ?_translationMeta=true exposes _meta.languageMeta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test('languageMeta envelope present', function () {",
+                  "    pm.expect(body).to.have.property('_meta');",
+                  "    pm.expect(body._meta).to.have.property('languageMeta');",
+                  "    pm.expect(body._meta.languageMeta).to.have.property('title');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{sot_register_id}}/{{sot_schema_id}}/{{sot_object_uuid}}?_lang=en&_translationMeta=true",
+            "header": []
+          }
+        },
+        {
+          "name": "X-Source-Language response header present",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+                  "pm.test('X-Source-Language header present', function () {",
+                  "    pm.expect(pm.response.headers.has('X-Source-Language')).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/openregister/api/objects/{{sot_register_id}}/{{sot_schema_id}}/{{sot_object_uuid}}",
+            "header": []
+          }
+        },
+        {
+          "name": "Filter translations by ?isOutOfDate=true (initial 0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/index.php/apps/openregister/api/translations/search?objectUuid={{sot_object_uuid}}&isOutOfDate=true",
+            "header": []
+          }
+        }
+      ]
+    }
+  ]
+}

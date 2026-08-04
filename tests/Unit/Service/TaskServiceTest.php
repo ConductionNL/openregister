@@ -7,6 +7,7 @@ namespace Unit\Service;
 use Exception;
 use OCA\OpenRegister\Exception\NoVtodoCalendarException;
 use OCA\OpenRegister\Service\TaskService;
+use OCP\IURLGenerator;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
@@ -23,11 +24,16 @@ class TaskServiceTest extends TestCase
 {
     private IUserSession&MockObject $userSession;
     private LoggerInterface&MockObject $logger;
+    private IURLGenerator&MockObject $urlGenerator;
 
     protected function setUp(): void
     {
         $this->userSession = $this->createMock(IUserSession::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->urlGenerator = $this->createMock(IURLGenerator::class);
+        $this->urlGenerator->method('linkToRoute')
+            ->with('tasks.page.index')
+            ->willReturn('/index.php/apps/tasks/');
     }
 
     private function requireCalDav(): void
@@ -42,7 +48,7 @@ class TaskServiceTest extends TestCase
         $this->requireCalDav();
 
         $calDavBackend = $this->createMock(\OCA\DAV\CalDAV\CalDavBackend::class);
-        return new TaskService($calDavBackend, $this->userSession, $this->logger);
+        return new TaskService($calDavBackend, $this->userSession, $this->logger, $this->urlGenerator);
     }
 
     private function createServiceWithBackend(): array
@@ -50,7 +56,7 @@ class TaskServiceTest extends TestCase
         $this->requireCalDav();
 
         $calDavBackend = $this->createMock(\OCA\DAV\CalDAV\CalDavBackend::class);
-        $service = new TaskService($calDavBackend, $this->userSession, $this->logger);
+        $service = new TaskService($calDavBackend, $this->userSession, $this->logger, $this->urlGenerator);
         return [$service, $calDavBackend];
     }
 

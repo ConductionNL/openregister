@@ -135,7 +135,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="processing || (stats.chunksToProcess === 0)"
 				@click="startVectorization">
 				<template #icon>
@@ -149,11 +149,7 @@
 </template>
 
 <script>
-import NcDialog from '@nextcloud/vue/dist/Components/NcDialog.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcProgressBar from '@nextcloud/vue/dist/Components/NcProgressBar.js'
+import { NcDialog, NcButton, NcCheckboxRadioSwitch, NcLoadingIcon, NcProgressBar } from '@nextcloud/vue'
 import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
 import PlayCircle from 'vue-material-design-icons/PlayCircle.vue'
 import axios from '@nextcloud/axios'
@@ -214,6 +210,9 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed display helper aggregating vectorization stats
+		 */
 		stats() {
 			const extractedFiles = this.extractionStats?.completed || this.extractionStats?.processedFiles || 0
 			const totalChunks = this.extractionStats?.totalChunks || 0
@@ -227,16 +226,25 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed progress percentage helper
+		 */
 		progress() {
 			if (this.stats.chunksToProcess === 0) return 0
 			return Math.round((this.processed / this.stats.chunksToProcess) * 100)
 		},
 
+		/**
+		 * @spec exclude computed estimate of batch count
+		 */
 		estimatedBatches() {
 			if (this.stats.chunksToProcess === 0 || this.batchSize === 0) return 0
 			return Math.ceil(this.stats.chunksToProcess / this.batchSize)
 		},
 
+		/**
+		 * @spec exclude computed estimate of duration
+		 */
 		estimatedDuration() {
 			// Estimate ~100-200ms per chunk for embedding generation
 			const avgTimePerChunk = 0.15 // seconds
@@ -251,6 +259,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude computed estimate of cost
+		 */
 		estimatedCost() {
 			// Assuming OpenAI pricing: $0.0001 per 1K tokens
 			// Average chunk is ~1000 characters = ~750 tokens
@@ -263,6 +274,10 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @param newValue
+		 * @spec exclude watcher reloading file types when modal opens
+		 */
 		show(newValue) {
 			if (newValue) {
 				// Reload file types when modal is opened
@@ -271,6 +286,9 @@ export default {
 		},
 	},
 
+	/**
+	 * @spec exclude Vue lifecycle hook loading file types
+	 */
 	mounted() {
 		if (this.show) {
 			this.loadFileTypes()
@@ -278,18 +296,23 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * @spec exclude form-state loader for file types via API
+		 */
 		async loadFileTypes() {
 			try {
 				const response = await axios.get(generateUrl('/apps/openregister/api/files/types'))
 				if (response.data.success) {
 					this.fileTypes = response.data.data
-					console.info('[FileVectorizationModal] Loaded file types:', this.fileTypes)
 				}
 			} catch (error) {
 				console.error('[FileVectorizationModal] Failed to load file types:', error)
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler triggering batch vectorization via API
+		 */
 		async startVectorization() {
 			if (this.stats.chunksToProcess === 0) {
 				showError(this.t('openregister', 'No chunks to vectorize'))

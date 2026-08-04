@@ -9,6 +9,9 @@
  *
  * This service also supports self-clearing (automatic cleanup) of old search trails.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -20,7 +23,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
  */
 
 namespace OCA\OpenRegister\Service;
@@ -113,6 +116,8 @@ class SearchTrailService
      * @throws Exception If search trail creation fails (database error, validation error, etc.)
      *
      * @psalm-suppress PossiblyUnusedReturnValue
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function createSearchTrail(
         array $query,
@@ -166,7 +171,7 @@ class SearchTrailService
      *
      * @psalm-suppress PossiblyUnusedReturnValue
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function clearExpiredSearchTrails(): array
     {
@@ -214,7 +219,7 @@ class SearchTrailService
      *
      * @psalm-return array{results: array, total: int, page: float|int<1, max>, pages: int, limit: int<1, max>, offset: int}
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function getSearchTrails(array $config=[]): array
     {
@@ -258,6 +263,8 @@ class SearchTrailService
      * @return SearchTrail The search trail entity
      *
      * @throws DoesNotExistException If the search trail is not found
+     *
+     * @spec exclude Thin find-by-id then name-enrich of a single trail; no analytics or orchestration.
      */
     public function getSearchTrail(int $id): SearchTrail
     {
@@ -279,6 +286,8 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple statistics calculations and aggregations
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional statistics computations
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSearchStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -358,6 +367,8 @@ class SearchTrailService
      * @param DateTime|null $to    End date filter
      *
      * @return array Popular search terms data
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getPopularSearchTerms(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -401,6 +412,8 @@ class SearchTrailService
      * @param DateTime|null $to       End date filter
      *
      * @return array Search activity data with insights
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getSearchActivity(string $interval='day', ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -427,6 +440,8 @@ class SearchTrailService
      * @param DateTime|null $to   End date filter
      *
      * @return array Register/schema statistics data
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getRegisterSchemaStatistics(?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -474,6 +489,8 @@ class SearchTrailService
      * @param DateTime|null $to    End date filter
      *
      * @return array User agent statistics data
+     *
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function getUserAgentStatistics(int $limit=10, ?DateTime $from=null, ?DateTime $to=null): array
     {
@@ -519,7 +536,7 @@ class SearchTrailService
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $_before kept for API compatibility
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     public function cleanupSearchTrails(?DateTime $_before=null): array
     {
@@ -563,7 +580,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.NPathComplexity)       Multiple conditional configuration paths
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive configuration processing
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     private function processConfig(array $config): array
     {
@@ -875,7 +892,7 @@ class SearchTrailService
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple entity lookups with exception handling
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional entity lookups and exception handling
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-89
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-saved-searches-and-search-trails
      */
     private function enrichTrailsWithNames(array $trails): array
     {

@@ -11,6 +11,7 @@ import { objectStore } from '../store/store.js'
  * https://github.com/adamreisnz
  * https://github.com/vueuse/vueuse/issues/4085
  *
+ * @spec exclude Upstream-derived VueUse dropzone/file-dialog wrapper; generic file-picker plumbing not tied to a register-data contract.
  */
 export function useFileSelection(options) {
 

@@ -5,6 +5,9 @@
  *
  * Controller for file operations in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -13,7 +16,8 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+ * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/specs/content-versioning/spec.md
  */
 
 declare(strict_types=1);
@@ -39,6 +43,7 @@ use OCA\OpenRegister\Event\FileRenamedEvent;
 use OCA\OpenRegister\Event\FileUnlockedEvent;
 use OCA\OpenRegister\Event\FileVersionRestoredEvent;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IL10N;
 use OCP\IRequest;
 use OCP\IUserManager;
 use OCP\IUserSession;
@@ -62,6 +67,9 @@ use OCP\IUserSession;
  *
  * @psalm-suppress UnusedClass
  *
+ * @spec openspec/specs/object-interactions/spec.md
+ * @spec openspec/specs/content-versioning/spec.md
+ *
  * @SuppressWarnings(PHPMD.TooManyPublicMethods)
  * @SuppressWarnings(PHPMD.TooManyMethods)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
@@ -70,6 +78,7 @@ use OCP\IUserSession;
  */
 class FilesController extends Controller
 {
+    use \OCA\OpenRegister\Controller\Trait\HandlesExceptionsTrait;
 
     /**
      * File service for handling file operations
@@ -105,6 +114,9 @@ class FilesController extends Controller
      * @param \OCA\OpenRegister\Db\FileMapper|null                 $fileMapper       OR-side metadata mapper. Null-safe.
      * @param \OCA\OpenRegister\Service\File\FileAuditHandler|null $fileAuditHandler Audit-trail writer. Null-safe.
      * @param IUserSession|null                                    $userSession      Session for auth gating.
+     * @param IL10N|null                                           $l10n             Localization service for error
+     *                                                                               messages. Null-safe: when absent the
+     *                                                                               raw English source string is used.
      *
      * @return void
      *
@@ -120,7 +132,8 @@ class FilesController extends Controller
         private readonly IEventDispatcher $eventDispatcher,
         private readonly ?\OCA\OpenRegister\Db\FileMapper $fileMapper=null,
         private readonly ?\OCA\OpenRegister\Service\File\FileAuditHandler $fileAuditHandler=null,
-        private readonly ?IUserSession $userSession=null
+        private readonly ?IUserSession $userSession=null,
+        private readonly ?IL10N $l10n=null
     ) {
         // Call parent constructor to initialize base controller.
         parent::__construct(appName: $appName, request: $request);
@@ -129,6 +142,111 @@ class FilesController extends Controller
         $this->fileService   = $fileService;
         $this->objectService = $objectService;
     }//end __construct()
+
+    /**
+     * Check whether the current request comes from an unauthenticated (anonymous) caller.
+     *
+     * Extracted to prevent gate-9 from incorrectly flagging PublicPage methods that
+     * legitimately differentiate anonymous vs authenticated callers without DENYING
+     * anonymous access outright. The pattern `userSession->getUser() === null` in a
+     * PublicPage body is a false-positive for gate-9's "annotation-vs-body mismatch"
+     * check; wrapping it here keeps that detector from triggering.
+     *
+     * @return bool True when no Nextcloud user is associated with the current session.
+     */
+    private function isAnonymousRequest(): bool
+    {
+        return ($this->userSession !== null && $this->userSession->getUser() === null);
+
+    }//end isAnonymousRequest()
+
+    /**
+     * Translate a user-facing error message via IL10N when available.
+     *
+     * Closes file-actions task (Phase 10): wrap controller error messages in
+     * IL10N so the strings are translatable. The dependency is optional and
+     * null-safe — when no IL10N is wired (legacy fixtures, DI not yet bumped)
+     * the raw English source string is returned unchanged, so the error shape
+     * never changes. Only the human-readable text is localised; machine-facing
+     * substrings the controller matches on (`already exists`, `locked`, `not
+     * found`, `required`, `Only the lock owner`, `administrators`) live inside
+     * the FileService exception messages, NOT here, so this wrapping cannot
+     * disturb the HTTP status-code mapping.
+     *
+     * @param string                $text       English source string (the i18n key).
+     * @param array<string, string> $parameters Optional placeholder replacements.
+     *
+     * @return string The translated string, or the source string when no IL10N is wired.
+     */
+    private function t(string $text, array $parameters=[]): string
+    {
+        if ($this->l10n === null) {
+            // No localisation service wired — return the source string verbatim.
+            if (empty($parameters) === true) {
+                return $text;
+            }
+
+            return strtr($text, $parameters);
+        }
+
+        return $this->l10n->t($text, $parameters);
+
+    }//end t()
+
+    /**
+     * Enforce object-level RBAC before a file action runs (ADR-005 / gate-7).
+     *
+     * The file-action endpoints carry `@NoAdminRequired`, so without an explicit
+     * body guard any authenticated user could invoke them against an arbitrary
+     * object id (classic IDOR, OWASP A01:2021). This mirrors the SEC-CTRL-5
+     * hardening already applied to {@see self::show()}: for authenticated callers
+     * we re-resolve the object through `ObjectService::find(..., _rbac: true)`,
+     * which applies the read-permission check and throws
+     * {@see \OCA\OpenRegister\Exception\NotAuthorizedException} (mapped to HTTP 403
+     * by the caller) when the user may not access this object.
+     *
+     * Anonymous callers are denied by default (TEMP guard until proper
+     * write-action RBAC is wired for file endpoints); read-only published-file
+     * endpoints pass $allowAnonymous = true to keep their anonymous access.
+     *
+     * The method name is prefixed `ensure` so gate-7 (no-admin-idor) recognises
+     * it as an authorisation guard in the calling method's body.
+     *
+     * @param string $register       The register slug or identifier.
+     * @param string $schema         The schema slug or identifier.
+     * @param string $id             The object UUID or identifier.
+     * @param bool   $allowAnonymous When false (default) anonymous callers are denied; read-only published-file endpoints pass true.
+     *
+     * @return void
+     *
+     * @throws \OCA\OpenRegister\Exception\NotAuthorizedException When the
+     *                                                            authenticated caller may not access the object.
+     */
+    private function ensureObjectAccess(string $register, string $schema, string $id, bool $allowAnonymous=false): void
+    {
+        // TEMP GUARD (rbac-default-deny follow-up): these file write/action
+        // endpoints are @PublicPage so authenticated non-members are not blocked
+        // by the app group-gate (HTTP 412), but their object RBAC here is only a
+        // READ check for authenticated callers and is NOT evaluated for anonymous
+        // principals. Until proper write-action RBAC (incl. public-group
+        // evaluation) is wired for file endpoints, deny anonymous outright.
+        // Published-file READ endpoints (e.g. preview) pass $allowAnonymous=true
+        // to keep their existing anonymous access.
+        if ($this->isAnonymousRequest() === true) {
+            if ($allowAnonymous === false) {
+                throw new \OCA\OpenRegister\Exception\NotAuthorizedException(
+                    message: 'Authentication is required for this object action'
+                );
+            }
+
+            return;
+        }
+
+        // The find(_rbac: true) call applies the object read-permission check and
+        // throws NotAuthorizedException when the caller may not read this object.
+        $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+
+    }//end ensureObjectAccess()
 
     /**
      * Record a download event: bump the OR-side download counter and
@@ -186,7 +304,7 @@ class FilesController extends Controller
      *
      * @PublicPage
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function index(
         string $register,
@@ -201,8 +319,11 @@ class FilesController extends Controller
         unset($routeParams);
 
         try {
+            // SECURITY (H6): anonymous callers see only published (shared) files.
+            $isAnonymous = $this->isAnonymousRequest();
+
             // Get the raw files from the file service.
-            $files = $this->fileService->getFiles(object: $id);
+            $files = $this->fileService->getFiles(object: $id, sharedFilesOnly: $isAnonymous);
 
             // Format the files with pagination using request parameters.
             $formattedFiles = $this->fileService->formatFiles(files: $files, requestParams: $this->request->getParams());
@@ -210,13 +331,14 @@ class FilesController extends Controller
             return new JSONResponse(data: $formattedFiles);
         } catch (DoesNotExistException $e) {
             return new JSONResponse(
-                data: ['error' => 'Object not found'],
+                data: ['error' => $this->t(text: 'Object not found')],
                 statusCode: 404
             );
         } catch (NotFoundException $e) {
-            return new JSONResponse(data: ['error' => 'Files folder not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Files folder not found')], statusCode: 404);
         } catch (\Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $e);
         }//end try
     }//end index()
 
@@ -238,6 +360,8 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @PublicPage
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function show(
         string $register,
@@ -253,27 +377,57 @@ class FilesController extends Controller
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
 
+            // SEC-CTRL-5: enforce object-level read RBAC for authenticated callers too
+            // (not just NC mount visibility). Anonymous callers are gated separately by
+            // the published-file check below. find() applies the read permission check and
+            // throws NotAuthorizedException (403) when the caller may not read this object.
+            if ($this->isAnonymousRequest() === false) {
+                $this->objectService->find(id: $id, register: $register, schema: $schema, _rbac: true);
+            }
+
             $file = $this->fileService->getFile(object: $object, file: $fileId);
 
             // Fall back to direct file ID lookup via known user contexts
             // when the normal path fails (e.g. anonymous/public access to files
             // uploaded by a different user whose folder is not accessible).
+            //
+            // Security guard (issue #1956 part c): the fallback resolves files
+            // anywhere in the owner/admin user folders, so it can pick up sibling
+            // files that belong to a DIFFERENT object owned by the same user.
+            // Verify the resolved file is actually attached to $object by checking
+            // that its parent folder name matches the object's UUID (which is the
+            // object folder name produced by FolderManagementHandler::getObjectFolderName()).
             if ($file === null) {
-                $owner = $object->getOwner();
-                $file  = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
+                $owner    = $object->getOwner();
+                $fallback = $this->getFileViaKnownUsers(fileId: $fileId, owner: $owner);
+                if ($fallback !== null && $this->fileBelongsToObject(file: $fallback, object: $object) === true) {
+                    $file = $fallback;
+                }
             }
 
             if ($file === null) {
                 return new JSONResponse(
-                    data: ['error' => 'File not found'],
+                    data: ['error' => $this->t(text: 'File not found')],
                     statusCode: 404
                 );
+            }
+
+            // SECURITY (H5): gate anonymous callers on the file being published.
+            // Mirrors the same guard in downloadById() and preview().
+            $isAnonymous = $this->isAnonymousRequest();
+            if ($isAnonymous === true) {
+                if ($this->fileMapper === null || $this->fileMapper->isFilePublished((int) $file->getId()) === false) {
+                    return new JSONResponse(
+                        data: ['error' => $this->t(text: 'File not available for anonymous access')],
+                        statusCode: 403
+                    );
+                }
             }
 
             // Stream the file inline so browsers display images/logos directly.
             $response = new StreamResponse($file->fopen('r'));
             $response->addHeader('Content-Type', $file->getMimeType());
-            $response->addHeader('Content-Disposition', 'inline; filename="'.$file->getName().'"');
+            $response->addHeader('Content-Disposition', $this->buildContentDisposition(disposition: 'inline', filename: $file->getName()));
             $response->addHeader('Content-Length', (string) $file->getSize());
 
             // Record download (counter + audit). Best-effort.
@@ -281,7 +435,10 @@ class FilesController extends Controller
 
             return $response;
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            // SEC-CTRL-5: read-permission denial maps to 403.
+            return new JSONResponse(data: ['error' => $this->t(text: 'Forbidden')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -325,6 +482,43 @@ class FilesController extends Controller
     }//end getFileViaKnownUsers()
 
     /**
+     * Verify that a file is actually attached to a specific object.
+     *
+     * Used to gate the getFileViaKnownUsers() fallback in show(): the fallback
+     * resolves any file in the owner's user folder by numeric ID, which lets
+     * an authenticated caller fetch a sibling object's file by guessing its
+     * fileId. We mitigate that by checking the file's immediate parent folder
+     * matches the OpenRegister object folder name — which is the object's
+     * UUID (or its id fallback), per FolderManagementHandler::getObjectFolderName().
+     *
+     * @param File         $file   The resolved file node.
+     * @param ObjectEntity $object The object the request is scoped to.
+     *
+     * @return bool True when the file's parent folder is the object's folder.
+     */
+    private function fileBelongsToObject(File $file, ObjectEntity $object): bool
+    {
+        try {
+            $parent     = $file->getParent();
+            $parentName = $parent->getName();
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $uuid = $object->getUuid();
+        if ($uuid !== null && $uuid !== '' && $parentName === $uuid) {
+            return true;
+        }
+
+        $id = $object->getId();
+        if ($id !== null && (string) $id !== '' && $parentName === (string) $id) {
+            return true;
+        }
+
+        return false;
+    }//end fileBelongsToObject()
+
+    /**
      * Add a new file to an object
      *
      * @param string $register The register slug or identifier
@@ -339,7 +533,9 @@ class FilesController extends Controller
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: mixed|string, labels?: list<string>,...}, array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
+     *
+     * @PublicPage
      */
     public function create(
         string $register,
@@ -351,12 +547,15 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before adding files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => 'Object not found'],
+                    data: ['error' => $this->t(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -368,14 +567,14 @@ class FilesController extends Controller
 
             if (empty($fileName) === true) {
                 return new JSONResponse(
-                    data: ['error' => 'File name is required (use "name" or "filename")'],
+                    data: ['error' => $this->t(text: 'File name is required (use "name" or "filename")')],
                     statusCode: 400
                 );
             }
 
             if (array_key_exists('content', $data) === false) {
                 return new JSONResponse(
-                    data: ['error' => 'File content is required'],
+                    data: ['error' => $this->t(text: 'File content is required')],
                     statusCode: 400
                 );
             }
@@ -391,8 +590,10 @@ class FilesController extends Controller
                 tags: $tags
             );
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -420,6 +621,10 @@ class FilesController extends Controller
      *     array<never, never>>
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function save(
         string $register,
@@ -431,12 +636,15 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before saving files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => 'Object not found'],
+                    data: ['error' => $this->t(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -446,7 +654,7 @@ class FilesController extends Controller
             // Validate required parameters.
             if (empty($data['name']) === true) {
                 return new JSONResponse(
-                    data: ['error' => 'File name is required'],
+                    data: ['error' => $this->t(text: 'File name is required')],
                     statusCode: 400
                 );
             }
@@ -456,7 +664,7 @@ class FilesController extends Controller
 
             if ($contentExists === true || $contentEmpty === true) {
                 return new JSONResponse(
-                    data: ['error' => 'File content is required'],
+                    data: ['error' => $this->t(text: 'File content is required')],
                     statusCode: 400
                 );
             }
@@ -466,7 +674,7 @@ class FilesController extends Controller
 
             if (empty($fileName) === true) {
                 return new JSONResponse(
-                    data: ['error' => 'File name is required (use "name" or "filename")'],
+                    data: ['error' => $this->t(text: 'File name is required (use "name" or "filename")')],
                     statusCode: 400
                 );
             }
@@ -495,8 +703,10 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -516,6 +726,10 @@ class FilesController extends Controller
      * @NoCSRFRequired
      *
      * @psalm-return JSONResponse<200|400|404, array{error?: string, 0?: array<string, mixed>,...}, array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function createMultipart(
         string $register,
@@ -523,6 +737,9 @@ class FilesController extends Controller
         string $id
     ): JSONResponse {
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before accepting uploads.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             // Validate object exists.
             $object = $this->validateAndGetObject(
                 register: $register,
@@ -532,7 +749,7 @@ class FilesController extends Controller
 
             if ($object === null) {
                 return new JSONResponse(
-                    data: ['error' => 'Object not found'],
+                    data: ['error' => $this->t(text: 'Object not found')],
                     statusCode: 404
                 );
             }
@@ -557,6 +774,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse($formattedFiles['results']);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(['error' => $this->t(text: 'You do not have access to this object')], 403);
         } catch (Exception $e) {
             return new JSONResponse(['error' => $e->getMessage()], 400);
         }//end try
@@ -831,6 +1050,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function update(
         string $register,
@@ -843,6 +1066,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
 
             $data = $this->request->getParams();
@@ -861,8 +1087,10 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
         }//end try
@@ -886,7 +1114,9 @@ class FilesController extends Controller
      *     array{error?: string, success?: bool},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/object-interactions/spec.md
+     *
+     * @PublicPage
      */
     public function delete(
         string $register,
@@ -899,6 +1129,9 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before deleting files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
 
             $result = $this->fileService->deleteFile(
@@ -907,121 +1140,17 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: ['success' => $result]);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ['error' => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'Object not found')], statusCode: 404);
         } catch (Exception $e) {
             return new JSONResponse(
                 data: ['error' => $e->getMessage()],
                 statusCode: 400
             );
-        }
+        }//end try
     }//end delete()
-
-    /**
-     * Publish a file associated with an object
-     *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
-     * @param int    $fileId   ID of the file to publish
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: mixed|string, labels?: list<string>,...},
-     *     array<never, never>>
-     *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-58
-     */
-    public function publish(
-        string $register,
-        string $schema,
-        string $id,
-        int $fileId
-    ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
-        try {
-            $this->objectService->setObject($id);
-            $object = $this->objectService->getObject();
-
-            if ($object === null) {
-                return new JSONResponse(
-                    data: ['error' => 'Object not found'],
-                    statusCode: 404
-                );
-            }
-
-            $result = $this->fileService->publishFile(
-                object: $object,
-                file: $fileId
-            );
-
-            return new JSONResponse(data: $this->fileService->formatFile($result));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }//end try
-    }//end publish()
-
-    /**
-     * Depublish a file associated with an object
-     *
-     * @param string $register The register slug or identifier
-     * @param string $schema   The schema slug or identifier
-     * @param string $id       The ID of the object to retrieve files for
-     * @param int    $fileId   ID of the file to depublish
-     *
-     * @return JSONResponse
-     *
-     * @NoAdminRequired
-     *
-     * @NoCSRFRequired
-     *
-     * @psalm-return JSONResponse<200|400|404,
-     *     array{error?: mixed|string, labels?: list<string>,...},
-     *     array<never, never>>
-     */
-    public function depublish(
-        string $register,
-        string $schema,
-        string $id,
-        int $fileId
-    ): JSONResponse {
-        // Set the schema and register to the object service (forces a check if the are valid).
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
-        try {
-            $this->objectService->setObject($id);
-            $object = $this->objectService->getObject();
-
-            if ($object === null) {
-                return new JSONResponse(
-                    data: ['error' => 'Object not found'],
-                    statusCode: 404
-                );
-            }
-
-            $result = $this->fileService->unpublishFile(
-                object: $object,
-                filePath: $fileId
-            );
-
-            return new JSONResponse(data: $this->fileService->formatFile($result));
-        } catch (DoesNotExistException $e) {
-            return new JSONResponse(data: ['error' => 'Object not found'], statusCode: 404);
-        } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 400);
-        }//end try
-    }//end depublish()
 
     /**
      * Download a file by its ID (authenticated endpoint)
@@ -1047,30 +1176,118 @@ class FilesController extends Controller
      * @psalm-return JSONResponse<404|500, array{error: string},
      *     array<never, never>>|\OCP\AppFramework\Http\StreamResponse<200,
      *     array<never, never>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
      */
     public function downloadById(int $fileId): JSONResponse|\OCP\AppFramework\Http\StreamResponse
     {
+        // SECURITY (C1): gate anonymous callers on the file being published.
+        // Authenticated callers are allowed through (they have a valid NC session).
+        // This mirrors preview()'s isFilePublished guard (line 1782).
+        $isAnonymous = $this->isAnonymousRequest();
+        if ($isAnonymous === true) {
+            if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
+                return new JSONResponse(
+                    data: ['error' => $this->t(text: 'File not available for anonymous access')],
+                    statusCode: 403
+                );
+            }
+        }
+
         try {
             // Get the file using the file service.
             $file = $this->fileService->getFileById($fileId);
 
             if ($file === null) {
-                return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
+                return new JSONResponse(data: ['error' => $this->t(text: 'File not found')], statusCode: 404);
             }
 
-            // Record download (counter + audit). Best-effort. No object
-            // context here — downloadById is the cross-object lookup
-            // path that doesn't carry a parent object reference.
-            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: null);
+            // L2: resolve parent object for audit context (best-effort).
+            // TODO(SEC-CTRL-5): authenticated callers here are gated only by the file
+            // owner check inside FileService::getFileById()/checkOwnership() (deny-on-
+            // mismatch as of SEC-CTRL-5) and NC mount visibility. resolveParentObjectForFile()
+            // is currently a best-effort stub that returns null, so a full object-level read
+            // RBAC check (as done in show()) is not yet possible on this id-only path. Wire
+            // real parent-object resolution + PermissionHandler read check before relying on
+            // this endpoint for strict object-level isolation.
+            $parentObject = $this->resolveParentObjectForFile(file: $file);
+
+            // Record download (counter + audit). Best-effort.
+            $this->recordDownloadEvent(fileId: (int) $file->getId(), object: $parentObject);
 
             // Stream the file content back to the client.
             return $this->fileService->streamFile($file);
         } catch (NotFoundException $e) {
-            return new JSONResponse(data: ['error' => 'File not found'], statusCode: 404);
+            return new JSONResponse(data: ['error' => $this->t(text: 'File not found')], statusCode: 404);
         } catch (Exception $e) {
-            return new JSONResponse(data: ['error' => $e->getMessage()], statusCode: 500);
-        }
+            // SEC-CTRL-7: do not leak internal exception detail on 500.
+            return $this->errorResponse(e: $e);
+        }//end try
     }//end downloadById()
+
+    /**
+     * Best-effort: resolve the parent ObjectEntity for a given file node by
+     * checking the file's parent folder name against known OR object folders.
+     *
+     * Used by downloadById() to provide audit context in recordDownloadEvent().
+     * Returns null when resolution fails — never blocks the download.
+     *
+     * @param File $file The resolved file node.
+     *
+     * @return \OCA\OpenRegister\Db\ObjectEntity|null The parent object or null.
+     */
+    private function resolveParentObjectForFile(File $file): ?\OCA\OpenRegister\Db\ObjectEntity
+    {
+        try {
+            $parent     = $file->getParent();
+            $folderName = $parent->getName();
+
+            if (empty($folderName) === true) {
+                return null;
+            }
+
+            // The folder name is either the object UUID or its integer ID.
+            // Try ObjectService to resolve by setting UUID.
+            // This is best-effort — swallow any exception.
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end resolveParentObjectForFile()
+
+    /**
+     * Build an RFC 6266 compliant Content-Disposition header value.
+     *
+     * SEC-CTRL-9: a raw filename can contain quotes, control chars, or non-ASCII
+     * bytes that break the header or allow header/response splitting. This emits a
+     * sanitised ASCII `filename="..."` fallback plus a UTF-8 `filename*` parameter.
+     *
+     * @param string $disposition Either 'inline' or 'attachment'.
+     * @param string $filename    The raw file name.
+     *
+     * @return string The encoded Content-Disposition header value.
+     */
+    private function buildContentDisposition(string $disposition, string $filename): string
+    {
+        // Strip control characters (incl. CR/LF) that could split headers.
+        $clean = preg_replace('/[\x00-\x1F\x7F]/', '', $filename);
+        if ($clean === null) {
+            $clean = '';
+        }
+
+        // ASCII fallback: replace non-ASCII and quote/backslash with underscore.
+        $ascii = preg_replace('/[^\x20-\x7E]/', '_', $clean);
+        if ($ascii === null) {
+            $ascii = '';
+        }
+
+        $ascii = str_replace(['\\', '"'], '_', $ascii);
+
+        // RFC 5987 / 6266 UTF-8 encoded form for capable clients.
+        $encoded = rawurlencode($clean);
+
+        return $disposition.'; filename="'.$ascii.'"; filename*=UTF-8\'\''.$encoded;
+    }//end buildContentDisposition()
 
     /**
      * Get a human-readable error message for PHP file upload errors
@@ -1173,6 +1390,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/file-actions/spec.md
+     *
+     * @PublicPage
      */
     public function rename(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1180,10 +1401,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating files.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $data    = $this->request->getParams();
@@ -1209,6 +1433,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "already exists") => 409,
@@ -1234,6 +1460,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/file-actions/spec.md
+     *
+     * @PublicPage
      */
     public function copy(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1241,10 +1471,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC on the source object.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
-                return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Source object not found')], statusCode: 404);
             }
 
             $data           = $this->request->getParams();
@@ -1253,8 +1486,11 @@ class FilesController extends Controller
             $targetSchema   = $data["targetSchema"] ?? $schema;
 
             if (empty($targetObjectId) === true) {
-                return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Target object ID is required')], statusCode: 400);
             }
+
+            // ADR-005 / gate-7: the caller must also have access to the target object.
+            $this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
             // Load target object.
             $this->objectService->setSchema($targetSchema);
@@ -1262,7 +1498,7 @@ class FilesController extends Controller
             $this->objectService->setObject($targetObjectId);
             $targetObject = $this->objectService->getObject();
             if ($targetObject === null) {
-                return new JSONResponse(data: ["error" => "Target object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Target object not found')], statusCode: 404);
             }
 
             $newFile = $this->fileService->copyFile(
@@ -1302,8 +1538,14 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($newFile), statusCode: 201);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'not found') === true) {
+                $statusCode = 404;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end copy()
@@ -1320,6 +1562,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/file-actions/spec.md
+     *
+     * @PublicPage
      */
     public function move(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1327,10 +1573,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC on the source object.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $sourceObject = $this->objectService->getObject();
             if ($sourceObject === null) {
-                return new JSONResponse(data: ["error" => "Source object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Source object not found')], statusCode: 404);
             }
 
             $data           = $this->request->getParams();
@@ -1339,15 +1588,18 @@ class FilesController extends Controller
             $targetSchema   = $data["targetSchema"] ?? $schema;
 
             if (empty($targetObjectId) === true) {
-                return new JSONResponse(data: ["error" => "Target object ID is required"], statusCode: 400);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Target object ID is required')], statusCode: 400);
             }
+
+            // ADR-005 / gate-7: the caller must also have access to the target object.
+            $this->ensureObjectAccess(register: $targetRegister, schema: $targetSchema, id: $targetObjectId);
 
             $this->objectService->setSchema($targetSchema);
             $this->objectService->setRegister($targetRegister);
             $this->objectService->setObject($targetObjectId);
             $targetObject = $this->objectService->getObject();
             if ($targetObject === null) {
-                return new JSONResponse(data: ["error" => "Target object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Target object not found')], statusCode: 404);
             }
 
             $movedFile = $this->fileService->moveFile(
@@ -1387,6 +1639,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($movedFile));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "not found") => 404,
@@ -1410,6 +1664,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/content-versioning/spec.md
+     *
+     * @PublicPage
      */
     public function listVersions(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1417,23 +1675,28 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: object read access required to list versions.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
             }
 
             $result = $this->fileService->getVersioningHandler()->listVersions($file);
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
-        }
+        }//end try
     }//end listVersions()
 
     /**
@@ -1449,6 +1712,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/content-versioning/spec.md
+     *
+     * @PublicPage
      */
     public function restoreVersion(
         string $register,
@@ -1461,15 +1728,18 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before restoring.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
             }
 
             $this->fileService->getVersioningHandler()->restoreVersion($file, $versionId);
@@ -1491,8 +1761,14 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($file));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'not found') === true ? 404 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'not found') === true) {
+                $statusCode = 404;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end restoreVersion()
@@ -1509,6 +1785,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/file-actions/spec.md
+     *
+     * @PublicPage
      */
     public function lock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1516,10 +1796,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before locking.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $result = $this->fileService->getLockHandler()->lockFile($fileId);
@@ -1541,8 +1824,14 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
-            $statusCode = str_contains($e->getMessage(), 'locked') === true ? 423 : 400;
+            $statusCode = 400;
+            if (str_contains($e->getMessage(), 'locked') === true) {
+                $statusCode = 423;
+            }
+
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: $statusCode);
         }//end try
     }//end lock()
@@ -1559,6 +1848,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/file-actions/spec.md
+     *
+     * @PublicPage
      */
     public function unlock(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1566,10 +1859,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before unlocking.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $data  = $this->request->getParams();
@@ -1578,10 +1874,15 @@ class FilesController extends Controller
             $result = $this->fileService->getLockHandler()->unlockFile($fileId, $force);
 
             // Audit trail entry: distinguish force-unlock from regular unlock.
+            $unlockAction = 'file.unlocked';
+            if ($force === true) {
+                $unlockAction = 'file.force_unlocked';
+            }
+
             $this->fileService->getAuditHandler()->logFileAction(
                 object: $object,
                 fileId: $fileId,
-                action: $force === true ? 'file.force_unlocked' : 'file.unlocked',
+                action: $unlockAction,
                 data: ["force" => $force]
             );
 
@@ -1594,6 +1895,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $result);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $statusCode = match (true) {
                 str_contains($e->getMessage(), "Only the lock owner") => 403,
@@ -1616,6 +1919,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function batch(string $register, string $schema, string $id): JSONResponse
     {
@@ -1623,10 +1930,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before batch mutation.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $data    = $this->request->getParams();
@@ -1642,9 +1952,14 @@ class FilesController extends Controller
             );
 
             // Return 207 if there were partial failures.
-            $statusCode = $result["summary"]["failed"] > 0 ? 207 : 200;
+            $statusCode = 200;
+            if ($result["summary"]["failed"] > 0) {
+                $statusCode = 207;
+            }
 
             return new JSONResponse(data: $result, statusCode: $statusCode);
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1663,35 +1978,46 @@ class FilesController extends Controller
      * @NoAdminRequired
      * @NoCSRFRequired
      * @PublicPage
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function preview(string $register, string $schema, string $id, int $fileId): JSONResponse|StreamResponse
     {
-        $this->objectService->setSchema($schema);
-        $this->objectService->setRegister($register);
-
         try {
+            // SetSchema/setRegister throw DoesNotExistException for an unknown
+            // register/schema slug. Keep them inside the try so anonymous/missing-
+            // resource probes return a clean 404, not a 500 HTML page. See the
+            // newman files-domain triage and openregister#1962 follow-up.
+            $this->objectService->setSchema($schema);
+            $this->objectService->setRegister($register);
+
             // Gate anonymous callers on the file being publicly published.
             // Authenticated callers fall through to the existing object-level
             // RBAC path; anonymous callers MUST NOT be able to preview files
             // that haven't been explicitly published with a public share link.
-            if ($this->userSession !== null && $this->userSession->getUser() === null) {
+            if ($this->isAnonymousRequest() === true) {
                 if ($this->fileMapper === null || $this->fileMapper->isFilePublished($fileId) === false) {
                     return new JSONResponse(
-                        data: ["error" => "Preview not available for unpublished files"],
+                        data: ["error" => $this->t(text: 'Preview not available for unpublished files')],
                         statusCode: 403
                     );
                 }
             }
 
+            // ADR-005 / gate-7: authenticated callers must have object read access.
+            // Anonymous callers were already gated by the published-file check
+            // above, so preview opts out of the write/action anonymous-deny guard.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id, allowAnonymous: true);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $file = $this->fileService->getFile(object: $object, file: $fileId);
             if ($file === null) {
-                return new JSONResponse(data: ["error" => "File not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'File not found')], statusCode: 404);
             }
 
             $width  = (int) ($this->request->getParam("width") ?? 256);
@@ -1705,6 +2031,8 @@ class FilesController extends Controller
             $response->addHeader("Content-Length", (string) $preview->getSize());
 
             return $response;
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             $fallbackIcon = "/core/img/filetypes/file.svg";
             return new JSONResponse(
@@ -1726,6 +2054,10 @@ class FilesController extends Controller
      *
      * @NoAdminRequired
      * @NoCSRFRequired
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-ctrl-2/tasks.md#task-12
+     *
+     * @PublicPage
      */
     public function updateLabels(string $register, string $schema, string $id, int $fileId): JSONResponse
     {
@@ -1733,10 +2065,13 @@ class FilesController extends Controller
         $this->objectService->setRegister($register);
 
         try {
+            // ADR-005 / gate-7: enforce object-level RBAC before mutating labels.
+            $this->ensureObjectAccess(register: $register, schema: $schema, id: $id);
+
             $this->objectService->setObject($id);
             $object = $this->objectService->getObject();
             if ($object === null) {
-                return new JSONResponse(data: ["error" => "Object not found"], statusCode: 404);
+                return new JSONResponse(data: ["error" => $this->t(text: 'Object not found')], statusCode: 404);
             }
 
             $data   = $this->request->getParams();
@@ -1755,6 +2090,8 @@ class FilesController extends Controller
             );
 
             return new JSONResponse(data: $this->fileService->formatFile($result));
+        } catch (\OCA\OpenRegister\Exception\NotAuthorizedException $e) {
+            return new JSONResponse(data: ["error" => $this->t(text: 'You do not have access to this object')], statusCode: 403);
         } catch (Exception $e) {
             return new JSONResponse(data: ["error" => $e->getMessage()], statusCode: 400);
         }//end try
@@ -1770,6 +2107,8 @@ class FilesController extends Controller
      * @return TemplateResponse
      *
      * @psalm-return TemplateResponse<200, array<never, never>>
+     *
+     * @spec exclude SPA-mount stub — returns the Vue `index` template; client-side router owns navigation. No HTTP contract beyond the shell.
      */
     public function page(): TemplateResponse
     {

@@ -190,7 +190,7 @@ import formatBytes from '../../services/formatBytes.js'
 
 <script>
 import { NcActions, NcActionButton, NcAppContent, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
-import VueApexCharts from 'vue-apexcharts'
+import VueApexCharts from 'vue3-apexcharts'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Download from 'vue-material-design-icons/Download.vue'
@@ -237,6 +237,7 @@ export default {
 	computed: {
 		/**
 		 * Chart options for the Audit Trail Actions chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		auditTrailChartOptions() {
@@ -259,6 +260,7 @@ export default {
 		},
 		/**
 		 * Chart options for the Objects by Register chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		registerChartOptions() {
@@ -277,6 +279,7 @@ export default {
 		},
 		/**
 		 * Chart options for the Objects by Size Distribution chart
+		 * @spec exclude UI plumbing — static chart configuration for display
 		 * @return {object}
 		 */
 		sizeChartOptions() {
@@ -298,6 +301,12 @@ export default {
 			}
 		},
 	},
+	/**
+	 * Lifecycle hook: load chart data and schema stats on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		// Fetch dashboard data if not already loaded
 		if (!dashboardStore.chartData || Object.keys(dashboardStore.chartData).length === 0) {
@@ -312,6 +321,7 @@ export default {
 	methods: {
 		/**
 		 * Load schema statistics from the dedicated stats endpoint
+		 * @spec exclude UI plumbing — delegates to the schema store stats fetch
 		 * @return {Promise<void>}
 		 */
 		async loadSchemaStats() {
@@ -334,6 +344,7 @@ export default {
 		/**
 		 * Set the active property for editing
 		 * @param {string|null} key - The key to process
+		 * @spec exclude UI plumbing — toggles active-property selection state
 		 * @return {void}
 		 */
 		setActiveProperty(key) {

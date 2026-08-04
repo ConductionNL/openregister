@@ -4,6 +4,8 @@ status: redirect
 # Document en Zaakdossier
 
 ## Purpose
+
+@e2e exclude redirect stub owned by Procest — no UI in OR
 This spec is a redirect stub. The canonical specification for document- and zaakdossier behavior is owned by the Procest app at `procest/openspec/specs/document-zaakdossier/spec.md`. This stub exists to preserve the spec slug locally and MUST NOT be treated as authoritative.
 
 ## Requirements

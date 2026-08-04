@@ -48,6 +48,9 @@ use OCA\OpenRegister\Service\DsarService;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IAppConfig;
 use OCP\IDBConnection;
+use OCP\IUser;
+use OCP\IUserManager;
+use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -114,6 +117,16 @@ class DsarServiceIntegrationTest extends TestCase
         $this->auditMapper    = \OC::$server->get(AuditTrailMapper::class);
         $this->gdprMapper     = \OC::$server->get(GdprEntityMapper::class);
         $this->appConfig      = \OC::$server->get(IAppConfig::class);
+
+        // DSAR composition is admin-only (#1825): authenticate as admin so
+        // the in-service privilege guard (DsarService::assertPrivileged)
+        // permits the flows exercised here.
+        $userManager = \OC::$server->get(IUserManager::class);
+        $userSession = \OC::$server->get(IUserSession::class);
+        $admin       = $userManager->get('admin');
+        if ($admin instanceof IUser) {
+            $userSession->setUser($admin);
+        }
 
         $this->previousDsarConfig = $this->appConfig->getValueString(
             app: 'openregister',

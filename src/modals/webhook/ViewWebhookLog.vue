@@ -110,7 +110,7 @@
 			</NcButton>
 			<NcButton
 				v-if="logItem && !logItem.success"
-				type="primary"
+				variant="primary"
 				:disabled="retrying"
 				@click="retryWebhook">
 				<template #icon>
@@ -167,11 +167,15 @@ export default {
 		 * Navigation store computed property for template access.
 		 *
 		 * @return {object} Navigation store instance
+		 * @spec exclude Computed passthrough exposing navigationStore to the template; UI plumbing.
 		 */
 		navigationStore() {
 			return navigationStore
 		},
 	},
+	/**
+	 * @spec exclude Vue mounted() hook loading log + webhook data on open; modal init plumbing.
+	 */
 	mounted() {
 		this.loadLogData()
 		this.loadWebhooks()
@@ -181,6 +185,7 @@ export default {
 		 * Load log data from navigation store transferData.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		loadLogData() {
 			const transferData = navigationStore.getTransferData()
@@ -199,6 +204,7 @@ export default {
 		 * Load webhooks list for name lookup.
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Loads the webhook list for id-to-name lookup; UI form-loading plumbing.
 		 */
 		async loadWebhooks() {
 			try {
@@ -218,6 +224,7 @@ export default {
 		 *
 		 * @param {number} webhookId - Webhook ID
 		 * @return {string} Webhook name or ID
+		 * @spec exclude Resolves a webhook id to its display name; UI presentation helper.
 		 */
 		getWebhookName(webhookId) {
 			const webhook = this.webhooksList.find(w => w.id === webhookId)
@@ -229,6 +236,7 @@ export default {
 		 *
 		 * @param {string} dateString - Date string to format
 		 * @return {string} Formatted date
+		 * @spec exclude Locale date-string formatter for display; UI presentation helper.
 		 */
 		formatDate(dateString) {
 			if (!dateString) {
@@ -247,6 +255,7 @@ export default {
 		 *
 		 * @param {string} jsonString - JSON string to format
 		 * @return {string} Formatted JSON or original string if invalid
+		 * @spec exclude Pretty-prints a JSON payload string for display; UI presentation helper.
 		 */
 		formatJson(jsonString) {
 			if (!jsonString) {
@@ -266,6 +275,7 @@ export default {
 		 *
 		 * @param {boolean} open - Dialog open state
 		 * @return {void}
+		 * @spec exclude Dialog close-event handler closing the modal on dismiss; UI plumbing.
 		 */
 		handleDialogClose(open) {
 			if (!open) {
@@ -277,6 +287,7 @@ export default {
 		 * Retry failed webhook delivery.
 		 *
 		 * @return {Promise<void>}
+		 * @spec exclude Retry handler posting to the webhook-log retry endpoint and refreshing the parent; UI orchestration plumbing.
 		 */
 		async retryWebhook() {
 			if (!this.logItem || !this.logItem.id) {
@@ -311,6 +322,7 @@ export default {
 		 * Close modal.
 		 *
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.modal/transferData; UI plumbing.
 		 */
 		closeModal() {
 			navigationStore.setModal(false)

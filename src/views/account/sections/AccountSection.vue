@@ -7,43 +7,27 @@
 			<p v-if="requestedAt">
 				{{ t('openregister', 'Requested at') }}: {{ formatDate(requestedAt) }}
 			</p>
-			<NcButton type="warning" @click="cancelDeactivation">
+			<NcButton variant="warning" @click="cancelDeactivation">
 				{{ t('openregister', 'Cancel deactivation request') }}
 			</NcButton>
 		</div>
 
 		<div v-else class="account-section__active">
 			<p>{{ t('openregister', 'Request account deactivation. This will notify administrators for review.') }}</p>
-			<NcButton type="error" @click="showConfirmModal = true">
+			<NcButton variant="error" @click="showConfirmModal = true">
 				{{ t('openregister', 'Request account deactivation') }}
 			</NcButton>
 		</div>
 
-		<NcModal v-if="showConfirmModal" @close="showConfirmModal = false">
-			<div class="account-section__modal">
-				<h3>{{ t('openregister', 'Confirm Account Deactivation') }}</h3>
-				<p>{{ t('openregister', 'This action will submit a deactivation request to your administrators.') }}</p>
-				<div class="section__field">
-					<label for="deactivation-reason">{{ t('openregister', 'Reason (optional)') }}</label>
-					<NcTextField id="deactivation-reason"
-						v-model="reason"
-						:label="t('openregister', 'Reason')" />
-				</div>
-				<div class="section__field">
-					<label for="confirm-username">
-						{{ t('openregister', 'Type your username to confirm') }}: <strong>{{ username }}</strong>
-					</label>
-					<NcTextField id="confirm-username"
-						v-model="confirmUsername"
-						:label="t('openregister', 'Username')" />
-				</div>
-				<NcButton type="error"
-					:disabled="confirmUsername !== username"
-					@click="requestDeactivation">
-					{{ t('openregister', 'Confirm deactivation') }}
-				</NcButton>
-			</div>
-		</NcModal>
+		<ConfirmDeactivationModal
+			v-if="showConfirmModal"
+			:username="username"
+			:reason="reason"
+			:confirm-username="confirmUsername"
+			@close="showConfirmModal = false"
+			@confirm="requestDeactivation"
+			@update:reason="reason = $event"
+			@update:confirmUsername="confirmUsername = $event" />
 
 		<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 			{{ message }}
@@ -55,13 +39,12 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcModal from '@nextcloud/vue/dist/Components/NcModal.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton } from '@nextcloud/vue'
+import ConfirmDeactivationModal from '../../../modals/account/ConfirmDeactivationModal.vue'
 
 export default {
 	name: 'AccountSection',
-	components: { NcButton, NcModal, NcTextField },
+	components: { NcButton, ConfirmDeactivationModal },
 	data() {
 		return {
 			status: 'active',
@@ -74,6 +57,12 @@ export default {
 			isError: false,
 		}
 	},
+	/**
+	 * Prime username + deactivation status on mount.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook hydrating local display state; account self-service contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
 			const [userRes, statusRes] = await Promise.all([
@@ -89,6 +78,14 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Submit a deactivation request for the signed-in user. Soft state change —
+		 * does not end the current session; an admin must approve before any account
+		 * effect.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {Promise<void>}
+		 */
 		async requestDeactivation() {
 			try {
 				await axios.post(
@@ -105,6 +102,12 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Cancel a pending deactivation request.
+		 *
+		 * @spec exclude UI plumbing — inverse of the requestDeactivation contract (account-self-service); thin DELETE + local state reset.
+		 * @return {Promise<void>}
+		 */
 		async cancelDeactivation() {
 			try {
 				await axios.delete(generateUrl('/apps/openregister/api/user/me/deactivate'))
@@ -117,6 +120,13 @@ export default {
 				this.isError = true
 			}
 		},
+		/**
+		 * Format a date string for display.
+		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
+		 * @param {string} dateStr - ISO date string
+		 * @return {string} localized date/time
+		 */
 		formatDate(dateStr) {
 			if (!dateStr) return ''
 			return new Date(dateStr).toLocaleString()
@@ -132,5 +142,4 @@ export default {
 .section__error { color: var(--color-error); margin-top: 8px; }
 .section__success { color: var(--color-success); margin-top: 8px; }
 .account-section__pending { background: var(--color-warning-background, #fff3cd); padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-.account-section__modal { padding: 24px; }
 </style>

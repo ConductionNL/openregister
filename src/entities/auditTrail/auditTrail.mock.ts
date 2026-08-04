@@ -1,5 +1,5 @@
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import { AuditTrail } from './auditTrail'
 import { TAuditTrail } from './auditTrail.types'

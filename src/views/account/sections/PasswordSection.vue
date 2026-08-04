@@ -22,8 +22,8 @@
 					:disabled="loading" />
 			</div>
 			<NcButton :disabled="loading || !currentPassword || !newPassword"
-				type="primary"
-				native-type="submit">
+				variant="primary"
+				type="submit">
 				{{ t('openregister', 'Change password') }}
 			</NcButton>
 			<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
@@ -37,8 +37,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcTextField from '@nextcloud/vue/dist/Components/NcTextField.js'
+import { NcButton, NcTextField } from '@nextcloud/vue'
 
 export default {
 	name: 'PasswordSection',
@@ -53,6 +52,12 @@ export default {
 			canChangePassword: true,
 		}
 	},
+	/**
+	 * Detect whether the auth backend supports password changes.
+	 *
+	 * @spec exclude UI plumbing — lifecycle hook toggling form visibility; password change contract owned by account-self-service.
+	 * @return {Promise<void>}
+	 */
 	async mounted() {
 		try {
 			const { data } = await axios.get(generateUrl('/apps/openregister/api/user/me'))
@@ -63,6 +68,13 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * Submit the current password + new password to the API and surface the result
+		 * inline. Does not sign the user out of other sessions.
+		 *
+		 * @spec openspec/specs/account-self-service/spec.md
+		 * @return {Promise<void>}
+		 */
 		async changePassword() {
 			this.loading = true
 			this.message = ''

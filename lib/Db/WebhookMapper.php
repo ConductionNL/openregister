@@ -5,6 +5,9 @@
  *
  * Mapper for Webhook entities to handle database operations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -22,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Db;
 
 use DateTime;
+use OCA\OpenRegister\Service\Webhook\WebhookInterceptionCache;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\Entity;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -105,16 +109,27 @@ class WebhookMapper extends QBMapper
     private readonly IGroupManager $groupManager;
 
     /**
+     * Interception-flag cache invalidated on every webhook CRUD operation
+     *
+     * Nullable so the mapper stays constructible without a cache backend
+     * (unit tests, degraded environments); invalidation is skipped then.
+     *
+     * @var WebhookInterceptionCache|null Interception cache instance
+     */
+    private readonly ?WebhookInterceptionCache $interceptionCache;
+
+    /**
      * Constructor
      *
      * Initializes mapper with database connection and multi-tenancy/RBAC dependencies.
      * Calls parent constructor to set up base mapper functionality.
      *
-     * @param IDBConnection      $db                 Database connection
-     * @param OrganisationMapper $organisationMapper Organisation mapper for multi-tenancy
-     * @param IUserSession       $userSession        User session
-     * @param IGroupManager      $groupManager       Group manager
-     * @param IAppConfig         $appConfig          App configuration for multitenancy settings
+     * @param IDBConnection                 $db                 Database connection
+     * @param OrganisationMapper            $organisationMapper Organisation mapper for multi-tenancy
+     * @param IUserSession                  $userSession        User session
+     * @param IGroupManager                 $groupManager       Group manager
+     * @param IAppConfig                    $appConfig          App configuration for multitenancy settings
+     * @param WebhookInterceptionCache|null $interceptionCache  Interception-flag cache invalidated on webhook CRUD
      *
      * @return void
      */
@@ -123,7 +138,8 @@ class WebhookMapper extends QBMapper
         OrganisationMapper $organisationMapper,
         IUserSession $userSession,
         IGroupManager $groupManager,
-        IAppConfig $appConfig
+        IAppConfig $appConfig,
+        ?WebhookInterceptionCache $interceptionCache=null
     ) {
         // Call parent constructor to initialize base mapper with table name and entity class.
         parent::__construct(db: $db, tableName: 'openregister_webhooks', entityClass: Webhook::class);
@@ -133,6 +149,7 @@ class WebhookMapper extends QBMapper
         $this->userSession        = $userSession;
         $this->groupManager       = $groupManager;
         $this->appConfig          = $appConfig;
+        $this->interceptionCache  = $interceptionCache;
     }//end __construct()
 
     /**
@@ -263,6 +280,39 @@ class WebhookMapper extends QBMapper
     }//end findEnabled()
 
     /**
+     * Find all enabled webhooks WITHOUT organisation filtering
+     *
+     * Tenant-agnostic variant of findEnabled() used exclusively to compute
+     * the global "has interception webhooks for event X" cache flag. The
+     * flag must consider ALL organisations: a per-tenant "no webhooks"
+     * answer cached globally would silently disable another tenant's
+     * interception hooks. Callers that deliver webhooks must still use the
+     * organisation-filtered findEnabled()/findForEvent() paths.
+     *
+     * @return Webhook[]
+     *
+     * @psalm-return list<\OCA\OpenRegister\Db\Webhook>
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md#request-interception-pre-event-webhooks
+     */
+    public function findEnabledForInterceptionScan(): array
+    {
+        // Check if table exists before querying (migrations might not have run yet).
+        if ($this->tableExists() === false) {
+            return [];
+        }
+
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('enabled', $qb->createNamedParameter(true, IQueryBuilder::PARAM_BOOL)));
+
+        // Deliberately NO organisation filter — see method docblock.
+        return $this->findEntities(query: $qb);
+    }//end findEnabledForInterceptionScan()
+
+    /**
      * Find webhooks that match an event
      *
      * @param string $eventClass Event class name
@@ -311,7 +361,12 @@ class WebhookMapper extends QBMapper
         // Auto-set organisation from active session.
         $this->setOrganisationOnCreate(entity: $entity);
 
-        return parent::insert(entity: $entity);
+        $inserted = parent::insert(entity: $entity);
+
+        // A new webhook can introduce interception for any event type.
+        $this->interceptionCache?->invalidate();
+
+        return $inserted;
     }//end insert()
 
     /**
@@ -334,7 +389,12 @@ class WebhookMapper extends QBMapper
             $entity->setUpdated(new DateTime());
         }
 
-        return parent::update(entity: $entity);
+        $updated = parent::update(entity: $entity);
+
+        // Enabled/events/configuration may have changed interception applicability.
+        $this->interceptionCache?->invalidate();
+
+        return $updated;
     }//end update()
 
     /**
@@ -353,7 +413,12 @@ class WebhookMapper extends QBMapper
         // Verify user has access to this organisation.
         $this->verifyOrganisationAccess(entity: $entity);
 
-        return parent::delete(entity: $entity);
+        $deleted = parent::delete(entity: $entity);
+
+        // Removing a webhook can drop the last interception hook for an event type.
+        $this->interceptionCache?->invalidate();
+
+        return $deleted;
     }//end delete()
 
     /**

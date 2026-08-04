@@ -5,10 +5,10 @@ status: implemented
 # Production Observability
 
 ## Purpose
+
+@e2e exclude Prometheus metrics/health backend — covered by PHPUnit
 Provide production-grade observability for OpenRegister deployments through Prometheus metrics, structured logging, health/readiness endpoints, and audit-compliant monitoring. This capability enables operations teams to monitor application health, track SLA compliance, detect anomalies in real-time, and satisfy BIO (Baseline Informatiebeveiliging Overheid) audit logging requirements for Dutch government deployments.
-
 ## Requirements
-
 ### Requirement: Prometheus Metrics Endpoint
 The system SHALL expose a dedicated metrics endpoint that returns all application metrics in Prometheus text exposition format (version 0.0.4). The endpoint MUST be served at `GET /index.php/apps/openregister/api/metrics` and MUST return the `Content-Type: text/plain; version=0.0.4; charset=utf-8` header. The `MetricsController` (`lib/Controller/MetricsController.php`) already implements this endpoint with basic gauge metrics; this requirement extends it with counters, histograms, and richer labels.
 
@@ -92,6 +92,38 @@ The system MUST expose gauge metrics for the total number of registers, schemas,
 
 ### Requirement: CRUD Operation Counters
 The system MUST maintain monotonic counters for create, update, and delete operations on objects. These counters SHALL be labeled with `register` and `schema` to enable per-domain throughput analysis. Counters MUST persist across PHP request boundaries using the `openregister_metrics` database table (already used by `MetricsService`).
+
+**Recording (implemented 2026-07-14, `revive-or-dead-capabilities` / openregister#393):**
+`ObjectMetricsListener` writes a metric row per object create/update/delete, listening on the
+`ObjectCreatedEvent` / `ObjectUpdatedEvent` / `ObjectDeletedEvent` that `MagicMapper` — the
+canonical write path every Conduction app inherits — already dispatches. Until then
+`MetricsService::recordMetric()` had **zero callers anywhere in `lib/`**: the
+`openregister_metrics` table was created by a migration and never written to, so this
+requirement had no implementation path at all despite being marked done.
+
+**Exposition — STILL A GAP.** The scrape-side scenarios below (`openregister_objects_*_total`
+in the Prometheus exposition) are **not yet implemented**: the `/api/metrics` endpoint is served
+by `AppHost\Controller\GenericMetrics`, which does not read `openregister_metrics`. The rows now
+exist; projecting them into the Prometheus exposition format is tracked as a follow-up on
+openregister#393. Do not read the scenarios below as satisfied.
+
+#### Scenario: Object creation writes a metric row
+- **GIVEN** an object is created in schema "meldingen" of register "zaken"
+- **WHEN** the write completes
+- **THEN** a row MUST be inserted into `openregister_metrics` with `metric_type = 'object_created'`
+- **AND** `entity_type = 'object'` and `entity_id` = the object's uuid
+- **AND** the `metadata` MUST carry `register` and `schema`, from which the `{register=…,schema=…}` labels are derived
+- **AND** `user_id` MUST record the acting user when there is a session
+
+#### Scenario: Object update and delete write metric rows
+- **WHEN** an object is updated, **THEN** a row with `metric_type = 'object_updated'` MUST be written
+- **WHEN** an object is deleted, **THEN** a row with `metric_type = 'object_deleted'` MUST be written
+
+#### Scenario: Metrics recording never breaks the write it observes
+- **GIVEN** the metrics insert fails (e.g. the database is unavailable)
+- **WHEN** an object is created
+- **THEN** the failure MUST be logged and swallowed
+- **AND** the object create/update/delete that triggered it MUST still succeed
 
 #### Scenario: Object creation counter increments
 - **GIVEN** 10 objects have been created in schema "meldingen" of register "zaken"
@@ -340,6 +372,231 @@ The system SHALL register an `OCP\Dashboard\IWidget` that displays key OpenRegis
 - **GIVEN** Nextcloud exposes `/ocs/v2.php/apps/serverinfo/api/v1/info` for server monitoring
 - **WHEN** an external monitoring tool queries this endpoint
 - **THEN** OpenRegister's health status SHOULD be included in the response as an additional section
+
+### Requirement: Per-Entity Statistics and Endpoint Delivery-Log API
+
+The system MUST expose per-entity statistics read endpoints and a
+custom-endpoint delivery-log API for operational observability.
+
+`RegistersController::stats` (`GET /api/registers/{id}/stats`) and
+`SchemasController::stats` (`GET /api/schemas/{id}/stats`) MUST return an
+aggregate statistics envelope for the entity, including object counts (total,
+invalid, deleted, locked, and storage size) and audit-log statistics, scoped
+to the entity. An unknown id MUST return `404` with an `{error}` body.
+
+`EndpointsController` MUST expose the delivery-log API:
+
+- `logs` (`GET /api/endpoints/{id}/logs`) — the delivery/call log entries for a
+  single endpoint;
+- `logStats` (`GET /api/endpoints/{id}/logs/stats`) — aggregate statistics over
+  that endpoint's delivery log; and
+- `allLogs` (`GET /api/endpoints/logs`) — the delivery log across all
+  endpoints.
+
+The statistics and log endpoints MUST respect the same RBAC + multi-tenancy
+filters as the underlying mappers so they cannot enumerate counts or log
+entries across tenants.
+
+#### Scenario: Register statistics envelope
+- **GIVEN** a register with a known id containing objects across its schemas
+- **WHEN** `GET /api/registers/{id}/stats` is called
+- **THEN** the response MUST include object counts (total, invalid, deleted, locked, size) and audit-log statistics scoped to the register
+- **AND** an unknown id MUST return HTTP 404 with an `{error}` body
+
+#### Scenario: Schema statistics envelope
+- **GIVEN** a schema with a known id
+- **WHEN** `GET /api/schemas/{id}/stats` is called
+- **THEN** the response MUST include object counts and audit-log statistics scoped to the schema
+
+#### Scenario: Endpoint delivery logs
+- **GIVEN** a custom endpoint with delivery-log entries
+- **WHEN** `GET /api/endpoints/{id}/logs` is called
+- **THEN** the response MUST return that endpoint's delivery-log entries
+- **AND** `GET /api/endpoints/logs` MUST return entries across all endpoints
+- **AND** `GET /api/endpoints/{id}/logs/stats` MUST return aggregate statistics over the endpoint's log
+
+### Requirement: Aggregate Settings Administration API
+The system SHALL expose an admin-gated REST surface for reading and writing the
+aggregate OpenRegister settings document, its publishing options, and the
+object-management dials. `SettingsController` provides `GET /api/settings` (read all),
+`POST /api/settings` (update all), a `load` alias that re-reads settings, and
+`updatePublishingOptions`; `ConfigurationSettingsController` provides
+`getObjectSettings`/`updateObjectSettings`/`patchObjectSettings`. All endpoints delegate
+to `SettingsService` and return service errors as HTTP 500 with an `error` field.
+
+#### Scenario: Read aggregate settings
+- **GIVEN** an admin requests `GET /api/settings`
+- **WHEN** `SettingsController::index` runs
+- **THEN** it MUST return the full settings document from `SettingsService::getSettings()`
+
+#### Scenario: Update aggregate settings
+- **GIVEN** an admin posts a settings payload to `POST /api/settings`
+- **WHEN** `SettingsController::update` runs
+- **THEN** it MUST pass the request params to `SettingsService::updateSettings()` and return the result
+
+#### Scenario: Object-management settings round-trip
+- **GIVEN** an admin reads object settings then writes them back
+- **WHEN** `getObjectSettings` then `updateObjectSettings` run
+- **THEN** each MUST return `{success: true, data: ...}` on success and `{success: false, error: ...}` with HTTP 500 on failure
+- **AND** a `provider` object payload MUST be reduced to its `id` before being persisted
+
+### Requirement: Settings Dashboard Statistics Endpoint
+The system SHALL expose a statistics endpoint for the settings dashboard that reports
+warning counts for objects/logs needing attention plus totals for objects, audit trails,
+and search trails. `SettingsController::stats` delegates to `SettingsService::getStats()`
+and `getStatistics` is an alias of `stats`. Service failures MUST surface as HTTP 422.
+
+#### Scenario: Retrieve dashboard statistics
+- **GIVEN** an admin requests the settings statistics
+- **WHEN** `SettingsController::stats` runs
+- **THEN** it MUST return the aggregated statistics from `SettingsService::getStats()`
+- **AND** a service exception MUST produce HTTP 422 with an `error` field
+
+#### Scenario: getStatistics aliases stats
+- **WHEN** `SettingsController::getStatistics` is invoked
+- **THEN** it MUST return exactly what `stats` returns
+
+### Requirement: Database Capability Introspection Endpoint
+The system SHALL expose an endpoint that introspects the active database platform,
+version, and native vector-search capability, caching the result in app config and
+allowing a forced refresh. `SettingsController::getDatabaseInfo` detects MySQL/MariaDB,
+PostgreSQL (including installed extensions and `pgvector` presence), and SQLite, and
+records a `vectorSupport` flag and a performance note. `refreshDatabaseInfo` clears the
+cache and re-queries.
+
+#### Scenario: Cached database info returned without refresh
+- **GIVEN** database info was previously cached in app config
+- **WHEN** `getDatabaseInfo` is called without `?refresh=true`
+- **THEN** it MUST return the cached payload with `fromCache: true`
+
+#### Scenario: PostgreSQL with pgvector reports vector support
+- **GIVEN** the active database is PostgreSQL with the `vector` extension installed
+- **WHEN** `getDatabaseInfo` runs with refresh
+- **THEN** the response MUST report `type: "PostgreSQL"`, `vectorSupport: true`, and list installed extensions
+
+#### Scenario: Forced refresh re-queries the database
+- **WHEN** `refreshDatabaseInfo` is called
+- **THEN** it MUST delete the `databaseInfo` app-config key and return freshly queried info with `fromCache: false`
+
+### Requirement: Application Version Reporting Endpoint
+The system SHALL expose an endpoint returning OpenRegister version information.
+`SettingsController::getVersionInfo` delegates to `SettingsService::getVersionInfoOnly()`
+and returns HTTP 500 with an `error` field on failure.
+
+#### Scenario: Retrieve version info
+- **WHEN** `getVersionInfo` is called
+- **THEN** it MUST return the version payload from `SettingsService::getVersionInfoOnly()`
+
+### Requirement: Connection Keep-Alive Heartbeat Endpoint
+The system SHALL expose a lightweight heartbeat endpoint that keeps HTTP connections
+alive during long-running operations (imports, exports, bulk operations) to prevent
+gateway timeouts. `HeartbeatController::heartbeat` performs minimal processing and is
+annotated `@NoAdminRequired` + `@NoCSRFRequired`.
+
+#### Scenario: Heartbeat returns alive status
+- **GIVEN** a long-running operation periodically calls the heartbeat endpoint
+- **WHEN** `HeartbeatController::heartbeat` runs
+- **THEN** it MUST return HTTP 200 with `{status: "alive", timestamp: <unix>, message: ...}`
+- **AND** it MUST require no admin role and no CSRF token
+
+### Requirement: Subsystem Administration Dials
+The system SHALL expose admin-gated operational dials for cache, object validation, and
+security rate limiting. `CacheSettingsController` provides cache statistics, granular
+cache clearing (`all`/`object`/`schema`/`facet`/`distributed`/`names`), names-cache
+warmup, a configurable warmup interval (`0` to disable, otherwise `>= 300s`), and Nextcloud
+app-store cache invalidation. `ValidationSettingsController` provides whole-corpus object
+validation, mass re-save validation, and a memory-usage prediction. `SecuritySettingsController`
+provides clearing of IP, user, and combined rate limits.
+
+#### Scenario: Clear a specific cache type
+- **GIVEN** an admin posts `{type: "facet"}` to the cache-clear endpoint
+- **WHEN** `CacheSettingsController::clearCache` runs
+- **THEN** it MUST delegate to `SettingsService::clearCache('facet')` and return the result
+
+#### Scenario: Warmup interval validation
+- **GIVEN** an admin posts `{interval: 120}` to set the warmup interval
+- **WHEN** `setWarmupInterval` runs
+- **THEN** it MUST reject with HTTP 422 because a non-zero interval below 300 seconds is invalid
+
+#### Scenario: Mass validation re-saves objects
+- **WHEN** `ValidationSettingsController::massValidateObjects` runs with `mode`/`batchSize`/`maxObjects`
+- **THEN** it MUST delegate to `SettingsService::massValidateObjects()` and return per-batch save statistics
+- **AND** invalid parameters MUST produce HTTP 400
+
+#### Scenario: Clear IP rate limit requires an IP
+- **WHEN** `SecuritySettingsController::clearIpRateLimits` runs without an `ip` param
+- **THEN** it MUST return HTTP 400 with an `error` field
+- **AND** a valid request MUST delegate to `SecurityService::clearIpRateLimits()` and log the admin action
+
+### Requirement: Integration Administration Endpoints
+The system SHALL expose admin-gated endpoints for configuring external integration
+credentials and connections. `N8nSettingsController` provides n8n connection settings
+read/write, connection testing, project initialization, and workflow listing.
+`ApiTokenSettingsController` provides GitHub/GitLab API token read/write and validation
+testing.
+
+#### Scenario: Test n8n connection
+- **WHEN** `N8nSettingsController::testN8nConnection` runs
+- **THEN** it MUST attempt a connection against the configured n8n endpoint and return the outcome
+
+#### Scenario: Validate a stored GitHub token
+- **WHEN** `ApiTokenSettingsController::testGitHubToken` runs
+- **THEN** it MUST validate the configured GitHub token and report whether it is accepted
+
+### Requirement: Metrics aggregation helpers MUST summarize operational metrics from the metrics table
+
+`MetricsService` MUST aggregate rows from the `openregister_metrics` table into the per-day, per-type, and summary shapes consumed by the dashboard and operational reporting, plus the supporting numeric helpers those aggregations rely on.
+
+#### Scenario: Files processed per day
+
+- **GIVEN** file-processed metrics recorded over the last N days
+- **WHEN** `getFilesProcessedPerDay(days)` runs
+- **THEN** it MUST return a `[date => count]` map, grouped by `%Y-%m-%d` and ordered ascending, restricted to rows within the window
+
+#### Scenario: Embedding statistics with success rate and cost
+
+- **GIVEN** embedding-generated metrics with a `status` of `success` or otherwise
+- **WHEN** `getEmbeddingStats(days)` runs
+- **THEN** it MUST return `{total, successful, failed, success_rate, estimated_cost_usd, period_days}`
+- **AND** `failed` MUST be `total - successful`, `success_rate` MUST come from `calculateSuccessRate()`, and `estimated_cost_usd` MUST be derived from the successful count
+
+#### Scenario: Search latency per search type
+
+- **GIVEN** keyword, semantic, and hybrid search metrics within the window
+- **WHEN** `getSearchLatencyStats(days)` runs
+- **THEN** it MUST return `[type => {count, avg_ms, min_ms, max_ms}]` computed per search type
+
+#### Scenario: Storage growth and dashboard composition
+
+- **GIVEN** recorded vector/storage metrics
+- **WHEN** `getStorageGrowth(days)` runs
+- **THEN** it MUST return per-day vector additions plus current storage and an average derived from `calculateAverageVectorsPerDay()`
+- **AND** `getDashboardMetrics()` MUST compose `files_processed` (30d), `embedding_stats` (30d), `search_latency` (7d), and `storage_growth` (30d) into a single bundle
+
+#### Scenario: Numeric helper behavior
+
+- **GIVEN** the supporting helpers
+- **WHEN** they are called
+- **THEN** `calculateSuccessRate(total, successful)` MUST return `0.0` when total is zero, otherwise `(successful / total) * 100` rounded to two decimals
+- **AND** `roundAverageMs(value)` MUST coerce a numeric (possibly string) value to a float rounded to two decimals, returning `0.0` for non-numeric input
+- **AND** `calculateAverageVectorsPerDay(growthData)` MUST return `0.0` for empty data, otherwise the total divided by the number of days rounded to two decimals
+
+### Requirement: Realtime change records MUST be emitted as CloudEvent-shaped envelopes
+
+`RealtimeService` MUST record a CloudEvents 1.0 shaped change record for a register object on create, update, delete, and transition, persisting it to the realtime event store. A write failure MUST NOT break the originating save pipeline.
+
+#### Scenario: Record a change event
+
+- **GIVEN** an object change of a known type (`or.object.created`, `or.object.updated`, `or.object.deleted`, `or.object.transitioned`)
+- **WHEN** `record(eventType, object, extra)` runs
+- **THEN** it MUST build a CloudEvents 1.0 envelope with `specversion: "1.0"`, the event type, a `source` of `<baseUrl>/apps/openregister`, a subject of the object URN (or its uuid), a unique id, an ISO 8601 `time`, and a `data` block carrying register, schema, uuid, urn, organisation, owner, actor (session UID), and trigger-specific `extra`
+- **AND** it MUST persist a `RealtimeEvent` with the matching fields and the JSON-encoded payload, returning the inserted entity
+
+#### Scenario: Failure is non-fatal
+
+- **GIVEN** the underlying realtime store write throws
+- **WHEN** `record()` executes
+- **THEN** it MUST catch the error, log a warning, and return `null` so a missed realtime event never breaks the actual save
 
 ## Current Implementation Status
 - **Implemented -- Prometheus metrics endpoint**: `MetricsController` (`lib/Controller/MetricsController.php`) exposes `/api/metrics` with `openregister_info`, `openregister_up`, `openregister_registers_total`, `openregister_schemas_total`, `openregister_objects_total` (by register/schema), and `openregister_search_requests_total` gauges. Content-Type header is correctly set to Prometheus exposition format.

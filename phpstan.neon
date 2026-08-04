@@ -1,52 +1,109 @@
 includes:
+    # Per-app tracked lint debt lives here (auto-generated via `phpstan --generate-baseline`).
+    # Apps without debt ship an empty baseline file; canonical includes are otherwise byte-identical
+    # across the fleet.
     - phpstan-baseline.neon
+    # Five JSONResponse generic-invariance mismatches surfaced by removing the
+    # stale `@method` shadows from lib/Db. Kept in their own file so the reason
+    # (written at the top of it) cannot get detached from the entries.
+    # openregister#2288
+    - phpstan-baseline-jsonresponse-invariance.neon
 
 parameters:
     level: 5
     paths:
         - lib
     bootstrapFiles:
-        - vendor/autoload.php
+        - phpstan-bootstrap.php
+    excludePaths:
+        - vendor
+        - vendor-bin
+        # Apps that ship a verbatim template snapshot under lib/Resources/template/ (e.g. openbuild).
+        - lib/Resources/template
+        # ContentProvider implements OCP\ContextChat\IContentProvider, which ships
+        # with an OPTIONAL Nextcloud component and is therefore absent during
+        # analysis. phpstan refuses to let a class-level "implements unknown
+        # interface" be ignored or baselined — it prescribes excludePaths — and
+        # analysis of the file is unreliable anyway once its interface cannot be
+        # resolved: it produced a FALSE "unknown parameter $_rbac in call to
+        # SchemaMapper::findAll()" here, for a call that is byte-identical to one
+        # phpstan accepts elsewhere. Excluding it removes noise rather than
+        # hiding a finding.
+        - lib/ContextChat/ContentProvider.php
     scanDirectories:
         - vendor/nextcloud/ocp
     reportUnmatchedIgnoredErrors: false
     ignoreErrors:
-        # Nextcloud internals not covered by OCP stubs.
+        # Nextcloud server internals (\OC, OC_App, OC\) not stubbed in nextcloud/ocp
         - '#Call to an undefined method OC::#'
         - '#Class OC not found#'
         - '#Access to static property \$server on an unknown class OC#'
         - '#unknown class OC\\#'
-        - '#unknown class OCA\\DAV\\#'
-        - '#unknown class OC_App#'
-        - '#not found in catched class OC\\#'
         - '#Caught class OC\\#'
+        - '#unknown class OC_App#'
+        - '#Class OC_App not found#'
+        # OCA\DAV is server-internal and not in nextcloud/ocp stubs
+        - '#unknown class OCA\\DAV\\#'
         - '#Class OCA\\DAV\\#'
-        - '#Throwing object of an unknown class OC\\#'
-        - '#Instantiated class OC\\AppFramework\\Middleware\\Security\\Exceptions\\SecurityException not found#'
-        - '#PHPDoc tag @throws with type OC\\AppFramework\\Middleware\\Security\\Exceptions\\SecurityException#'
-        - '#unknown class OC\\AppFramework\\Middleware\\Security\\Exceptions\\SecurityException#'
-
-        # Doctrine\DBAL classes (used in migrations/mappers; not in vendor stubs).
+        # OCA\Bookmarks is an optional peer app (lazy-resolved via
+        # \OCP\Server::get() behind a class_exists guard) — not a
+        # composer dependency, so its classes are absent during analysis.
+        - '#unknown class OCA\\Bookmarks\\#'
+        - '#OCA\\Bookmarks\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\Bookmarks\\#'
+        - '#has invalid return type OCA\\Bookmarks\\#'
+        - '#Instantiated class OCA\\Bookmarks\\#'
+        # OCP\ContextChat and OCP\SystemTag ship with OPTIONAL Nextcloud
+        # components, so their classes are absent during analysis in exactly the
+        # way OCA\Bookmarks above is. Ignored rather than baselined because a
+        # baseline entry would go stale the moment the component IS present —
+        # psalm sets findUnusedBaselineEntry, and phpstan would report the entry
+        # as unmatched. An absent optional dependency is a property of the
+        # analysis environment, not debt to pay down.
+        - '#unknown class OCP\\ContextChat\\#'
+        - '#OCP\\ContextChat\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCP\\ContextChat\\#'
+        - '#has invalid type OCP\\ContextChat\\#'
+        - '#implements unknown interface OCP\\ContextChat\\#'
+        - '#unknown class OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
+        - '#OCP\\SystemTag\\Tag(Assigned|Unassigned)Event not found#'
+        - '#has invalid type OCP\\SystemTag\\Tag(Assigned|Unassigned)Event#'
+        # OCA classes from other apps (OpenRegister) not available during static analysis
+        - '#unknown class OCA\\OpenRegister\\#'
+        - '#OCA\\OpenRegister\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class OCA\\OpenRegister\\#'
+        - '#has invalid return type OCA\\OpenRegister\\#'
+        - '#has invalid type OCA\\OpenRegister\\#'
+        - '#implements unknown interface OCA\\OpenRegister\\#'
+        # GuzzleHttp is available at runtime via Nextcloud but not in composer require
+        - '#unknown class GuzzleHttp\\#'
+        - '#GuzzleHttp\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class GuzzleHttp\\#'
+        - '#invalid type GuzzleHttp\\#'
+        - '#Caught class GuzzleHttp\\#'
+        # Doctrine\DBAL is shipped by Nextcloud server but not stubbed in nextcloud/ocp
         - '#unknown class Doctrine\\DBAL\\#'
-        - '#class Doctrine\\DBAL\\#'
-        - '#Class Doctrine\\DBAL\\#'
-        - '#Doctrine\\DBAL\\Platforms\\#'
-
-        # Cron\CronExpression (mtdowling/cron-expression — not in stubs).
-        - '#class Cron\\CronExpression#'
-        - '#Cron\\CronExpression#'
-
-        # Sabre\VObject (sabre/vobject — not in scan stubs).
-        - '#Sabre\\VObject\\#'
-
-        # Multi-tenancy and RBAC stub parameters added at runtime by the QBMapper layer.
-        - '#Unknown parameter \$_multitenancy in call#'
-        - '#Unknown parameter \$_rbac in call#'
-        - '#Method OCA\\OpenRegister\\Db\\.+::find\(\) invoked with \d+ parameters#'
-        - '#Method OCA\\OpenRegister\\Db\\.+::findAll\(\) invoked with \d+ parameters#'
-
-        # Entity __call magic methods (setOrganisation/getOrganisation/etc.) — set
-        # at runtime by Nextcloud Entity, but the parent Entity class does not
-        # declare them. Per-property @method docblocks would be ideal but
-        # categorically suppressing here is honest about the framework pattern.
-        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::#'
+        - '#Doctrine\\DBAL\\[a-zA-Z\\]+.*not found#'
+        - '#on an unknown class Doctrine\\DBAL\\#'
+        # ConductionNL/sapp fork uses lowercase pseudo-classes `obj` /
+        # `value` / `pdfentry` / `buffer` / `bytes` etc. in `@return`
+        # PHPDocs (upstream typo — fictitious classes that PHPStan can't
+        # resolve). The actual runtime types are PDFObject / PDFValue
+        # subclasses / string / Buffer respectively. Cleanup goes into
+        # an upstream PR; until then ignore PHPStan's "unknown class
+        # ddn\sapp\<lowercase>" diagnostic chain.
+        - '#on an unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#unknown class ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#should return [^ ]+ but returns ddn\\sapp\\(obj|value|pdfentry|buffer|bytes|str)\b#'
+        - '#Parameter \$pdf_object of method ddn\\sapp\\PDFDoc::add_object\(\) expects ddn\\sapp\\PDFObject, ddn\\sapp\\obj given#'
+        - '#Strict comparison using === between ddn\\sapp\\(obj|value|pdfentry) and false will always evaluate to false#'
+        # Dynamic HTTP status codes from business rule validation results
+        # (matches both `Parameter $statusCode` and `Parameter #N $statusCode` forms emitted by phpstan)
+        - '#Parameter (\#\d+ )?\$statusCode of class OCP\\AppFramework\\Http\\JSONResponse constructor expects#'
+        # registerRepairStep exists on server; not yet in nextcloud/ocp stub used for analysis
+        - '#Call to an undefined method OCP\\AppFramework\\Bootstrap\\IRegistrationContext::registerRepairStep#'
+        # OCP stub gaps for methods that exist at runtime
+        - '#Call to an undefined method OCP\\IRequest::getContent\(\)#'
+        - '#Call to an undefined method OCP\\IRequest::setParameter\(\)#'
+        - '#Call to an undefined method OCP\\Mail\\IMessage::attachFile\(\)#'
+        - '#Call to an undefined method OCP\\AppFramework\\Db\\Entity::jsonSerialize#'

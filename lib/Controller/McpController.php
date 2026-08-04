@@ -6,6 +6,9 @@
  * Controller for MCP (Model Context Protocol) discovery endpoints.
  * Provides AI agents with tiered API discovery for OpenRegister.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\AppInfo
  *
@@ -17,10 +20,10 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+ * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+ * @spec openspec/specs/mcp-discovery/spec.md
+ * @spec openspec/specs/mcp-discovery/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -81,8 +84,8 @@ class McpController extends Controller
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-52
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-55
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-1-discovery-catalog
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function discover(): JSONResponse
     {
@@ -107,11 +110,13 @@ class McpController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Closed enum, no object: McpDiscoveryService::getCapabilityDetail maps the capability
+     *   name against a fixed hardcoded allowlist and returns 404 otherwise; no OpenRegister object lookup.
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-53
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-56
+     * @spec openspec/specs/mcp-discovery/spec.md#requirement-tier-2-capability-detail-with-live-data
+     * @spec openspec/specs/mcp-discovery/spec.md
      */
     public function discoverCapability(string $capability): JSONResponse
     {

@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Object Interactions
 
 ## Purpose
+
+@e2e exclude REST API convenience layer — covered by Newman
 
 OpenRegister objects require rich interaction capabilities — notes, tasks, file attachments, tags, and audit trails — that allow users to collaborate on and track the lifecycle of register data. Rather than building custom interaction systems, this spec defines a convenience API layer that wraps Nextcloud's native subsystems (CalDAV for tasks, ICommentsManager for notes, IRootFolder for files, Nextcloud tags) and links them to OpenRegister objects via standardized properties. Any consuming app (Procest, Pipelinq, OpenCatalogi, ZaakAfhandelApp) can use these unified sub-resource endpoints without knowledge of the underlying Nextcloud internals.
 
@@ -13,10 +15,7 @@ OpenRegister objects require rich interaction capabilities — notes, tasks, fil
 
 **OpenSpec changes**
 - `fix-object-files-listing-lock-and-limit` (active) — makes the object files listing endpoint resilient to Nextcloud file locks, raises the `_limit` ceiling from 100 to 1000, replaces the `getContent()` ownership probe with `isReadable()`, and adds `locked`/`lock` metadata to each file entry.
-
-
 ## Requirements
-
 ### Requirement: Notes on Objects via ICommentsManager
 
 The system SHALL provide a `NoteService` that wraps Nextcloud's `OCP\Comments\ICommentsManager` for creating, listing, and deleting notes (comments) on OpenRegister objects. Notes MUST be stored using `objectType: "openregister"` and `objectId: {uuid}`. The service MUST resolve actor display names via `OCP\IUserManager` and indicate whether the current user authored each note.
@@ -154,7 +153,7 @@ The system SHALL determine which CalDAV calendar to use by finding the user's fi
 
 ### Requirement: File Attachments on Objects
 
-The system SHALL provide file attachment operations as sub-resource endpoints under objects. Files MUST be stored in Nextcloud's filesystem via `OCP\Files\IRootFolder` and linked to OpenRegister objects. The system MUST support upload, download, listing, deletion, and publish/depublish operations.
+The system SHALL provide file attachment operations as sub-resource endpoints under objects. Files MUST be stored in Nextcloud's filesystem via `OCP\Files\IRootFolder` and linked to OpenRegister objects. The system MUST support upload, download, listing, deletion, and publish/depublish operations. The listing operation MUST honour any positive user-supplied `_limit` parameter without imposing an upper cap (default 30, floor 1), MUST NOT fail when individual files are held under a Nextcloud file lock, and MUST include `locked` and optional `lock` metadata on every entry when the caller is authenticated. For unauthenticated callers the listing MUST NOT include `locked` or `lock` in any file entry.
 
 #### Scenario: Upload a file to an object
 - **GIVEN** an OpenRegister object with UUID `abc-123`
@@ -163,10 +162,88 @@ The system SHALL provide file attachment operations as sub-resource endpoints un
 - **AND** the file MUST be linked to the object
 - **AND** the response MUST return HTTP 201 with the file metadata
 
-#### Scenario: List files for an object
-- **GIVEN** object `abc-123` has 3 attached files
+#### Scenario: List files for an object (authenticated caller)
+- **GIVEN** an authenticated user and object `abc-123` with 3 attached files
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return all 3 files with metadata including `fileId`, `name`, `mimeType`, `size`, and `locked`
+
+#### Scenario: List files for an object (anonymous caller)
+- **GIVEN** no authenticated session (`IUserSession::getUser()` returns `null`) and a publicly accessible object `abc-123` with 3 attached files
 - **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
 - **THEN** the response MUST return all 3 files with metadata including `fileId`, `name`, `mimeType`, `size`
+- **AND** NO file entry MUST include a `locked` field
+- **AND** NO file entry MUST include a `lock` sub-object
+- **AND** no call to `ILockManager::getLocks()` MUST be attempted for this request
+
+#### Scenario: List files honours user-supplied `_limit` without a ceiling
+- **GIVEN** object `abc-123` has 500 attached files
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files?_limit=500&_page=1`
+- **THEN** the response MUST return 500 file entries (not silently clamped to 100)
+- **AND** the pagination envelope MUST report `limit: 500`
+
+#### Scenario: Large `_limit` values are honoured as-is
+- **GIVEN** object `abc-123` has 2500 attached files
+- **WHEN** a GET request is sent with `?_limit=5000`
+- **THEN** the response MUST return all 2500 entries
+- **AND** the pagination envelope MUST report `limit: 5000`
+- **AND** the system MUST NOT apply any upper ceiling to the `_limit` value
+
+#### Scenario: `_limit=0` or negative is clamped to 1
+- **WHEN** a GET request is sent with `?_limit=0` or `?_limit=-10`
+- **THEN** the response MUST return at least 1 entry (or 0 if no files exist) and the pagination envelope MUST report `limit: 1`
+
+#### Scenario: Missing `_limit` uses the default
+- **WHEN** a GET request is sent with no `_limit` query parameter
+- **THEN** the pagination envelope MUST report `limit: 30`
+
+#### Scenario: Listing is resilient to Nextcloud-locked files (authenticated caller)
+- **GIVEN** an authenticated user and object `abc-123` with 5 attached files, one of which is held under a Nextcloud file lock by another user
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return HTTP 200 with all 5 file entries
+- **AND** the locked file's entry MUST have `locked: true` and a `lock` sub-object with `type`, `scope`, `owner`, `createdAt`, and optional `expiresAt`
+- **AND** each unlocked file entry MUST have `locked: false` and no `lock` sub-object
+- **AND** one structured log line at `info` level MUST be emitted per locked file, including `fileId`, `name`, and lock owner
+
+#### Scenario: Listing is resilient to Nextcloud-locked files (anonymous caller)
+- **GIVEN** no authenticated session and a publicly accessible object `abc-123` with 5 attached files, one of which is held under a Nextcloud file lock
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the response MUST return HTTP 200 with all 5 file entries
+- **AND** NO file entry MUST include `locked` or `lock`
+- **AND** the locked file's entry MUST still be present in the result set (not silently elided)
+- **AND** one structured log line at `info` level MUST still be emitted server-side per locked file, so operators retain traceability even when the field is hidden from the caller
+
+#### Scenario: `lock.type` maps Nextcloud lock constants to string aliases
+- **GIVEN** a file is locked with `ILock::TYPE_USER`
+- **WHEN** the file is formatted in a listing response
+- **THEN** `lock.type` MUST equal `"user"`
+- **AND** `TYPE_APP` maps to `"app"`, `TYPE_TOKEN` maps to `"token"`
+- **AND** `lock.scope` MUST be `"exclusive"` for `ILock::LOCK_EXCLUSIVE` and `"shared"` for `ILock::LOCK_SHARED`
+
+#### Scenario: `lock.expiresAt` is null when the lock has no timeout
+- **GIVEN** a lock with `getTimeout()` returning `0` (no timeout)
+- **WHEN** the file is formatted in a listing response
+- **THEN** `lock.expiresAt` MUST be `null`
+- **AND** `lock.createdAt` MUST still be an ISO 8601 string
+
+#### Scenario: Lock provider is not available
+- **GIVEN** the `files_lock` app is disabled, `ILockManager::isLockProviderAvailable()` returns `false`, and the caller is authenticated
+- **WHEN** any file is formatted in a listing response
+- **THEN** each file entry MUST have `locked: false`
+- **AND** no file entry MUST include a `lock` sub-object
+- **AND** no call to `ILockManager::getLocks()` MUST be attempted
+
+#### Scenario: Listing does not read file contents to probe ownership
+- **GIVEN** object `abc-123` has attached files of varying sizes (including a 2 GB file)
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/files`
+- **THEN** the ownership probe MUST use `$file->isReadable()` (a pure permission-bitmask check)
+- **AND** the listing MUST NOT call `$file->getContent()` or otherwise read file bytes during formatting
+- **AND** the listing MUST NOT acquire a shared lock on any file during formatting
+
+#### Scenario: Ownership repair still runs when the current user can read the file
+- **GIVEN** the current user can read file 42 (bitmask allows `PERMISSION_READ`) but is not recorded as its OpenRegister owner
+- **WHEN** the file is encountered during listing
+- **THEN** the ownership record MUST be repaired via `FileMapper::setFileOwnership($fileId, $userId)` (a direct DB write)
+- **AND** no file bytes MUST be read as part of the repair
 
 #### Scenario: Download all files as archive
 - **GIVEN** object `abc-123` has multiple attached files
@@ -390,6 +467,112 @@ All interaction endpoints SHALL follow a consistent sub-resource pattern under t
 - **AND** list responses MUST use the format `{"results": [...], "total": N}`
 
 ---
+
+### Requirement: User-Wide Task Aggregate Endpoint
+
+The system MUST expose a user-wide task aggregate endpoint that returns every
+CalDAV VTODO belonging to the current session user across all of their
+VTODO-supporting calendars, independent of any single object. `TasksController::allUserTasks()`
+MUST resolve the calendar set from the session user (`IUserSession`), never from
+a request parameter, so the endpoint cannot be used to read another user's tasks.
+It MUST accept optional `status`, `assignee`, and pagination (`_limit`/`limit`
+capped at 200, `_offset`/`offset`) filters, where `assignee` is a free-text
+filter applied within the caller's own task list and is NOT an identity claim.
+On error it MUST return HTTP 500 with an `error` message.
+
+#### Scenario: List all of the current user's tasks
+- **GIVEN** an authenticated user with VTODOs spread across multiple calendars
+- **WHEN** a GET request is sent to `/api/tasks`
+- **THEN** `TasksController::allUserTasks()` MUST return the aggregate via `TaskService::getAllUserTasks()` resolved from `IUserSession::getUser()->getUID()`
+- **AND** the response MUST NOT depend on any object register/schema/id
+
+#### Scenario: Filter the aggregate by status and assignee
+- **GIVEN** a GET request to `/api/tasks?status=needs-action&assignee=jan`
+- **WHEN** the controller reads the parameters
+- **THEN** `status` and `assignee` MUST be forwarded to `TaskService::getAllUserTasks()`
+- **AND** `assignee` MUST be applied as a free-text filter within the caller's own task list, not as an identity claim
+
+#### Scenario: Aggregate pagination caps the limit
+- **GIVEN** a GET request to `/api/tasks?_limit=500`
+- **WHEN** the controller computes the limit
+- **THEN** the effective limit MUST be capped at 200
+
+### Requirement: Deck Card Linkage on Objects
+
+The system MUST provide object-scoped Nextcloud Deck card linkage as a
+sub-resource of objects. `DeckController` MUST support listing the Deck cards
+linked to an object, creating or linking a card to an object, and a reverse
+lookup of every object linked to cards on a given board. When the Nextcloud Deck
+app is not installed, every endpoint MUST return HTTP 501 with
+`{"error": "Nextcloud Deck app is not installed", "code": "APP_NOT_AVAILABLE"}`.
+Object-scoped operations MUST validate the object exists (HTTP 404 otherwise) via
+`ObjectService` before delegating to `DeckCardService`.
+
+#### Scenario: List Deck cards for an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a GET request is sent to `/api/objects/{register}/{schema}/abc-123/deck`
+- **THEN** the controller MUST validate the object and return `DeckCardService::getCardsForObject()` results
+
+#### Scenario: Create or link a Deck card to an object
+- **GIVEN** the Deck app is installed and object `abc-123` exists
+- **WHEN** a POST request supplies card link/create data
+- **THEN** `DeckCardService::linkOrCreateCard()` MUST be invoked and the link returned with HTTP 201
+- **AND** a duplicate link MUST return HTTP 409, a missing target MUST return HTTP 404
+
+#### Scenario: Reverse lookup objects on a board
+- **GIVEN** the Deck app is installed
+- **WHEN** a GET request is sent for objects linked to a board id
+- **THEN** the response MUST return `{"results": [...], "total": N}` from `DeckCardService::getObjectsForBoard()`
+
+#### Scenario: Deck app not installed
+- **GIVEN** the Nextcloud Deck app is not installed
+- **WHEN** any `DeckController` endpoint is called
+- **THEN** the response MUST be HTTP 501 with `code: "APP_NOT_AVAILABLE"`
+
+### Requirement: The endpoint dispatcher MUST route execution by target type
+
+`EndpointService` MUST act as the runtime dispatcher behind the dynamic endpoint surface, routing an endpoint to a target-type-specific handler (`view`, `agent`, `webhook`, `register`, `schema`) and returning a uniform result shape `{success, statusCode, response, error?}`. A test entry point MUST allow executing an endpoint with supplied test data without a real inbound request.
+
+#### Scenario: Route by target type
+
+- **GIVEN** an `Endpoint` with a `targetType`
+- **WHEN** `executeEndpoint()` runs
+- **THEN** it MUST dispatch to the matching handler for `view`, `agent`, `webhook`, `register`, or `schema`
+- **AND** an unknown target type MUST return `{success: false, statusCode: 400, error: "Unknown target type: ..."}`
+
+#### Scenario: Test an endpoint with supplied data
+
+- **GIVEN** an endpoint and an optional `testData` array
+- **WHEN** `testEndpoint()` runs
+- **THEN** it MUST first check access via `canExecuteEndpoint()` and return `statusCode: 403` when denied
+- **AND** on success it MUST build a request from the endpoint method/path plus test data, dispatch via `executeEndpoint()`, log the call, and return the handler result
+- **AND** any thrown exception MUST be caught, logged, and surfaced as `{success: false, statusCode: 500, error: <message>}`
+
+#### Scenario: Agent endpoint executes an AI agent
+
+- **GIVEN** an endpoint with `targetType: agent` and a `targetId` resolving to an agent
+- **WHEN** `executeAgentEndpoint()` runs
+- **THEN** a missing agent MUST return `statusCode: 404` and an empty message MUST return `statusCode: 400`
+- **AND** on success it MUST resolve the agent's configured tools through `ToolRegistry` and execute the agent with the request message
+
+### Requirement: Endpoint execution MUST enforce group access and log every call
+
+Endpoint execution MUST be gated by group-based access control and MUST persist an execution log entry for audit and debugging.
+
+#### Scenario: Group-based access control
+
+- **GIVEN** an endpoint with a configured `groups` list
+- **WHEN** `canExecuteEndpoint()` evaluates the current user
+- **THEN** an unauthenticated request MUST be allowed only when the endpoint declares no groups (public)
+- **AND** a member of the `admin` group MUST always be allowed
+- **AND** an authenticated user MUST be allowed when the endpoint declares no groups, or when the user belongs to at least one of the endpoint's groups; otherwise access MUST be denied
+
+#### Scenario: Execution call is logged with a TTL
+
+- **GIVEN** any endpoint execution
+- **WHEN** `logEndpointCall()` runs
+- **THEN** it MUST persist an `EndpointLog` with a generated uuid, the endpoint id, the acting user (when present), the request and response payloads, the status code and message, a creation timestamp, and an expiry one week out
+- **AND** the entry size MUST be computed before insert
 
 ## Non-Functional Requirements
 

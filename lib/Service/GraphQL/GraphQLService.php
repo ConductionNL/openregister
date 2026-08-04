@@ -5,6 +5,9 @@
  *
  * Main service for executing GraphQL queries with schema caching and complexity analysis.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *
@@ -12,7 +15,7 @@
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+ * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
  */
 
 namespace OCA\OpenRegister\Service\GraphQL;
@@ -96,7 +99,7 @@ class GraphQLService
      *
      * @return array<string, mixed> The execution result
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-38
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-log-operations-to-the-audit-trail
      */
     public function execute(string $query, ?array $variables=null, ?string $operationName=null): array
     {
@@ -168,7 +171,7 @@ class GraphQLService
      *
      * @return Schema The GraphQL schema
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-40
+     * @spec openspec/specs/graphql-api/spec.md#requirement-cross-register-schema-stitching-must-provide-a-unified-graph
      */
     private function getSchema(): Schema
     {
@@ -190,7 +193,7 @@ class GraphQLService
      *
      * @return array<string, mixed> The context
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     private function createContext(?string $operationName): array
     {
@@ -218,7 +221,7 @@ class GraphQLService
      *
      * @throws Error If introspection is not allowed
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function checkIntrospection(\GraphQL\Language\AST\DocumentNode $document): void
     {
@@ -286,7 +289,7 @@ class GraphQLService
      *
      * @return bool True if introspection fields are present
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function selectionSetHasIntrospection(
         \GraphQL\Language\AST\SelectionSetNode $selectionSet
@@ -316,7 +319,7 @@ class GraphQLService
      *
      * @throws Error If rate limited
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-39
+     * @spec openspec/specs/graphql-api/spec.md#requirement-query-complexity-analysis-must-prevent-resource-abuse
      */
     private function checkRateLimit(): void
     {

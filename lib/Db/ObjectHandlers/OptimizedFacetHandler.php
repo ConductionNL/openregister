@@ -6,6 +6,9 @@
  * This handler provides high-performance faceting by using optimized
  * database queries, query batching, and strategic caching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Db\ObjectHandlers
  *

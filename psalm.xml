@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <psalm
+    errorBaseline="psalm-baseline.xml"
     errorLevel="4"
     resolveFromConfigFile="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -7,7 +8,6 @@
     findUnusedBaselineEntry="true"
     findUnusedCode="true"
     findUnusedVariablesAndParams="true"
-    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="lib" />
@@ -22,24 +22,6 @@
         <UndefinedDocblockClass errorLevel="suppress"/>
         <UndefinedClass>
             <errorLevel type="suppress">
-                <referencedClass name="OC"/>
-                <referencedClass name="Doctrine\DBAL\Types\Types"/>
-                <referencedClass name="Doctrine\DBAL\Types\Type"/>
-                <referencedClass name="Doctrine\DBAL\Connection"/>
-                <referencedClass name="Doctrine\DBAL\Schema\Schema"/>
-                <referencedClass name="Symfony\Component\HttpFoundation\Response"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\AbstractPlatform"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\MySQLPlatform"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\AbstractMySQLPlatform"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\SqlitePlatform"/>
-                <referencedClass name="Doctrine\DBAL\ParameterType"/>
-                <referencedClass name="APCUIterator"/>
-                <referencedClass name="React\Async\PromiseInterface"/>
-                <referencedClass name="Solarium\Client"/>
-                <referencedClass name="Solarium\Core\Client\Adapter\Curl"/>
-                <referencedClass name="Solarium\Exception\HttpException"/>
-                <referencedClass name="Symfony\Component\EventDispatcher\EventDispatcher"/>
-                <referencedClass name="Ramsey\Uuid\Uuid"/>
                 <!-- Nextcloud OCP Classes -->
                 <referencedClass name="OCP\AppFramework\App"/>
                 <referencedClass name="OCP\AppFramework\Bootstrap\IBootstrap"/>
@@ -58,7 +40,6 @@
                 <referencedClass name="OCP\IGroupManager"/>
                 <referencedClass name="OCP\IUserManager"/>
                 <referencedClass name="OCP\IUserSession"/>
-                <referencedClass name="OCP\Search\IFilteringProvider"/>
                 <referencedClass name="OCP\IMemcache"/>
                 <referencedClass name="OCP\IRequest"/>
                 <referencedClass name="OCP\EventDispatcher\IEventDispatcher"/>
@@ -77,20 +58,69 @@
                 <referencedClass name="OCP\IURLGenerator"/>
                 <referencedClass name="OCP\Http\Client\IClient"/>
                 <referencedClass name="OCP\Http\Client\IClientService"/>
-                <referencedClass name="OCP\SystemTag\ISystemTagManager"/>
                 <referencedClass name="OCP\Notification\IManager"/>
                 <referencedClass name="OCP\Share\IManager"/>
-                <referencedClass name="OC\Files\AppData\Factory"/>
-                <referencedClass name="OC\Security\CSP\ContentSecurityPolicyNonceManager"/>
-                <referencedClass name="OC\Security\CSRF\CsrfTokenManager"/>
-                <referencedClass name="Doctrine\DBAL\Platforms\PostgreSQLPlatform"/>
-                <referencedClass name="OCA\DAV\CalDAV\CalDavBackend"/>
-                <referencedClass name="Sabre\VObject\Reader"/>
-                <referencedClass name="OC\DB\Exceptions\DbalException"/>
-                <referencedClass name="OCA\OpenRegister\Db\Exception"/>
+                <!-- OpenRegister cross-app classes (loaded dynamically) -->
+                <referencedClass name="OCA\OpenRegister\Db\ObjectEntity"/>
+                <referencedClass name="OCA\OpenRegister\Db\RegisterMapper"/>
+                <referencedClass name="OCA\OpenRegister\Db\SchemaMapper"/>
+                <referencedClass name="OCA\OpenRegister\Event\DeepLinkRegistrationEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectCreatingEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectCreatedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatingEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectUpdatedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Event\ObjectDeletedEvent"/>
+                <referencedClass name="OCA\OpenRegister\Service\ObjectService"/>
+                <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
+                <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
+                <referencedClass name="OCA\OpenRegister\Service\FileService"/>
+                <referencedClass name="OCA\OpenRegister\Service\CalendarEventService"/>
+                <referencedClass name="OCA\OpenRegister\Mcp\IMcpToolProvider"/>
+                <!-- OCA\Bookmarks optional peer app (lazy-resolved at runtime) -->
+                <referencedClass name="OCA\Bookmarks\QueryParameters"/>
+                <referencedClass name="OCA\Bookmarks\Db\Bookmark"/>
+                <referencedClass name="OCA\Bookmarks\Db\BookmarkMapper"/>
+                <referencedClass name="OCA\Bookmarks\Db\TagMapper"/>
+                <!-- Additional OCP infrastructure types used across the fleet -->
+                <referencedClass name="OCP\AppFramework\Bootstrap\IBootContext"/>
+                <referencedClass name="OCP\AppFramework\Bootstrap\IRegistrationContext"/>
+                <referencedClass name="OCP\AppFramework\Db\DoesNotExistException"/>
+                <referencedClass name="OCP\DB\Exception"/>
+                <referencedClass name="OCP\IGroup"/>
+                <referencedClass name="OCP\IUser"/>
+                <referencedClass name="OCP\Migration\IRepairStep"/>
+                <!-- Nextcloud server internals -->
+                <referencedClass name="OC"/>
+                <!-- GuzzleHttp (loaded via composer at runtime) -->
+                <referencedClass name="GuzzleHttp\Client"/>
+                <referencedClass name="GuzzleHttp\Exception\GuzzleException"/>
+                <!--
+                  PHP EXTENSION classes. Whether psalm can see these depends on
+                  which extensions are ENABLED wherever it happens to run: CI
+                  installs zip and gd but not imagick, and a bare php image has
+                  none of them. Suppressed here rather than recorded in the
+                  baseline, because a baseline entry for one of these is only
+                  correct in the environment that generated it — psalm sets
+                  findUnusedBaselineEntry, so the entry then FAILS the build in
+                  any environment where the extension IS present. An absent
+                  extension is a property of the analysis host, not app debt.
+                -->
+                <referencedClass name="ZipArchive"/>
+                <referencedClass name="Imagick"/>
+                <referencedClass name="ImagickPixel"/>
+                <!--
+                  OCP\ContextChat and OCP\SystemTag ship with OPTIONAL Nextcloud
+                  components, lazy-resolved behind class_exists guards, so they
+                  are absent during analysis for the same reason OCA\Bookmarks is.
+                -->
+                <referencedClass name="OCP\ContextChat\IContentManager"/>
+                <referencedClass name="OCP\ContextChat\IContentProvider"/>
+                <referencedClass name="OCP\ContextChat\ContentItem"/>
+                <referencedClass name="OCP\ContextChat\Events\ContentProviderRegisterEvent"/>
+                <referencedClass name="OCP\SystemTag\TagAssignedEvent"/>
+                <referencedClass name="OCP\SystemTag\TagUnassignedEvent"/>
             </errorLevel>
         </UndefinedClass>
-        <InaccessibleMethod errorLevel="suppress"/>
         <UndefinedMagicMethod errorLevel="suppress"/>
         <UnusedClass errorLevel="suppress"/>
         <PossiblyUnusedMethod errorLevel="suppress"/>
@@ -103,80 +133,24 @@
         <RedundantCondition errorLevel="suppress"/>
         <RedundantFunctionCall errorLevel="suppress"/>
         <RedundantCast errorLevel="suppress"/>
-        <RedundantPropertyInitializationCheck errorLevel="suppress"/>
-        <StringIncrement errorLevel="suppress"/>
         <InvalidDocblock errorLevel="suppress"/>
         <MoreSpecificImplementedParamType errorLevel="suppress"/>
         <MissingDependency errorLevel="suppress"/>
         <UnevaluatedCode errorLevel="suppress"/>
-        <!-- Suppress external library/interface method issues -->
-        <UndefinedInterfaceMethod>
-            <errorLevel type="suppress">
-                <!-- Doctrine DBAL methods -->
-                <referencedMethod name="OCP\IDBConnection::getSchemaManager"/>
-                <!-- Nextcloud QueryBuilder methods -->
-                <referencedMethod name="OCP\DB\QueryBuilder\IQueryBuilder::escapeLikeParameter"/>
-                <!-- Nextcloud File methods -->
-                <referencedMethod name="OCP\Files\Node::fopen"/>
-                <referencedMethod name="OCP\Files\Node::getContent"/>
-                <!-- Search backend implementation methods -->
-                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::indexFiles"/>
-                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::getFileIndexStats"/>
-                <referencedMethod name="OCA\OpenRegister\Service\Index\SearchBackendInterface::fixMismatchedFields"/>
-            </errorLevel>
-        </UndefinedInterfaceMethod>
-        <!-- Suppress React library function calls -->
-        <UndefinedFunction>
-            <errorLevel type="suppress">
-                <referencedFunction name="React\Async\await"/>
-            </errorLevel>
-        </UndefinedFunction>
-        <!-- Suppress LLPhant dynamic property access -->
-        <UndefinedPropertyAssignment>
-            <errorLevel type="suppress">
-                <referencedProperty name="LLPhant\OpenAIConfig::$temperature"/>
-                <referencedProperty name="LLPhant\OpenAIConfig::$organizationId"/>
-            </errorLevel>
-        </UndefinedPropertyAssignment>
-        <UndefinedPropertyFetch>
-            <errorLevel type="suppress">
-                <referencedProperty name="LLPhant\OllamaConfig::$apiKey"/>
-                <referencedProperty name="LLPhant\OpenAIConfig::$apiKey"/>
-                <referencedProperty name="LLPhant\OpenAIConfig::$model"/>
-                <referencedProperty name="LLPhant\OpenAIConfig::$url"/>
-            </errorLevel>
-        </UndefinedPropertyFetch>
-        <!-- Suppress OrganisationMapper method calls from trait -->
-        <UndefinedMethod>
-            <errorLevel type="suppress">
-                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getActiveOrganisationWithFallback"/>
-                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getDefaultOrganisationFromConfig"/>
-                <referencedMethod name="OCA\OpenRegister\Service\OrganisationService::getOrganisationHierarchy"/>
-                <!-- Entity base class methods -->
-                <referencedMethod name="OCA\OpenRegister\Db\Register::getId"/>
-                <referencedMethod name="OCA\OpenRegister\Db\Schema::getId"/>
-                <referencedMethod name="OCA\OpenRegister\Db\Schema::getSlug"/>
-                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getRegister"/>
-                <referencedMethod name="OCA\OpenRegister\Db\ObjectEntity::getSchema"/>
-            </errorLevel>
-        </UndefinedMethod>
-        <!-- Suppress dead code warnings for defensive null checks -->
         <NoValue errorLevel="suppress"/>
         <TypeDoesNotContainNull errorLevel="suppress"/>
         <TypeDoesNotContainType errorLevel="suppress"/>
         <InvalidArrayOffset errorLevel="suppress"/>
         <InvalidCast errorLevel="suppress"/>
         <InvalidArgument errorLevel="suppress"/>
-        <InvalidTemplateParam errorLevel="suppress"/>
         <InvalidReturnType errorLevel="suppress"/>
         <InvalidReturnStatement errorLevel="suppress"/>
         <MismatchingDocblockReturnType errorLevel="suppress"/>
         <EmptyArrayAccess errorLevel="suppress"/>
         <ImplementedReturnTypeMismatch errorLevel="suppress"/>
         <InvalidMethodCall errorLevel="suppress"/>
-        <InvalidPropertyAssignmentValue errorLevel="suppress"/>
-        <InvalidThrow errorLevel="suppress"/>
-        <UnsupportedPropertyReferenceUsage errorLevel="suppress"/>
+        <UndefinedInterfaceMethod errorLevel="suppress"/>
+        <MissingTemplateParam errorLevel="suppress"/>
     </issueHandlers>
     <extraFiles>
         <directory name="vendor/nextcloud/ocp" />

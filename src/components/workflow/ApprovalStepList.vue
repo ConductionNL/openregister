@@ -18,10 +18,10 @@ import { generateUrl } from '@nextcloud/router'
 			<span v-if="step.decidedBy" class="decided-by">{{ t('openregister', 'by') }} {{ step.decidedBy }}</span>
 			<div v-if="step.status === 'pending' && canDecide(step)" class="step-actions">
 				<input v-model="comments[step.id]" type="text" :placeholder="t('openregister', 'Comment...')">
-				<NcButton type="success" @click="approve(step)">
+				<NcButton variant="success" @click="approve(step)">
 					{{ t('openregister', 'Approve') }}
 				</NcButton>
-				<NcButton type="error" @click="reject(step)">
+				<NcButton variant="error" @click="reject(step)">
 					{{ t('openregister', 'Reject') }}
 				</NcButton>
 			</div>
@@ -30,6 +30,9 @@ import { generateUrl } from '@nextcloud/router'
 </template>
 
 <script>
+/**
+ * @spec openspec/specs/approval-workflow/spec.md
+ */
 export default {
 	name: 'ApprovalStepList',
 	components: { NcButton },
@@ -46,6 +49,9 @@ export default {
 		this.fetchSteps()
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/approval-workflow/spec.md
+		 */
 		async fetchSteps() {
 			try {
 				const url = generateUrl('/apps/openregister/api/approval-steps')
@@ -55,9 +61,16 @@ export default {
 				console.error('Failed to fetch steps:', error)
 			}
 		},
+		/**
+		 * @spec exclude computed decide-permission display flag (stub returns true), UI plumbing
+		 */
 		canDecide() {
 			return true
 		},
+		/**
+		 * @param step
+		 * @spec exclude API passthrough approving step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async approve(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/approve`)
@@ -67,6 +80,10 @@ export default {
 				console.error('Failed to approve:', error)
 			}
 		},
+		/**
+		 * @param step
+		 * @spec exclude API passthrough rejecting step + refetch; approval contract owned by approval-workflow capability
+		 */
 		async reject(step) {
 			try {
 				const url = generateUrl(`/apps/openregister/api/approval-steps/${step.id}/reject`)

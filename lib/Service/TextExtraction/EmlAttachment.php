@@ -29,7 +29,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md
  *       "Each `EmlAttachment` MUST carry filename, MIME type, raw bytes, and inline / contentId metadata"
  */
 
@@ -72,6 +72,9 @@ final class EmlAttachment implements JsonSerializable
      * value object directly receive raw bytes via `$attachment->content`.
      *
      * @return array<string, mixed>
+     *
+     * @spec exclude Value-object serialiser: maps public readonly properties to an array (content base64-encoded);
+     *              field shape specified by text-extraction-eml.
      */
     public function jsonSerialize(): array
     {

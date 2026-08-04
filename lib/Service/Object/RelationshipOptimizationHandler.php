@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -43,7 +47,7 @@ class RelationshipOptimizationHandler
      *
      * @param LoggerInterface $logger Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly LoggerInterface $logger
@@ -62,7 +66,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractAllRelationshipIds(array $_objects, array $_extend): array
     {
@@ -81,7 +85,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function bulkLoadRelationshipsBatched(array $_relationshipIds): array
     {
@@ -100,7 +104,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function bulkLoadRelationshipsParallel(array $_relationshipIds): array
     {
@@ -119,7 +123,7 @@ class RelationshipOptimizationHandler
      *
      * @psalm-return array<never, never>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function loadRelationshipChunkOptimized(array $_relationshipIds): array
     {
@@ -136,7 +140,7 @@ class RelationshipOptimizationHandler
      *
      * @return null Created object entity or null.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function createLightweightObjectEntity(array $_row)
     {

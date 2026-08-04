@@ -6,6 +6,9 @@
  * Shared service for matching contact metadata (email, name, organization)
  * to OpenRegister entities with APCu caching.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -184,6 +187,8 @@ class ContactMatchingService
      * @param string $email The email address to match
      *
      * @return array The match results with confidence 1.0
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByEmail(string $email): array
     {
@@ -246,6 +251,8 @@ class ContactMatchingService
      * @param string|null $name The display name to match
      *
      * @return array The match results
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByName(?string $name): array
     {
@@ -308,6 +315,8 @@ class ContactMatchingService
      * @param string|null $organization The organization name to match
      *
      * @return array The match results with confidence 0.5
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchByOrganization(?string $organization): array
     {
@@ -370,6 +379,8 @@ class ContactMatchingService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function matchContact(
         string $email,
@@ -441,6 +452,8 @@ class ContactMatchingService
      * @param array $matches The match results from matchContact()
      *
      * @return array Associative array of schema title => count
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function getRelatedObjectCounts(array $matches): array
     {
@@ -463,6 +476,8 @@ class ContactMatchingService
      * @param string $email The email address to invalidate
      *
      * @return void
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function invalidateCache(string $email): void
     {
@@ -485,6 +500,8 @@ class ContactMatchingService
      * @param array $object The object data array
      *
      * @return void
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function invalidateCacheForObject(array $object): void
     {
@@ -677,7 +694,10 @@ class ContactMatchingService
             }
 
             // Full match = 0.7, partial = 0.4.
-            $confidence = ($matchedParts === $totalParts) ? 0.7 : 0.4;
+            $confidence = 0.4;
+            if ($matchedParts === $totalParts) {
+                $confidence = 0.7;
+            }
 
             $matches[] = $this->formatMatch(result: $result, matchType: 'name', confidence: $confidence);
         }//end foreach

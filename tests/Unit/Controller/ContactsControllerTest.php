@@ -168,6 +168,135 @@ class ContactsControllerTest extends TestCase
     // Email-only match
     // -------------------------------------------------------------------------
 
+    // -------------------------------------------------------------------------
+    // Tier-2: destroy by contact uid + create-new endpoint
+    // -------------------------------------------------------------------------
+
+    /**
+     * Tier-2: destroy with a non-numeric `{contactUid}` resolves through
+     * `unlinkContactByUid` (not the legacy id-based path).
+     */
+    public function testDestroyRoutesNonNumericUidThroughUnlinkByUid(): void
+    {
+        $object = new \OCA\OpenRegister\Db\ObjectEntity();
+        $object->setUuid('abc-123');
+
+        $this->objectService->method('getObject')->willReturn($object);
+
+        $this->contactService->expects($this->once())
+            ->method('unlinkContactByUid')
+            ->with('abc-123', 'jan-uid');
+
+        $response = $this->controller->destroy('reg', 'sch', 'oid', 'jan-uid');
+
+        $this->assertSame(200, $response->getStatus());
+        $this->assertSame(['success' => true], $response->getData());
+    }
+
+    /**
+     * Tier-2: destroy with a numeric `{contactUid}` falls back to the
+     * legacy id-based unlink path (back-compat).
+     */
+    public function testDestroyRoutesNumericIdThroughLegacyUnlink(): void
+    {
+        $object = new \OCA\OpenRegister\Db\ObjectEntity();
+        $object->setUuid('abc-123');
+
+        $this->objectService->method('getObject')->willReturn($object);
+
+        $this->contactService->expects($this->once())
+            ->method('unlinkContact')
+            ->with(42);
+
+        $response = $this->controller->destroy('reg', 'sch', 'oid', '42');
+
+        $this->assertSame(200, $response->getStatus());
+    }
+
+    /**
+     * Tier-2: createNew rejects payloads carrying a contactUri (link
+     * shape) with a 400.
+     */
+    public function testCreateNewRejectsLinkPayload(): void
+    {
+        $object = new \OCA\OpenRegister\Db\ObjectEntity();
+        $object->setUuid('abc-123');
+        $object->setRegister('5');
+        $object->setSchema('7');
+
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getParams')->willReturn([
+            'contactUri'    => 'jan.vcf',
+            'addressbookId' => 1,
+            'displayName'   => 'Jan',
+        ]);
+
+        $response = $this->controller->createNew('reg', 'sch', 'oid');
+
+        $this->assertSame(400, $response->getStatus());
+    }
+
+    /**
+     * Tier-2: createNew requires `displayName` (or back-compat
+     * `fullName`).
+     */
+    public function testCreateNewRequiresDisplayName(): void
+    {
+        $object = new \OCA\OpenRegister\Db\ObjectEntity();
+        $object->setUuid('abc-123');
+        $object->setRegister('5');
+        $object->setSchema('7');
+
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getParams')->willReturn([
+            'email' => 'jan@example.nl',
+        ]);
+
+        $response = $this->controller->createNew('reg', 'sch', 'oid');
+
+        $this->assertSame(400, $response->getStatus());
+    }
+
+    /**
+     * Tier-2: createNew passes the schema id through to
+     * `createAndLinkContact`.
+     */
+    public function testCreateNewThreadsSchemaId(): void
+    {
+        $object = new \OCA\OpenRegister\Db\ObjectEntity();
+        $object->setUuid('abc-123');
+        $object->setRegister('5');
+        $object->setSchema('7');
+
+        $this->objectService->method('getObject')->willReturn($object);
+        $this->request->method('getParams')->willReturn([
+            'displayName' => 'Jan de Vries',
+            'email'       => 'jan@example.nl',
+            'role'        => 'applicant',
+        ]);
+
+        $link = new \OCA\OpenRegister\Db\ContactLink();
+        $link->setObjectUuid('abc-123');
+
+        $this->contactService->expects($this->once())
+            ->method('createAndLinkContact')
+            ->with(
+                'abc-123',
+                5,
+                $this->callback(static function (array $data): bool {
+                    return $data['displayName'] === 'Jan de Vries'
+                        && $data['email'] === 'jan@example.nl'
+                        && $data['role'] === 'applicant';
+                }),
+                7
+            )
+            ->willReturn($link);
+
+        $response = $this->controller->createNew('reg', 'sch', 'oid');
+
+        $this->assertSame(201, $response->getStatus());
+    }
+
     public function testMatchWorksWithEmailOnly(): void
     {
         $this->request->method('getParam')

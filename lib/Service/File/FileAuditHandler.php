@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -69,6 +73,8 @@ class FileAuditHandler
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec exclude No-op audit shim: only emits a log line; the AuditTrail insert is commented out, so there is no persisted behavior to specify.
      */
     public function logDownload(
         int $fileId,
@@ -123,6 +129,8 @@ class FileAuditHandler
      * @return AuditTrail|null The persisted audit row, or null on failure.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
      */
     public function logBulkDownload(
         ObjectEntity $object,
@@ -200,6 +208,8 @@ class FileAuditHandler
      * @return AuditTrail|null The persisted audit row, or null on failure.
      *
      * @SuppressWarnings(PHPMD.StaticAccess)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-audit-trail-immutable/tasks.md#task-4
      */
     public function logFileAction(
         ObjectEntity $object,
@@ -259,6 +269,10 @@ class FileAuditHandler
     private function getCurrentUserId(): string
     {
         $user = $this->userSession->getUser();
-        return $user !== null ? $user->getUID() : 'anonymous';
+        if ($user !== null) {
+            return $user->getUID();
+        }
+
+        return 'anonymous';
     }//end getCurrentUserId()
 }//end class

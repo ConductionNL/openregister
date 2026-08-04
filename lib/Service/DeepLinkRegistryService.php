@@ -5,6 +5,9 @@
  *
  * Registry service for deep link registrations from consuming apps.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,11 +19,11 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+ * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+ * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
+ * @spec openspec/specs/deep-link-registry/spec.md
+ * @spec openspec/specs/deep-link-registry/spec.md
+ * @spec openspec/specs/deep-link-registry/spec.md
  */
 
 declare(strict_types=1);
@@ -119,23 +122,27 @@ class DeepLinkRegistryService
     /**
      * Register a deep link pattern for a (register, schema) combination.
      *
-     * @param string $appId        The consuming app ID (e.g., "procest")
-     * @param string $registerSlug The register slug
-     * @param string $schemaSlug   The schema slug
-     * @param string $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
-     * @param string $icon         Optional icon identifier (defaults to "icon-{appId}")
+     * @param string      $appId        The consuming app ID (e.g., "procest")
+     * @param string      $registerSlug The register slug
+     * @param string      $schemaSlug   The schema slug
+     * @param string      $urlTemplate  URL template with placeholders (e.g., "/apps/procest/#/cases/{uuid}")
+     * @param string      $icon         Optional icon identifier (defaults to "icon-{appId}")
+     * @param string|null $displayName  Optional human-readable label for the app's
+     *                                  unified-search results (defaults to null → app id)
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-25
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
+     * @spec openspec/specs/deep-link-registry/spec.md
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function register(
         string $appId,
         string $registerSlug,
         string $schemaSlug,
         string $urlTemplate,
-        string $icon=''
+        string $icon='',
+        ?string $displayName=null
     ): void {
         $key = $registerSlug.'::'.$schemaSlug;
 
@@ -162,6 +169,7 @@ class DeepLinkRegistryService
             schemaSlug: $schemaSlug,
             urlTemplate: $urlTemplate,
             icon: $effectiveIcon,
+            displayName: $displayName,
         );
 
         $this->logger->debug(
@@ -182,8 +190,8 @@ class DeepLinkRegistryService
      *
      * @return DeepLinkRegistration|null The registration, or null if none exists
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolve(int $registerId, int $schemaId): ?DeepLinkRegistration
     {
@@ -215,8 +223,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The resolved URL, or null to use default
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolveUrl(
         int $registerId,
@@ -243,8 +251,8 @@ class DeepLinkRegistryService
      *
      * @return string|null The icon identifier, or null
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-18
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-26
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-deep-link-registry-shall-resolve-urls-for-unified-search-results
+     * @spec openspec/specs/deep-link-registry/spec.md
      */
     public function resolveIcon(int $registerId, int $schemaId): ?string
     {
@@ -253,11 +261,40 @@ class DeepLinkRegistryService
     }//end resolveIcon()
 
     /**
+     * Resolve the display name for a registered (register, schema) pair.
+     *
+     * Returns the registration's explicit `displayName` when set, falling
+     * back to its `appId` for a claimed pair, and `null` for an unclaimed
+     * pair. Used by the unified search provider to label results per owning
+     * app.
+     *
+     * @param int $registerId The register database ID
+     * @param int $schemaId   The schema database ID
+     *
+     * @return string|null The display name, the app id, or null if unclaimed
+     *
+     * @spec openspec/specs/deep-link-registry/spec.md
+     */
+    public function resolveDisplayName(int $registerId, int $schemaId): ?string
+    {
+        $registration = $this->resolve(registerId: $registerId, schemaId: $schemaId);
+        if ($registration === null) {
+            return null;
+        }
+
+        if ($registration->displayName !== null && $registration->displayName !== '') {
+            return $registration->displayName;
+        }
+
+        return $registration->appId;
+    }//end resolveDisplayName()
+
+    /**
      * Lazily build the ID↔slug maps from database.
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     private function ensureIdMaps(): void
     {
@@ -314,7 +351,7 @@ class DeepLinkRegistryService
      *
      * @return bool True if at least one deep link is registered
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     public function hasRegistrations(): bool
     {
@@ -326,7 +363,7 @@ class DeepLinkRegistryService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-19
+     * @spec openspec/specs/deep-link-registry/spec.md#requirement-notification-deep-links-shall-use-the-deep-link-registry
      */
     public static function reset(): void
     {

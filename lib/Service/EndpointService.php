@@ -5,6 +5,9 @@
  *
  * Service for handling endpoint execution and management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -102,6 +105,8 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @spec openspec/specs/object-interactions/spec.md
      */
     public function testEndpoint(Endpoint $endpoint, array $testData=[]): array
     {
@@ -170,6 +175,8 @@ class EndpointService
      *
      * @phpstan-return array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
+     *
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function executeEndpoint(Endpoint $endpoint, array $request): array
     {
@@ -229,6 +236,13 @@ class EndpointService
     /**
      * Execute an agent endpoint
      *
+     * Validates that the referenced agent exists and that a message was
+     * supplied, then returns a 501 Not Implemented response.
+     *
+     * Deprecated: agent endpoint LLM execution (tool loading + chat calls)
+     * is not implemented here anymore; it is pending the agent-core
+     * migration to the standalone hermiq application.
+     *
      * @param Endpoint $endpoint The endpoint to execute
      * @param array    $request  Request data
      *
@@ -237,17 +251,13 @@ class EndpointService
      * @psalm-return   array{success: bool, statusCode: int, response: mixed, error?: string}
      * @psalm-suppress UnusedParam - False positive: both parameters are used within the method.
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Agent execution has multiple provider and tool conditions
-     * @SuppressWarnings(PHPMD.NPathComplexity)       Agent setup involves many validation and config paths
-     * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Agent execution with tools requires comprehensive logic
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function executeAgentEndpoint(Endpoint $endpoint, array $request): array
     {
         try {
             // Get required services.
-            $agentMapper     = \OC::$server->get(\OCA\OpenRegister\Db\AgentMapper::class);
-            $toolRegistry    = \OC::$server->get(\OCA\OpenRegister\Service\ToolRegistry::class);
-            $settingsService = \OC::$server->get(\OCA\OpenRegister\Service\SettingsService::class);
+            $agentMapper = \OC::$server->get(\OCA\OpenRegister\Db\AgentMapper::class);
 
             $agentId = $endpoint->getTargetId();
             $this->logger->info(
@@ -279,118 +289,14 @@ class EndpointService
                 ];
             }
 
-            $this->logger->info(
-                message: '[EndpointService] Executing agent',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'agent'    => $agent->getName(),
-                    'provider' => $agent->getProvider(),
-                    'model'    => $agent->getModel(),
-                    'message'  => substr($message, 0, 100),
-                ]
-            );
-
-            // Get LLM configuration.
-            $llmConfig = $settingsService->getSettings()['llm'] ?? [];
-
-            // Prepare tools/functions for the agent.
-            $functions  = [];
-            $agentTools = $agent->getTools() ?? [];
-
-            if (empty($agentTools) === false) {
-                foreach ($agentTools as $toolName) {
-                    try {
-                        $tool = $toolRegistry->getTool($toolName);
-                        if ($tool !== null) {
-                            $tool->setAgent($agent);
-                            $toolFunctions = $tool->getFunctions();
-                            $functions     = array_merge($functions, $toolFunctions);
-
-                            $this->logger->debug(
-                                message: '[EndpointService] Added tool functions',
-                                context: [
-                                    'file'      => __FILE__,
-                                    'line'      => __LINE__,
-                                    'tool'      => $toolName,
-                                    'functions' => count($toolFunctions),
-                                ]
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        $this->logger->warning(
-                            message: '[EndpointService] Failed to load tool: '.$toolName,
-                            context: [
-                                'file'  => __FILE__,
-                                'line'  => __LINE__,
-                                'error' => $e->getMessage(),
-                            ]
-                        );
-                    }//end try
-                }//end foreach
-            }//end if
-
-            $this->logger->info(
-                message: '[EndpointService] Agent has tools configured',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'totalFunctions' => count($functions),
-                ]
-            );
-
-            // Call LLM based on provider.
-            if ($agent->getProvider() === 'ollama') {
-                $ollamaConfig = $llmConfig['ollamaConfig'] ?? [];
-                $ollamaUrl    = $ollamaConfig['url'] ?? 'http://host.docker.internal:11434';
-
-                $this->logger->info(
-                    message: '[EndpointService] Calling Ollama',
-                    context: [
-                        'file'               => __FILE__,
-                        'line'               => __LINE__,
-                        'url'                => $ollamaUrl,
-                        'model'              => $agent->getModel(),
-                        'functionsAvailable' => count($functions),
-                    ]
-                );
-
-                // Build messages.
-                $messages = [];
-                if (($agent->getPrompt() !== null && $agent->getPrompt() !== '') === true) {
-                    $messages[] = [
-                        'role'    => 'system',
-                        'content' => $agent->getPrompt(),
-                    ];
-                }
-
-                $messages[] = [
-                    'role'    => 'user',
-                    'content' => $message,
-                ];
-
-                // Call Ollama API directly.
-                $response = $this->callOllamaWithTools(
-                    url: $ollamaUrl,
-                    model: $agent->getModel(),
-                    messages: $messages,
-                    functions: $functions,
-                    agent: $agent,
-                    toolRegistry: $toolRegistry
-                );
-
-                return [
-                    'success'    => true,
-                    'statusCode' => 200,
-                    'response'   => $response,
-                ];
-            }//end if
-
+            // Agent endpoint LLM execution (tool loading + chat calls) is
+            // deprecated pending the agent-core migration to hermiq; return
+            // a clean not-implemented response instead of calling an LLM.
             return [
                 'success'    => false,
                 'statusCode' => 501,
                 'response'   => null,
-                'error'      => 'Provider '.$agent->getProvider().' not yet implemented for endpoint execution',
+                'error'      => 'Agent endpoint type is not implemented',
             ];
         } catch (\Exception $e) {
             $this->logger->error(
@@ -496,6 +402,8 @@ class EndpointService
      *
      * @return bool True if user can execute, false otherwise
      *
+     * @spec openspec/specs/object-interactions/spec.md
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Permission check has multiple user and group conditions
      */
     private function canExecuteEndpoint(Endpoint $endpoint): bool
@@ -542,6 +450,8 @@ class EndpointService
      * @param array    $result   Result data
      *
      * @return void
+     *
+     * @spec openspec/specs/object-interactions/spec.md
      */
     private function logEndpointCall(Endpoint $endpoint, array $request, array $result): void
     {

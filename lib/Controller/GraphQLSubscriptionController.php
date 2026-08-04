@@ -6,6 +6,9 @@
  * Provides a Server-Sent Events endpoint for GraphQL subscriptions.
  * Clients connect via GET and receive real-time object change events.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -15,7 +18,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-41
+ * @spec openspec/specs/event-driven-architecture/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -69,10 +72,12 @@ class GraphQLSubscriptionController extends Controller
      * @NoAdminRequired
      *
      * @NoCSRFRequired
+     * @no-admin-idor-exempt Guarded downstream: SubscriptionService filters every streamed event through
+     *   verifyEventRBAC -> PermissionHandler::hasPermission(schema,'read'); non-readable schemas are never streamed.
      *
      * @CORS
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-41
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function subscribe(): Response
     {

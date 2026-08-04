@@ -25,7 +25,8 @@ The access control system integrates with:
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
 - Schema level - Manage permissions for specific register/schema combinations
-- Object level - Set permissions on individual objects
+- Object level - Set permissions on individual objects, make one object `private`,
+  and invite a principal to it (see [Object Sharing](./object-sharing.md))
 - Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types
@@ -715,6 +716,21 @@ ORDER BY priority DESC;
 5. **Unauthenticated Access**
    - Unauthenticated users only see objects with 'public' in read permissions
    - Fallback to published object filtering can be enabled (currently disabled)
+
+## Restricting OpenRegister to a user group
+
+Nextcloud administrators can limit OpenRegister to specific groups via **Apps → OpenRegister → Limit to groups** (or `occ app:enable openregister --groups <group>`). Because Nextcloud gates app routes by `IAppManager::isEnabledForUser()`, this blocks **every non-public route** for any user outside those groups — including admins who are not members, and other apps calling OpenRegister on a user's behalf. Only routes marked `#[PublicPage]` bypass the restriction.
+
+OpenRegister is a data platform whose register, schema, and object **read** endpoints are consumed by other apps for all users. To keep those reachable while limiting **management** to the restriction group, the read surface is public-by-route and write/management endpoints are not:
+
+| Operation | Route visibility | Behaviour under app-group restriction |
+|-----------|------------------|----------------------------------------|
+| Read registers / schemas / objects (`index`, `show`) | `#[PublicPage]` | Reachable by all users (and consuming apps), in or out of the group |
+| Create / update / delete registers & schemas | not public | Blocked for users outside the group (and additionally gated to admin / manage-permission) |
+
+**Anonymous access to the public read endpoints is limited to *published* resources.** A register or schema is only returned to an unauthenticated caller when its `published` field is set and it has not been depublished; an anonymous request for an unpublished register/schema returns `401`. Authenticated users are unaffected and continue to receive results scoped by the RBAC rules described above. Object reads remain governed by `ObjectService` / `PermissionHandler` regardless of the resolved identity.
+
+Net effect: group-restricting OpenRegister hides the management UI and write operations from non-group users while leaving the consumed read APIs (and published catalogue data) available. See also the register/schema write-authorization rules below and in `RegistersController` / `SchemasController`.
 
 ## Authorization Exceptions
 

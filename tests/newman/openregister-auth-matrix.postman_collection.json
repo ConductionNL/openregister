@@ -46,7 +46,7 @@
 			"name": "02 - No-auth (anonymous)",
 			"item": [
 				{
-					"name": "GET /api/registers without auth → 401 or 403",
+					"name": "GET /api/registers without auth → 200 (only published)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -57,9 +57,15 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test('anonymous read of admin route is rejected', () => {",
-									"  const code = pm.response.code;",
-									"  pm.expect([401, 403]).to.include(code);",
+									"// PR #1950: /api/registers is now @PublicPage — anonymous callers see only",
+									"// published registers (empty list is valid when none are published).",
+									"pm.test('anonymous read of registers returns 200', () => {",
+									"  pm.response.to.have.status(200);",
+									"});",
+									"pm.test('response is valid JSON with results array', () => {",
+									"  const body = pm.response.json();",
+									"  pm.expect(body).to.have.property('results');",
+									"  pm.expect(body.results).to.be.an('array');",
 									"});"
 								],
 								"type": "text/javascript"

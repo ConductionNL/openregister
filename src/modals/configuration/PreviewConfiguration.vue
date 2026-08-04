@@ -56,8 +56,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isRegisterSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isRegisterSelected(change.slug)"
-								@update:checked="(checked) => toggleRegisterSelection(change.slug, checked)" />
+								:model-value="isRegisterSelected(change.slug)"
+								@update:modelValue="(checked) => toggleRegisterSelection(change.slug, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -107,8 +107,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isSchemaSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isSchemaSelected(change.slug)"
-								@update:checked="(checked) => toggleSchemaSelection(change.slug, checked)" />
+								:model-value="isSchemaSelected(change.slug)"
+								@update:modelValue="(checked) => toggleSchemaSelection(change.slug, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -158,8 +158,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isObjectSelected(change) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isObjectSelected(change)"
-								@update:checked="(checked) => toggleObjectSelection(change, checked)" />
+								:model-value="isObjectSelected(change)"
+								@update:modelValue="(checked) => toggleObjectSelection(change, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -219,7 +219,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="hasSelection"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="importSelected">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -283,11 +283,17 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed boolean true when any preview item is selected; UI state helper.
+		 */
 		hasSelection() {
 			return this.selectedRegisters.length > 0
 				   || this.selectedSchemas.length > 0
 				   || this.selectedObjects.length > 0
 		},
+		/**
+		 * @spec exclude Computed total count of selected preview items; UI state helper.
+		 */
 		selectionCount() {
 			return this.selectedRegisters.length
 				   + this.selectedSchemas.length
@@ -298,6 +304,9 @@ export default {
 		await this.loadPreview()
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		async loadPreview() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
@@ -330,10 +339,19 @@ export default {
 		isSchemaSelected(slug) {
 			return this.selectedSchemas.includes(slug)
 		},
+		/**
+		 * @param change
+		 * @spec exclude Checkbox-state predicate for an object row in the preview list; UI state helper.
+		 */
 		isObjectSelected(change) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			return this.selectedObjects.includes(objectId)
 		},
+		/**
+		 * @param slug
+		 * @param checked
+		 * @spec exclude Toggles a register slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleRegisterSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedRegisters.includes(slug)) {
@@ -343,6 +361,11 @@ export default {
 				this.selectedRegisters = this.selectedRegisters.filter(s => s !== slug)
 			}
 		},
+		/**
+		 * @param slug
+		 * @param checked
+		 * @spec exclude Toggles a schema slug in/out of the selection set; UI selection plumbing.
+		 */
 		toggleSchemaSelection(slug, checked) {
 			if (checked) {
 				if (!this.selectedSchemas.includes(slug)) {
@@ -352,6 +375,11 @@ export default {
 				this.selectedSchemas = this.selectedSchemas.filter(s => s !== slug)
 			}
 		},
+		/**
+		 * @param change
+		 * @param checked
+		 * @spec exclude Toggles an object id in/out of the selection set; UI selection plumbing.
+		 */
 		toggleObjectSelection(change, checked) {
 			const objectId = `${change.register}:${change.schema}:${change.slug}`
 			if (checked) {
@@ -362,6 +390,9 @@ export default {
 				this.selectedObjects = this.selectedObjects.filter(id => id !== objectId)
 			}
 		},
+		/**
+		 * @spec exclude Selects all non-skip preview items; UI bulk-selection plumbing.
+		 */
 		selectAll() {
 			// Select all registers
 			if (this.preview.registers) {
@@ -382,16 +413,26 @@ export default {
 					.map(o => `${o.register}:${o.schema}:${o.slug}`)
 			}
 		},
+		/**
+		 * @spec exclude Clears all preview selections; UI bulk-selection plumbing.
+		 */
 		deselectAll() {
 			this.selectedRegisters = []
 			this.selectedSchemas = []
 			this.selectedObjects = []
 		},
+		/**
+		 * @param value
+		 * @spec exclude Truncating/stringifying value formatter for the preview table; UI presentation helper.
+		 */
 		formatValue(value) {
 			if (value === null || value === undefined) return '-'
 			if (typeof value === 'object') return JSON.stringify(value).substring(0, 50) + '...'
 			return String(value).substring(0, 50)
 		},
+		/**
+		 * @spec exclude Posts the selected preview subset to the configurations/import endpoint and refreshes the list; UI orchestration plumbing.
+		 */
 		async importSelected() {
 			const configuration = configurationStore.configurationItem
 			if (!configuration || !configuration.id) {
@@ -439,9 +480,15 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @spec exclude Dialog close-event passthrough to closeModal; UI plumbing.
+		 */
 		handleDialogClose() {
 			this.closeModal()
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and preview/selection state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			this.loading = false

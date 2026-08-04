@@ -6,6 +6,9 @@
  * This file contains the event class dispatched when a view is updated
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -50,6 +53,8 @@ class ViewUpdatedEvent extends Event
      * @param View $oldView The view before update.
      *
      * @return void
+     *
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(View $newView, View $oldView)
     {

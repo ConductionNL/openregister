@@ -57,15 +57,38 @@ export default {
 		},
 	},
 	computed: {
+		/**
+		 * OR sometimes derives `@self.name` as a JSON-encoded locale map
+		 * (e.g. `{"nl":"…"}`); unwrap it to the first locale value so the
+		 * card shows the human-readable name.
+		 *
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		objectTitle() {
-			return this.object.objectTitle || this.object.objectUuid || ''
+			const raw = this.object.objectTitle || this.object.objectUuid || ''
+			if (typeof raw === 'string' && raw.startsWith('{')) {
+				try {
+					const parsed = JSON.parse(raw)
+					const values = Object.values(parsed).filter((v) => typeof v === 'string')
+					if (values.length > 0) return values[0]
+				} catch (e) {
+					// not JSON — fall through to the raw value
+				}
+			}
+			return raw
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		deepLink() {
 			const registerId = this.object.registerId || ''
 			const schemaId = this.object.schemaId || ''
 			const objectUuid = this.object.objectUuid || ''
 			return `/apps/openregister/registers/${registerId}/${schemaId}/${objectUuid}`
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		cardAriaLabel() {
 			const parts = [this.objectTitle]
 			if (this.object.schemaTitle) {

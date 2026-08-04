@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # nextcloud-entity-relations Specification
 
 ## Purpose
+
+@e2e exclude backend entity relation mapper — covered by PHPUnit
 TBD - created by archiving change nextcloud-entity-relations. Update Purpose after archive.
 ## Requirements
 ### Requirement: Email Relations via Nextcloud Mail

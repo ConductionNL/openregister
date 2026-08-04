@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Templates') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
@@ -55,8 +55,8 @@
 
 				<NcEmptyContent
 					v-else-if="!templatesList.length"
-					:name="t('openregister', 'No templates found')"
-					:description="t('openregister', 'No templates have been created yet')">
+					:name="t('openregister', 'Templates are coming soon')"
+					:description="t('openregister', 'The templates feature is not available yet. This page is a placeholder and will list templates once the feature ships.')">
 					<template #icon>
 						<FileOutline :size="64" />
 					</template>
@@ -184,6 +184,7 @@ export default {
 		/**
 		 * Get current page number
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Current page
 		 */
 		currentPage() {
@@ -193,6 +194,7 @@ export default {
 		/**
 		 * Get total number of pages
 		 *
+		 * @spec exclude UI plumbing — pagination computed; admin list contract owned by admin-list-views.
 		 * @return {number} Total pages
 		 */
 		totalPages() {
@@ -208,6 +210,7 @@ export default {
 		/**
 		 * Toggle sidebar visibility
 		 *
+		 * @spec openspec/specs/admin-list-views/spec.md
 		 * @return {void}
 		 */
 		toggleSidebar() {
@@ -217,6 +220,7 @@ export default {
 		/**
 		 * Load templates from the API
 		 *
+		 * @spec exclude UI plumbing — list load hydrating local state (stubbed pending API); list contract owned by admin-list-views.
 		 * @return {Promise<void>}
 		 */
 		async loadTemplates() {
@@ -254,6 +258,7 @@ export default {
 		/**
 		 * Refresh the templates list
 		 *
+		 * @spec exclude UI plumbing — delegates to loadTemplates.
 		 * @return {void}
 		 */
 		refreshTemplates() {
@@ -263,6 +268,7 @@ export default {
 		/**
 		 * Go to previous page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		previousPage() {
@@ -275,6 +281,7 @@ export default {
 		/**
 		 * Go to next page
 		 *
+		 * @spec exclude UI plumbing — pagination offset mutation + reload; admin list contract owned by admin-list-views.
 		 * @return {void}
 		 */
 		nextPage() {
@@ -287,17 +294,18 @@ export default {
 		/**
 		 * View template details
 		 *
+		 * @spec exclude UI plumbing — unimplemented navigation stub, no observable contract.
 		 * @param {object} _template - Template object
 		 * @return {void}
 		 */
 		viewTemplate(_template) {
 			// TODO: Navigate to template details page when available
-			// console.log('View template:', template)
 		},
 
 		/**
 		 * Format date for display
 		 *
+		 * @spec exclude UI plumbing — pure display formatter, no observable contract.
 		 * @param {string} date - Date string
 		 * @return {string} Formatted date
 		 */

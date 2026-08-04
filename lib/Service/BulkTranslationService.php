@@ -14,6 +14,9 @@
  * The actual saveObject path is left to the caller — this service is
  * a pure translation step that returns the patch the caller applies.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -82,6 +85,8 @@ class BulkTranslationService
      *                                  names to translate; null = all.
      *
      * @return array{translated: array<string, string>, skipped: array<string, string>}
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)

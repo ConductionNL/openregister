@@ -5,6 +5,9 @@
  *
  * Background job for pruning old workflow execution history records.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-32
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md
  */
 
 declare(strict_types=1);
@@ -72,6 +75,8 @@ class ExecutionHistoryCleanupJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/specs/workflow-operations/spec.md
      */
     protected function run($argument): void
     {

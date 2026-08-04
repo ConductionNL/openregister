@@ -6,6 +6,9 @@
  * Nextcloud Contacts Menu provider that bridges Contacts/CardDAV
  * with OpenRegister entity data.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Contacts
  * @package  OCA\OpenRegister\Contacts
  *
@@ -100,7 +103,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         ContactMatchingService $matchingService,
@@ -125,7 +128,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function process(IEntry $entry): void
     {
@@ -149,7 +152,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function doProcess(IEntry $entry): void
     {
@@ -164,10 +167,15 @@ class ContactsMenuProvider implements IProvider
         }
 
         // Match contact against OpenRegister entities.
+        $organizationString = null;
+        if (is_string($organization) === true) {
+            $organizationString = $organization;
+        }
+
         $matches = $this->matchingService->matchContact(
             $primaryEmail,
             $fullName,
-            is_string($organization) === true ? $organization : null
+            $organizationString
         );
 
         if (empty($matches) === true) {
@@ -190,7 +198,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function injectCountBadge(IEntry $entry, array $matches, string $primaryEmail): void
     {
@@ -230,7 +238,7 @@ class ContactsMenuProvider implements IProvider
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function injectEntityActions(
         IEntry $entry,

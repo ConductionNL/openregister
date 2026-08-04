@@ -130,14 +130,24 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude computed add-enabled form-validation flag, UI plumbing
+		 */
 		canAdd() {
 			return !this.disabled && this.normalizedDraft !== '' && this.validateDraft(this.normalizedDraft) === null
 		},
+		/**
+		 * @spec exclude computed normalized draft input value, UI plumbing
+		 */
 		normalizedDraft() {
 			return (this.draft || '').trim().toLowerCase()
 		},
 	},
 	methods: {
+		/**
+		 * @param candidate
+		 * @spec exclude client-side BCP-47/duplicate validation helper, UI plumbing
+		 */
 		validateDraft(candidate) {
 			if (candidate === '') return 'empty'
 			if (!BCP_47_RE.test(candidate)) return 'invalid'
@@ -145,6 +155,9 @@ export default {
 			if (seen.includes(candidate)) return 'duplicate'
 			return null
 		},
+		/**
+		 * @spec exclude list-editor add emitting v-model input; languages contract owned by register-i18n capability
+		 */
 		addCurrent() {
 			const candidate = this.normalizedDraft
 			const reason = this.validateDraft(candidate)
@@ -157,6 +170,10 @@ export default {
 			this.$emit('input', next)
 			this.draft = ''
 		},
+		/**
+		 * @param reason
+		 * @spec exclude computed validation-error message display helper, UI plumbing
+		 */
 		errorMessageFor(reason) {
 			switch (reason) {
 			case 'empty': return 'Enter a BCP 47 language tag.'
@@ -165,12 +182,21 @@ export default {
 			default: return 'Invalid input.'
 			}
 		},
+		/**
+		 * @param idx
+		 * @spec exclude list-editor remove emitting v-model input; languages contract owned by register-i18n capability
+		 */
 		remove(idx) {
 			if (this.disabled) return
 			const next = [...(this.value || [])]
 			next.splice(idx, 1)
 			this.$emit('input', next)
 		},
+		/**
+		 * @param from
+		 * @param to
+		 * @spec exclude list-editor reorder emitting v-model input; languages contract owned by register-i18n capability
+		 */
 		move(from, to) {
 			if (this.disabled) return
 			const list = [...(this.value || [])]

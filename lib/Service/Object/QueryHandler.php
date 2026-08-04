@@ -5,20 +5,23 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
+ *
+ * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
  */
 
 namespace OCA\OpenRegister\Service\Object;
 
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\Object\GetObject;
 use OCA\OpenRegister\Service\Object\RenderObject;
 use OCA\OpenRegister\Service\Object\SearchQueryHandler;
@@ -57,21 +60,30 @@ use Psr\Log\LoggerInterface;
 class QueryHandler
 {
     /**
+     * Hard maximum page size for list/search requests. A client-supplied
+     * `_limit` above this is clamped down, so an oversized request (e.g.
+     * `_limit=1000000`) cannot force an unbounded result load (DoS/OOM).
+     */
+    public const MAX_PAGE_SIZE = 1000;
+
+    /**
      * Constructor for QueryHandler.
      *
-     * @param MagicMapper                    $objectMapper       Unified mapper for objects.
-     * @param GetObject                      $getHandler         Get handler.
-     * @param RenderObject                   $renderHandler      Render handler.
-     * @param SearchQueryHandler             $searchQueryHandler Search handler.
-     * @param FacetHandler                   $facetHandler       Facet handler.
-     * @param PerformanceOptimizationHandler $performanceHandler Performance handler.
-     * @param IAppContainer                  $container          App container.
-     * @param LoggerInterface                $logger             Logger.
-     * @param IRequest                       $request            Request object.
+     * @param MagicMapper                    $objectMapper         Unified mapper for objects.
+     * @param GetObject                      $getHandler           Get handler.
+     * @param RenderObject                   $renderHandler        Render handler.
+     * @param SearchQueryHandler             $searchQueryHandler   Search handler.
+     * @param FacetHandler                   $facetHandler         Facet handler.
+     * @param PerformanceOptimizationHandler $performanceHandler   Performance handler.
+     * @param ContentSearchHandler           $contentSearchHandler Opt-in `_content_search` chunk fan-out handler.
+     * @param IAppContainer                  $container            App container.
+     * @param LoggerInterface                $logger               Logger.
+     * @param IRequest                       $request              Request object.
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -80,6 +92,7 @@ class QueryHandler
         private readonly SearchQueryHandler $searchQueryHandler,
         private readonly FacetHandler $facetHandler,
         private readonly PerformanceOptimizationHandler $performanceHandler,
+        private readonly ContentSearchHandler $contentSearchHandler,
         private readonly IAppContainer $container,
         private readonly LoggerInterface $logger,
         private readonly IRequest $request
@@ -105,7 +118,7 @@ class QueryHandler
      * @psalm-return   int
      * @phpstan-return int
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function countSearchObjects(
         array $query=[],
@@ -155,7 +168,7 @@ class QueryHandler
      *
      * @throws \OCP\DB\Exception If a database error occurs.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function searchObjects(
         array $query=[],
@@ -266,7 +279,7 @@ class QueryHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-10
+     * @spec openspec/specs/zoeken-filteren/spec.md
      */
     public function searchObjectsPaginated(
         array $query=[],
@@ -285,34 +298,7 @@ class QueryHandler
         // Strip deprecated _source parameter (silently ignore for backward compatibility).
         unset($query['_source']);
 
-        // Use SOLR if enabled in config, unless relation-based search params are provided.
-        $hasIds        = isset($query['_ids']) === true;
-        $hasUses       = isset($query['_uses']) === true;
-        $hasIdsParam   = $ids !== null;
-        $hasUsesParam  = $uses !== null;
-        $isSolrEnabled = $this->searchQueryHandler->isSolrAvailable();
-
-        if ($isSolrEnabled === true
-            && $hasIdsParam === false && $hasUsesParam === false
-            && $hasIds === false && $hasUses === false
-        ) {
-            // Forward to Index service - let it handle availability checks and error handling.
-            $indexService = $this->container->get(IndexService::class);
-            $result       = $indexService->searchObjects(
-                query: $query,
-                _rbac: $_rbac,
-                _multitenancy: $_multitenancy,
-                deleted: $deleted
-            );
-            $result['@self']['source']  = 'index';
-            $result['@self']['query']   = $query;
-            $result['@self']['rbac']    = $_rbac;
-            $result['@self']['multi']   = $_multitenancy;
-            $result['@self']['deleted'] = $deleted;
-            return $result;
-        }
-
-        // Use database search.
+        // Use database search (the only search backend; the external Solr/index tier was removed).
         $result = $this->searchObjectsPaginatedDatabase(
             query: $query,
             _rbac: $_rbac,
@@ -351,7 +337,7 @@ class QueryHandler
      * @psalm-return   array<string, mixed>
      * @phpstan-return array<string, mixed>
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-91
+     * @spec openspec/specs/zoeken-filteren/spec.md#requirement-view-based-search-composition
      */
     public function searchObjectsPaginatedDatabase(
         array $query=[],
@@ -365,7 +351,8 @@ class QueryHandler
         $metrics   = [];
 
         // Extract pagination parameters (limit=0 is valid for count/facets-only requests).
-        $limit  = max(0, (int) ($query['_limit'] ?? 20));
+        // Clamp to MAX_PAGE_SIZE so an oversized `_limit` cannot force an unbounded load.
+        $limit  = min(max(0, (int) ($query['_limit'] ?? 20)), self::MAX_PAGE_SIZE);
         $offset = $query['_offset'] ?? null;
         $page   = $query['_page'] ?? null;
 
@@ -421,6 +408,27 @@ class QueryHandler
         if (isset($searchResult['metrics']) === true) {
             $metrics['db_search'] = $searchResult['metrics']['search_ms'] ?? null;
             $metrics['db_count']  = $searchResult['metrics']['count_ms'] ?? null;
+        }
+
+        // Opt-in `_content_search` fan-out (ZKN-CONTENT-001): widen the metadata-match
+        // result set with objects whose attached-file (or object) chunk body text
+        // matches `_search`. Absent or false is byte-identical to pre-change behaviour —
+        // no additional query is issued against openregister_chunks. Runs BEFORE the
+        // render/extend pipeline below so appended rows get the same `_extend`/`_fields`
+        // treatment as metadata-match rows (ZKN-CONTENT-003).
+        if (filter_var($query['_content_search'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+            $contentSearchStart = microtime(true);
+            $augmented          = $this->contentSearchHandler->augmentWithChunkMatches(
+                query: $query,
+                results: $results,
+                total: $total,
+                limit: $limit,
+                _rbac: $_rbac,
+                _multitenancy: $_multitenancy
+            );
+            $results            = $augmented['results'];
+            $total = $augmented['total'];
+            $metrics['content_search'] = round((microtime(true) - $contentSearchStart) * 1000, 2);
         }
 
         // Detect if complex rendering is needed (extend, fields, filter, unset).
@@ -490,6 +498,24 @@ class QueryHandler
             $filesStart = microtime(true);
             $this->renderHandler->attachLightweightFilesToRows(rows: $results);
             $metrics['lightweightFiles'] = round((microtime(true) - $filesStart) * 1000, 2);
+
+            // Cheap path also skips renderEntity, which is where translatable
+            // properties get projected to the negotiated language. Without this,
+            // list rows return raw language-keyed maps (e.g. {"nl":...}) while the
+            // single-object read returns a projected string. Resolve them here so
+            // both paths agree. No-op for `?_translations=all` and for schemas with
+            // no translatable properties (both early-return in the handler).
+            $translateStart = microtime(true);
+            $this->renderHandler->resolveTranslationsForRows(rows: $results);
+            $metrics['translations'] = round((microtime(true) - $translateStart) * 1000, 2);
+
+            // Cheap path also skips renderEntity, which is where write-only properties are
+            // redacted (openregister#380, ocon#147). Without this, a LIST read returns
+            // secrets that a single-object read would strip — and the OpenConnector leak
+            // was exactly a list read. Apply the same redaction to the raw rows here.
+            $redactStart = microtime(true);
+            $this->renderHandler->redactWriteOnlyFromRows(rows: $results, _rbac: $_rbac);
+            $metrics['writeOnlyRedaction'] = round((microtime(true) - $redactStart) * 1000, 2);
         }//end if
 
         // Calculate total pages (avoid division by zero when limit=0).

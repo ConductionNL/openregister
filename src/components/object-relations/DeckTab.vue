@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 	<div class="deck-tab">
 		<!-- Toolbar -->
 		<div v-if="!loading && !deckUnavailable" class="deck-tab__toolbar">
-			<NcButton type="primary" @click="openCreateDialog">
+			<NcButton variant="primary" @click="openCreateDialog">
 				<template #icon>
 					<TableLargePlus :size="20" />
 				</template>
@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						<span v-if="card.dueDate" class="deck-tab__date">{{ formatDate(card.dueDate) }}</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Remove Deck card')"
 					@click="unlinkCard(card)">
 					<template #icon>
@@ -80,9 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import TableLarge from 'vue-material-design-icons/TableLarge.vue'
 import TableLargePlus from 'vue-material-design-icons/TableLargePlus.vue'
@@ -139,15 +137,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked deck cards from store; deck-relations contract owned by integration-deck capability
+		 */
 		cards() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		deckUnavailable() {
 			return this.store.deckUnavailable
 		},
@@ -156,6 +166,10 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @param newId
+			 * @spec exclude watcher refetching deck cards on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchCards()
@@ -167,6 +181,12 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch linked Deck cards for the current object via the per-object store.
+		 *
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
+		 * @return {Promise<void>}
+		 */
 		async fetchCards() {
 			this.error = false
 			this.errorMessage = ''
@@ -178,6 +198,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param card
+		 * @spec exclude store passthrough unlinking card + change emit; deck-relations contract owned by integration-deck capability
+		 */
 		async unlinkCard(card) {
 			const ref = card.ref || card.deckRef || card.id
 			try {
@@ -189,10 +213,17 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler opening add-card dialog, UI plumbing
+		 */
 		openCreateDialog() {
 			this.$emit('add-deck-card')
 		},
 
+		/**
+		 * @param value
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

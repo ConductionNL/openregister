@@ -22,6 +22,7 @@ const BASE = '/index.php/apps/openregister/api/notification-subscriptions'
  *
  * @return {Promise<Array<{id, userId, registerId, schemaId, created}>>}
  * @throws {Error} On HTTP error.
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 export async function listSubscriptions() {
 	const response = await fetch(BASE, {
@@ -43,6 +44,7 @@ export async function listSubscriptions() {
  * @param {?number} [params.schemaId] Schema id.
  * @return {Promise<object>} The created subscription.
  * @throws {Error} On HTTP error.
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 export async function subscribe({ registerId = null, schemaId = null } = {}) {
 	const response = await fetch(BASE, {
@@ -64,6 +66,7 @@ export async function subscribe({ registerId = null, schemaId = null } = {}) {
  * @param {?number} [params.schemaId] Schema id.
  * @return {Promise<{deleted: boolean}>} Result envelope.
  * @throws {Error} On HTTP error.
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 export async function unsubscribe({ registerId = null, schemaId = null } = {}) {
 	const qs = new URLSearchParams()
@@ -90,6 +93,7 @@ export async function unsubscribe({ registerId = null, schemaId = null } = {}) {
  * @param {?number} [target.registerId] Register id.
  * @param {?number} [target.schemaId] Schema id.
  * @return {boolean} True when a matching subscription exists.
+ * @spec openspec/specs/notificatie-engine/spec.md
  */
 export function hasSubscription(subscriptions, { registerId = null, schemaId = null } = {}) {
 	if (!Array.isArray(subscriptions)) return false

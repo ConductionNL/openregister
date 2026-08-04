@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # Environment OTAP
 
 ## Purpose
+
+@e2e exclude backend Organisation entity field — covered by PHPUnit
 Define environment type tagging (Ontwikkeling/Test/Acceptatie/Productie) for Organisation entities, enabling environment-aware configuration, behavior differentiation, and configuration promotion between environments. This supports the standard Dutch government OTAP deployment model where changes flow from development through test and acceptance to production.
 
 **Source**: Dutch government OTAP requirements; BIO mandates separation of environments; 73% of tenders require DTAP/OTAP environment management.

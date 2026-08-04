@@ -104,7 +104,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			</NcButton>
 			<NcButton v-if="!success && !loading && !error && objectCount > 0"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="confirmDeletion()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -156,8 +156,11 @@ export default {
 	watch: {
 		// Watch for changes in schemaItem and reload count if needed
 		'schemaStore.schemaItem': {
+			/**
+			 * @param newSchemaItem
+			 * @spec exclude watcher reloading object count on schema change
+			 */
 			handler(newSchemaItem) {
-				console.info('Schema item changed in DeleteSchemaObjects:', newSchemaItem)
 				if (newSchemaItem?.id && this.objectCount === 0) {
 					this.loadObjectCount()
 				}
@@ -166,43 +169,46 @@ export default {
 		},
 		// Watch for dialog state changes to load count when dialog becomes visible
 		'navigationStore.dialog': {
+			/**
+			 * @param newDialog
+			 * @spec exclude watcher loading object count when dialog opens
+			 */
 			handler(newDialog) {
-				console.info('Dialog changed to:', newDialog)
 				if (newDialog === 'deleteSchemaObjects' && schemaStore.schemaItem?.id) {
-					console.info('DeleteSchemaObjects dialog opened, loading object count')
 					this.loadObjectCount()
 				}
 			},
 			immediate: true,
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook loading object count
+	 */
 	async mounted() {
-		console.info('DeleteSchemaObjects dialog mounted, schemaItem:', schemaStore.schemaItem)
 		await this.loadObjectCount()
 	},
 	methods: {
+		/**
+		 * @spec exclude form-state loader for schema object count via schemaStore
+		 */
 		async loadObjectCount() {
-			console.info('DeleteSchemaObjects loadObjectCount called, schemaItem:', schemaStore.schemaItem)
 			try {
 				if (schemaStore.schemaItem?.id) {
-					console.info('Calling getSchemaStats for schema ID:', schemaStore.schemaItem.id)
 					// Use the upgraded stats endpoint to get detailed object counts
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
-					console.info('DeleteSchemaObjects received stats:', stats)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('DeleteSchemaObjects set objectCount to:', this.objectCount)
-				} else {
-					console.info('DeleteSchemaObjects: No schema item ID available')
 				}
 			} catch (err) {
 				console.error('DeleteSchemaObjects error in loadObjectCount:', err)
-				console.warn('Could not load object count:', err)
 				this.objectCount = 0
 				this.objectStats = null
 			}
 		},
 
+		/**
+		 * @spec exclude modal submit handler for bulk schema-object deletion
+		 */
 		async confirmDeletion() {
 			this.loading = true
 			this.error = false
@@ -256,6 +262,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude modal close + form-state reset handler
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.loading = false

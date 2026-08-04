@@ -5,6 +5,9 @@
  *
  * Wraps an `oc_openregister_notification_subscriptions` row.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -32,6 +35,10 @@ use OCP\AppFramework\Db\Entity;
  * @method int|null       getSchemaId()
  * @method void           setCreated(\DateTime $created)
  * @method \DateTime|null getCreated()
+ *
+ * @deprecated Superseded by override-only user-config notification preferences
+ *             (NotificationPreferenceService). Rows are migrated by the
+ *             MigrateNotificationSubscriptionsToUserConfig repair step.
  */
 class NotificationSubscription extends Entity
 {

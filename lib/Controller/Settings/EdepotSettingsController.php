@@ -5,6 +5,9 @@
  *
  * Handles e-Depot endpoint configuration and connection testing.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller\Settings
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
  */
 
 declare(strict_types=1);
@@ -78,7 +81,7 @@ class EdepotSettingsController extends Controller
      *
      * @return JSONResponse The current e-Depot configuration.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function getEdepotSettings(): JSONResponse
     {
@@ -113,7 +116,7 @@ class EdepotSettingsController extends Controller
      *
      * @return JSONResponse The update result.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-23
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function updateEdepotSettings(): JSONResponse
     {
@@ -186,6 +189,8 @@ class EdepotSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse The connection test result.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-support-configurable-e-depot-endpoint-settings
      */
     public function testEdepotConnection(): JSONResponse
     {
@@ -194,11 +199,16 @@ class EdepotSettingsController extends Controller
             $transport = $this->resolveTransport(type: ($config['transport'] ?? 'rest_api'));
             $result    = $transport->testConnection($config);
 
+            $message = 'Connection failed';
+            if ($result === true) {
+                $message = 'Connection successful';
+            }
+
             return new JSONResponse(
                     data: [
                         'success'   => $result,
                         'transport' => $transport->getName(),
-                        'message'   => ($result === true) ? 'Connection successful' : 'Connection failed',
+                        'message'   => $message,
                     ]
                     );
         } catch (\Exception $e) {
@@ -218,6 +228,8 @@ class EdepotSettingsController extends Controller
      * @param string $type The transport type.
      *
      * @return TransportInterface The transport.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     private function resolveTransport(string $type): TransportInterface
     {

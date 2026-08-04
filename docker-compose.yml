@@ -596,7 +596,16 @@ services:
     user: root
     container_name: nextcloud
 #    entrypoint: occ app:enable openregister
-    image: nextcloud
+    # PINNED Nextcloud version. Do NOT use the floating `nextcloud` / `:latest`
+    # tag here: when `latest` drifts to a newer NC (e.g. 33→34) and the env is
+    # recreated, the container boots a newer NC over the existing data volume →
+    # needsDbUpgrade → maintenance mode → 503 instance-wide, and bind-mounted
+    # apps (shillinq/pipelinq/procest/openregister/…) get disabled or their
+    # OpenRegister API fails until someone runs `occ upgrade`. Pinning a single
+    # patch tag makes every `docker compose up` reproducible — bump this
+    # deliberately (and run `occ upgrade` once) when you actually want to move
+    # NC versions, instead of being surprised on a reset.
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80
@@ -614,7 +623,7 @@ services:
       - ../opencatalogi:/var/www/html/custom_apps/opencatalogi
       - ../softwarecatalog:/var/www/html/custom_apps/softwarecatalog
       - ../nldesign:/var/www/html/custom_apps/nldesign
-      - ../mydash:/var/www/html/custom_apps/mydash
+      - ../launchpad:/var/www/html/custom_apps/launchpad
       - ../opentalk:/var/www/html/custom_apps/opentalk
       - ../valtimo:/var/www/html/custom_apps/valtimo
       - ../openzaak:/var/www/html/custom_apps/openzaak
@@ -625,6 +634,7 @@ services:
       - ../decidesk:/var/www/html/custom_apps/decidesk
       - ../zaakafhandelapp:/var/www/html/custom_apps/zaakafhandelapp
       - ../larpingapp:/var/www/html/custom_apps/larpingapp
+      - ../shillinq:/var/www/html/custom_apps/shillinq
     environment:
       # Database configuration (PostgreSQL)
       - POSTGRES_DB=nextcloud
@@ -713,7 +723,9 @@ services:
       - mariadb
     user: root
     container_name: nextcloud-mariadb
-    image: nextcloud
+    # PINNED — same reason as the main nextcloud service above (avoid latest-drift
+    # upgrade churn that 503s the env on reset).
+    image: nextcloud:34.0.0-apache
     restart: always
     ports:
       - 8080:80

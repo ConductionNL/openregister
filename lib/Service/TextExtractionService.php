@@ -6,6 +6,9 @@
  * This service handles all text extraction logic for files in the system.
  * It consolidates extraction workflows, file tracking, and re-extraction detection.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -14,6 +17,8 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git-id>
  * @link      https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
  */
 
 declare(strict_types=1);
@@ -34,6 +39,10 @@ use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\RiskLevelService;
+use OCA\OpenRegister\Service\TextExtraction\EmlParser;
+use OCA\OpenRegister\Service\TextExtraction\SpreadsheetExtractor;
+use OCA\OpenRegister\Service\TextExtraction\PdfExtractor;
+use OCA\OpenRegister\Service\TextExtraction\WordExtractor;
 use OCA\OpenRegister\Service\TextExtraction\EntityRecognitionHandler;
 use OCA\OpenRegister\Service\TextExtraction\ObjectHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -44,9 +53,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Uid\Uuid;
 use Throwable;
 // Document parsing libraries.
-use Smalot\PdfParser\Parser as PdfParser;
-use PhpOffice\PhpWord\IOFactory as WordIOFactory;
-use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
 
 /**
  * TextExtractionService
@@ -60,10 +66,13 @@ use PhpOffice\PhpSpreadsheet\IOFactory as SpreadsheetIOFactory;
  * @copyright 2024 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods
- * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries
- * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+ * @SuppressWarnings(PHPMD.ExcessiveClassLength)     Text extraction requires comprehensive document parsing methods.
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity) Complex multi-format document extraction logic.
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)   Requires multiple document parsing libraries and mapper types for multi-format extraction.
+ * @SuppressWarnings(PHPMD.ExcessiveMethodLength)    Individual extraction methods for PDF/DOCX/XLSX/EML each require format-specific logic.
+ * @SuppressWarnings(PHPMD.TooManyMethods)           One private extraction method per supported MIME group
+ * (PDF/DOCX/XLSX/EML/text/object/file) plus chunking strategies; splitting into sub-services would
+ * break the encapsulated extraction workflow.
  */
 class TextExtractionService
 {
@@ -129,8 +138,12 @@ class TextExtractionService
      *                                                       inputs and for the public `parseEmlStructured`
      *                                                       surface that DocuDesk's `eml-pdf-assembly`
      *                                                       consumes; see `text-extraction-eml`).
+     * @param SpreadsheetExtractor     $spreadsheetExtractor Extractor for spreadsheet documents
+     * @param PdfExtractor             $pdfExtractor         Extractor for PDF documents
+     * @param WordExtractor            $wordExtractor        Extractor for Word documents
      *
-     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) Nextcloud DI requires constructor injection for all document-type parsers and entity mappers.
+     * @SuppressWarnings(PHPMD.ShortVariable)          $db is a well-known PHP idiom for a database connection parameter.
      */
     public function __construct(
         private readonly FileMapper $fileMapper,
@@ -146,7 +159,10 @@ class TextExtractionService
         private readonly EntityRelationMapper $entityRelationMapper,
         private readonly SettingsService $settingsService,
         private readonly RiskLevelService $riskLevelService,
-        private readonly \OCA\OpenRegister\Service\TextExtraction\EmlParser $emlParser
+        private readonly EmlParser $emlParser,
+        private readonly SpreadsheetExtractor $spreadsheetExtractor,
+        private readonly PdfExtractor $pdfExtractor,
+        private readonly WordExtractor $wordExtractor
     ) {
     }//end __construct()
 
@@ -167,6 +183,8 @@ class TextExtractionService
      * @throws Exception If extraction fails
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Boolean flag needed for force re-extraction behavior
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractFile(int $fileId, bool $forceReExtract=false): void
     {
@@ -308,6 +326,8 @@ class TextExtractionService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)   Boolean flag needed for force re-extraction behavior
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive object extraction requires detailed processing
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractObject(int $objectId, bool $forceReExtract=false): void
     {
@@ -1012,6 +1032,8 @@ class TextExtractionService
      * @return (int|string)[] Statistics about discovery: {discovered, failed, total}
      *
      * @psalm-return array{discovered: int<0, max>, failed: int<0, max>, total: int<0, max>, error?: string}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function discoverUntrackedFiles(int $limit=100): array
     {
@@ -1095,6 +1117,8 @@ class TextExtractionService
      * @return int[] Statistics about the extraction process: {processed, failed, total}
      *
      * @psalm-return array{processed: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function extractPendingFiles(int $limit=100): array
     {
@@ -1174,6 +1198,8 @@ class TextExtractionService
      * @return int[] Statistics about the retry process
      *
      * @psalm-return array{retried: int<0, max>, failed: int<0, max>, total: int<0, max>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function retryFailedExtractions(int $limit=50): array
     {
@@ -1224,6 +1250,8 @@ class TextExtractionService
      *     totalObjects: int,
      *     totalEntities: int
      * }
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function getStats(): array
     {
@@ -1246,6 +1274,8 @@ class TextExtractionService
      * @param string $tableName Table name without prefix
      *
      * @return int
+     *
+     * @SuppressWarnings(PHPMD.ShortVariable) $qb is a well-known NC/Doctrine idiom for a QueryBuilder instance.
      */
     private function getTableCountSafe(string $tableName): int
     {
@@ -1326,195 +1356,36 @@ class TextExtractionService
      */
     private function extractPdf(\OCP\Files\File $file): string|null
     {
-        // Check if PdfParser library is available.
-        if (class_exists('Smalot\PdfParser\Parser') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PDF parser library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PDF parser library (smalot/pdfparser) is not installed. ";
-            $msg .= "Run: composer require smalot/pdfparser";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting PDF',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PdfParser (it requires a file path).
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Parse PDF.
-            $parser = new PdfParser();
-            $pdf    = $parser->parseFile($tempPath);
-
-            // Extract text.
-            $text = $pdf->getText();
-
-            // Clean up.
-            fclose($tempFile);
-
-            if ($text === '') {
-                $this->logger->warning(
-                    message: '[TextExtractionService] PDF extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] PDF extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] PDF extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("PDF extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated PdfExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->pdfExtractor->extract(file: $file);
     }//end extractPdf()
 
     /**
-     * Extract text from Word document (DOCX/DOC) using PhpWord
+     * Extract text from a Word-family document (DOCX/DOC/ODT) using PhpWord
+     *
+     * Selects the PhpWord reader from the file's MIME type / extension
+     * (DOCX → Word2007, DOC → MsDoc, ODT → ODText) and walks the full
+     * element tree — body, tables (incl. nested tables and in-cell text
+     * runs / list items), section headers and footers, and document-level
+     * footnotes/endnotes. On a per-document load/parse failure the method
+     * logs structural detail (no document content) and returns null rather
+     * than throwing, so a single un-parseable file does not abort a batch.
      *
      * @param \OCP\Files\File $file Nextcloud file object
      *
-     * @return string|null Extracted text content
+     * @return string|null Extracted text content, or null on empty/failed extraction
      *
-     * @throws Exception If Word parsing fails
+     * @throws Exception If the PhpWord library itself is not installed (deployment error)
      *
      * @SuppressWarnings(PHPMD.StaticAccess)         IOFactory::load is standard PhpWord pattern
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex document structure traversal
+     * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multi-section header/body/footer/notes traversal
      */
     private function extractWord(\OCP\Files\File $file): ?string
     {
-        // Check if PhpWord library is available.
-        if (class_exists('PhpOffice\PhpWord\IOFactory') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PhpWord library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PhpWord library (phpoffice/phpword) is not installed. ";
-            $msg .= "Run: composer require phpoffice/phpword";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting Word document',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PhpWord.
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Load Word document.
-            $phpWord = WordIOFactory::load($tempPath);
-
-            // Extract text from all sections.
-            $text = '';
-            foreach ($phpWord->getSections() as $section) {
-                foreach ($section->getElements() as $element) {
-                    if (method_exists($element, 'getText') === true) {
-                        $text .= $element->getText()."\n";
-                    } else if (method_exists($element, 'getElements') === true) {
-                        // Handle nested elements (tables, etc.).
-                        foreach ($element->getElements() as $childElement) {
-                            if (method_exists($childElement, 'getText') === true) {
-                                $text .= $childElement->getText()." ";
-                            }
-                        }
-
-                        $text .= "\n";
-                    }
-                }
-            }
-
-            // Clean up.
-            fclose($tempFile);
-
-            if (trim($text) === '' || trim($text) === null) {
-                $this->logger->warning(
-                    message: '[TextExtractionService] Word extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] Word document extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] Word extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("Word extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated WordExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->wordExtractor->extract(file: $file);
     }//end extractWord()
 
     /**
@@ -1532,114 +1403,9 @@ class TextExtractionService
      */
     private function extractSpreadsheet(\OCP\Files\File $file): ?string
     {
-        // PhpSpreadsheet should already be installed (in composer.json).
-        if (class_exists('PhpOffice\PhpSpreadsheet\IOFactory') === false) {
-            $this->logger->warning(
-                message: '[TextExtractionService] PhpSpreadsheet library not available',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                ]
-            );
-            $msg  = "PhpSpreadsheet library (phpoffice/phpspreadsheet) is not installed. ";
-            $msg .= "Run: composer require phpoffice/phpspreadsheet";
-            throw new Exception($msg);
-        }
-
-        try {
-            $this->logger->debug(
-                message: '[TextExtractionService] Extracting spreadsheet',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'name'   => $file->getName(),
-                ]
-            );
-
-            // Get file content.
-            $content = $file->getContent();
-
-            // Create temporary file for PhpSpreadsheet.
-            $tempFile = tmpfile();
-            $tempPath = stream_get_meta_data($tempFile)['uri'];
-            fwrite($tempFile, $content);
-
-            // Load spreadsheet.
-            $spreadsheet = SpreadsheetIOFactory::load($tempPath);
-
-            // Extract text from all sheets.
-            $text = '';
-            foreach ($spreadsheet->getAllSheets() as $sheet) {
-                $text .= "Sheet: ".$sheet->getTitle()."\n";
-
-                $highestRow    = $sheet->getHighestRow();
-                $highestColumn = $sheet->getHighestColumn();
-
-                // Iterate through rows and columns.
-                for ($row = 1; $row <= $highestRow; $row++) {
-                    $rowData = [];
-                    // @psalm-suppress StringIncrement - Excel column increment is intentional
-                    for ($col = 'A'; $col !== $highestColumn; $col++) {
-                        $value = $sheet->getCell($col.$row)->getValue();
-                        if ($value !== null && $value !== '') {
-                            $rowData[] = $value;
-                        }
-                    }
-
-                    // Add last column.
-                    $value = $sheet->getCell($highestColumn.$row)->getValue();
-                    if ($value !== null && $value !== '') {
-                        $rowData[] = $value;
-                    }
-
-                    if (empty($rowData) === false) {
-                        $text .= implode("\t", $rowData)."\n";
-                    }
-                }
-
-                $text .= "\n";
-            }//end foreach
-
-            // Clean up.
-            fclose($tempFile);
-
-            if (trim($text) === '' || trim($text) === null) {
-                $this->logger->warning(
-                    message: '[TextExtractionService] Spreadsheet extraction returned empty text',
-                    context: [
-                        'file'   => __FILE__,
-                        'line'   => __LINE__,
-                        'fileId' => $file->getId(),
-                    ]
-                );
-                return null;
-            }
-
-            $this->logger->debug(
-                message: '[TextExtractionService] Spreadsheet extracted successfully',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'length' => strlen($text),
-                ]
-            );
-
-            return $text;
-        } catch (Exception $e) {
-            $this->logger->error(
-                message: '[TextExtractionService] Spreadsheet extraction failed',
-                context: [
-                    'file'   => __FILE__,
-                    'line'   => __LINE__,
-                    'fileId' => $file->getId(),
-                    'error'  => $e->getMessage(),
-                ]
-            );
-            throw new Exception("Spreadsheet extraction failed: ".$e->getMessage());
-        }//end try
+        // Delegated to the dedicated SpreadsheetExtractor handler
+        // (extract-god-class-services) — behaviour unchanged.
+        return $this->spreadsheetExtractor->extract(file: $file);
     }//end extractSpreadsheet()
 
     /**
@@ -1652,6 +1418,11 @@ class TextExtractionService
      * @param \OCP\Files\File $file The EML file.
      *
      * @return string|null Flat plain-text, or null when the file cannot be parsed.
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) EmlParser::sanitisePiiForLogging is a stateless utility;
+     * making it non-static would not improve testability or DI.
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     private function extractEml(\OCP\Files\File $file): ?string
     {
@@ -1689,6 +1460,8 @@ class TextExtractionService
      * @return \OCA\OpenRegister\Service\TextExtraction\EmlStructure
      *
      * @throws \OCA\OpenRegister\Exception\EmlParseException
+     *
+     * @spec openspec/specs/text-extraction-eml/spec.md#requirement-extracteml-and-parseemlstructured-must-not-log-pii-adr-005
      */
     public function parseEmlStructured(\OCP\Files\File $file): \OCA\OpenRegister\Service\TextExtraction\EmlStructure
     {
@@ -1707,6 +1480,8 @@ class TextExtractionService
      * @return (int|mixed|string)[][] Array of text chunks
      *
      * @psalm-return array<int<0, max>, array{text: mixed|string, start_offset: int|mixed, end_offset: int|mixed}>
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw2-svc-flat-2/tasks.md#task-5
      */
     public function chunkDocument(string $text, array $options=[]): array
     {
@@ -1840,11 +1615,24 @@ class TextExtractionService
 
             $chunkLength = strlen($chunk);
 
-            if (strlen(trim($chunk)) >= self::MIN_CHUNK_SIZE) {
-                $chunks[] = [
-                    'text'         => trim($chunk),
-                    'start_offset' => $offset,
-                    'end_offset'   => $offset + $chunkLength,
+            $trimmedChunk = trim($chunk);
+            if (strlen($trimmedChunk) >= self::MIN_CHUNK_SIZE) {
+                // Align the persisted absolute offset with the trimmed text we
+                // store. trim() drops leading whitespace, so the first char of
+                // `text_content` sits `leadingWhitespace` bytes after the raw
+                // window start ($offset). Persisting the raw $offset would make
+                // every regex offset computed against `text_content` (and added
+                // to start_offset by ChunkTextMatcher) wrong by that amount —
+                // and two overlapping chunks with different leading-whitespace
+                // counts would then derive DIFFERENT absolute positions for the
+                // same occurrence, defeating absolute-position dedup and
+                // inserting duplicate EntityRelation rows (design §D2).
+                $leadingWhitespace = (strlen($chunk) - strlen(ltrim($chunk)));
+                $trimmedStart      = ($offset + $leadingWhitespace);
+                $chunks[]          = [
+                    'text'         => $trimmedChunk,
+                    'start_offset' => $trimmedStart,
+                    'end_offset'   => ($trimmedStart + strlen($trimmedChunk)),
                 ];
             }
 
@@ -1862,8 +1650,8 @@ class TextExtractionService
 
         return array_filter(
             $chunks,
-            function ($c) {
-                $trimmed = trim($c['text']);
+            function ($chunk) {
+                $trimmed = trim($chunk['text']);
                 return $trimmed !== '' && $trimmed !== null;
             }
         );
@@ -1970,7 +1758,10 @@ class TextExtractionService
         $currentOffset = 0;
 
         foreach ($splits as $split) {
-            $testChunk = $currentChunk === '' ? $split : $currentChunk.$separator.$split;
+            $testChunk = $currentChunk.$separator.$split;
+            if ($currentChunk === '') {
+                $testChunk = $split;
+            }
 
             if (strlen($testChunk) <= $chunkSize) {
                 // Can add to current chunk.
@@ -2041,8 +1832,8 @@ class TextExtractionService
 
         return array_filter(
             $chunks,
-            function ($c) {
-                $trimmed = trim($c['text']);
+            function ($chunk) {
+                $trimmed = trim($chunk['text']);
                 return $trimmed !== '' && $trimmed !== null;
             }
         );
@@ -2060,6 +1851,7 @@ class TextExtractionService
         $wordTypes = [
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/msword',
+            'application/vnd.oasis.opendocument.text',
         ];
 
         return in_array($mimeType, $wordTypes, true) === true;

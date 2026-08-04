@@ -6,7 +6,6 @@ namespace OCA\OpenRegister\Tests\Unit\Controller\Settings;
 
 use OC\Files\AppData\Factory;
 use OCA\OpenRegister\Controller\Settings\CacheSettingsController;
-use OCA\OpenRegister\Service\IndexService;
 use OCA\OpenRegister\Service\SettingsService;
 use OCP\Files\GenericFileException;
 use OCP\Files\IAppData;
@@ -24,7 +23,6 @@ class CacheSettingsControllerTest extends TestCase
     private CacheSettingsController $controller;
     private IRequest&MockObject $request;
     private SettingsService&MockObject $settingsService;
-    private IndexService&MockObject $indexService;
     private LoggerInterface&MockObject $logger;
     private Factory&MockObject $appDataFactory;
     private IAppConfig&MockObject $appConfig;
@@ -33,18 +31,16 @@ class CacheSettingsControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->request = $this->createMock(IRequest::class);
+        $this->request        = $this->createMock(IRequest::class);
         $this->settingsService = $this->createMock(SettingsService::class);
-        $this->indexService = $this->createMock(IndexService::class);
-        $this->logger = $this->createMock(LoggerInterface::class);
+        $this->logger         = $this->createMock(LoggerInterface::class);
         $this->appDataFactory = $this->createMock(Factory::class);
-        $this->appConfig = $this->createMock(IAppConfig::class);
+        $this->appConfig      = $this->createMock(IAppConfig::class);
 
         $this->controller = new CacheSettingsController(
             'openregister',
             $this->request,
             $this->settingsService,
-            $this->indexService,
             $this->logger,
             $this->appDataFactory,
             $this->appConfig

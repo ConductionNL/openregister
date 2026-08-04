@@ -47,6 +47,37 @@ function createObjectStore(id, options = {}) {
 
 const noopPlugin = name => () => ({ name, state: () => ({}), getters: {}, actions: {} })
 
+/**
+ * Mirrors the REAL liveUpdatesPlugin contract (plugin name, contributed state
+ * keys, subscribe/unsubscribe action names and handle shape) so factory-wiring
+ * tests catch drift between this stub and the published API. Transport
+ * behaviour (notify_push, polling, refetch-on-event) is deliberately NOT
+ * simulated here — that lives in @conduction/nextcloud-vue's own test suite.
+ *
+ * @return {object} Plugin definition matching the real plugin's shape
+ */
+function liveUpdatesPlugin() {
+	return {
+		name: 'liveUpdates',
+		state: () => ({
+			liveStatus: 'offline',
+			liveSubscriptions: 0,
+			liveLastEventAt: null,
+		}),
+		getters: {},
+		actions: {
+			async subscribe(type, id) {
+				this.liveSubscriptions += 1
+				return { _livePlugin: true, type, id, eventKey: id ? `or-object-${id}` : `or-collection-${type}` }
+			},
+			unsubscribe(handle) {
+				if (!handle || !handle._livePlugin) return
+				this.liveSubscriptions = Math.max(0, this.liveSubscriptions - 1)
+			},
+		},
+	}
+}
+
 module.exports = {
 	createObjectStore,
 	filesPlugin: noopPlugin('files'),
@@ -56,4 +87,5 @@ module.exports = {
 	lifecyclePlugin: noopPlugin('lifecycle'),
 	searchPlugin: noopPlugin('search'),
 	selectionPlugin: noopPlugin('selection'),
+	liveUpdatesPlugin,
 }

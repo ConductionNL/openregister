@@ -15,6 +15,9 @@
  * Filters are immutable and constructed via static factory methods so
  * invalid input fails fast at parse time.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *
@@ -24,7 +27,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
  */
 
 declare(strict_types=1);
@@ -71,6 +75,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public static function fromBbox(string $bbox, ?string $property=null): self
     {
@@ -117,6 +123,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When malformed.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public static function fromNearAndRadius(
         float|string $lon,
@@ -150,6 +158,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When geometry is malformed.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public static function fromWithinGeometry(array $geometry, ?string $property=null): self
     {
@@ -167,6 +177,8 @@ class GeoFilter
      * @return self
      *
      * @throws InvalidArgumentException When geometry is malformed.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public static function fromIntersectsGeometry(array $geometry, ?string $property=null): self
     {
@@ -184,6 +196,8 @@ class GeoFilter
      * @return void
      *
      * @throws InvalidArgumentException When the geometry is invalid.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     private static function assertGeoJsonGeometry(mixed $geometry, string $opName): void
     {

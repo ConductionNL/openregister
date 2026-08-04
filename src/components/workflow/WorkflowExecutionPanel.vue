@@ -49,7 +49,7 @@
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+ * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
  */
 import { NcButton } from '@nextcloud/vue'
 import axios from '@nextcloud/axios'
@@ -77,7 +77,7 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		async fetchExecutions() {
 			this.loading = true
@@ -95,21 +95,22 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+		 * @param dateStr
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		formatDate(dateStr) {
 			if (!dateStr) return '-'
 			return new Date(dateStr).toLocaleString()
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		prevPage() {
 			this.offset = Math.max(0, this.offset - this.limit)
 			this.fetchExecutions()
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-83
+		 * @spec openspec/specs/workflow-engine-abstraction/spec.md#requirement-workflow-execution-api-sync-and-async
 		 */
 		nextPage() {
 			this.offset += this.limit

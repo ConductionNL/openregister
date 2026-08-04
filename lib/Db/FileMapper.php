@@ -6,6 +6,9 @@
  * This file contains the class for handling read-only file operations
  * on the oc_filecache table with share information from oc_share table.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -79,6 +82,9 @@ use OCP\IURLGenerator;
  *
  * @SuppressWarnings(PHPMD.ExcessiveClassLength)
  * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)     Read-only filecache/oc_share query surface;
+ *   each method is one focused query, splitting the mapper would scatter it without
+ *   reducing complexity.
  */
 class FileMapper extends QBMapper
 {
@@ -479,6 +485,45 @@ class FileMapper extends QBMapper
     }//end getFile()
 
     /**
+     * Batch-load multiple files by their fileids in a single query (PERF-1).
+     *
+     * Avoids the N+1 pattern of calling getFile() once per file during list rendering.
+     * Returns a map keyed by the (string) fileid so callers can do O(1) lookups, with
+     * the same per-file shape (share urls, owner, published, etc.) as getFile().
+     *
+     * @param array $fileIds List of file ids (int|string) to load
+     *
+     * @return array<string, array> Map of (string) fileid => file record
+     *
+     * @phpstan-param  array<int, int|string> $fileIds
+     * @phpstan-return array<string, File>
+     */
+    public function getFilesByIds(array $fileIds): array
+    {
+        // Normalise to unique positive integers; ignore non-numeric entries.
+        $normalisedIds = [];
+        foreach ($fileIds as $fileId) {
+            if (is_numeric($fileId) === true) {
+                $normalisedIds[(int) $fileId] = (int) $fileId;
+            }
+        }
+
+        if (empty($normalisedIds) === true) {
+            return [];
+        }
+
+        // Reuse the existing batch query (single WHERE fileid IN (...)).
+        $files = $this->getFiles(node: null, ids: array_values($normalisedIds));
+
+        $filesById = [];
+        foreach ($files as $file) {
+            $filesById[(string) $file['fileid']] = $file;
+        }
+
+        return $filesById;
+    }//end getFilesByIds()
+
+    /**
      * Get all files for a given ObjectEntity by using its folder property as the node id.
      * If the folder property is empty, search oc_filecache for a row where name matches the object's uuid.
      * If one result, use its fileid as node id; if more than one, throw an error; if zero, return empty array.
@@ -647,6 +692,66 @@ class FileMapper extends QBMapper
 
         return $result;
     }//end getFileIdsForObjects()
+
+    /**
+     * Resolve the owning object's UUID for a Nextcloud `filecache.fileid`.
+     *
+     * Inverse of the {@see getFilesForObject()} fallback path: an object's attached
+     * files live under a folder node whose `filecache.name` equals the object's UUID.
+     * This looks up the file's parent folder and returns that folder's name.
+     *
+     * Best-effort only: an object with an explicit `folder` property pointing at a
+     * node whose name is NOT the object UUID (e.g. a manually re-parented folder)
+     * will not resolve here. Callers MUST treat a `null` return as "no owning object
+     * found" and skip silently rather than error — this mirrors the same convention
+     * `getFilesForObject()` already relies on for its own fallback path.
+     *
+     * SECURITY BOUNDARY: this join is intentionally NOT scoped by storage / tenant /
+     * owner — `filecache.fileid` is globally unique across all storages and any
+     * returned UUID is treated as an *unauthenticated candidate*. The RBAC /
+     * multitenancy safety net lives ONE layer up in
+     * {@see ContentSearchHandler::resolveOwningObject()}, which passes the UUID to
+     * `MagicMapper::find($uuid, _rbac: $callerRbac, _multitenancy: $callerMultitenancy)`.
+     * Those flags are propagated from the outer caller (see
+     * `QueryHandler::searchObjectsPaginatedDatabase`) and default to `true` on the
+     * ContentSearchHandler entry point. **When the outer caller opts out of either
+     * flag** (system contexts, batch jobs, some test paths using
+     * `searchObjectsPaginatedDatabase(_rbac: false, _multitenancy: false)`) **this
+     * method's join becomes an unbounded read across tenants and the caller must
+     * supply its own scope guard** — the built-in safety net collapses. Do NOT
+     * reuse this method in contexts that bypass the follow-up `MagicMapper::find()`
+     * call OR that call it with the RBAC/multitenancy flags disabled, or a
+     * low-privileged user could probe cross-tenant chunk-content by guessing
+     * monotonic fileids. Defence-in-depth (join in `oc_storages` and filter to
+     * accessible storages up-front) is a follow-up if we ever call this from a
+     * hotter path or expose it to callers that opt out of RBAC.
+     *
+     * @param int $fileId The Nextcloud filecache fileid to resolve.
+     *
+     * @return string|null The owning object's UUID, or null when it cannot be resolved.
+     *
+     * @spec openspec/changes/expose-content-search-in-object-service/tasks.md
+     */
+    public function findOwningObjectUuid(int $fileId): ?string
+    {
+        $qb = $this->db->getQueryBuilder();
+        // SECURITY: unscoped filecache join — see docblock. Safety comes from
+        // the MagicMapper::find() call in the sole caller (ContentSearchHandler).
+        $qb->select('parentNode.name')
+            ->from('filecache', 'file')
+            ->innerJoin('file', 'filecache', 'parentNode', $qb->expr()->eq('file.parent', 'parentNode.fileid'))
+            ->where($qb->expr()->eq('file.fileid', $qb->createNamedParameter($fileId, IQueryBuilder::PARAM_INT)));
+
+        $result = $qb->executeQuery();
+        $name   = $result->fetchOne();
+        $result->closeCursor();
+
+        if ($name === false || $name === null || $name === '') {
+            return null;
+        }
+
+        return (string) $name;
+    }//end findOwningObjectUuid()
 
     /**
      * Generate a share URL from a share token.

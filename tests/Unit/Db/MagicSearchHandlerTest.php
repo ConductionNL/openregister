@@ -7,7 +7,9 @@ namespace OCA\OpenRegister\Tests\Unit\Db;
 use OCA\OpenRegister\Db\MagicMapper\MagicOrganizationHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicRbacHandler;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
+use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\Object\SchemaTypeConverter;
 use OCP\IDBConnection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -55,7 +57,8 @@ class MagicSearchHandlerTest extends TestCase
             logger: $this->logger,
             rbacHandler: $this->rbacHandler,
             organizationHandler: $this->organizationHandler,
-            schemaTypeConverter: new SchemaTypeConverter()
+            schemaTypeConverter: new SchemaTypeConverter(),
+            dateTimeNormalizer: new DateTimeNormalizer($this->logger)
         );
     }//end setUp()
 
@@ -68,15 +71,19 @@ class MagicSearchHandlerTest extends TestCase
      *
      * @return string[] Generated SQL condition strings.
      */
-    private function invokeMethod(array $query, array $properties, object $connection): array
-    {
+    private function invokeMethod(
+        array $query,
+        array $properties,
+        object $connection,
+        bool $isPostgres=true
+    ): array {
         $schema = $this->createMock(Schema::class);
         $schema->method('getProperties')->willReturn($properties);
 
         $method = new ReflectionMethod(MagicSearchHandler::class, 'buildObjectFilterConditionsSql');
         $method->setAccessible(true);
 
-        return $method->invoke($this->handler, $query, $schema, $connection);
+        return $method->invoke($this->handler, $query, $schema, $connection, $isPostgres);
     }//end invokeMethod()
 
     /**
@@ -101,7 +108,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
     }//end testGteProducesGreaterThanOrEqualCondition()
 
     public function testLteProducesLessThanOrEqualCondition(): void
@@ -113,7 +120,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[0]);
     }//end testLteProducesLessThanOrEqualCondition()
 
     public function testGteAndLteTogetherProduceTwoRangeConditions(): void
@@ -125,8 +132,8 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(2, $conditions);
-        $this->assertSame("publicatiedatum >= '2025-12-31T23:59:59Z'", $conditions[0]);
-        $this->assertSame("publicatiedatum <= '2027-01-01T00:00:00Z'", $conditions[1]);
+        $this->assertSame("\"publicatiedatum\" >= '2025-12-31T23:59:59Z'", $conditions[0]);
+        $this->assertSame("\"publicatiedatum\" <= '2027-01-01T00:00:00Z'", $conditions[1]);
     }//end testGteAndLteTogetherProduceTwoRangeConditions()
 
     // -------------------------------------------------------------------------
@@ -141,7 +148,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("bedrag > '100'", $conditions[0]);
+        $this->assertSame("\"bedrag\" > '100'", $conditions[0]);
     }//end testGtProducesStrictGreaterThanCondition()
 
     public function testLtProducesStrictLessThanCondition(): void
@@ -153,7 +160,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("bedrag < '500'", $conditions[0]);
+        $this->assertSame("\"bedrag\" < '500'", $conditions[0]);
     }//end testLtProducesStrictLessThanCondition()
 
     // -------------------------------------------------------------------------
@@ -168,7 +175,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open', 'pending')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open', 'pending')", $conditions[0]);
     }//end testInOperatorKeyProducesInClause()
 
     public function testInOperatorKeyWithSingleStringValueProducesInClause(): void
@@ -180,7 +187,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open')", $conditions[0]);
     }//end testInOperatorKeyWithSingleStringValueProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -195,7 +202,7 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status IN ('open', 'closed')", $conditions[0]);
+        $this->assertSame("\"status\" IN ('open', 'closed')", $conditions[0]);
     }//end testPlainArrayValueStillProducesInClause()
 
     // -------------------------------------------------------------------------
@@ -210,8 +217,83 @@ class MagicSearchHandlerTest extends TestCase
         );
 
         $this->assertCount(1, $conditions);
-        $this->assertSame("status = 'open'", $conditions[0]);
+        $this->assertSame("\"status\" = 'open'", $conditions[0]);
     }//end testScalarValueProducesEqualityCondition()
+
+    // -------------------------------------------------------------------------
+    // Reserved-word property names must be quoted in filter conditions —
+    // regression guard for the bug reported in #1956 part (b): a schema
+    // property named 'status'/'case'/'order'/'group' produced a SQL syntax
+    // error because the column name was interpolated raw.
+    // -------------------------------------------------------------------------
+    public function testReservedWordPropertyIsQuotedOnPostgresForEqualityFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['case' => 'open'],
+            properties: ['case' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("\"case\" = 'open'", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedOnPostgresForEqualityFilter()
+
+    public function testReservedWordPropertyIsQuotedOnMySqlForEqualityFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['case' => 'open'],
+            properties: ['case' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: false
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("`case` = 'open'", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedOnMySqlForEqualityFilter()
+
+    public function testReservedWordPropertyIsQuotedForRangeFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['order' => ['gte' => '5', 'lte' => '10']],
+            properties: ['order' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(2, $conditions);
+        $this->assertSame("\"order\" >= '5'", $conditions[0]);
+        $this->assertSame("\"order\" <= '10'", $conditions[1]);
+    }//end testReservedWordPropertyIsQuotedForRangeFilter()
+
+    public function testReservedWordPropertyIsQuotedForInFilter(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['group' => ['admin', 'user']],
+            properties: ['group' => ['type' => 'string']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        $this->assertSame("\"group\" IN ('admin', 'user')", $conditions[0]);
+    }//end testReservedWordPropertyIsQuotedForInFilter()
+
+    public function testReservedWordArrayPropertyIsQuotedForJsonbContainment(): void
+    {
+        $conditions = $this->invokeMethod(
+            query: ['key' => 'foo'],
+            properties: ['key' => ['type' => 'array']],
+            connection: $this->makeConnection(),
+            isPostgres: true
+        );
+
+        $this->assertCount(1, $conditions);
+        // Array properties use a JSONB containment template; the column identifier
+        // must appear quoted so the reserved word doesn't break the COALESCE expression.
+        $this->assertStringContainsString('"key"', $conditions[0]);
+        $this->assertStringNotContainsString("COALESCE(key,", $conditions[0]);
+    }//end testReservedWordArrayPropertyIsQuotedForJsonbContainment()
 
     // -------------------------------------------------------------------------
     // Unknown property must still produce the 1=0 guard condition
@@ -311,4 +393,79 @@ class MagicSearchHandlerTest extends TestCase
         // Non-string properties must not appear in the LIKE chain.
         $this->assertStringNotContainsString('"numeric"', $sql);
     }//end testBuildSearchConditionSqlQuotesEveryStringPropertyOnPostgres()
+
+    // -------------------------------------------------------------------------
+    // Regression: `format: date-time` must round-trip as ISO-8601.
+    //
+    // A date-time property lives in a DATETIME column, so the driver hands it
+    // back as 'Y-m-d H:i:s'. That string fails the schema's own `date-time`
+    // format when the object is written straight back — and a UI edit is exactly
+    // a read-modify-write, so every object carrying a populated date-time 400'd
+    // ("Property 'occurredAt' should match format 'date-time'"). This is the read
+    // path findAll() uses; MagicStatisticsHandler already normalised, this did not.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Invoke the private convertRowToObjectEntity() via reflection.
+     *
+     * @param array<string,mixed> $row        The raw DB row.
+     * @param array<string,mixed> $properties Schema properties.
+     *
+     * @return array<string,mixed> The hydrated object data.
+     */
+    private function invokeConvertRow(array $row, array $properties): array
+    {
+        $register = $this->createMock(Register::class);
+        $schema   = $this->createMock(Schema::class);
+        $schema->method('getProperties')->willReturn($properties);
+
+        $method = new ReflectionMethod(MagicSearchHandler::class, 'convertRowToObjectEntity');
+        $method->setAccessible(true);
+        $entity = $method->invoke($this->handler, $row, $register, $schema, '');
+
+        return ($entity?->getObject() ?? []);
+    }//end invokeConvertRow()
+
+    public function testDateTimePropertyIsReadBackAsIso8601(): void
+    {
+        $objectData = $this->invokeConvertRow(
+            row: [
+                '_uuid'       => 'f5c7b75c-8a72-4d15-9fb2-d91762c871e7',
+                'occurred_at' => '2026-05-26 09:15:00',
+            ],
+            properties: ['occurredAt' => ['type' => 'string', 'format' => 'date-time']]
+        );
+
+        // ISO-8601 (has the `T` separator) — not the raw 'Y-m-d H:i:s' column value,
+        // which the schema's own date-time validator rejects on the way back in.
+        $this->assertArrayHasKey('occurredAt', $objectData);
+        $this->assertStringContainsString('T', (string) $objectData['occurredAt']);
+        $this->assertStringStartsWith('2026-05-26T09:15:00', (string) $objectData['occurredAt']);
+    }//end testDateTimePropertyIsReadBackAsIso8601()
+
+    public function testDatePropertyIsReadBackAsPlainDate(): void
+    {
+        $objectData = $this->invokeConvertRow(
+            row: [
+                '_uuid'               => 'f5c7b75c-8a72-4d15-9fb2-d91762c871e7',
+                'expected_close_date' => '2026-07-15 00:00:00',
+            ],
+            properties: ['expectedCloseDate' => ['type' => 'string', 'format' => 'date']]
+        );
+
+        $this->assertSame('2026-07-15', $objectData['expectedCloseDate']);
+    }//end testDatePropertyIsReadBackAsPlainDate()
+
+    public function testUnformattedStringPropertyIsLeftAlone(): void
+    {
+        $objectData = $this->invokeConvertRow(
+            row: [
+                '_uuid' => 'f5c7b75c-8a72-4d15-9fb2-d91762c871e7',
+                'title' => 'Inlogproblemen na update',
+            ],
+            properties: ['title' => ['type' => 'string']]
+        );
+
+        $this->assertSame('Inlogproblemen na update', $objectData['title']);
+    }//end testUnformattedStringPropertyIsLeftAlone()
 }//end class

@@ -32,6 +32,8 @@ namespace OCA\OpenRegister\Capabilities;
 
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCA\OpenRegister\Service\Integration\IntegrationRegistry;
+use OCA\OpenRegister\Service\Integration\LeafRegistry;
+use OCP\App\IAppManager;
 use OCP\Capabilities\ICapability;
 use OCP\IGroupManager;
 use OCP\IUserSession;
@@ -42,11 +44,25 @@ use OCP\IUserSession;
 class IntegrationsCapability implements ICapability
 {
     /**
+     * Contract version of the `openregister.integrations` capability shape.
+     *
+     * Bumped when the descriptor shape changes incompatibly so consumers
+     * (clients, AI agents) can branch on it. Per ADR-019 the registry is
+     * advertised through OCS discoverability; this is the version of THAT
+     * surface, distinct from any individual provider's own versioning.
+     *
+     * @var int
+     */
+    public const CONTRACT_VERSION = 1;
+
+    /**
      * Constructor.
      *
      * @param IntegrationRegistry $registry     Integration registry.
      * @param IUserSession        $userSession  Current user session.
      * @param IGroupManager       $groupManager Group manager (admin check).
+     * @param IAppManager         $appManager   App manager (installed check).
+     * @param LeafRegistry        $leafRegistry Cross-app leaf catalogue (ADR-066).
      *
      * @return void
      */
@@ -54,6 +70,8 @@ class IntegrationsCapability implements ICapability
         private IntegrationRegistry $registry,
         private IUserSession $userSession,
         private IGroupManager $groupManager,
+        private IAppManager $appManager,
+        private LeafRegistry $leafRegistry,
     ) {
     }//end __construct()
 
@@ -76,8 +94,26 @@ class IntegrationsCapability implements ICapability
         return [
             'openregister' => [
                 'integrations' => [
-                    'version'   => 1,
-                    'providers' => $rows,
+                    // `version` retained for back-compat with the original
+                    // Phase E shape; `contractVersion` is the canonical key
+                    // going forward (ADR-019 discoverability contract).
+                    'version'         => self::CONTRACT_VERSION,
+                    'contractVersion' => self::CONTRACT_VERSION,
+                    // Flat id list — the cheapest discovery primitive, mirrors
+                    // IntegrationRegistry::listIds(). AI agents / clients that
+                    // only need "what exists" read this without walking
+                    // `providers`.
+                    'registered'      => $this->registry->listIds(),
+                    'providers'       => $rows,
+                    // `leaves` — the cross-app leaf catalogue (ADR-066). A
+                    // manifest app or admin UI discovers which leaves exist
+                    // (id, label, requiredApp, surfaces, kinds, renderMode,
+                    // usability) WITHOUT loading any leaf app's JS bundle.
+                    // `renderMode` (component | mount) reports HOW a render-
+                    // surface leaf renders. Render-surface parity to the JS
+                    // registration — including the renderMode correlation — is
+                    // keyed by the shared id.
+                    'leaves'          => $this->leafRegistry->describeForCapabilities(),
                 ],
             ],
         ];
@@ -93,11 +129,20 @@ class IntegrationsCapability implements ICapability
      */
     private function describe(IntegrationProvider $provider, bool $isAdmin): array
     {
+        $requiredApp = $provider->getRequiredApp();
+
         $row = [
             'id'              => $provider->getId(),
             'label'           => $provider->getLabel(),
             'group'           => $provider->getGroup(),
             'enabled'         => $provider->isEnabled(),
+            // `requiredApp` + `available` are public discovery fields: a
+            // non-admin needs to know whether an integration's backing NC
+            // app is installed to decide whether to render its surface.
+            // Built-in providers (requiredApp === null) ride on OpenRegister
+            // itself and are therefore always available.
+            'requiredApp'     => $requiredApp,
+            'available'       => $this->appIsInstalled(appId: $requiredApp),
             'storageStrategy' => $provider->getStorageStrategy(),
             'surfaces'        => ['user-dashboard', 'app-dashboard', 'detail-page', 'single-entity'],
         ];
@@ -121,6 +166,25 @@ class IntegrationsCapability implements ICapability
 
         return $row;
     }//end describe()
+
+    /**
+     * Whether the NC app backing an integration is installed and enabled.
+     *
+     * Built-in integrations declare a null `requiredApp` — they ride on
+     * OpenRegister itself and are therefore always considered available.
+     *
+     * @param string|null $appId The required NC app id, or null for built-ins.
+     *
+     * @return bool True when the integration's backing app is usable.
+     */
+    private function appIsInstalled(?string $appId): bool
+    {
+        if ($appId === null || $appId === '') {
+            return true;
+        }
+
+        return $this->appManager->isEnabledForUser($appId);
+    }//end appIsInstalled()
 
     /**
      * Check whether the current user is in the admin group.

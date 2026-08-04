@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -47,7 +51,7 @@ class CascadingHandler
      * @param UtilityHandler  $utilityHandler Handler for utility operations.
      * @param LoggerInterface $logger         Logger for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function __construct(
         private readonly SaveObject $saveHandler,
@@ -75,7 +79,7 @@ class CascadingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic with multiple relationship types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for handling different relationship configurations
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function handlePreValidationCascading(array $object, Schema $schema, ?string $uuid, ?int $currentRegister): array
     {
@@ -191,7 +195,7 @@ class CascadingHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function createRelatedObject(
         array $objectData,

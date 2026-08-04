@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 declare(strict_types=1);
@@ -23,6 +27,7 @@ use OCA\OpenRegister\Service\File\FileValidationHandler;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
 use OCP\Files\Node;
+use OCP\Files\NotPermittedException;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -78,11 +83,16 @@ class DeleteFileHandler
      * @throws Exception If deleting the file is not permitted or file operations fail.
      *
      * @psalm-param Node|string|int $file
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFile(Node|string|int $file, ?ObjectEntity $object=null): bool
     {
         // Determine file name for error logging.
-        $fileName = ($file instanceof Node === true) ? $file->getName() : (string) $file;
+        $fileName = (string) $file;
+        if ($file instanceof Node === true) {
+            $fileName = $file->getName();
+        }
 
         if ($file instanceof Node === false) {
             $file = $this->readFileHandler->getFile(object: $object, file: $file);
@@ -107,8 +117,14 @@ class DeleteFileHandler
         // Reject when the file is locked by someone else.
         $this->fileLockHandler->assertCanModify($file->getId());
 
-        // @TODO: Check ownership to prevent "File not found" errors - hack for NextCloud rights issues.
+        // Assert the session can reach the file (owned or shared).
         $this->fileValidHandler->checkOwnership($file);
+
+        // Deleting additionally requires delete permission. NC enforces this
+        // natively on delete(), but we fail fast with a clear message.
+        if ($file->isDeletable() === false) {
+            throw new NotPermittedException("File {$file->getName()} is not deletable by the current session");
+        }
 
         try {
             $file->delete();
@@ -132,6 +148,8 @@ class DeleteFileHandler
      * @return (Node|bool|int|mixed|string)[][] Array of deletion results.
      *
      * @psalm-return list<array{error?: string, file: Node|int|mixed|string, success: bool}>
+     *
+     * @spec openspec/specs/file-actions/spec.md
      */
     public function deleteFiles(array $files, ?ObjectEntity $object=null): array
     {

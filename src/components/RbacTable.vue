@@ -19,23 +19,23 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'create')"
-							@update:checked="updatePermission('public', 'create', $event)" />
+							:model-value="hasPermission('public', 'create')"
+							@update:modelValue="updatePermission('public', 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'read')"
-							@update:checked="updatePermission('public', 'read', $event)" />
+							:model-value="hasPermission('public', 'read')"
+							@update:modelValue="updatePermission('public', 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'update')"
-							@update:checked="updatePermission('public', 'update', $event)" />
+							:model-value="hasPermission('public', 'update')"
+							@update:modelValue="updatePermission('public', 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('public', 'delete')"
-							@update:checked="updatePermission('public', 'delete', $event)" />
+							:model-value="hasPermission('public', 'delete')"
+							@update:modelValue="updatePermission('public', 'delete', $event)" />
 					</td>
 				</tr>
 
@@ -47,23 +47,23 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'create')"
-							@update:checked="updatePermission('authenticated', 'create', $event)" />
+							:model-value="hasPermission('authenticated', 'create')"
+							@update:modelValue="updatePermission('authenticated', 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'read')"
-							@update:checked="updatePermission('authenticated', 'read', $event)" />
+							:model-value="hasPermission('authenticated', 'read')"
+							@update:modelValue="updatePermission('authenticated', 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'update')"
-							@update:checked="updatePermission('authenticated', 'update', $event)" />
+							:model-value="hasPermission('authenticated', 'update')"
+							@update:modelValue="updatePermission('authenticated', 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission('authenticated', 'delete')"
-							@update:checked="updatePermission('authenticated', 'delete', $event)" />
+							:model-value="hasPermission('authenticated', 'delete')"
+							@update:modelValue="updatePermission('authenticated', 'delete', $event)" />
 					</td>
 				</tr>
 
@@ -74,23 +74,23 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'create')"
-							@update:checked="updatePermission(group.id, 'create', $event)" />
+							:model-value="hasPermission(group.id, 'create')"
+							@update:modelValue="updatePermission(group.id, 'create', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'read')"
-							@update:checked="updatePermission(group.id, 'read', $event)" />
+							:model-value="hasPermission(group.id, 'read')"
+							@update:modelValue="updatePermission(group.id, 'read', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'update')"
-							@update:checked="updatePermission(group.id, 'update', $event)" />
+							:model-value="hasPermission(group.id, 'update')"
+							@update:modelValue="updatePermission(group.id, 'update', $event)" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="hasPermission(group.id, 'delete')"
-							@update:checked="updatePermission(group.id, 'delete', $event)" />
+							:model-value="hasPermission(group.id, 'delete')"
+							@update:modelValue="updatePermission(group.id, 'delete', $event)" />
 					</td>
 				</tr>
 
@@ -102,22 +102,22 @@
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
+							:model-value="true"
 							:disabled="true" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
+							:model-value="true"
 							:disabled="true" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
+							:model-value="true"
 							:disabled="true" />
 					</td>
 					<td>
 						<NcCheckboxRadioSwitch
-							:checked="true"
+							:model-value="true"
 							:disabled="true" />
 					</td>
 				</tr>
@@ -179,6 +179,7 @@ export default {
 		 * Get sorted groups (only showing groups assigned to the organisation)
 		 *
 		 * @return {Array} Sorted array of groups
+		 * @spec exclude computed sorted/filtered group list for display, RBAC contract owned by rbac capability
 		 */
 		sortedGroups() {
 			// If no organisation groups specified, show all available groups
@@ -205,6 +206,7 @@ export default {
 		 * Check if any permissions are set for this entity type
 		 *
 		 * @return {boolean} True if permissions are set
+		 * @spec exclude computed read of authorization prop presence, RBAC contract owned by rbac capability
 		 */
 		hasAnyPermissions() {
 		// For applications, authorization is flat (just {create: [], read: [], ...})
@@ -241,6 +243,7 @@ export default {
 	 * @param {string} groupId - The group ID
 	 * @param {string} action - The action (create, read, update, delete)
 	 * @return {boolean} True if group has permission
+	 * @spec exclude permission-check read helper, RBAC contract owned by rbac capability
 	 */
 		hasPermission(groupId, action) {
 		// For applications, authorization is flat (just {create: [], read: [], ...})
@@ -269,6 +272,7 @@ export default {
 		 * @param {string} action - The action (create, read, update, delete)
 		 * @param {boolean} hasPermission - Whether to grant or revoke permission
 		 * @return {void}
+		 * @spec exclude emit update event to parent, RBAC contract owned by rbac capability
 		 */
 		updatePermission(groupId, action, hasPermission) {
 			this.$emit('update', {

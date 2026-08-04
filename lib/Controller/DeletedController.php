@@ -6,6 +6,9 @@
  * Controller for managing soft deleted objects in the OpenRegister app.
  * Provides functionality for listing, filtering, restoring, and permanently deleting objects.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -17,18 +20,19 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+ * @spec openspec/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
+ * @spec openspec/specs/deletion-audit-trail/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
 
 use DateTime;
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -49,14 +53,14 @@ class DeletedController extends Controller
     /**
      * Constructor for the DeletedController
      *
-     * @param string         $appName            The name of the app
-     * @param IRequest       $request            The request object
-     * @param MagicMapper    $objectEntityMapper The object entity mapper
-     * @param RegisterMapper $registerMapper     The register mapper
-     * @param SchemaMapper   $schemaMapper       The schema mapper
-     * @param ObjectService  $objectService      The object service
-     * @param IUserSession   $userSession        The user session
-     * @param IGroupManager  $groupManager       The group manager for admin checks
+     * @param string            $appName            The name of the app
+     * @param IRequest          $request            The request object
+     * @param MagicMapper       $objectEntityMapper The object entity mapper
+     * @param RegisterMapper    $registerMapper     The register mapper
+     * @param SchemaMapper      $schemaMapper       The schema mapper
+     * @param IUserSession      $userSession        The user session
+     * @param IGroupManager     $groupManager       The group manager for admin checks
+     * @param PermissionHandler $permissionHandler  Handler for per-schema RBAC checks
      *
      * @return void
      */
@@ -66,9 +70,9 @@ class DeletedController extends Controller
         private readonly MagicMapper $objectEntityMapper,
         private readonly RegisterMapper $registerMapper,
         private readonly SchemaMapper $schemaMapper,
-        private readonly ObjectService $objectService,
         private readonly IUserSession $userSession,
-        private readonly IGroupManager $groupManager
+        private readonly IGroupManager $groupManager,
+        private readonly PermissionHandler $permissionHandler
     ) {
         parent::__construct(appName: $appName, request: $request);
     }//end __construct()
@@ -87,6 +91,62 @@ class DeletedController extends Controller
 
         return (bool) $this->groupManager->isAdmin($user->getUID());
     }//end isCurrentUserAdmin()
+
+    /**
+     * Resolve a soft-deleted object's schema and check the caller has the
+     * required action permission.
+     *
+     * Refuses the call (returns false) when:
+     *  - no user is authenticated, OR
+     *  - the object lacks a resolvable register/schema context, OR
+     *  - PermissionHandler denies the action for the caller.
+     *
+     * Admin users always pass. This mirrors the fail-closed write-RBAC
+     * pattern from #1949: when register/schema context cannot be derived,
+     * the destructive operation is refused.
+     *
+     * @param ObjectEntity $object The soft-deleted object being acted on.
+     * @param string       $action The action to authorize ('delete'|'update').
+     *
+     * @return bool True if the caller may perform the action on this object.
+     */
+    private function userMayActOnDeletedObject(ObjectEntity $object, string $action): bool
+    {
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return false;
+        }
+
+        // Admin bypass.
+        if ($this->isCurrentUserAdmin() === true) {
+            return true;
+        }
+
+        $schemaId = $object->getSchema();
+        if ($schemaId === null || $schemaId === '') {
+            // Fail-closed: cannot resolve schema, refuse.
+            return false;
+        }
+
+        try {
+            $schema = $this->schemaMapper->find((int) $schemaId);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        try {
+            return $this->permissionHandler->hasPermission(
+                schema: $schema,
+                action: $action,
+                userId: $user->getUID(),
+                objectOwner: $object->getOwner(),
+                _rbac: true,
+                object: $object
+            );
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }//end userMayActOnDeletedObject()
 
     /**
      * Helper method to extract request parameters for deleted objects
@@ -190,43 +250,22 @@ class DeletedController extends Controller
      *     page?: int, pages?: 1|float, limit?: int|null, offset?: int|null},
      *     array<never, never>>
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function index(): JSONResponse
     {
         $params = $this->extractRequestParameters();
 
         try {
-            // Use searchObjectsPaginated with @self.deleted filter to find deleted objects.
-            // Build query array with filter for deleted objects.
-            $query = [
-                '@self.deleted' => 'IS NOT NULL',
-                '_limit'        => $params['limit'],
-                '_offset'       => $params['offset'],
-                '_order'        => $params['sort'],
-            ];
-
-            // Merge any additional filters from request.
-            foreach ($params['filters'] as $key => $value) {
-                if ($key !== '@self.deleted') {
-                    $query[$key] = $value;
-                }
-            }
-
-            // Determine if current user is admin and disable multitenancy if so.
-            $isAdmin = $this->isCurrentUserAdmin();
-
-            // Use ObjectService to search for deleted objects with deleted=true to include them.
-            $result = $this->objectService->searchObjectsPaginated(
-                query: $query,
-                deleted: true,
-                // This tells the service to include deleted objects in the search.
-                _multitenancy: !$isAdmin
-                // Disable multitenancy for admins so they can see all deleted objects.
+            // Objects live in per-register/schema magic tables, so there is no
+            // single table for searchObjectsPaginated() to query without a
+            // register/schema context — it always fell through to an empty
+            // result. Scan every magic table for soft-deleted rows directly.
+            $deletedObjects = $this->objectEntityMapper->findDeletedAcrossAllMagicTables(
+                limit: $params['limit'],
+                offset: $params['offset']
             );
-
-            $deletedObjects = $result['results'] ?? [];
-            $total          = $result['total'] ?? 0;
+            $total          = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
 
             // Calculate pagination.
             $pages = 1;
@@ -262,14 +301,16 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with deletion statistics
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function statistics(): JSONResponse
     {
         try {
-            // Get total deleted count.
-            $totalDeleted = $this->objectEntityMapper->countAll(
-                _filters: ['@self.deleted' => 'IS NOT NULL'],
-            );
+            // Count soft-deleted rows across every magic table. countAll() with
+            // no register/schema context returns 0 (it cannot pick a table), so
+            // the dedicated cross-table count is required.
+            $totalDeleted = $this->objectEntityMapper->countDeletedAcrossAllMagicTables();
 
             // Get deleted today count.
             $today        = (new DateTime())->format('Y-m-d');
@@ -318,9 +359,17 @@ class DeletedController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with top deleters data
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-ctrl-object-data/tasks.md#task-16
      */
     public function topDeleters(): JSONResponse
     {
+        // SEC-CTRL: admin-only — cross-user deletion analytics (usernames are
+        // PII); a tenant-wide management surface, not per-user data.
+        if ($this->isCurrentUserAdmin() === false) {
+            return new JSONResponse(data: ['error' => 'Admin privileges required'], statusCode: 403);
+        }
+
         try {
             // TODO: Implement aggregation query to get top deleters from deleted objects.
             // For now, return mock data structure.
@@ -352,7 +401,7 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with restore result
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function restore(string $id): JSONResponse
     {
@@ -368,13 +417,11 @@ class DeletedController extends Controller
                 );
             }
 
-            // Clear the deleted status using direct SQL update.
-            // Nextcloud Entity system has issues detecting array->null changes for JSON fields.
-            $qb = $this->objectEntityMapper->getQueryBuilder();
-            $qb->update('openregister_objects')
-                ->set('deleted', $qb->createNamedParameter(null, \PDO::PARAM_NULL))
-                ->where($qb->expr()->eq('uuid', $qb->createNamedParameter($id)))
-                ->executeStatement();
+            // Restore via MagicMapper: objects live in per-register/schema magic
+            // tables, NOT the legacy generic `openregister_objects` table. The
+            // old direct `UPDATE openregister_objects` matched zero rows, so the
+            // call reported success but never un-deleted the object.
+            $this->objectEntityMapper->restoreObject(uuid: $id);
 
             return new JSONResponse(
                 data: [
@@ -395,9 +442,12 @@ class DeletedController extends Controller
     /**
      * Restore multiple deleted objects
      *
-     * TODO: This function is unsafe as it doesn't filter by register/schema.
-     * In the future, add register and schema filtering to mass operations
-     * to prevent cross-register restoring.
+     * Each soft-deleted object is gated through PermissionHandler with the
+     * `update` action against the object's resolved schema. Admins bypass.
+     * Objects whose schema cannot be resolved or for which the caller lacks
+     * `update` permission are skipped (counted as `failed`) so a partial
+     * cross-tenant bulk restore cannot succeed silently. This closes the
+     * wave-3 C4 finding (no RBAC on `restoreMultiple`).
      *
      * @NoAdminRequired
      *
@@ -405,10 +455,17 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple restore result
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-31
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function restoreMultiple(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         $ids = $this->request->getParam('ids', []);
 
         if (empty($ids) === true) {
@@ -421,17 +478,13 @@ class DeletedController extends Controller
         }
 
         try {
-            // Use findAll for better database performance - single query instead of multiple.
-            $objects = $this->objectEntityMapper->findAll(
-                limit: null,
-                offset: null,
-                filters: [],
-                searchConditions: [],
-                searchParams: [],
-                sort: [],
-                search: null,
-                ids: $ids,
-                uses: null,
+            // Resolve across ALL magic tables, including deleted rows. findAll()
+            // without register/schema context returns [] (it cannot know which
+            // magic table to query), so a UUID-keyed cross-table lookup is
+            // required to actually find the soft-deleted objects.
+            $objects = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+                uuids: $ids,
+                includeDeleted: true
             );
 
             // Track results.
@@ -441,7 +494,7 @@ class DeletedController extends Controller
 
             // Process found objects.
             foreach ($objects as $object) {
-                $foundIds[] = $object->getId();
+                $foundIds[] = $object->getUuid();
 
                 try {
                     if ($object->getDeleted() === null) {
@@ -450,13 +503,23 @@ class DeletedController extends Controller
                         continue;
                     }
 
-                    $object->setDeleted(null);
-                    $this->objectEntityMapper->update(entity: $object);
+                    // Per-object RBAC gate: caller must have `update`
+                    // permission on the resolved schema (admins bypass).
+                    // Cross-tenant restores are silently dropped (counted
+                    // as failed) rather than aborting the whole batch.
+                    if ($this->userMayActOnDeletedObject(object: $object, action: 'update') === false) {
+                        $failed++;
+                        continue;
+                    }
+
+                    // Restore via the magic-table-aware path (writes _deleted=NULL
+                    // on the correct per-register/schema table).
+                    $this->objectEntityMapper->restoreObject(uuid: (string) $object->getUuid());
                     $restored++;
                 } catch (\Exception $e) {
                     $failed++;
-                }
-            }
+                }//end try
+            }//end foreach
 
             // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));
@@ -484,6 +547,11 @@ class DeletedController extends Controller
     /**
      * Permanently delete an object
      *
+     * Gated through PermissionHandler with the `delete` action against the
+     * resolved schema (admins bypass). When register/schema context cannot
+     * be derived the call is refused fail-closed. This closes the wave-3 C4
+     * finding (no RBAC on `destroy`).
+     *
      * @param string $id The ID or UUID of the object to permanently delete
      *
      * @NoAdminRequired
@@ -492,10 +560,17 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with deletion result
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function destroy(string $id): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         try {
             $object = $this->objectEntityMapper->find(identifier: $id, register: null, schema: null, includeDeleted: true);
 
@@ -505,6 +580,17 @@ class DeletedController extends Controller
                         'error' => 'Object is not deleted',
                     ],
                     statusCode: 400
+                );
+            }
+
+            // Per-object RBAC gate: caller must have `delete` permission on
+            // the resolved schema (admins bypass). Cross-tenant destructive
+            // deletes are refused with 403 — no silent fail since this is a
+            // single-object endpoint.
+            if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
+                return new JSONResponse(
+                    data: ['error' => 'User does not have permission to permanently delete this object'],
+                    statusCode: 403
                 );
             }
 
@@ -530,9 +616,12 @@ class DeletedController extends Controller
     /**
      * Permanently delete multiple objects
      *
-     * TODO: This function is unsafe as it doesn't filter by register/schema.
-     * In the future, add register and schema filtering to mass operations
-     * to prevent cross-register deleting.
+     * Each soft-deleted object is gated through PermissionHandler with the
+     * `delete` action against the object's resolved schema. Admins bypass.
+     * Objects whose schema cannot be resolved or for which the caller lacks
+     * `delete` permission are skipped (counted as `failed`) so a partial
+     * cross-tenant bulk wipe cannot succeed silently. This closes the
+     * wave-3 C4 finding (no RBAC on `destroyMultiple`).
      *
      * @NoAdminRequired
      *
@@ -540,10 +629,17 @@ class DeletedController extends Controller
      *
      * @return JSONResponse JSON response with multiple deletion result
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-28
+     * @spec openspec/specs/deletion-audit-trail/spec.md
      */
     public function destroyMultiple(): JSONResponse
     {
+        if ($this->userSession->getUser() === null) {
+            return new JSONResponse(
+                data: ['error' => 'Not authenticated'],
+                statusCode: 401
+            );
+        }
+
         $ids = $this->request->getParam('ids', []);
 
         if (empty($ids) === true) {
@@ -556,17 +652,12 @@ class DeletedController extends Controller
         }
 
         try {
-            // Use findAll for better database performance - single query instead of multiple.
-            $objects = $this->objectEntityMapper->findAll(
-                limit: null,
-                offset: null,
-                filters: [],
-                searchConditions: [],
-                searchParams: [],
-                sort: [],
-                search: null,
-                ids: $ids,
-                uses: null,
+            // Resolve across ALL magic tables, including deleted rows. findAll()
+            // without register/schema context returns [], so a UUID-keyed
+            // cross-table lookup is required to find the soft-deleted objects.
+            $objects = $this->objectEntityMapper->findMultipleAcrossAllMagicTables(
+                uuids: $ids,
+                includeDeleted: true
             );
 
             // Track results.
@@ -576,11 +667,18 @@ class DeletedController extends Controller
 
             // Process found objects.
             foreach ($objects as $object) {
-                $foundIds[] = $object->getId();
+                $foundIds[] = $object->getUuid();
 
                 try {
                     if ($object->getDeleted() === null) {
                         // Object exists but is not deleted.
+                        $failed++;
+                        continue;
+                    }
+
+                    // Per-object RBAC gate: caller must have `delete`
+                    // permission on the resolved schema (admins bypass).
+                    if ($this->userMayActOnDeletedObject(object: $object, action: 'delete') === false) {
                         $failed++;
                         continue;
                     }
@@ -590,7 +688,7 @@ class DeletedController extends Controller
                 } catch (\Exception $e) {
                     $failed++;
                 }
-            }
+            }//end foreach
 
             // Count objects that were requested but not found in database.
             $notFound = count(array_diff($ids, $foundIds));

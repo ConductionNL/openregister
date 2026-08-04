@@ -591,4 +591,61 @@ class PropertyValidatorHandlerTest extends TestCase
         ]);
         $this->assertTrue($result);
     }
+
+    // ── sourceLanguage modifier (i18n-source-of-truth) ──
+
+    public function testSourceLanguageOnTranslatableProperty(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type'           => 'string',
+            'translatable'   => true,
+            'sourceLanguage' => 'nl',
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testSourceLanguageWithRegionSuffix(): void
+    {
+        $result = $this->validator->validateProperty([
+            'type'           => 'string',
+            'translatable'   => true,
+            'sourceLanguage' => 'en-GB',
+        ]);
+        $this->assertTrue($result);
+    }
+
+    public function testSourceLanguageRejectedOnNonTranslatableProperty(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("requires translatable: true");
+
+        $this->validator->validateProperty([
+            'type'           => 'string',
+            'sourceLanguage' => 'nl',
+        ]);
+    }
+
+    public function testSourceLanguageRejectedWhenInvalidBcp47(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("not a valid BCP-47");
+
+        $this->validator->validateProperty([
+            'type'           => 'string',
+            'translatable'   => true,
+            'sourceLanguage' => 'GARBAGE',
+        ]);
+    }
+
+    public function testSourceLanguageRejectedWhenEmpty(): void
+    {
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage("must be a non-empty string");
+
+        $this->validator->validateProperty([
+            'type'           => 'string',
+            'translatable'   => true,
+            'sourceLanguage' => '',
+        ]);
+    }
 }

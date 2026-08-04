@@ -16,7 +16,7 @@ import { applicationStore, navigationStore } from '../../store/store.js'
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="error"
+				variant="error"
 				@click="deleteApplication">
 				<template #icon>
 					<TrashCanOutline :size="20" />
@@ -41,6 +41,9 @@ export default {
 		TrashCanOutline,
 	},
 	computed: {
+		/**
+		 * @spec exclude computed display helper for confirmation message
+		 */
 		deleteMessage() {
 			return t('openregister', 'Are you sure you want to delete the application "{name}"? This action cannot be undone.', {
 				name: applicationStore.applicationItem?.name || t('openregister', 'this application'),
@@ -48,6 +51,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		async deleteApplication() {
 			try {
 				await applicationStore.deleteApplication(applicationStore.applicationItem)
@@ -56,6 +62,10 @@ export default {
 				console.error('Error deleting application:', error)
 			}
 		},
+		/**
+		 * @param open
+		 * @spec exclude modal open/close UI handler
+		 */
 		handleDialogClose(open) {
 			if (!open) {
 				navigationStore.setDialog(false)

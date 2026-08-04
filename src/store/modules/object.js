@@ -14,6 +14,7 @@ import {
 	lifecyclePlugin,
 	searchPlugin,
 	selectionPlugin,
+	liveUpdatesPlugin,
 } from '@conduction/nextcloud-vue'
 import { useRegisterStore } from './register.js'
 import { useSchemaStore } from './schema.js'
@@ -43,10 +44,16 @@ function openregisterObjectPlugin() {
 		}),
 
 		getters: {
+			/**
+			 * @spec exclude Derived client-state getter — composes a type slug from the register/schema stores. No backend contract.
+			 */
 			currentType() {
 				return getCurrentType(getActivePinia())
 			},
 
+			/**
+			 * @spec exclude Derived client-state getter — proxies the active schema from the schema store. No backend contract.
+			 */
 			activeSchema() {
 				const pinia = getActivePinia()
 				if (!pinia) return null
@@ -57,7 +64,9 @@ function openregisterObjectPlugin() {
 		actions: {
 			/**
 			 * Ensure the current register/schema type is registered in the package store, then fetch collection.
-			 * @param options
+			 * @param {object} [options] Fetch options: register, schema, limit, page, search
+			 *
+			 * @spec exclude Adapter delegating to the @conduction/nextcloud-vue package object store (fetchCollection); the data-fetch contract is owned by the shared library, not this app.
 			 */
 			async refreshObjectList(options = {}) {
 				const pinia = getActivePinia()
@@ -106,6 +115,9 @@ function openregisterObjectPlugin() {
 			// A no-op stub lets the SPA finish mounting; the original
 			// behaviour (per-column filter init) is now handled inline by
 			// the filter components themselves.
+			/**
+			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the filter components.
+			 */
 			initializeColumnFilters() {
 				// Intentionally empty.
 			},
@@ -114,6 +126,10 @@ function openregisterObjectPlugin() {
 			// the same code paths in DashboardSideBar.vue when a schema
 			// becomes available. The new schema-aware property store
 			// handles this elsewhere; a no-op keeps the call site safe.
+			/**
+			 * @param {object} _schema Unused — kept for call-site compatibility
+			 * @spec exclude Intentional no-op compatibility stub — keeps stale call sites safe; behaviour moved into the schema-aware property store.
+			 */
 			initializeProperties(_schema) {
 				// Intentionally empty.
 			},
@@ -131,6 +147,14 @@ export const useObjectStore = createObjectStore('openregister-objects', {
 		lifecyclePlugin(),
 		searchPlugin(),
 		selectionPlugin(),
+		// Live updates (adopt-live-updates-ui): exposes subscribe(type, id?) /
+		// unsubscribe(handle) backed by @nextcloud/notify_push with polling
+		// fallback. Inert until the first subscribe() call — the object list
+		// (ObjectsList.vue) subscribes to the or-collection event for the
+		// current register+schema, the detail view (ObjectDetails.vue) to the
+		// or-object event for the open object. Events are refetch hints only:
+		// the plugin re-runs fetchCollection/fetchObject through this store.
+		liveUpdatesPlugin(),
 		openregisterObjectPlugin(),
 	],
 })

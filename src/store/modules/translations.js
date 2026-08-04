@@ -13,7 +13,6 @@
  * @license  EUPL-1.2
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -43,6 +42,7 @@ export const RTL_LANGUAGES = new Set([
 /**
  * @param {string} language - BCP 47 language code (may include region, e.g. "ar-SA")
  * @return {boolean}
+ * @spec openspec/specs/frontend-store-client-state/spec.md
  */
 export function isRtlLanguage(language) {
 	if (typeof language !== 'string' || language === '') return false
@@ -86,6 +86,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 *
 		 * @param {string} uuid - Object UUID
 		 * @param {string|number} schema - Schema id, slug, or uuid (required for completeness calc)
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchByObject(uuid, schema) {
 			if (!uuid) return
@@ -117,6 +118,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} property - Property name
 		 * @param {string} language - Language code
 		 * @param {string} status - One of TRANSLATION_STATUSES
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async setStatus(uuid, property, language, status) {
 			if (!Object.values(TRANSLATION_STATUSES).includes(status)) {
@@ -157,6 +159,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} to - Target language
 		 * @param {string[]} [properties] - Optional property whitelist
 		 * @return {Promise<object>} - { translated: {prop: value}, skipped: {prop: reason} }
+		 * @spec exclude API passthrough to POST /api/translations/object/{uuid}/bulk-translate
 		 */
 		async bulkTranslate(uuid, from, to, properties) {
 			this.loading = true
@@ -185,6 +188,7 @@ export const useTranslationsStore = defineStore('translations', {
 		 * @param {string} [params.status]
 		 * @param {string} [params.objectUuid]
 		 * @param {number} [params.limit]
+		 * @spec exclude API passthrough to GET /api/translations/search
 		 */
 		async search(params = {}) {
 			this.loading = true

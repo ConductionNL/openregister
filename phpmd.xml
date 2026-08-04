@@ -6,8 +6,12 @@
                         http://pmd.sourceforge.net/ruleset_xml_schema.xsd">
 
     <description>
-        OpenRegister Nextcloud Rules
+        This is a custom ruleset for OpenRegister Nextcloud.
     </description>
+
+    <!-- Exclude database migration files: they are one-time DDL scripts with no business logic,
+         and analysing all 136+ of them accounts for ~100s of the total phpmd runtime. -->
+    <exclude-pattern>*/Migration/*</exclude-pattern>
 
     <!-- Clean Code Rules -->
     <rule ref="rulesets/cleancode.xml/BooleanArgumentFlag"/>
@@ -48,7 +52,30 @@
     <rule ref="rulesets/design.xml/NumberOfChildren"/>
     <rule ref="rulesets/design.xml/DepthOfInheritance"/>
     <rule ref="rulesets/design.xml/CouplingBetweenObjects"/>
-    <rule ref="rulesets/design.xml/DevelopmentCodeFragment"/>
+    <!-- DevelopmentCodeFragment MUST carry ignore-namespaces=true, or it is dead
+         code in this ruleset. See ConductionNL/openregister#2286.
+
+         PDepend resolves an unqualified call inside a namespaced file to the
+         CURRENT-NAMESPACE-qualified image, so `var_dump($x)` in
+         `namespace OCA\OpenRegister\Service;` reaches the rule as
+         `OCA\OpenRegister\Service\var_dump`, which never matches the
+         `unwanted-functions` list. All of our production PHP is namespaced, so
+         with the default (false) the rule catches nothing anywhere. Measured on
+         phpmd 2.15.0 / PHP 8.3.32: byte-identical probe class, namespaced ->
+         exit 0, non-namespaced -> exit 2. With ignore-namespaces=true the rule
+         strips the enclosing namespace before matching and the namespaced probe
+         is reported (exit 2), while a clean namespaced file stays exit 0.
+
+         Note: hydra gate 2 (forbidden-patterns) independently greps lib/ for
+         var_dump / die / error_log / print_r / dd / dump and is the broader
+         control — it also catches calls outside methods, which this rule (a
+         MethodAware/FunctionAware rule) cannot see. This rule is the
+         `composer check:strict` half of the same guard; keep both. -->
+    <rule ref="rulesets/design.xml/DevelopmentCodeFragment">
+        <properties>
+            <property name="ignore-namespaces" value="true"/>
+        </properties>
+    </rule>
     <rule ref="rulesets/design.xml/EmptyCatchBlock"/>
     <rule ref="rulesets/design.xml/CountInLoopExpression"/>
 

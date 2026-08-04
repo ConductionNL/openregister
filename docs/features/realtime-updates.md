@@ -6,10 +6,10 @@ OpenRegister provides live data synchronization to connected clients via Server-
 
 ## Server-Sent Events (SSE)
 
-SSE is the primary real-time transport. Clients open a persistent HTTP connection and receive a stream of events:
+SSE is the primary real-time transport. Today SSE is served by the GraphQL subscription endpoint (see [GraphQL Subscriptions](#graphql-subscriptions) below); a dedicated REST-native SSE endpoint is planned:
 
 ```
-GET /api/realtime/subscribe?topic=register/meldingen-register/schema/meldingen
+GET /api/sse/{register}/{schema}   (planned — see the realtime-updates spec)
 ```
 
 ### Topics
@@ -24,7 +24,7 @@ GET /api/realtime/subscribe?topic=register/meldingen-register/schema/meldingen
 Multiple topics can be subscribed in one connection:
 
 ```
-GET /api/realtime/subscribe?topic[]=register/meldingen&topic[]=register/besluiten
+GET /api/sse?topics=zaken/meldingen,zaken/besluiten   (planned)
 ```
 
 ### Event Format
@@ -51,10 +51,10 @@ This ensures users only receive events for data they are authorized to see, even
 
 ### Reconnection with Event Replay
 
-Clients that disconnect and reconnect can request missed events:
+Clients that disconnect and reconnect can request missed events via the standard SSE `Last-Event-ID` header:
 
 ```
-GET /api/realtime/subscribe?topic=...&lastEventId=evt-099
+Last-Event-ID: evt-099
 ```
 
 The SSE service replays events since `lastEventId` from an in-memory ring buffer (configurable size, default 1000 events). Events older than the buffer are not replayed — clients should poll for a full resync.
@@ -98,10 +98,11 @@ The `_updatedSince` parameter returns only objects updated after the given times
 ## API
 
 ```
-GET /api/realtime/subscribe              SSE subscription endpoint
-GET /api/realtime/topics                 List available topics
-GET /api/realtime/status                 Connection statistics
+POST /api/graphql                        GraphQL subscriptions over SSE (current SSE transport)
+notify_push `notify_custom` events       or-object-{uuid} / or-collection-{register-slug}-{schema-slug}
 ```
+
+> **Removed:** the DB-backed cursor-polling endpoints (`GET /api/realtime/events`, `GET /api/realtime/cursor`) and their append-only event table writer were removed in the `complete-live-updates` change — the write path ran on every object change but had zero consumers. Use notify_push events with an RBAC-filtered REST refetch, or GraphQL SSE subscriptions.
 
 ## Standards
 

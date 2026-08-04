@@ -20,6 +20,8 @@ import axios from '@nextcloud/axios'
  * triple, 501-graceful when the Calendar app is missing.
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/event-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
  */
 export const useEventRelationsStore = defineStore('eventRelations', {
 	state: () => ({
@@ -30,6 +32,13 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 	}),
 
 	actions: {
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/events' + suffix, {
 				register,
@@ -38,6 +47,12 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			})
 		},
 
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
 			this.loading = { ...this.loading, [k]: true }
@@ -63,18 +78,39 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			}
 		},
 
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async create(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async link(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id, '/link'), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param eventId
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		async unlink(register, schema, id, eventId) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(eventId)))
 			const k = `${register}:${schema}:${id}`
@@ -83,6 +119,12 @@ export const useEventRelationsStore = defineStore('eventRelations', {
 			return next
 		},
 
+		/**
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-5
+		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []
 		},

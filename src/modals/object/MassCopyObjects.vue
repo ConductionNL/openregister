@@ -17,6 +17,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 				<label for="namingPattern">{{ t('openregister', 'Naming pattern for copies:') }}</label>
 				<NcSelect
 					v-model="selectedNamingPattern"
+					input-label="Selected Naming Pattern"
 					:options="namingPatternOptions"
 					:disabled="loading"
 					label="label"
@@ -33,7 +34,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 					v-model="customPattern"
 					:placeholder="t('openregister', 'Copy of {name}')"
 					:disabled="loading"
-					@input="updateCustomPreview" />
+					@update:modelValue="updateCustomPreview" />
 				<p class="help-text">
 					Use {name} for the original name, {id} for the original ID
 				</p>
@@ -57,7 +58,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="copyObjects()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -143,6 +144,9 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -154,6 +158,10 @@ export default {
 			// Clear selection after closing
 			objectStore.selectedObjects = []
 		},
+		/**
+		 * @param object
+		 * @spec exclude computed display helper for copy-name preview
+		 */
 		getPreviewName(object) {
 			if (!object) return 'Preview Name'
 
@@ -170,10 +178,16 @@ export default {
 				.replace('{name}', originalName)
 				.replace('{id}', object['@self']?.id || object.id || 'ID')
 		},
+		/**
+		 * @spec exclude form-state UI helper to refresh preview
+		 */
 		updateCustomPreview() {
 			// Trigger reactivity for preview update
 			this.$forceUpdate()
 		},
+		/**
+		 * @spec exclude modal bulk-submit handler delegating to objectStore.saveObject
+		 */
 		async copyObjects() {
 			this.loading = true
 			this.error = false

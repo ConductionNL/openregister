@@ -37,7 +37,7 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 				v-if="success === null"
 				:disabled="loading || !canDelete"
 				icon="Delete"
-				type="error"
+				variant="error"
 				@click="deleteProperty()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -77,10 +77,16 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed delete-enablement guard (no objects use the property); UI validation helper.
+		 */
 		canDelete() {
 			return this.objects.length === 0
 		},
 	},
+	/**
+	 * @spec exclude Vue updated() hook running one-time dialog init when the modal opens; modal init plumbing.
+	 */
 	updated() {
 		if (!this.isUpdated && navigationStore.modal === 'deleteSchemaProperty') {
 			this.isUpdated = true
@@ -88,6 +94,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Scans registers/objects for usage of the property to populate the warning list; UI form-loading plumbing.
+		 */
 		async initDialog() {
 			await registerStore.refreshRegisterList()
 			if (registerStore.registerList.length === 0) {
@@ -111,6 +120,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Modal close handler resetting navigationStore.modal and local state; UI plumbing.
+		 */
 		closeModal() {
 			navigationStore.setModal(null)
 			schemaStore.setSchemaPropertyKey(null)
@@ -120,6 +132,9 @@ export default {
 			this.objects = []
 			this.isUpdated = false
 		},
+		/**
+		 * @spec exclude Delete-confirm handler removing the property and delegating to schemaStore.saveSchema; entity mutation lives in the store, this is modal orchestration plumbing.
+		 */
 		deleteProperty() {
 			this.loading = true
 

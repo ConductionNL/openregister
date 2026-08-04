@@ -9,6 +9,9 @@
  * Since facets are determined by schema properties, they can be cached and
  * invalidated when schemas change, providing significant performance benefits.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -20,7 +23,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
+ * @spec openspec/specs/faceting-configuration/spec.md#requirement-schema-id-in-non-aggregated-facet-response
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -207,6 +210,8 @@ class FacetCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
      */
     public function cacheFacetableFields(int $schemaId, array $facetableFields, int $ttl=7200): void
     {
@@ -250,7 +255,7 @@ class FacetCacheHandler
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-30
+     * @spec openspec/specs/faceting-configuration/spec.md#requirement-schema-id-in-non-aggregated-facet-response
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -317,6 +322,8 @@ class FacetCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
      */
     public function clearAllCaches(): void
     {
@@ -354,6 +361,8 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return int The number of deleted cache entries.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
      */
     public function cleanExpiredEntries(): int
     {
@@ -389,6 +398,8 @@ class FacetCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @return array Statistics with total entries, by type, memory cache size, cache table, query time, timestamp.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-12
      */
     public function getCacheStatistics(): array
     {
@@ -490,7 +501,10 @@ class FacetCacheHandler
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now     = new DateTime();
-        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
+        $expires = null;
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+        }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE pattern.
         $qb = $this->db->getQueryBuilder();

@@ -3,11 +3,15 @@
 /**
  * ConsumersController handles REST API endpoints for consumer management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author  Conduction Development Team <info@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  *
@@ -30,6 +34,8 @@ use OCP\IRequest;
  * Provides REST API endpoints for managing API consumers.
  *
  * @package OCA\OpenRegister\Controller
+ *
+ * @spec openspec/specs/openapi-generation/spec.md
  */
 class ConsumersController extends Controller
 {
@@ -57,6 +63,8 @@ class ConsumersController extends Controller
      * @return JSONResponse The list of consumers
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function index(): JSONResponse
     {
@@ -79,6 +87,8 @@ class ConsumersController extends Controller
      * @return JSONResponse The consumer data or error
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function show(int $id): JSONResponse
     {
@@ -97,6 +107,8 @@ class ConsumersController extends Controller
      * @return JSONResponse The created consumer
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function create(): JSONResponse
     {
@@ -122,6 +134,8 @@ class ConsumersController extends Controller
      * @return JSONResponse The updated consumer or error
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function update(int $id): JSONResponse
     {
@@ -149,6 +163,8 @@ class ConsumersController extends Controller
      * @return JSONResponse Empty response or error
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function destroy(int $id): JSONResponse
     {
@@ -171,6 +187,8 @@ class ConsumersController extends Controller
      * @return JSONResponse The updated consumer or error
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/openapi-generation/spec.md
      */
     public function patch(int $id): JSONResponse
     {

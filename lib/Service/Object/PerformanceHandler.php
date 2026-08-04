@@ -7,6 +7,9 @@
  * This handler consolidates performance-related operations from ObjectService,
  * improving code organization and making optimization logic more maintainable.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects
  *
@@ -50,7 +53,7 @@ class PerformanceHandler
      * @param CacheHandler    $objectCacheService Object cache service for caching.
      * @param LoggerInterface $logger             Logger for performance monitoring.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly CacheHandler $objectCacheService,
@@ -71,7 +74,7 @@ class PerformanceHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function optimizeRequestForPerformance(array &$query, array &$perfTimings): void
     {
@@ -118,7 +121,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple criteria for determining request simplicity
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function isSimpleRequest(array $query): bool
     {
@@ -163,7 +166,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function optimizeExtendQueries(array | string $extend): array
     {
@@ -194,7 +197,7 @@ class PerformanceHandler
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function optimizeExtendInQuery(array &$query): void
     {
@@ -235,7 +238,7 @@ class PerformanceHandler
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function preloadCriticalEntities(array $query): void
     {
@@ -265,7 +268,7 @@ class PerformanceHandler
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flags control optional extraction features
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple paths for different data types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function extractRelatedData(array $results, bool $includeRelated, bool $includeRelatedNames): array
     {
@@ -339,7 +342,7 @@ class PerformanceHandler
      *
      * @return bool True if the value is a UUID string
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function isUuid(mixed $value): bool
     {
@@ -367,24 +370,6 @@ class PerformanceHandler
     }//end isUuid()
 
     /**
-     * Get cached entities or use fallback function
-     *
-     * Attempts to retrieve entities from cache, falling back to the provided function if not cached.
-     *
-     * @param mixed    $ids          Entity ID(s) to retrieve (int, array, or 'all').
-     * @param callable $fallbackFunc Function to call if not in cache.
-     *
-     * @return array<mixed> Array of entities
-     *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
-     */
-    public function getCachedEntities(mixed $ids, callable $fallbackFunc): array
-    {
-        // Entity caching is disabled - always use fallback function.
-        return call_user_func($fallbackFunc, $ids);
-    }//end getCachedEntities()
-
-    /**
      * Get facet count from query parameters
      *
      * @param bool                 $hasFacets Whether facets are requested.
@@ -394,7 +379,7 @@ class PerformanceHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getFacetCount(bool $hasFacets, array $query): int
     {
@@ -419,7 +404,7 @@ class PerformanceHandler
      *
      * @return int Total pages
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function calculateTotalPages(int $total, int $limit): int
     {
@@ -441,7 +426,7 @@ class PerformanceHandler
      *
      * @psalm-return int<0, max>
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function calculateExtendCount(mixed $extend): int
     {

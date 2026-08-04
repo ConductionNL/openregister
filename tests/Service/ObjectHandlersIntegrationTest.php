@@ -438,50 +438,6 @@ class ObjectHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test validateSchemaObjects with valid data.
-     */
-    public function testValidateSchemaObjectsWithValidObjects(): void
-    {
-        $this->saveTestObject(['title' => 'Schema Validation 1']);
-        $this->saveTestObject(['title' => 'Schema Validation 2']);
-
-        $result = $this->validationHandler->validateSchemaObjects(
-            $this->testSchema->getId(),
-            function ($data, $register, $schema, $uuid, $rbac, $multi, $silent) {
-                // Succeeds silently.
-            }
-        );
-
-        $this->assertArrayHasKey('valid_count', $result);
-        $this->assertArrayHasKey('invalid_count', $result);
-        $this->assertArrayHasKey('valid_objects', $result);
-        $this->assertArrayHasKey('invalid_objects', $result);
-        $this->assertArrayHasKey('schema_id', $result);
-        $this->assertEquals($this->testSchema->getId(), $result['schema_id']);
-        // May return 0 if objects are in magic tables.
-        $this->assertGreaterThanOrEqual(0, $result['valid_count']);
-    }
-
-    /**
-     * Test validateSchemaObjects with failing callback.
-     */
-    public function testValidateSchemaObjectsWithFailingCallback(): void
-    {
-        $this->saveTestObject(['title' => 'Failing validation test']);
-
-        $result = $this->validationHandler->validateSchemaObjects(
-            $this->testSchema->getId(),
-            function () {
-                throw new \Exception('Callback failure');
-            }
-        );
-
-        // May return 0 if objects are in magic tables.
-        $this->assertGreaterThanOrEqual(0, $result['invalid_count']);
-        $this->assertIsArray($result['invalid_objects']);
-    }
-
-    /**
      * Test applyInversedByFilter returns empty array.
      */
     public function testApplyInversedByFilterReturnsEmptyArray(): void
@@ -1160,24 +1116,6 @@ class ObjectHandlersIntegrationTest extends TestCase
     }
 
     /**
-     * Test isSolrAvailable.
-     */
-    public function testIsSolrAvailable(): void
-    {
-        $result = $this->searchQueryHandler->isSolrAvailable();
-        $this->assertIsBool($result);
-    }
-
-    /**
-     * Test isSearchTrailsEnabled.
-     */
-    public function testIsSearchTrailsEnabled(): void
-    {
-        $result = $this->searchQueryHandler->isSearchTrailsEnabled();
-        $this->assertIsBool($result);
-    }
-
-    /**
      * Test logSearchTrail does not throw.
      */
     public function testLogSearchTrailDoesNotThrow(): void
@@ -1485,18 +1423,6 @@ class ObjectHandlersIntegrationTest extends TestCase
             'delete'
         );
         $this->assertEmpty($result);
-    }
-
-    /**
-     * Test filterObjectsForPermissions with RBAC disabled.
-     */
-    public function testFilterObjectsForPermissionsRbacDisabled(): void
-    {
-        $objects = [
-            ['@self' => ['schema' => $this->testSchema->getId(), 'owner' => 'admin'], 'title' => 'Test'],
-        ];
-        $result = $this->permissionHandler->filterObjectsForPermissions($objects, false, false);
-        $this->assertCount(1, $result);
     }
 
     /**

@@ -5,6 +5,9 @@
  *
  * Service for tracking and retrieving operational metrics.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -21,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Service;
 
+use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\IDBConnection;
 use Psr\Log\LoggerInterface;
 
@@ -34,6 +38,8 @@ use Psr\Log\LoggerInterface;
  * @author   Conduction <info@conduction.nl>
  * @license  EUPL-1.2 https://opensource.org/licenses/EUPL-1.2
  * @link     https://www.conduction.nl
+ *
+ * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy
  */
 
 class MetricsService
@@ -103,6 +109,27 @@ class MetricsService
     public const METRIC_CHAT_MESSAGE = 'chat_message';
 
     /**
+     * Metric type constant for object creation (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_CREATED = 'object_created';
+
+    /**
+     * Metric type constant for object update (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_UPDATED = 'object_updated';
+
+    /**
+     * Metric type constant for object deletion (CRUD counter).
+     *
+     * @var string
+     */
+    public const METRIC_OBJECT_DELETED = 'object_deleted';
+
+    /**
      * Constructor
      *
      * @param IDBConnection   $db     Database connection
@@ -137,6 +164,10 @@ class MetricsService
      * @throws \Exception If database operation fails (logged but not rethrown)
      *
      * @psalm-suppress PossiblyNullArgument
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (fail-soft insert of an
+     *       operational metric row — type, entity, status, duration, metadata, error, user, timestamp — that
+     *       never disrupts the calling operation on DB error)
      */
     public function recordMetric(
         string $metricType,
@@ -154,20 +185,27 @@ class MetricsService
 
             // Build INSERT query for metrics table.
             // Create named parameters for all values to prevent SQL injection.
+            //
+            // 🔴 `values()` takes a FLAT column => parameter map. Wrapping it in
+            // an extra array (`[[ ... ]]`, as this did) makes each value an array
+            // rather than a parameter, so Doctrine rejected every insert with
+            // "Only strings, Literals and Parameters are allowed" — silently,
+            // because the catch below is fail-soft by design. The result was that
+            // NO metric was ever recorded while an error was logged on every
+            // object write. Every other `->values()` call in this app uses the
+            // flat form; this was the only nested one.
             $qb->insert('openregister_metrics')
                 ->values(
                     values: [
-                        [
-                            'metric_type'   => $qb->createNamedParameter($metricType),
-                            'entity_type'   => $qb->createNamedParameter($entityType),
-                            'entity_id'     => $qb->createNamedParameter($entityId),
-                            'user_id'       => $qb->createNamedParameter($userId),
-                            'status'        => $qb->createNamedParameter($status),
-                            'duration_ms'   => $qb->createNamedParameter($durationMs),
-                            'metadata'      => $qb->createNamedParameter($this->encodeMetadata(metadata: $metadata)),
-                            'error_message' => $qb->createNamedParameter($errorMessage),
-                            'created_at'    => $qb->createNamedParameter(time()),
-                        ],
+                        'metric_type'   => $qb->createNamedParameter($metricType),
+                        'entity_type'   => $qb->createNamedParameter($entityType),
+                        'entity_id'     => $qb->createNamedParameter($entityId),
+                        'user_id'       => $qb->createNamedParameter($userId),
+                        'status'        => $qb->createNamedParameter($status),
+                        'duration_ms'   => $qb->createNamedParameter($durationMs, IQueryBuilder::PARAM_INT),
+                        'metadata'      => $qb->createNamedParameter($this->encodeMetadata(metadata: $metadata)),
+                        'error_message' => $qb->createNamedParameter($errorMessage),
+                        'created_at'    => $qb->createNamedParameter(time(), IQueryBuilder::PARAM_INT),
                     ]
                 );
 
@@ -196,6 +234,8 @@ class MetricsService
      * @return int[] Array of [date => count]
      *
      * @psalm-return array<int>
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getFilesProcessedPerDay(int $days=30): array
     {
@@ -242,6 +282,8 @@ class MetricsService
      *
      * @psalm-return array{total: int, successful: int, failed: int,
      *               success_rate: float, estimated_cost_usd: float, period_days: int}
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getEmbeddingStats(int $days=30): array
     {
@@ -302,6 +344,8 @@ class MetricsService
      * @return (float|int)[][]
      *
      * @psalm-return array<string, array{count: int, avg_ms: float, min_ms: int, max_ms: int}>
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getSearchLatencyStats(int $days=7): array
     {
@@ -374,6 +418,8 @@ class MetricsService
      * @psalm-return array{daily_vectors_added: array<string, int>,
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getStorageGrowth(int $days=30): array
     {
@@ -443,6 +489,8 @@ class MetricsService
      *     storage_growth: array{daily_vectors_added: array<string, int>,
      *     current_storage_bytes: int, current_storage_mb: float,
      *     avg_vectors_per_day: float, period_days: int}}
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getDashboardMetrics(): array
     {
@@ -465,6 +513,9 @@ class MetricsService
      * @return int Number of deleted records
      *
      * @psalm-suppress PossiblyInvalidMethodCall
+     *
+     * @spec openspec/specs/production-observability/spec.md#metrics-storage-strategy (retention pruning:
+     *       deletes metric rows older than the retention window to bound table growth)
      */
     public function cleanOldMetrics(int $retentionDays=90): int
     {
@@ -531,6 +582,8 @@ class MetricsService
      * @param int $successful Number of successful operations
      *
      * @return float Success rate as percentage (0-100), rounded to 2 decimal places
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function calculateSuccessRate(int $total, int $successful): float
     {
@@ -556,6 +609,8 @@ class MetricsService
      * @return float Rounded average milliseconds (0.0 if invalid or null)
      *
      * @psalm-suppress MixedArgument
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function roundAverageMs($avgMs): float
     {
@@ -578,6 +633,8 @@ class MetricsService
      * @param array<string, int> $growthData Growth data array with [date => count] format
      *
      * @return float Average vectors per day, rounded to 2 decimal places
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     private function calculateAverageVectorsPerDay(array $growthData): float
     {

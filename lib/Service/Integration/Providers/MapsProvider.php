@@ -1,12 +1,18 @@
 <?php
 
 /**
- * MapsProvider — exposes NC Location entities linked to an OpenRegister
- * object via a `[or:{objectUuid}]` marker in the entity's `name`
- * field.
+ * MapsProvider — exposes NC Maps favorites (POIs) linked to an
+ * OpenRegister object via the Tier-2 `openregister_map_links` table.
  *
- * Storage strategy is `link-table` — the marker lives in the upstream
- * app's own table (`maps_favorites`), not in OR.
+ * Pre-Tier-2 the provider matched a `[or:{objectUuid}]` marker embedded
+ * in the favorite's `name` field. Tier-2 (this file) reads the dedicated
+ * link table instead — the marker convention is retained as a
+ * backwards-compat fallback for favorites that pre-date the link table.
+ *
+ * Storage strategy is `link-table` — the link rows live in OR; the
+ * upstream `maps_favorites` table is only read by the wrapping
+ * {@see \OCA\OpenRegister\Service\MapLinkService} for picker / create
+ * flows.
  *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
@@ -27,10 +33,13 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing
 
+use OCA\OpenRegister\Db\MapLink;
+use OCA\OpenRegister\Db\MapLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCP\App\IAppManager;
 use OCP\IDBConnection;
 use OCP\IL10N;
+use Throwable;
 
 class MapsProvider extends AbstractIntegrationProvider
 {
@@ -44,6 +53,7 @@ class MapsProvider extends AbstractIntegrationProvider
         private IDBConnection $db,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private MapLinkMapper $mapLinkMapper,
     ) {
     }//end __construct()
 
@@ -54,7 +64,7 @@ class MapsProvider extends AbstractIntegrationProvider
 
     public function getLabel(): string
     {
-        return $this->l10n->t('Location');
+        return $this->l10n->t('Locations');
     }//end getLabel()
 
     public function getIcon(): string
@@ -83,11 +93,12 @@ class MapsProvider extends AbstractIntegrationProvider
     }//end isEnabled()
 
     /**
-     * List linked Location entities for an OR object.
+     * List linked Location POIs for an OR object.
      *
-     * Linking convention: the entity's `name` field contains
-     * the marker `[or:{objectUuid}]`. The trait runs the LIKE query;
-     * rows are normalised into the registry leaf row shape.
+     * Reads the Tier-2 link table first; if no link rows exist it falls
+     * back to the legacy `[or:{uuid}]` marker scan in
+     * `maps_favorites.name` so POIs that pre-date the link table still
+     * surface.
      *
      * @param string $register Register slug for the parent object.
      * @param string $schema   Schema slug for the parent object.
@@ -95,6 +106,8 @@ class MapsProvider extends AbstractIntegrationProvider
      * @param array  $filters  Optional registry filters (unused).
      *
      * @return array List of registry leaf rows.
+     *
+     * @spec openspec/specs/integration-maps/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -102,6 +115,22 @@ class MapsProvider extends AbstractIntegrationProvider
             return [];
         }
 
+        // Tier-2 path: read from the link table.
+        try {
+            $linkRows = $this->mapLinkMapper->findByObjectUuid($objectId);
+        } catch (Throwable $e) {
+            $linkRows = [];
+        }
+
+        if (count($linkRows) > 0) {
+            return array_map(
+                fn (MapLink $link): array => $this->rowFromLink(link: $link),
+                $linkRows
+            );
+        }
+
+        // Backwards-compat fallback: scan the legacy `[or:{uuid}]` marker
+        // in `maps_favorites.name` (the wave-1 category-tag convention).
         $marker = self::MARKER_PREFIX.$objectId.']';
         $rows   = $this->findByMarker(
             db: $this->db,
@@ -125,13 +154,51 @@ class MapsProvider extends AbstractIntegrationProvider
                 );
     }//end list()
 
+    /**
+     * Convert a MapLink row into the registry leaf-row shape.
+     *
+     * @param MapLink $link Link row from the mapper.
+     *
+     * @return array<string,mixed>
+     */
+    private function rowFromLink(MapLink $link): array
+    {
+        $favoriteId = (int) $link->getFavoriteId();
+        $data       = $link->jsonSerialize();
+
+        return [
+            'id'       => (string) $favoriteId,
+            'title'    => (string) $link->getName(),
+            'url'      => '/index.php/apps/maps/#/m='.$favoriteId,
+            'category' => $link->getCategory(),
+            'lat'      => $link->getLat(),
+            'lng'      => $link->getLng(),
+            'data'     => $data,
+        ];
+    }//end rowFromLink()
+
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing isEnabled() — no standalone health behaviour;
+     *              the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $available = $this->isEnabled();
+        $status    = 'unavailable';
+        $message   = 'NC Location app is not installed';
+        if ($available === true) {
+            $status  = 'ok';
+            $message = null;
+        }
+
         return [
-            'status'     => $available === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $available === true ? null : 'NC Location app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

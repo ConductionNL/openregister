@@ -13,6 +13,9 @@
  * channel logic (nc-notification, email, activity, webhook, talk) is
  * reused unchanged.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -30,12 +33,18 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Db\MagicMapper;
+use OCA\OpenRegister\Db\NotificationDedupeStateMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use DateTime;
+use DateTimeImmutable;
+use DateTimeZone;
 use OCA\OpenRegister\Service\Notification\AnnotationNotificationDispatcher;
+use OCA\OpenRegister\Service\Notification\ScheduledFilterEvaluator;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
+use OCP\IAppConfig;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
@@ -49,6 +58,18 @@ final class ScheduledNotificationJob extends TimedJob
 {
 
     /**
+     * Hard upper bound on the number of objects scanned per (schema, notification)
+     * fire. Acts as a memory/time guard so a single huge schema cannot OOM or stall
+     * the cron run (OPS-6 / PERF-3). When the cap is hit a warning is logged.
+     *
+     * TODO(PERF-3): push the trigger `filter` into SQL (a paged findBySchema with
+     * _filter+_limit in lib/Db/MagicMapper) and add a per-schema watermark for
+     * delta scans, so we no longer load the whole table into PHP and filter
+     * in-memory. Until then this cap bounds the blast radius.
+     */
+    private const MAX_OBJECTS_PER_FIRE = 5000;
+
+    /**
      * Distributed cache holding last-fire timestamps per (schema, notification).
      *
      * @var ICache|null
@@ -58,12 +79,15 @@ final class ScheduledNotificationJob extends TimedJob
     /**
      * Wire collaborators and configure the timed-job interval.
      *
-     * @param ITimeFactory                     $time         Nextcloud time factory.
-     * @param SchemaMapper                     $schemaMapper Schema lookup mapper.
-     * @param MagicMapper                      $objectMapper Magic object mapper.
-     * @param AnnotationNotificationDispatcher $dispatcher   Notification dispatcher.
-     * @param LoggerInterface                  $logger       PSR logger.
-     * @param ICacheFactory                    $cacheFactory Distributed cache factory.
+     * @param ITimeFactory                     $time            Nextcloud time factory.
+     * @param SchemaMapper                     $schemaMapper    Schema lookup mapper.
+     * @param MagicMapper                      $objectMapper    Magic object mapper.
+     * @param AnnotationNotificationDispatcher $dispatcher      Notification dispatcher.
+     * @param LoggerInterface                  $logger          PSR logger.
+     * @param ICacheFactory                    $cacheFactory    Distributed cache factory.
+     * @param ScheduledFilterEvaluator         $filterEvaluator Operator-aware filter evaluator.
+     * @param NotificationDedupeStateMapper    $dedupeMapper    Per-object dedup state mapper.
+     * @param IAppConfig                       $appConfig       App config for tunable retention window.
      *
      * @return void
      */
@@ -73,7 +97,10 @@ final class ScheduledNotificationJob extends TimedJob
         private readonly MagicMapper $objectMapper,
         private readonly AnnotationNotificationDispatcher $dispatcher,
         private readonly LoggerInterface $logger,
-        ICacheFactory $cacheFactory
+        ICacheFactory $cacheFactory,
+        private readonly ScheduledFilterEvaluator $filterEvaluator,
+        private readonly NotificationDedupeStateMapper $dedupeMapper,
+        private readonly IAppConfig $appConfig
     ) {
         parent::__construct(time: $time);
         $this->setInterval(seconds: 60);
@@ -93,10 +120,15 @@ final class ScheduledNotificationJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/specs/notificatie-engine/spec.md
      */
     protected function run($argument): void
     {
         $now = time();
+        // One logical "now" per scan pass so every entry sees the same window
+        // (Phase 1 — filter operator evaluator).
+        $nowDt = (new DateTimeImmutable('@'.$now))->setTimezone(new DateTimeZone('UTC'));
 
         try {
             $schemas = $this->schemaMapper->findAll();
@@ -112,19 +144,55 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            $this->processSchema(schema: $schema, now: $now);
+            $this->processSchema(schema: $schema, now: $now, nowDt: $nowDt);
         }
+
+        // Retention sweep — once per scan pass, best-effort. Drop dedup rows
+        // last seen before the configured cutoff so that an object that no
+        // longer matches any rule (purged / archived / annotation removed)
+        // does not pile up state forever.
+        $this->runRetentionSweep(nowDt: $nowDt);
     }//end run()
+
+    /**
+     * Drop dedup rows whose `seen_at` is older than the configured retention.
+     *
+     * @param DateTimeImmutable $nowDt Logical "now" for this scan pass.
+     *
+     * @return void
+     */
+    private function runRetentionSweep(DateTimeImmutable $nowDt): void
+    {
+        try {
+            $days = (int) $this->appConfig->getValueString(
+                'openregister',
+                'notification_dedupe_retention_days',
+                (string) NotificationDedupeStateMapper::DEFAULT_RETENTION_DAYS
+            );
+        } catch (\Throwable $e) {
+            $days = NotificationDedupeStateMapper::DEFAULT_RETENTION_DAYS;
+        }
+
+        if ($days <= 0) {
+            return;
+        }
+
+        $cutoff = DateTime::createFromImmutable($nowDt);
+        $cutoff->modify(sprintf('-%d days', $days));
+
+        $this->dedupeMapper->deleteSeenBefore(cutoff: $cutoff);
+    }//end runRetentionSweep()
 
     /**
      * Inspect one schema's notification specs and fire those that are due.
      *
-     * @param Schema $schema Schema being inspected.
-     * @param int    $now    Current epoch second.
+     * @param Schema            $schema Schema being inspected.
+     * @param int               $now    Current epoch second.
+     * @param DateTimeImmutable $nowDt  Logical "now" for relative-date filters in this scan pass.
      *
      * @return void
      */
-    private function processSchema(Schema $schema, int $now): void
+    private function processSchema(Schema $schema, int $now, DateTimeImmutable $nowDt): void
     {
         $config        = ($schema->getConfiguration() ?? []);
         $notifications = ($config['x-openregister-notifications'] ?? null);
@@ -157,7 +225,7 @@ final class ScheduledNotificationJob extends TimedJob
                 continue;
             }
 
-            $this->fire(schema: $schema, notificationName: (string) $name, trigger: $trigger);
+            $this->fire(schema: $schema, notificationName: (string) $name, trigger: $trigger, nowDt: $nowDt);
 
             // Mark as fired regardless of per-object errors; the dispatcher
             // already swallows + logs its own failures.
@@ -238,10 +306,11 @@ final class ScheduledNotificationJob extends TimedJob
      * @param Schema               $schema           Schema whose objects to scan.
      * @param string               $notificationName Notification key in the schema config.
      * @param array<string, mixed> $trigger          Trigger configuration including filters.
+     * @param DateTimeImmutable    $nowDt            Logical "now" used for relative-date operators.
      *
      * @return void
      */
-    private function fire(Schema $schema, string $notificationName, array $trigger): void
+    private function fire(Schema $schema, string $notificationName, array $trigger, DateTimeImmutable $nowDt): void
     {
         try {
             $filter  = (array) ($trigger['filter'] ?? []);
@@ -258,13 +327,113 @@ final class ScheduledNotificationJob extends TimedJob
             return;
         }
 
-        $matched = 0;
+        // Bound the in-memory scan so a pathologically large schema cannot OOM or
+        // stall the cron run (OPS-6 / PERF-3). Excess objects are processed via a
+        // ROTATING window keyed by a persisted per-(schema, notification) offset
+        // cursor: each run handles the next MAX_OBJECTS_PER_FIRE slice and advances
+        // the cursor (wrapping at the end), so every object is eventually swept —
+        // fixing the previous behaviour where array_slice(0, MAX) always processed
+        // the same first N and objects beyond N never fired.
+        if (count($objects) > self::MAX_OBJECTS_PER_FIRE) {
+            $total     = count($objects);
+            $offsetKey = 'sched_offset:'.((int) $schema->getId()).':'.$notificationName;
+
+            $offset = 0;
+            try {
+                $offset = (int) $this->appConfig->getValueString('openregister', $offsetKey, '0');
+            } catch (\Throwable $e) {
+                $offset = 0;
+            }
+
+            if ($offset < 0 || $offset >= $total) {
+                $offset = 0;
+            }
+
+            $this->logger->warning(
+                sprintf(
+                    '[ScheduledNotificationJob] schema %d / "%s" returned %d objects; '
+                    .'processing rotating window [%d, %d) this run (PERF-3 SQL filter pushdown pending)',
+                    $schema->getId(),
+                    $notificationName,
+                    $total,
+                    $offset,
+                    min($offset + self::MAX_OBJECTS_PER_FIRE, $total)
+                )
+            );
+
+            $objects = array_slice($objects, $offset, self::MAX_OBJECTS_PER_FIRE);
+
+            // Advance the cursor for the next run; wrap once the schema is swept.
+            $nextOffset = ($offset + self::MAX_OBJECTS_PER_FIRE);
+            if ($nextOffset >= $total) {
+                $nextOffset = 0;
+            }
+
+            try {
+                $this->appConfig->setValueString('openregister', $offsetKey, (string) $nextOffset);
+            } catch (\Throwable $e) {
+                // Non-fatal: worst case the window does not advance this run.
+                $this->logger->warning(
+                    sprintf(
+                        '[ScheduledNotificationJob] failed to persist rotation offset for schema %d / "%s": %s',
+                        $schema->getId(),
+                        $notificationName,
+                        $e->getMessage()
+                    )
+                );
+            }
+        }//end if
+
+        $watchedFields = $this->resolveWatchedFields(trigger: $trigger);
+        $schemaId      = (int) $schema->getId();
+        $now           = DateTime::createFromImmutable($nowDt);
+
+        $matched      = 0;
+        $dispatched   = 0;
+        $deduplicated = 0;
         foreach ($objects as $object) {
             if (($object instanceof ObjectEntity) === false) {
                 continue;
             }
 
-            if ($this->matchesFilter(object: $object, filter: $filter) === false) {
+            $objectData = (array) ($object->getObject() ?? []);
+            if ($this->filterEvaluator->matches(objectData: $objectData, filter: $filter, now: $nowDt) === false) {
+                continue;
+            }
+
+            $matched++;
+
+            $objectUuid = (string) $object->getUuid();
+            if ($objectUuid === '') {
+                continue;
+            }
+
+            $fingerprint = $this->computeFingerprint(objectData: $objectData, watchedFields: $watchedFields);
+            $existing    = $this->dedupeMapper->findOne(
+                schemaId: $schemaId,
+                ruleKey: $notificationName,
+                objectUuid: $objectUuid
+            );
+
+            $shouldDispatch = ($existing === null
+                || (string) $existing->getFingerprint() !== $fingerprint);
+
+            if ($shouldDispatch === false) {
+                // Fingerprint unchanged: touch seen_at, skip dispatch.
+                try {
+                    $this->dedupeMapper->upsert(
+                        schemaId: $schemaId,
+                        ruleKey: $notificationName,
+                        objectUuid: $objectUuid,
+                        fingerprint: $fingerprint,
+                        now: $now,
+                        dispatched: false
+                    );
+                } catch (\Throwable $e) {
+                    // Non-fatal — sweep will reclaim eventually.
+                }
+
+                $deduplicated++;
                 continue;
             }
 
@@ -274,53 +443,130 @@ final class ScheduledNotificationJob extends TimedJob
                     'scheduled',
                     ['notificationName' => $notificationName]
                 );
-                $matched++;
+
+                $this->dedupeMapper->upsert(
+                    schemaId: $schemaId,
+                    ruleKey: $notificationName,
+                    objectUuid: $objectUuid,
+                    fingerprint: $fingerprint,
+                    now: $now,
+                    dispatched: true
+                );
+
+                $dispatched++;
             } catch (\Throwable $e) {
                 $this->logger->warning(
                     sprintf(
                         '[ScheduledNotificationJob] dispatch failed for object %s: %s',
-                        (string) $object->getUuid(),
+                        $objectUuid,
                         $e->getMessage()
                     )
                 );
-            }
+            }//end try
         }//end foreach
 
         $this->logger->info(
             sprintf(
-                '[ScheduledNotificationJob] fired "%s" on schema %d: %d/%d objects',
+                '[ScheduledNotificationJob] fired "%s" on schema %d: matched=%d dispatched=%d deduped=%d of %d',
                 $notificationName,
                 $schema->getId(),
                 $matched,
+                $dispatched,
+                $deduplicated,
                 count($objects)
             )
         );
     }//end fire()
 
     /**
-     * Simple equality match against object data fields.
-     * For v1 we only support flat `{ field: value }` filters; richer
-     * shapes (operators, nested paths) are a v1.1 extension.
+     * Resolve the ordered list of object fields to fingerprint for dedup.
      *
-     * @param ObjectEntity         $object Object instance whose data is being inspected.
-     * @param array<string, mixed> $filter Flat key/value equality filter.
+     * Precedence:
+     *  1. Explicit `trigger.dedupeFields` (array of strings) — used verbatim.
+     *  2. Otherwise the set of `field` keys in `trigger.filter` whose value is
+     *     an operator object using a date operator (`withinNext`, `olderThan`)
+     *     — i.e. the values whose change should re-arm the notification.
+     *  3. Otherwise empty — produces a constant fingerprint so a triggered
+     *     rule fires exactly once per object until pruned (fire-once).
      *
-     * @return bool True when every filter entry matches, false otherwise.
+     * @param array<string, mixed> $trigger Trigger configuration block.
+     *
+     * @return array<int, string> Sorted, distinct field names.
      */
-    private function matchesFilter(ObjectEntity $object, array $filter): bool
+    private function resolveWatchedFields(array $trigger): array
     {
-        if (count($filter) === 0) {
-            return true;
-        }
+        $explicit = ($trigger['dedupeFields'] ?? null);
+        if (is_array($explicit) === true) {
+            $fields = [];
+            foreach ($explicit as $field) {
+                if (is_string($field) === true && $field !== '') {
+                    $fields[] = $field;
+                }
+            }
 
-        $data = (array) ($object->getObject() ?? []);
-        foreach ($filter as $key => $expected) {
-            $actual = ($data[$key] ?? null);
-            if ($actual !== $expected) {
-                return false;
+            if ($fields !== []) {
+                $fields = array_values(array_unique($fields));
+                sort($fields);
+                return $fields;
             }
         }
 
-        return true;
-    }//end matchesFilter()
+        $filter = (array) ($trigger['filter'] ?? []);
+        $fields = [];
+        foreach ($filter as $field => $spec) {
+            if (is_string($field) === false || $field === '') {
+                continue;
+            }
+
+            if (is_array($spec) === false) {
+                continue;
+            }
+
+            $operator = (string) ($spec['operator'] ?? '');
+            if (in_array($operator, ['withinNext', 'olderThan'], true) === true) {
+                $fields[] = $field;
+            }
+        }
+
+        if ($fields === []) {
+            return [];
+        }
+
+        $fields = array_values(array_unique($fields));
+        sort($fields);
+        return $fields;
+    }//end resolveWatchedFields()
+
+    /**
+     * SHA-1 fingerprint of the watched field values on this object.
+     *
+     * Empty watched-field list yields a stable constant fingerprint so a
+     * triggered rule fires exactly once per object until state is pruned.
+     * Missing fields are encoded as `null` so adding a value re-arms the
+     * rule.
+     *
+     * @param array<string, mixed> $objectData    Decoded object payload.
+     * @param array<int, string>   $watchedFields Sorted field names.
+     *
+     * @return string Hex SHA-1 string.
+     */
+    private function computeFingerprint(array $objectData, array $watchedFields): string
+    {
+        if ($watchedFields === []) {
+            return sha1('constant');
+        }
+
+        $payload = [];
+        foreach ($watchedFields as $field) {
+            $payload[$field] = ($objectData[$field] ?? null);
+        }
+
+        $encoded = json_encode($payload, (JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+        if ($encoded === false) {
+            // JSON encode failure (resource etc.) — fall back to var_export.
+            $encoded = var_export($payload, true);
+        }
+
+        return sha1($encoded);
+    }//end computeFingerprint()
 }//end class

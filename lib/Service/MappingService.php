@@ -6,6 +6,9 @@
  * Service for executing data mappings using Twig templating and dot notation.
  * Provides data transformation capabilities between different formats.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -29,11 +32,14 @@ use OCA\OpenRegister\Db\MappingMapper;
 use Throwable;
 use OCA\OpenRegister\Twig\MappingExtension;
 use OCA\OpenRegister\Twig\MappingRuntimeLoader;
+use OCP\EventDispatcher\IEventDispatcher;
 use OCP\ICacheFactory;
 use OCP\ICache;
 use Psr\Log\LoggerInterface;
 use Twig\Environment;
+use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
+use Twig\Sandbox\SecurityPolicy;
 use Twig\TemplateWrapper;
 
 /**
@@ -95,24 +101,113 @@ class MappingService
     /**
      * MappingService constructor
      *
-     * @param MappingMapper   $mappingMapper The mapping mapper for database operations
-     * @param ICacheFactory   $cacheFactory  Cache factory for distributed caching
-     * @param LoggerInterface $logger        Logger for cache diagnostics
+     * @param MappingMapper         $mappingMapper The mapping mapper for database operations
+     * @param ICacheFactory         $cacheFactory  Cache factory for distributed caching
+     * @param LoggerInterface       $logger        Logger for cache diagnostics
+     * @param IEventDispatcher|null $events        Collects Twig functions contributed by other apps.
+     *                                             Nullable so the service still constructs where no
+     *                                             dispatcher is available (tests, early boot).
      */
     public function __construct(
         private readonly MappingMapper $mappingMapper,
         ICacheFactory $cacheFactory,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?IEventDispatcher $events=null
     ) {
-        $loader     = new ArrayLoader([]);
-        $this->twig = new Environment($loader);
+        $loader = new ArrayLoader([]);
+        // Autoescape disabled — mappings transform data (not HTML), and the
+        // sandbox SecurityPolicy below does not allow the `escape` filter that
+        // autoescaping injects into every output expression.
+        $this->twig = new Environment($loader, ['autoescape' => false]);
         $this->twig->addExtension(new MappingExtension());
+
+        // Functions only another app can provide — `callSource` needs
+        // OpenConnector's CallService, the contract lookups its contract
+        // service. Collected BEFORE the sandbox policy is built, because a
+        // contributed function that is not allowlisted fails as "unknown
+        // function" inside a mapping, nowhere near its registration.
+        $contributed = $this->contributedFunctions();
+        foreach ($contributed['functions'] as $function) {
+            $this->twig->addFunction($function);
+        }
+
         $this->twig->addRuntimeLoader(
             new MappingRuntimeLoader(
                 mappingService: $this,
                 mappingMapper: $this->mappingMapper,
             )
         );
+
+        // SSTI hardening (SEC-SVC-3): user-authored mapping templates are
+        // compiled and rendered here, so they MUST run inside a Twig sandbox.
+        // Only the tags, filters and functions actually used by mappings are
+        // allowlisted; method/property access on objects is denied entirely.
+        $policy = new SecurityPolicy(
+            allowedTags: [
+                'if',
+                'for',
+                'set',
+                'apply',
+            ],
+            allowedFilters: [
+                'date',
+                'date_modify',
+                'upper',
+                'lower',
+                'trim',
+                'length',
+                'default',
+                'number_format',
+                'round',
+                'abs',
+                'split',
+                'join',
+                'slice',
+                'first',
+                'last',
+                'replace',
+                'format',
+                'merge',
+                'keys',
+                'escape',
+                'raw',
+                'b64enc',
+                'b64dec',
+                'json_decode',
+                'zgw_enum',
+                'zgw_enum_reverse',
+                'zgw_extract_uuid',
+            ],
+            allowedMethods: [],
+            allowedProperties: [],
+            allowedFunctions: array_merge(
+                [
+                    'max',
+                    'min',
+                    'range',
+                    'executeMapping',
+                    'generateUuid',
+                    // Ported from OpenConnector's copy so its mappings keep
+                    // working once that copy is retired. `json_decode` is the
+                    // name OpenConnector's templates use; OpenRegister's own
+                    // runtime spells it `jsonDecode`. Both are exposed rather
+                    // than renaming either, because a mapping is authored data
+                    // — renaming a function silently breaks stored templates.
+                    'json_decode',
+                    'jsonDecode',
+                    'createSlug',
+                    'getFileContents',
+                    'getFiles',
+                    'b64enc',
+                    'b64dec',
+                    'zgwEnum',
+                    'zgwEnumReverse',
+                    'zgwExtractUuid',
+                ],
+                $contributed['names']
+            )
+        );
+        $this->twig->addExtension(new SandboxExtension($policy, sandboxed: true));
 
         // Initialize distributed cache for mapping entity lookups.
         try {
@@ -133,6 +228,8 @@ class MappingService
      * @param string $replacement The encoded character.
      *
      * @return array The array with encoded array keys
+     *
+     * @spec exclude Pure array-key encoding helper used internally by executeMapping; no standalone behavior.
      */
     public function encodeArrayKeys(array $array, string $toReplace, string $replacement): array
     {
@@ -165,6 +262,8 @@ class MappingService
      * @return array The result (output) of the mapping process
      *
      * @throws Exception When mapping fails
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function executeMapping(Mapping $mapping, array $input, bool $list=false): array
     {
@@ -281,9 +380,13 @@ class MappingService
             }
         }
 
-        // Ensure output is always an array.
+        // Ensure output is always an array — default null to [], wrap scalars.
+        if ($output === null) {
+            $output = [];
+        }
+
         if (is_array($output) === false) {
-            $output = $output === null ? [] : [$output];
+            $output = [$output];
         }
 
         return $output;
@@ -554,6 +657,8 @@ class MappingService
      * @param int|string $id The mapping ID, UUID, or slug to invalidate
      *
      * @return void
+     *
+     * @spec exclude One-line distributed-cache invalidation called by MappingMapper on write; cache plumbing.
      */
     public function invalidateMappingCache(int|string $id): void
     {
@@ -570,6 +675,8 @@ class MappingService
      * @param string $coordinates A string containing coordinates.
      *
      * @return array An array of coordinates.
+     *
+     * @spec exclude Pure coordinate-string parsing helper; no orchestration or persisted state.
      */
     public function coordinateStringToArray(string $coordinates): array
     {
@@ -607,6 +714,8 @@ class MappingService
      *
      * @throws \OCP\AppFramework\Db\DoesNotExistException          If mapping is not found
      * @throws \OCP\AppFramework\Db\MultipleObjectsReturnedException If multiple mappings found
+     *
+     * @spec exclude Cache-wrapped read delegating to MappingMapper::find; read-through caching plumbing.
      */
     public function getMapping(string $mappingId): Mapping
     {
@@ -644,4 +753,44 @@ class MappingService
     {
         return $this->mappingMapper->findAll();
     }//end getMappings()
+
+    /**
+     * Collect Twig functions contributed by other apps.
+     *
+     * Best-effort by design. A contributing app that is absent, or a listener
+     * that throws, must not stop mappings from evaluating at all — the engine
+     * belongs to OpenRegister and has to work on an instance where no other app
+     * is installed. What it must NOT do is pretend a contributed function
+     * exists: an unregistered function fails loudly inside the mapping, which is
+     * the correct place for that failure to surface.
+     *
+     * @return array{functions: array<int, \Twig\TwigFunction>, names: array<int, string>}
+     *         The contributed functions and the names to allowlist.
+     *
+     * @spec openspec/changes/flow-parity-mapping-and-webhooks/specs/flow-mapping/spec.md
+     */
+    private function contributedFunctions(): array
+    {
+        if ($this->events === null) {
+            return ['functions' => [], 'names' => []];
+        }
+
+        try {
+            $event = new RegisterMappingFunctionsEvent();
+            $this->events->dispatchTyped($event);
+
+            return [
+                'functions' => $event->getFunctions(),
+                'names'     => $event->getAllowedNames(),
+            ];
+        } catch (Throwable $e) {
+            $this->logger->warning(
+                message: '[MappingService] Could not collect contributed Twig functions: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+
+            return ['functions' => [], 'names' => []];
+        }//end try
+
+    }//end contributedFunctions()
 }//end class

@@ -1,14 +1,19 @@
 ---
-status: implemented
+status: in-progress
+retrofit_extensions:
+  - REQ-001
 ---
 
 # Computed Fields
 
+**OpenSpec changes**
+- `calc-engine-scalar-functions` (active) — adds seven pure per-object scalar operators (`max`, `min`, `coalesce`, `abs`, `round`, `year`, `monthsElapsed`) to the `CalculationEvaluator` JSON-AST engine; additive and backward-compatible. Cross-object folding stays out of scope (aggregations).
+
 ## Purpose
+
+@e2e exclude server-side Twig expression engine — covered by PHPUnit
 Computed fields enable schema properties whose values are derived automatically from expressions evaluated against object data, cross-referenced objects, and aggregation functions. This capability eliminates redundant data entry, ensures consistency of derived values (full names, totals, expiry dates), and brings spreadsheet-like formula power to OpenRegister without requiring external workflow engines for simple calculations. Computed fields use Twig expressions evaluated server-side, leveraging the existing Twig infrastructure already integrated into OpenRegister for mapping and transformation.
-
 ## Requirements
-
 ### Requirement: Schema Property Computed Attribute Definition
 Schema property definitions MUST support a `computed` object attribute that defines the expression, evaluation mode, and metadata for deriving field values. The `computed` attribute MUST contain an `expression` key (Twig template string) and MAY contain `evaluateOn` (default `save`), `description`, and `dependsOn` keys. The `computed` attribute MUST be stored as part of the schema property definition in the standard JSON Schema `properties` object, using a vendor extension pattern consistent with ADR-006.
 
@@ -449,6 +454,448 @@ Computed field evaluation MUST occur BEFORE schema hooks fire on `creating` and 
 - **GIVEN** an async hook on the `created` event
 - **WHEN** the object is saved with computed fields
 - **THEN** the CloudEvent payload MUST include all computed field values as they were saved
+
+### REQ-001: The system SHALL provide an OCC command that re-evaluates and persists every materialised calculation declared by a (register, schema) pair
+
+The system SHALL provide an OCC command that re-evaluates and persists every materialised calculation declared by a (register, schema) pair.
+
+> Added by retrofit-2026-05-24-2b-command-repair-middleware (archived).
+
+`occ openregister:rematerialise-calculations <register> <schema> [--dry-run]` iterates every object in the (register, schema) magic table, re-evaluates each materialised calculation declared in the schema's `configuration.x-openregister-calculations` map, and persists the new value when the result differs from the stored value. A calculation is "materialised" when its declaration in the calculations map satisfies `materialise === true`; non-materialised entries are skipped.
+
+The command is implemented in `OCA\OpenRegister\Command\RematerialiseCalculationsCommand`. It accepts two required arguments (`register` and `schema`, each resolvable by slug, uuid, or id) and one optional flag (`--dry-run`). On invocation it:
+1. Resolves register and schema via `RegisterMapper::find()` / `SchemaMapper::find()` with `_multitenancy: false`; lookup failures emit `<error>` to stderr and return `Command::FAILURE`.
+2. Reads the calculations map via `getCalculations(schema)` (returns `$schema->getConfiguration()['x-openregister-calculations']` or null). Null or empty map → writes `<comment>Schema declares no x-openregister-calculations — nothing to do.</comment>` and exits `Command::SUCCESS`.
+3. Filters the map to materialised names. Empty list → writes `<comment>No materialised calculations declared — nothing to do.</comment>` and exits `Command::SUCCESS`.
+4. Pulls all entities (capped at 100,000 per run) via `MagicMapper::findAllInRegisterSchemaTable(register, schema, limit: 100000)`.
+5. For each entity, builds an evaluation payload by injecting the synthetic `@self` metadata block (`id`, `uuid`, `register`, `schema`, `owner`, `created`, `updated`) into the object data via `withSelf()`. Created/updated are formatted as `DateTimeInterface::ATOM` strings (null when absent).
+6. For each materialised calculation: calls `CalculationEvaluator::evaluate(payload, expression)`. `DateTimeInterface` results are normalised to ATOM strings. The stored value at `$data[$name]` is compared against the new value using `!==`; a difference marks the entity as `changed`. Per-calculation evaluation errors are counted in `$failed`, written as `<error>! <name> on <uuid>: <message></error>`, and do not abort the iteration.
+7. When `--dry-run` is absent and the entity is changed, the new data is persisted via `ObjectService::saveObject(object: $data, register: $entity->getRegister(), schema: $entity->getSchema(), uuid: $entity->getUuid())`. Save failures are written as `<error>save failed on <uuid>: <message></error>` and counted in `$failed`.
+
+The final line reports `<info>Touched <touched>, unchanged <unchanged>, failed <failed></info>`. Exit status is `Command::FAILURE` when `$failed > 0`, else `Command::SUCCESS`.
+
+#### Scenario: Re-materialise a changed expression across the schema
+- **GIVEN** a schema with `x-openregister-calculations: { totalIncl: { materialise: true, expression: "<expr-v2>" } }` whose expression was just changed from v1 to v2
+- **AND** 500 objects exist in the register × schema table, all carrying the v1-evaluated value of `totalIncl`
+- **WHEN** the admin runs `occ openregister:rematerialise-calculations <register> <schema>`
+- **THEN** the command loads all 500 entities, evaluates v2 with the `@self`-augmented payload, and saves each entity via `ObjectService::saveObject()` where the new value differs from the stored value
+- **AND** the final line reports `Touched 500, unchanged 0, failed 0`
+- **AND** the command exits `Command::SUCCESS` (0)
+
+#### Scenario: Dry-run reports diffs without persisting
+- **GIVEN** 100 entities where v2 evaluation produces a value different from the stored v1 value
+- **WHEN** the admin runs `occ openregister:rematerialise-calculations <register> <schema> --dry-run`
+- **THEN** every entity is evaluated and counted as `touched`
+- **AND** `ObjectService::saveObject()` is NEVER called
+- **AND** the final line reports `Touched 100, unchanged 0, failed 0`
+
+#### Scenario: DateTime calculation result is normalised to ATOM
+- **GIVEN** a materialised calculation whose expression returns a `\DateTime` instance (e.g. `vervaldatum = ingangsdatum + 1 year`)
+- **WHEN** the command evaluates it for a given entity
+- **THEN** the `\DateTime` result is converted via `->format(DateTimeInterface::ATOM)` before comparison and storage
+- **AND** the persisted value is the ATOM string, not the object
+
+#### Scenario: Evaluation failure on a single entity does not abort the batch
+- **GIVEN** a calculation whose expression throws on entity `<uuid-bad>`
+- **WHEN** the command evaluates that entity
+- **THEN** `! <name> on <uuid-bad>: <message>` is written to stderr
+- **AND** `$failed` is incremented
+- **AND** the loop continues with the next entity
+- **AND** the final command exits `Command::FAILURE` (because `$failed > 0`)
+
+### Requirement: Save-Time Materialisation of Declared Calculations
+
+When a schema declares an `x-openregister-calculations` configuration block, the system MUST materialise each calculation marked `materialise: true` into the object payload before the object is persisted, on both create and update. Materialisation MUST run during the `ObjectCreatingEvent` / `ObjectUpdatingEvent` (pre-persist) phase via `CalculationOnSaveListener`. The listener MUST iterate calculations in declaration order (a later calculation MAY reference an earlier one; the validator's cycle check guarantees the graph is acyclic), evaluate each expression through `CalculationEvaluator`, and write the serialised result back into the object data. The listener MUST NOT abort the save when an individual calculation fails.
+
+#### Scenario: Materialise a calculation into the payload on create
+- **GIVEN** a schema whose configuration declares `x-openregister-calculations` with an entry `total` having `materialise: true` and an expression over other fields
+- **WHEN** an object is created and `ObjectCreatingEvent` fires
+- **THEN** `CalculationOnSaveListener::handle()` MUST invoke `process()` with the new object
+- **AND** the evaluated value MUST be written into the object data under key `total`
+- **AND** the materialised value MUST be present in the persisted object
+
+#### Scenario: Re-materialise on update
+- **GIVEN** an existing object with a materialised calculation `total`
+- **WHEN** the object is updated and `ObjectUpdatingEvent` fires
+- **THEN** `CalculationOnSaveListener::handle()` MUST invoke `process()` with the new object state (`getNewObject()`)
+- **AND** `total` MUST be recomputed from the updated source data
+
+#### Scenario: Only `materialise: true` entries are written
+- **GIVEN** a calculations block containing one entry with `materialise: true` and one with `materialise` unset or false
+- **WHEN** the object is saved
+- **THEN** only the `materialise: true` entry MUST be written into the payload
+- **AND** the non-materialised entry MUST be skipped
+
+#### Scenario: Synthetic `@self` metadata is available during evaluation but stripped before persist
+- **GIVEN** a calculation expression that references `@self.created` or `@self.uuid`
+- **WHEN** `process()` builds the evaluation context
+- **THEN** it MUST inject a `@self` array containing `id`, `uuid`, `register`, `schema`, `owner`, and ISO-8601 `created` / `updated` (null when the entity timestamp is null)
+- **AND** the expression MUST resolve `@self.*` references against that block
+- **AND** the `@self` key MUST be removed from the data before the payload is persisted (it is a runtime aid, not user data)
+
+#### Scenario: No-op save does not rewrite the payload
+- **GIVEN** a materialised calculation whose recomputed value equals the value already stored
+- **WHEN** `process()` runs
+- **THEN** the listener MUST NOT call `setObject()` (the payload is only re-set when at least one materialised value actually changed)
+
+#### Scenario: Per-calculation evaluation error is logged and skipped
+- **GIVEN** one calculation whose expression raises an `EvaluationException`
+- **WHEN** `process()` evaluates the calculations in order
+- **THEN** the failing calculation MUST be skipped
+- **AND** a WARNING MUST be logged via `LoggerInterface` including the calculation name, the object UUID, and the error message
+- **AND** the remaining calculations MUST still be evaluated and the object MUST still be saved successfully
+
+#### Scenario: DateTime results are serialised to ATOM
+- **GIVEN** a calculation that returns a `DateTimeInterface` value
+- **WHEN** the result is written into the payload
+- **THEN** `serialise()` MUST format it as an ATOM (`DATE_ATOM`) string
+- **AND** non-DateTime values MUST be stored unchanged
+
+#### Scenario: Schema without a calculations block is a no-op
+- **GIVEN** a schema whose configuration does not contain `x-openregister-calculations` (or contains a non-array value)
+- **WHEN** an object of that schema is saved
+- **THEN** `getCalculations()` MUST return null and `process()` MUST return without modifying the payload
+
+#### Notes
+- `loadSchema()` resolves the object's schema via `SchemaMapper::find($ref, _multitenancy: false)`; an unresolvable or empty schema reference yields a null schema and the listener returns early. The `_multitenancy: false` flag is a system-level lookup (the listener is not user-scoped) — see the change Notes for the multitenancy-boundary follow-up.
+- This listener consumes the JSON-AST `x-openregister-calculations` annotation (archived change `2026-04-29-calculations-annotation`), which is the declarative sibling of the `computed.expression` form covered by the main spec's "Save-Time Evaluation" requirement. Both materialise derived values at save time.
+
+### Requirement: JSON-AST calculation expressions MUST be evaluated by a pure-function evaluator
+
+OpenRegister MUST provide a second derivation engine, distinct from the Twig-based
+`ComputedFieldHandler`, that evaluates calculations expressed as a single-key JSON
+expression AST. `CalculationEvaluator::evaluate(array $object, mixed $expression)`
+MUST accept either a bare scalar literal (resolved through the shared
+`PlaceholderResolver`) or a single-key array of the form `{ "<op>": <args> }`, and MUST
+dispatch on the operator key. The recognised v1 vocabulary is: `prop`, `lit`, `concat`,
+`if`, `not`, `and`, `or`, the arithmetic operators `+ - * / %`, the comparison operators
+`eq ne lt lte gt gte`, and the date operators `now`, `diffDays`, `formatDate`, `dateDiff`.
+The evaluator MUST be side-effect-free: no I/O, no database access. Any malformed
+expression, unknown operator, non-numeric arithmetic operand, zero divisor, or unknown
+`dateDiff` unit MUST raise an `EvaluationException` rather than returning a silent default.
+
+#### Scenario: Single-key dispatch on a known operator
+- **GIVEN** the expression `{ "+": [{ "prop": "aantal" }, 1] }` and an object `{ "aantal": 4 }`
+- **WHEN** `evaluate()` is called
+- **THEN** the result MUST be `5`
+
+#### Scenario: Bare scalar resolves through the placeholder resolver
+- **GIVEN** the expression is the string `"$now"` (a placeholder, not an array)
+- **WHEN** `evaluate()` is called
+- **THEN** the value MUST be resolved by the shared `PlaceholderResolver` and returned as-is for non-placeholder scalars
+
+#### Scenario: Dotted-path and @self property resolution
+- **GIVEN** an object whose `@self` metadata was injected by the on-save listener
+- **WHEN** the expression `{ "prop": "@self.created" }` is evaluated
+- **THEN** the value at the dotted path MUST be returned
+- **AND** a path that does not exist MUST resolve to null rather than raising
+
+#### Scenario: Expression with more than one top-level key is rejected
+- **GIVEN** the expression `{ "+": [1, 2], "-": [3] }` (two keys)
+- **WHEN** `evaluate()` is called
+- **THEN** an `EvaluationException` MUST be raised stating the expression must be a single-key object
+
+#### Scenario: Arithmetic guards reject non-numeric and zero-divisor operands
+- **GIVEN** the expression `{ "/": [{ "prop": "a" }, { "prop": "b" }] }`
+- **WHEN** `b` resolves to `0`
+- **THEN** an `EvaluationException` MUST be raised requiring non-zero numeric operands
+- **AND** when any operand of `+ - * %` is non-numeric an `EvaluationException` MUST be raised
+
+#### Scenario: Comparison normalises ISO-date operands before ordering
+- **GIVEN** the expression `{ "lt": [{ "prop": "start" }, { "prop": "end" }] }` with ISO-8601 date strings
+- **WHEN** `evaluate()` is called
+- **THEN** both operands MUST be coerced to integer timestamps before the `<` comparison
+- **AND** an ordering comparison against a null operand MUST yield false
+
+#### Scenario: dateDiff computes a signed integer difference in the requested unit
+- **GIVEN** the expression `{ "dateDiff": { "from": "now", "to": { "prop": "@self.dueDate" }, "unit": "days" } }`
+- **WHEN** `to` is after `from`
+- **THEN** the result MUST be a positive integer day count
+- **AND** when `to` is before `from` the result MUST be negative
+- **AND** an unsupported `unit` MUST raise an `EvaluationException`
+- **AND** an unparseable `from` or `to` MUST yield null
+
+### Requirement: Calculation annotations MUST be validated at schema-save time
+
+`CalculationAnnotationValidator::validate(array $schema)` MUST validate the
+`x-openregister-calculations` annotation before a schema is persisted and MUST return a
+list of `{code, message}` errors (empty list when the annotation is absent or valid).
+Each calculation declaration MUST be an object with a `type` drawn from
+`[string, integer, number, boolean, date]` and a non-empty `expression`. Every `prop`
+reference inside an expression MUST resolve either to a property declared on the schema,
+to a sibling calculation declared in the same annotation, or to an allowlisted
+`@self.<field>` system field (`id`, `uuid`, `register`, `schema`, `owner`, `created`,
+`updated`). Every operator key MUST be in the v1 vocabulary. The validator MUST detect
+cycles in the calc-to-calc dependency graph and report them.
+
+#### Scenario: Absent annotation produces no errors
+- **GIVEN** a schema with no `x-openregister-calculations` key
+- **WHEN** `validate()` is called
+- **THEN** the result MUST be an empty error list
+
+#### Scenario: Empty annotation is rejected
+- **GIVEN** a schema with `x-openregister-calculations` present but empty
+- **WHEN** `validate()` is called
+- **THEN** the result MUST include an error with code `calculations-empty`
+
+#### Scenario: Bad type or missing expression is reported per calculation
+- **GIVEN** a calculation declaring `type: "object"` (not in the allowed set) or omitting `expression`
+- **WHEN** `validate()` is called
+- **THEN** an error with code `calculation-bad-type` or `calculation-no-expression` MUST be returned for that calculation
+
+#### Scenario: Unknown property reference is reported
+- **GIVEN** a calculation whose expression references `{ "prop": "doesNotExist" }`
+- **WHEN** `validate()` is called
+- **THEN** an error with code `calculation-prop-unknown` MUST be returned
+- **AND** a reference to a sibling calculation name MUST be accepted and recorded as a dependency edge
+
+#### Scenario: Unknown @self field is reported
+- **GIVEN** a calculation referencing `{ "prop": "@self.secret" }`
+- **WHEN** `validate()` is called
+- **THEN** an error with code `calculation-self-unknown` MUST be returned listing the allowed system fields
+
+#### Scenario: Calculation cycle is detected
+- **GIVEN** calculation `a` referencing `b` and calculation `b` referencing `a`
+- **WHEN** `validate()` runs DFS-colouring cycle detection over the dependency graph
+- **THEN** an error with code `calculation-cycle` MUST be returned naming the cycle path
+
+#### Scenario: dateDiff argument dict is validated
+- **GIVEN** a calculation using `dateDiff` without all of `from`, `to`, `unit`
+- **WHEN** `validate()` is called
+- **THEN** an error with code `calculation-dateDiff-missing-keys` MUST be returned
+- **AND** a `dateDiff` whose `unit` is a literal string outside the supported list MUST report `calculation-dateDiff-invalid-unit`
+
+### Requirement: Static Identifier Extraction From Twig Expression Source
+The system MUST extract candidate variable identifiers from a Twig expression by regex-scanning the source text of every `{{ ... }}` and `{% ... %}` block, without parsing the expression through a Twig AST or sandbox environment. The extractor MUST collect only the top-level word of dotted or array references (`foo`, `foo.bar`, `foo[0]` all yield `foo`). The extractor MUST skip a curated reserved-word set covering Twig keywords (`and`, `or`, `not`, `in`, `is`, `as`, `with`, `if`, `else`, `elseif`, `endif`, `for`, `endfor`, `set`, `do`, `block`, `endblock`), literals (`true`, `false`, `null`), and built-in helpers used inside expressions (`date`, `now`, `min`, `max`, `range`, `random`, `length`, `count`). The extractor MUST strip the cross-object reference prefix `_ref` from the result because `_ref.*` references are foreign-object lookups, not in-schema dependencies.
+
+#### Scenario: Identifier extracted from a simple expression
+- **GIVEN** the expression `{{ voornaam }} {{ achternaam }}`
+- **WHEN** `extractTwigVariables` runs
+- **THEN** the result MUST contain `voornaam` and `achternaam`
+- **AND** the result MUST NOT contain any Twig keyword
+
+#### Scenario: Top-level identifier of a dotted reference
+- **GIVEN** the expression `{{ klant.naam }}`
+- **WHEN** `extractTwigVariables` runs
+- **THEN** the result MUST contain `klant`
+- **AND** the result MUST NOT contain `naam` (it is a sub-property, not a top-level identifier)
+
+#### Scenario: Cross-object reference prefix is stripped
+- **GIVEN** the expression `{{ _ref.klant.naam }}`
+- **WHEN** `extractTwigVariables` runs
+- **THEN** the result MUST NOT contain `_ref`
+- **AND** the identifier `_ref` MUST be filtered out because cross-object references are not in-schema dependencies
+
+#### Scenario: Plain-text content outside Twig blocks is ignored
+- **GIVEN** the expression `Hello {{ name }} world`
+- **WHEN** `extractTwigVariables` runs
+- **THEN** the result MUST contain `name`
+- **AND** the result MUST NOT contain `Hello` or `world` (plain text outside `{{ }}` / `{% %}` is not scanned)
+
+#### Scenario: Empty expression yields empty result
+- **GIVEN** an expression with no `{{ }}` or `{% %}` blocks
+- **WHEN** `extractTwigVariables` runs
+- **THEN** the result MUST be an empty array
+
+### Requirement: Computed-Only Dependency Graph Construction
+The system MUST build the cycle-detection dependency graph using only edges between computed properties. Before extraction, the system MUST collect the set of property names whose definition contains a `computed` array attribute. For each computed property, after extracting candidate identifiers from its expression, the system MUST filter the identifiers down to those also in the computed-property set; references to non-computed properties MUST be discarded because non-computed inputs are inert leaves that cannot close a cycle. The resulting graph MUST be an adjacency list keyed by computed property name with deduplicated edge targets.
+
+#### Scenario: Non-computed property reference is filtered from graph
+- **GIVEN** computed field `totaal` with expression `{{ aantal * prijs - korting }}`
+- **AND** `aantal`, `prijs`, `korting` are non-computed (plain) properties
+- **WHEN** the dependency graph is built
+- **THEN** the graph entry for `totaal` MUST be an empty edge list
+- **AND** no graph entry MUST be created for `aantal`, `prijs`, or `korting` (they are not computed)
+
+#### Scenario: Computed-to-computed reference becomes a graph edge
+- **GIVEN** computed field `subtotaal` (expression `{{ aantal * prijs }}`)
+- **AND** computed field `totaal` (expression `{{ subtotaal - korting }}`)
+- **WHEN** the dependency graph is built
+- **THEN** the graph MUST contain an edge `totaal -> subtotaal`
+
+#### Scenario: Schema with no computed properties yields an empty graph
+- **GIVEN** a schema whose `properties` array contains no entry with a `computed` attribute
+- **WHEN** `detectCircularDependencies` runs
+- **THEN** the function MUST return an empty cycle list immediately without building the graph
+
+#### Scenario: Computed property with empty expression has empty edge list
+- **GIVEN** a computed property whose `computed.expression` is missing or the empty string
+- **WHEN** the dependency graph is built
+- **THEN** the graph entry for that property MUST be an empty edge list (the property is in the graph as a node but has no outgoing edges)
+
+### Requirement: DFS-Based Back-Edge Cycle Detection
+The system MUST detect cycles in the computed-field dependency graph by depth-first traversal. The traversal MUST maintain an explicit stack of nodes on the current path. When the traversal encounters a node that is already on the stack, that node is a back-edge target and the path from that node back to itself (the slice of the stack from the matched index plus the duplicated closing node) MUST be recorded as a cycle. The traversal MUST also maintain a globally-visited set so that subtrees already explored from another starting node are not re-walked. The traversal MUST be invoked once per node in the graph so cycles reachable only from non-root entry points are still detected.
+
+#### Scenario: Self-loop is detected as a length-1 cycle
+- **GIVEN** computed field `a` with expression `{{ a + 1 }}` (so `a -> a` is an edge)
+- **WHEN** `dfsForCycles` is called for node `a`
+- **THEN** the cycle `[a, a]` (start `a`, back-edge to `a`) MUST be recorded
+
+#### Scenario: Two-node cycle is detected from either starting node
+- **GIVEN** edges `a -> b` and `b -> a`
+- **WHEN** DFS runs from node `a`
+- **THEN** the cycle `[a, b, a]` MUST be recorded
+
+#### Scenario: Shared subtree not re-walked
+- **GIVEN** a graph with nodes `a`, `b`, `c` where both `a -> c` and `b -> c` exist and `c` is acyclic
+- **WHEN** DFS runs from `a` and then from `b`
+- **THEN** the subtree rooted at `c` MUST NOT be re-traversed during the second invocation (visited-set short-circuits the second walk)
+
+#### Scenario: Acyclic graph produces no cycles
+- **GIVEN** a graph `subtotaal -> []`, `totaal -> [subtotaal]` (no back-edges)
+- **WHEN** DFS runs from every node
+- **THEN** the returned cycle list MUST be empty
+
+### Requirement: Canonical Cycle Signature Deduplication
+The system MUST deduplicate detected cycles by canonical signature so that entering the same cycle from two different DFS starting nodes produces only one entry in the reported cycle list. The signature MUST be computed by dropping the duplicated closing node from the cycle path and then rotating the remaining sequence so the lexicographically smallest node leads. The rotated sequence MUST be joined by `->` to form the signature. The first time a signature is produced the cycle MUST be appended to the output and the signature recorded; subsequent re-discoveries with the same signature MUST be suppressed.
+
+#### Scenario: Same cycle entered from two starts yields one report
+- **GIVEN** the cycle `a -> b -> a` is reachable from both starting nodes `a` and `b`
+- **WHEN** DFS visits both starts in turn
+- **THEN** the cycle MUST appear exactly once in the returned cycle list
+- **AND** the canonical signature MUST be `a->b` (rotation starting at the lexicographically smallest node)
+
+#### Scenario: Cycle rotated to lexicographically smallest start
+- **GIVEN** the cycle path `[c, a, b, c]` (closing node duplicated)
+- **WHEN** `canonicaliseCycle` runs
+- **THEN** the duplicated closing `c` MUST be dropped
+- **AND** the body `[c, a, b]` MUST be rotated so `a` (smallest) leads
+- **AND** the returned signature MUST be `a->b->c`
+
+#### Scenario: Single-node self-loop produces a single-name signature
+- **GIVEN** the cycle path `[a, a]`
+- **WHEN** `canonicaliseCycle` runs
+- **THEN** the duplicated closing `a` MUST be dropped
+- **AND** the body `[a]` is already canonical
+- **AND** the returned signature MUST be `a`
+
+#### Scenario: Empty cycle returns empty signature
+- **GIVEN** an empty cycle path
+- **WHEN** `canonicaliseCycle` runs
+- **THEN** the returned signature MUST be the empty string
+
+### Requirement: Declarative cross-object reference annotation
+A schema MAY declare an `x-openregister-references` annotation: a map of named references, each resolving to at most one OTHER object whose fields the schema's calculations MAY read via `@ref.<name>.<field>`. Each reference SHALL declare a target `schema` and a `mode` of either `relatedObject` (resolve by a local foreign-key `field` holding a uuid/id) or `lookup` (resolve by a `filters` criteria map). A `lookup` reference MAY declare an optional `effectiveDate` selector to pick the most-recent row valid as-of a date. References are resolved by `CalculationOnSaveListener` (and `RematerialiseCalculationsCommand`) BEFORE any calculation is evaluated, and injected into the evaluation payload under `@ref.<name>`; the pure `CalculationEvaluator` SHALL remain free of I/O and resolve `@ref.<name>.<field>` only through its existing dotted-path `prop` mechanism. Reference resolution MUST run under the saving user's existing RBAC and multitenancy scope, MUST NOT recursively re-trigger the resolved object's own calculations, and MUST NOT fail the save when a reference is unresolvable.
+
+#### Scenario: Resolve a reference by foreign key
+- **GIVEN** a schema `DepreciationSchedule` declaring `x-openregister-references.asset` with `mode: relatedObject`, `schema: FixedAsset`, and `field: fixedAssetId`
+- **AND** an object whose `fixedAssetId` holds the uuid of a `FixedAsset` with `acquisitionCost = 10000`
+- **WHEN** the object is saved and a calculation reads `{ "prop": "@ref.asset.acquisitionCost" }`
+- **THEN** the listener MUST resolve the `FixedAsset` via `ObjectService::find()`
+- **AND** inject its data under `@ref.asset` so the calculation reads `10000`
+
+#### Scenario: Resolve a reference by effective-dated criteria
+- **GIVEN** a schema `MileageEntry` declaring `x-openregister-references.rate` with `mode: lookup`, `schema: MileageRate`, and `filters` keyed by `@self`-derived values (e.g. `{ "fiscalYear": { "year": "@self.journeyDate" }, "vehicleType": "@self.vehicleType", "country": "@self.country" }`)
+- **AND** a `MileageRate` master row matching those criteria with `ratePerKm = 0.21`
+- **WHEN** a `MileageEntry` is saved and a calculation reads `{ "prop": "@ref.rate.ratePerKm" }`
+- **THEN** the listener MUST resolve the row via `ObjectService::findAll(['filters'=>…])` parameterised by the object's values
+- **AND** inject it under `@ref.rate` so the calculation reads `0.21`
+
+#### Scenario: An unresolvable reference injects null and never fails the save
+- **GIVEN** a `lookup` reference whose criteria match no master row, OR a `relatedObject` reference whose `field` is empty or points to a missing object
+- **WHEN** the object is saved
+- **THEN** the listener MUST inject `@ref.<name>` as `null`
+- **AND** a calculation reading `{ "prop": "@ref.<name>.<field>" }` MUST yield `null`
+- **AND** the save MUST complete successfully (a warning MAY be logged)
+
+#### Scenario: Reference resolution respects RBAC and tenant scope
+- **GIVEN** a saving user without read permission on the target schema, or a referenced object owned by another tenant
+- **WHEN** a reference is resolved during save
+- **THEN** the resolution MUST use `ObjectService` with its default `_rbac: true` and `_multitenancy: true` (never bypassed)
+- **AND** the unreadable/cross-tenant object MUST resolve to `null`, NOT leak its data
+
+#### Scenario: Resolving a reference does not recursively re-trigger calculations
+- **GIVEN** the resolved object's schema also declares materialised calculations
+- **WHEN** a reference to it is resolved during another object's save
+- **THEN** resolution MUST use a read path (`find()` / `findAll()`) that does NOT dispatch creating/updating events
+- **AND** the resolved object's own calculations MUST NOT re-run as a side effect
+
+#### Scenario: Materialised reference values are save-time snapshots refreshed by rematerialise
+- **GIVEN** a `MileageEntry` whose `ratePerKm` was materialised from a `MileageRate` row at save time
+- **WHEN** that `MileageRate` row is later edited
+- **THEN** the previously saved `MileageEntry.ratePerKm` MUST remain unchanged (a snapshot) until the entry is re-saved
+- **AND** running `openregister:rematerialise-calculations <register> <schema>` MUST re-resolve the reference and refresh the materialised value
+
+### Requirement: Declarative aggregate-reference annotation
+A schema MUST be able to declare an `x-openregister-aggregate-refs` annotation: a map of
+named aggregate-references, each folding over MANY objects of a target `schema` into a
+value the declaring schema's calculations MAY read via `@aggregate.<name>` (scalar) or
+`@aggregate.<name>.<field>` (grouped). Each aggregate-reference SHALL declare a target
+`schema` and a `metric` (one of `count`, `sum`, `avg`, `min`, `max`); a non-`count`
+metric SHALL declare a `field`; it MAY declare a `filters` criteria map (each value a
+literal or a `@self.<field>` token, parameterising the aggregation by the saving
+object) and an optional `groupBy`. Aggregate-references SHALL be resolved by
+`CalculationOnSaveListener` (and `RematerialiseCalculationsCommand`) BEFORE any
+calculation is evaluated, via `AggregationRunner::runAdhoc()`, and injected into the
+evaluation payload under `@aggregate.<name>`; the pure `CalculationEvaluator` SHALL
+remain free of I/O and resolve `@aggregate.<name>` only through its existing dotted-path
+`prop` mechanism. Aggregate-reference resolution MUST run under the saving user's
+existing RBAC and multitenancy scope (inherited from `runAdhoc`), and MUST NOT fail the
+save when an aggregation is unresolvable.
+
+#### Scenario: Resolve a scalar aggregate-reference
+- **GIVEN** a schema `UrenRegistratie` declaring `x-openregister-aggregate-refs.billableHoursThisPeriod` with `schema: TimeEntry`, `metric: sum`, `field: hours`, and `filters` keyed by `@self`-derived values (e.g. `{ "resourceId": "@self.resourceId", "billable": true }`)
+- **AND** matching `TimeEntry` rows whose `hours` sum to `120`
+- **WHEN** a `UrenRegistratie` is saved and a calculation reads `{ "prop": "@aggregate.billableHoursThisPeriod" }`
+- **THEN** the listener MUST resolve the aggregation via `AggregationRunner::runAdhoc()` parameterised by the object's values
+- **AND** inject the scalar `120` under `@aggregate.billableHoursThisPeriod` so the calculation reads `120`
+
+#### Scenario: Resolve a grouped aggregate-reference
+- **GIVEN** a schema declaring an aggregate-reference with a `groupBy` (e.g. `{ "field": "status" }`)
+- **WHEN** the object is saved and a calculation reads `{ "prop": "@aggregate.<name>.<groupKey>" }`
+- **THEN** the listener MUST inject a `{<groupKey>: <value>}` map under `@aggregate.<name>`
+- **AND** the calculation MUST read the per-group value via the dotted path
+
+#### Scenario: An unresolvable aggregate-reference injects null and never fails the save
+- **GIVEN** an aggregate-reference whose target schema is missing, whose query errors, or which the saving user may not list
+- **WHEN** the object is saved
+- **THEN** the listener MUST inject `@aggregate.<name>` as `null`
+- **AND** a calculation reading `{ "prop": "@aggregate.<name>" }` MUST yield `null`
+- **AND** the save MUST complete successfully (a warning MAY be logged)
+
+#### Scenario: Aggregate-reference resolution respects RBAC and tenant scope
+- **GIVEN** a saving user without list permission on the target schema, or a target schema in another tenant
+- **WHEN** an aggregate-reference is resolved during save
+- **THEN** the resolution MUST use `AggregationRunner::runAdhoc()` with its RBAC `list` gate and multi-tenancy predicate (never bypassed)
+- **AND** the aggregation MUST NOT fold over rows the saving user cannot list, NOR leak cross-tenant data
+
+#### Scenario: Materialised aggregate values are save-time snapshots refreshed by rematerialise
+- **GIVEN** a `UrenRegistratie` whose `utilizationPercent` was materialised from aggregate-references at save time
+- **WHEN** a contributing `TimeEntry` row is later added or edited
+- **THEN** the previously saved `utilizationPercent` MUST remain unchanged (a snapshot) until the entry is re-saved
+- **AND** running `openregister:rematerialise-calculations <register> <schema>` MUST re-resolve the aggregate-references and refresh the materialised value
+
+#### Scenario: Aggregate-reference annotation is preserved on schema save
+- **GIVEN** a schema imported with an `x-openregister-aggregate-refs` block
+- **WHEN** the schema is saved
+- **THEN** the annotation MUST be retained in the schema configuration because `x-openregister-aggregate-refs` is registered in `Schema::ANNOTATION_VOCABULARY`
+- **AND** a calculation reading `@aggregate.<name>` MUST NOT be rejected as referencing an undeclared aggregate
+
+### Requirement: sha256 scalar operator
+The pure `CalculationEvaluator` SHALL support a `sha256` single-argument operator that
+returns the lowercase hex SHA-256 digest of the stringified value of its operand. The
+operator SHALL accept both `{ "sha256": [<expr>] }` and a bare `{ "sha256": <expr> }`
+argument shape, MUST be deterministic (no I/O), and MUST return `null` when its operand
+resolves to `null` (rather than hashing an empty string). The operator name SHALL be
+recognised by `CalculationAnnotationValidator`.
+
+#### Scenario: Hash a string operand deterministically
+- **GIVEN** a calculation `{ "sha256": ["abc"] }`
+- **WHEN** the calculation is evaluated
+- **THEN** the result MUST be `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`
+- **AND** repeated evaluation of the same operand MUST yield the same digest
+
+#### Scenario: Hash a stringified non-string operand
+- **GIVEN** a calculation `{ "sha256": [ { "prop": "@aggregate.contributingIds" } ] }` whose operand resolves to a non-string value
+- **WHEN** the calculation is evaluated
+- **THEN** the operand MUST be cast to its string form before hashing
+- **AND** the result MUST be the 64-character hex SHA-256 of that string
+
+#### Scenario: A null operand yields null, not a hash
+- **GIVEN** a calculation `{ "sha256": [ { "prop": "missingField" } ] }` whose operand resolves to `null`
+- **WHEN** the calculation is evaluated
+- **THEN** the result MUST be `null`
+- **AND** the calculation MUST NOT return the SHA-256 of an empty string
 
 ## Current Implementation Status
 - **Implemented:**

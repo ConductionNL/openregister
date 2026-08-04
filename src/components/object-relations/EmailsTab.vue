@@ -58,7 +58,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Unlink email')"
 					@click="unlinkEmail(email)">
 					<template #icon>
@@ -74,9 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import axios from '@nextcloud/axios'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import EmailOutline from 'vue-material-design-icons/EmailOutline.vue'
 import EmailOffOutline from 'vue-material-design-icons/EmailOffOutline.vue'
@@ -134,6 +132,10 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @param newId
+			 * @spec exclude watcher refetching emails on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchEmails()
@@ -145,6 +147,9 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * @spec exclude API passthrough loading linked emails; email-relations contract owned by integration-email capability
+		 */
 		async fetchEmails() {
 			this.loading = true
 			this.error = false
@@ -172,6 +177,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param email
+		 * @spec exclude API passthrough unlinking email + change emit; email-relations contract owned by integration-email capability
+		 */
 		async unlinkEmail(email) {
 			const url = generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/emails/{emailId}', {
 				register: this.register,
@@ -190,6 +199,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param value
+		 * @spec exclude computed date-format display helper, UI plumbing
+		 */
 		formatDate(value) {
 			if (!value) {
 				return ''

@@ -5,6 +5,9 @@
  *
  * Formatter for creating CloudEvents specification compliant webhook payloads.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Webhook
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-84
+ * @spec openspec/specs/webhook-payload-mapping/spec.md
  */
 
 declare(strict_types=1);
@@ -69,6 +72,8 @@ class CloudEventFormatter
      *     id: string, time: string, datacontenttype: 'application/json',
      *     subject: null|string, dataschema: null, data: array,
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function formatAsCloudEvent(
         string $eventType,
@@ -125,6 +130,8 @@ class CloudEventFormatter
      *     data: array{method: mixed|string, path: false|mixed|string,
      *     queryParams: array|mixed, headers: array|mixed, body: array|mixed,...},
      *     openregister: array{app: 'openregister', version: '1.0.0'}}
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     public function formatRequestAsCloudEvent(
         IRequest $request,
@@ -277,6 +284,8 @@ class CloudEventFormatter
      * @param IRequest $request Request object with getHeader method
      *
      * @return string Content type header value
+     *
+     * @spec openspec/specs/webhook-payload-mapping/spec.md
      */
     private function getContentTypeHeader(IRequest $request): string
     {

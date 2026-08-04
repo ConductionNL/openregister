@@ -6,6 +6,9 @@
  * Handler for managing object relations and cascading operations.
  * Handles schema resolution, relation scanning, and cascading object creation.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
@@ -57,7 +60,7 @@ class RelationCascadeHandler
      * @param RegisterMapper  $registerMapper     Register mapper for register operations.
      * @param LoggerInterface $logger             Logger interface for logging operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectEntityMapper,
@@ -84,7 +87,7 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function resolveSchemaReference(string $reference): string|null
     {
@@ -143,7 +146,7 @@ class RelationCascadeHandler
      *
      * @return string The cleaned reference without query parameters.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function removeQueryParameters(string $reference): string
     {
@@ -171,7 +174,7 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple reference format handling paths
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function resolveRegisterReference(string $reference): string|null
     {
@@ -237,7 +240,7 @@ class RelationCascadeHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive relation scanning with multiple reference types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for different relation patterns
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function scanForRelations(array $data, string $prefix='', ?Schema $schema=null): array
     {
@@ -295,7 +298,7 @@ class RelationCascadeHandler
      *
      * @return array The property definition or empty array.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function getPropertyDefinition(array $properties, array $propertyPath): array
     {
@@ -318,7 +321,7 @@ class RelationCascadeHandler
      *
      * @return bool True if array contains references.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function isArrayOfReferences(array $array): bool
     {
@@ -334,11 +337,18 @@ class RelationCascadeHandler
     /**
      * Checks if a value looks like an object reference.
      *
+     * This is the relation RESOLUTION path (it accepts numeric ids and `/api/`
+     * URLs so cascade write-back can resolve them to UUIDs), which is a broader
+     * concern than the `@self.relations` RECORDING rule shared by SaveObjects
+     * and BulkRelationHandler via RelationDetectionTrait. It deliberately does
+     * NOT carry the loose "length + separator" heuristic, so scalars such as
+     * dates or enum values are never matched here either.
+     *
      * @param string $value The value to check.
      *
      * @return bool True if it looks like a reference.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function looksLikeObjectReference(string $value): bool
     {
@@ -384,7 +394,7 @@ class RelationCascadeHandler
      *
      * @return bool True if value is a reference.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function isReference(string $value): bool
     {
@@ -431,7 +441,7 @@ class RelationCascadeHandler
      *
      * @return ObjectEntity The updated object entity.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function updateObjectRelations(ObjectEntity $objectEntity, array $data, ?Schema $schema=null): ObjectEntity
     {
@@ -465,7 +475,7 @@ class RelationCascadeHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Navigating nested arrays and handling
      *                                               multiple reference types requires complex logic
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function resolveRelationPath(array &$objectData, string $relationPath): void
     {
@@ -522,7 +532,7 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.StaticAccess) Uuid::isValid is standard Symfony UID pattern
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function extractUuidFromReference(string $reference): ?string
     {
@@ -569,7 +579,7 @@ class RelationCascadeHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex cascading logic for different property types
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function cascadeObjects(ObjectEntity $objectEntity, Schema $schema, array $data): array
     {
@@ -621,7 +631,7 @@ class RelationCascadeHandler
      *
      * @return bool True if all values are scalar.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     private function isArrayOfScalars(array $array): bool
     {
@@ -648,7 +658,7 @@ class RelationCascadeHandler
      * @SuppressWarnings(PHPMD.StaticAccess)
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function cascadeMultipleObjects(ObjectEntity $objectEntity, array $property, array $propData): array
     {
@@ -678,7 +688,7 @@ class RelationCascadeHandler
      *
      * @return null The UUID of the created object or null.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function cascadeSingleObject(ObjectEntity $_objectEntity, array $_definition, array $_object)
     {
@@ -705,7 +715,7 @@ class RelationCascadeHandler
      *
      * @return array The updated data after write-back operations.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-6
+     * @spec openspec/specs/linked-entity-types/spec.md
      */
     public function handleInverseRelationsWriteBack(ObjectEntity $_objectEntity, Schema $_schema, array $data): array
     {

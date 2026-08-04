@@ -128,7 +128,9 @@ class RenderObjectCoverageTest extends TestCase
             $this->createMock(\OCA\OpenRegister\Service\Object\LinkedEntityEnricher::class),
             $this->createMock(\OCA\OpenRegister\Service\Calculation\CalculationEvaluator::class),
             $this->createMock(\OCA\OpenRegister\Service\UrnService::class),
-            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class)
+            $this->createMock(\OCA\OpenRegister\Service\TranslationStatusService::class),
+            $this->createMock(\OCA\OpenRegister\Db\TranslationMapper::class),
+            $this->createMock(\OCA\OpenRegister\Service\LanguageService::class)
         );
     }
 
@@ -1344,5 +1346,158 @@ class RenderObjectCoverageTest extends TestCase
 
         $serialized = $result->jsonSerialize();
         $this->assertTrue($serialized['@circular'] ?? false);
+    }
+
+    // =========================================================================
+    // handleInversedProperties — single read uses the batched preload machinery
+    // (list-path parity, no cross-table findByRelation scan)
+    // =========================================================================
+
+    /**
+     * A single-entity render (show() path) must resolve inversedBy properties
+     * through the same schema-targeted batched machinery as the list path
+     * (preloadInverseRelationships → findByRelationBatchInSchema) — never
+     * through the generic cross-table findByRelation() reverse-reference scan —
+     * while preserving the complete legacy response shape: once ANY inverse
+     * property is extended, ALL inverse properties are resolved (a non-extended
+     * inverse property is populated, not silently emptied). The extended
+     * property's value must be identical to what a list read returns.
+     *
+     * @return void
+     */
+    public function testSingleReadResolvesInversePropertiesViaBatchedPreloadLikeListRead(): void
+    {
+        $entityUuid = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+        $contactUuid = 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
+        $membershipUuid = 'cccccccc-dddd-eeee-ffff-000000000000';
+
+        // The schema carries TWO inverse properties; only one will be extended.
+        $schema = $this->createSchema(1, 'org-schema');
+        $schema->setProperties([
+            'name' => ['type' => 'string'],
+            'contacts' => [
+                'type' => 'array',
+                'items' => [
+                    'inversedBy' => 'org',
+                    '$ref' => '5',
+                ],
+            ],
+            'memberships' => [
+                'type' => 'array',
+                'items' => [
+                    'inversedBy' => 'group',
+                    '$ref' => '6',
+                ],
+            ],
+        ]);
+        $contactSchema = $this->createSchema(5, 'contact-schema');
+        $contactSchema->setProperties([
+            'name' => ['type' => 'string'],
+            'org' => ['type' => 'string'],
+        ]);
+        $membershipSchema = $this->createSchema(6, 'membership-schema');
+        $membershipSchema->setProperties([
+            'name' => ['type' => 'string'],
+            'group' => ['type' => 'string'],
+        ]);
+        $this->setPrivateProperty(
+            'schemasCache',
+            [1 => $schema, 5 => $contactSchema, 6 => $membershipSchema]
+        );
+        $this->fileMapper->method('getFilesForObject')->willReturn([]);
+
+        $makeEntity = function () use ($entityUuid): ObjectEntity {
+            $entity = $this->createObjectEntity(1, $entityUuid, ['name' => 'Org']);
+            $entity->setSchema(1);
+            $entity->setRegister(1);
+            return $entity;
+        };
+
+        $makeContact = function () use ($contactUuid, $entityUuid): ObjectEntity {
+            $ref = $this->createObjectEntity(2, $contactUuid, ['name' => 'Contact', 'org' => $entityUuid]);
+            $ref->setSchema(5);
+            $ref->setRegister(1);
+            return $ref;
+        };
+
+        $makeMembership = function () use ($membershipUuid, $entityUuid): ObjectEntity {
+            $ref = $this->createObjectEntity(3, $membershipUuid, ['name' => 'Membership', 'group' => $entityUuid]);
+            $ref->setSchema(6);
+            $ref->setRegister(1);
+            return $ref;
+        };
+
+        // The generic cross-table reverse-reference scan must NOT run…
+        $this->objectMapper->expects($this->never())
+            ->method('findByRelation');
+
+        // …the schema-targeted batched lookup serves everything: the single
+        // path preloads BOTH inverse properties (2 calls: fieldName org +
+        // group), the list path preloads only the extended one (1 call: org).
+        $this->objectMapper->expects($this->exactly(3))
+            ->method('findByRelationBatchInSchema')
+            ->willReturnCallback(
+                function (
+                    array $uuids,
+                    int $schemaId,
+                    int $registerId,
+                    string $fieldName
+                ) use ($makeContact, $makeMembership): array {
+                    if ($fieldName === 'org') {
+                        return [$makeContact()];
+                    }
+
+                    if ($fieldName === 'group') {
+                        return [$makeMembership()];
+                    }
+
+                    return [];
+                }
+            );
+
+        // Single read (renderEntity — the show() path), extending ONLY contacts.
+        $singleRendered = $this->handler->renderEntity(
+            entity: $makeEntity(),
+            _extend: ['contacts']
+        )->jsonSerialize();
+
+        // Reset the per-request inverse caches so the list path starts cold too.
+        $this->setPrivateProperty('inverseRelationCache', []);
+        $this->setPrivateProperty('objectsCache', []);
+
+        // List read (renderEntities — the index() path).
+        $listEntities = $this->handler->renderEntities(
+            entities: [$makeEntity()],
+            _extend: ['contacts']
+        );
+        $listRendered = $listEntities[0]->jsonSerialize();
+
+        // The extended inverse property is resolved and identical to the list read.
+        $this->assertNotEmpty(
+            $singleRendered['contacts'],
+            'single read must resolve the extended inverse property'
+        );
+        $this->assertSame(
+            'Contact',
+            $singleRendered['contacts'][0]['name'] ?? null,
+            'inverse property must contain the fully rendered referencing object'
+        );
+        $this->assertEquals(
+            $listRendered['contacts'],
+            $singleRendered['contacts'],
+            'single read must resolve the extended inverse property identically to a list read'
+        );
+
+        // Complete legacy shape: the NON-extended inverse property is resolved
+        // too — the batched preload must not silently empty it.
+        $this->assertNotEmpty(
+            $singleRendered['memberships'],
+            'a non-extended inverse property must still be resolved on a single read'
+        );
+        $this->assertSame(
+            'Membership',
+            $singleRendered['memberships'][0]['name'] ?? null,
+            'the non-extended inverse property must carry the fully rendered referencing object'
+        );
     }
 }

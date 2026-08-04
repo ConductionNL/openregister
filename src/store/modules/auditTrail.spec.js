@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import { toRaw } from 'vue'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAuditTrailStore } from './auditTrail.js'
 import { mockAuditTrailData } from '../../entities/index.js'
@@ -58,7 +59,15 @@ describe('AuditTrail Store', () => {
 		it('stores the active audit trail entry', () => {
 			const item = mockAuditTrailData()[0]
 			store.setAuditTrailItem(item)
-			expect(store.auditTrailItem).toBe(item)
+			// Vue 3 reactivity is a Proxy: `store.auditTrailItem` is a reactive
+			// wrapper AROUND `item`, not `item` itself, so a bare `toBe` fails
+			// with "serializes to the same string". Vue 2 mutated the object in
+			// place, which is the only reason identity used to hold.
+			//
+			// `toRaw()` unwraps the proxy, so this still asserts the store holds
+			// THE SAME OBJECT — deliberately not relaxed to `toStrictEqual`,
+			// which would pass for any equal-looking copy.
+			expect(toRaw(store.auditTrailItem)).toBe(item)
 		})
 
 		it('accepts null to clear the active entry', () => {

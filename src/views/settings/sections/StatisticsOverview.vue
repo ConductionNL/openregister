@@ -7,7 +7,7 @@
 			:loading-message="t('openregister', 'Loading statistics...')">
 			<template #actions>
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="loading || saving || rebasing || loadingStats"
 					@click="loadStats">
 					<template #icon>
@@ -161,7 +161,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalBlobObjects > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingBlobObjects"
 												@click="showClearBlobObjectsDialog">
@@ -206,7 +206,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalAuditTrails > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingAuditTrails"
 												@click="showClearAuditTrailsDialog">
@@ -229,7 +229,7 @@
 										<td class="stats-table-value">
 											<NcButton
 												v-if="stats.totals.totalSearchTrails > 0"
-												type="error"
+												variant="error"
 												size="small"
 												:disabled="loading || saving || rebasing || clearingSearchTrails"
 												@click="showClearSearchTrailsDialog">
@@ -324,7 +324,7 @@
 						</p>
 						<div class="rebase-actions">
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="loading || saving || rebasing"
 								@click="settingsStore.showRebaseDialog">
 								<template #icon>
@@ -347,7 +347,7 @@
 						</p>
 						<div class="mass-validate-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="loading || saving || rebasing || massValidating"
 								@click="openMassValidateModal">
 								<template #icon>
@@ -363,34 +363,12 @@
 		</SettingsSection>
 
 		<!-- Rebase Confirmation Dialog -->
-		<NcDialog v-if="showRebaseConfirmation"
+		<RebaseConfirmationDialog
+			v-if="showRebaseConfirmation"
 			:open="showRebaseConfirmation"
-			name="Confirm Rebase Operation"
-			@closing="settingsStore.hideRebaseDialog">
-			<div class="rebase-dialog-content">
-				<h3>⚠️ Confirm Rebase Operation</h3>
-				<p>
-					This operation will recalculate deletion times for all objects and logs based on current retention settings.
-					It will also assign default owners and organizations to objects that don't have them assigned.
-				</p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="settingsStore.hideRebaseDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="rebasing"
-						@click="settingsStore.confirmRebase">
-						<template #icon>
-							<NcLoadingIcon v-if="rebasing" :size="20" />
-							<Refresh v-else :size="20" />
-						</template>
-						{{ rebasing ? 'Rebasing...' : 'Confirm Rebase' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:rebasing="rebasing"
+			@closing="settingsStore.hideRebaseDialog"
+			@confirm="settingsStore.confirmRebase" />
 
 		<!-- Mass Validate Modal -->
 		<MassValidateModal
@@ -408,100 +386,31 @@
 			@reset="handleResetMassValidate" />
 
 		<!-- Clear Audit Trails Confirmation Dialog -->
-		<NcDialog v-if="showClearAuditTrailsConfirmation"
+		<ClearAuditTrailsDialog
+			v-if="showClearAuditTrailsConfirmation"
 			:open="showClearAuditTrailsConfirmation"
-			name="Confirm Clear Audit Trails"
-			@closing="hideClearAuditTrailsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Audit Trails</h3>
-				<p>
-					This operation will permanently delete all audit trail logs from the database.
-					This action cannot be undone.
-				</p>
-				<p><strong>Current audit trails: {{ stats.totals.totalAuditTrails }}</strong></p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearAuditTrailsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingAuditTrails"
-						@click="clearAllAuditTrails">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingAuditTrails" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingAuditTrails ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingAuditTrails"
+			:total-audit-trails="stats.totals.totalAuditTrails"
+			@closing="hideClearAuditTrailsDialog"
+			@confirm="clearAllAuditTrails" />
 
 		<!-- Clear Search Trails Confirmation Dialog -->
-		<NcDialog v-if="showClearSearchTrailsConfirmation"
+		<ClearSearchTrailsDialog
+			v-if="showClearSearchTrailsConfirmation"
 			:open="showClearSearchTrailsConfirmation"
-			name="Confirm Clear Search Trails"
-			@closing="hideClearSearchTrailsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Search Trails</h3>
-				<p>
-					This operation will permanently delete all search trail logs from the database.
-					This action cannot be undone.
-				</p>
-				<p><strong>Current search trails: {{ stats.totals.totalSearchTrails }}</strong></p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearSearchTrailsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingSearchTrails"
-						@click="clearAllSearchTrails">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingSearchTrails" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingSearchTrails ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingSearchTrails"
+			:total-search-trails="stats.totals.totalSearchTrails"
+			@closing="hideClearSearchTrailsDialog"
+			@confirm="clearAllSearchTrails" />
 
 		<!-- Clear Blob Objects Confirmation Dialog -->
-		<NcDialog v-if="showClearBlobObjectsConfirmation"
+		<ClearBlobObjectsDialog
+			v-if="showClearBlobObjectsConfirmation"
 			:open="showClearBlobObjectsConfirmation"
-			name="Confirm Clear Blob Objects"
-			@closing="hideClearBlobObjectsDialog">
-			<div class="clear-dialog-content">
-				<h3>⚠️ Confirm Clear All Blob Storage Objects</h3>
-				<p>
-					This operation will permanently delete all objects stored in blob storage mode from the database.
-					Magic Mapper objects will NOT be affected.
-				</p>
-				<p><strong>Current blob storage objects: {{ stats.totals.totalBlobObjects }}</strong></p>
-				<p class="warning-text">
-					⚠️ This action cannot be undone!
-				</p>
-				<p><strong>This operation may take some time to complete.</strong></p>
-
-				<div class="dialog-actions">
-					<NcButton @click="hideClearBlobObjectsDialog">
-						Cancel
-					</NcButton>
-					<NcButton type="error"
-						:disabled="clearingBlobObjects"
-						@click="clearAllBlobObjects">
-						<template #icon>
-							<NcLoadingIcon v-if="clearingBlobObjects" :size="20" />
-							<Delete v-else :size="20" />
-						</template>
-						{{ clearingBlobObjects ? 'Clearing...' : 'Confirm Clear All' }}
-					</NcButton>
-				</div>
-			</div>
-		</NcDialog>
+			:clearing="clearingBlobObjects"
+			:total-blob-objects="stats.totals.totalBlobObjects"
+			@closing="hideClearBlobObjectsDialog"
+			@confirm="clearAllBlobObjects" />
 	</div>
 </template>
 
@@ -509,11 +418,16 @@
 import { mapStores } from 'pinia'
 import { useSettingsStore } from '../../../store/settings.js'
 import SettingsSection from '../../../components/shared/SettingsSection.vue'
-import { NcButton, NcLoadingIcon, NcDialog } from '@nextcloud/vue'
+import { NcButton, NcLoadingIcon } from '@nextcloud/vue'
 import Refresh from 'vue-material-design-icons/Refresh.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import MassValidateModal from '../../../modals/settings/MassValidateModal.vue'
+// eslint-disable-next-line n/no-unpublished-import -- false positive: this bundled dialog (identical in shape to the sibling dialogs imported below, which lint clean) is app source shipped via webpack, not an npm package.
+import RebaseConfirmationDialog from '../../../dialogs/settings/RebaseConfirmationDialog.vue'
+import ClearAuditTrailsDialog from '../../../dialogs/settings/ClearAuditTrailsDialog.vue'
+import ClearSearchTrailsDialog from '../../../dialogs/settings/ClearSearchTrailsDialog.vue'
+import ClearBlobObjectsDialog from '../../../dialogs/settings/ClearBlobObjectsDialog.vue'
 
 export default {
 	name: 'StatisticsOverview',
@@ -522,11 +436,14 @@ export default {
 		SettingsSection,
 		NcButton,
 		NcLoadingIcon,
-		NcDialog,
 		Refresh,
 		CheckCircle,
 		Delete,
 		MassValidateModal,
+		RebaseConfirmationDialog,
+		ClearAuditTrailsDialog,
+		ClearSearchTrailsDialog,
+		ClearBlobObjectsDialog,
 	},
 
 	data() {
@@ -557,62 +474,152 @@ export default {
 	computed: {
 		...mapStores(useSettingsStore),
 
+		/**
+		 * Statistics object from the settings store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		stats() {
 			return this.settingsStore.stats
 		},
 
+		/**
+		 * Whether statistics are loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loadingStats() {
 			return this.settingsStore.loadingStats
 		},
 
+		/**
+		 * Whether the settings store is loading, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Whether settings are saving, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		saving() {
 			return this.settingsStore.saving
 		},
 
+		/**
+		 * Whether a rebase is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		rebasing() {
 			return this.settingsStore.rebasing
 		},
 
+		/**
+		 * Whether the rebase confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showRebaseConfirmation() {
 			return this.settingsStore.showRebaseConfirmation
 		},
 
+		/**
+		 * Whether mass validation is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		massValidating() {
 			return this.settingsStore.massValidating
 		},
 
+		/**
+		 * Whether the mass-validate confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showMassValidateConfirmation() {
 			return this.settingsStore.showMassValidateConfirmation
 		},
 
+		/**
+		 * Mass-validate results from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		massValidateResults() {
 			return this.settingsStore.massValidateResults
 		},
 
+		/**
+		 * Whether audit trails are being cleared, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		clearingAuditTrails() {
 			return this.settingsStore.clearingAuditTrails
 		},
 
+		/**
+		 * Whether search trails are being cleared, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		clearingSearchTrails() {
 			return this.settingsStore.clearingSearchTrails
 		},
 
+		/**
+		 * Whether blob objects are being cleared, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		clearingBlobObjects() {
 			return this.settingsStore.clearingBlobObjects
 		},
 
+		/**
+		 * Whether the clear-audit-trails confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showClearAuditTrailsConfirmation() {
 			return this.settingsStore.showClearAuditTrailsConfirmation
 		},
 
+		/**
+		 * Whether the clear-search-trails confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showClearSearchTrailsConfirmation() {
 			return this.settingsStore.showClearSearchTrailsConfirmation
 		},
 
+		/**
+		 * Whether the clear-blob-objects confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showClearBlobObjectsConfirmation() {
 			return this.settingsStore.showClearBlobObjectsConfirmation
 		},
@@ -628,6 +635,12 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load statistics from the settings store.
+		 *
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {void}
+		 */
 		loadStats() {
 			this.settingsStore.loadStats()
 		},
@@ -636,6 +649,7 @@ export default {
 		 * Format bytes to human-readable size.
 		 *
 		 * @param {number} bytes - The size in bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted size string (e.g., '1.5 MB')
 		 */
 		formatBytes(bytes) {
@@ -648,6 +662,12 @@ export default {
 			return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 		},
 
+		/**
+		 * Open the mass-validate modal and load supporting data in the background.
+		 *
+		 * @spec exclude UI plumbing — modal open plus background data fetch
+		 * @return {Promise<void>}
+		 */
 		async openMassValidateModal() {
 			// Open modal immediately for better UX
 			this.showMassValidateModal = true
@@ -657,12 +677,25 @@ export default {
 			this.loadMemoryPrediction(0) // Default to all objects
 		},
 
+		/**
+		 * Close the mass-validate modal and reset its state.
+		 *
+		 * @spec exclude UI plumbing — modal visibility toggle
+		 * @return {void}
+		 */
 		closeMassValidateModal() {
 			this.showMassValidateModal = false
 			// Reset state when modal is closed
 			this.massValidateCompleted = false
 		},
 
+		/**
+		 * Start a mass-validate run with the given config.
+		 *
+		 * @param {object} config The mass-validate configuration.
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {Promise<void>}
+		 */
 		async handleStartMassValidate(config) {
 			this.massValidateCompleted = false
 			this.massValidateConfig = { ...config }
@@ -676,10 +709,22 @@ export default {
 			}
 		},
 
+		/**
+		 * Retry the last mass-validate run.
+		 *
+		 * @spec exclude UI plumbing — re-invokes the start handler
+		 * @return {Promise<void>}
+		 */
 		async handleRetryMassValidate() {
 			await this.handleStartMassValidate(this.massValidateConfig)
 		},
 
+		/**
+		 * Reset the mass-validate form to defaults.
+		 *
+		 * @spec exclude UI plumbing — resets local form state
+		 * @return {void}
+		 */
 		handleResetMassValidate() {
 			this.massValidateCompleted = false
 			// Reset to default configuration
@@ -691,6 +736,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Load total object count from store stats for the modal.
+		 *
+		 * @spec exclude UI plumbing — reads store stats for display
+		 * @return {Promise<void>}
+		 */
 		async loadObjectStats() {
 			this.objectStats.loading = true
 
@@ -706,6 +757,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Load the memory-usage prediction for a mass-validate run.
+		 *
+		 * @param {number} maxObjects The object cap for the prediction.
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {Promise<void>}
+		 */
 		async loadMemoryPrediction(maxObjects = 0) {
 			this.memoryPredictionLoading = true
 			try {
@@ -719,14 +777,32 @@ export default {
 			}
 		},
 
+		/**
+		 * Show the clear-audit-trails confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		showClearAuditTrailsDialog() {
 			this.settingsStore.showClearAuditTrailsDialog()
 		},
 
+		/**
+		 * Hide the clear-audit-trails confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		hideClearAuditTrailsDialog() {
 			this.settingsStore.hideClearAuditTrailsDialog()
 		},
 
+		/**
+		 * Clear all audit trails and reload stats.
+		 *
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {Promise<void>}
+		 */
 		async clearAllAuditTrails() {
 			try {
 				await this.settingsStore.clearAllAuditTrails()
@@ -737,14 +813,32 @@ export default {
 			}
 		},
 
+		/**
+		 * Show the clear-search-trails confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		showClearSearchTrailsDialog() {
 			this.settingsStore.showClearSearchTrailsDialog()
 		},
 
+		/**
+		 * Hide the clear-search-trails confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		hideClearSearchTrailsDialog() {
 			this.settingsStore.hideClearSearchTrailsDialog()
 		},
 
+		/**
+		 * Clear all search trails and reload stats.
+		 *
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {Promise<void>}
+		 */
 		async clearAllSearchTrails() {
 			try {
 				await this.settingsStore.clearAllSearchTrails()
@@ -755,14 +849,32 @@ export default {
 			}
 		},
 
+		/**
+		 * Show the clear-blob-objects confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		showClearBlobObjectsDialog() {
 			this.settingsStore.showClearBlobObjectsDialog()
 		},
 
+		/**
+		 * Hide the clear-blob-objects confirmation dialog.
+		 *
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
+		 */
 		hideClearBlobObjectsDialog() {
 			this.settingsStore.hideClearBlobObjectsDialog()
 		},
 
+		/**
+		 * Clear all blob objects and reload stats.
+		 *
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {Promise<void>}
+		 */
 		async clearAllBlobObjects() {
 			try {
 				await this.settingsStore.clearAllBlobObjects()
@@ -931,47 +1043,5 @@ export default {
 	.button-group {
 		justify-content: center;
 	}
-}
-
-.rebase-dialog-content {
-	padding: 20px;
-}
-
-.rebase-dialog-content h3 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-}
-
-.rebase-dialog-content p {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.dialog-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-}
-
-.clear-dialog-content {
-	padding: 20px;
-}
-
-.clear-dialog-content h3 {
-	color: var(--color-text-light);
-	margin: 0 0 16px 0;
-}
-
-.clear-dialog-content p {
-	color: var(--color-text-light);
-	line-height: 1.5;
-	margin: 0 0 12px 0;
-}
-
-.clear-dialog-content .warning-text {
-	color: var(--color-error);
-	font-weight: 600;
 }
 </style>

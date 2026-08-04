@@ -21,6 +21,9 @@
  * - Admin users cross-organization access (configurable)
  * - Unauthenticated user organization filtering
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -96,6 +99,13 @@ class MagicOrganizationHandler
     ): void {
         $user = $this->userSession->getUser();
 
+        // CLI / no-session system context (occ commands, repair steps, cron
+        // jobs, background calculations, system listeners) is a trusted system
+        // operation and must see all org-owned rows. See isSystemContext().
+        if ($this->isSystemContext(user: $user) === true) {
+            return;
+        }
+
         // Check if user is admin - admins can see all objects including those with null organization.
         $isAdmin = false;
         if ($user !== null) {
@@ -115,10 +125,6 @@ class MagicOrganizationHandler
             }
 
             if ($saasMode !== true) {
-                $this->logger->debug(
-                    message: '[MagicOrganizationHandler] Admin bypass enabled, skipping org filter',
-                    context: ['file' => __FILE__, 'line' => __LINE__]
-                );
                 return;
             }
         }
@@ -127,11 +133,6 @@ class MagicOrganizationHandler
         $activeOrgUuids = $this->getActiveOrganizationUuids();
 
         if (empty($activeOrgUuids) === true) {
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] No active organization, applying public filter',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
-
             // No active organization - admins can see null-org objects, others get no results.
             if ($isAdmin !== true) {
                 $qb->andWhere('1 = 0');
@@ -166,17 +167,30 @@ class MagicOrganizationHandler
         // Apply OR of all conditions.
         $qb->andWhere($qb->expr()->orX(...$conditions));
 
-        $this->logger->debug(
-            message: '[MagicOrganizationHandler] Applied organization filter',
-            context: [
-                'file'            => __FILE__,
-                'line'            => __LINE__,
-                'activeOrgUuids'  => $activeOrgUuids,
-                'conditionsCount' => count($conditions),
-                'isAdmin'         => $isAdmin,
-            ]
-                );
     }//end applyOrganizationFilter()
+
+    /**
+     * Determine whether the current call is a trusted system (CLI/no-session)
+     * context that must bypass org filtering.
+     *
+     * OCC commands, repair steps, cron jobs, background calculations and system
+     * listeners have no user session. Clamping them to `1 = 0` silently empties
+     * app list views and background calcs (e.g. larpingapp). This mirrors the
+     * established CLI bypass in MultiTenancyTrait::hasRbacPermission(). SaaS mode
+     * still enforces the org boundary for genuine multi-tenant deployments.
+     *
+     * @param \OCP\IUser|null $user The resolved session user (null in CLI).
+     *
+     * @return bool True when the org filter should be bypassed.
+     */
+    private function isSystemContext(?\OCP\IUser $user): bool
+    {
+        if ($user !== null || PHP_SAPI !== 'cli' || $this->isSaasModeEnabled() === true) {
+            return false;
+        }
+
+        return true;
+    }//end isSystemContext()
 
     /**
      * Get the active organization UUID(s) for the current user
@@ -195,16 +209,6 @@ class MagicOrganizationHandler
             // Get active organisations including parent chain.
             $orgUuids = $organisationService->getUserActiveOrganisations();
 
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] getUserActiveOrganisations returned',
-                context: [
-                    'file'     => __FILE__,
-                    'line'     => __LINE__,
-                    'orgUuids' => $orgUuids,
-                    'user'     => $this->userSession->getUser()?->getUID(),
-                ]
-                    );
-
             if (empty($orgUuids) === false) {
                 return $orgUuids;
             }
@@ -212,21 +216,9 @@ class MagicOrganizationHandler
             // Fallback: try to get just the active organisation.
             $activeOrg = $organisationService->getActiveOrganisation();
             if ($activeOrg !== null) {
-                $this->logger->debug(
-                    message: '[MagicOrganizationHandler] getActiveOrganisation returned',
-                    context: [
-                        'file' => __FILE__,
-                        'line' => __LINE__,
-                        'uuid' => $activeOrg->getUuid(),
-                    ]
-                        );
                 return [$activeOrg->getUuid()];
             }
 
-            $this->logger->debug(
-                message: '[MagicOrganizationHandler] No active organisation found',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
             return [];
         } catch (\Exception $e) {
             $this->logger->warning(

@@ -5,6 +5,9 @@
  *
  * Transmits SIP packages to e-Depot systems via OpenConnector synchronization.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot\Transport
  *
@@ -40,6 +43,8 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @param Client          $httpClient The HTTP client.
      * @param LoggerInterface $logger     Logger.
+     *
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function __construct(
         private readonly Client $httpClient,
@@ -55,7 +60,7 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return TransportResult The result of the transport.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function send(string $sipFilePath, array $config): TransportResult
     {
@@ -126,7 +131,7 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return bool True if connection test succeeds.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function testConnection(array $config): bool
     {
@@ -156,7 +161,7 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @return string The transport name.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     public function getName(): string
     {
@@ -172,7 +177,7 @@ class OpenConnectorTransport implements TransportInterface
      *
      * @throws RuntimeException If required configuration is missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     private function validateConfig(array $config): void
     {

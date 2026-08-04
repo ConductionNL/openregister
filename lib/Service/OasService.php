@@ -5,6 +5,9 @@
  *
  * This service generates OpenAPI Specification (OAS) documentation for registers and schemas.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -13,6 +16,16 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
+ *
+ * @spec openspec/specs/actions/spec.md
+ * @spec openspec/specs/deprecate-published-metadata/spec.md
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
+ * @spec openspec/specs/mock-registers/spec.md#requirement-schema-compliance-with-adr-006
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-generation/spec.md
+ * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
+ * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -170,6 +183,8 @@ class OasService
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     public function createOas(?string $registerId=null, bool $strict=false): array
     {
@@ -323,6 +338,7 @@ class OasService
                         operationIdPrefix: $operationIdPrefix
                     );
                     $this->addExtendedPaths(register: $register, schema: $schema);
+                    $this->addJsonLdContextPaths(register: $register, schema: $schema);
                 }
             }
         }//end foreach
@@ -349,6 +365,8 @@ class OasService
      * Log every validation issue once at the appropriate severity level.
      *
      * @return void
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     private function logValidationIssues(): void
     {
@@ -373,6 +391,8 @@ class OasService
      * @return array The base OAS array
      *
      * @throws \Exception When file cannot be read or parsed
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function getBaseOas(): array
     {
@@ -399,6 +419,8 @@ class OasService
      *
      * @return array{createGroups: string[], readGroups: string[], updateGroups: string[], deleteGroups: string[]}
      *               Unique groups per CRUD action
+     *
+     * @spec openspec/specs/deprecate-published-metadata/spec.md
      */
     private function extractSchemaGroups(object $schema): array
     {
@@ -459,6 +481,8 @@ class OasService
      * @param mixed $rule The authorization rule (string or array)
      *
      * @return string|null The group name, or null if not extractable
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function extractGroupFromRule($rule): ?string
     {
@@ -479,6 +503,8 @@ class OasService
      * @param string $group The Nextcloud group name
      *
      * @return string The scope description
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function getScopeDescription(string $group): string
     {
@@ -517,6 +543,8 @@ class OasService
      * @param string[] $groups    The schema-specific groups that have access to this operation
      *
      * @return void
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function applyRbacToOperation(array &$operation, array $groups): void
     {
@@ -583,6 +611,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array Enriched schema with type, x-tags, and properties.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function enrichSchema(object $schema): array
     {
@@ -832,7 +862,10 @@ class OasService
             if (is_array($cleanDef['items']) === true && array_is_list($cleanDef['items']) === true) {
                 // Sequential array (list) — not valid. Use first element or default.
                 $firstItem         = $cleanDef['items'][0] ?? null;
-                $cleanDef['items'] = empty($firstItem) === false ? $firstItem : ['type' => 'string'];
+                $cleanDef['items'] = ['type' => 'string'];
+                if (empty($firstItem) === false) {
+                    $cleanDef['items'] = $firstItem;
+                }
             }
 
             if (is_array($cleanDef['items']) === false || empty($cleanDef['items']) === true) {
@@ -867,6 +900,8 @@ class OasService
      * @param string $operationIdPrefix Prefix for operationId to ensure uniqueness across registers
      *
      * @return void
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function addCrudPaths(object $register, object $schema, array $rbac=[], string $operationIdPrefix=''): void
     {
@@ -928,6 +963,77 @@ class OasService
     }//end addCrudPaths()
 
     /**
+     * Add the JSON-LD `@context` document endpoints for a register/schema
+     * pair (json-ld-output). These are the dereferenceable URLs that object
+     * JSON-LD serializations reference in their `@context`.
+     *
+     * @param object $register The register object.
+     * @param object $schema   The schema object.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/json-ld-output/spec.md
+     */
+    private function addJsonLdContextPaths(object $register, object $schema): void
+    {
+        $registerSlug = $register->getSlug();
+        if ($registerSlug === null || $registerSlug === '') {
+            $registerSlug = $this->slugify(string: $register->getTitle());
+        }
+
+        $schemaSlug = $schema->getSlug();
+        if ($schemaSlug === null || $schemaSlug === '') {
+            $schemaSlug = $this->slugify(string: $schema->getTitle());
+        }
+
+        $contextResponse = [
+            '200' => [
+                'description' => 'JSON-LD context document of the form `{"@context": {…}}`.',
+                'content'     => [
+                    'application/ld+json' => [
+                        'schema' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                '@context' => ['type' => 'object'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            '404' => [
+                'description' => 'Register or schema not found',
+                'content'     => [
+                    'application/json' => [
+                        'schema' => ['$ref' => '#/components/schemas/Error'],
+                    ],
+                ],
+            ],
+        ];
+
+        // Register-wide context document (idempotent across schemas of a register).
+        $this->oas['paths']['/contexts/'.$registerSlug] = [
+            'get' => [
+                'summary'     => 'JSON-LD context for register '.$registerSlug,
+                'operationId' => 'getContext'.$this->pascalCase(string: (string) $registerSlug),
+                'tags'        => ['JSON-LD'],
+                'description' => 'Dereferenceable register-wide JSON-LD @context document.',
+                'responses'   => $contextResponse,
+            ],
+        ];
+
+        // Per-schema context document.
+        $this->oas['paths']['/contexts/'.$registerSlug.'/'.$schemaSlug] = [
+            'get' => [
+                'summary'     => 'JSON-LD context for '.$schemaSlug,
+                'operationId' => 'getContext'.$this->pascalCase(string: (string) $registerSlug).$this->pascalCase(string: (string) $schemaSlug),
+                'tags'        => ['JSON-LD'],
+                'description' => 'Dereferenceable per-schema JSON-LD @context document.',
+                'responses'   => $contextResponse,
+            ],
+        ];
+    }//end addJsonLdContextPaths()
+
+    /**
      * Add extended paths for a schema using whitelist approach
      *
      * Only adds endpoints that are explicitly whitelisted in INCLUDED_EXTENDED_ENDPOINTS.
@@ -937,6 +1043,8 @@ class OasService
      * @param object $schema   The schema object
      *
      * @return void
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function addExtendedPaths(object $register, object $schema): void
     {
@@ -1000,6 +1108,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)  Boolean flag controls collection vs single item parameters
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Dynamic parameter generation from schema properties
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createCommonQueryParameters(bool $isCollection=false, ?object $schema=null): array
     {
@@ -1097,6 +1207,8 @@ class OasService
      * @param mixed $propertyDefinition The property definition from the schema
      *
      * @return string The OpenAPI type for the property
+     *
+     * @spec openspec/specs/mock-registers/spec.md#requirement-schema-compliance-with-adr-006
      */
     private function getPropertyType($propertyDefinition): string
     {
@@ -1138,6 +1250,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET collection.
+     *
+     * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
      */
     private function createGetCollectionOperation(object $schema): array
     {
@@ -1162,9 +1276,12 @@ class OasService
             'parameters'  => $this->createCommonQueryParameters(isCollection: true, schema: $schema),
             'responses'   => [
                 '200' => [
-                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata',
+                    'description' => 'List of '.$schemaTitle.' objects with pagination metadata. '
+                        .'Send `Accept: application/ld+json` to receive a JSON-LD `@graph` '
+                        .'document (pagination under `or:` terms); the default '
+                        .'`application/json` representation is unchanged (json-ld-output).',
                     'content'     => [
-                        'application/json' => [
+                        'application/json'    => [
                             'schema' => [
                                 'allOf' => [
                                     [
@@ -1181,6 +1298,17 @@ class OasService
                                             ],
                                         ],
                                     ],
+                                ],
+                            ],
+                        ],
+                        'application/ld+json' => [
+                            'schema' => [
+                                'type'        => 'object',
+                                'description' => 'JSON-LD @graph serialization of the collection.',
+                                'properties'  => [
+                                    '@context' => ['type' => 'string', 'format' => 'uri'],
+                                    '@graph'   => ['type' => 'array', 'items' => ['type' => 'object']],
+                                    'or:total' => ['type' => 'integer'],
                                 ],
                             ],
                         ],
@@ -1204,6 +1332,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for GET single item.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createGetOperation(object $schema): array
     {
@@ -1235,11 +1365,25 @@ class OasService
             ),
             'responses'   => [
                 '200' => [
-                    'description' => $schema->getTitle().' found.',
+                    'description' => $schema->getTitle().' found. Send '
+                        .'`Accept: application/ld+json` to receive the JSON-LD '
+                        .'representation (`@context`/`@id`/`@type`); the default '
+                        .'`application/json` representation is unchanged (json-ld-output).',
                     'content'     => [
-                        'application/json' => [
+                        'application/json'    => [
                             'schema' => [
                                 '$ref' => '#/components/schemas/'.$this->sanitizeSchemaName(title: $schemaName),
+                            ],
+                        ],
+                        'application/ld+json' => [
+                            'schema' => [
+                                'type'        => 'object',
+                                'description' => 'JSON-LD serialization of the object.',
+                                'properties'  => [
+                                    '@context' => ['type' => 'string', 'format' => 'uri'],
+                                    '@id'      => ['type' => 'string', 'format' => 'uri'],
+                                    '@type'    => ['type' => 'string'],
+                                ],
                             ],
                         ],
                     ],
@@ -1264,6 +1408,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for PUT.
+     *
+     * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
      */
     private function createPutOperation(object $schema): array
     {
@@ -1334,6 +1480,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for POST.
+     *
+     * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
      */
     private function createPostOperation(object $schema): array
     {
@@ -1388,6 +1536,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for DELETE.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createDeleteOperation(object $schema): array
     {
@@ -1432,6 +1582,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for logs endpoint.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createLogsOperation(object $schema): array
     {
@@ -1486,6 +1638,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for get files endpoint.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createGetFilesOperation(object $schema): array
     {
@@ -1540,6 +1694,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for post file endpoint.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createPostFileOperation(object $schema): array
     {
@@ -1608,6 +1764,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for lock endpoint.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createLockOperation(object $schema): array
     {
@@ -1662,6 +1820,8 @@ class OasService
      * @param object $schema The schema object
      *
      * @return array OpenAPI operation definition for unlock endpoint.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function createUnlockOperation(object $schema): array
     {
@@ -1709,6 +1869,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The slugified string
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function slugify(string $string): string
     {
@@ -1721,6 +1883,8 @@ class OasService
      * @param string $string The string to convert
      *
      * @return string The PascalCase string
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-14
      */
     private function pascalCase(string $string): string
     {
@@ -1736,6 +1900,8 @@ class OasService
      * @param string|null $title The schema title to sanitize
      *
      * @return string The sanitized schema name
+     *
+     * @spec openspec/specs/oas-validation/spec.md#scenario-standard-http-methods-documented-api-01
      */
     private function sanitizeSchemaName(?string $title): string
     {
@@ -1776,6 +1942,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple nested loops and conditional checks for validating
      *                                               paths, responses, and schemas
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function validateOasIntegrity(): void
     {
@@ -1885,6 +2053,8 @@ class OasService
      * Verify every entry in `servers` uses an absolute URL.
      *
      * @return void
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function validateServerUrls(): void
     {
@@ -1910,6 +2080,8 @@ class OasService
      * deduplicated in place by appending a numeric suffix (`_2`, `_3`, ...).
      *
      * @return void
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function validateOperationIdUniqueness(): void
     {
@@ -1973,6 +2145,8 @@ class OasService
      * @return void
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function validateTagConsistency(): void
     {
@@ -2099,6 +2273,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Recursive schema validation with multiple reference types
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple conditional paths for allOf, $ref, and nested validation
+     *
+     * @spec openspec/specs/oas-validation/spec.md#scenario-pagination-structure-follows-api-42
      */
     private function validateSchemaReferences(array &$schema, string $context): void
     {
@@ -2229,6 +2405,8 @@ class OasService
      * @param object $schema The schema object.
      *
      * @return array|null The effective authorization array.
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function resolveEffectiveAuthorization(object $schema): ?array
     {
@@ -2267,6 +2445,8 @@ class OasService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/specs/oas-generation/spec.md
      */
     private function expandRolesForOas(array $authorization, object $schema, ?object $register=null): array
     {

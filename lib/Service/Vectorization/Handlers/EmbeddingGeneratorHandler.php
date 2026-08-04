@@ -5,6 +5,9 @@
  *
  * Manages creation and caching of embedding generators for different LLM providers.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization\Handlers
  *
@@ -49,6 +52,9 @@ class EmbeddingGeneratorHandler
         'text-embedding-ada-002' => 1536,
         'text-embedding-3-small' => 1536,
         'text-embedding-3-large' => 3072,
+        'nomic-embed-text'       => 768,
+        'mxbai-embed-large'      => 1024,
+        'all-minilm'             => 384,
         'ollama-default'         => 384,
     ];
 
@@ -79,6 +85,8 @@ class EmbeddingGeneratorHandler
      * @throws \Exception If configuration is invalid or generator cannot be created
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple provider configurations require separate conditions
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getGenerator(array $config): EmbeddingGeneratorInterface
     {
@@ -127,7 +135,9 @@ class EmbeddingGeneratorHandler
      *
      * @return int Default dimensions
      *
-     * @psalm-return 384|1536|3072
+     * @psalm-return 384|768|1024|1536|3072
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function getDefaultDimensions(string $model): int
     {
@@ -145,6 +155,8 @@ class EmbeddingGeneratorHandler
      *     |OpenAI3LargeEmbeddingGenerator Generator instance
      *
      * @throws \Exception If model is not supported
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createOpenAIGenerator(
         string $model,
@@ -182,6 +194,8 @@ class EmbeddingGeneratorHandler
      * @throws \Exception If model is not supported
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Anonymous class requires complete implementation
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createFireworksGenerator(string $model, array $config): object
     {
@@ -234,6 +248,8 @@ class EmbeddingGeneratorHandler
              * @return array<float> Embedding vector
              *
              * @throws \Exception If API call fails
+             *
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedText(string $text): array
             {
@@ -252,6 +268,11 @@ class EmbeddingGeneratorHandler
                 $ch = curl_init($url);
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                // Bound the request: without timeouts a hung/slow embedding
+                // provider blocks the whole batch (and cron) until PHP's
+                // max_execution_time kills it (optimize-vectorization-pipeline).
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
                 curl_setopt(
                     $ch,
                     CURLOPT_HTTPHEADER,
@@ -274,8 +295,8 @@ class EmbeddingGeneratorHandler
                 $response = curl_exec($ch);
                 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $error    = curl_error($ch);
-                curl_close($ch);
-
+                // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+                // CurlHandle object is freed when it goes out of scope.
                 if ($error !== null && $error !== '') {
                     throw new Exception("Fireworks API request failed: {$error}");
                 }
@@ -303,6 +324,8 @@ class EmbeddingGeneratorHandler
              * @return int Embedding length
              *
              * @psalm-return 768|1024
+             *
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function getEmbeddingLength(): int
             {
@@ -322,6 +345,8 @@ class EmbeddingGeneratorHandler
              * @param \LLPhant\Embeddings\Document $document Document to embed
              *
              * @return \LLPhant\Embeddings\Document Embedded document
+             *
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedDocument(\LLPhant\Embeddings\Document $document): \LLPhant\Embeddings\Document
             {
@@ -335,6 +360,8 @@ class EmbeddingGeneratorHandler
              * @param array<int,\LLPhant\Embeddings\Document> $documents Documents to embed
              *
              * @return array<int,\LLPhant\Embeddings\Document> Embedded documents
+             *
+             * @spec openspec/specs/vector-embeddings/spec.md
              */
             public function embedDocuments(array $documents): array
             {
@@ -354,6 +381,8 @@ class EmbeddingGeneratorHandler
      * @param array  $config Configuration array with base_url
      *
      * @return OllamaEmbeddingGenerator Generator instance
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     private function createOllamaGenerator(string $model, array $config): OllamaEmbeddingGenerator
     {

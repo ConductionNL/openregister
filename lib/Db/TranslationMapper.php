@@ -6,6 +6,9 @@
  * CRUD + search + completeness queries against the unified
  * `openregister_translations` sidecar.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -54,12 +57,13 @@ class TranslationMapper extends QBMapper
      * an existing slot, status defaults to retaining the previous
      * status unless caller passes a non-null override.
      *
-     * @param string      $objectUuid UUID of the object being translated.
-     * @param string      $property   Property path within the object.
-     * @param string      $language   BCP-47 language tag of the slot.
-     * @param string|null $value      Translated value (null clears).
-     * @param string|null $status     Optional workflow status override.
-     * @param string|null $translator Optional UID of the translator.
+     * @param string      $objectUuid     UUID of the object being translated.
+     * @param string      $property       Property path within the object.
+     * @param string      $language       BCP-47 language tag of the slot.
+     * @param string|null $value          Translated value (null clears).
+     * @param string|null $status         Optional workflow status override.
+     * @param string|null $translator     Optional UID of the translator.
+     * @param string|null $sourceLanguage Optional canonical source language for the property.
      *
      * @return Translation Persisted translation row.
      */
@@ -69,7 +73,8 @@ class TranslationMapper extends QBMapper
         string $language,
         ?string $value,
         ?string $status=null,
-        ?string $translator=null
+        ?string $translator=null,
+        ?string $sourceLanguage=null
     ): Translation {
         $existing = $this->findOne(objectUuid: $objectUuid, property: $property, language: $language);
         $entity   = $existing ?? new Translation();
@@ -85,6 +90,10 @@ class TranslationMapper extends QBMapper
 
         if ($translator !== null) {
             $entity->setTranslator($translator);
+        }
+
+        if ($sourceLanguage !== null && $sourceLanguage !== '') {
+            $entity->setSourceLanguage($sourceLanguage);
         }
 
         $entity->setUpdated(new DateTime());
@@ -187,29 +196,39 @@ class TranslationMapper extends QBMapper
     /**
      * Search translations by content + optional filters.
      *
-     * - `query`     — case-insensitive substring against `value`
-     * - `language`  — scope to a specific language (null = cross-language)
-     * - `status`    — filter by workflow status
-     * - `objectUuid` — scope to one object
+     * - `query`           — case-insensitive substring against `value`
+     * - `language`        — scope to a specific language (null = cross-language)
+     * - `status`          — filter by workflow status
+     * - `objectUuid`      — scope to one object
+     * - `sourceLanguage`  — scope to rows whose canonical source-of-truth
+     *                       language equals the given BCP-47 tag
+     *                       (`i18n-source-of-truth`)
+     * - `isOutOfDate`     — when true, narrows to rows in `outdated` status
      *
      * Uses `LOWER(value) LIKE LOWER(?)` so the query works on both
      * Postgres and MariaDB without DB-specific FTS. tsvector
      * optimisation is a v1.1 follow-up.
      *
-     * @param string|null $query      Case-insensitive substring against the value column.
-     * @param string|null $language   Optional language filter (BCP-47 tag).
-     * @param string|null $status     Optional workflow-status filter.
-     * @param string|null $objectUuid Optional object-uuid scope.
-     * @param int         $limit      Maximum number of rows to return (1..1000).
+     * @param string|null $query          Case-insensitive substring against the value column.
+     * @param string|null $language       Optional language filter (BCP-47 tag).
+     * @param string|null $status         Optional workflow-status filter.
+     * @param string|null $objectUuid     Optional object-uuid scope.
+     * @param int         $limit          Maximum number of rows to return (1..1000).
+     * @param string|null $sourceLanguage Optional source-language filter (BCP-47 tag).
+     * @param bool        $isOutOfDate    When true, narrows to status='outdated'.
      *
      * @return Translation[]
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
      */
     public function search(
         ?string $query=null,
         ?string $language=null,
         ?string $status=null,
         ?string $objectUuid=null,
-        int $limit=100
+        int $limit=100,
+        ?string $sourceLanguage=null,
+        bool $isOutOfDate=false
     ): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
@@ -237,8 +256,190 @@ class TranslationMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)));
         }
 
+        if ($sourceLanguage !== null && $sourceLanguage !== '') {
+            $qb->andWhere($qb->expr()->eq('source_language', $qb->createNamedParameter($sourceLanguage)));
+        }
+
+        if ($isOutOfDate === true) {
+            $qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter(Translation::STATUS_OUTDATED)));
+        }
+
         return $this->findEntities(query: $qb);
     }//end search()
+
+    /**
+     * Flip every non-source-language row for one (object, property) to outdated.
+     *
+     * Targets every row WHERE `object_uuid = $objectUuid AND property = $property
+     * AND language != $sourceLanguage AND status IN (approved,
+     * human_reviewed, machine_translated)`. Rows already in `outdated` or
+     * `draft` are not re-flipped.
+     *
+     * @param string $objectUuid     UUID of the object whose translations to flip.
+     * @param string $property       Property whose derived translations to flip.
+     * @param string $sourceLanguage Source language for the property (never flipped).
+     *
+     * @return int Number of rows transitioned to `outdated`.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-2
+     */
+    public function markDerivedOutdated(string $objectUuid, string $property, string $sourceLanguage): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('openregister_translations')
+            ->set('status', $qb->createNamedParameter(Translation::STATUS_OUTDATED))
+            ->set('updated', $qb->createNamedParameter((new DateTime())->format('Y-m-d H:i:s')))
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->eq('property', $qb->createNamedParameter($property)))
+            ->andWhere($qb->expr()->neq('language', $qb->createNamedParameter($sourceLanguage)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(
+                        Translation::FLIPPABLE_STATUSES,
+                        IQueryBuilder::PARAM_STR_ARRAY
+                    )
+                )
+            );
+
+        return $qb->executeStatement();
+    }//end markDerivedOutdated()
+
+    /**
+     * Back-fill the source_language column on rows that have an empty value.
+     *
+     * Streams candidate rows in batches and updates each row's
+     * `source_language` to the resolved `<defaultLanguage>` for the parent
+     * register. Used by the
+     * `openregister:translations:backfill-source-language` console command.
+     *
+     * @param array<string, string> $registerDefaults Map of `register_id => default_language`.
+     * @param int                   $batchSize        Maximum rows updated per pass.
+     *
+     * @return int Number of rows updated across all batches.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+     */
+    public function backfillSourceLanguage(array $registerDefaults, int $batchSize=1000): int
+    {
+        $totalUpdated = 0;
+
+        // Distinct register ids present in the registers map.
+        $registerIds = array_keys($registerDefaults);
+        if (count($registerIds) === 0) {
+            // Fallback: blanket-fill every empty row with 'nl' so the
+            // NOT NULL DEFAULT '' constraint is honoured.
+            $qb = $this->db->getQueryBuilder();
+            $qb->update('openregister_translations')
+                ->set('source_language', $qb->createNamedParameter('nl'))
+                ->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
+            return $qb->executeStatement();
+        }
+
+        foreach ($registerDefaults as $registerId => $defaultLanguage) {
+            if ($defaultLanguage === '' || $defaultLanguage === null) {
+                $defaultLanguage = 'nl';
+            }
+
+            $qb = $this->db->getQueryBuilder();
+            $qb->update('openregister_translations', 't')
+                ->set('source_language', $qb->createNamedParameter((string) $defaultLanguage))
+                ->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')))
+                ->andWhere(
+                    "object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = "
+                    .$qb->createNamedParameter((string) $registerId).")"
+                )
+                ->setMaxResults(max(1, $batchSize));
+
+            try {
+                $updated       = $qb->executeStatement();
+                $totalUpdated += $updated;
+            } catch (\Throwable $e) {
+                // Driver doesn't support setMaxResults on UPDATE — fall back to
+                // a single non-bounded UPDATE for this register.
+                $qb2 = $this->db->getQueryBuilder();
+                $qb2->update('openregister_translations')
+                    ->set('source_language', $qb2->createNamedParameter((string) $defaultLanguage))
+                    ->where($qb2->expr()->eq('source_language', $qb2->createNamedParameter('')))
+                    ->andWhere(
+                        "object_uuid IN (SELECT uuid FROM `*PREFIX*openregister_objects` WHERE register = "
+                        .$qb2->createNamedParameter((string) $registerId).")"
+                    );
+                $totalUpdated += (int) $qb2->executeStatement();
+            }
+        }//end foreach
+
+        // Catch-all: rows whose object UUID no longer joins back to a
+        // register (orphans). Use 'nl' as the conservative fallback.
+        $qb = $this->db->getQueryBuilder();
+        $qb->update('openregister_translations')
+            ->set('source_language', $qb->createNamedParameter('nl'))
+            ->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
+        $totalUpdated += (int) $qb->executeStatement();
+
+        return $totalUpdated;
+    }//end backfillSourceLanguage()
+
+    /**
+     * Count rows whose `source_language` is the empty back-fill default.
+     *
+     * Used by the back-fill command's idempotency check.
+     *
+     * @return int Count of rows still pending back-fill.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-1
+     */
+    public function countMissingSourceLanguage(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->createFunction('COUNT(*) AS pending'))
+            ->from('openregister_translations')
+            ->where($qb->expr()->eq('source_language', $qb->createNamedParameter('')));
+
+        $stmt = $qb->executeQuery();
+        $row  = $stmt->fetch();
+        $stmt->closeCursor();
+        return (int) ($row['pending'] ?? 0);
+    }//end countMissingSourceLanguage()
+
+    /**
+     * Find the most common source_language across an object's translatable
+     * properties. Used to drive the `X-Source-Language` response header.
+     *
+     * Returns null when the object has no translation rows.
+     *
+     * @param string $objectUuid UUID of the object to inspect.
+     *
+     * @return string|null Dominant source language, or null when no rows exist.
+     *
+     * @spec openspec/changes/i18n-source-of-truth/tasks.md#phase-3
+     */
+    public function getDominantSourceLanguage(string $objectUuid): ?string
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('source_language')
+            ->selectAlias($qb->createFunction('COUNT(*)'), 'cnt')
+            ->from('openregister_translations')
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->neq('source_language', $qb->createNamedParameter('')))
+            ->groupBy('source_language')
+            ->orderBy('cnt', 'DESC')
+            ->setMaxResults(1);
+
+        $stmt = $qb->executeQuery();
+        $row  = $stmt->fetch();
+        $stmt->closeCursor();
+        if ($row === false || isset($row['source_language']) === false) {
+            return null;
+        }
+
+        $value = (string) $row['source_language'];
+        if ($value === '') {
+            return null;
+        }
+
+        return $value;
+    }//end getDominantSourceLanguage()
 
     /**
      * Find object UUIDs missing a translation in the given language for

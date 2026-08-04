@@ -104,7 +104,7 @@ import { translate as t } from '@nextcloud/l10n'
 							v-model="githubToken"
 							placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateGitHubToken">
+							@update:modelValue="updateGitHubToken">
 							<template #trailing-button-icon>
 								<Github :size="20" />
 							</template>
@@ -112,7 +112,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 						<div class="token-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="saving || !githubToken || githubToken === originalGithubToken"
 								@click="saveGitHubToken">
 								<template #icon>
@@ -122,7 +122,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Save Token
 							</NcButton>
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="testingGithub || !githubToken"
 								@click="testGitHubToken">
 								<template #icon>
@@ -132,7 +132,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Test Token
 							</NcButton>
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="saving || !githubToken"
 								@click="clearGitHubToken">
 								<template #icon>
@@ -177,7 +177,7 @@ import { translate as t } from '@nextcloud/l10n'
 							v-model="gitlabToken"
 							placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
 							autocomplete="off"
-							@update:value="updateGitLabToken">
+							@update:modelValue="updateGitLabToken">
 							<template #trailing-button-icon>
 								<Gitlab :size="20" />
 							</template>
@@ -185,7 +185,7 @@ import { translate as t } from '@nextcloud/l10n'
 
 						<div class="token-actions">
 							<NcButton
-								type="primary"
+								variant="primary"
 								:disabled="saving || !gitlabToken || gitlabToken === originalGitlabToken"
 								@click="saveGitLabToken">
 								<template #icon>
@@ -195,7 +195,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Save Token
 							</NcButton>
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="testingGitlab || !gitlabToken"
 								@click="testGitLabToken">
 								<template #icon>
@@ -205,7 +205,7 @@ import { translate as t } from '@nextcloud/l10n'
 								Test Token
 							</NcButton>
 							<NcButton
-								type="error"
+								variant="error"
 								:disabled="saving || !gitlabToken"
 								@click="clearGitLabToken">
 								<template #icon>
@@ -239,7 +239,7 @@ import { translate as t } from '@nextcloud/l10n'
 							id="gitlab-url"
 							v-model="gitlabUrl"
 							placeholder="https://gitlab.com/api/v4"
-							@update:value="updateGitLabUrl">
+							@update:modelValue="updateGitLabUrl">
 							<template #trailing-button-icon>
 								<Web :size="20" />
 							</template>
@@ -252,7 +252,7 @@ import { translate as t } from '@nextcloud/l10n'
 					<div class="token-actions">
 						<NcButton
 							v-if="gitlabUrl && gitlabUrl !== originalGitlabUrl"
-							type="primary"
+							variant="primary"
 							:disabled="saving"
 							@click="saveGitLabUrl">
 							<template #icon>
@@ -352,6 +352,7 @@ export default {
 		/**
 		 * Load existing API tokens from the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings load hydrating local fields.
 		 * @return {Promise<void>}
 		 */
 		async loadTokens() {
@@ -375,6 +376,7 @@ export default {
 		/**
 		 * Update GitHub token value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New token value
 		 * @return {void}
 		 */
@@ -385,6 +387,7 @@ export default {
 		/**
 		 * Update GitLab token value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New token value
 		 * @return {void}
 		 */
@@ -395,6 +398,7 @@ export default {
 		/**
 		 * Update GitLab URL value
 		 *
+		 * @spec exclude UI plumbing — local field setter for two-way binding.
 		 * @param {string} value New URL value
 		 * @return {void}
 		 */
@@ -405,6 +409,7 @@ export default {
 		/**
 		 * Save GitHub token to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitHubToken() {
@@ -426,6 +431,7 @@ export default {
 		/**
 		 * Save GitLab token to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitLabToken() {
@@ -447,6 +453,7 @@ export default {
 		/**
 		 * Save GitLab URL to the backend
 		 *
+		 * @spec exclude UI plumbing — admin-settings save + toast.
 		 * @return {Promise<void>}
 		 */
 		async saveGitLabUrl() {
@@ -468,6 +475,7 @@ export default {
 		/**
 		 * Clear GitHub token
 		 *
+		 * @spec exclude UI plumbing — resets field then delegates to saveGitHubToken.
 		 * @return {Promise<void>}
 		 */
 		async clearGitHubToken() {
@@ -478,6 +486,7 @@ export default {
 		/**
 		 * Clear GitLab token
 		 *
+		 * @spec exclude UI plumbing — resets field then delegates to saveGitLabToken.
 		 * @return {Promise<void>}
 		 */
 		async clearGitLabToken() {
@@ -488,6 +497,7 @@ export default {
 		/**
 		 * Show save message
 		 *
+		 * @spec exclude UI plumbing — transient inline message with auto-clear timeout.
 		 * @param {string} message - The message to show
 		 * @param {string} type - The type of message ('success' or 'error')
 		 * @return {void}
@@ -503,6 +513,7 @@ export default {
 		/**
 		 * Test GitHub token validity
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
 		 * @return {Promise<void>}
 		 */
 		async testGitHubToken() {
@@ -540,6 +551,7 @@ export default {
 		/**
 		 * Test GitLab token validity
 		 *
+		 * @spec exclude UI plumbing — thin POST + result display; token validation contract owned by backend.
 		 * @return {Promise<void>}
 		 */
 		async testGitLabToken() {

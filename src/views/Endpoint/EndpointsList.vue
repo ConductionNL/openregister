@@ -5,63 +5,61 @@ import { endpointStore, navigationStore, searchStore } from '../../store/store.j
 
 <template>
 	<NcAppContentList>
-		<ul>
-			<div class="listHeader">
-				<NcTextField
-					:value.sync="searchStore.search"
-					:show-trailing-button="searchStore.search !== ''"
-					:label="t('openregister', 'Search')"
-					class="searchField"
-					trailing-button-icon="close"
-					@trailing-button-click="endpointStore.refreshEndpointList()">
-					<Magnify :size="20" />
-				</NcTextField>
-				<NcActions>
-					<NcActionButton close-after-click @click="endpointStore.refreshEndpointList()">
-						<template #icon>
-							<Refresh :size="20" />
-						</template>
-						{{ t('openregister', 'Refresh') }}
-					</NcActionButton>
-					<NcActionButton close-after-click @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
-						<template #icon>
-							<Plus :size="20" />
-						</template>
-						{{ t('openregister', 'Add endpoint') }}
-					</NcActionButton>
-				</NcActions>
-			</div>
-			<div v-if="endpointStore.endpointList && endpointStore.endpointList.length > 0">
-				<NcListItem v-for="(endpoint, i) in endpointStore.endpointList"
-					:key="`${endpoint}${i}`"
-					:name="endpoint.name"
-					:active="endpointStore.endpointItem?.id === endpoint?.id"
-					:force-display-actions="true"
-					@click="endpointStore.setEndpointItem(endpoint)">
+		<div class="listHeader">
+			<NcTextField
+				v-model="searchStore.search"
+				:show-trailing-button="searchStore.search !== ''"
+				:label="t('openregister', 'Search')"
+				class="searchField"
+				trailing-button-icon="close"
+				@trailing-button-click="endpointStore.refreshEndpointList()">
+				<Magnify :size="20" />
+			</NcTextField>
+			<NcActions>
+				<NcActionButton close-after-click @click="endpointStore.refreshEndpointList()">
 					<template #icon>
-						<Api :class="endpointStore.endpointItem?.id === endpoint.id && 'selectedEndpointIcon'"
-							disable-menu
-							:size="44" />
+						<Refresh :size="20" />
 					</template>
-					<template #subname>
-						{{ endpoint?.method }} {{ endpoint?.endpoint }} ({{ endpoint?.targetType }})
+					{{ t('openregister', 'Refresh') }}
+				</NcActionButton>
+				<NcActionButton close-after-click @click="endpointStore.setEndpointItem({}); navigationStore.setModal('editEndpoint')">
+					<template #icon>
+						<Plus :size="20" />
 					</template>
-					<template #actions>
-						<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('editEndpoint')">
-							<template #icon>
-								<Pencil />
-							</template>
-							{{ t('openregister', 'Edit') }}
-						</NcActionButton>
-						<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
-							<template #icon>
-								<TrashCanOutline />
-							</template>
-							{{ t('openregister', 'Delete') }}
-						</NcActionButton>
-					</template>
-				</NcListItem>
-			</div>
+					{{ t('openregister', 'Add endpoint') }}
+				</NcActionButton>
+			</NcActions>
+		</div>
+		<ul v-if="endpointStore.endpointList && endpointStore.endpointList.length > 0">
+			<NcListItem v-for="(endpoint, i) in endpointStore.endpointList"
+				:key="`${endpoint}${i}`"
+				:name="endpoint.name"
+				:active="endpointStore.endpointItem?.id === endpoint?.id"
+				:force-display-actions="true"
+				@click="endpointStore.setEndpointItem(endpoint)">
+				<template #icon>
+					<Api :class="endpointStore.endpointItem?.id === endpoint.id && 'selectedEndpointIcon'"
+						disable-menu
+						:size="44" />
+				</template>
+				<template #subname>
+					{{ endpoint?.method }} {{ endpoint?.endpoint }} ({{ endpoint?.targetType }})
+				</template>
+				<template #actions>
+					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setModal('editEndpoint')">
+						<template #icon>
+							<Pencil />
+						</template>
+						{{ t('openregister', 'Edit') }}
+					</NcActionButton>
+					<NcActionButton close-after-click @click="endpointStore.setEndpointItem(endpoint); navigationStore.setDialog('deleteEndpoint')">
+						<template #icon>
+							<TrashCanOutline />
+						</template>
+						{{ t('openregister', 'Delete') }}
+					</NcActionButton>
+				</template>
+			</NcListItem>
 		</ul>
 
 		<NcLoadingIcon v-if="!endpointStore.endpointList"

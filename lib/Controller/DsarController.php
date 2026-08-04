@@ -23,8 +23,9 @@
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -85,6 +86,8 @@ class DsarController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function inzage(): JSONResponse
     {
@@ -100,9 +103,14 @@ class DsarController extends Controller
         $type = $this->request->getParam(key: 'type');
         $mode = (string) ($this->request->getParam(key: 'mode') ?? 'exact');
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $results = $this->dsarService->findObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             mode: $mode
         );
 
@@ -127,6 +135,8 @@ class DsarController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function portabiliteit(): JSONResponse
     {
@@ -142,9 +152,14 @@ class DsarController extends Controller
         $type = $this->request->getParam(key: 'type');
         $mode = (string) ($this->request->getParam(key: 'mode') ?? 'exact');
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $results = $this->dsarService->findObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             mode: $mode
         );
 
@@ -178,6 +193,8 @@ class DsarController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function vergetelheid(): JSONResponse
     {
@@ -196,9 +213,14 @@ class DsarController extends Controller
             FILTER_VALIDATE_BOOLEAN
         );
 
+        $typeString = null;
+        if ($type !== null && $type !== '') {
+            $typeString = (string) $type;
+        }
+
         $summary = $this->dsarService->eraseObjectsForSubject(
             subject: $subject,
-            type: ($type !== null && $type !== '') ? (string) $type : null,
+            type: $typeString,
             dryRun: $dryRun
         );
 
@@ -219,6 +241,8 @@ class DsarController extends Controller
      * @return JSONResponse
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function rectificatie(): JSONResponse
     {
@@ -273,6 +297,8 @@ class DsarController extends Controller
      * @return JSONResponse Compliance envelope.
      *
      * @NoCSRFRequired
+     *
+     * @spec openspec/specs/avg-verwerkingsregister/spec.md
      */
     public function compliance(): JSONResponse
     {

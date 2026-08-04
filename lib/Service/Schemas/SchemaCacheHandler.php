@@ -9,6 +9,9 @@
  * computed properties like facetable fields, validation rules, and configuration.
  * It automatically invalidates cache when schemas are updated.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Schemas
  *
@@ -195,6 +198,8 @@ class SchemaCacheHandler
      * @return Schema|null The cached schema object or null if not found
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSchema(int $schemaId): ?Schema
     {
@@ -248,6 +253,8 @@ class SchemaCacheHandler
      * @param int $schemaId The schema ID to remove from cache
      *
      * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearSchemaCache(int $schemaId): void
     {
@@ -288,6 +295,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchema(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -314,6 +323,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchemaConfiguration(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -335,6 +346,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cacheSchemaProperties(Schema $schema, int $ttl=self::DEFAULT_TTL): void
     {
@@ -359,6 +372,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidate(int $schemaId): void
     {
@@ -386,6 +401,8 @@ class SchemaCacheHandler
      * @throws \OCP\DB\Exception If a database error occurs
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Operation parameter with default is not a boolean
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidateForSchemaChange(int $schemaId, string $operation='update'): void
     {
@@ -448,6 +465,8 @@ class SchemaCacheHandler
      * @return void
      *
      * @throws \OCP\DB\Exception If a database error occurs
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function clearAllCaches(): void
     {
@@ -487,6 +506,8 @@ class SchemaCacheHandler
      * @return int
      *
      * @psalm-return int<min, max>
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function cleanExpiredEntries(): int
     {
@@ -522,6 +543,8 @@ class SchemaCacheHandler
      * @return array Cache statistics with total entries, TTL info, memory size, and timing.
      *
      * @throws \OCP\DB\Exception If a database error occurs.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getCacheStatistics(): array
     {
@@ -616,7 +639,10 @@ class SchemaCacheHandler
         $ttl = min($ttl, self::MAX_CACHE_TTL);
 
         $now     = new DateTime();
-        $expires = $ttl > 0 ? (clone $now)->add(new DateInterval("PT{$ttl}S")) : null;
+        $expires = null;
+        if ($ttl > 0) {
+            $expires = (clone $now)->add(new DateInterval("PT{$ttl}S"));
+        }
 
         // Use INSERT ... ON DUPLICATE KEY UPDATE for MySQL/MariaDB compatibility.
         $qb = $this->db->getQueryBuilder();

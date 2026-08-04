@@ -3,6 +3,9 @@
 /**
  * OpenRegister ScheduledWorkflow Entity
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -209,6 +212,11 @@ class ScheduledWorkflow extends Entity implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
+        $payload = null;
+        if ($this->payload !== null) {
+            $payload = json_decode($this->payload, true);
+        }
+
         return [
             'id'          => $this->id,
             'uuid'        => $this->uuid,
@@ -219,7 +227,7 @@ class ScheduledWorkflow extends Entity implements JsonSerializable
             'schemaId'    => $this->schemaId,
             'intervalSec' => $this->intervalSec,
             'enabled'     => $this->enabled,
-            'payload'     => $this->payload !== null ? json_decode($this->payload, true) : null,
+            'payload'     => $payload,
             'lastRun'     => $this->lastRun?->format('c'),
             'lastStatus'  => $this->lastStatus,
             'created'     => $this->created?->format('c'),

@@ -5,6 +5,9 @@
  *
  * Activity setting for object CRUD notifications.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Activity
  * @package  OCA\OpenRegister\Activity\Setting
  *
@@ -34,7 +37,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @param IL10N $l The localization service.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private IL10N $l,
@@ -46,7 +49,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return string The setting identifier.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getIdentifier(): string
     {
@@ -58,7 +61,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return string The setting name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getName(): string
     {
@@ -70,7 +73,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return string The group identifier.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getGroupIdentifier(): string
     {
@@ -82,7 +85,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return string The group name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getGroupName(): string
     {
@@ -94,7 +97,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return int The priority.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function getPriority(): int
     {
@@ -106,7 +109,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return bool True if changeable.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function canChangeStream(): bool
     {
@@ -118,7 +121,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return bool True if enabled by default.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function isDefaultEnabledStream(): bool
     {
@@ -130,7 +133,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return bool True if changeable.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function canChangeMail(): bool
     {
@@ -142,7 +145,7 @@ class ObjectSetting extends ActivitySettings
      *
      * @return bool True if enabled by default.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-2
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function isDefaultEnabledMail(): bool
     {

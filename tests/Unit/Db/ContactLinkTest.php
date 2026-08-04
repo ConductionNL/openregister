@@ -52,4 +52,40 @@ class ContactLinkTest extends TestCase
         $this->assertSame('handler', $link->getRole());
         $this->assertSame('contact-123', $link->getContactUid());
     }
+
+    /**
+     * Tier-2: jsonSerialize emits the widened payload (phone / org /
+     * avatarUrl / schemaId / metadata) plus the original fields.
+     */
+    public function testJsonSerializeEmitsTier2Fields(): void
+    {
+        $link = new ContactLink();
+        $link->setObjectUuid('abc-123');
+        $link->setSchemaId(7);
+        $link->setPhone('+31 6 1234');
+        $link->setOrg('Acme B.V.');
+        $link->setAvatarUrl('https://example.com/jan.jpg');
+        $link->setMetadata(json_encode(['note' => 'hello']));
+
+        $json = $link->jsonSerialize();
+
+        $this->assertSame(7, $json['schemaId']);
+        $this->assertSame('+31 6 1234', $json['phone']);
+        $this->assertSame('Acme B.V.', $json['org']);
+        $this->assertSame('https://example.com/jan.jpg', $json['avatarUrl']);
+        $this->assertSame(['note' => 'hello'], $json['metadata']);
+    }
+
+    /**
+     * Tier-2: corrupt metadata JSON does not blow up the serialiser.
+     */
+    public function testJsonSerializeToleratesCorruptMetadata(): void
+    {
+        $link = new ContactLink();
+        $link->setMetadata('{ this is not json');
+
+        $json = $link->jsonSerialize();
+
+        $this->assertNull($json['metadata']);
+    }
 }

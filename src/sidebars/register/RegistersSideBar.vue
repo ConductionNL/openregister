@@ -31,7 +31,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:disabled="registerLoading"
 						:aria-label-combobox="t('openregister', 'Select a register')"
 						:placeholder="t('openregister', 'Select a register')"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -42,7 +42,7 @@ import { objectStore, registerStore, schemaStore, dashboardStore, navigationStor
 						:disabled="!registerStore.registerItem || schemaLoading"
 						:aria-label-combobox="t('openregister', 'Select a schema')"
 						:placeholder="t('openregister', 'Select a schema')"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 			</div>
 
@@ -204,23 +204,48 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * System totals stats from the dashboard store.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null}
+		 */
 		systemTotals() {
 			return dashboardStore.getSystemTotals
 		},
+		/**
+		 * Orphaned-items stats from the dashboard store.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null}
+		 */
 		orphanedItems() {
 			return dashboardStore.getOrphanedItems
 		},
+		/**
+		 * Registers excluding the synthetic System Totals / Orphaned Items rows.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array}
+		 */
 		filteredRegisters() {
 			return dashboardStore.registers.filter(register =>
 				register.title !== 'System Totals'
 				&& register.title !== 'Orphaned Items',
 			)
 		},
+		/**
+		 * Total schema count across the filtered registers.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {number}
+		 */
 		totalSchemas() {
 			return this.filteredRegisters.reduce((total, register) => {
 				return total + (register.schemas?.length || 0)
 			}, 0)
 		},
+		/**
+		 * Build the register dropdown options for the registers-overview filter.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -236,6 +261,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -255,6 +285,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -265,6 +300,11 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -277,10 +317,22 @@ export default {
 		},
 	},
 	methods: {
+		/**
+		 * Apply a register selection and reset dependent schema state (cascade).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - Selected register (or null to clear)
+		 * @return {void}
+		 */
 		handleRegisterChange(option) {
 			registerStore.setRegisterItem(option)
 			schemaStore.setSchemaItem(null)
 		},
+		/**
+		 * Apply a schema selection, initialise properties, and refresh the object list.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
+		 * @param {object|null} option - Selected schema (or null to clear)
+		 * @return {void}
+		 */
 		handleSchemaChange(option) {
 			schemaStore.setSchemaItem(option)
 			if (option) {
@@ -288,9 +340,19 @@ export default {
 				objectStore.refreshObjectList()
 			}
 		},
+		/**
+		 * Push the selected date range into the dashboard store for stats scoping.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {void}
+		 */
 		onDateRangeChange() {
 			dashboardStore.setDateRange(this.dateRange.from, this.dateRange.till)
 		},
+		/**
+		 * @spec exclude Presentation-only formatter; builds the objects stats breakdown descriptor for a stats source.
+		 * @param {object} source - Stats-bearing record
+		 * @return {object|null} Breakdown descriptor or null
+		 */
 		objectsBreakdown(source) {
 			const stats = source?.stats?.objects
 			if (!stats) return null
@@ -301,6 +363,11 @@ export default {
 			if (stats.locked) breakdown.locked = stats.locked
 			return Object.keys(breakdown).length > 0 ? breakdown : null
 		},
+		/**
+		 * @spec exclude Presentation-only formatter; renders a byte size as a stats breakdown descriptor.
+		 * @param {number} size - Byte size
+		 * @return {object|null} Breakdown descriptor or null
+		 */
 		sizeBreakdown(size) {
 			if (!size) return null
 			return { size: formatBytes(size) }

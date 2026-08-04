@@ -1,5 +1,12 @@
 ---
+status: done
 retrofit: true
+retrofit_extensions:
+  - REQ-006
+  - REQ-007
+  - REQ-008
+  - REQ-009
+  - REQ-010
 ---
 # Actions Specification
 
@@ -7,8 +14,11 @@ retrofit: true
 **Scope**: openregister
 **OpenSpec changes**:
 - [retrofit-2026-05-01-actions](../../changes/retrofit-2026-05-01-actions/) _(archived 2026-05-01)_
+- [retrofit-2026-05-24-actions](../../changes/retrofit-2026-05-24-actions/) _(pending archive)_
 
 ## Purpose
+
+@e2e exclude backend service/entity — covered by PHPUnit
 
 Actions are schema-attached, administrator-configured workflow triggers that execute external workflow engine payloads in response to object lifecycle events. Unlike inline schema hooks (which are attached to a schema's `hooks` array and execute sequentially), Actions are standalone entities that can target multiple schemas and registers, support both synchronous and asynchronous execution, and carry configurable failure handling and retry policies. Actions coexist with inline hooks via `ActionListener` and `HookListener` — hooks execute first, then Actions run, both respecting event propagation stop signals.
 
@@ -18,7 +28,7 @@ This spec documents the observed behavior of the Actions feature as retroactivel
 
 ### REQ-001: The system SHALL provide a CRUD API for schema-attached workflow actions
 
-Actions are named entities that declare which lifecycle event type to listen for, which workflow engine to invoke, and which workflow to run. Administrators manage actions via `ActionsController` backed by `ActionService`. CRUD operations dispatch typed events (`ActionCreatedEvent`, `ActionUpdatedEvent`, `ActionDeletedEvent`). Deletion is soft: the `deleted` timestamp is set and `status` becomes `'archived'`; the record is not removed. Execution statistics (total count, success count, failure count, last executed timestamp) are tracked per action by `ActionService::updateStatistics()`.
+The system SHALL provide a CRUD API for schema-attached workflow actions. Actions are named entities that declare which lifecycle event type to listen for, which workflow engine to invoke, and which workflow to run. Administrators manage actions via `ActionsController` backed by `ActionService`. CRUD operations dispatch typed events (`ActionCreatedEvent`, `ActionUpdatedEvent`, `ActionDeletedEvent`). Deletion is soft: the `deleted` timestamp is set and `status` becomes `'archived'`; the record is not removed. Execution statistics (total count, success count, failure count, last executed timestamp) are tracked per action by `ActionService::updateStatistics()`.
 
 Required fields on create: `name`, `eventType`, `engine` (workflow engine ID), `workflowId`. Optional fields default to: `status='draft'`, `mode='sync'`, `executionOrder=0`, `timeout=30`, `onFailure='reject'`, `onTimeout='reject'`, `onEngineDown='allow'`, `maxRetries=3`, `retryPolicy='exponential'`, `enabled=true`, `version='1.0.0'`.
 
@@ -53,7 +63,7 @@ Actions may be scoped to zero or more schemas (by UUID) and zero or more registe
 
 ### REQ-002: The system SHALL execute matching workflow actions when object lifecycle events fire
 
-`ActionListener` is registered for all lifecycle event types (ObjectCreatingEvent, ObjectCreatedEvent, ObjectUpdatingEvent, ObjectUpdatedEvent, ObjectDeletingEvent, ObjectDeletedEvent, and others). On each event it:
+The system SHALL execute matching workflow actions when object lifecycle events fire. `ActionListener` is registered for all lifecycle event types (ObjectCreatingEvent, ObjectCreatedEvent, ObjectUpdatingEvent, ObjectUpdatedEvent, ObjectDeletingEvent, ObjectDeletedEvent, and others). On each event it:
 1. Checks propagation stop — if a prior hook stopped propagation, no actions run.
 2. Extracts the event payload (object data, schemaUuid, registerUuid) via duck-typing on the event class.
 3. Queries `ActionMapper::findMatchingActions()` by eventType, schemaUuid, registerUuid — the mapper applies schema/register scoping at DB level.
@@ -82,7 +92,7 @@ Within `executeActions()`, actions execute in the order provided. If a previous 
 
 ### REQ-003: The system SHALL support synchronous and fire-and-forget execution modes per action
 
-Each action carries a `mode` field: `'sync'` (default) or `'async'`.
+The system SHALL support synchronous and fire-and-forget execution modes per action. Each action carries a `mode` field: `'sync'` (default) or `'async'`.
 
 In **sync mode**: `ActionExecutor` calls the workflow engine and processes the `WorkflowResult`. If the result is `rejected`, `stopPropagation()` is called on the event and `setErrors()` is called with the result's error list — blocking the object mutation for pre-mutation events. If the result is `modified`, `setModifiedData()` is called — applying data changes from the workflow. Statistics are updated and an `ActionLog` is created regardless of outcome.
 
@@ -112,7 +122,7 @@ The CloudEvents 1.0 envelope is built by `ActionExecutor::buildCloudEventPayload
 
 ### REQ-004: The system SHALL retry failed action executions with configurable backoff until max retries are reached
 
-When an action execution fails and its `onFailure` policy is `'queue'` (or `onEngineDown='queue'` and the engine is unavailable), `ActionExecutor::handleFailure()` adds an `ActionRetryJob` to the background job queue with the action ID, payload, attempt number (starting at 2), and retry configuration.
+The system SHALL retry failed action executions with configurable backoff until max retries are reached. When an action execution fails and its `onFailure` policy is `'queue'` (or `onEngineDown='queue'` and the engine is unavailable), `ActionExecutor::handleFailure()` adds an `ActionRetryJob` to the background job queue with the action ID, payload, attempt number (starting at 2), and retry configuration.
 
 `ActionRetryJob` implements the retry loop:
 - If `attempt > maxRetries`: create an `ActionLog` with `status='abandoned'`, call `updateStatistics(actionId, 'abandoned')`, stop.
@@ -147,7 +157,7 @@ Delay calculation (static `calculateDelay(policy, attempt)`):
 
 ### REQ-005: The system SHALL execute actions with a cron schedule when they fall due
 
-`ActionScheduleJob` is a `TimedJob` that runs every 60 seconds. It queries all actions where `enabled=true`, `status='active'`, and `schedule IS NOT NULL`. For each, it evaluates the cron expression (via `dragonmantank/cron-expression`) against `lastExecutedAt`:
+The system SHALL execute actions with a cron schedule when they fall due. `ActionScheduleJob` is a `TimedJob` that runs every 60 seconds. It queries all actions where `enabled=true`, `status='active'`, and `schedule IS NOT NULL`. For each, it evaluates the cron expression (via `dragonmantank/cron-expression`) against `lastExecutedAt`:
 - If `lastExecutedAt` is null → action is due immediately.
 - Otherwise → compute `getNextRunDate(lastExecutedAt)` and check if it is ≤ now.
 

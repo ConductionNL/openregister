@@ -6,6 +6,9 @@
  * Controller for managing archival destruction workflows including
  * destruction lists, legal holds, and destruction certificates.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -17,13 +20,13 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-7
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
+ * @spec openspec/specs/archival-destruction-workflow/spec.md
  */
 
 namespace OCA\OpenRegister\Controller;
@@ -140,8 +143,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-6
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function listDestructionLists(): JSONResponse
     {
@@ -173,8 +176,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-7
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function getDestructionList(string $id): JSONResponse
     {
@@ -206,8 +209,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function approveDestructionList(string $id): JSONResponse
     {
@@ -233,7 +236,8 @@ class ArchivalController extends Controller
                 action: $action,
                 excludedIds: $excludedIds,
                 exclusionReasons: $exclusionReasons,
-                requiresDual: $requiresDual
+                requiresDual: $requiresDual,
+                listUuid: $id
             );
 
             // Check if dual approval was rejected (same user).
@@ -245,6 +249,14 @@ class ArchivalController extends Controller
                     statusCode: Http::STATUS_CONFLICT
                 );
             }
+
+            // Persist the approval. Without this the recorded approval and the
+            // `approved` status were returned to the caller but never written back,
+            // so the list stayed `in_review` in storage and the execution job — which
+            // reloads the list by uuid and requires status `approved` — refused to run
+            // (openregister#393). RetentionController has always persisted here.
+            $object->setObject($result);
+            $this->objectMapper->update($object);
 
             return new JSONResponse(
                 data: $result,
@@ -276,8 +288,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-1
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function rejectDestructionList(string $id): JSONResponse
     {
@@ -330,8 +342,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function createLegalHold(): JSONResponse
     {
@@ -419,8 +431,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function releaseLegalHold(string $id): JSONResponse
     {
@@ -466,8 +478,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-5
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-8
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function listLegalHolds(): JSONResponse
     {
@@ -493,8 +505,8 @@ class ArchivalController extends Controller
      *
      * @NoAdminRequired
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-3
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     public function listCertificates(): JSONResponse
     {
@@ -519,7 +531,7 @@ class ArchivalController extends Controller
      *
      * @return JSONResponse|null Returns a 403 response if unauthorized, null if authorized.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-2
+     * @spec openspec/specs/archival-destruction-workflow/spec.md
      */
     private function checkArchivistRole(): ?JSONResponse
     {

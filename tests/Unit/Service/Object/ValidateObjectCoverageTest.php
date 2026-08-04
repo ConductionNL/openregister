@@ -491,6 +491,40 @@ class ValidateObjectCoverageTest extends TestCase
         $this->assertSame('object', $result->type);
     }
 
+    public function testTransformArrayItemsForValidationInlineValueObjectLeftUntouched(): void
+    {
+        // Inline value-object array items (no objectConfiguration, no $ref) that already
+        // declare their own properties - e.g. openbuild's Application.dataRegisters
+        // [{register, label}] - must not be reduced to a bare {id} stub. See or#290.
+        $items = (object)[
+            'type' => 'object',
+            'required' => ['register'],
+            'additionalProperties' => false,
+            'properties' => (object)[
+                'register' => (object)['type' => 'string'],
+                'label'    => (object)['type' => 'string'],
+            ],
+        ];
+        $result = $this->invokeMethod('transformArrayItemsForValidation', [$items]);
+
+        $this->assertSame('object', $result->type);
+        $this->assertFalse($result->additionalProperties);
+        $this->assertTrue(isset($result->properties->register));
+        $this->assertTrue(isset($result->properties->label));
+        $this->assertFalse(isset($result->properties->id));
+    }
+
+    public function testTransformArrayItemsForValidationNoConfigNoPropertiesStillStubbed(): void
+    {
+        // With no properties declared at all, there is nothing to preserve; the legacy
+        // {id}-stub fallback still applies for backwards compatibility.
+        $items = (object)['type' => 'object'];
+        $result = $this->invokeMethod('transformArrayItemsForValidation', [$items]);
+
+        $this->assertSame('object', $result->type);
+        $this->assertTrue(isset($result->properties->id));
+    }
+
     // =========================================================================
     // transformToUuidProperty
     // =========================================================================

@@ -8,6 +8,7 @@
  *
  * @param  { string | Date } dateString The date string or Date object to be converted.
  * @return { string | null } The ISO string representation of the date or null.
+ * @spec exclude Stateless ISO-string validation/conversion helper; pure format utility with no domain contract.
  */
 export default function getValidISOstring(dateString) {
 	const date = new Date(dateString)

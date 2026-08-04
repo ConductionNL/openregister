@@ -6,6 +6,9 @@
  * This file contains the event listener for node folder events
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category EventListener
  * @package  OCA\OpenRegister\EventListener
  *
@@ -45,7 +48,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function __construct(
         private readonly ObjectService $objectService,
@@ -60,7 +63,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     public function handle(Event $event): void
     {
@@ -91,7 +94,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeCopied(NodeCopiedEvent $_event): void
     {
@@ -107,7 +110,7 @@ class AbstractNodesFolderEventListener implements IEventListener
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-1
+     * @spec openspec/specs/event-driven-architecture/spec.md
      */
     private function handleNodeRenamed(NodeRenamedEvent $_event): void
     {

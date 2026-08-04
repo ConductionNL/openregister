@@ -5,6 +5,9 @@
  *
  * Strategy for vectorizing file chunks.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Vectorization
  *
@@ -15,6 +18,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/vector-embeddings/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Vectorization\Strategies;
@@ -85,6 +90,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return \OCA\OpenRegister\Db\Chunk[]
      *
      * @psalm-return list<\OCA\OpenRegister\Db\Chunk>
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function fetchEntities(array $options): array
     {
@@ -147,6 +154,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      * @return ((int|string)|mixed|null)[][] Array of items with 'text' and chunk data
      *
      * @psalm-return list<array{end_offset: mixed|null, index: array-key, start_offset: mixed|null, text: mixed}>
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function extractVectorizationItems($entity): array
     {
@@ -181,6 +190,8 @@ class FileVectorizationStrategy implements VectorizationStrategyInterface
      *         end_offset: mixed
      *     }
      * }
+     *
+     * @spec openspec/specs/vector-embeddings/spec.md
      */
     public function prepareVectorMetadata($entity, array $item): array
     {

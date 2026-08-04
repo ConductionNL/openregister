@@ -8,6 +8,7 @@ use OCA\OpenRegister\Controller\GdprEntitiesController;
 use OCA\OpenRegister\Db\EntityRelationMapper;
 use OCA\OpenRegister\Db\GdprEntity;
 use OCA\OpenRegister\Db\GdprEntityMapper;
+use OCA\OpenRegister\Service\OrganisationService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http;
 use OCP\DB\IResult;
@@ -16,7 +17,10 @@ use OCP\DB\QueryBuilder\IFunctionBuilder;
 use OCP\DB\QueryBuilder\IQueryBuilder;
 use OCP\DB\QueryBuilder\IQueryFunction;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -29,6 +33,9 @@ class GdprEntitiesControllerTest extends TestCase
     private EntityRelationMapper&MockObject $entityRelationMapper;
     private IDBConnection&MockObject $db;
     private LoggerInterface&MockObject $logger;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
+    private OrganisationService&MockObject $organisationService;
 
     protected function setUp(): void
     {
@@ -40,13 +47,27 @@ class GdprEntitiesControllerTest extends TestCase
         $this->db = $this->createMock(IDBConnection::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // Authenticated admin user: with #1825 fixes the admin path is the
+        // unscoped path, so existing assertions about unscoped results hold.
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->groupManager->method('isAdmin')->willReturn(true);
+        $this->organisationService = $this->createMock(OrganisationService::class);
+        $this->organisationService->method('getUserOrganisations')->willReturn([]);
+
         $this->controller = new GdprEntitiesController(
             'openregister',
             $this->request,
             $this->entityMapper,
             $this->entityRelationMapper,
             $this->db,
-            $this->logger
+            $this->logger,
+            $this->userSession,
+            $this->groupManager,
+            $this->organisationService
         );
     }
 
@@ -912,5 +933,139 @@ class GdprEntitiesControllerTest extends TestCase
         $result = $this->controller->destroy(7);
 
         $this->assertEquals(200, $result->getStatus());
+    }
+
+    // =========================================================================
+    // #1825 cross-tenant authorization regression tests
+    // =========================================================================
+
+    /**
+     * Build a controller wired with a non-admin user belonging to the
+     * given organisation UUIDs.
+     *
+     * @param array<int, string> $orgUuids Organisation UUIDs.
+     *
+     * @return GdprEntitiesController
+     */
+    private function nonAdminController(array $orgUuids): GdprEntitiesController
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('bob');
+
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn($user);
+
+        $groupManager = $this->createMock(IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        $orgs = [];
+        foreach ($orgUuids as $uuid) {
+            // Organisation uses Entity __call magic; use a real instance
+            // so getUuid() resolves (it cannot be configured on a mock).
+            $org = new \OCA\OpenRegister\Db\Organisation();
+            $org->setUuid($uuid);
+            $orgs[] = $org;
+        }
+
+        $organisationService = $this->createMock(OrganisationService::class);
+        $organisationService->method('getUserOrganisations')->willReturn($orgs);
+
+        return new GdprEntitiesController(
+            'openregister',
+            $this->request,
+            $this->entityMapper,
+            $this->entityRelationMapper,
+            $this->db,
+            $this->logger,
+            $userSession,
+            $groupManager,
+            $organisationService
+        );
+    }
+
+    public function testIndexUnauthenticatedReturns401(): void
+    {
+        $userSession = $this->createMock(IUserSession::class);
+        $userSession->method('getUser')->willReturn(null);
+
+        $controller = new GdprEntitiesController(
+            'openregister',
+            $this->request,
+            $this->entityMapper,
+            $this->entityRelationMapper,
+            $this->db,
+            $this->logger,
+            $userSession,
+            $this->groupManager,
+            $this->organisationService
+        );
+
+        $result = $controller->index();
+
+        $this->assertEquals(Http::STATUS_UNAUTHORIZED, $result->getStatus());
+    }
+
+    public function testIndexNonAdminWithNoOrgsReturnsEmpty(): void
+    {
+        $this->request->method('getParam')
+            ->willReturnMap([
+                ['limit', 50, 50],
+                ['offset', 0, 0],
+            ]);
+
+        // No DB query should be issued — fail-closed before touching data.
+        $this->db->expects($this->never())->method('getQueryBuilder');
+
+        $controller = $this->nonAdminController([]);
+        $result     = $controller->index();
+
+        $this->assertEquals(200, $result->getStatus());
+        $data = $result->getData();
+        $this->assertTrue($data['success']);
+        $this->assertEmpty($data['data']);
+        $this->assertEquals(0, $data['count']);
+    }
+
+    public function testShowNonAdminCrossTenantReturns404(): void
+    {
+        // GdprEntity uses Entity __call magic, so use a real instance
+        // (getOrganisation cannot be configured on a mock).
+        $entity = new GdprEntity();
+        $entity->setOrganisation('other-org-uuid');
+        $this->entityMapper->method('find')->willReturn($entity);
+
+        $controller = $this->nonAdminController(['my-org-uuid']);
+        $result     = $controller->show(1);
+
+        $this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
+        $this->assertFalse($result->getData()['success']);
+    }
+
+    public function testShowNonAdminSameTenantSucceeds(): void
+    {
+        $entity = new GdprEntity();
+        $entity->setOrganisation('my-org-uuid');
+        $this->entityMapper->method('find')->willReturn($entity);
+        $this->entityRelationMapper->method('findByEntityId')->willReturn([]);
+
+        $controller = $this->nonAdminController(['my-org-uuid']);
+        $result     = $controller->show(1);
+
+        $this->assertEquals(200, $result->getStatus());
+        $this->assertTrue($result->getData()['success']);
+    }
+
+    public function testDestroyNonAdminCrossTenantReturns404(): void
+    {
+        $entity = new GdprEntity();
+        $entity->setOrganisation('other-org-uuid');
+        $this->entityMapper->method('find')->willReturn($entity);
+        // Must not delete a cross-tenant row.
+        $this->entityMapper->expects($this->never())->method('delete');
+
+        $controller = $this->nonAdminController(['my-org-uuid']);
+        $result     = $controller->destroy(1);
+
+        $this->assertEquals(Http::STATUS_NOT_FOUND, $result->getStatus());
     }
 }

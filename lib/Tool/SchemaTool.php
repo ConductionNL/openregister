@@ -6,6 +6,9 @@
  * LLphant function tool for managing schemas through natural language.
  * Provides CRUD operations on schemas with RBAC and multi-tenancy support.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Tool
  * @package  OCA\OpenRegister\Tool
  *
@@ -73,7 +76,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return 'schema'
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getName(): string
     {
@@ -85,7 +88,7 @@ class SchemaTool extends AbstractTool
      *
      * @return string The tool description
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getDescription(): string
     {
@@ -101,7 +104,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive function definitions for LLM
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getFunctions(): array
     {
@@ -222,7 +225,7 @@ class SchemaTool extends AbstractTool
      *
      * @throws \Exception If function execution fails
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function executeFunction(string $functionName, array $parameters, ?string $userId=null): array
     {
@@ -257,7 +260,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable filter parameter
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function listSchemas(int $limit=100, int $offset=0, ?string $register=null): array
     {
@@ -297,7 +300,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getSchema(string $id): array
     {
@@ -337,7 +340,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function createSchema(string $title, array $properties, string $description='', ?array $required=null): array
     {
@@ -383,7 +386,7 @@ class SchemaTool extends AbstractTool
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Optional nullable parameters for partial updates
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function updateSchema(
         string $id,
@@ -428,6 +431,14 @@ class SchemaTool extends AbstractTool
     /**
      * Delete a schema
      *
+     * **DELETE SAFETY (runtime-schema-api)**: this is an LLM-invokable schema-destruction
+     * surface with no controller in front of it. It deliberately does NOT pass
+     * `force: true` — SchemaMapper::delete() refuses a schema that still holds objects,
+     * and a model acting on an ambiguous instruction must not be able to orphan a user's
+     * data. The ValidationException surfaces to the model as a tool error naming the
+     * object count; deleting the objects is a separate, explicit human decision
+     * (`DELETE /api/schemas/{id}?deleteObjects=true`).
+     *
      * @param string $id Schema ID
      *
      * @return (mixed|string|true)[] Result of deletion
@@ -436,7 +447,7 @@ class SchemaTool extends AbstractTool
      *
      * @psalm-return array{success: true, message: string, data: mixed}
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-29
+     * @spec openspec/changes/schema-delete-cascade/specs/runtime-schema-api/spec.md
      */
     public function deleteSchema(string $id): array
     {

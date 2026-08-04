@@ -27,7 +27,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton
 				:disabled="loading || success"
-				type="primary"
+				variant="primary"
 				@click="lockObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -39,12 +39,12 @@ import { objectStore, navigationStore } from '../../store/store.js'
 
 		<div v-if="!success" class="formContainer">
 			<NcTextField
-				:value.sync="process"
+				v-model="process"
 				:label="t('openregister', 'Process Name (optional)')"
 				:disabled="loading" />
 			<NcTextField
 				type="number"
-				:value.sync="duration"
+				v-model="duration"
 				:label="t('openregister', 'Duration in seconds (optional)')"
 				:disabled="loading" />
 		</div>
@@ -85,6 +85,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 			clearTimeout(this.closeModalTimeout)
@@ -94,6 +97,9 @@ export default {
 			this.process = ''
 			this.duration = 3600
 		},
+		/**
+		 * @spec exclude Lock-confirm handler delegating to objectStore.lockObject; entity lock lives in the store, this is modal orchestration plumbing.
+		 */
 		async lockObject() {
 			this.loading = true
 

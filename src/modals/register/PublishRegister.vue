@@ -89,7 +89,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 
 			<div class="formActions">
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!canPublish || loading"
 					@click="publishRegister">
 					<template #icon>
@@ -144,12 +144,21 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI accessor — exposes the store's registerItem to the template.
+		 */
 		register() {
 			return registerStore.registerItem
 		},
+		/**
+		 * @spec exclude UI state helper — enables the publish button when repo/branch/path are set.
+		 */
 		canPublish() {
 			return this.selectedRepository && this.selectedBranch && this.filePath.trim() !== ''
 		},
+		/**
+		 * @spec exclude UI display helper — maps repositories to NcSelect option objects.
+		 */
 		repositoryOptions() {
 			return this.repositories.map(repo => ({
 				value: repo.full_name,
@@ -157,6 +166,9 @@ export default {
 				...repo,
 			}))
 		},
+		/**
+		 * @spec exclude UI display helper — maps branches to NcSelect option objects.
+		 */
 		branchOptions() {
 			return this.branches.map(branch => ({
 				value: branch.name,
@@ -166,6 +178,10 @@ export default {
 		},
 	},
 	watch: {
+		/**
+		 * @param newValue
+		 * @spec exclude UI watcher — reloads branches when the selected repository changes.
+		 */
 		selectedRepository(newValue) {
 			if (newValue) {
 				// Extract value if it's an object, otherwise use the value directly
@@ -178,6 +194,9 @@ export default {
 			}
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — loads repositories and sets default commit message/path.
+	 */
 	async mounted() {
 		await this.loadRepositories()
 
@@ -191,6 +210,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal close plumbing — clears the active modal in navigationStore.
+		 */
 		closeModal() {
 			if (!this.loading) {
 				navigationStore.setModal(null)
@@ -198,6 +220,9 @@ export default {
 				// so we don't need to clear data here - it will be reset on next mount
 			}
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches GitHub repositories for the picker.
+		 */
 		async loadRepositories() {
 			this.loadingRepositories = true
 			this.error = null
@@ -224,6 +249,11 @@ export default {
 				this.loadingRepositories = false
 			}
 		},
+		/**
+		 * @param owner
+		 * @param repo
+		 * @spec exclude Modal data-load plumbing — fetches branches for the selected repository.
+		 */
 		async loadBranches(owner, repo) {
 			if (!owner || !repo) return
 
@@ -260,6 +290,10 @@ export default {
 				this.loadingBranches = false
 			}
 		},
+		/**
+		 * @param value
+		 * @spec exclude UI event handler — reloads branches when repository selection changes.
+		 */
 		onRepositoryChange(value) {
 			// Clear branches and selected branch when repository changes
 			this.branches = []
@@ -275,6 +309,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Modal action plumbing — pushes the register OAS to the selected GitHub repo/branch.
+		 */
 		async publishRegister() {
 			if (!this.canPublish || !this.register) return
 

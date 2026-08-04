@@ -19,7 +19,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md
  *       "A new public method `parseEmlStructured()` MUST return an `EmlStructure` value object"
  */
 
@@ -50,6 +50,8 @@ final class EmlBody implements JsonSerializable
      * JSON serialisation.
      *
      * @return array{plainText: string|null, html: string|null}
+     *
+     * @spec exclude Value-object serialiser: maps public readonly properties to an array; field shape specified by text-extraction-eml.
      */
     public function jsonSerialize(): array
     {

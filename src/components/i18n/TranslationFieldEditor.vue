@@ -106,12 +106,19 @@ export default {
 		},
 	},
 	computed: {
+		/**
+		 * @spec exclude computed visible-language list filter, UI plumbing
+		 */
 		orderedLanguages() {
 			if (!this.hideEmpty) return this.languages
 			return this.languages.filter((lang) => this.getValue(lang) !== '')
 		},
 	},
 	methods: {
+		/**
+		 * @param lang
+		 * @spec exclude computed read of per-language value from v-model prop, UI plumbing
+		 */
 		getValue(lang) {
 			const v = this.value?.[lang]
 			return typeof v === 'string' ? v : ''
@@ -119,12 +126,25 @@ export default {
 		getStatus(lang) {
 			return this.statuses?.[lang] ?? null
 		},
+		/**
+		 * @param lang
+		 * @spec exclude computed text-direction (rtl/ltr) display helper, UI plumbing
+		 */
 		dirFor(lang) {
 			return isRtlLanguage(lang) ? 'rtl' : 'ltr'
 		},
+		/**
+		 * @param lang
+		 * @spec exclude computed placeholder display helper, UI plumbing
+		 */
 		placeholderFor(lang) {
 			return `Translation in ${lang.toUpperCase()}`
 		},
+		/**
+		 * @param lang
+		 * @param newValue
+		 * @spec exclude per-language input emitting v-model input; translatable-field contract owned by register-i18n capability
+		 */
 		onInput(lang, newValue) {
 			const next = { ...this.value, [lang]: newValue }
 			// Drop empty slots so they don't bloat the JSONB nor create

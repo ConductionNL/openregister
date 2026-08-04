@@ -50,7 +50,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -63,6 +62,7 @@ use OCA\OpenRegister\Service\Object\SearchQueryHandler;
 use OCA\OpenRegister\Service\Object\UtilityHandler;
 use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCP\AppFramework\IAppContainer;
 use OCP\IGroupManager;
 use OCP\IUserManager;
@@ -159,7 +159,6 @@ class AppendOnlyTest extends TestCase
             $this->createMock(DataManipulationHandler::class),
             $this->deleteHandler,
             $this->createMock(GetObject::class),
-            $this->createMock(PerformanceHandler::class),
             $this->createMock(PermissionHandler::class),
             $this->renderHandler,
             $this->saveHandler,
@@ -193,7 +192,8 @@ class AppendOnlyTest extends TestCase
             $this->createMock(CacheHandler::class),
             $this->createMock(SettingsService::class),
             $this->dateTimeNormalizer,
-            $this->createMock(IAppContainer::class)
+            $this->createMock(IAppContainer::class),
+            $this->createMock(ObjectSourceRegistry::class)
         );
 
         $this->reflection = new ReflectionClass(ObjectService::class);

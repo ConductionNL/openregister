@@ -5,6 +5,9 @@
  *
  * Business logic for Action entity management.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+ * @spec openspec/specs/actions/spec.md
  */
 
 declare(strict_types=1);
@@ -83,7 +86,7 @@ class ActionService
      *
      * @throws InvalidArgumentException If required fields are missing
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function createAction(array $data): Action
     {
@@ -148,7 +151,7 @@ class ActionService
      *
      * @return Action The updated action
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function updateAction(int $id, array $data): Action
     {
@@ -176,7 +179,7 @@ class ActionService
      *
      * @return Action The deleted action
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function deleteAction(int $id): Action
     {
@@ -209,6 +212,8 @@ class ActionService
      * @return array Test result with match info and payload
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     public function testAction(int $id, array $samplePayload): array
     {
@@ -254,6 +259,11 @@ class ActionService
 
         $matched = $eventMatch && $schemaMatch && $registerMatch && $filterMatch;
 
+        $builtPayload = null;
+        if ($matched === true) {
+            $builtPayload = $samplePayload;
+        }
+
         return [
             'matched'       => $matched,
             'action'        => $action->jsonSerialize(),
@@ -262,7 +272,7 @@ class ActionService
             'registerMatch' => $registerMatch,
             'filterMatch'   => $filterMatch,
             'filterReasons' => $filterReasons,
-            'builtPayload'  => $matched === true ? $samplePayload : null,
+            'builtPayload'  => $builtPayload,
         ];
     }//end testAction()
 
@@ -274,6 +284,8 @@ class ActionService
      * @return array Migration report
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/actions/spec.md
      */
     public function migrateFromHooks(int $schemaId): array
     {
@@ -354,7 +366,7 @@ class ActionService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-05-01-actions/tasks.md#task-1
+     * @spec openspec/specs/actions/spec.md
      */
     public function updateStatistics(int $actionId, string $status): void
     {

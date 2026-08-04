@@ -7,6 +7,9 @@
  * OpenRegister objects that reference a given file ID and aggregating
  * extraction / entity-recognition metadata for the Extraction tab.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -84,6 +87,8 @@ class FileSidebarService
      *     register: array{id: int, title: string},
      *     schema: array{id: int, title: string}
      * }>
+     *
+     * @spec openspec/specs/files-sidebar-tabs/spec.md
      */
     public function getObjectsForFile(int $fileId): array
     {
@@ -269,6 +274,8 @@ class FileSidebarService
      *   anonymizedAt: string|null,
      *   anonymizedFileId: int|null
      * }
+     *
+     * @spec openspec/specs/files-sidebar-tabs/spec.md
      */
     public function getExtractionStatus(int $fileId): array
     {

@@ -232,15 +232,21 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         $this->assertTrue($hasPermission);
     }
 
-    public function testHasPermissionPublicRuleForUnconfiguredAction(): void
+    public function testHasPermissionUnconfiguredActionFailsClosed(): void
     {
-        // Only 'read' is configured - 'update' should be open (not configured = open)
+        // rbac-default-deny: only 'read' is configured; an unconfigured action
+        // ('update') on a non-empty block is now denied for a non-admin. Admin
+        // CLI runners still bypass RBAC, so the expectation is guarded.
         $schema = $this->createTestSchema([
             'read' => ['public'],
         ]);
 
         $hasPermission = $this->rbacHandler->hasPermission($schema, 'update');
-        $this->assertTrue($hasPermission);
+        if ($this->rbacHandler->isAdmin() === true) {
+            $this->assertTrue($hasPermission, 'Admin bypasses RBAC');
+        } else {
+            $this->assertFalse($hasPermission, 'Unconfigured action on a non-empty block must fail closed');
+        }
     }
 
     // =========================================================================
@@ -336,8 +342,12 @@ class MagicRbacHandlerIntegrationTest extends TestCase
         $this->assertIsArray($result);
         $this->assertArrayHasKey('bypass', $result);
         $this->assertArrayHasKey('conditions', $result);
-        // No authorization = bypass
-        $this->assertTrue($result['bypass']);
+        // No authorization used to mean an unconditional bypass. It now means
+        // "open to every NON-PRIVATE row": an individual object may declare
+        // `scope: private` on a schema that configures nothing, and bypassing
+        // here would leak it. See the `private` object scope.
+        $this->assertFalse($result['bypass']);
+        $this->assertStringContainsString('_authorization', implode(' ', $result['conditions']));
     }
 
     public function testBuildRbacConditionsSqlPublicRule(): void
@@ -348,7 +358,10 @@ class MagicRbacHandlerIntegrationTest extends TestCase
 
         $result = $this->rbacHandler->buildRbacConditionsSql($schema, 'read');
         $this->assertIsArray($result);
-        $this->assertTrue($result['bypass']);
+        // An unconditional `public` grant reaches every non-private row, which
+        // is now expressed as a condition rather than as a bypass.
+        $this->assertFalse($result['bypass']);
+        $this->assertStringContainsString('_authorization', implode(' ', $result['conditions']));
     }
 
     public function testBuildRbacConditionsSqlUnconfiguredAction(): void
@@ -357,10 +370,16 @@ class MagicRbacHandlerIntegrationTest extends TestCase
             'read' => ['public'],
         ]);
 
-        // 'delete' is not configured - should bypass
+        // rbac-default-deny: 'delete' is unconfigured on a non-empty block, so it
+        // no longer bypasses filtering. Admin still bypasses; otherwise the result
+        // is a non-bypass filter (owner-only conditions, or empty = deny-all).
         $result = $this->rbacHandler->buildRbacConditionsSql($schema, 'delete');
         $this->assertIsArray($result);
-        $this->assertTrue($result['bypass']);
+        if ($this->rbacHandler->isAdmin() === true) {
+            $this->assertTrue($result['bypass']);
+        } else {
+            $this->assertFalse($result['bypass']);
+        }
     }
 
     public function testBuildRbacConditionsSqlGroupRule(): void
@@ -821,5 +840,121 @@ class MagicRbacHandlerIntegrationTest extends TestCase
             $pairs
         );
         $this->assertIsArray($results);
+    }
+
+    // =========================================================================
+    // Fail-closed SQL match evaluation on null-resolved dynamic variables (#1953).
+    //
+    // When a `match` rule's dynamic variable ($organisation/$userId/$now)
+    // resolves to null, the SQL/list path MUST emit an impossible predicate
+    // (1 = 0) for that property rather than dropping it from the AND. This makes
+    // the LIST path agree with the PHP/find path (ConditionMatcher), which
+    // already fails closed on null dynamic values. These tests run as anonymous
+    // (the genuine null-$organisation case) so $organisation cannot resolve.
+    // =========================================================================
+
+    public function testListFailsClosedOnMultiConditionMatchWithNullOrganisation(): void
+    {
+        // Multi-condition public match rule: a static `status` predicate AND a
+        // dynamic `_organisation` => '$organisation' predicate. As anonymous,
+        // $organisation resolves to null, so the rule must grant NO rows even
+        // though the static predicate matches the inserted object.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                [
+                    'group' => 'public',
+                    'match' => [
+                        'status'        => 'published',
+                        '_organisation' => '$organisation',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        // Object satisfies the static predicate (status=published) but the
+        // $organisation predicate cannot be satisfied for an anonymous caller.
+        $this->insertTestObject($register, $schema, ['name' => 'Leaky', 'status' => 'published', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        // Pre-fix: the null $organisation predicate was DROPPED, leaving only
+        // status=published, so the object leaked on LIST. Post-fix the impossible
+        // predicate (1 = 0) is ANDed in, so LIST returns nothing — matching the
+        // PHP/find verdict.
+        $this->assertIsArray($results);
+        $this->assertEmpty(
+            $results,
+            'Multi-condition match with null-resolved $organisation MUST deny on LIST (no silent drop)'
+        );
+    }
+
+    public function testListFailsClosedOnSingleConditionMatchWithNullOrganisation(): void
+    {
+        // Single-condition match on a null-resolving dynamic variable: LIST must
+        // also deny (parity with find), confirming the impossible predicate is
+        // emitted rather than the whole match being dropped.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                ['group' => 'public', 'match' => ['_organisation' => '$organisation']],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'SingleLeaky', 'status' => 'x', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($results);
+        $this->assertEmpty(
+            $results,
+            'Single-condition match with null-resolved $organisation MUST deny on LIST'
+        );
+    }
+
+    public function testResolvableMatchRuleStillReturnsRowsOnList(): void
+    {
+        // Guard against over-denial: a match rule whose predicates DO resolve
+        // (a static-only public match) must still return its rows on LIST. The
+        // fail-closed change introduces no new denials for resolvable rules.
+        $register = $this->createTestRegister();
+        $schema   = $this->createTestSchema([
+            'read' => [
+                ['group' => 'public', 'match' => ['status' => 'published']],
+            ],
+        ]);
+
+        $this->mapper->ensureTableForRegisterSchema($register, $schema);
+        $this->trackTable($register, $schema);
+
+        $this->insertTestObject($register, $schema, ['name' => 'Visible', 'status' => 'published', 'age' => 1]);
+        $this->insertTestObject($register, $schema, ['name' => 'Hidden', 'status' => 'draft', 'age' => 1]);
+
+        $results = $this->mapper->searchObjectsInRegisterSchemaTable(
+            ['_multitenancy' => false],
+            $register,
+            $schema
+        );
+
+        $this->assertIsArray($results);
+        $this->assertCount(
+            1,
+            $results,
+            'A fully-resolvable static match rule MUST still return its matching rows (no new denials)'
+        );
     }
 }

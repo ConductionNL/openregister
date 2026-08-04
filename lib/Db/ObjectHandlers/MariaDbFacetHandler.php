@@ -6,6 +6,9 @@
  * This file contains the handler for managing JSON object field facets
  * using MariaDB JSON functions in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Db\ObjectHandlers
  *

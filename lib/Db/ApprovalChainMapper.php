@@ -3,6 +3,9 @@
 /**
  * OpenRegister ApprovalChainMapper
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -114,6 +117,43 @@ class ApprovalChainMapper extends QBMapper
 
         return $this->findEntities(query: $qb);
     }//end findBySchema()
+
+    /**
+     * Find the chain provisioned for a schema under a given declarative chain
+     * key (the `x-openregister-approval-chains` entry name, stored as `name`).
+     *
+     * @param int    $schemaId Schema ID.
+     * @param string $name     Chain key / name.
+     *
+     * @return ApprovalChain|null The matching chain, or null when none exists yet.
+     *
+     * @spec openspec/specs/approval-workflow/spec.md
+     */
+    public function findBySchemaAndName(int $schemaId, string $name): ?ApprovalChain
+    {
+        $qb = $this->db->getQueryBuilder();
+
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->eq(
+                    'schema_id',
+                    $qb->createNamedParameter(value: $schemaId, type: IQueryBuilder::PARAM_INT)
+                )
+            )
+            ->andWhere(
+                $qb->expr()->eq('name', $qb->createNamedParameter($name))
+            )
+            ->setMaxResults(1);
+
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }//end findBySchemaAndName()
 
     /**
      * Create an approval chain from an array.

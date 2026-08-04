@@ -12,7 +12,10 @@ use OCA\OpenRegister\Db\WebhookMapper;
 use OCA\OpenRegister\Service\WebhookService;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IGroupManager;
 use OCP\IRequest;
+use OCP\IUser;
+use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -25,6 +28,8 @@ class WebhooksControllerTest extends TestCase
     private WebhookLogMapper&MockObject $webhookLogMapper;
     private WebhookService&MockObject $webhookService;
     private LoggerInterface&MockObject $logger;
+    private IUserSession&MockObject $userSession;
+    private IGroupManager&MockObject $groupManager;
 
     protected function setUp(): void
     {
@@ -35,6 +40,13 @@ class WebhooksControllerTest extends TestCase
         $this->webhookLogMapper = $this->createMock(WebhookLogMapper::class);
         $this->webhookService = $this->createMock(WebhookService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
+        $this->userSession = $this->createMock(IUserSession::class);
+        $this->groupManager = $this->createMock(IGroupManager::class);
+
+        // Default to an authenticated admin so existing tests for the
+        // create/update/destroy/test/retry endpoints pass the C10 admin gate.
+        // Anonymous / non-admin behaviour is verified in dedicated tests below.
+        $this->setupAdminUser();
 
         $this->controller = new WebhooksController(
             'openregister',
@@ -42,8 +54,22 @@ class WebhooksControllerTest extends TestCase
             $this->webhookMapper,
             $this->webhookLogMapper,
             $this->webhookService,
-            $this->logger
+            $this->logger,
+            $this->userSession,
+            $this->groupManager
         );
+    }
+
+    /**
+     * Configure the user session / group manager mocks to behave as an
+     * authenticated administrator (the default for most existing tests).
+     */
+    private function setupAdminUser(): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->willReturn(true);
     }
 
     private function createWebhookEntity(): Webhook
@@ -1505,5 +1531,211 @@ class WebhooksControllerTest extends TestCase
         $this->assertEquals('Bad request', $data['message']);
         $this->assertEquals(400, $data['error_details']['status_code']);
         $this->assertEquals('{"error": "invalid"}', $data['error_details']['response_body']);
+    }
+
+    // =========================================================================
+    // Wave-3 C10: admin-gate tests on write endpoints
+    //
+    // Webhook write endpoints (create/update/destroy/test/retry) used to be
+    // wide-open under #[NoAdminRequired] with no permission check. Any logged-in
+    // user could create a webhook pointed at any URL, then trigger it via the
+    // /test endpoint — the SSRF chain C9/C10/C13. These tests verify that
+    // each write endpoint now responds 403 when the caller is not in the
+    // admin group, and that the underlying mapper is never called.
+    // =========================================================================
+
+    /**
+     * Build a controller wired to a NON-admin (regular) user session.
+     *
+     * Cannot reuse setUp()'s admin defaults: PHPUnit mocks accept only one
+     * willReturn() per method, so admin/non-admin tests need fresh mocks.
+     */
+    private function buildControllerAsNonAdmin(): WebhooksController
+    {
+        $request = $this->createMock(IRequest::class);
+        $webhookMapper = $this->createMock(WebhookMapper::class);
+        $webhookLogMapper = $this->createMock(WebhookLogMapper::class);
+        $webhookService = $this->createMock(WebhookService::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $userSession = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn('alice');
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager->method('isAdmin')->willReturn(false);
+
+        // Expose the mapper mocks so tests can assert "never called".
+        $this->nonAdminMapper = $webhookMapper;
+        $this->nonAdminLogMapper = $webhookLogMapper;
+        $this->nonAdminWebhookService = $webhookService;
+
+        return new WebhooksController(
+            'openregister',
+            $request,
+            $webhookMapper,
+            $webhookLogMapper,
+            $webhookService,
+            $logger,
+            $userSession,
+            $groupManager
+        );
+    }
+
+    /**
+     * Build a controller wired to no signed-in user (anonymous).
+     */
+    private function buildControllerAsAnonymous(): WebhooksController
+    {
+        $request = $this->createMock(IRequest::class);
+        $webhookMapper = $this->createMock(WebhookMapper::class);
+        $webhookLogMapper = $this->createMock(WebhookLogMapper::class);
+        $webhookService = $this->createMock(WebhookService::class);
+        $logger = $this->createMock(LoggerInterface::class);
+        $userSession = $this->createMock(IUserSession::class);
+        $groupManager = $this->createMock(IGroupManager::class);
+
+        $userSession->method('getUser')->willReturn(null);
+
+        $this->nonAdminMapper = $webhookMapper;
+        $this->nonAdminLogMapper = $webhookLogMapper;
+        $this->nonAdminWebhookService = $webhookService;
+
+        return new WebhooksController(
+            'openregister',
+            $request,
+            $webhookMapper,
+            $webhookLogMapper,
+            $webhookService,
+            $logger,
+            $userSession,
+            $groupManager
+        );
+    }
+
+    /** @var WebhookMapper&MockObject */
+    private $nonAdminMapper;
+    /** @var WebhookLogMapper&MockObject */
+    private $nonAdminLogMapper;
+    /** @var WebhookService&MockObject */
+    private $nonAdminWebhookService;
+
+    public function testCreateRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        // Mapper must never be called when the gate rejects the caller.
+        $this->nonAdminMapper->expects($this->never())->method('createFromArray');
+
+        $result = $controller->create();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testCreateRejectsAnonymousWith403(): void
+    {
+        $controller = $this->buildControllerAsAnonymous();
+        $this->nonAdminMapper->expects($this->never())->method('createFromArray');
+
+        $result = $controller->create();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testUpdateRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('updateFromArray');
+
+        $result = $controller->update(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testDestroyRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+        $this->nonAdminMapper->expects($this->never())->method('delete');
+
+        $result = $controller->destroy(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testTestEndpointRejectsNonAdminWith403(): void
+    {
+        // The /test endpoint is the most dangerous one because it
+        // synchronously fires an outbound HTTP request — verify the
+        // non-admin caller never reaches the webhook service.
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+        $this->nonAdminWebhookService->expects($this->never())->method('deliverWebhook');
+
+        $result = $controller->test(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testRetryRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminLogMapper->expects($this->never())->method('find');
+        $this->nonAdminWebhookService->expects($this->never())->method('deliverWebhook');
+
+        $result = $controller->retry(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    // === Read-endpoint authorization (gate-read-endpoint-authorization) ===
+
+    public function testIndexRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('findAll');
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testLogsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->logs(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testLogStatsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminMapper->expects($this->never())->method('find');
+
+        $result = $controller->logStats(1);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testAllLogsRejectsNonAdminWith403(): void
+    {
+        $controller = $this->buildControllerAsNonAdmin();
+        $this->nonAdminLogMapper->expects($this->never())->method('findAll');
+
+        $result = $controller->allLogs();
+
+        $this->assertEquals(403, $result->getStatus());
     }
 }

@@ -4,10 +4,14 @@
  * Operator Evaluator
  *
  * Evaluates MongoDB-style comparison operators used in RBAC match conditions.
- * Supports $eq, $ne, $in, $nin, $exists, $gt, $gte, $lt, $lte operators.
+ * Supports $eq, $ne, $in, $nin, $contains, $exists, $gt, $gte, $lt, $lte
+ * operators.
  *
  * Extracted from PropertyRbacHandler / ConditionMatcher to keep class
  * complexity manageable.
+ *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category  Service
  * @package   OCA\OpenRegister\Service
@@ -50,6 +54,10 @@ class OperatorEvaluator
      * @param array $operators Operator conditions (e.g. ['$gt' => 5, '$lt' => 10])
      *
      * @return bool True if value matches all operators
+     *
+     * @spec openspec/specs/row-field-level-security/spec.md#mongodb-style-operators (evaluates $eq/$ne/$in/$nin/$exists/$gt/$gte/$lt/$lte
+     *       for RLS/FLS match conditions, fail-closed on unknown operators with null-handling that mirrors SQL
+     *       three-valued logic so list and find verdicts stay aligned)
      */
     public function valueMatchesOperator(mixed $value, array $operators): bool
     {
@@ -85,6 +93,9 @@ class OperatorEvaluator
 
             case '$nin':
                 return $this->operatorNotIn(value: $value, operand: $operand);
+
+            case '$contains':
+                return $this->operatorContains(value: $value, operand: $operand);
 
             case '$exists':
                 return $this->operatorExists(value: $value, operand: $operand);
@@ -177,6 +188,69 @@ class OperatorEvaluator
 
         return in_array($value, $operand, true);
     }//end operatorIn()
+
+    /**
+     * Check $contains operator: the object's ARRAY-valued property must contain the operand.
+     *
+     * The mirror image of `$in`. `$in` asks "is the object's scalar one of these
+     * literals?"; `$contains` asks "is this value one of the object's array
+     * members?" — which is what a per-object principal list needs and what no
+     * existing operator could express: `{"sharedWith": "$userId"}` compares an
+     * array to a string, and `{"sharedWith": {"$in": ["$userId"]}}` calls
+     * `in_array(array, [uid])`. Both deny for every object.
+     *
+     * When the operand is itself an array the semantics are ANY-intersection, so
+     * an array-valued dynamic token (`$user.groups`) matches when the object
+     * lists any one of the user's groups. This mirrors the OR-of-containment SQL
+     * that MagicSearchHandler::buildArrayPropertyConditionSql already emits for
+     * multi-value array filters.
+     *
+     * SQL parity (the SQL side emits `COALESCE(col, '[]')` containment, per
+     * platform: `::jsonb @> to_jsonb(?::text)` on PostgreSQL,
+     * `JSON_CONTAINS(col, JSON_QUOTE(?))` on MariaDB):
+     *   - NULL column → `COALESCE` makes it `'[]'`, which contains nothing → deny.
+     *   - Non-array column (a scalar) → jsonb containment against a one-element
+     *     array is false → deny.
+     *   - Empty operand → there is no principal to match, so deny. NOTE this
+     *     deliberately does NOT copy `buildArrayPropertyConditionSql`'s
+     *     `$values[0] ?? ''` fallback, which would test containment of the empty
+     *     string for an empty filter; for an access-control operator that would
+     *     admit any object whose list happened to contain `''`.
+     *   - Comparison is STRICT, matching jsonb's typed comparison: the string
+     *     `"1"` and the number `1` are different members.
+     *
+     * @param mixed $value   Object value (expected: an array).
+     * @param mixed $operand Value(s) that must appear in it.
+     *
+     * @return bool True when the object's array contains the operand (or any of them).
+     *
+     * @spec openspec/changes/shared-credentials-and-flows/specs/flow-sharing/spec.md#requirement-the-single-object-and-list-access-decisions-agree
+     */
+    private function operatorContains(mixed $value, mixed $operand): bool
+    {
+        // A null or non-array property contains nothing — mirrors COALESCE(col, '[]').
+        if (is_array($value) === false) {
+            return false;
+        }
+
+        // An array-valued operand is ANY-intersection ($user.groups).
+        if (is_array($operand) === true) {
+            foreach ($operand as $candidate) {
+                if ($candidate !== null && in_array($candidate, $value, true) === true) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        // Nothing to look for cannot be found.
+        if ($operand === null) {
+            return false;
+        }
+
+        return in_array($operand, $value, true);
+    }//end operatorContains()
 
     /**
      * Check $nin operator: value must not be in the operand array

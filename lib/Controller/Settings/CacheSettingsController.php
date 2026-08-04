@@ -3,6 +3,9 @@
 /**
  * OpenRegister Cache Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -25,7 +28,6 @@ use OCP\IAppConfig;
 use OCP\IRequest;
 use Exception;
 use OCA\OpenRegister\Service\SettingsService;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -48,7 +50,6 @@ class CacheSettingsController extends Controller
      * @param string          $appName         The app name.
      * @param IRequest        $request         The request.
      * @param SettingsService $settingsService Settings service.
-     * @param IndexService    $indexService    Index service.
      * @param LoggerInterface $logger          Logger.
      * @param Factory         $appDataFactory  App data factory.
      * @param IAppConfig      $appConfig       App configuration.
@@ -57,7 +58,6 @@ class CacheSettingsController extends Controller
         $appName,
         IRequest $request,
         private readonly SettingsService $settingsService,
-        private readonly IndexService $indexService,
         private readonly LoggerInterface $logger,
         private readonly Factory $appDataFactory,
         private readonly IAppConfig $appConfig,
@@ -74,6 +74,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with cache statistics or error
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getCacheStats(): JSONResponse
     {
@@ -94,6 +96,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with clear cache result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearCache(): JSONResponse
     {
@@ -117,6 +121,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup result or error
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function warmupNamesCache(): JSONResponse
     {
@@ -136,6 +142,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with warmup interval config
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function getWarmupInterval(): JSONResponse
     {
@@ -178,6 +186,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with updated interval config
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function setWarmupInterval(): JSONResponse
     {
@@ -242,6 +252,8 @@ class CacheSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with invalidation result
+     *
+     * @spec openspec/specs/production-observability/spec.md
      */
     public function clearAppStoreCache(): JSONResponse
     {

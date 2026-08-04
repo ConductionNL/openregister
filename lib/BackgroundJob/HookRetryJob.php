@@ -5,6 +5,9 @@
  *
  * Background job for retrying schema hooks that failed due to engine unavailability.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -16,7 +19,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+ * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
  */
 
 declare(strict_types=1);
@@ -86,7 +89,7 @@ class HookRetryJob extends QueuedJob
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-72
+     * @spec openspec/specs/schema-hooks/spec.md#requirement-hook-retry-via-background-job
      */
     protected function run($argument): void
     {

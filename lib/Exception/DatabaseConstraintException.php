@@ -6,6 +6,9 @@
  * This file contains the custom exception class for handling database constraint violations
  * with user-friendly error messages.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
@@ -61,7 +64,7 @@ class DatabaseConstraintException extends Exception
      * @param int            $httpStatus The HTTP status code (default: 409 Conflict)
      * @param Exception|null $previous   The previous exception
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(string $message, int $code=0, int $httpStatus=409, ?Exception $previous=null)
     {
@@ -77,7 +80,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return int The HTTP status code (typically 409 for constraint violations)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getHttpStatusCode(): int
     {
@@ -97,7 +100,7 @@ class DatabaseConstraintException extends Exception
      *
      * @return DatabaseConstraintException The user-friendly exception with parsed message
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public static function fromDatabaseException(
         Exception $dbException,
@@ -129,7 +132,7 @@ class DatabaseConstraintException extends Exception
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Constraint parsing requires many conditional error type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Constraint parsing requires many conditional error type checks
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private static function parseConstraintError(string $dbMessage, string $entityType): string
     {
@@ -137,15 +140,29 @@ class DatabaseConstraintException extends Exception
         // MySQL/MariaDB format: "Duplicate entry 'value' for key 'constraint_name'".
         if (str_contains($dbMessage, 'Duplicate entry') === true && str_contains($dbMessage, 'for key') === true) {
             // Check for specific constraint names to provide more detailed messages.
+            //
+            // BOTH index names are matched, old and new. Version1Date20260723000000
+            // renamed `schemas_organisation_slug_unique` ->
+            // `schemas_org_app_slug_unique` (and the register equivalent) when it
+            // widened the key to (organisation, application, slug), and this
+            // parser was not updated with it — so on every post-migration
+            // instance these friendly messages had been dead since 2026-07-23,
+            // silently degrading to the generic "This schema already exists".
+            // The old names stay so an instance that has not yet migrated keeps
+            // its message too.
             // Schema slug uniqueness violation.
-            if (str_contains($dbMessage, 'schemas_organisation_slug_unique') === true) {
-                $msg = 'A schema with this slug already exists in your organization. ';
+            $isSchemaSlugViol = str_contains($dbMessage, 'schemas_organisation_slug_unique') === true
+                || str_contains($dbMessage, 'schemas_org_app_slug_unique') === true;
+            if ($isSchemaSlugViol === true) {
+                $msg = 'A schema with this slug already exists for this application in your organization. ';
                 return $msg.'Please choose a different slug or title.';
             }
 
             // Register slug uniqueness violation.
-            if (str_contains($dbMessage, 'registers_organisation_slug_unique') === true) {
-                $msg = 'A register with this slug already exists in your organization. ';
+            $isRegisterSlugViol = str_contains($dbMessage, 'registers_organisation_slug_unique') === true
+                || str_contains($dbMessage, 'registers_org_app_slug_unique') === true;
+            if ($isRegisterSlugViol === true) {
+                $msg = 'A register with this slug already exists for this application in your organization. ';
                 return $msg.'Please choose a different slug or title.';
             }
 

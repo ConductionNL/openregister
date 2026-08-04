@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # nextcloud-api-compat Specification
 
 ## Purpose
+
+@e2e exclude NC34 API compat backend — covered by PHPUnit
 TBD - created by archiving change fix-nc34-server-accessor-removals. Update Purpose after archive.
 ## Requirements
 ### Requirement: Public OCP API Only

@@ -16,6 +16,9 @@
  * (INSERT race conditions surface as unique-violation, which we map to
  * "already read").
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -25,7 +28,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/notificatie-engine/tasks.md "Read/unread tracking MUST be maintained per user per notification"
+ * @spec openspec/specs/notificatie-engine/spec.md "Read/unread tracking MUST be maintained per user per notification"
  *
  * @template-extends QBMapper<NotificationReadStateEntity>
  */

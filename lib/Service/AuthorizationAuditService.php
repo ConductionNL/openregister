@@ -6,6 +6,9 @@
  * Logs all changes to authorization configuration on registers and schemas.
  * Provides structured audit entries for compliance and debugging.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -14,8 +17,8 @@
  * @version   GIT: <git_id>
  * @link      https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
+ * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-authorization-cache
  */
 
 declare(strict_types=1);
@@ -67,6 +70,9 @@ class AuthorizationAuditService
      * @param array|null $newAuthorization The new authorization value.
      *
      * @return void
+     *
+     * @spec exclude Facade plumbing: emits one structured audit log line; sibling of logRegisterAuthorizationChange
+     *              (rbac-scopes REQ-002), no distinct behavioral contract.
      */
     public function logSchemaAuthorizationChange(
         int $schemaId,
@@ -75,8 +81,12 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         $this->logger->info(
             message: '[AuthorizationAudit] Schema authorization changed',
@@ -105,7 +115,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-56
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-level-authorization-cascade
      */
     public function logRegisterAuthorizationChange(
         int $registerId,
@@ -114,8 +124,12 @@ class AuthorizationAuditService
         ?array $newAuthorization
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         // Count schemas that will inherit this change.
         // This is approximate -- we don't load each schema to check whether it has its own authorization.
@@ -123,7 +137,9 @@ class AuthorizationAuditService
         try {
             $register = $this->registerMapper->find($registerId);
             $schemas  = $register->getSchemas();
-            $affectedSchemaCount = is_array($schemas) === true ? count($schemas) : 0;
+            if (is_array($schemas) === true) {
+                $affectedSchemaCount = count($schemas);
+            }
         } catch (\Throwable $e) {
             // Could not count affected schemas.
         }
@@ -156,7 +172,7 @@ class AuthorizationAuditService
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-58
+     * @spec openspec/specs/rbac-scopes/spec.md#requirement-register-authorization-cache
      */
     public function logRoleDefinitionChange(
         int $registerId,
@@ -165,8 +181,12 @@ class AuthorizationAuditService
         ?array $newRoles
     ): void {
         $user     = $this->userSession->getUser();
-        $userName = $user !== null ? $user->getDisplayName() : 'System';
-        $userId   = $user !== null ? $user->getUID() : 'system';
+        $userName = 'System';
+        $userId   = 'system';
+        if ($user !== null) {
+            $userName = $user->getDisplayName();
+            $userId   = $user->getUID();
+        }
 
         $this->logger->info(
             message: '[AuthorizationAudit] Role definitions changed',

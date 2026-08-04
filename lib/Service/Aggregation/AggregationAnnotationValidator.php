@@ -6,6 +6,9 @@
  * Schema-save validation for the `x-openregister-aggregations` annotation.
  * Returns a list of errors; empty = valid.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Aggregation
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
  */
 
 declare(strict_types=1);
@@ -66,6 +71,8 @@ final class AggregationAnnotationValidator
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-18
      */
     public function validate(array $schema): array
     {
@@ -84,7 +91,10 @@ final class AggregationAnnotationValidator
         }
 
         $properties = ($schema['properties'] ?? []);
-        $propKeys   = is_array($properties) === true ? array_keys($properties) : [];
+        $propKeys   = [];
+        if (is_array($properties) === true) {
+            $propKeys = array_keys($properties);
+        }
 
         $errors = [];
         foreach ($aggregations as $name => $spec) {
@@ -115,8 +125,16 @@ final class AggregationAnnotationValidator
             }
 
             // Intra-schema aggregation: full property-existence checks.
-            // Support `select` as alias for `metric`.
-            $metric = (string) ($spec['metric'] ?? $spec['select'] ?? '');
+            // Support `select` as alias for `metric`. Non-scalar values (a
+            // schema author passing an array) must not reach the string cast —
+            // PHP emits "Array to string conversion" — so they collapse to ''
+            // and fail the metric check with a proper validation error.
+            $metric = ($spec['metric'] ?? $spec['select'] ?? '');
+            if (is_scalar($metric) === false) {
+                $metric = '';
+            }
+
+            $metric = (string) $metric;
             if (in_array($metric, self::VALID_METRICS, true) === false) {
                 $errors[] = [
                     'code'    => 'aggregation-bad-metric',

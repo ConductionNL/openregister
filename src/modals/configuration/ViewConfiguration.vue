@@ -106,7 +106,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 				</template>
 				Delete Configuration
 			</NcActionButton>
-			<NcButton type="primary" @click="closeModal">
+			<NcButton variant="primary" @click="closeModal">
 				<template #icon>
 					<Cancel :size="20" />
 				</template>
@@ -155,15 +155,27 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec openspec/specs/entity-management-modals/spec.md
+		 */
 		closeModal() {
 			navigationStore.setModal(false)
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the edit-configuration modal.
+		 */
 		editConfiguration() {
 			navigationStore.setModal('editConfiguration')
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the export-configuration modal.
+		 */
 		exportConfiguration() {
 			navigationStore.setModal('exportConfiguration')
 		},
+		/**
+		 * @spec exclude Modal navigation plumbing — opens the delete-configuration dialog.
+		 */
 		deleteConfiguration() {
 			navigationStore.setModal(false)
 			navigationStore.setDialog('deleteConfiguration')

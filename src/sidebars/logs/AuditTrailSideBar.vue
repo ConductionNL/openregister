@@ -30,7 +30,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -42,7 +42,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="actionSelect">{{ t('openregister', 'Actions') }}</label>
@@ -54,7 +54,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Actions')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -70,7 +70,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						:input-label="t('openregister', 'Users')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -82,12 +82,12 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
 					<label for="objectFilter">{{ t('openregister', 'Object ID') }}</label>
@@ -96,12 +96,12 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 						v-model="objectFilter"
 						:label="t('openregister', 'Filter by object ID')"
 						:placeholder="t('openregister', 'Enter object ID')"
-						@update:value="handleObjectFilterChange" />
+						@update:modelValue="handleObjectFilterChange" />
 				</div>
 				<div class="filterGroup">
 					<NcCheckboxRadioSwitch
 						v-model="showOnlyWithChanges"
-						@update:checked="applyFilters">
+						@update:modelValue="applyFilters">
 						{{ t('openregister', 'Show only entries with changes') }}
 					</NcCheckboxRadioSwitch>
 				</div>
@@ -203,7 +203,7 @@ import { auditTrailStore, navigationStore, registerStore, schemaStore } from '..
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcAppSidebar,
@@ -223,6 +223,7 @@ import Plus from 'vue-material-design-icons/Plus.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
 import Eye from 'vue-material-design-icons/Eye.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'AuditTrailSideBar',
@@ -284,7 +285,7 @@ export default {
 	},
 	computed: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		registerOptions() {
 			return {
@@ -302,7 +303,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
@@ -324,7 +325,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
@@ -337,7 +338,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
@@ -350,7 +351,7 @@ export default {
 			}
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		userOptions() {
 			if (!auditTrailStore.auditTrailList || !auditTrailStore.auditTrailList.length) {
@@ -368,7 +369,7 @@ export default {
 		// React to query param changes as single source of truth (only on /audit-trails)
 		'$route.query': {
 			/**
-			 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+			 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 			 */
 			handler() {
 				if (this.$route.path !== '/audit-trails') return
@@ -391,6 +392,9 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * @spec exclude Lifecycle plumbing; fire-and-forget load of lists/audit-trail data and route-seed, delegating to already-annotated methods.
+	 */
 	mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -409,7 +413,7 @@ export default {
 		this.loadTopObjects()
 
 		// Listen for filtered count updates
-		this.$root.$on('audit-trail-filtered-count', (count) => {
+		eventBus.on('audit-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 
@@ -419,15 +423,15 @@ export default {
 		// Initialize from query params after lists potentially load
 		this.applyQueryParamsFromRoute()
 	},
-	beforeDestroy() {
-		this.$root.$off('audit-trail-filtered-count')
+	beforeUnmount() {
+		eventBus.off('audit-trail-filtered-count')
 	},
 	methods: {
 		/**
 		 * Load audit trail data and update filtered count
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadAuditTrailData() {
 			try {
@@ -441,7 +445,7 @@ export default {
 		 * Clear filters (alias for clearAllFilters for template compatibility)
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		clearFilters() {
 			this.clearAllFilters()
@@ -451,7 +455,7 @@ export default {
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleObjectFilterChange(value) {
 			this.objectFilter = value
@@ -461,7 +465,7 @@ export default {
 		 * Apply filters and sync them to the URL query (single source of truth)
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyFilters() {
 			this.updateRouteQueryFromState()
@@ -470,7 +474,7 @@ export default {
 		 * Debounced version of applyFilters for text input
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		debouncedApplyFilters() {
 			clearTimeout(this.filterTimeout)
@@ -483,7 +487,7 @@ export default {
 		 * @param {boolean} value - Whether to show only entries with changes
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateChangesFilter(value) {
 			this.showOnlyWithChanges = value
@@ -493,7 +497,7 @@ export default {
 		 * Update filtered count from store
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateFilteredCount() {
 			this.filteredCount = auditTrailStore.auditTrailList.length
@@ -503,7 +507,7 @@ export default {
 		 * Load statistics
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadStatistics() {
 			try {
@@ -520,7 +524,7 @@ export default {
 		 * Load action distribution for stats
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadActionDistribution() {
 			try {
@@ -538,7 +542,7 @@ export default {
 		 * Load top objects for stats
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		async loadTopObjects() {
 			try {
@@ -556,7 +560,7 @@ export default {
 		 * @param {object} register - Selected register
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleRegisterChange(register) {
 			registerStore.setRegisterItem(register)
@@ -568,7 +572,7 @@ export default {
 		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		handleSchemaChange(schema) {
 			schemaStore.setSchemaItem(schema)
@@ -578,7 +582,7 @@ export default {
 		 * Build URL query object from current sidebar state
 		 * @return {object}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		buildQueryFromState() {
 			const query = {}
@@ -607,7 +611,7 @@ export default {
 		 * @param {object} b - Second query object to compare
 		 * @return {boolean}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		queriesEqual(a, b) {
 			const ka = Object.keys(a || {}).sort()
@@ -623,7 +627,7 @@ export default {
 		 * Write current state to the router query (only on /audit-trails)
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/audit-trails') return
@@ -638,7 +642,7 @@ export default {
 		 * Apply URL query params to component/store state and refresh list
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/audit-trails') return
@@ -702,7 +706,7 @@ export default {
 		 * Build filters from state and push to store, then refresh list
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		applyFiltersToStore() {
 			const filters = {}
@@ -731,13 +735,13 @@ export default {
 
 			auditTrailStore.setAuditTrailFilters(filters)
 			auditTrailStore.refreshAuditTrailList()
-			this.$root.$emit('audit-trail-filters-changed', filters)
+			eventBus.emit('audit-trail-filters-changed', filters)
 		},
 		/**
 		 * Clear all filters and sync URL
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		clearAllFilters() {
 			// Clear component state

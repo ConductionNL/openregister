@@ -6,6 +6,9 @@
  * Background job that scans for objects eligible for e-Depot transfer
  * and generates transfer lists for archivist review.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Cron
  * @package  OCA\OpenRegister\Cron
  *
@@ -17,7 +20,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
  */
 
 declare(strict_types=1);
@@ -60,7 +63,7 @@ class TransferCheckJob extends TimedJob
      * @param IAppConfig          $appConfig           The app configuration.
      * @param LoggerInterface     $logger              Logger.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     public function __construct(
         ITimeFactory $time,
@@ -88,7 +91,7 @@ class TransferCheckJob extends TimedJob
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     protected function run(mixed $argument): void
     {
@@ -136,7 +139,7 @@ class TransferCheckJob extends TimedJob
      *
      * @return bool True if e-Depot endpoint is configured.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-12
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     private function isEdepotConfigured(): bool
     {
@@ -155,7 +158,7 @@ class TransferCheckJob extends TimedJob
      *
      * @return array<int, \OCA\OpenRegister\Db\ObjectEntity> Eligible objects.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-assemble-sip-packages-for-e-depot-transfer
      */
     private function findEligibleObjects(): array
     {

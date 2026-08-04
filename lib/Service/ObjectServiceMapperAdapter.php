@@ -2,6 +2,9 @@
 /**
  * Adapter that exposes a mapper-like API over ObjectService.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <info@conduction.nl>
@@ -47,6 +50,8 @@ class ObjectServiceMapperAdapter
      * @param array|null $extend     Relations to expand inline.
      *
      * @return ObjectEntity|null
+     *
+     * @spec exclude Facade plumbing: mapper-shaped adapter delegating to ObjectService::find with bound register/schema; no standalone contract.
      */
     public function find(int|string $identifier, ?array $extend=null): ?ObjectEntity
     {
@@ -80,6 +85,9 @@ class ObjectServiceMapperAdapter
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec exclude Facade plumbing: argument-normalisation + register/schema injection then delegate to
+     *              ObjectService::findAll; no standalone contract.
      */
     public function findAll(
         array $config=[],
@@ -140,6 +148,8 @@ class ObjectServiceMapperAdapter
      * @param array $object Raw object data.
      *
      * @return ObjectEntity
+     *
+     * @spec exclude Facade plumbing: delegate to ObjectService::saveObject with bound register/schema; no standalone contract.
      */
     public function createFromArray(array $object): ObjectEntity
     {
@@ -172,6 +182,9 @@ class ObjectServiceMapperAdapter
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
      * @SuppressWarnings(PHPMD.UnusedFormalParameter) $validate kept for interface compatibility.
+     *
+     * @spec exclude Facade plumbing: PUT/PATCH merge then delegate to ObjectService::saveObject; no standalone
+     *              contract beyond ObjectService's save path.
      */
     public function updateFromArray(
         int|string $id,
@@ -210,6 +223,8 @@ class ObjectServiceMapperAdapter
      * @param ObjectEntity $object The entity to save.
      *
      * @return ObjectEntity
+     *
+     * @spec exclude Facade plumbing: delegate to ObjectService::saveObject with bound register/schema; no standalone contract.
      */
     public function update(ObjectEntity $object): ObjectEntity
     {
@@ -223,13 +238,24 @@ class ObjectServiceMapperAdapter
     /**
      * Delete an object by criteria array.
      *
-     * The array must contain an 'id' key with the object ID or UUID.
+     * The array must contain an 'id' key with the object ID or UUID. The
+     * adapter's bound `(register, schema)` is forwarded to
+     * `ObjectService::deleteObject()` so the deletion is scoped to the
+     * adapter's magic table — a UUID that lives in a different
+     * `(register, schema)` magic table raises `DoesNotExistException`
+     * instead of being silently deleted (see #1638).
      *
      * @param array $criteria Must contain key 'id' with the object ID or UUID.
      *
      * @return bool
      *
      * @throws ValidationException When no 'id' key is present in $criteria.
+     * @throws \OCP\AppFramework\Db\DoesNotExistException When the adapter is
+     *         bound to a specific `(register, schema)` and the UUID is not
+     *         present in that magic table.
+     *
+     * @spec exclude Facade plumbing: id-extraction then delegate to ObjectService::deleteObject (scoped delete
+     *              owned by ObjectService); no standalone contract.
      */
     public function delete(array $criteria): bool
     {
@@ -238,7 +264,11 @@ class ObjectServiceMapperAdapter
             throw new ValidationException(message: 'No id given to delete');
         }
 
-        return $this->objectService->deleteObject((string) $id);
+        return $this->objectService->deleteObject(
+            uuid: (string) $id,
+            register: $this->register,
+            schema: $this->schema
+        );
     }//end delete()
 
     /**
@@ -248,7 +278,11 @@ class ObjectServiceMapperAdapter
      */
     public function getSchema(): ?int
     {
-        return $this->schema !== null ? (int) $this->schema : null;
+        if ($this->schema !== null) {
+            return (int) $this->schema;
+        }
+
+        return null;
     }//end getSchema()
 
     /**
@@ -258,7 +292,11 @@ class ObjectServiceMapperAdapter
      */
     public function getRegister(): ?int
     {
-        return $this->register !== null ? (int) $this->register : null;
+        if ($this->register !== null) {
+            return (int) $this->register;
+        }
+
+        return null;
     }//end getRegister()
 
     /**
@@ -272,6 +310,8 @@ class ObjectServiceMapperAdapter
      * @param array $requestParams Raw query parameters (e.g. _limit, page, _search).
      *
      * @return array{results: array, total: int, page: int, pages: int}
+     *
+     * @spec exclude Facade plumbing: register/schema injection then delegate to ObjectService::searchObjectsPaginated; no standalone contract.
      */
     public function findAllPaginated(array $requestParams=[]): array
     {

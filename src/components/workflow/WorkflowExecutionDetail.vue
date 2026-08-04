@@ -1,7 +1,7 @@
 <template>
 	<div class="execution-detail">
 		<h4>Execution Detail</h4>
-		<NcButton type="tertiary" @click="$emit('close')">
+		<NcButton variant="tertiary" @click="$emit('close')">
 			Close
 		</NcButton>
 		<dl class="detail-list">

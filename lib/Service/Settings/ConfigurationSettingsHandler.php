@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing general configuration settings.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -130,6 +133,9 @@ class ConfigurationSettingsHandler
      * Check if multi-tenancy is enabled
      *
      * @return bool True if multi-tenancy is enabled, false otherwise
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function isMultiTenancyEnabled(): bool
     {
@@ -208,6 +214,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration defaults and overrides create multiple execution paths
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getSettings(): array
     {
@@ -381,6 +389,23 @@ class ConfigurationSettingsHandler
                 ];
             }//end if
 
+            // Flow engine. These are ADMINISTRATOR settings, deliberately: how
+            // long run history is kept, whether every hop is audit-trailed, and
+            // whether the oversight gate runs are instance policy, not a
+            // per-user preference.
+            //
+            // The two booleans have OPPOSITE defaults on purpose. Auditing is
+            // write volume — one entry per node per run — and the step rows
+            // already carry the operational history, so it is opt-in. Oversight
+            // is what STOPS a running flow, and a safety rail defaulting to off
+            // protects only the flows somebody remembered to configure.
+            $data['flow'] = [
+                'retentionDays'    => (int) $this->appConfig->getValueString($this->appName, 'flow_run_retention_days', '31'),
+                'auditEnabled'     => $this->appConfig->getValueBool($this->appName, 'flow_audit_enabled', false),
+                'oversightEnabled' => $this->appConfig->getValueBool($this->appName, 'flow_oversight_enabled', true),
+                'killSwitch'       => $this->appConfig->getValueBool($this->appName, 'flow_kill_switch', false),
+            ];
+
             return $data;
         } catch (Exception $e) {
             throw new RuntimeException('Failed to retrieve settings: '.$e->getMessage());
@@ -525,6 +550,8 @@ class ConfigurationSettingsHandler
      *     Multiple configuration sections require conditional handling
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Configuration sections are independently optional
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateSettings(array $data): array
     {
@@ -542,6 +569,35 @@ class ConfigurationSettingsHandler
                 ];
                 $this->appConfig->setValueString($this->appName, 'rbac', json_encode($rbacConfig));
             }
+
+            // Handle flow-engine settings.
+            if (($data['flow'] ?? null) !== null) {
+                $flowData = $data['flow'];
+
+                // A non-positive retention is refused rather than stored: zero
+                // would mean "delete all run history on the next sweep", which
+                // is never what a mistyped field is asking for.
+                $days = (int) ($flowData['retentionDays'] ?? 31);
+                if ($days > 0) {
+                    $this->appConfig->setValueString($this->appName, 'flow_run_retention_days', (string) $days);
+                }
+
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_audit_enabled',
+                    (bool) ($flowData['auditEnabled'] ?? false)
+                );
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_oversight_enabled',
+                    (bool) ($flowData['oversightEnabled'] ?? true)
+                );
+                $this->appConfig->setValueBool(
+                    $this->appName,
+                    'flow_kill_switch',
+                    (bool) ($flowData['killSwitch'] ?? false)
+                );
+            }//end if
 
             // Handle Multitenancy settings - enabled by default.
             if (($data['multitenancy'] ?? null) !== null) {
@@ -610,56 +666,6 @@ class ConfigurationSettingsHandler
     }//end updateSettings()
 
     /**
-     * Update the publishing options configuration.
-     *
-     * @param array $options The publishing options data to update.
-     *
-     * @return bool[] The updated publishing options configuration.
-     *
-     * @throws \RuntimeException If publishing options update fails.
-     *
-     * @psalm-return array{
-     *     use_old_style_publishing_view?: bool,
-     *     auto_publish_objects?: bool,
-     *     auto_publish_attachments?: bool
-     * }
-     */
-    public function updatePublishingOptions(array $options): array
-    {
-        try {
-            // Define valid publishing option keys for security.
-            $validOptions = [
-                'auto_publish_attachments',
-                'auto_publish_objects',
-                'use_old_style_publishing_view',
-            ];
-
-            $updatedOptions = [];
-
-            // Update each publishing option in the configuration.
-            foreach ($validOptions as $option) {
-                // Check if this option is provided in the input data.
-                if (isset($options[$option]) === true) {
-                    // Convert boolean or string to string format for storage.
-                    $value = 'false';
-                    if ($options[$option] === true || $options[$option] === 'true') {
-                        $value = 'true';
-                    }
-
-                    // Store the value in the configuration.
-                    $this->appConfig->setValueString($this->appName, $option, $value);
-                    // Retrieve and convert back to boolean for the response.
-                    $updatedOptions[$option] = $this->appConfig->getValueString($this->appName, $option, '') === 'true';
-                }
-            }
-
-            return $updatedOptions;
-        } catch (Exception $e) {
-            throw new RuntimeException('Failed to update publishing options: '.$e->getMessage());
-        }//end try
-    }//end updatePublishingOptions()
-
-    /**
      * Get focused RBAC settings only
      *
      * @return (mixed|string|true)[][]
@@ -671,6 +677,9 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getRbacSettingsOnly(): array
     {
@@ -723,6 +732,9 @@ class ConfigurationSettingsHandler
      *     defaultObjectOwner: ''|mixed, adminOverride: mixed|true},
      *     availableGroups: array<string, string>,
      *     availableUsers: array<string, string>}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateRbacSettingsOnly(array $rbacData): array
     {
@@ -758,6 +770,9 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationSettingsOnly(): array
     {
@@ -801,6 +816,9 @@ class ConfigurationSettingsHandler
      *     default_organisation: mixed|null,
      *     auto_create_default_organisation: mixed|true
      * }}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateOrganisationSettingsOnly(array $organisationData): array
     {
@@ -824,6 +842,9 @@ class ConfigurationSettingsHandler
      * Get default organisation UUID from settings
      *
      * @return string|null Default organisation UUID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getDefaultOrganisationUuid(): ?string
     {
@@ -843,6 +864,9 @@ class ConfigurationSettingsHandler
      * Get tenant ID from multitenancy settings
      *
      * @return string|null Tenant ID (default user tenant) or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getTenantId(): ?string
     {
@@ -862,6 +886,8 @@ class ConfigurationSettingsHandler
      * Get organisation ID (alias for getDefaultOrganisationUuid)
      *
      * @return string|null Organisation ID or null if not set
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getOrganisationId(): ?string
     {
@@ -874,6 +900,9 @@ class ConfigurationSettingsHandler
      * @param string|null $uuid Default organisation UUID
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-3
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function setDefaultOrganisationUuid(?string $uuid): void
     {
@@ -904,6 +933,9 @@ class ConfigurationSettingsHandler
      * @psalm-return array{multitenancy: array{enabled: false|mixed,
      *     defaultUserTenant: ''|mixed, defaultObjectTenant: ''|mixed,
      *     adminOverride: mixed|true}, availableTenants: array}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getMultitenancySettingsOnly(): array
     {
@@ -950,6 +982,9 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If Multitenancy settings update fails
      *
      * @return array Updated multitenancy config with settings and available tenants.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateMultitenancySettingsOnly(array $multitenancyData): array
     {
@@ -986,6 +1021,9 @@ class ConfigurationSettingsHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *     Default configuration structure requires comprehensive initialization
      *     Nested else branches handle optional vector config backward compatibility
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getLLMSettingsOnly(): array
     {
@@ -1067,6 +1105,9 @@ class ConfigurationSettingsHandler
      * @return array Updated LLM config with providers and their configurations.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity) PATCH behavior requires merging multiple nested configuration structures
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateLLMSettingsOnly(array $llmData): array
     {
@@ -1128,6 +1169,9 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If File Management settings retrieval fails
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many default configuration values
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getFileSettingsOnly(): array
     {
@@ -1158,13 +1202,13 @@ class ConfigurationSettingsHandler
                     ],
                     'ocrEnabled'               => false,
                     'maxFileSizeMB'            => 100,
-                // Text extraction settings (for FileConfiguration component).
+                    // Text extraction settings (for FileConfiguration component).
                     'extractionScope'          => 'objects',
-                // None, all, folders, objects.
+                    // None, all, folders, objects.
                     'textExtractor'            => 'llphant',
-                // Llphant, dolphin.
+                    // Llphant, dolphin.
                     'extractionMode'           => 'background',
-                // Background, immediate, manual.
+                    // Background, immediate, manual.
                     'maxFileSize'              => 100,
                     'batchSize'                => 10,
                     'dolphinApiEndpoint'       => '',
@@ -1203,6 +1247,9 @@ class ConfigurationSettingsHandler
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
      *
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive file settings require many configuration fields
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -1228,13 +1275,13 @@ class ConfigurationSettingsHandler
                 ],
                 'ocrEnabled'               => $fileData['ocrEnabled'] ?? false,
                 'maxFileSizeMB'            => $fileData['maxFileSizeMB'] ?? 100,
-            // Text extraction settings (from FileConfiguration component).
+                // Text extraction settings (from FileConfiguration component).
                 'extractionScope'          => $fileData['extractionScope'] ?? 'objects',
-            // None, all, folders, objects.
+                // None, all, folders, objects.
                 'textExtractor'            => $fileData['textExtractor'] ?? 'llphant',
-            // Llphant, dolphin.
+                // Llphant, dolphin.
                 'extractionMode'           => $fileData['extractionMode'] ?? 'background',
-            // Background, immediate, manual.
+                // Background, immediate, manual.
                 'maxFileSize'              => $fileData['maxFileSize'] ?? 100,
                 'batchSize'                => $fileData['batchSize'] ?? 10,
                 'dolphinApiEndpoint'       => $fileData['dolphinApiEndpoint'] ?? '',
@@ -1261,6 +1308,9 @@ class ConfigurationSettingsHandler
      * @return array n8n configuration.
      *
      * @throws \RuntimeException If n8n settings retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getN8nSettingsOnly(): array
     {
@@ -1295,6 +1345,9 @@ class ConfigurationSettingsHandler
      * @throws \RuntimeException If n8n settings update fails.
      *
      * @psalm-return array{enabled: false|mixed, url: ''|mixed, apiKey: ''|mixed, project: 'openregister'|mixed}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function updateN8nSettingsOnly(array $n8nData): array
     {
@@ -1319,22 +1372,26 @@ class ConfigurationSettingsHandler
      * Returns version and build information for the application.
      *
      * @return array Version info with name, version, description, author, licence, timestamp, and date.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-2
+     * @spec openspec/changes/retrofit-2026-05-24-b-svc-settings-mgmt/tasks.md#task-2
      */
     public function getVersionInfoOnly(): array
     {
         try {
-            $appInfo = \OCP\Server::get(\OCP\App\IAppManager::class)->getAppInfo($this->appName);
+            $appManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+            $appInfo    = $appManager->getAppInfo($this->appName);
 
             return [
-                'version'     => $appInfo['version'] ?? 'unknown',
-                'name'        => $appInfo['name'] ?? 'OpenRegister',
-                'description' => $appInfo['description'] ?? '',
-                'author'      => $appInfo['author'] ?? 'Conduction',
-                'licence'     => $appInfo['licence'] ?? 'AGPL',
+                'version'     => ($appInfo['version'] ?? null) ?? 'unknown',
+                'name'        => ($appInfo['name'] ?? null) ?? 'OpenRegister',
+                'description' => ($appInfo['description'] ?? null) ?? '',
+                'author'      => ($appInfo['author'] ?? null) ?? 'Conduction',
+                'licence'     => ($appInfo['licence'] ?? null) ?? 'AGPL',
                 'timestamp'   => time(),
                 'date'        => date('Y-m-d H:i:s'),
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'version' => 'unknown',
                 'error'   => 'Failed to retrieve version info: '.$e->getMessage(),

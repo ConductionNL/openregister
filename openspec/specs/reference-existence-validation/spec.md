@@ -1,6 +1,12 @@
+---
+status: done
+---
+
 # reference-existence-validation Specification
 
 ## Purpose
+
+@e2e exclude backend schema property validation — covered by PHPUnit
 TBD - created by archiving change reference-existence-validation. Update Purpose after archive.
 ## Requirements
 ### Requirement: Schema properties MUST support a validateReference configuration
@@ -405,7 +411,7 @@ For batch operations exceeding a configurable threshold (default: 500 objects), 
 - AND objects that could not be validated MUST have `_validationStatus: "retry_pending"`
 
 ### Requirement: Validation events MUST be dispatched for notification and extensibility
-The reference validation pipeline MUST dispatch Nextcloud events via `IEventDispatcher` at key points, allowing other apps and listeners to react to validation outcomes.
+The reference validation pipeline MUST dispatch Nextcloud events via `IEventDispatcher` at key points, allowing other apps and listeners to react to validation outcomes. The dispatched event value-objects (`ReferenceValidatedEvent`, `ReferenceValidationFailedEvent`) MUST expose the validated reference context — property name, referenced UUID, target schema slug, and target register — via getters so listeners can route on it without re-deriving it from the object data.
 
 #### Scenario: Validation failure event dispatched
 - GIVEN a save that fails reference validation
@@ -430,6 +436,14 @@ The reference validation pipeline MUST dispatch Nextcloud events via `IEventDisp
 - THEN the exception MUST be caught and logged
 - AND the original validation error MUST still be returned to the client
 - AND the save pipeline MUST NOT be affected by listener failures
+
+#### Scenario: Validation event value-objects expose the reference context via getters
+- GIVEN a `ReferenceValidatedEvent` or `ReferenceValidationFailedEvent` is dispatched for property `assignee` referencing UUID `person-uuid` in target schema slug `person` within register `procest`
+- WHEN a listener reads the event
+- THEN `getPropertyName()` MUST return `"assignee"`
+- AND `getReferencedUuid()` MUST return `"person-uuid"`
+- AND `getTargetSchemaSlug()` MUST return `"person"` (the slug or raw `$ref`)
+- AND `getTargetRegister()` MUST return `"procest"`, or `null` when no register context applied to the lookup
 
 ### Requirement: Schema-configurable validation strictness levels MUST be supported
 Schemas MUST support a `validationStrictness` configuration that controls the severity of reference validation failures. Three levels MUST be supported: `strict` (fail on invalid reference, default when `validateReference: true`), `warn` (log warning but allow save), and `off` (no validation).

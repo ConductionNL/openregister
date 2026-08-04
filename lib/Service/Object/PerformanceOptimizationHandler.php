@@ -5,11 +5,15 @@
  *
  * This file is part of the OpenRegister app for Nextcloud.
  *
- * @category Service
- * @package  OCA\OpenRegister
- * @author   Conduction <info@conduction.nl>
- * @license  AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
- * @link     https://github.com/ConductionNL/openregister
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
+ * @category  Service
+ * @package   OCA\OpenRegister
+ * @author    Conduction <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   AGPL-3.0-or-later https://www.gnu.org/licenses/agpl-3.0.html
+ * @link      https://github.com/ConductionNL/openregister
  */
 
 namespace OCA\OpenRegister\Service\Object;
@@ -41,7 +45,7 @@ class PerformanceOptimizationHandler
      * @param OrganisationService $organisationService Organisation service for context.
      * @param LoggerInterface     $logger              Logger for debugging.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly OrganisationService $organisationService,
@@ -60,7 +64,7 @@ class PerformanceOptimizationHandler
      * @psalm-return   string|null
      * @phpstan-return string|null
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getActiveOrganisationForContext(): ?string
     {
@@ -111,7 +115,7 @@ class PerformanceOptimizationHandler
      * @SuppressWarnings(PHPMD.NPathComplexity)       Different timing scenarios generate different recommendations
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Comprehensive recommendations require detailed analysis
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-3
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getPerformanceRecommendations(float $totalTime, array $perfTimings, array $query): array
     {

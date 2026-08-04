@@ -3,11 +3,15 @@
 /**
  * Twig runtime for authentication token functions.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Twig
  * @package  OCA\OpenRegister\Twig
  *
- * @author  Conduction Development Team <info@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -31,7 +35,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @param AuthenticationService $authService The authentication service
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly AuthenticationService $authService,
@@ -48,7 +52,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function oauthToken(Source $source): string
     {
@@ -68,7 +72,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException If the request fails.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function decosToken(Source $source): string
     {
@@ -86,7 +90,7 @@ class AuthenticationRuntime implements RuntimeExtensionInterface
      *
      * @return string The signed JWT token
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-28
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function jwtToken(Source $source): string
     {

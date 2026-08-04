@@ -16,6 +16,9 @@
  * No NC app is required — OpenProject is external; the only install
  * dependency is OpenConnector (which carries the source + credentials).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
@@ -25,7 +28,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-openproject/tasks.md
+ * @spec openspec/specs/integration-openproject/spec.md
  */
 
 declare(strict_types=1);
@@ -34,10 +37,13 @@ namespace OCA\OpenRegister\Service\Integration\Providers;
 
 // phpcs:disable PEAR.Commenting.FunctionComment.Missing -- self-documenting IntegrationProvider metadata getters mirror the contract in the interface.
 
+use OCA\OpenRegister\Db\OpenProjectLink;
+use OCA\OpenRegister\Db\OpenProjectLinkMapper;
 use OCA\OpenRegister\Service\Integration\AbstractIntegrationProvider;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCP\App\IAppManager;
 use OCP\IL10N;
+use Throwable;
 
 /**
  * OpenProject integration provider — external, OpenConnector-backed.
@@ -63,9 +69,10 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * Constructor.
      *
-     * @param ExternalIntegrationRouter $router     External-call router.
-     * @param IAppManager               $appManager NC app manager.
-     * @param IL10N                     $l10n       Localisation.
+     * @param ExternalIntegrationRouter  $router     External-call router.
+     * @param IAppManager                $appManager NC app manager.
+     * @param IL10N                      $l10n       Localisation.
+     * @param OpenProjectLinkMapper|null $linkMapper Tier-2 link table (optional).
      *
      * @return void
      */
@@ -73,6 +80,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         private ExternalIntegrationRouter $router,
         private IAppManager $appManager,
         private IL10N $l10n,
+        private ?OpenProjectLinkMapper $linkMapper=null,
     ) {
     }//end __construct()
 
@@ -120,6 +128,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * Auth requirements descriptor.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function authRequirements(): array
     {
@@ -134,15 +144,40 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     /**
      * List OpenProject work packages linked to an OR object.
      *
+     * Tier-2 path: reads the dedicated `openregister_openproject_links`
+     * table first so the linked list renders from the cached row even
+     * when the OpenConnector source is temporarily unconfigured / down.
+     * When no link rows exist (or the mapper isn't wired) it falls back
+     * to the external router so a fresh source still surfaces rows.
+     *
      * @param string              $register Register slug or numeric id.
      * @param string              $schema   Schema slug or numeric id.
      * @param string              $objectId Object uuid.
      * @param array<string,mixed> $filters  Optional: `_search`, `_limit`, `_page`.
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
+        // Tier-2 path: read from the link table first.
+        if ($this->linkMapper !== null) {
+            try {
+                $linkRows = $this->linkMapper->findByObjectUuid($objectId);
+            } catch (Throwable $e) {
+                $linkRows = [];
+            }
+
+            if (count($linkRows) > 0) {
+                return array_map(
+                    fn (OpenProjectLink $link): array => $this->rowFromLink(link: $link),
+                    $linkRows
+                );
+            }
+        }
+
+        // Fallback: query the external source through OpenConnector.
         $query    = $this->contextQuery(register: $register, schema: $schema, objectId: $objectId, filters: $filters);
         $response = $this->router->call(
             provider: $this,
@@ -155,6 +190,35 @@ class OpenProjectProvider extends AbstractIntegrationProvider
     }//end list()
 
     /**
+     * Convert an OpenProjectLink row into the registry leaf-row shape,
+     * preserving the flat type / status / priority / assignee / project
+     * fields the bespoke CnOpenprojectTab renders.
+     *
+     * @param OpenProjectLink $link Link row from the mapper.
+     *
+     * @return array<string,mixed>
+     */
+    private function rowFromLink(OpenProjectLink $link): array
+    {
+        $id   = (string) $link->getWorkPackageId();
+        $data = $link->jsonSerialize();
+
+        return [
+            'id'        => $id,
+            'reference' => $id,
+            'subject'   => (string) $link->getSubject(),
+            'title'     => (string) $link->getSubject(),
+            'status'    => (string) ($link->getStatus() ?? ''),
+            'type'      => (string) ($link->getType() ?? ''),
+            'priority'  => (string) ($link->getPriority() ?? ''),
+            'assignee'  => (string) ($link->getAssignee() ?? ''),
+            'project'   => (string) ($link->getProject() ?? ''),
+            'url'       => (string) ($link->getUrl() ?? ''),
+            'data'      => $data,
+        ];
+    }//end rowFromLink()
+
+    /**
      * Fetch a single linked OpenProject work package.
      *
      * @param string $register Register slug or numeric id.
@@ -163,6 +227,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param string $entityId Work-package id.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function get(string $register, string $schema, string $objectId, string $entityId): array
     {
@@ -186,6 +252,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Reference or new-WP fields.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function create(string $register, string $schema, string $objectId, array $payload): array
     {
@@ -214,6 +282,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Fields to update.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -241,6 +311,8 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param string $entityId Work-package id.
      *
      * @return void
+     *
+     * @spec openspec/specs/integration-openproject/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
@@ -255,6 +327,14 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         );
     }//end delete()
 
+    /**
+     * Health descriptor — defers to the router's probe.
+     *
+     * @return array{status: string, authStatus: string, message: ?string}
+     *
+     * @spec exclude Thin delegation to ExternalIntegrationRouter::probe
+     *   (annotated to pluggable-integration-registry task-4); carries no provider-specific health behaviour.
+     */
     public function health(): array
     {
         return $this->router->probe(provider: $this);
@@ -284,6 +364,11 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      * @param bool $withBody Whether the request carries a JSON body.
      *
      * @return array<string,string>
+     *
+     * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Body-vs-no-body is the
+     *     natural toggle for HTTP request headers; a two-method split
+     *     (requestHeaders / requestHeadersWithBody) would duplicate the
+     *     static Accept header.
      */
     private function requestHeaders(bool $withBody=false): array
     {
@@ -305,26 +390,7 @@ class OpenProjectProvider extends AbstractIntegrationProvider
      */
     private function normalizeList(array $response): array
     {
-        $rows = [];
-        foreach (['results', 'items', '_embedded', 'elements'] as $key) {
-            if (isset($response[$key]) === true && is_array($response[$key]) === true) {
-                $candidate = $response[$key];
-                // OpenProject's HAL+JSON envelope nests rows under _embedded.elements.
-                if ($key === '_embedded'
-                    && isset($candidate['elements']) === true
-                    && is_array($candidate['elements']) === true
-                ) {
-                    $candidate = $candidate['elements'];
-                }
-
-                $rows = $candidate;
-                break;
-            }
-        }
-
-        if ($rows === [] && array_is_list($response) === true) {
-            $rows = $response;
-        }
+        $rows = $this->extractRowsFromEnvelope(response: $response);
 
         $out = [];
         foreach ($rows as $row) {
@@ -335,6 +401,42 @@ class OpenProjectProvider extends AbstractIntegrationProvider
 
         return $out;
     }//end normalizeList()
+
+    /**
+     * Extract the row list from a potentially enveloped source response.
+     *
+     * Handles OpenProject HAL+JSON (`_embedded.elements`), generic
+     * `results`, `items`, `elements` wrappers, and bare top-level arrays.
+     *
+     * @param array<string,mixed> $response Decoded source response.
+     *
+     * @return array<mixed> Flat list of raw row arrays.
+     */
+    private function extractRowsFromEnvelope(array $response): array
+    {
+        foreach (['results', 'items', '_embedded', 'elements'] as $key) {
+            if (isset($response[$key]) === false || is_array($response[$key]) === false) {
+                continue;
+            }
+
+            $candidate = $response[$key];
+            // OpenProject HAL+JSON nests rows under _embedded.elements.
+            if ($key === '_embedded'
+                && isset($candidate['elements']) === true
+                && is_array($candidate['elements']) === true
+            ) {
+                $candidate = $candidate['elements'];
+            }
+
+            return $candidate;
+        }
+
+        if (array_is_list($response) === true) {
+            return $response;
+        }
+
+        return [];
+    }//end extractRowsFromEnvelope()
 
     /**
      * Shape one work-package row to the registry contract.
@@ -350,15 +452,63 @@ class OpenProjectProvider extends AbstractIntegrationProvider
         $status  = (string) ($row['status'] ?? ($row['_links']['status']['title'] ?? ''));
         $url     = (string) ($row['url'] ?? ($row['_links']['self']['href'] ?? ''));
 
+        // Flatten the OpenProject hAL-style _links/_embedded labels onto
+        // top-level keys so CnOpenprojectTab can render type / priority /
+        // assignee / project without hand-walking nested envelopes.
+        // Falls through to top-level fields when a source pre-maps them.
+        $type     = $this->pickHalLabel(row: $row, field: 'type', linkKey: 'title', embedKey: 'name');
+        $priority = $this->pickHalLabel(row: $row, field: 'priority', linkKey: 'title', embedKey: 'name');
+        $assignee = $this->pickHalLabel(row: $row, field: 'assignee', linkKey: 'title', embedKey: 'name');
+        $project  = $this->pickHalLabel(row: $row, field: 'project', linkKey: 'title', embedKey: 'name');
+
         return array_merge(
             $row,
             [
                 'id'        => $id,
                 'reference' => $id,
+                'subject'   => $subject,
                 'title'     => $subject,
                 'status'    => $status,
+                'type'      => $type,
+                'priority'  => $priority,
+                'assignee'  => $assignee,
+                'project'   => $project,
                 'url'       => $url,
             ]
         );
     }//end normalizeRow()
+
+    /**
+     * Pick a hAL label from a work-package row, preferring a top-level
+     * field, then `_links.<field>.<linkKey>`, then `_embedded.<field>.<embedKey>`.
+     *
+     * Empty strings count as "missing" so source mappings that emit a
+     * blank top-level key still fall through to the envelope copy.
+     *
+     * @param array  $row      Raw work-package row.
+     * @param string $field    Field name (`type`, `priority`, `assignee`, `project`).
+     * @param string $linkKey  Label key under `_links.<field>` (`title`).
+     * @param string $embedKey Label key under `_embedded.<field>` (`name`).
+     *
+     * @return string Resolved label or empty string.
+     */
+    private function pickHalLabel(array $row, string $field, string $linkKey, string $embedKey): string
+    {
+        $top = $row[$field] ?? null;
+        if (is_string($top) === true && $top !== '') {
+            return $top;
+        }
+
+        $link = $row['_links'][$field][$linkKey] ?? null;
+        if (is_string($link) === true && $link !== '') {
+            return $link;
+        }
+
+        $embed = $row['_embedded'][$field][$embedKey] ?? null;
+        if (is_string($embed) === true && $embed !== '') {
+            return $embed;
+        }
+
+        return '';
+    }//end pickHalLabel()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * Mapper for contact link entities.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *
@@ -110,4 +113,34 @@ class ContactLinkMapper extends QBMapper
 
         return $qb->executeStatement();
     }//end deleteByObjectUuid()
+
+    /**
+     * Find the single link for an (objectUuid, contactUid) pair.
+     *
+     * Backs the upsert path in `ContactService::linkContact()` — the DB
+     * already enforces uniqueness via the Tier-2 composite index
+     * `idx_contact_object_uid_uniq`, but reading first lets the service
+     * update the cached vCard fields (phone/org/avatar) and role
+     * in-place instead of failing on the duplicate-key.
+     *
+     * @param string $objectUuid The object UUID.
+     * @param string $contactUid The vCard UID.
+     *
+     * @return ContactLink|null The link, or null when no row exists.
+     */
+    public function findByObjectAndContact(string $objectUuid, string $contactUid): ?ContactLink
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('*')
+            ->from($this->getTableName())
+            ->where($qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid)))
+            ->andWhere($qb->expr()->eq('contact_uid', $qb->createNamedParameter($contactUid)))
+            ->setMaxResults(1);
+
+        try {
+            return $this->findEntity(query: $qb);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            return null;
+        }
+    }//end findByObjectAndContact()
 }//end class

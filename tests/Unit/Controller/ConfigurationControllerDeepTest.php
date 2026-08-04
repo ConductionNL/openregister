@@ -44,6 +44,15 @@ class ConfigurationControllerDeepTest extends TestCase
         $this->appManager = $this->createMock(IAppManager::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
+        // SEC-CTRL-3: show/preview/export now require an admin (403 otherwise).
+        // Wire an admin session so the non-403 assertions still hold.
+        $user = $this->createMock(\OCP\IUser::class);
+        $user->method('getUID')->willReturn('admin');
+        $userSession = $this->createMock(\OCP\IUserSession::class);
+        $userSession->method('getUser')->willReturn($user);
+        $groupManager = $this->createMock(\OCP\IGroupManager::class);
+        $groupManager->method('isAdmin')->willReturn(true);
+
         $this->controller = new ConfigurationController(
             'openregister',
             $this->request,
@@ -53,7 +62,9 @@ class ConfigurationControllerDeepTest extends TestCase
             $this->gitHubHandler,
             $this->gitLabHandler,
             $this->appManager,
-            $this->logger
+            $this->logger,
+            $userSession,
+            $groupManager
         );
     }
 

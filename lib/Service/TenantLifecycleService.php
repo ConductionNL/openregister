@@ -7,6 +7,9 @@
  * provisioning -> active -> suspended -> deprovisioning -> archived.
  * Also handles reactivation from suspended back to active.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,12 +19,12 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
+ * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-tenant-provisioning-must-create-default-resources-automatically
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
+ * @spec openspec/specs/tenant-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -112,11 +115,19 @@ class TenantLifecycleService
      *
      * @throws Exception If the transition is invalid
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+     * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function validateTransition(string $currentStatus, string $targetStatus): void
     {
+        // Validate that both statuses are known before checking transition.
+        if ($this->isValidStatus(status: $currentStatus) === false || $this->isValidStatus(status: $targetStatus) === false) {
+            throw new Exception(
+                sprintf("Unknown status '%s' or '%s'.", $currentStatus, $targetStatus),
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
         $allowedTransitions = self::STATE_TRANSITIONS[$currentStatus] ?? [];
 
         if (in_array($targetStatus, $allowedTransitions, true) === false) {
@@ -137,7 +148,7 @@ class TenantLifecycleService
      *
      * @return string[] Valid next states
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-73
+     * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-organisation-entities-must-have-a-lifecycle-status-field-with-defined-state-transitions
      */
     public function getValidTransitions(string $status): array
     {
@@ -154,8 +165,8 @@ class TenantLifecycleService
      *
      * @throws Exception If provisioning fails
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-74
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-77
+     * @spec openspec/specs/tenant-lifecycle/spec.md#requirement-tenant-provisioning-must-create-default-resources-automatically
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
@@ -169,6 +180,24 @@ class TenantLifecycleService
         }
 
         $slug = $organisation->getSlug() ?? 'org';
+
+        // Validate that the organisation's target environment is a known OTAP stage.
+        $env = $organisation->getEnvironment() ?? self::ENV_PRODUCTION;
+        if ($this->isValidEnvironment(environment: $env) === false) {
+            throw new Exception(
+                sprintf("Unknown target environment '%s'.", $env),
+                Response::HTTP_UNPROCESSABLE_ENTITY
+            );
+        }
+
+        // If a source environment is set, validate the promotion order.
+        $sourceEnv = $organisation->getEnvironment() ?? null;
+        if ($sourceEnv !== null && $sourceEnv !== $env && $this->isValidPromotionOrder(sourceEnv: $sourceEnv, targetEnv: $env) === false) {
+            throw new Exception(
+                sprintf("Invalid OTAP promotion order from '%s' to '%s'.", $sourceEnv, $env),
+                Response::HTTP_CONFLICT
+            );
+        }
 
         try {
             // Create default groups prefixed with org slug.
@@ -251,7 +280,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function suspend(Organisation $organisation): Organisation
     {
@@ -280,7 +309,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-76
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function reactivate(Organisation $organisation): Organisation
     {
@@ -309,7 +338,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function deprovision(Organisation $organisation): Organisation
     {
@@ -338,7 +367,7 @@ class TenantLifecycleService
      *
      * @throws Exception If transition is invalid
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-75
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function archive(Organisation $organisation): Organisation
     {
@@ -364,8 +393,8 @@ class TenantLifecycleService
      *
      * @return bool Whether the environment is valid
      *
-     * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+     * @spec openspec/specs/tenant-lifecycle/spec.md
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function isValidEnvironment(string $environment): bool
     {
@@ -380,8 +409,8 @@ class TenantLifecycleService
      *
      * @return bool Whether the promotion order is valid
      *
-     * @spec openspec/changes/retrofit-2026-04-28-tenant-lifecycle/tasks.md#task-2
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-74
+     * @spec openspec/specs/tenant-lifecycle/spec.md
+     * @spec openspec/specs/tenant-lifecycle/spec.md
      */
     public function isValidPromotionOrder(string $sourceEnv, string $targetEnv): bool
     {

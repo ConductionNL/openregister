@@ -6,6 +6,9 @@
  * This file contains the class for validating schema properties
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.app
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
  */
 
 namespace OCA\OpenRegister\Service\Schemas;
@@ -49,6 +54,9 @@ class PropertyValidatorHandler
         'null',
         'file',
         'geo',
+        // Extended field types (see extended-field-types spec).
+        'color',
+        'recurrence',
         'NcFile',
         'NcMail',
         'NcContact',
@@ -123,6 +131,8 @@ class PropertyValidatorHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Complex JSON Schema property validation with multiple type checks
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths for different property types
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-annotate-openregister/tasks.md#task-13
      */
     public function validateProperty(array $property, string $path=''): bool
     {
@@ -136,18 +146,30 @@ class PropertyValidatorHandler
             throw new Exception("Property at '$path' must have a 'type' field");
         }
 
-        // Validate type.
+        // Validate type. Union types arrive as arrays — render them as JSON in
+        // the message instead of letting string interpolation emit a PHP
+        // "Array to string conversion" warning.
         if (in_array($property['type'], $this->validTypes) === false) {
+            $typeLabel = $property['type'];
+            if (is_string($typeLabel) === false) {
+                $typeLabel = (string) json_encode($typeLabel);
+            }
+
             throw new Exception(
-                "Invalid type '{$property['type']}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
+                "Invalid type '{$typeLabel}' at '$path'. Must be one of: ".implode(', ', $this->validTypes)
             );
         }
 
         // Validate string format if present.
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
+                $formatLabel = $property['format'];
+                if (is_string($formatLabel) === false) {
+                    $formatLabel = (string) json_encode($formatLabel);
+                }
+
                 $validFormats = implode(', ', $this->validStringFormats);
-                $message      = "Invalid string format '{$property['format']}' at '$path'. Must be one of: $validFormats";
+                $message      = "Invalid string format '{$formatLabel}' at '$path'. Must be one of: $validFormats";
                 throw new Exception($message);
             }
         }
@@ -208,6 +230,28 @@ class PropertyValidatorHandler
             throw new Exception("'hideOnForm' at '$path' must be a boolean");
         }
 
+        // Validate sourceLanguage modifier (i18n-source-of-truth).
+        // Only allowed on translatable properties; rejects on non-translatable.
+        if (array_key_exists('sourceLanguage', $property) === true) {
+            if (($property['translatable'] ?? false) !== true) {
+                $msg = "'sourceLanguage' at '$path' requires translatable: true";
+                throw new Exception($msg);
+            }
+
+            $sourceLanguage = $property['sourceLanguage'];
+            if (is_string($sourceLanguage) === false || $sourceLanguage === '') {
+                throw new Exception("'sourceLanguage' at '$path' must be a non-empty string");
+            }
+
+            // Basic BCP-47 syntax check: 2-3 lowercase letters, optional
+            // region/subtag suffix.
+            if (preg_match('/^[a-z]{2,3}(-[a-zA-Z0-9]{2,8})*$/', $sourceLanguage) !== 1) {
+                throw new Exception(
+                    "'sourceLanguage' at '$path' is not a valid BCP-47 language tag: '$sourceLanguage'"
+                );
+            }
+        }
+
         // Validate onDelete property if present.
         if (($property['onDelete'] ?? null) !== null) {
             // OnDelete is only valid on relation properties (those with $ref).
@@ -239,6 +283,8 @@ class PropertyValidatorHandler
      * @throws Exception If any property definition is invalid
      *
      * @return true True if all properties are valid
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid2/tasks.md#task-13
      */
     public function validateProperties(array $properties, string $path=''): bool
     {

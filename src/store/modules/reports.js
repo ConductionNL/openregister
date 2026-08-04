@@ -22,7 +22,6 @@
  * @license   EUPL-1.2
  */
 
-/* eslint-disable no-console */
 import { defineStore } from 'pinia'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -84,6 +83,11 @@ export const useReportsStore = defineStore('reports', {
 		getWidgetData: (state) => (cacheKey) => state.widgetData[cacheKey] ?? null,
 	},
 	actions: {
+		/**
+		 * Clear the store error.
+		 *
+		 * @spec exclude store setter (clears local error state)
+		 */
 		clearError() {
 			this.error = null
 		},
@@ -91,6 +95,8 @@ export const useReportsStore = defineStore('reports', {
 		/**
 		 * Reset cached widget data — useful after editing a dashboard
 		 * to force fresh fetches on the next render.
+		 *
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		clearWidgetCache() {
 			this.widgetData = {}
@@ -100,6 +106,7 @@ export const useReportsStore = defineStore('reports', {
 		 * List dashboards in the configured `reports` register.
 		 *
 		 * @param {object} params Optional filters (status, category, …).
+		 * @spec exclude API passthrough to GET /api/objects/{register}/{schema} (dashboard list)
 		 */
 		async fetchDashboards(params = {}) {
 			this.loading = true
@@ -127,6 +134,7 @@ export const useReportsStore = defineStore('reports', {
 		 *
 		 * @param {string} identifier
 		 * @param {object} params {register?, schema?}
+		 * @spec exclude API passthrough to GET /api/objects/{register}/{schema}/{id} (single dashboard)
 		 */
 		async fetchDashboard(identifier, params = {}) {
 			if (!identifier) return null
@@ -157,6 +165,7 @@ export const useReportsStore = defineStore('reports', {
 		 * @param {object} widget Widget descriptor with `dataSource`.
 		 * @param {boolean} forceRefresh When true, bypasses the cache.
 		 * @return {Promise<object>}
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchWidgetData(widget, forceRefresh = false) {
 			const dataSource = widget?.dataSource
@@ -208,6 +217,7 @@ export const useReportsStore = defineStore('reports', {
 		 *
 		 * @param {object} dashboard Dashboard object with `widgets[]`.
 		 * @param {boolean} forceRefresh Bypass cache.
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
 		 */
 		async fetchDashboardData(dashboard, forceRefresh = false) {
 			const widgets = dashboard?.widgets ?? []
@@ -224,6 +234,12 @@ export const useReportsStore = defineStore('reports', {
 
 		// --- Internal fetchers below -----------------------------------
 
+		/**
+		 * Fetch aggregation widget data.
+		 *
+		 * @param dataSource
+		 * @spec exclude private API passthrough to GET /api/objects/aggregations/...
+		 */
 		async _fetchAggregation(dataSource) {
 			const register = encodeURIComponent(dataSource.register || '')
 			const schema = encodeURIComponent(dataSource.schema || '')
@@ -237,6 +253,12 @@ export const useReportsStore = defineStore('reports', {
 			return response.data
 		},
 
+		/**
+		 * Fetch graphql widget data.
+		 *
+		 * @param dataSource
+		 * @spec exclude private API passthrough to POST /api/graphql
+		 */
 		async _fetchGraphql(dataSource) {
 			const query = dataSource.graphqlQuery
 			if (!query) {
@@ -246,6 +268,12 @@ export const useReportsStore = defineStore('reports', {
 			return response.data?.data ?? response.data
 		},
 
+		/**
+		 * Fetch statistics widget data.
+		 *
+		 * @param dataSource
+		 * @spec exclude private API passthrough to GET /api/dashboard/statistics
+		 */
 		async _fetchStatistics(dataSource) {
 			const register = dataSource.register || ''
 			const schema = dataSource.schema || ''

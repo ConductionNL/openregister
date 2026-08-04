@@ -17,6 +17,9 @@
  * Each public guard returns either `null` (continue) or a `JSONResponse` (short-circuit
  * with a structured error). The controller invokes them via the shared `runGuards` pipeline.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -77,6 +80,9 @@ class GitHubGuards
      * @param array<callable(): ?JSONResponse> $guards Ordered guard closures.
      *
      * @return JSONResponse|null First failing response, or null when all guards pass.
+     *
+     * @spec exclude Generic guard-runner combinator — loops guard closures and short-circuits on the first
+     *              non-null response; carries no policy itself (the individual guards are separately annotated).
      */
     public function runGuards(array $guards): ?JSONResponse
     {
@@ -111,15 +117,28 @@ class GitHubGuards
     }//end enforceFeatureFlag()
 
     /**
-     * Enforce per-instance repo allowlist (task 1.14).
+     * Enforce per-instance owner allowlist (task 1.14, generalised).
      *
-     * Reads `openregister::github_repo` from IAppConfig:
-     *   - Unset → graceful degradation: 200 + `hint: github_repo_not_configured` on GET,
-     *     503 + `error: github_repo_not_configured` on POST.
-     *   - Set + mismatch with caller-supplied `repo` → 403 `repo_not_allowed`.
-     *   - Set + match → null (continue).
+     * Reads `openregister::github_allowed_owners` from IAppConfig as a
+     * comma-separated list of GitHub organisation / user names. The caller's
+     * `repo` is `<owner>/<name>`; only the owner segment is matched against
+     * the allowlist (case-insensitive). This lets one OR instance proxy
+     * issues for many sibling repos under the same orgs without per-repo
+     * configuration.
      *
-     * @param string $repo   Caller-supplied slug (already format-validated).
+     *   - Unset / empty after trimming → graceful degradation: 200 +
+     *     `hint: github_repo_not_configured` on GET, 503 +
+     *     `error: github_repo_not_configured` on POST.
+     *   - Owner not in list → 403 `repo_not_allowed`.
+     *   - Owner in list → null (continue).
+     *
+     * Default value: `ConductionNL,nextcloud` so fresh installs proxy the
+     * Conduction-fleet and core Nextcloud repos out of the box.
+     *
+     * Supersedes the old single-repo `openregister::github_repo` config key
+     * which used strict `owner/repo` equality (PR #1726).
+     *
+     * @param string $repo   Caller-supplied slug `<owner>/<name>` (already format-validated).
      * @param bool   $isRead Whether the call is the GET path (alters the unset-config response).
      *
      * @return JSONResponse|null Null on match, structured 403/200/503 otherwise.
@@ -128,8 +147,10 @@ class GitHubGuards
      */
     public function enforceRepoAllowlist(string $repo, bool $isRead): ?JSONResponse
     {
-        $allowed = $this->appConfig->getValueString('openregister', 'github_repo', '');
-        if ($allowed === '') {
+        $rawAllowed = $this->appConfig->getValueString('openregister', 'github_allowed_owners', 'ConductionNL,nextcloud');
+        $allowed    = array_values(array_filter(array_map('trim', explode(',', $rawAllowed)), static fn($ownerStr) => $ownerStr !== ''));
+
+        if ($allowed === []) {
             if ($isRead === true) {
                 return new JSONResponse(['items' => [], 'hint' => 'github_repo_not_configured']);
             }
@@ -137,7 +158,10 @@ class GitHubGuards
             return new JSONResponse(['error' => 'github_repo_not_configured'], Http::STATUS_SERVICE_UNAVAILABLE);
         }
 
-        if ($repo === $allowed) {
+        $owner        = explode('/', $repo, 2)[0];
+        $ownerLower   = strtolower($owner);
+        $allowedLower = array_map('strtolower', $allowed);
+        if (in_array($ownerLower, $allowedLower, true) === true) {
             return null;
         }
 

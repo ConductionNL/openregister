@@ -1,7 +1,11 @@
 /**
- * Composable for managing email link API state.
+ * Composable for managing email link API state. Powers the three-tab
+ * sidebar's Objects + Link data flow (cache, abort, sender-suggestion
+ * de-dup against linked uuids).
  *
- * @package OpenRegister
+ * @package
+ *
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 import { ref } from 'vue'
@@ -46,7 +50,7 @@ export function useEmailLinks() {
 	 * @param {number} accountId The mail account ID.
 	 * @param {number} messageId The mail message ID.
 	 * @param {string} [sender] The sender email address for discovery.
-	 * @param {boolean} [useCache=true] Whether to use cached results.
+	 * @param {boolean} [useCache] Whether to use cached results.
 	 */
 	async function loadForMessage(accountId, messageId, sender, useCache = true) {
 		const key = cacheKey(accountId, messageId)

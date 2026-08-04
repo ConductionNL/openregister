@@ -9,6 +9,9 @@
  * (LibreTranslate / DeepL / Google) in `Application.php` to get
  * actual machine translations.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
  *
@@ -35,6 +38,8 @@ class IdentityTranslationProvider implements TranslationProviderInterface
      * @param string $toLang   BCP 47 target language code.
      *
      * @return string|null Always the source text (passthrough).
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function translate(string $text, string $fromLang, string $toLang): ?string
     {
@@ -48,6 +53,8 @@ class IdentityTranslationProvider implements TranslationProviderInterface
      * Provider identifier used for status attribution.
      *
      * @return string The literal `identity`.
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      */
     public function getIdentifier(): string
     {

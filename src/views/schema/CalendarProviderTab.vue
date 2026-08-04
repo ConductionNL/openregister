@@ -12,9 +12,9 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Enable toggle -->
 		<div class="fieldRow">
 			<NcCheckboxRadioSwitch
-				:checked="localConfig.enabled"
+				:model-value="localConfig.enabled"
 				type="switch"
-				@update:checked="localConfig.enabled = $event">
+				@update:modelValue="localConfig.enabled = $event">
 				{{ t('openregister', 'Enable calendar provider') }}
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -25,7 +25,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<label for="cal-displayName">{{ t('openregister', 'Display Name') }}</label>
 				<NcTextField
 					id="cal-displayName"
-					:value.sync="localConfig.displayName"
+					v-model="localConfig.displayName"
 					:placeholder="schema?.title || t('openregister', 'Calendar name')"
 					:label-outside="true" />
 			</div>
@@ -49,6 +49,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-dtstart"
 					v-model="localConfig.dtstart"
+					input-label="Local Config Dtstart"
 					:options="datePropertyOptions"
 					:placeholder="t('openregister', 'Select a date property')" />
 			</div>
@@ -59,6 +60,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-dtend"
 					v-model="localConfig.dtend"
+					input-label="Local Config Dtend"
 					:options="datePropertyOptions"
 					:placeholder="t('openregister', 'Optional end date property')" />
 			</div>
@@ -68,7 +70,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<label for="cal-title">{{ t('openregister', 'Title Template') }} *</label>
 				<NcTextField
 					id="cal-title"
-					:value.sync="localConfig.titleTemplate"
+					v-model="localConfig.titleTemplate"
 					:placeholder="t('openregister', '{property} - {other}')" />
 				<small class="hint">
 					{{ t('openregister', 'Available placeholders:') }}
@@ -95,6 +97,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<NcSelect
 					id="cal-location"
 					v-model="localConfig.locationField"
+					input-label="Local Config Location Field"
 					:options="stringPropertyOptions"
 					:placeholder="t('openregister', 'Optional location property')" />
 			</div>
@@ -102,10 +105,10 @@ import { translate as t } from '@nextcloud/l10n'
 			<!-- All day toggle -->
 			<div class="fieldRow">
 				<NcCheckboxRadioSwitch
-					:checked="localConfig.allDay"
+					:model-value="localConfig.allDay"
 					:indeterminate="localConfig.allDay === null || localConfig.allDay === undefined"
 					type="switch"
-					@update:checked="localConfig.allDay = $event">
+					@update:modelValue="localConfig.allDay = $event">
 					{{ t('openregister', 'All-day events') }}
 				</NcCheckboxRadioSwitch>
 				<small class="hint">
@@ -116,7 +119,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<!-- Save button -->
 			<div class="fieldRow actions">
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!isValid || saving"
 					@click="save">
 					<template #icon>
@@ -180,6 +183,7 @@ export default {
 	computed: {
 		/**
 		 * Property names available for placeholders
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		propertyNames() {
@@ -190,6 +194,7 @@ export default {
 		},
 		/**
 		 * Date/datetime properties for dtstart/dtend selectors
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		datePropertyOptions() {
@@ -206,6 +211,7 @@ export default {
 		},
 		/**
 		 * String properties for location selector
+		 * @spec exclude UI plumbing — derived select-option list
 		 * @return {string[]}
 		 */
 		stringPropertyOptions() {
@@ -218,6 +224,7 @@ export default {
 		},
 		/**
 		 * Validation: dtstart and titleTemplate required when enabled
+		 * @spec exclude UI plumbing — derived form-validity flag for display
 		 * @return {boolean}
 		 */
 		isValid() {
@@ -229,6 +236,13 @@ export default {
 	},
 	watch: {
 		schema: {
+			/**
+			 * Reload the calendar config when the schema prop changes.
+			 *
+			 * @param {object} newSchema The new schema.
+			 * @spec exclude UI plumbing — prop watch handler
+			 * @return {void}
+			 */
 			handler(newSchema) {
 				if (newSchema) {
 					this.loadConfig(newSchema)
@@ -241,6 +255,7 @@ export default {
 		/**
 		 * Load calendar provider config from schema configuration
 		 * @param {object} schema The schema object
+		 * @spec openspec/specs/calendar-integration/spec.md
 		 */
 		loadConfig(schema) {
 			const config = schema?.configuration?.calendarProvider || {}
@@ -258,6 +273,8 @@ export default {
 		},
 		/**
 		 * Save the calendar provider configuration via schema update
+		 * @spec exclude UI plumbing — save action delegates to the schema store
+		 * @return {Promise<void>}
 		 */
 		async save() {
 			this.saving = true

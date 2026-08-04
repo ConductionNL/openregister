@@ -10,6 +10,9 @@
  * NotificationDispatchLogMapper::record() throws when the index trips,
  * so callers can abort the send before flagging the message as delivered.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Db
  * @package  OCA\OpenRegister\Db
  *

@@ -64,40 +64,40 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<!-- Analysis Results (inside the well) -->
 				<div v-else-if="explorationData" class="analysis-summary">
 					<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.total_objects }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Objects Analyzed') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.analysis_summary?.new_properties_count || Object.keys(explorationData.discovered_properties || {}).length }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'New Properties') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ explorationData.analysis_summary?.existing_properties_improvements || 0 }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Existing Improvements') }}
 							</div>
 						</div>
-						<div style="background: white; border: 2px solid #ddd; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-							<div style="font-size: 2rem; font-weight: bold; color: #0066cc; margin-bottom: 8px;">
+						<div style="background: var(--color-main-background); border: 2px solid var(--color-border); border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+							<div style="font-size: 2rem; font-weight: bold; color: var(--color-primary-element); margin-bottom: 8px;">
 								{{ selectedProperties.length }}
 							</div>
-							<div style="font-size: 0.9rem; color: #666; text-transform: uppercase; font-weight: 600;">
+							<div style="font-size: 0.9rem; color: var(--color-text-maxcontrast); text-transform: uppercase; font-weight: 600;">
 								{{ t('openregister', 'Selected') }}
 							</div>
 						</div>
 					</div>
-					<div style="text-align: center; padding: 12px; background: #e9ecef; border-radius: 6px; border: 1px solid #ddd; color: #495057; font-size: 0.9rem;">
+					<div style="text-align: center; padding: 12px; background: var(--color-background-dark); border-radius: 6px; border: 1px solid var(--color-border); color: var(--color-main-text); font-size: 0.9rem;">
 						<strong>{{ t('openregister', 'Analysis completed:') }}</strong> {{ new Date(explorationData.analysis_date).toLocaleString() }}
 					</div>
 				</div>
@@ -107,7 +107,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			<div class="analysis-controls">
 				<NcButton
 					v-if="!explorationData && !loading"
-					type="primary"
+					variant="primary"
 					:disabled="!schemaStore.schemaItem"
 					@click="startAnalysis">
 					<template #icon>
@@ -118,7 +118,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 				<NcButton
 					v-else-if="!loading"
-					type="secondary"
+					variant="secondary"
 					@click="startAnalysis">
 					<template #icon>
 						<Refresh :size="20" />
@@ -144,6 +144,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<label class="filter-label">{{ t('openregister', 'Confidence Level') }}</label>
 						<NcSelect
 							v-model="confidenceFilter"
+							input-label="Confidence Filter"
 							:options="confidenceFilterOptions" />
 					</div>
 
@@ -151,6 +152,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 						<label class="filter-label">{{ t('openregister', 'Property Type') }}</label>
 						<NcSelect
 							v-model="typeFilter"
+							input-label="Type Filter"
 							:options="typeFilterOptions" />
 					</div>
 				</div>
@@ -193,8 +195,8 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 							<div class="property-actions">
 								<NcCheckboxRadioSwitch
-									:checked="isPropertySelected(suggestion.property_name)"
-									@update:checked="togglePropertySelection(suggestion.property_name)" />
+									:model-value="isPropertySelected(suggestion.property_name)"
+									@update:modelValue="togglePropertySelection(suggestion.property_name)" />
 							</div>
 						</div>
 
@@ -472,13 +474,13 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 					</NcNoteCard>
 
 					<div class="summary-actions">
-						<NcButton type="secondary" @click="clearSelection">
+						<NcButton variant="secondary" @click="clearSelection">
 							{{ t('openregister', 'Clear Selection') }}
 						</NcButton>
-						<NcButton type="secondary" @click="selectAll">
+						<NcButton variant="secondary" @click="selectAll">
 							{{ t('openregister', 'Select All') }}
 						</NcButton>
-						<NcButton type="primary" :disabled="loading || selectedProperties.length === 0" @click="updateSchema">
+						<NcButton variant="primary" :disabled="loading || selectedProperties.length === 0" @click="updateSchema">
 							<template #icon>
 								<Check :size="20" />
 							</template>
@@ -491,7 +493,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 				<div v-if="!explorationData && !loading" class="modal-footer">
 					<NcButton
 						:disabled="analysisStarted"
-						type="primary"
+						variant="primary"
 						@click="startAnalysis">
 						<template #icon>
 							<NcLoadingIcon v-if="analysisStarted" :size="16" />
@@ -503,7 +505,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 
 				<!-- Close Button (show when results are available) -->
 				<div v-else-if="explorationData && explorationData.suggestions" class="modal-footer">
-					<NcButton type="secondary" @click="closeDialog">
+					<NcButton variant="secondary" @click="closeDialog">
 						{{ t('openregister', 'Close') }}
 					</NcButton>
 				</div>
@@ -557,6 +559,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI display helper — static property-type select options.
+		 */
 		typeOptions() {
 			return [
 				{ label: 'String', value: 'string', key: 'string' },
@@ -567,6 +572,9 @@ export default {
 				{ label: 'Object', value: 'object', key: 'object' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — builds format select options including any detected format.
+		 */
 		formatOptions() {
 			return (suggestion) => {
 				const commonFormats = [
@@ -596,6 +604,9 @@ export default {
 				return commonFormats
 			}
 		},
+		/**
+		 * @spec exclude UI display helper — static confidence-filter select options.
+		 */
 		confidenceFilterOptions() {
 			return [
 				{ label: this.t('openregister', 'All Confidence Levels'), value: 'all', key: 'all' },
@@ -604,6 +615,9 @@ export default {
 				{ label: this.t('openregister', 'Low Confidence'), value: 'low', key: 'low' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — static type-filter select options.
+		 */
 		typeFilterOptions() {
 			return [
 				{ label: this.t('openregister', 'All'), value: 'all', key: 'all' },
@@ -611,6 +625,9 @@ export default {
 				{ label: this.t('openregister', 'Existing Improvements'), value: 'existing', key: 'existing' },
 			]
 		},
+		/**
+		 * @spec exclude UI display helper — applies search/confidence/type/selection filters to suggestions.
+		 */
 		filteredSuggestions() {
 			if (!this.explorationData?.suggestions) {
 				return []
@@ -656,15 +673,24 @@ export default {
 
 			return filtered
 		},
+		/**
+		 * @spec exclude UI pagination helper — slices filtered suggestions for the current page.
+		 */
 		paginatedSuggestions() {
 			const start = (this.currentPage - 1) * this.itemsPerPage
 			const end = start + this.itemsPerPage
 			return this.filteredSuggestions.slice(start, end)
 		},
+		/**
+		 * @spec exclude UI pagination helper — computes the total page count.
+		 */
 		totalPages() {
 			return Math.ceil(this.filteredSuggestions.length / this.itemsPerPage)
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — counts objects for the schema on mount.
+	 */
 	mounted() {
 		// Initialize if we don't have schema item
 		if (!schemaStore.schemaItem) {
@@ -676,10 +702,16 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec exclude UI event handler — closes the dialog and resets its state.
+		 */
 		async handleDialogClose() {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+		/**
+		 * @spec exclude Modal state plumbing — resets all local exploration state.
+		 */
 		resetDialog() {
 			this.loading = false
 			this.error = null
@@ -696,6 +728,9 @@ export default {
 			this.objectCount = 0
 			this.objectStats = null
 		},
+		/**
+		 * @spec exclude Modal data-load plumbing — fetches object-count stats for the schema.
+		 */
 		async countObjects() {
 			try {
 				if (schemaStore.schemaItem?.id) {
@@ -703,14 +738,15 @@ export default {
 					const stats = await schemaStore.getSchemaStats(schemaStore.schemaItem.id)
 					this.objectStats = stats.objects
 					this.objectCount = stats.objects?.total || 0
-					console.info('Loaded detailed schema stats for exploration:', stats)
 				}
-			} catch (error) {
-				console.warn('Could not fetch object count:', error)
+			} catch {
 				this.objectCount = 0
 				this.objectStats = null
 			}
 		},
+		/**
+		 * @spec exclude Modal action plumbing — runs the schema-explore endpoint and seeds suggestion config.
+		 */
 		async startAnalysis() {
 			this.analysisStarted = true
 			this.loading = true
@@ -778,6 +814,10 @@ export default {
 				this.analysisStarted = false
 			}
 		},
+		/**
+		 * @param propertyName
+		 * @spec exclude UI selection plumbing — toggles a suggested property in the selection.
+		 */
 		togglePropertySelection(propertyName) {
 			if (this.selectedProperties.includes(propertyName)) {
 				this.selectedProperties = this.selectedProperties.filter(name => name !== propertyName)
@@ -820,10 +860,16 @@ export default {
 		isPropertySelected(propertyName) {
 			return this.selectedProperties.includes(propertyName)
 		},
+		/**
+		 * @spec exclude UI selection plumbing — clears the property selection.
+		 */
 		clearSelection() {
 			this.selectedProperties = []
 			this.selectedPropertiesConfig = {}
 		},
+		/**
+		 * @spec exclude UI selection plumbing — selects all suggested properties.
+		 */
 		selectAll() {
 			this.explorationData?.suggestions?.forEach(suggestion => {
 				if (!this.selectedProperties.includes(suggestion.property_name)) {
@@ -840,6 +886,9 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @spec exclude Modal action plumbing — posts selected property updates to the schema-update endpoint.
+		 */
 		async updateSchema() {
 			this.loading = true
 			this.error = null
@@ -903,6 +952,10 @@ export default {
 				this.loading = false
 			}
 		},
+		/**
+		 * @param value
+		 * @spec exclude UI display helper — truncates/normalizes an example value for display.
+		 */
 		formatExample(value) {
 			if (value === null || value === undefined) {
 				return 'null'
@@ -918,6 +971,10 @@ export default {
 
 			return String(value)
 		},
+		/**
+		 * @param page
+		 * @spec exclude UI pagination handler — sets the current page and scrolls to top.
+		 */
 		onPageChanged(page) {
 			this.currentPage = page
 
@@ -927,14 +984,25 @@ export default {
 				container.scrollTop = 0
 			}
 		},
+		/**
+		 * @param pageSize
+		 * @spec exclude UI pagination handler — sets page size and resets to page one.
+		 */
 		onPageSizeChanged(pageSize) {
 			this.itemsPerPage = pageSize
 			this.currentPage = 1
 		},
+		/**
+		 * @spec exclude Modal close plumbing — closes the dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			this.resetDialog()
 		},
+		/**
+		 * @param issues
+		 * @spec exclude UI display helper — maps issue-type strings to display objects.
+		 */
 		getIssueDetails(issues) {
 			// Convert issue type strings to more detailed objects
 			return issues.map(issueType => {
@@ -944,6 +1012,10 @@ export default {
 				}
 			})
 		},
+		/**
+		 * @param issueType
+		 * @spec exclude UI display helper — maps an issue type to a UI category.
+		 */
 		getIssueType(issueType) {
 			// Map issue types to UI-friendly categories
 			const typeMap = {
@@ -961,6 +1033,10 @@ export default {
 			}
 			return typeMap[issueType] || 'general'
 		},
+		/**
+		 * @param issueType
+		 * @spec exclude UI display helper — maps an issue category to a translated label.
+		 */
 		getIssueLabel(issueType) {
 			// Get UI-friendly labels for issue types
 			const labelMap = {
@@ -974,6 +1050,10 @@ export default {
 			}
 			return labelMap[issueType] || this.t('openregister', 'Issue')
 		},
+		/**
+		 * @param issueType
+		 * @spec exclude UI display helper — maps an issue type to a translated description.
+		 */
 		getIssueDescription(issueType) {
 			// Get descriptions for different issue types
 			const descriptionMap = {
@@ -1041,8 +1121,8 @@ export default {
 		}
 
 		.stat-box {
-			background: white;
-			border: 2px solid #e1e5e9;
+			background: var(--color-main-background);
+			border: 2px solid var(--color-border);
 			border-radius: 8px;
 			padding: 1rem;
 			text-align: center;
@@ -1051,7 +1131,7 @@ export default {
 		}
 
 		.stat-box:hover {
-			border-color: #0066cc;
+			border-color: var(--color-primary-element);
 			box-shadow: 0 4px 8px rgba(0, 102, 204, 0.2);
 			transform: translateY(-2px);
 		}
@@ -1059,14 +1139,14 @@ export default {
 		.stat-number {
 			font-size: 2rem;
 			font-weight: bold;
-			color: #0066cc;
+			color: var(--color-primary-element);
 			margin-bottom: 0.5rem;
 			display: block;
 		}
 
 		.stat-title {
 			font-size: 0.9rem;
-			color: #666;
+			color: var(--color-text-maxcontrast);
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
 			font-weight: 600;
@@ -1075,10 +1155,10 @@ export default {
 		.analysis-timestamp {
 			text-align: center;
 			padding: 0.75rem;
-			background: #f8f9fa;
+			background: var(--color-background-hover);
 			border-radius: 6px;
-			border: 1px solid #e1e5e9;
-			color: #495057;
+			border: 1px solid var(--color-border);
+			color: var(--color-main-text);
 			font-size: 0.9rem;
 		}
 	}

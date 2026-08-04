@@ -5,6 +5,9 @@
  *
  * This file contains the handler class for managing file management configuration.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Settings
  *
@@ -79,6 +82,8 @@ class FileSettingsHandler
      * @return array File management configuration.
      *
      * @throws \RuntimeException If File Management settings retrieval fails.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function getFileSettingsOnly(): array
     {
@@ -123,9 +128,13 @@ class FileSettingsHandler
                     // Presidio entity recognition settings.
                     'presidioApiEndpoint'       => '',
                     'openAnonymiserApiEndpoint' => '',
+                    // OpenAnonymiser source: 'internal' (AppAPI ExApp) or 'external' (operator URL).
+                    'openAnonymiserSource'      => 'internal',
                     'entityRecognitionEnabled'  => false,
-                    'entityRecognitionMethod'   => 'hybrid',
-                    // Regex, presidio, openanonymiser, llm, hybrid.
+                    // 'auto' is an internal "not yet configured" marker resolved at state-query
+                    // time to the recommended backend; it is never shown as a UI option.
+                    'entityRecognitionMethod'   => 'auto',
+                    // Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
                 ];
             }//end if
 
@@ -153,6 +162,8 @@ class FileSettingsHandler
      *     textExtractor: 'llphant'|mixed, extractionMode: 'background'|mixed,
      *     maxFileSize: 100|mixed, batchSize: 10|mixed,
      *     dolphinApiEndpoint: ''|mixed, dolphinApiKey: ''|mixed}
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-1
      */
     public function updateFileSettingsOnly(array $fileData): array
     {
@@ -192,9 +203,10 @@ class FileSettingsHandler
                 // Presidio entity recognition settings.
                 'presidioApiEndpoint'       => $fileData['presidioApiEndpoint'] ?? '',
                 'openAnonymiserApiEndpoint' => $fileData['openAnonymiserApiEndpoint'] ?? '',
+                'openAnonymiserSource'      => $fileData['openAnonymiserSource'] ?? 'internal',
                 'entityRecognitionEnabled'  => $fileData['entityRecognitionEnabled'] ?? false,
-                'entityRecognitionMethod'   => $fileData['entityRecognitionMethod'] ?? 'hybrid',
-                // Regex, presidio, openanonymiser, llm, hybrid.
+                'entityRecognitionMethod'   => $fileData['entityRecognitionMethod'] ?? 'auto',
+                // Auto (unconfigured marker), regex, presidio, openanonymiser, llm, hybrid.
             ];
 
             $this->appConfig->setValueString($this->appName, 'fileManagement', json_encode($fileConfig));

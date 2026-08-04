@@ -7,6 +7,9 @@
  * annotation values. Shared by the parallel `aggregations-annotation`
  * and `calculations-annotation` changes so both write the same DSL.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Search
  *
@@ -17,6 +20,8 @@
  * @version GIT: <git-id>
  *
  * @link https://OpenRegister.app
+ *
+ * @spec openspec/specs/aggregations-backend-native/spec.md
  */
 
 declare(strict_types=1);
@@ -59,6 +64,8 @@ final class PlaceholderResolver
      *
      * @return mixed Resolved value: DateTimeImmutable for date placeholders,
      *               string for $currentUser, original value otherwise.
+     *
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function resolve(mixed $value): mixed
     {
@@ -79,6 +86,8 @@ final class PlaceholderResolver
      * @param array<string, mixed> $values The array whose leaf values may contain placeholders.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/specs/aggregations-backend-native/spec.md
      */
     public function resolveArray(array $values): array
     {
@@ -110,7 +119,10 @@ final class PlaceholderResolver
         if ($matched === 1) {
             $base = $matches[1];
             $sign = (int) $matches[2];
-            $unit = ($matches[3] !== '' ? $matches[3] : $this->defaultUnitFor(base: $base));
+            $unit = $this->defaultUnitFor(base: $base);
+            if ($matches[3] !== '') {
+                $unit = $matches[3];
+            }
         } else if (in_array($expr, $datebases, true) === true) {
             $base = $expr;
             $sign = 0;
@@ -141,7 +153,12 @@ final class PlaceholderResolver
                 default => 'days',
             };
 
-            $intervalSpec = sprintf('%s%d %s', ($sign < 0 ? '-' : '+'), abs($sign), $unitWord);
+            $signChar = '+';
+            if ($sign < 0) {
+                $signChar = '-';
+            }
+
+            $intervalSpec = sprintf('%s%d %s', $signChar, abs($sign), $unitWord);
             $dateTime     = $dateTime->modify($intervalSpec);
         }
 

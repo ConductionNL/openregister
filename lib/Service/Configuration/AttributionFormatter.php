@@ -13,6 +13,9 @@
  * URL) is scoped to task 1.15 (follow-up); this skeleton implementation builds the
  * prefix from the raw values returned by IUserManager + IURLGenerator.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Configuration
  *
@@ -101,9 +104,13 @@ class AttributionFormatter
     public function format(string $userId): string
     {
         $user           = $this->userManager->get($userId);
-        $rawDisplayName = $user !== null ? $user->getDisplayName() : $userId;
-        $displayName    = $this->sanitizeDisplayName(rawDisplayName: $rawDisplayName);
-        $instanceUrl    = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
+        $rawDisplayName = $userId;
+        if ($user !== null) {
+            $rawDisplayName = $user->getDisplayName();
+        }
+
+        $displayName = $this->sanitizeDisplayName(rawDisplayName: $rawDisplayName);
+        $instanceUrl = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
 
         if ($this->isValidInstanceUrl(url: $instanceUrl) === false) {
             return self::FALLBACK_PREFIX;

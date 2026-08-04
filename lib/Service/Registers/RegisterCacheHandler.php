@@ -10,6 +10,9 @@
  * cache window on {@see \OCA\OpenRegister\Db\RegisterMapper} so that follow-up
  * reads in the same PHP worker observe a fresh state.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Registers
  *
@@ -96,6 +99,8 @@ class RegisterCacheHandler
      * @param int $registerId The register ID to invalidate.
      *
      * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function invalidate(int $registerId): void
     {

@@ -7,6 +7,9 @@
  * Supports save-time and read-time evaluation of Twig expressions
  * defined in schema property `computed` attributes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Service\Objects\SaveObject
  *
@@ -75,7 +78,7 @@ class ComputedFieldHandler
      * @param MappingRuntimeLoader $mappingRuntimeLoader Twig runtime loader for mapping functions.
      * @param LoggerInterface      $logger               Logger for error and debug messages.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(
         private readonly MagicMapper $objectMapper,
@@ -95,7 +98,7 @@ class ComputedFieldHandler
      *
      * @return Environment The configured Twig environment
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function getTwig(): Environment
     {
@@ -173,7 +176,7 @@ class ComputedFieldHandler
      *
      * @return array The object data with computed field values added/updated.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function evaluateComputedFields(array $data, Schema $schema, string $evaluateOn='save'): array
     {
@@ -223,7 +226,7 @@ class ComputedFieldHandler
      *
      * @return mixed The computed value, or null on error.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function evaluateExpression(
         string $expression,
@@ -280,7 +283,7 @@ class ComputedFieldHandler
      *
      * @return array The Twig context with data and resolved references.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function buildTwigContext(array $data, Schema $schema, int $depth=0): array
     {
@@ -309,7 +312,7 @@ class ComputedFieldHandler
      *
      * @return array Resolved reference data indexed by property name.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function resolveReferences(array $data, Schema $schema, int $depth): array
     {
@@ -388,7 +391,7 @@ class ComputedFieldHandler
      *
      * @return mixed The cast result.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     private function castResult(string $result): mixed
     {
@@ -420,7 +423,7 @@ class ComputedFieldHandler
      *
      * @return bool True if the schema has at least one computed property.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function hasComputedProperties(Schema $schema): bool
     {
@@ -443,7 +446,7 @@ class ComputedFieldHandler
      *
      * @return array List of property names that are computed for the given mode.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-object-lifecycle/tasks.md#task-5
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getComputedPropertyNames(Schema $schema, string $evaluateOn='save'): array
     {
@@ -488,6 +491,8 @@ class ComputedFieldHandler
      * @return array<int, array<int, string>> Detected cycles.
      *
      * @SuppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-2
      */
     public function detectCircularDependencies(Schema $schema): array
     {
@@ -574,6 +579,8 @@ class ComputedFieldHandler
      * @param string $expression The Twig expression source.
      *
      * @return array<int, string> Distinct top-level identifiers.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-1
      */
     private function extractTwigVariables(string $expression): array
     {
@@ -674,6 +681,8 @@ class ComputedFieldHandler
      *                                                 already emitted.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-3
      */
     private function dfsForCycles(
         string $node,
@@ -729,6 +738,8 @@ class ComputedFieldHandler
      *                                  node duplicated.
      *
      * @return string Canonical cycle signature.
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-computed-fields/tasks.md#task-4
      */
     private function canonicaliseCycle(array $cycle): string
     {

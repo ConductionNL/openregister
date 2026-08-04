@@ -7,6 +7,9 @@
  * This ensures optimal facet label resolution performance by pre-populating the
  * distributed name cache with all object names.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category BackgroundJob
  * @package  OCA\OpenRegister\BackgroundJob
  *
@@ -18,7 +21,7 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-30
+ * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -26,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\BackgroundJob;
 
 use OCA\OpenRegister\Service\Object\CacheHandler;
+use OCP\BackgroundJob\IJob;
 use OCP\BackgroundJob\TimedJob;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
@@ -62,6 +66,8 @@ class NameCacheWarmupJob extends TimedJob
     {
         parent::__construct(time: $time);
         $this->setInterval(seconds: self::DEFAULT_INTERVAL);
+        // Warmup is not time-critical: let NC defer it to a low-load window (OPS-13).
+        $this->setTimeSensitivity(sensitivity: IJob::TIME_INSENSITIVE);
     }//end __construct()
 
     /**
@@ -72,6 +78,8 @@ class NameCacheWarmupJob extends TimedJob
      * @return void
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/specs/faceting-configuration/spec.md
      */
     protected function run($argument): void
     {

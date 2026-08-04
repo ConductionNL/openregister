@@ -536,4 +536,160 @@ class AuditTrailControllerTest extends TestCase
 
         $this->assertEquals(405, $result->getStatus());
     }
+
+    // ── Wave-3 C6 admin-only gate (cross-tenant audit-trail leak) ──
+
+    /**
+     * Build a fresh controller with a non-admin user for gate tests.
+     *
+     * The shared `setUp()` wires an admin user so the rest of the suite
+     * exercises the happy path. C6 tests need a non-admin (or anon)
+     * user, so we rebuild the controller with overridden mocks rather
+     * than fight the sticky `willReturn` already wired in setUp().
+     *
+     * @param IUser|null $user The user the session returns; null => anon.
+     * @param bool       $isAdmin Whether $user is in the admin group.
+     */
+    private function makeControllerWithUser(?IUser $user, bool $isAdmin): AuditTrailController
+    {
+        $session     = $this->createMock(IUserSession::class);
+        $groupMgr    = $this->createMock(IGroupManager::class);
+        $session->method('getUser')->willReturn($user);
+        if ($user !== null) {
+            $groupMgr->method('isAdmin')->with($user->getUID())->willReturn($isAdmin);
+        }
+
+        return new AuditTrailController(
+            'openregister',
+            $this->request,
+            $this->logService,
+            $this->auditTrailMapper,
+            $this->auditHashService,
+            $session,
+            $groupMgr
+        );
+    }
+
+    public function testIndexReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(401, $result->getStatus());
+        $this->assertEquals('Authentication required', $result->getData()['error']);
+    }
+
+    public function testIndexReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->index();
+
+        $this->assertEquals(403, $result->getStatus());
+        $this->assertStringContainsString('admin-only', $result->getData()['error']);
+    }
+
+    public function testShowReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->show(1);
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testShowReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->show(42);
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testShowDoesNotInvokeServiceWhenForbidden(): void
+    {
+        // Defence-in-depth check: a non-admin call must short-circuit
+        // before the service is touched (no DB hit, no log read).
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->logService->expects($this->never())->method('getLog');
+
+        $controller->show(42);
+    }
+
+    // ── IDOR gate: per-object audit trail read (objects) is admin-only ──
+
+    public function testObjectsReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->objects('reg', 'schema', 'obj-uuid');
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testObjectsReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->objects('reg', 'schema', 'obj-uuid');
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testObjectsDoesNotInvokeServiceWhenForbidden(): void
+    {
+        // A non-admin must be rejected before any audit log is read —
+        // this is the IDOR fix: arbitrary object ids never reach the service.
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->logService->expects($this->never())->method('getLogs');
+
+        $controller->objects('reg', 'schema', 'obj-uuid');
+    }
+
+    // ── IDOR gate: audit hash-chain verify is admin-only ──
+
+    public function testVerifyReturns401WhenAnonymous(): void
+    {
+        $controller = $this->makeControllerWithUser(null, false);
+
+        $result = $controller->verify();
+
+        $this->assertEquals(401, $result->getStatus());
+    }
+
+    public function testVerifyReturns403WhenNonAdmin(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $result = $controller->verify();
+
+        $this->assertEquals(403, $result->getStatus());
+    }
+
+    public function testVerifyDoesNotInvokeServiceWhenForbidden(): void
+    {
+        $bob = $this->createMock(IUser::class);
+        $bob->method('getUID')->willReturn('bob');
+        $controller = $this->makeControllerWithUser($bob, false);
+
+        $this->auditHashService->expects($this->never())->method('verifyChain');
+
+        $controller->verify();
+    }
 }

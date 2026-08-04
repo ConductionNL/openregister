@@ -45,7 +45,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 					<div class="audit-trail-linked-items-container">
 						<div>
 							<p><b>{{ t('openregister', 'Schema:') }}</b> {{ schemaLoading ? t('openregister', 'Loading...') : schemaItem?.title }}</p>
-							<NcButton type="tertiary"
+							<NcButton variant="tertiary"
 								:aria-label="t('openregister', 'Go to linked Schema')"
 								@click="goToSchema">
 								<template #icon>
@@ -57,7 +57,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 						<div>
 							<p><b>{{ t('openregister', 'Register:') }}</b> {{ registerLoading ? t('openregister', 'Loading...') : registerItem?.title }}</p>
-							<NcButton type="tertiary"
+							<NcButton variant="tertiary"
 								:aria-label="t('openregister', 'Go to linked Register')"
 								@click="goToRegister">
 								<template #icon>
@@ -82,7 +82,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 <script>
 /**
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+ * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
  */
 import {
 	NcModal,
@@ -109,6 +109,9 @@ export default {
 			auditTrail: {}, // Initialize with an empty object
 		}
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — hydrates the audit-trail view modal on mount.
+	 */
 	mounted() {
 		// Assuming objectStore.auditTrailItem is a single audit trail object
 		this.auditTrail = objectStore.auditTrailItem || {}
@@ -117,14 +120,15 @@ export default {
 	},
 	methods: {
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		closeDialog() {
 			navigationStore.setModal(null)
 			objectStore.setAuditTrailItem(null)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @param value
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		formatValue(value) {
 			if (value === null || value === undefined) {
@@ -137,7 +141,7 @@ export default {
 			return value // Return the value as is for other types
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		fetchSchema() {
 			this.schemaLoading = true
@@ -148,7 +152,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		fetchRegister() {
 			this.registerLoading = true
@@ -159,7 +163,7 @@ export default {
 				})
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		goToSchema() {
 			navigationStore.setModal(null)
@@ -168,7 +172,7 @@ export default {
 			schemaStore.setSchemaItem(this.schemaItem)
 		},
 		/**
-		 * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-8
+		 * @spec openspec/specs/audit-trail-immutable/spec.md#requirement-the-audit-trail-must-use-cryptographic-hash-chaining
 		 */
 		goToRegister() {
 			navigationStore.setModal(null)

@@ -3,6 +3,9 @@
 /**
  * OpenRegister ApprovalStepMapper
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Database
  * @package  OCA\OpenRegister\Db
  *
@@ -145,6 +148,8 @@ class ApprovalStepMapper extends QBMapper
      * @param int|null             $offset  Pagination offset
      *
      * @return array<int, ApprovalStep>
+     *
+     * @spec openspec/specs/approval-workflow/spec.md
      */
     public function findAllFiltered(array $filters=[], ?int $limit=null, ?int $offset=null): array
     {
@@ -233,4 +238,41 @@ class ApprovalStepMapper extends QBMapper
 
         return $this->insert(entity: $step);
     }//end createFromArray()
+
+    /**
+     * Delete every step for a chain and object combination.
+     *
+     * Used by `ApprovalChainGateListener` to clear a `rejected` cycle before
+     * provisioning a fresh one on the next gated-transition attempt
+     * (resubmission). `workflow_executions` (`WorkflowExecutionMapper`) remains
+     * the durable audit trail for the cleared cycle's decisions — `ApprovalStep`
+     * rows are working state, not audit log.
+     *
+     * @param int    $chainId    Chain ID
+     * @param string $objectUuid Object UUID
+     *
+     * @return int Number of rows deleted (0 on error).
+     *
+     * @spec openspec/specs/approval-workflow/spec.md
+     */
+    public function deleteByChainAndObject(int $chainId, string $objectUuid): int
+    {
+        try {
+            $qb = $this->db->getQueryBuilder();
+            $qb->delete($this->getTableName())
+                ->where(
+                    $qb->expr()->eq(
+                        'chain_id',
+                        $qb->createNamedParameter(value: $chainId, type: IQueryBuilder::PARAM_INT)
+                    )
+                )
+                ->andWhere(
+                    $qb->expr()->eq('object_uuid', $qb->createNamedParameter($objectUuid))
+                );
+
+            return (int) $qb->executeStatement();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }//end deleteByChainAndObject()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * OpenRegister LLM Settings Controller
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Controller
  * @package   OCA\OpenRegister\Controller\Settings
  * @author    Conduction Development Team <info@conduction.nl>
@@ -71,6 +74,8 @@ class LlmSettingsController extends Controller
      * @return JSONResponse LLM settings
      *
      * @psalm-return JSONResponse<200|500, array, array<never, never>>
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getLLMSettings(): JSONResponse
     {
@@ -91,6 +96,8 @@ class LlmSettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
      * @suppressWarnings(PHPMD.NPathComplexity)
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function updateLLMSettings(): JSONResponse
     {
@@ -168,6 +175,8 @@ class LlmSettingsController extends Controller
      *     array{success: bool, error?: string,
      *     message?: 'LLM settings updated successfully', data?: array},
      *     array<never, never>>
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function patchLLMSettings(): JSONResponse
     {
@@ -185,6 +194,8 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with embedding test result
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function testEmbedding(): JSONResponse
     {
@@ -257,6 +268,8 @@ class LlmSettingsController extends Controller
      *     array<never, never>>|JSONResponse<400,
      *     array{success: false, error: string, message: string},
      *     array<never, never>>
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function testChat(): JSONResponse
     {
@@ -327,6 +340,8 @@ class LlmSettingsController extends Controller
      *
      * @suppressWarnings(PHPMD.ExcessiveMethodLength)
      * @suppressWarnings(PHPMD.CyclomaticComplexity)
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getOllamaModels(): JSONResponse
     {
@@ -351,8 +366,8 @@ class LlmSettingsController extends Controller
             $response  = curl_exec($ch);
             $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
-
+            // No curl_close(): deprecated since PHP 8.0 and a no-op — the
+            // CurlHandle object is freed when it goes out of scope.
             if ($curlError !== '') {
                 return new JSONResponse(
                     data: [
@@ -453,6 +468,8 @@ class LlmSettingsController extends Controller
      * @NoCSRFRequired
      *
      * @return JSONResponse JSON response with mismatch check result
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function checkEmbeddingModelMismatch(): JSONResponse
     {
@@ -482,6 +499,8 @@ class LlmSettingsController extends Controller
      * @psalm-return JSONResponse<200|500,
      *     array{success: bool, error?: string, message?: string, deleted?: int},
      *     array<never, never>>
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function clearAllEmbeddings(): JSONResponse
     {

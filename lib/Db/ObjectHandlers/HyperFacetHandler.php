@@ -7,6 +7,9 @@
  * multi-layered approach to faceting that eliminates performance bottlenecks
  * through intelligent caching, statistical approximation, and parallel processing.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Handler
  * @package  OCA\OpenRegister\Db\ObjectHandlers
  *
@@ -492,7 +495,36 @@ class HyperFacetHandler
         }
 
         // Execute all facet calculations in parallel. @psalm-suppress UndefinedFunction.
-        $results = \React\Async\await(\React\Promise\all($promises));
+        // react/async is a runtime dep of this app; if a deployment ships a
+        // pruned vendor/ (no react/async) the call fatals with "Call to
+        // undefined function React\Async\await()". The facet promises here
+        // resolve synchronously inside their executors (no I/O loop), so
+        // when await() is unavailable we can extract values via then().
+        if (function_exists('React\\Async\\await') === true) {
+            $results = \React\Async\await(\React\Promise\all($promises));
+        } else {
+            $this->logger->warning(
+                message: '[HyperFacetHandler] React\\Async\\await() unavailable; falling back to synchronous'
+                    .' promise extraction (install react/async to silence)',
+                context: ['file' => __FILE__, 'line' => __LINE__]
+            );
+            $results = [];
+            $caught  = null;
+            foreach ($promises as $key => $promise) {
+                $promise->then(
+                    function ($value) use (&$results, $key) {
+                        $results[$key] = $value;
+                    },
+                    function (\Throwable $e) use (&$caught) {
+                        $caught = $e;
+                    }
+                );
+            }
+
+            if ($caught !== null) {
+                throw $caught;
+            }
+        }//end if
 
         // Combine results from different facet types.
         $combinedFacets = [];

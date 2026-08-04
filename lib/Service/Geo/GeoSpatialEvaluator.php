@@ -21,6 +21,9 @@
  *   - Polygon-polygon overlap is approximated as "any vertex of A is in
  *     B, OR any vertex of B is in A".
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Geo
  *
@@ -30,7 +33,9 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/geo-metadata-kaart/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md REQ-GEO-004
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
+ * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
  */
 
 declare(strict_types=1);
@@ -67,6 +72,8 @@ class GeoSpatialEvaluator
      * @param GeoFilter  $filter      The filter to apply.
      *
      * @return bool True when the row passes the filter; null geometries always fail.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     public function matches(?array $rowGeometry, GeoFilter $filter): bool
     {
@@ -101,6 +108,8 @@ class GeoSpatialEvaluator
      * @param float $lat2 Latitude of point B.
      *
      * @return float Distance in meters.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     public function haversineMeters(float $lon1, float $lat1, float $lon2, float $lat2): float
     {
@@ -122,6 +131,8 @@ class GeoSpatialEvaluator
      * @param array $bbox     west/south/east/north.
      *
      * @return bool
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesBbox(array $geometry, array $bbox): bool
     {
@@ -146,6 +157,8 @@ class GeoSpatialEvaluator
      * @param array $payload  lon/lat/radius.
      *
      * @return bool
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-004-spatial-queries-in-the-api
      */
     private function matchesNear(array $geometry, array $payload): bool
     {
@@ -171,6 +184,8 @@ class GeoSpatialEvaluator
      * @param array $predicateGeometry The polygon predicate.
      *
      * @return bool
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesWithin(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -190,6 +205,8 @@ class GeoSpatialEvaluator
      * @param array $predicateGeometry The polygon predicate.
      *
      * @return bool
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function matchesIntersects(array $rowGeometry, array $predicateGeometry): bool
     {
@@ -232,6 +249,8 @@ class GeoSpatialEvaluator
      *   MultiPolygon / LineString) plus shape-validity guards.
      * @SuppressWarnings(PHPMD.NPathComplexity)
      *   Same: each geometry type is one branch.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function extractRepresentativePoint(array $geometry): ?array
     {
@@ -250,13 +269,23 @@ class GeoSpatialEvaluator
         }
 
         if ($type === 'Polygon') {
-            $ring = ($coords[0] ?? null);
-            return $this->ringCentroid(ring: (is_array($ring) === true ? $ring : []));
+            $ring      = ($coords[0] ?? null);
+            $ringArray = [];
+            if (is_array($ring) === true) {
+                $ringArray = $ring;
+            }
+
+            return $this->ringCentroid(ring: $ringArray);
         }
 
         if ($type === 'MultiPolygon') {
-            $ring = ($coords[0][0] ?? null);
-            return $this->ringCentroid(ring: (is_array($ring) === true ? $ring : []));
+            $ring      = ($coords[0][0] ?? null);
+            $ringArray = [];
+            if (is_array($ring) === true) {
+                $ringArray = $ring;
+            }
+
+            return $this->ringCentroid(ring: $ringArray);
         }
 
         if ($type === 'LineString'
@@ -279,6 +308,8 @@ class GeoSpatialEvaluator
      * @param array $ring The ring vertices.
      *
      * @return ?array `[lon, lat]` centroid, or null when the ring is empty.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function ringCentroid(array $ring): ?array
     {
@@ -318,6 +349,8 @@ class GeoSpatialEvaluator
      * @param array $geometry GeoJSON Polygon or MultiPolygon.
      *
      * @return bool
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function pointInPolygonGeometry(array $point, array $geometry): bool
     {
@@ -341,6 +374,8 @@ class GeoSpatialEvaluator
      * @return bool
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Standard Bevis & Chatelain ray-casting algorithm; the branches are inherent to the geometry test.
+     *
+     * @spec openspec/specs/geo-metadata-kaart/spec.md#requirement-req-geo-012-solr-and-elasticsearch-spatial-query-support
      */
     private function pointInRing(array $point, array $ring): bool
     {
@@ -363,13 +398,17 @@ class GeoSpatialEvaluator
                 continue;
             }
 
-            $denom     = ((($yj - $yi) === 0.0) ? 1e-12 : ($yj - $yi));
+            $denom = ($yj - $yi);
+            if ($denom === 0.0) {
+                $denom = 1e-12;
+            }
+
             $intersect = (($yi > $y) !== ($yj > $y))
                 && ($x < (($xj - $xi) * (($y - $yi) / $denom) + $xi));
             if ($intersect === true) {
                 $inside = !$inside;
             }
-        }
+        }//end for
 
         return $inside;
 
@@ -381,6 +420,8 @@ class GeoSpatialEvaluator
      * @param array $geometry The geometry.
      *
      * @return array<int, array<int, array<int, array<int, float>>>>
+     *
+     * @spec openspec/changes/retrofit-2026-05-24-geo-metadata-kaart/tasks.md#task-2
      */
     private function extractPolygons(array $geometry): array
     {

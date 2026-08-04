@@ -22,7 +22,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/text-extraction-eml/specs/text-extraction-eml/spec.md
+ * @spec openspec/specs/text-extraction-eml/spec.md
  *       "Malformed input MUST NOT throw from `extractEml`; `parseEmlStructured` MUST throw a typed exception"
  */
 

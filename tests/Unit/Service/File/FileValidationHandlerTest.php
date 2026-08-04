@@ -435,81 +435,50 @@ class FileValidationHandlerTest extends TestCase
         $this->handler->checkOwnership(file: $file);
     }//end testCheckOwnershipUnreadableFileThrowsNotPermitted()
 
-    public function testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair(): void
+    public function testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed(): void
     {
+        // Access is readability-based and ownership-agnostic: a file the session can
+        // read but does not own (e.g. reached via a file share, or owned by the
+        // openregister system user) must be allowed. No ownership repair is performed.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
 
         $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('old-owner');
+        $fileOwner->method('getUID')->willReturn('other-user');
         $file->method('getOwner')->willReturn($fileOwner);
 
         $currentUser = $this->createMock(IUser::class);
         $currentUser->method('getUID')->willReturn('admin');
         $this->userSession->method('getUser')->willReturn($currentUser);
 
-        // Readable but drifted owner — repair must be attempted.
-        $this->fileMapper->expects($this->once())
-            ->method('setFileOwnership')
-            ->with(42, 'admin')
-            ->willReturn(true);
+        // Ownership is never mutated on an access check.
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
 
         $this->handler->checkOwnership(file: $file);
 
         $this->assertTrue(true);
-    }//end testCheckOwnershipReadableFileWithDriftedOwnerTriggersRepair()
+    }//end testCheckOwnershipReadableFileWithDifferentOwnerIsAllowed()
 
-    public function testCheckOwnershipReadableFileWithNullOwnerTriggersRepair(): void
+    public function testCheckOwnershipReadableFileWithNullOwnerIsAllowed(): void
     {
+        // A readable file is allowed even when getOwner() returns null: readability is
+        // the access gate, and the owner identity is irrelevant.
         $file = $this->createMock(Node::class);
         $file->method('isReadable')->willReturn(true);
         $file->method('getName')->willReturn('test.pdf');
         $file->method('getId')->willReturn(42);
         $file->method('getOwner')->willReturn(null);
 
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        $this->fileMapper->expects($this->once())
-            ->method('setFileOwnership')
-            ->with(42, 'admin')
-            ->willReturn(true);
+        $this->fileMapper->expects($this->never())
+            ->method('setFileOwnership');
 
         $this->handler->checkOwnership(file: $file);
 
         $this->assertTrue(true);
-    }//end testCheckOwnershipReadableFileWithNullOwnerTriggersRepair()
-
-    public function testCheckOwnershipRepairFailureIsSwallowed(): void
-    {
-        $file = $this->createMock(Node::class);
-        $file->method('isReadable')->willReturn(true);
-        $file->method('getName')->willReturn('test.pdf');
-        $file->method('getId')->willReturn(42);
-
-        $fileOwner = $this->createMock(IUser::class);
-        $fileOwner->method('getUID')->willReturn('old-owner');
-        $file->method('getOwner')->willReturn($fileOwner);
-
-        $currentUser = $this->createMock(IUser::class);
-        $currentUser->method('getUID')->willReturn('admin');
-        $this->userSession->method('getUser')->willReturn($currentUser);
-
-        // Repair fails — checkOwnership must NOT propagate the failure (best-effort).
-        $this->fileMapper->method('setFileOwnership')
-            ->willThrowException(new Exception('DB error'));
-
-        $this->logger->expects($this->atLeastOnce())
-            ->method('warning');
-
-        // No exception thrown despite repair failure.
-        $this->handler->checkOwnership(file: $file);
-
-        $this->assertTrue(true);
-    }//end testCheckOwnershipRepairFailureIsSwallowed()
+    }//end testCheckOwnershipReadableFileWithNullOwnerIsAllowed()
 
     // =========================================================================
     // ownFile

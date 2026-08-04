@@ -28,7 +28,7 @@ import { schemaStore, navigationStore, objectStore, registerStore } from '../../
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !canDelete"
-				type="error"
+				variant="error"
 				@click="deleteSchema()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -74,10 +74,16 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude UI state helper — enables deletion only when no objects reference the schema.
+		 */
 		canDelete() {
 			return this.objects.length === 0
 		},
 	},
+	/**
+	 * @spec exclude Vue lifecycle hook — initializes the dialog once when it opens.
+	 */
 	updated() {
 		if (!this.isUpdated && navigationStore.dialog === 'deleteSchema') {
 			this.isUpdated = true
@@ -85,6 +91,9 @@ export default {
 		}
 	},
 	methods: {
+		/**
+		 * @spec exclude Modal data-load plumbing — counts objects referencing the schema before delete.
+		 */
 		async initDialog() {
 			await registerStore.refreshRegisterList()
 			if (!registerStore.registerList.length) {
@@ -128,6 +137,9 @@ export default {
 				}
 			}
 		},
+		/**
+		 * @spec exclude Modal close plumbing — closes the dialog and resets state.
+		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
 			clearTimeout(this.closeModalTimeout)
@@ -138,6 +150,9 @@ export default {
 			this.registerName = ''
 			this.isUpdated = false
 		},
+		/**
+		 * @spec exclude Modal action plumbing — delegates deletion to schemaStore.deleteSchema.
+		 */
 		async deleteSchema() {
 			this.loading = true
 

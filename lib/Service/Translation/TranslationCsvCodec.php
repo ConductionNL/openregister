@@ -9,6 +9,9 @@
  * `ExportService::exportToCsv` once they're updated to be
  * translation-aware (Phase 2.3 wire-in).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Translation
  *
@@ -55,6 +58,8 @@ class TranslationCsvCodec
      *
      * @return array<string, scalar|null>
      *
+     * @spec openspec/specs/register-i18n/spec.md
+     *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */
     public function flattenForCsv(array $data, Schema $schema): array
@@ -83,7 +88,12 @@ class TranslationCsvCodec
                         continue;
                     }
 
-                    $row[$key.'_'.$lang] = is_scalar($langValue) === true ? $langValue : null;
+                    $langScalar = null;
+                    if (is_scalar($langValue) === true) {
+                        $langScalar = $langValue;
+                    }
+
+                    $row[$key.'_'.$lang] = $langScalar;
                 }
 
                 continue;
@@ -99,7 +109,12 @@ class TranslationCsvCodec
             }
 
             // Anything else: pass through.
-            $row[$key] = is_scalar($value) === true ? $value : null;
+            $scalarValue = null;
+            if (is_scalar($value) === true) {
+                $scalarValue = $value;
+            }
+
+            $row[$key] = $scalarValue;
         }//end foreach
 
         return $row;
@@ -118,6 +133,8 @@ class TranslationCsvCodec
      * @param Schema               $schema The schema describing translatable properties.
      *
      * @return array<string, mixed>
+     *
+     * @spec openspec/specs/register-i18n/spec.md
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)
      */

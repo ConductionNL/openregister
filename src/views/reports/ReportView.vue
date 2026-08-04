@@ -3,7 +3,7 @@
 		<div class="viewContainer">
 			<div class="viewHeader">
 				<div class="viewHeaderTitle">
-					<NcButton type="tertiary" @click="$router.push('/reports')">
+					<NcButton variant="tertiary" @click="$router.push('/reports')">
 						<template #icon>
 							<ChevronLeft :size="20" />
 						</template>
@@ -12,7 +12,7 @@
 					<h1 class="viewHeaderTitleIndented">
 						{{ dashboard?.titel || t('openregister', 'Dashboard') }}
 					</h1>
-					<NcButton type="tertiary" :disabled="loading" @click="refresh">
+					<NcButton variant="tertiary" :disabled="loading" @click="refresh">
 						<template #icon>
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<Refresh v-else :size="20" />
@@ -117,11 +117,11 @@
 							:labels="chartLabels(widgetState(index).data, widget)" />
 
 						<!-- Table -->
-						<CnTableWidget
+						<CnDataTable
 							v-else-if="widget.type === 'table'"
-							:title="''"
 							:rows="tableRows(widgetState(index).data)"
-							:columns="tableColumns(widget)" />
+							:columns="tableColumns(widget)"
+							borderless />
 
 						<!-- Sparkline (renders as a tiny line chart) -->
 						<CnChartWidget
@@ -167,7 +167,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppContent, NcButton, NcEmptyContent, NcLoadingIcon, NcActions, NcActionButton } from '@nextcloud/vue'
-import { CnChartWidget, CnTableWidget } from '@conduction/nextcloud-vue'
+import { CnChartWidget, CnDataTable } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 
 import Refresh from 'vue-material-design-icons/Refresh.vue'
@@ -203,7 +203,7 @@ export default {
 		NcActions,
 		NcActionButton,
 		CnChartWidget,
-		CnTableWidget,
+		CnDataTable,
 		Refresh,
 		ChevronLeft,
 		AlertCircleOutline,
@@ -225,18 +225,48 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Expose the l10n translate helper to the template.
+		 *
+		 * @spec exclude UI plumbing — template translation helper
+		 * @return {Function}
+		 */
 		t() {
 			return t
 		},
+		/**
+		 * The active report dashboard from the store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		dashboard() {
 			return reportsStore.getActiveDashboard
 		},
+		/**
+		 * Whether the reports store is loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return reportsStore.isLoading
 		},
+		/**
+		 * Widget list for the active dashboard, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {Array<object>}
+		 */
 		widgets() {
 			return this.dashboard?.widgets || []
 		},
+		/**
+		 * CSS grid custom properties derived from the dashboard layout.
+		 *
+		 * @spec exclude UI plumbing — derived presentation styles
+		 * @return {object}
+		 */
 		gridStyles() {
 			const cols = this.dashboard?.layout?.cols ?? 4
 			return {
@@ -248,6 +278,13 @@ export default {
 	watch: {
 		'$route.params.id': {
 			immediate: true,
+			/**
+			 * Load the dashboard when the route id changes.
+			 *
+			 * @param {string} value The new route id.
+			 * @spec exclude UI plumbing — route watch handler
+			 * @return {void}
+			 */
 			handler(value) {
 				if (value) this.load(value)
 			},
@@ -255,6 +292,13 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Fetch a dashboard and its widget data for display.
+		 *
+		 * @param {string} identifier The dashboard identifier.
+		 * @spec exclude UI plumbing — delegates to the reports store fetch
+		 * @return {Promise<void>}
+		 */
 		async load(identifier) {
 			try {
 				await reportsStore.fetchDashboard(identifier)
@@ -266,6 +310,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Fetch data for every widget in the active dashboard.
+		 *
+		 * @param {boolean} forceRefresh Whether to bypass cached widget data.
+		 * @spec exclude UI plumbing — delegates to the reports store fetch
+		 * @return {Promise<void>}
+		 */
 		async loadWidgetData(forceRefresh = false) {
 			const widgets = this.widgets
 			for (let i = 0; i < widgets.length; i++) {
@@ -289,10 +340,23 @@ export default {
 			}))
 		},
 
+		/**
+		 * Reload the current dashboard and its widget data.
+		 *
+		 * @spec exclude UI plumbing — refresh button delegates to load()
+		 * @return {Promise<void>}
+		 */
 		async refresh() {
 			await this.load(this.$route.params.id)
 		},
 
+		/**
+		 * Render and download the dashboard in the given export format.
+		 *
+		 * @param {string} format The export format (e.g. pdf, xlsx).
+		 * @spec exclude UI plumbing — delegates to the render API and downloads
+		 * @return {Promise<void>}
+		 */
 		async downloadAs(format) {
 			const id = this.$route.params.id
 			if (!id) return
@@ -315,6 +379,12 @@ export default {
 			}
 		},
 
+		/**
+		 * Open the dashboard's HTML preview in a new tab.
+		 *
+		 * @spec exclude UI plumbing — opens a preview URL in a new tab
+		 * @return {void}
+		 */
 		openHtmlPreview() {
 			const id = this.$route.params.id
 			if (!id) return
@@ -322,16 +392,37 @@ export default {
 			window.open(url, '_blank')
 		},
 
+		/**
+		 * Extract a filename from a response's content-disposition header.
+		 *
+		 * @param {object} response The axios response.
+		 * @spec exclude UI plumbing — private download-filename helper
+		 * @return {(string|null)}
+		 */
 		_extractFilename(response) {
 			const cd = response.headers?.['content-disposition'] || ''
 			const m = cd.match(/filename="?([^";]+)"?/i)
 			return m ? m[1] : null
 		},
 
+		/**
+		 * Return the per-widget loading/error/data state for display.
+		 *
+		 * @param {number} index The widget index.
+		 * @spec exclude UI plumbing — derived per-widget view state
+		 * @return {object}
+		 */
 		widgetState(index) {
 			return this.widgetStates[index] ?? { loading: false, error: null, data: null }
 		},
 
+		/**
+		 * Build the cache key for a widget's data source.
+		 *
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — private cache-key helper
+		 * @return {string}
+		 */
 		_cacheKey(widget) {
 			const ds = widget?.dataSource
 			if (!ds) return ''
@@ -341,6 +432,13 @@ export default {
 			return `unknown:${ds.mode}`
 		},
 
+		/**
+		 * Compute the CSS grid span styles for a widget cell.
+		 *
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — derived presentation styles
+		 * @return {object}
+		 */
 		widgetCellStyle(widget) {
 			const layout = widget.layout
 			if (!layout) return {}
@@ -350,10 +448,25 @@ export default {
 			return styles
 		},
 
+		/**
+		 * Resolve the icon component for a widget.
+		 *
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation helper
+		 * @return {object}
+		 */
 		widgetIcon(widget) {
 			return ICON_MAP[widget.options?.icon] || ChartBoxOutline
 		},
 
+		/**
+		 * Format a widget value for display per its configured format.
+		 *
+		 * @param {*} data The raw widget data.
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation helper
+		 * @return {string}
+		 */
 		formatValue(data, widget) {
 			if (data === null || data === undefined) return '—'
 			const field = widget.options?.valueField || 'count'
@@ -383,6 +496,14 @@ export default {
 			return String(raw)
 		},
 
+		/**
+		 * Build the ApexCharts series array from widget data.
+		 *
+		 * @param {object} data The widget data.
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array}
+		 */
 		chartSeries(data, widget) {
 			if (!data) return []
 			// If the aggregation returned grouped data: { groups: [{ key, value }] }
@@ -402,11 +523,27 @@ export default {
 			return []
 		},
 
+		/**
+		 * Build the chart x-axis categories from widget data.
+		 *
+		 * @param {object} data The widget data.
+		 * @param {object} _widget The widget definition (unused).
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<string>}
+		 */
 		chartCategories(data, _widget) {
 			if (!data || !Array.isArray(data.groups)) return []
 			return data.groups.map((g) => String(g.key ?? g.label ?? ''))
 		},
 
+		/**
+		 * Build the pie/donut chart labels from widget data.
+		 *
+		 * @param {object} data The widget data.
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<string>}
+		 */
 		chartLabels(data, widget) {
 			const chartType = widget.options?.chartType || 'bar'
 			if ((chartType === 'pie' || chartType === 'donut') && Array.isArray(data?.groups)) {
@@ -415,6 +552,13 @@ export default {
 			return []
 		},
 
+		/**
+		 * Extract table row data from a widget's payload.
+		 *
+		 * @param {object} data The widget data.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array}
+		 */
 		tableRows(data) {
 			if (!data) return []
 			if (Array.isArray(data)) return data
@@ -423,6 +567,13 @@ export default {
 			return []
 		},
 
+		/**
+		 * Build the table column definitions for a widget.
+		 *
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<object>}
+		 */
 		tableColumns(widget) {
 			const cols = widget.options?.columns
 			if (Array.isArray(cols) && cols.length > 0) {
@@ -435,6 +586,14 @@ export default {
 			]
 		},
 
+		/**
+		 * Build the sparkline value series from widget data.
+		 *
+		 * @param {object} data The widget data.
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<number>}
+		 */
 		sparklineData(data, widget) {
 			if (!data) return []
 			const field = widget.options?.trendField || 'groups'
@@ -443,11 +602,26 @@ export default {
 			return arr.map((entry) => Number(entry[valueField] ?? entry.value ?? entry.count ?? entry))
 		},
 
+		/**
+		 * Build the sparkline x-axis categories from widget data.
+		 *
+		 * @param {object} data The widget data.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<string>}
+		 */
 		sparklineCategories(data) {
 			if (!data || !Array.isArray(data.groups)) return []
 			return data.groups.map((g) => String(g.key ?? ''))
 		},
 
+		/**
+		 * Build the label/value entries for a stats widget.
+		 *
+		 * @param {object} data The widget data.
+		 * @param {object} widget The widget definition.
+		 * @spec exclude UI plumbing — pure presentation data mapping
+		 * @return {Array<object>}
+		 */
 		statsEntries(data, widget) {
 			if (!data) return []
 			const valueField = widget.options?.valueField || 'value'

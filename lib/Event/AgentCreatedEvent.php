@@ -6,6 +6,9 @@
  * This file contains the event class dispatched when an agent is created
  * in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Event
  * @package  OCA\OpenRegister\Event
  *
@@ -54,7 +57,7 @@ class AgentCreatedEvent extends Event
      *
      * @return Agent The agent that was created.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-27
+     * @spec openspec/specs/event-driven-architecture/spec.md#requirement-event-payloads-for-webhook-delivery-must-include-register-and-schema-context-for-object-events
      */
     public function getAgent(): Agent
     {

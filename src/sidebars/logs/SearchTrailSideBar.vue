@@ -29,7 +29,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -41,7 +41,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="successSelect">{{ t('openregister', 'Success Status') }}</label>
@@ -52,7 +52,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:placeholder="t('openregister', 'All searches')"
 						:input-label="t('openregister', 'Success Status')"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label, value }">
 							<div class="statusOption" :class="value">
 								{{ label }}
@@ -70,7 +70,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						:input-label="t('openregister', 'Users')"
 						:multiple="true"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -82,12 +82,12 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="datetime-local"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 				<div class="filterGroup">
 					<label for="searchTermFilter">{{ t('openregister', 'Search Term') }}</label>
@@ -96,7 +96,7 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 						v-model="searchTermFilter"
 						:label="t('openregister', 'Filter by search term')"
 						:placeholder="t('openregister', 'Enter search term')"
-						@update:value="handleSearchTermFilterChange" />
+						@update:modelValue="handleSearchTermFilterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="executionTimeFilter">{{ t('openregister', 'Execution Time Range') }}</label>
@@ -107,14 +107,14 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							:label="t('openregister', 'Min execution time (ms)')"
 							:placeholder="t('openregister', 'Min ms')"
 							type="number"
-							@update:value="handleExecutionTimeChange" />
+							@update:modelValue="handleExecutionTimeChange" />
 						<NcTextField
 							id="executionTimeTo"
 							v-model="executionTimeTo"
 							:label="t('openregister', 'Max execution time (ms)')"
 							:placeholder="t('openregister', 'Max ms')"
 							type="number"
-							@update:value="handleExecutionTimeChange" />
+							@update:modelValue="handleExecutionTimeChange" />
 					</div>
 				</div>
 				<div class="filterGroup">
@@ -126,14 +126,14 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 							:label="t('openregister', 'Min result count')"
 							:placeholder="t('openregister', 'Min results')"
 							type="number"
-							@update:value="handleResultCountChange" />
+							@update:modelValue="handleResultCountChange" />
 						<NcTextField
 							id="resultCountTo"
 							v-model="resultCountTo"
 							:label="t('openregister', 'Max result count')"
 							:placeholder="t('openregister', 'Max results')"
 							type="number"
-							@update:value="handleResultCountChange" />
+							@update:modelValue="handleResultCountChange" />
 					</div>
 				</div>
 			</div>
@@ -326,9 +326,10 @@ import { searchTrailStore, navigationStore, registerStore, schemaStore } from '.
 					<NcSelect
 						id="activityPeriodSelect"
 						v-model="selectedActivityPeriod"
+						input-label="Selected Activity Period"
 						:options="activityPeriodOptions"
 						:placeholder="t('openregister', 'Select period')"
-						@input="loadActivityData">
+						@update:modelValue="loadActivityData">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -395,6 +396,7 @@ import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
 import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
 import Monitor from 'vue-material-design-icons/Monitor.vue'
 import FilterOffOutline from 'vue-material-design-icons/FilterOffOutline.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'SearchTrailSideBar',
@@ -485,6 +487,11 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * Build the register dropdown options for the search-trail filter.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for registers
+		 */
 		registerOptions() {
 			return {
 				options: registerStore.registerList.map(register => ({
@@ -500,6 +507,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Build the schema dropdown options scoped to the selected register.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object} NcSelect options bag for schemas
+		 */
 		schemaOptions() {
 			if (!registerStore.registerItem) return { options: [] }
 
@@ -519,6 +531,11 @@ export default {
 				},
 			}
 		},
+		/**
+		 * Resolve the currently-selected register into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected register option, or null
+		 */
 		selectedRegisterValue() {
 			if (!registerStore.registerItem) return null
 			const register = registerStore.registerItem
@@ -529,6 +546,11 @@ export default {
 				register,
 			}
 		},
+		/**
+		 * Resolve the currently-selected schema into NcSelect value shape.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {object|null} Selected schema option, or null
+		 */
 		selectedSchemaValue() {
 			if (!schemaStore.schemaItem) return null
 			const schema = schemaStore.schemaItem
@@ -539,6 +561,11 @@ export default {
 				schema,
 			}
 		},
+		/**
+		 * Derive the user filter options from the search-trail list.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-11
+		 * @return {Array} User filter options
+		 */
 		userOptions() {
 			if (!searchTrailStore.searchTrailList || !searchTrailStore.searchTrailList.length) {
 				return []
@@ -554,6 +581,9 @@ export default {
 	watch: {
 		// Keep component/store in sync with URL query params (single source of truth)
 		'$route.query': {
+			/**
+			 * @spec exclude Vue watch handler plumbing; re-syncs sidebar state from the route query on /search-trails.
+			 */
 			handler() {
 				if (this.$route.path !== '/search-trails') return
 				this.applyQueryParamsFromRoute()
@@ -571,6 +601,12 @@ export default {
 			this.applyFilters()
 		},
 	},
+	/**
+	 * Load every search-trail analytics dataset on mount and seed state from the route.
+	 *
+	 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
+	 * @return {void}
+	 */
 	mounted() {
 		// Load required data
 		if (!registerStore.registerList.length) {
@@ -590,7 +626,7 @@ export default {
 		this.loadActivityData()
 
 		// Listen for filtered count updates
-		this.$root.$on('search-trail-filtered-count', (count) => {
+		eventBus.on('search-trail-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 
@@ -600,12 +636,13 @@ export default {
 		// Initialize from current URL query params
 		this.applyQueryParamsFromRoute()
 	},
-	beforeDestroy() {
-		this.$root.$off('search-trail-filtered-count')
+	beforeUnmount() {
+		eventBus.off('search-trail-filtered-count')
 	},
 	methods: {
 		/**
 		 * Load search trail data and update filtered count
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadSearchTrailData() {
@@ -618,6 +655,7 @@ export default {
 		},
 		/**
 		 * Clear all filters
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		clearAllFilters() {
@@ -647,6 +685,7 @@ export default {
 		},
 		/**
 		 * Clear filters (alias for clearAllFilters for template compatibility)
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		clearFilters() {
@@ -654,6 +693,7 @@ export default {
 		},
 		/**
 		 * Handle search term filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @param {string} value - The filter value
 		 * @return {void}
 		 */
@@ -663,6 +703,7 @@ export default {
 		},
 		/**
 		 * Handle execution time filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		handleExecutionTimeChange() {
@@ -670,6 +711,7 @@ export default {
 		},
 		/**
 		 * Handle result count filter change with debouncing
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		handleResultCountChange() {
@@ -677,6 +719,7 @@ export default {
 		},
 		/**
 		 * Apply filters and emit to parent components
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		applyFilters() {
@@ -739,13 +782,14 @@ export default {
 			searchTrailStore.refreshSearchTrailList()
 
 			// Also emit for legacy compatibility
-			this.$root.$emit('search-trail-filters-changed', filters)
+			eventBus.emit('search-trail-filters-changed', filters)
 
 			// Reflect filters in URL
 			this.updateRouteQueryFromState()
 		},
 		/**
 		 * Debounced version of applyFilters for text input
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
 		 * @return {void}
 		 */
 		debouncedApplyFilters() {
@@ -756,6 +800,7 @@ export default {
 		},
 		/**
 		 * Update filtered count from store
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {void}
 		 */
 		updateFilteredCount() {
@@ -763,6 +808,7 @@ export default {
 		},
 		/**
 		 * Load statistics
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadStatistics() {
@@ -797,6 +843,7 @@ export default {
 		},
 		/**
 		 * Load popular search terms
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadPopularTerms() {
@@ -810,6 +857,7 @@ export default {
 		},
 		/**
 		 * Load register schema statistics
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadRegisterSchemaStats() {
@@ -823,6 +871,7 @@ export default {
 		},
 		/**
 		 * Load user agent statistics
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadUserAgentStats() {
@@ -836,6 +885,7 @@ export default {
 		},
 		/**
 		 * Load activity data for selected period
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @return {Promise<void>}
 		 */
 		async loadActivityData() {
@@ -852,6 +902,7 @@ export default {
 		},
 		/**
 		 * Get complexity percentage for progress bar
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {string} type - The complexity type
 		 * @return {number} The percentage
 		 */
@@ -862,6 +913,7 @@ export default {
 		},
 		/**
 		 * Format activity period for display
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {string} period - The period string
 		 * @return {string} Formatted period
 		 */
@@ -883,7 +935,8 @@ export default {
 			}
 		},
 		/**
-		 * Handle register change
+		 * Handle register change (cascade: set register, clear schema, re-apply filters).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} register - Selected register
 		 * @return {void}
 		 */
@@ -893,7 +946,8 @@ export default {
 			this.applyFilters()
 		},
 		/**
-		 * Handle schema change
+		 * Handle schema change (set schema, re-apply filters).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-5
 		 * @param {object} schema - Selected schema
 		 * @return {void}
 		 */
@@ -903,6 +957,7 @@ export default {
 		},
 		/**
 		 * Get register/schema name for display
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {object} stat - The register/schema stat object
 		 * @return {string} The display name
 		 */
@@ -917,6 +972,7 @@ export default {
 		},
 		/**
 		 * Get browser name for display
+		 * @spec openspec/specs/zoeken-filteren/spec.md#requirement-search-trail-analytics-dashboard
 		 * @param {object} agent - The user agent stat object
 		 * @return {string} The browser name
 		 */
@@ -928,7 +984,11 @@ export default {
 			}
 			return agent.user_agent || 'Unknown Browser'
 		},
-		// Build URL query from current component/store state
+		/**
+		 * Build URL query from current component/store state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {object} Query object derived from sidebar filter state
+		 */
 		buildQueryFromState() {
 			const query = {}
 			// Filters
@@ -946,7 +1006,13 @@ export default {
 			if (this.resultCountTo) query.resultCountTo = String(this.resultCountTo)
 			return query
 		},
-		// Shallow compare queries
+		/**
+		 * Shallow-compare two query objects (keys and stringified values).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @param {object} a - First query object
+		 * @param {object} b - Second query object
+		 * @return {boolean} Whether the queries are equal
+		 */
 		queriesEqual(a, b) {
 			const ka = Object.keys(a).sort()
 			const kb = Object.keys(b || {}).sort()
@@ -958,14 +1024,22 @@ export default {
 			}
 			return true
 		},
-		// Write current state into URL
+		/**
+		 * Write current sidebar state into the URL query (only on /search-trails).
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		updateRouteQueryFromState() {
 			if (this.$route.path !== '/search-trails') return
 			const nextQuery = this.buildQueryFromState()
 			if (this.queriesEqual(nextQuery, this.$route.query)) return
 			this.$router.replace({ path: this.$route.path, query: nextQuery })
 		},
-		// Read URL query and apply to component/store
+		/**
+		 * Read the URL query and apply it to component/store state.
+		 * @spec openspec/changes/retrofit-2026-05-25-fe-sidebars/tasks.md#task-6
+		 * @return {void}
+		 */
 		applyQueryParamsFromRoute() {
 			if (this.$route.path !== '/search-trails') return
 			const q = this.$route.query || {}

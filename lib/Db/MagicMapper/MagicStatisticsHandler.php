@@ -16,6 +16,9 @@
  * - Register/schema pair discovery from database table names
  * - Row-to-ObjectEntity conversion for magic table rows
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Handler
  * @package   OCA\OpenRegister\Db\MagicMapper
  * @author    Conduction Development Team <info@conduction.nl>
@@ -56,6 +59,33 @@ use Psr\Log\LoggerInterface;
  */
 class MagicStatisticsHandler
 {
+
+    /**
+     * Per-request memo of the magic-table list from information_schema.
+     *
+     * `getStatistics()` is called once per register on a registers-list page and
+     * each call re-ran the information_schema catalog scan; caching it for the
+     * request collapses O(registers) scans to one (consolidate-request-scoped-cache).
+     * Null until first populated; only successful scans are cached.
+     *
+     * @var array<int, string>|null
+     */
+    private ?array $magicTablesCache = null;
+
+    /**
+     * Registers already fetched this request, keyed by id.
+     *
+     * @var array<int, Register>
+     */
+    private array $registerCache = [];
+
+    /**
+     * Schemas already fetched this request, keyed by id.
+     *
+     * @var array<int, Schema>
+     */
+    private array $schemaCache = [];
+
 
     /**
      * Metadata column prefix used in magic mapper tables
@@ -109,6 +139,59 @@ class MagicStatisticsHandler
     }//end setCountCallback()
 
     /**
+     * Find a Register, reusing the entity within this request.
+     *
+     * Statistics walk every register/schema pair, and a caller that wants stats for N
+     * registers calls getStatistics() N times — so the SAME register and schema rows were
+     * re-fetched from the database over and over. On a dev instance with 76 registers and
+     * 1,231 schemas that was ~2,500 redundant SELECTs to render one list.
+     *
+     * Registers and schemas do not change mid-request, so hold on to them.
+     *
+     * @param int $registerId The register id.
+     *
+     * @return Register The register entity.
+     *
+     * @spec exclude request-scoped identity cache; no behaviour change
+     */
+    private function findRegisterCached(int $registerId): Register
+    {
+        if (isset($this->registerCache[$registerId]) === false) {
+            $this->registerCache[$registerId] = $this->registerMapper->find(
+                $registerId,
+                _multitenancy: false,
+                _rbac: false
+            );
+        }
+
+        return $this->registerCache[$registerId];
+    }//end findRegisterCached()
+
+    /**
+     * Find a Schema, reusing the entity within this request.
+     *
+     * @param int $schemaId The schema id.
+     *
+     * @return Schema The schema entity.
+     *
+     * @see self::findRegisterCached() for why this cache exists.
+     *
+     * @spec exclude request-scoped identity cache; no behaviour change
+     */
+    private function findSchemaCached(int $schemaId): Schema
+    {
+        if (isset($this->schemaCache[$schemaId]) === false) {
+            $this->schemaCache[$schemaId] = $this->schemaMapper->find(
+                $schemaId,
+                _multitenancy: false,
+                _rbac: false
+            );
+        }
+
+        return $this->schemaCache[$schemaId];
+    }//end findSchemaCached()
+
+    /**
      * Count objects in a register-schema table via the injected callback.
      *
      * @param array    $query    Query filters
@@ -142,6 +225,10 @@ class MagicStatisticsHandler
      */
     private function getAllMagicMapperTables(): array
     {
+        if ($this->magicTablesCache !== null) {
+            return $this->magicTablesCache;
+        }
+
         try {
             $platform   = $this->db->getDatabasePlatform();
             $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
@@ -168,6 +255,8 @@ class MagicStatisticsHandler
 
                 $tables[] = $tableName;
             }
+
+            $this->magicTablesCache = $tables;
 
             return $tables;
         } catch (Exception $e) {
@@ -273,8 +362,8 @@ class MagicStatisticsHandler
             }
 
             try {
-                $register = $this->registerMapper->find($pairRegisterId, _multitenancy: false, _rbac: false);
-                $schema   = $this->schemaMapper->find($pairSchemaId, _multitenancy: false, _rbac: false);
+                $register = $this->findRegisterCached(registerId: $pairRegisterId);
+                $schema   = $this->findSchemaCached(schemaId: $pairSchemaId);
 
                 $count  = $this->countObjectsInRegisterSchemaTable(
                     query: [],
@@ -589,7 +678,10 @@ class MagicStatisticsHandler
                 if ($value !== null && is_string($value) === true && $propertyFormat !== null) {
                     if ($propertyFormat === 'date') {
                         $normalised = $this->dateTimeNormalizer->normalize($value);
-                        $value      = $normalised !== null ? $normalised->format('Y-m-d') : null;
+                        $value      = null;
+                        if ($normalised !== null) {
+                            $value = $normalised->format('Y-m-d');
+                        }
                     } else if ($propertyFormat === 'date-time') {
                         $value = $this->dateTimeNormalizer->formatForIso8601($value);
                     }
@@ -626,25 +718,9 @@ class MagicStatisticsHandler
                 $objectEntity->$method($value);
                 // Debug critical fields.
                 if (in_array($field, ['id', 'uuid', 'owner'], true) === true) {
-                    $this->logger->debug(
-                        message: '[MagicStatisticsHandler] Set critical metadata field',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'field' => $field, 'value' => $value]
-                    );
                 }
             }//end foreach
 
-            // Verify entity state after setting metadata.
-            $this->logger->debug(
-                message: '[MagicStatisticsHandler] Entity state after metadata',
-                context: [
-                    'file'        => __FILE__,
-                    'line'        => __LINE__,
-                    'entityId'    => $objectEntity->getId(),
-                    'entityUuid'  => $objectEntity->getUuid(),
-                    'entityOwner' => $objectEntity->getOwner(),
-                ]
-            );
-            // End foreach.
             // Set object data.
             $objectEntity->setObject($objectData);
 
@@ -660,20 +736,6 @@ class MagicStatisticsHandler
             if (isset($metadata['uuid']) === true && $metadata['uuid'] !== null) {
                 $objectEntity->setUuid($metadata['uuid']);
             }
-
-            // Debug logging.
-            $this->logger->debug(
-                message: '[MagicStatisticsHandler] Successfully converted row to ObjectEntity',
-                context: [
-                    'file'           => __FILE__,
-                    'line'           => __LINE__,
-                    'uuid'           => $metadata['uuid'] ?? 'unknown',
-                    'register'       => $metadata['register'] ?? 'missing',
-                    'schema'         => $metadata['schema'] ?? 'missing',
-                    'objectDataKeys' => array_keys($objectData),
-                    'metadataCount'  => count($metadata),
-                ]
-            );
 
             return $objectEntity;
         } catch (Exception $e) {

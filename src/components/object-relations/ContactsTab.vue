@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 	<div class="contacts-tab">
 		<!-- Toolbar -->
 		<div v-if="!loading && !contactsUnavailable" class="contacts-tab__toolbar">
-			<NcButton type="primary" @click="openCreateDialog">
+			<NcButton variant="primary" @click="openCreateDialog">
 				<template #icon>
 					<AccountPlus :size="20" />
 				</template>
@@ -64,7 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 						<span v-if="contact.role" class="contacts-tab__role">{{ contact.role }}</span>
 					</div>
 				</div>
-				<NcButton type="tertiary"
+				<NcButton variant="tertiary"
 					:aria-label="t('openregister', 'Remove contact')"
 					@click="unlinkContact(contact)">
 					<template #icon>
@@ -78,9 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 <script>
 import { translate as t } from '@nextcloud/l10n'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcEmptyContent, NcLoadingIcon, NcButton } from '@nextcloud/vue'
 import AlertCircleOutline from 'vue-material-design-icons/AlertCircleOutline.vue'
 import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
 import AccountPlus from 'vue-material-design-icons/AccountPlus.vue'
@@ -138,15 +136,27 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * @spec exclude computed store cache-key from register/schema/object, UI plumbing
+		 */
 		key() {
 			return `${this.register}:${this.schema}:${this.objectId}`
 		},
+		/**
+		 * @spec exclude computed read of linked contacts from store; contact-relations contract owned by integration-contacts capability
+		 */
 		contacts() {
 			return this.store.byObject[this.key] || []
 		},
+		/**
+		 * @spec exclude computed read of loading state from store, UI plumbing
+		 */
 		loading() {
 			return !!this.store.loading[this.key]
 		},
+		/**
+		 * @spec exclude computed read of integration-availability flag from store, UI plumbing
+		 */
 		contactsUnavailable() {
 			return this.store.contactsUnavailable
 		},
@@ -155,6 +165,10 @@ export default {
 	watch: {
 		objectId: {
 			immediate: true,
+			/**
+			 * @param newId
+			 * @spec exclude watcher refetching contacts on objectId change, UI plumbing
+			 */
 			handler(newId) {
 				if (newId) {
 					this.fetchContacts()
@@ -166,6 +180,17 @@ export default {
 	methods: {
 		t,
 
+		/**
+		 * Fetch the contact list for the current object via the per-object
+		 * `GET /api/objects/{register}/{schema}/{id}/contacts` endpoint. Sets
+		 * `error` / `errorMessage` on failure; the 501 graceful-degradation
+		 * path is handled inside the store and surfaces as
+		 * `store.contactsUnavailable`.
+		 *
+		 * @spec openspec/specs/contacts-actions/spec.md
+		 *
+		 * @return {Promise<void>}
+		 */
 		async fetchContacts() {
 			this.error = false
 			this.errorMessage = ''
@@ -177,6 +202,10 @@ export default {
 			}
 		},
 
+		/**
+		 * @param contact
+		 * @spec exclude store passthrough unlinking contact + change emit; contact-relations contract owned by integration-contacts capability
+		 */
 		async unlinkContact(contact) {
 			const uid = contact.uid || contact.contactUid || contact.id
 			try {
@@ -188,6 +217,9 @@ export default {
 			}
 		},
 
+		/**
+		 * @spec exclude emit UI handler opening add-contact dialog, UI plumbing
+		 */
 		openCreateDialog() {
 			this.$emit('add-contact')
 		},

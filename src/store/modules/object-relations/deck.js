@@ -20,6 +20,8 @@ import axios from '@nextcloud/axios'
  * can render an empty state instead of an error.
  *
  * Spec: openspec/changes/nextcloud-entity-relations/specs/deck-relations/spec.md
+ *
+ * @spec openspec/changes/retrofit-2026-05-24-data-integrity-relations/tasks.md#task-4
  */
 export const useDeckRelationsStore = defineStore('deckRelations', {
 	state: () => ({
@@ -30,6 +32,15 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 	}),
 
 	actions: {
+		/**
+		 * Build the Deck endpoint URL for an object.
+		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param suffix
+		 * @spec exclude private URL-builder helper (no client state)
+		 */
 		_url(register, schema, id, suffix = '') {
 			return generateUrl('/apps/openregister/api/objects/{register}/{schema}/{id}/deck' + suffix, {
 				register,
@@ -38,6 +49,15 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 			})
 		},
 
+		/**
+		 * Fetch and cache Deck links for an object, falling back to an empty
+		 * state when the Deck app is unavailable (HTTP 501).
+		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 */
 		async fetch(register, schema, id) {
 			const k = `${register}:${schema}:${id}`
 			this.loading = { ...this.loading, [k]: true }
@@ -67,12 +87,32 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 			}
 		},
 
+		/**
+		 * Create or link a Deck card to an object, then refresh the cached
+		 * list for that object key.
+		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param payload
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 */
 		async createOrLink(register, schema, id, payload) {
 			const response = await axios.post(this._url(register, schema, id), payload)
 			await this.fetch(register, schema, id)
 			return response.data
 		},
 
+		/**
+		 * Unlink a Deck card, optimistically pruning it from the cached list
+		 * for that object key without refetching.
+		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @param deckRef
+		 * @spec openspec/specs/frontend-store-client-state/spec.md
+		 */
 		async unlink(register, schema, id, deckRef) {
 			await axios.delete(this._url(register, schema, id, '/' + encodeURIComponent(deckRef)))
 			const k = `${register}:${schema}:${id}`
@@ -81,6 +121,14 @@ export const useDeckRelationsStore = defineStore('deckRelations', {
 			return next
 		},
 
+		/**
+		 * Read the cached Deck links for an object key.
+		 *
+		 * @param register
+		 * @param schema
+		 * @param id
+		 * @spec exclude store getter (reads local per-key cache)
+		 */
 		get(register, schema, id) {
 			return this.byObject[`${register}:${schema}:${id}`] || []
 		},

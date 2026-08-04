@@ -18,6 +18,9 @@
  * ContactsController routes; the registry's generic create() would lose
  * that distinction.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Integration\Providers
  *
@@ -27,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/integration-contacts/tasks.md
+ * @spec openspec/specs/integration-contacts/spec.md
  */
 
 declare(strict_types=1);
@@ -115,6 +118,8 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $filters  Optional filters (currently ignored).
      *
      * @return array<int,array<string,mixed>>
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function list(string $register, string $schema, string $objectId, array $filters=[]): array
     {
@@ -140,6 +145,8 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param array<string,mixed> $payload  Must carry `role`.
      *
      * @return array<string,mixed>
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function update(string $register, string $schema, string $objectId, string $entityId, array $payload): array
     {
@@ -149,9 +156,15 @@ class ContactsProvider extends AbstractIntegrationProvider
     }//end update()
 
     /**
-     * Unlink a contact from an OR object. The vCard remains in the
-     * user's addressbook — only the link row + X-OPENREGISTER-*
-     * properties are removed.
+     * Unlink a contact from an OR object.
+     *
+     * The vCard normally remains in the user's addressbook — only the
+     * link row + X-OPENREGISTER-* properties are removed. The
+     * underlying `ContactService::unlinkContact()` is idempotent and
+     * tolerates a missing vCard, so this path can also be used to
+     * recover orphan link rows (vCard already deleted via NC Contacts).
+     * Any non-404 Throwable from the cleanup is swallowed at provider
+     * level so the registry tab degrades gracefully per AD-23.
      *
      * @param string $register Register slug or numeric id (unused).
      * @param string $schema   Schema slug or numeric id (unused).
@@ -159,19 +172,40 @@ class ContactsProvider extends AbstractIntegrationProvider
      * @param string $entityId Numeric link id.
      *
      * @return void
+     *
+     * @spec openspec/specs/contacts-actions/spec.md
      */
     public function delete(string $register, string $schema, string $objectId, string $entityId): void
     {
         $this->contactService->unlinkContact(linkId: (int) $entityId);
     }//end delete()
 
+    /**
+     * Provider health descriptor (enabled/disabled echo).
+     *
+     * @return array<string,mixed>
+     *
+     * @spec exclude Static enabled/disabled descriptor echoing IAppManager::isInstalled — no standalone health
+     *              behaviour; the health/OCS contract is owned by pluggable-integration-registry task-2.
+     */
     public function health(): array
     {
         $installed = $this->appManager->isInstalled(self::REQUIRED_APP);
+
+        $status = 'unavailable';
+        if ($installed === true) {
+            $status = 'ok';
+        }
+
+        $message = 'NC Contacts app is not installed';
+        if ($installed === true) {
+            $message = null;
+        }
+
         return [
-            'status'     => $installed === true ? 'ok' : 'unavailable',
+            'status'     => $status,
             'authStatus' => 'configured',
-            'message'    => $installed === true ? null : 'NC Contacts app is not installed',
+            'message'    => $message,
         ];
     }//end health()
 }//end class

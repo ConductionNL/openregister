@@ -9,7 +9,7 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\MagicMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUserSession;
@@ -27,9 +27,9 @@ class DeletedControllerGapTest extends TestCase
     private MagicMapper&MockObject $objectMapper;
     private RegisterMapper&MockObject $registerMapper;
     private SchemaMapper&MockObject $schemaMapper;
-    private ObjectService&MockObject $objectService;
     private IUserSession&MockObject $userSession;
     private IGroupManager&MockObject $groupManager;
+    private PermissionHandler&MockObject $permissionHandler;
 
     protected function setUp(): void
     {
@@ -39,9 +39,9 @@ class DeletedControllerGapTest extends TestCase
         $this->objectMapper = $this->createMock(MagicMapper::class);
         $this->registerMapper = $this->createMock(RegisterMapper::class);
         $this->schemaMapper = $this->createMock(SchemaMapper::class);
-        $this->objectService = $this->createMock(ObjectService::class);
         $this->userSession = $this->createMock(IUserSession::class);
         $this->groupManager = $this->createMock(IGroupManager::class);
+        $this->permissionHandler = $this->createMock(PermissionHandler::class);
 
         $this->controller = new DeletedController(
             'openregister',
@@ -49,10 +49,26 @@ class DeletedControllerGapTest extends TestCase
             $this->objectMapper,
             $this->registerMapper,
             $this->schemaMapper,
-            $this->objectService,
             $this->userSession,
-            $this->groupManager
+            $this->groupManager,
+            $this->permissionHandler
         );
+
+        // index()/statistics() now scan magic tables directly (BUG-1 fix).
+        // PHPUnit auto-returns [] / 0 for the array/int return types, so most
+        // param-branch tests need no explicit stub; tests asserting a specific
+        // total override countDeletedAcrossAllMagicTables individually.
+    }
+
+    /**
+     * Helper: stub the user session as an admin so RBAC gates pass.
+     */
+    private function stubAdminUser(string $userId = 'admin'): void
+    {
+        $user = $this->createMock(IUser::class);
+        $user->method('getUID')->willReturn($userId);
+        $this->userSession->method('getUser')->willReturn($user);
+        $this->groupManager->method('isAdmin')->with($userId)->willReturn(true);
     }
 
     /**
@@ -69,11 +85,6 @@ class DeletedControllerGapTest extends TestCase
         // OC::$server->getGroupManager() is used in isCurrentUserAdmin.
         // We can't easily mock that, so this test covers the user !== null branch.
         // The actual admin check goes through OC::$server which is available in the container.
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
-
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
     }
@@ -87,11 +98,6 @@ class DeletedControllerGapTest extends TestCase
             'offset' => '10',
         ]);
         $this->userSession->method('getUser')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -108,11 +114,6 @@ class DeletedControllerGapTest extends TestCase
             '_offset' => '5',
         ]);
         $this->userSession->method('getUser')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -131,11 +132,6 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
-
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
     }
@@ -151,11 +147,6 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
-
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
     }
@@ -170,11 +161,6 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
-
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
     }
@@ -188,11 +174,6 @@ class DeletedControllerGapTest extends TestCase
             '_search' => 'another search',
         ]);
         $this->userSession->method('getUser')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 0,
-        ]);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -209,10 +190,7 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 5,
-        ]);
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(5);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -230,11 +208,6 @@ class DeletedControllerGapTest extends TestCase
             'limit' => '10',
         ]);
         $this->userSession->method('getUser')->willReturn(null);
-
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 50,
-        ]);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -254,11 +227,6 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 30,
-        ]);
-
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
         $data = $result->getData();
@@ -275,10 +243,7 @@ class DeletedControllerGapTest extends TestCase
         ]);
         $this->userSession->method('getUser')->willReturn(null);
 
-        $this->objectService->method('searchObjectsPaginated')->willReturn([
-            'results' => [],
-            'total' => 25,
-        ]);
+        $this->objectMapper->method('countDeletedAcrossAllMagicTables')->willReturn(25);
 
         $result = $this->controller->index();
         $this->assertEquals(200, $result->getStatus());
@@ -291,29 +256,24 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleWithMixedObjects(): void
     {
+        $this->stubAdminUser();
         // Create one deleted and one non-deleted object
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $notDeletedObject = new ObjectEntity();
         // deleted is null by default
-        $ref2 = new \ReflectionClass($notDeletedObject);
-        $prop2 = $ref2->getProperty('id');
-        $prop2->setAccessible(true);
-        $prop2->setValue($notDeletedObject, 'uuid-2');
+        $notDeletedObject->setUuid('uuid-2');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1', 'uuid-2', 'uuid-missing']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject, $notDeletedObject]);
-        $this->objectMapper->method('update')
+        $this->objectMapper->method('restoreObject')
             ->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
@@ -335,25 +295,20 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleWithMixedObjects(): void
     {
+        $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $notDeletedObject = new ObjectEntity();
-        $ref2 = new \ReflectionClass($notDeletedObject);
-        $prop2 = $ref2->getProperty('id');
-        $prop2->setAccessible(true);
-        $prop2->setValue($notDeletedObject, 'uuid-2');
+        $notDeletedObject->setUuid('uuid-2');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1', 'uuid-2', 'uuid-missing']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject, $notDeletedObject]);
 
         $result = $this->controller->destroyMultiple();
@@ -374,21 +329,19 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleInnerException(): void
     {
+        $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject]);
-        $this->objectMapper->method('update')
+        $this->objectMapper->method('restoreObject')
             ->willThrowException(new \Exception('DB error'));
 
         $result = $this->controller->restoreMultiple();
@@ -405,19 +358,17 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleInnerException(): void
     {
+        $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject]);
         $this->objectMapper->method('delete')
             ->willThrowException(new \Exception('DB error'));
@@ -452,21 +403,19 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testRestoreMultipleMessageWithNoNotFound(): void
     {
+        $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject]);
-        $this->objectMapper->method('update')
+        $this->objectMapper->method('restoreObject')
             ->willReturn($deletedObject);
 
         $result = $this->controller->restoreMultiple();
@@ -481,19 +430,17 @@ class DeletedControllerGapTest extends TestCase
      */
     public function testDestroyMultipleMessageWithNoNotFound(): void
     {
+        $this->stubAdminUser();
         $deletedObject = new ObjectEntity();
         $deletedObject->setDeleted(['deleted' => '2024-01-01']);
-        $ref = new \ReflectionClass($deletedObject);
-        $prop = $ref->getProperty('id');
-        $prop->setAccessible(true);
-        $prop->setValue($deletedObject, 'uuid-1');
+        $deletedObject->setUuid('uuid-1');
 
         $this->request->method('getParam')
             ->willReturnMap([
                 ['ids', [], ['uuid-1']],
             ]);
 
-        $this->objectMapper->method('findAll')
+        $this->objectMapper->method('findMultipleAcrossAllMagicTables')
             ->willReturn([$deletedObject]);
 
         $result = $this->controller->destroyMultiple();

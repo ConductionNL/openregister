@@ -5,6 +5,9 @@
  *
  * Exception thrown when no VTODO-supporting calendar is found for a user.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Exception
  * @package   OCA\OpenRegister\Exception
  * @author    Conduction Development Team <info@conduction.nl>

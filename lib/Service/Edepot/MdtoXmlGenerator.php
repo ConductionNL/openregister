@@ -7,6 +7,9 @@
  * Conforms to the MDTO (Metagegevens Duurzaam Toegankelijke Overheidsinformatie)
  * schema version 1.0 or later.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Edepot
  *
@@ -18,8 +21,8 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-32
+ * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
+ * @spec openspec/specs/edepot-transfer/spec.md
  */
 
 declare(strict_types=1);
@@ -90,8 +93,8 @@ class MdtoXmlGenerator
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-32
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
+     * @spec openspec/specs/edepot-transfer/spec.md
      */
     public function generate(ObjectEntity $object, array $files=[]): string
     {
@@ -138,7 +141,7 @@ class MdtoXmlGenerator
      *
      * @throws InvalidArgumentException If required fields are missing.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function validateRequiredFields(ObjectEntity $object, array $retention): void
     {
@@ -182,7 +185,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addIdentificatie(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -209,7 +212,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addNaam(DOMDocument $dom, DOMElement $parent, ObjectEntity $object): void
     {
@@ -227,7 +230,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addWaardering(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -245,7 +248,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addBewaartermijn(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -262,7 +265,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addInformatiecategorie(DOMDocument $dom, DOMElement $parent, array $retention): void
     {
@@ -278,7 +281,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addArchiefvormer(DOMDocument $dom, DOMElement $parent): void
     {
@@ -314,7 +317,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addBestand(DOMDocument $dom, DOMElement $parent, array $file): void
     {
@@ -348,7 +351,7 @@ class MdtoXmlGenerator
      *
      * @return void
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-20
+     * @spec openspec/specs/edepot-transfer/spec.md#requirement-the-system-must-generate-mdto-compliant-xml-metadata-per-object
      */
     private function addTextElement(DOMDocument $dom, DOMElement $parent, string $name, string $content): void
     {

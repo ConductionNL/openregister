@@ -1,10 +1,12 @@
 ---
-status: implemented
+status: done
 ---
 
 # Calendar Provider
 
 ## Purpose
+
+@e2e exclude CalDAV ICalendarProvider backend — covered by PHPUnit
 
 OpenRegister SHALL implement `OCP\Calendar\ICalendarProvider` to surface objects with date properties as read-only calendar events in the Nextcloud Calendar app. This enables users to see case deadlines, publication dates, hearing schedules, and other time-based data directly in their calendar without manual event creation.
 

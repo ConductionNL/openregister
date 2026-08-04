@@ -1,0 +1,31 @@
+{
+    "title": "Credential (property-level read RBAC demo)",
+    "description": "TEST-ONLY schema demonstrating the two opt-in property-level read mechanisms from the property-level-read-rbac change (closes openregister#380). See openspec/specs/row-field-level-security/spec.md.",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Returned to everyone as today — no read restriction."
+        },
+        "apiToken": {
+            "type": "string",
+            "title": "API token",
+            "description": "writeOnly secret: writable, but NEVER returned on any read for anyone (including admin).",
+            "writeOnly": true
+        },
+        "internalNote": {
+            "type": "string",
+            "title": "Internal note",
+            "description": "Property-level authorization: only members of the secret-readers group (or admin) see it on read.",
+            "authorization": {
+                "read": [
+                    "secret-readers"
+                ]
+            }
+        }
+    },
+    "required": [
+        "name"
+    ]
+}

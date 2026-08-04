@@ -13,6 +13,9 @@
  * by tasks 1.14 – 1.22 and lands in a follow-up commit. This file implements the core
  * proxy shape only (tasks 1.3, 1.5, 1.6, 1.7, 1.8, 1.9).
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Controller
  * @package  OCA\OpenRegister\Controller
  *
@@ -114,6 +117,9 @@ class GitHubIssuesController extends Controller
      *
      * @return JSONResponse
      *
+     * @no-admin-idor-exempt Guarded downstream: GitHubGuards::enforceRepoAllowlist restricts the caller-supplied repo to the
+     *   admin-configured allowlist (plus feature-flag and rate-limit); takes no OpenRegister object id.
+     *
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-3
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-5
      * @spec openspec/changes/add-features-roadmap-menu/tasks.md#task-7
@@ -129,7 +135,10 @@ class GitHubIssuesController extends Controller
         $perPage = (int) $this->request->getParam('per_page', 30);
         $labels  = (string) $this->request->getParam('labels', '');
 
-        $labelArray = $labels === '' ? null : array_values(array_filter(array_map('trim', explode(',', $labels))));
+        $labelArray = null;
+        if ($labels !== '') {
+            $labelArray = array_values(array_filter(array_map('trim', explode(',', $labels))));
+        }
 
         $guardError = $this->guards->runGuards(
             $this->readGuardPipeline(repo: $repo, sort: $sort, perPage: $perPage, labels: $labelArray)
@@ -209,11 +218,14 @@ class GitHubIssuesController extends Controller
 
         $uid = $user->getUID();
 
-        $repo    = (string) $this->request->getParam('repo', '');
-        $title   = (string) $this->request->getParam('title', '');
-        $body    = (string) $this->request->getParam('body', '');
-        $specRef = $this->request->getParam('specRef');
-        $specRef = ($specRef === null || $specRef === '') ? null : (string) $specRef;
+        $repo       = (string) $this->request->getParam('repo', '');
+        $title      = (string) $this->request->getParam('title', '');
+        $body       = (string) $this->request->getParam('body', '');
+        $specRefRaw = $this->request->getParam('specRef');
+        $specRef    = null;
+        if ($specRefRaw !== null && $specRefRaw !== '') {
+            $specRef = (string) $specRefRaw;
+        }
 
         $guardError = $this->guards->runGuards(
             $this->writeGuardPipeline(repo: $repo, title: $title, body: $body, specRef: $specRef, uid: $uid)

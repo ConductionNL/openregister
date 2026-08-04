@@ -39,8 +39,10 @@ namespace OCA\OpenRegister\Tests\Unit\Service\Integration\Providers;
 
 use OCA\OpenRegister\Exception\NotImplementedException;
 use OCA\OpenRegister\Service\CalendarEventService;
+use OCA\OpenRegister\Service\CalendarLinkService;
 use OCA\OpenRegister\Service\ContactService;
-use OCA\OpenRegister\Service\DeckCardService;
+use OCA\OpenRegister\Service\DeckLinkService;
+use OCA\OpenRegister\Service\EmailLinkService;
 use OCA\OpenRegister\Service\EmailService;
 use OCA\OpenRegister\Service\Integration\ExternalIntegrationRouter;
 use OCA\OpenRegister\Service\Integration\Providers\ActivityProvider;
@@ -67,6 +69,7 @@ use OCP\IL10N;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Contract + delegation tests for all 16 leaf integration providers.
@@ -106,6 +109,17 @@ class LeafProvidersMetadataTest extends TestCase
     }//end buildAppManager()
 
     /**
+     * Build a PSR-3 logger mock — providers log failure paths through
+     * this; in unit tests we only care that the type contract is met.
+     *
+     * @return LoggerInterface
+     */
+    private function buildLogger(): LoggerInterface
+    {
+        return $this->createMock(LoggerInterface::class);
+    }//end buildLogger()
+
+    /**
      * Build a greenfield provider instance. The provider's constructor
      * signature differs by backing-store flavour (db-backed vs.
      * container/session-backed), so this helper picks the right shape.
@@ -117,19 +131,49 @@ class LeafProvidersMetadataTest extends TestCase
      */
     private function buildGreenfieldProvider(string $class, string $requiredApp): object
     {
-        $appManager = $this->buildAppManager([$requiredApp]);
-        $l10n       = $this->buildL10n();
+        return $this->instantiateGreenfieldProvider($class, [$requiredApp]);
+    }//end buildGreenfieldProvider()
 
-        // Container/session-backed providers (Bookmarks, Polls, Talk).
-        if (in_array(
-            $class,
-            [
-                BookmarksProvider::class,
-                PollsProvider::class,
-                TalkProvider::class,
-            ],
-            true
-        ) === true) {
+    /**
+     * Build a mocked link mapper whose `findByObjectUuid()` returns an
+     * empty array — the stub providers query it from `list()` and we
+     * assert an empty result.
+     *
+     * @param string $mapperClass Link-mapper FQN.
+     *
+     * @return object Mock mapper.
+     */
+    private function buildLinkMapper(string $mapperClass): object
+    {
+        $mapper = $this->getMockBuilder($mapperClass)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['findByObjectUuid'])
+            ->getMock();
+        $mapper->method('findByObjectUuid')->willReturn([]);
+        return $mapper;
+    }//end buildLinkMapper()
+
+    /**
+     * Instantiate a greenfield provider with the right constructor shape.
+     *
+     * The Tier-2 work gave most leaf providers a per-integration link
+     * mapper. Constructor arg order varies by provider, so each shape is
+     * handled explicitly. `$installed` controls which NC apps the mocked
+     * IAppManager reports installed (drives isEnabled()/health()).
+     *
+     * @param string            $class     Provider class FQN.
+     * @param array<int,string> $installed App ids to treat as installed.
+     *
+     * @return object Provider instance.
+     */
+    private function instantiateGreenfieldProvider(string $class, array $installed): object
+    {
+        $appManager = $this->buildAppManager($installed);
+        $l10n       = $this->buildL10n();
+        $db         = $this->createMock(IDBConnection::class);
+
+        // Container/session-backed provider (Talk).
+        if ($class === TalkProvider::class) {
             return new $class(
                 container: $this->createMock(ContainerInterface::class),
                 appManager: $appManager,
@@ -138,13 +182,87 @@ class LeafProvidersMetadataTest extends TestCase
             );
         }
 
-        // Default: db-backed providers.
+        // PollsProvider — (mapper, db, appManager, userSession, l10n).
+        if ($class === PollsProvider::class) {
+            return new $class(
+                pollLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\PollLinkMapper::class),
+                db: $db,
+                appManager: $appManager,
+                userSession: $this->createMock(IUserSession::class),
+                l10n: $l10n,
+            );
+        }
+
+        // BookmarksProvider — (mapper, appManager, l10n).
+        if ($class === BookmarksProvider::class) {
+            return new $class(
+                bookmarkLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\BookmarkLinkMapper::class),
+                appManager: $appManager,
+                l10n: $l10n,
+            );
+        }
+
+        // FlowProvider — (mapper, db, appManager, l10n).
+        if ($class === FlowProvider::class) {
+            return new $class(
+                flowLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\FlowLinkMapper::class),
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+            );
+        }
+
+        // CospendProvider — (db, appManager, l10n, mapper, ?container).
+        if ($class === CospendProvider::class) {
+            return new $class(
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+                cospendLinkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\CospendLinkMapper::class),
+            );
+        }
+
+        // TimeProvider — (db, appManager, l10n, mapper, config).
+        if ($class === TimeProvider::class) {
+            $config = $this->createMock(\OCP\IConfig::class);
+            $config->method('getAppValue')->willReturnCallback(
+                static function (string $app, string $key, string $default = '') {
+                    return $default;
+                }
+            );
+            return new TimeProvider(
+                db: $db,
+                appManager: $appManager,
+                l10n: $l10n,
+                linkMapper: $this->buildLinkMapper(\OCA\OpenRegister\Db\TimeTrackerLinkMapper::class),
+                config: $config,
+            );
+        }
+
+        // Providers shaped (db, appManager, l10n, <mapper>).
+        $trailingMapper = [
+            AnalyticsProvider::class   => \OCA\OpenRegister\Db\AnalyticsLinkMapper::class,
+            CollectivesProvider::class => \OCA\OpenRegister\Db\CollectiveLinkMapper::class,
+            MapsProvider::class        => \OCA\OpenRegister\Db\MapLinkMapper::class,
+            PhotosProvider::class      => \OCA\OpenRegister\Db\PhotoLinkMapper::class,
+            FormsProvider::class       => \OCA\OpenRegister\Db\FormLinkMapper::class,
+        ];
+        if (isset($trailingMapper[$class]) === true) {
+            return new $class(
+                $db,
+                $appManager,
+                $l10n,
+                $this->buildLinkMapper($trailingMapper[$class]),
+            );
+        }
+
+        // Default: plain (db, appManager, l10n) providers (Activity, ...).
         return new $class(
-            db: $this->createMock(IDBConnection::class),
+            db: $db,
             appManager: $appManager,
             l10n: $l10n,
         );
-    }//end buildGreenfieldProvider()
+    }//end instantiateGreenfieldProvider()
 
     /**
      * Build a greenfield provider instance with the required NC app
@@ -156,31 +274,7 @@ class LeafProvidersMetadataTest extends TestCase
      */
     private function buildGreenfieldProviderMissingApp(string $class): object
     {
-        $appManager = $this->buildAppManager([]);
-        $l10n       = $this->buildL10n();
-
-        if (in_array(
-            $class,
-            [
-                BookmarksProvider::class,
-                PollsProvider::class,
-                TalkProvider::class,
-            ],
-            true
-        ) === true) {
-            return new $class(
-                container: $this->createMock(ContainerInterface::class),
-                appManager: $appManager,
-                userSession: $this->createMock(IUserSession::class),
-                l10n: $l10n,
-            );
-        }
-
-        return new $class(
-            db: $this->createMock(IDBConnection::class),
-            appManager: $appManager,
-            l10n: $l10n,
-        );
+        return $this->instantiateGreenfieldProvider($class, []);
     }//end buildGreenfieldProviderMissingApp()
 
     /**
@@ -193,8 +287,10 @@ class LeafProvidersMetadataTest extends TestCase
     {
         $provider = new CalendarProvider(
             calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         $this->assertSame('calendar', $provider->getId());
@@ -208,52 +304,84 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testCalendarProviderListDelegatesToService(): void
     {
-        $service = $this->createMock(CalendarEventService::class);
-        $service->expects($this->once())
-            ->method('getEventsForObject')
+        // Tier-2: list() now goes through CalendarLinkService::getLinkedEvents
+        // (UNION over the link table + the legacy X-OR-* scan).
+        $link = $this->createMock(CalendarLinkService::class);
+        $link->expects($this->once())
+            ->method('getLinkedEvents')
             ->with('obj-uuid')
-            ->willReturn([['id' => 'cal1/event.ics']]);
+            ->willReturn([['id' => 'cal1/event.ics', 'source' => 'both']]);
 
         $provider = new CalendarProvider(
-            calendarEventService: $service,
+            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
-        $this->assertSame([['id' => 'cal1/event.ics']], $provider->list('reg', 'sch', 'obj-uuid'));
+        $this->assertSame([['id' => 'cal1/event.ics', 'source' => 'both']], $provider->list('reg', 'sch', 'obj-uuid'));
     }//end testCalendarProviderListDelegatesToService()
 
     public function testCalendarProviderListSurfacesEmptyOnFailure(): void
     {
-        $service = $this->createMock(CalendarEventService::class);
-        $service->method('getEventsForObject')->willThrowException(new \RuntimeException('no calendar'));
+        $link = $this->createMock(CalendarLinkService::class);
+        $link->method('getLinkedEvents')->willThrowException(new \RuntimeException('no calendar'));
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('warning')
+            ->with(
+                $this->stringContains('CalendarProvider::list()'),
+                $this->callback(static function (array $ctx): bool {
+                    return ($ctx['provider'] ?? null) === CalendarProvider::class
+                        && ($ctx['method'] ?? null) === 'list'
+                        && ($ctx['objectId'] ?? null) === 'obj-uuid'
+                        && isset($ctx['exception'])
+                        && $ctx['exception'] instanceof \Throwable;
+                })
+            );
 
         $provider = new CalendarProvider(
-            calendarEventService: $service,
+            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $link,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $logger,
         );
 
         $this->assertSame([], $provider->list('reg', 'sch', 'obj-uuid'));
     }//end testCalendarProviderListSurfacesEmptyOnFailure()
 
-    public function testCalendarProviderDeleteRejectsMalformedEntityId(): void
+    public function testCalendarProviderDeleteHandlesLegacyAndBareUidShapes(): void
     {
+        $eventSvc = $this->createMock(CalendarEventService::class);
+        $eventSvc->expects($this->once())->method('unlinkEvent')->with('7', 'event.ics');
+        $linkSvc  = $this->createMock(CalendarLinkService::class);
+        $linkSvc->expects($this->once())->method('unlinkEvent')->with('o', 'ev-uid');
+
         $provider = new CalendarProvider(
-            calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarEventService: $eventSvc,
+            calendarLinkService: $linkSvc,
             appManager: $this->buildAppManager(['calendar']),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
-        $this->expectException(\InvalidArgumentException::class);
-        $provider->delete('r', 's', 'o', 'not-a-composite');
-    }//end testCalendarProviderDeleteRejectsMalformedEntityId()
+
+        // Legacy composite shape — strips X-OR-* via CalendarEventService.
+        $provider->delete('r', 's', 'o', '7/event.ics');
+        // Bare uid shape — Tier-2 link-only removal.
+        $provider->delete('r', 's', 'o', 'ev-uid');
+    }//end testCalendarProviderDeleteHandlesLegacyAndBareUidShapes()
 
     public function testCalendarProviderHealthReportsUnavailableWhenAppMissing(): void
     {
         $provider = new CalendarProvider(
             calendarEventService: $this->createMock(CalendarEventService::class),
+            calendarLinkService: $this->createMock(CalendarLinkService::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
+            logger: $this->buildLogger(),
         );
 
         $health = $provider->health();
@@ -306,11 +434,11 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testDeckProviderMetadataAndEnableGate(): void
     {
-        $service = $this->createMock(DeckCardService::class);
+        $service = $this->createMock(DeckLinkService::class);
         $service->method('isDeckAvailable')->willReturn(true);
 
         $provider = new DeckProvider(
-            deckCardService: $service,
+            deckLinkService: $service,
             appManager: $this->buildAppManager(['deck']),
             l10n: $this->buildL10n(),
         );
@@ -325,11 +453,15 @@ class LeafProvidersMetadataTest extends TestCase
     public function testEmailProviderMetadataAndDelegation(): void
     {
         $service = $this->createMock(EmailService::class);
-        $service->method('isMailAvailable')->willReturn(true);
         $service->method('getEmailsForObject')->willReturn(['results' => [['id' => 9]], 'total' => 1]);
+
+        // Tier-2: isEnabled()/health() gate through EmailLinkService.
+        $linkService = $this->createMock(EmailLinkService::class);
+        $linkService->method('isMailAvailable')->willReturn(true);
 
         $provider = new EmailProvider(
             emailService: $service,
+            emailLinkService: $linkService,
             appManager: $this->buildAppManager(['mail']),
             l10n: $this->buildL10n(),
         );
@@ -337,7 +469,10 @@ class LeafProvidersMetadataTest extends TestCase
         $this->assertSame('email', $provider->getId());
         $this->assertSame('Email', $provider->getIcon());
         $this->assertTrue($provider->isEnabled());
-        $this->assertSame([['id' => 9]], $provider->list('r', 's', 'obj'));
+        $this->assertSame(
+            ['items' => [['id' => 9]], 'total' => 1, 'nextCursor' => null],
+            $provider->list('r', 's', 'obj')
+        );
     }//end testEmailProviderMetadataAndDelegation()
 
     /**
@@ -409,11 +544,11 @@ class LeafProvidersMetadataTest extends TestCase
             'cospend'      => [CospendProvider::class, 'cospend', 'Costs', 'CurrencyEur', 'workflow', 'cospend', 'link-table'],
             'flow'         => [FlowProvider::class, 'flow', 'Automation', 'RobotOutline', 'workflow', 'workflowengine', 'link-table'],
             'forms'        => [FormsProvider::class, 'forms', 'Forms', 'ClipboardText', 'workflow', 'forms', 'link-table'],
-            'maps'         => [MapsProvider::class, 'maps', 'Location', 'MapMarker', 'docs', 'maps', 'link-table'],
+            'maps'         => [MapsProvider::class, 'maps', 'Locations', 'MapMarker', 'docs', 'maps', 'link-table'],
             'photos'       => [PhotosProvider::class, 'photos', 'Photos', 'Image', 'docs', 'photos', 'link-table'],
             'polls'        => [PollsProvider::class, 'polls', 'Polls', 'Poll', 'workflow', 'polls', 'link-table'],
             'talk'         => [TalkProvider::class, 'talk', 'Chat', 'ChatOutline', 'comms', 'spreed', 'link-table'],
-            'time-tracker' => [TimeProvider::class, 'time-tracker', 'Time', 'Clock', 'workflow', 'timemanager', 'link-table'],
+            'time-tracker' => [TimeProvider::class, 'time-tracker', 'Time tracker', 'Clock', 'workflow', 'timemanager', 'link-table'],
         ];
     }//end greenfieldStubProvider()
 
@@ -512,10 +647,21 @@ class LeafProvidersMetadataTest extends TestCase
 
     public function testSharesProviderCreateThrowsNotImplemented(): void
     {
+        // Inject a mock container that returns null for every service lookup
+        // so that SharesProvider::lookup() cannot resolve CaseTokenService
+        // from the real NC container. Without the container override,
+        // \OCP\Server::get(CaseTokenService) succeeds in the docker environment
+        // but then throws InvalidArgumentException (no logged-in user) rather
+        // than falling through to parent::create() → NotImplementedException.
+        $mockContainer = $this->createMock(ContainerInterface::class);
+        $mockContainer->method('get')->willThrowException(new \RuntimeException('not found'));
+        $mockContainer->method('has')->willReturn(false);
+
         $provider = new SharesProvider(
             db: $this->createMock(IDBConnection::class),
             appManager: $this->buildAppManager([]),
             l10n: $this->buildL10n(),
+            container: $mockContainer,
         );
 
         $this->expectException(NotImplementedException::class);

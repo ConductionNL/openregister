@@ -43,7 +43,6 @@ use OCA\OpenRegister\Service\Object\LockHandler;
 use OCA\OpenRegister\Service\Object\MergeHandler;
 use OCA\OpenRegister\Service\Object\MetadataHandler;
 use OCA\OpenRegister\Service\Object\MigrationHandler;
-use OCA\OpenRegister\Service\Object\PerformanceHandler;
 use OCA\OpenRegister\Service\Object\PerformanceOptimizationHandler;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCA\OpenRegister\Service\Object\QueryHandler;
@@ -58,6 +57,7 @@ use OCA\OpenRegister\Service\Object\ValidateObject;
 use OCA\OpenRegister\Service\Object\ValidationHandler;
 use OCA\OpenRegister\Service\DateTimeNormalizer;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\ObjectSource\ObjectSourceRegistry;
 use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\SearchTrailService;
 use OCA\OpenRegister\Service\SettingsService;
@@ -105,7 +105,6 @@ class ObjectServiceSearchBySlugTest extends TestCase
             dataManipHandler:    $this->createMock(DataManipulationHandler::class),
             deleteHandler:       $this->createMock(DeleteObject::class),
             getHandler:          $this->createMock(GetObject::class),
-            performanceHandler:  $this->createMock(PerformanceHandler::class),
             permissionHandler:   $this->createMock(PermissionHandler::class),
             renderHandler:       $this->createMock(RenderObject::class),
             saveHandler:         $this->createMock(SaveObject::class),
@@ -139,7 +138,8 @@ class ObjectServiceSearchBySlugTest extends TestCase
             cacheHandler:        $this->createMock(CacheHandler::class),
             settingsService:     $this->createMock(SettingsService::class),
             dateTimeNormalizer:  $this->createMock(DateTimeNormalizer::class),
-            container:           $this->createMock(IAppContainer::class)
+            container:           $this->createMock(IAppContainer::class),
+            objectSourceRegistry: $this->createMock(ObjectSourceRegistry::class)
         );
 
     }//end setUp()
@@ -157,7 +157,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
     {
         $register = new Register();
         $register->setId(7);
-        $register->setSlug('openbuilt');
+        $register->setSlug('openbuild');
 
         $schema = new Schema();
         $schema->setId(42);
@@ -166,7 +166,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
         $this->registerMapper
             ->expects($this->once())
             ->method('find')
-            ->with($this->equalTo('openbuilt'))
+            ->with($this->equalTo('openbuild'))
             ->willReturn($register);
 
         $this->schemaMapper
@@ -189,7 +189,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
             ->willReturn([]);
 
         $result = $this->service->searchObjectsBySlug(
-            'openbuilt',
+            'openbuild',
             'application',
             ['status' => 'published']
         );
@@ -241,7 +241,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
     {
         $register = new Register();
         $register->setId(7);
-        $register->setSlug('openbuilt');
+        $register->setSlug('openbuild');
 
         $this->registerMapper
             ->expects($this->once())
@@ -262,7 +262,7 @@ class ObjectServiceSearchBySlugTest extends TestCase
         );
 
         $this->service->searchObjectsBySlug(
-            'openbuilt',
+            'openbuild',
             'ghost-schema',
             []
         );

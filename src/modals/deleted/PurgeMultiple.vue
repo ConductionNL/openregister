@@ -31,7 +31,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'ID: {id}', { id: obj.id }) }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="t('openregister', 'Remove {title}', { title: getObjectTitle(obj) })"
 							@click="removeObject(obj.id)">
 							<template #icon>
@@ -66,7 +66,7 @@ import { deletedStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="success === null"
 				:disabled="loading || objectsToDelete.length === 0"
-				type="error"
+				variant="error"
 				@click="permanentlyDeleteMultiple()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -90,6 +90,8 @@ import {
 import Cancel from 'vue-material-design-icons/Cancel.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Close from 'vue-material-design-icons/Close.vue'
+
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'PurgeMultiple',
@@ -115,6 +117,9 @@ export default {
 		}
 	},
 	computed: {
+		/**
+		 * @spec exclude Computed passthrough exposing the selected-objects list to the template; UI state helper.
+		 */
 		objectsToDelete() {
 			return this.selectedObjects
 		},
@@ -133,6 +138,7 @@ export default {
 		/**
 		 * Initialize selection from transfer data
 		 * @return {void}
+		 * @spec openspec/specs/entity-management-modals/spec.md
 		 */
 		initializeSelection() {
 			const data = deletedStore.selectedForBulkAction || []
@@ -145,6 +151,7 @@ export default {
 		 * Remove object from selection
 		 * @param {string} objectId - ID of object to remove
 		 * @return {void}
+		 * @spec exclude Removes one object from the local bulk-selection list; UI selection plumbing.
 		 */
 		removeObject(objectId) {
 			this.selectedObjects = this.selectedObjects.filter(obj => obj.id !== objectId)
@@ -155,6 +162,7 @@ export default {
 		/**
 		 * Close the dialog and reset state
 		 * @return {void}
+		 * @spec exclude Modal close handler resetting navigationStore.dialog and local state; UI plumbing.
 		 */
 		closeDialog() {
 			navigationStore.setDialog(false)
@@ -169,6 +177,7 @@ export default {
 		/**
 		 * Permanently delete multiple objects
 		 * @return {Promise<void>}
+		 * @spec exclude Bulk-purge confirm handler delegating to deletedStore.permanentlyDeleteMultiple; entity mutation lives in the store, this is modal orchestration plumbing.
 		 */
 		async permanentlyDeleteMultiple() {
 			if (!this.objectsToDelete || this.objectsToDelete.length === 0) {
@@ -200,7 +209,7 @@ export default {
 				this.closeModalTimeout = setTimeout(this.closeDialog, 3000)
 
 				// Emit event to refresh parent list
-				this.$root.$emit('deleted-objects-permanently-deleted', ids)
+				eventBus.emit('deleted-objects-permanently-deleted', ids)
 			} catch (error) {
 				this.success = false
 				this.error = error.message || t('openregister', 'An error occurred while permanently deleting the objects')

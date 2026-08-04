@@ -509,18 +509,18 @@ class SchemaServiceTest extends TestCase
 
 
     /**
-     * Test analyzeStringPattern does not detect filename due to broken regex in source.
+     * Test analyzeStringPattern detects filename patterns.
      *
-     * The filename regex in SchemaService has an unescaped '/' inside the character class
-     * which terminates the regex delimiter early, so preg_match returns false (error).
-     * Since the code checks === 1, 'filename' is never added to patterns.
+     * The filename regex now uses a ~ delimiter, so the literal '/' inside the
+     * character class no longer terminates it early; a "name.ext" value is
+     * correctly detected as a 'filename' pattern.
      *
      * @return void
      */
-    public function testAnalyzeStringPatternFilenameNotDetected(): void
+    public function testAnalyzeStringPatternFilenameDetected(): void
     {
         $result = $this->invokePrivate('analyzeStringPattern', ['document.pdf']);
-        $this->assertNotContains('filename', $result);
+        $this->assertContains('filename', $result);
     }
 
 

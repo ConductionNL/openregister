@@ -5,6 +5,9 @@
  *
  * Formats GraphQL errors into structured responses with extension codes.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\GraphQL
  *
@@ -35,6 +38,8 @@ class GraphQLErrorFormatter
      * @param Error $error The GraphQL error
      *
      * @return array<string, mixed> The formatted error
+     *
+     * @spec openspec/specs/graphql-api/spec.md
      */
     public function format(Error $error): array
     {
@@ -66,7 +71,7 @@ class GraphQLErrorFormatter
      *
      * @return Error The GraphQL error
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     public static function fieldForbidden(string $field, array $path): Error
     {
@@ -90,7 +95,7 @@ class GraphQLErrorFormatter
      *
      * @return Error The GraphQL error
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-37
+     * @spec openspec/specs/graphql-api/spec.md#requirement-graphql-must-enforce-schema-level-rbac-via-permissionhandler
      */
     public static function notFound(string $type, string $id): Error
     {

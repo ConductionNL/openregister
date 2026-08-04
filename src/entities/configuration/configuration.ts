@@ -32,6 +32,10 @@ export class ConfigurationEntity implements TConfiguration {
 	githubPath?: string | null
 	app?: string
 
+	/**
+	 * @param configuration
+	 * @spec exclude Entity model field-copy boilerplate: copies typed fields off the input with || defaults; no standalone behavioural contract.
+	 */
 	constructor(configuration: TConfiguration) {
 		this.id = configuration.id || ''
 		this.title = configuration.title || ''

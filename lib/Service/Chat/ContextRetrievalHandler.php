@@ -6,6 +6,9 @@
  * Handler for RAG (Retrieval Augmented Generation) context retrieval.
  * Manages semantic search, keyword search, and source extraction for chat context.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Chat
  *
@@ -16,14 +19,16 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service\Chat;
 
 use Exception;
 use OCA\OpenRegister\Db\Agent;
+use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Vectorization\VectorEmbeddings;
-use OCA\OpenRegister\Service\IndexService;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -52,11 +57,11 @@ class ContextRetrievalHandler
     private VectorEmbeddings $vectorService;
 
     /**
-     * Index service for SOLR search
+     * Object service for database search
      *
-     * @var IndexService
+     * @var ObjectService
      */
-    private IndexService $solrService;
+    private ObjectService $objectService;
 
     /**
      * Logger
@@ -69,18 +74,20 @@ class ContextRetrievalHandler
      * Constructor
      *
      * @param VectorEmbeddings $vectorService Vector embeddings service.
-     * @param IndexService     $solrService   SOLR index service.
+     * @param ObjectService    $objectService Object service for database search.
      * @param LoggerInterface  $logger        Logger.
      *
      * @return void
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function __construct(
         VectorEmbeddings $vectorService,
-        IndexService $solrService,
+        ObjectService $objectService,
         LoggerInterface $logger
     ) {
         $this->vectorService = $vectorService;
-        $this->solrService   = $solrService;
+        $this->objectService = $objectService;
         $this->logger        = $logger;
     }//end __construct()
 
@@ -100,6 +107,8 @@ class ContextRetrievalHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  RAG context retrieval requires many search strategies
      * @SuppressWarnings(PHPMD.NPathComplexity)       RAG context retrieval requires many search strategies
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Complex RAG logic cannot be easily split
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function retrieveContext(
         string $query,
@@ -212,12 +221,11 @@ class ContextRetrievalHandler
                     // Pass filters array instead of 0.7.
                 );
             } else if ($searchMode === 'hybrid') {
+                // Fuse the already-fetched keyword results with vector search.
                 $hybridResponse = $this->vectorService->hybridSearch(
                     query: $query,
-                    solrFilters: ['vector_filters' => $vectorFilters],
-                    // Pass filters in SOLR filters array.
+                    keywordResults: $results,
                     limit: $fetchLimit
-                    // Limit parameter.
                 );
                 // Extract results array from hybrid search response.
                 $results = $hybridResponse['results'] ?? [];
@@ -387,34 +395,31 @@ class ContextRetrievalHandler
     }//end retrieveContext()
 
     /**
-     * Search using keyword only (SOLR)
+     * Search using keyword only (database)
      *
-     * Performs keyword-based search using SOLR without vector embeddings.
+     * Performs keyword-based search using the database without vector embeddings.
      *
      * @param string $query  Query text.
-     * @param int    $_limit Result limit (unused, for interface compatibility).
+     * @param int    $_limit Result limit.
      *
      * @return array Search results in standardized format
      *
      * @psalm-return list<array{entity_id: mixed, entity_type: string, text: string, score: float}>
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function searchKeywordOnly(string $query, int $_limit): array
     {
-        $results = $this->solrService->searchObjectsPaginated(
-            query: ['_search' => $query],
-            limit: $_limit,
-            offset: 0,
-            facets: [],
-            collection: null,
-            includeTotal: true
+        $results = $this->objectService->searchObjectsPaginated(
+            query: ['_search' => $query, '_limit' => $_limit]
         );
 
         $transformed = [];
         foreach ($results['results'] ?? [] as $result) {
             $transformed[] = [
-                'entity_id'   => $result['id'] ?? null,
+                'entity_id'   => $result['id'] ?? $result['uuid'] ?? null,
                 'entity_type' => 'object',
                 'text'        => $result['_source']['data'] ?? json_encode($result),
                 'score'       => $result['_score'] ?? 1.0,
@@ -436,6 +441,8 @@ class ContextRetrievalHandler
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Name extraction requires checking many possible fields
      * @SuppressWarnings(PHPMD.NPathComplexity)      Name extraction requires checking many possible fields
+     *
+     * @spec openspec/specs/chat-ai/spec.md
      */
     private function extractSourceName(array $result): string
     {

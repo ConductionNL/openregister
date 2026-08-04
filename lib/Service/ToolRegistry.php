@@ -6,6 +6,9 @@
  * Central registry for managing LLphant function tools from all apps.
  * Allows other Nextcloud apps to register their own tools for agents to use.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,6 +19,8 @@
  * @version GIT: <git_id>
  *
  * @link https://www.OpenRegister.nl
+ *
+ * @spec openspec/specs/chat-ai/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
@@ -97,6 +102,8 @@ class ToolRegistry
      *
      * @param IEventDispatcher $eventDispatcher Event dispatcher
      * @param LoggerInterface  $logger          Logger
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function __construct(
         IEventDispatcher $eventDispatcher,
@@ -112,6 +119,8 @@ class ToolRegistry
      * This is called lazily the first time tools are accessed.
      *
      * @return void
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     private function loadTools(): void
     {
@@ -155,17 +164,21 @@ class ToolRegistry
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Multiple validation checks required
      * @SuppressWarnings(PHPMD.NPathComplexity)      Multiple validation paths with exceptions
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function registerTool(string $id, ToolInterface $tool, array $metadata): void
     {
-        // Validate ID format (should be app_name.tool_name). MCP tool
-        // ids commonly use camelCase on the right side (e.g.
-        // `openbuilt.createApp`, `decidesk.listRecentMeetings`) so the
-        // right-hand side accepts both cases. The left-hand side stays
+        // Validate ID format (should be app_name.tool_name, or
+        // app_name.schema.verb for ADR-063 chain-2 schema-derived tools —
+        // e.g. `pipelinq.lead.search`). MCP tool ids commonly use camelCase
+        // on the right side (e.g. `openbuild.createApp`,
+        // `decidesk.listRecentMeetings`) so every segment after the first
+        // accepts both cases. The left-hand (app id) segment stays
         // lowercase since it maps to a Nextcloud app id.
-        if (preg_match('/^[a-z0-9_]+\.[a-zA-Z0-9_]+$/', $id) === 0) {
+        if (preg_match('/^[a-z0-9_]+(\.[a-zA-Z0-9_]+)+$/', $id) === 0) {
             throw new InvalidArgumentException(
-                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name'"
+                "Invalid tool ID format: {$id}. Must be 'app_name.tool_name' (dot-separated segments)"
             );
         }
 
@@ -206,6 +219,8 @@ class ToolRegistry
      * @param string $id Tool identifier
      *
      * @return ToolInterface|null Tool instance or null if not found
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTool(string $id): ?ToolInterface
     {
@@ -222,6 +237,9 @@ class ToolRegistry
      * Get all registered tools
      *
      * @return array Array of tool IDs and their metadata
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
+     * @spec openspec/specs/chat-ai/spec.md
      */
     public function getAllTools(): array
     {
@@ -243,6 +261,8 @@ class ToolRegistry
      * @param array $ids Array of tool IDs
      *
      * @return array Array of ToolInterface instances (key: id, value: tool)
+     *
+     * @spec openspec/specs/ai-mcp/spec.md
      */
     public function getTools(array $ids): array
     {

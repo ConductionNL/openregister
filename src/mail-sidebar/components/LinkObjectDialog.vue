@@ -22,7 +22,7 @@
 					class="or-mail-link-dialog__search"
 					:placeholder="t('openregister', 'Search by title or UUID...')"
 					:aria-label="t('openregister', 'Search by title or UUID...')"
-					@input="onSearchInput" />
+					@input="onSearchInput">
 				<div v-if="searching" class="or-mail-loading">
 					<span class="icon-loading-small" />
 				</div>
@@ -67,6 +67,11 @@
 </template>
 
 <script>
+/**
+ * Link-object search dialog — drives the three-tab sidebar's Link tab.
+ *
+ * @spec openspec/specs/mail-sidebar/spec.md
+ */
 import { translate as t } from '@nextcloud/l10n'
 import { searchObjects } from '../api/emailLinks.js'
 
@@ -92,6 +97,10 @@ export default {
 		}
 	},
 	watch: {
+		/**
+		 * @param val
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		visible(val) {
 			if (val) {
 				this.$nextTick(() => {
@@ -106,6 +115,9 @@ export default {
 	},
 	methods: {
 		t,
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		onSearchInput() {
 			if (this.debounceTimer) {
 				clearTimeout(this.debounceTimer)
@@ -117,6 +129,9 @@ export default {
 			}
 			this.debounceTimer = setTimeout(() => this.doSearch(), 300)
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		async doSearch() {
 			this.searching = true
 			try {
@@ -139,12 +154,20 @@ export default {
 		isAlreadyLinked(result) {
 			return this.linkedObjectUuids.includes(result.uuid)
 		},
+		/**
+		 * @param result
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		selectResult(result) {
 			if (this.isAlreadyLinked(result)) {
 				return
 			}
 			this.selectedResult = result
 		},
+		/**
+		 * @param result
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		resultAriaLabel(result) {
 			const title = result.title || result.uuid
 			if (this.isAlreadyLinked(result)) {
@@ -152,15 +175,24 @@ export default {
 			}
 			return title
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		confirmLink() {
 			if (this.selectedResult) {
 				this.$emit('link', this.selectedResult)
 				this.close()
 			}
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		close() {
 			this.$emit('close')
 		},
+		/**
+		 * @spec openspec/specs/mail-sidebar/spec.md
+		 */
 		reset() {
 			this.query = ''
 			this.searchResults = []

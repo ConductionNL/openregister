@@ -3,11 +3,15 @@
 /**
  * Authentication Exception.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Exception
  * @package  OCA\OpenRegister\Exception
  *
- * @author  Conduction Development Team <info@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -37,7 +41,7 @@ class AuthenticationException extends Exception
      * @param string $message A human-readable error message
      * @param array  $details Structured details about the failure
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function __construct(string $message, array $details)
     {
@@ -51,7 +55,7 @@ class AuthenticationException extends Exception
      *
      * @return array The details array.
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-26
+     * @spec openspec/specs/object-lifecycle/spec.md
      */
     public function getDetails(): array
     {

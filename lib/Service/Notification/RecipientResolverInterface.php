@@ -8,6 +8,9 @@
  * implementation under a DI tag; the schema's notification annotation
  * references the tag via `{kind: "expression", resolver: "<tag>"}`.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -44,6 +47,8 @@ interface RecipientResolverInterface
      * @param array<string, mixed> $context Trigger-specific extras (action, from, to, aggregation, ...).
      *
      * @return array<int, string> List of Nextcloud uids.
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-11
      */
     public function resolve(ObjectEntity $object, array $context): array;
 }//end interface

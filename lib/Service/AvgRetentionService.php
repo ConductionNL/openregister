@@ -26,8 +26,9 @@
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
- * @author  Conduction Development Team <dev@conduction.nl>
- * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://OpenRegister.app
  */
@@ -60,6 +61,8 @@ class AvgRetentionService
      * @param VerwerkingsactiviteitMapper $vrwMapper    Catalog reader.
      * @param MagicMapper                 $objectMapper Object loader.
      * @param LoggerInterface             $logger       Logger.
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function __construct(
         private readonly IDBConnection $db,
@@ -98,6 +101,8 @@ class AvgRetentionService
      * @return array<string, mixed>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag)
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     public function runRetentionPass(bool $dryRun=false): array
     {
@@ -140,6 +145,8 @@ class AvgRetentionService
      * @param bool                  $dryRun   Pass-through dry-run flag.
      *
      * @return array<string, mixed>|null Per-activity result or null skip.
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function processActivity(Verwerkingsactiviteit $activity, DateTime $now, bool $dryRun): ?array
     {
@@ -195,6 +202,8 @@ class AvgRetentionService
      * @param string   $duration ISO-8601 duration string.
      *
      * @return DateTime|null Cutoff timestamp or null on parse error.
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function computeCutoff(DateTime $now, string $duration): ?DateTime
     {
@@ -221,6 +230,8 @@ class AvgRetentionService
      * @param DateTime $cutoff       Cut-off timestamp.
      *
      * @return array<int, array{object: int, object_uuid: string|null, register: int|null, schema: int|null}>
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function findOverdueObjectsForActivity(string $activityUuid, DateTime $cutoff): array
     {
@@ -256,11 +267,21 @@ class AvgRetentionService
 
             $candidates = [];
             foreach ($rows as $row) {
+                $candidateRegister = null;
+                if (isset($row['register']) === true) {
+                    $candidateRegister = (int) $row['register'];
+                }
+
+                $candidateSchema = null;
+                if (isset($row['schema']) === true) {
+                    $candidateSchema = (int) $row['schema'];
+                }
+
                 $candidates[] = [
                     'object'      => (int) ($row['object'] ?? 0),
                     'object_uuid' => ($row['object_uuid'] ?? null),
-                    'register'    => (isset($row['register']) === true) ? (int) $row['register'] : null,
-                    'schema'      => (isset($row['schema']) === true) ? (int) $row['schema'] : null,
+                    'register'    => $candidateRegister,
+                    'schema'      => $candidateSchema,
                 ];
             }
 
@@ -284,6 +305,8 @@ class AvgRetentionService
      * @param Verwerkingsactiviteit            $activity   Owning activity.
      *
      * @return int
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function erasePastRetention(array $candidates, Verwerkingsactiviteit $activity): int
     {
@@ -327,13 +350,19 @@ class AvgRetentionService
      * @param array<string, mixed> $candidate Single candidate row.
      *
      * @return ObjectEntity|null
+     *
+     * @spec openspec/specs/retention-management/spec.md
      */
     private function loadCandidate(array $candidate): ?ObjectEntity
     {
         $uuid = (string) ($candidate['object_uuid'] ?? '');
         $id   = (int) ($candidate['object'] ?? 0);
 
-        $identifier = ($uuid !== '') ? $uuid : $id;
+        $identifier = $id;
+        if ($uuid !== '') {
+            $identifier = $uuid;
+        }
+
         if ($identifier === 0 || $identifier === '') {
             return null;
         }

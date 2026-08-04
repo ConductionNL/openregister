@@ -5,6 +5,9 @@
  *
  * Validates semantic version strings according to SemVer specification.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Formats
  * @package  OCA\OpenRegister\Formats
  *
@@ -70,7 +73,7 @@ REGEX;
      *
      * @return bool True if data is a valid semantic version, false otherwise
      *
-     * @spec openspec/changes/retrofit-2026-04-28-b2b-crossrefs/tasks.md#task-22
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function validate(mixed $data): bool
     {

@@ -7,7 +7,7 @@
 			:loading-message="t('openregister', 'Loading cache statistics...')">
 			<template #actions>
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="loading || clearingCache || loadingCache"
 					@click="loadCacheStats">
 					<template #icon>
@@ -17,7 +17,7 @@
 					Refresh
 				</NcButton>
 				<NcButton
-					type="error"
+					variant="error"
 					:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
 					@click="showClearCacheDialog">
 					<template #icon>
@@ -248,18 +248,19 @@
 						<div class="warmup-select">
 							<label for="warmup-interval">Warmup Interval:</label>
 							<NcSelect
+								input-label="Warmup Interval"
 								input-id="warmup-interval"
-								:value="selectedWarmupOption"
+								:model-value="selectedWarmupOption"
 								:options="warmupIntervalOptions"
 								:clearable="false"
 								:disabled="savingWarmupInterval"
 								label="label"
 								track-by="value"
-								@input="onWarmupIntervalChange" />
+								@update:modelValue="onWarmupIntervalChange" />
 						</div>
 						<div class="warmup-actions">
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="warmingUpCache || savingWarmupInterval"
 								@click="triggerWarmup">
 								<template #icon>
@@ -299,35 +300,35 @@
 					<div class="cache-type-selection">
 						<h4>Cache Type:</h4>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="all"
 							type="radio">
 							Clear All Cache (Recommended)
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="object"
 							type="radio">
 							Object Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="schema"
 							type="radio">
 							Schema Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="facet"
 							type="radio">
 							Facet Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="distributed"
 							type="radio">
@@ -342,7 +343,7 @@
 						Cancel
 					</NcButton>
 					<NcButton
-						type="error"
+						variant="error"
 						:disabled="clearingCache"
 						@click="performClearCache">
 						<template #icon>
@@ -382,30 +383,73 @@ export default {
 	computed: {
 		...mapStores(useSettingsStore),
 
+		/**
+		 * Cache statistics from the settings store, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {object}
+		 */
 		cacheStats() {
 			return this.settingsStore.cacheStats
 		},
 
+		/**
+		 * Whether cache stats are loading, for spinner display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loadingCache() {
 			return this.settingsStore.loadingCache
 		},
 
+		/**
+		 * Whether the cache is currently being cleared, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		clearingCache() {
 			return this.settingsStore.clearingCache
 		},
 
+		/**
+		 * Whether the settings store is loading, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		loading() {
 			return this.settingsStore.loading
 		},
 
+		/**
+		 * Whether the clear-cache confirmation is showing, for display.
+		 *
+		 * @spec exclude UI plumbing — derived dialog visibility state
+		 * @return {boolean}
+		 */
 		showClearCacheConfirmation() {
 			return this.settingsStore.showClearCacheConfirmation
 		},
 
 		clearCacheType: {
+			/**
+			 * Read the selected clear-cache type from the store.
+			 *
+			 * @spec exclude UI plumbing — computed getter proxies the store
+			 * @return {string}
+			 */
 			get() {
 				return this.settingsStore.clearCacheType
 			},
+			/**
+			 * Write the selected clear-cache type to the store.
+			 *
+			 * @param {string} value The new clear-cache type.
+			 * @spec exclude UI plumbing — computed setter proxies the store
+			 * @return {void}
+			 */
 			set(value) {
 				this.settingsStore.clearCacheType = value
 			},
@@ -414,24 +458,49 @@ export default {
 		/**
 		 * Get CSS class for overall hit rate
 		 *
+		 * @spec exclude UI plumbing — derived row-styling helper
 		 * @return {string} CSS class name
 		 */
 		hitRateClass() {
 			return this.getHitRateClass(this.cacheStats.overview?.overallHitRate || 0)
 		},
 
+		/**
+		 * Whether a cache warmup is in progress, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		warmingUpCache() {
 			return this.settingsStore.warmingUpCache
 		},
 
+		/**
+		 * Whether the warmup interval is being saved, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {boolean}
+		 */
 		savingWarmupInterval() {
 			return this.settingsStore.savingWarmupInterval
 		},
 
+		/**
+		 * Timestamp of the last warmup run, for display.
+		 *
+		 * @spec exclude UI plumbing — derived view state from the store
+		 * @return {(string|null)}
+		 */
 		warmupLastRun() {
 			return this.settingsStore.warmupLastRun
 		},
 
+		/**
+		 * Selectable warmup-interval options for the dropdown.
+		 *
+		 * @spec exclude UI plumbing — static select-option list
+		 * @return {Array<object>}
+		 */
 		warmupIntervalOptions() {
 			return [
 				{ label: 'Disabled', value: 0 },
@@ -443,12 +512,24 @@ export default {
 			]
 		},
 
+		/**
+		 * Currently selected warmup-interval option, for display.
+		 *
+		 * @spec exclude UI plumbing — derived select-value state
+		 * @return {object}
+		 */
 		selectedWarmupOption() {
 			const interval = this.settingsStore.warmupInterval
 			return this.warmupIntervalOptions.find((o) => o.value === interval) || this.warmupIntervalOptions[3]
 		},
 	},
 
+	/**
+	 * Lifecycle hook: load the warmup interval setting on mount.
+	 *
+	 * @spec exclude UI plumbing — view-mount data fetch for display only
+	 * @return {void}
+	 */
 	mounted() {
 		this.settingsStore.loadWarmupInterval()
 	},
@@ -456,6 +537,8 @@ export default {
 	methods: {
 		/**
 		 * Load cache statistics
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {void}
 		 */
 		loadCacheStats() {
 			this.settingsStore.loadCacheStats()
@@ -463,6 +546,8 @@ export default {
 
 		/**
 		 * Show clear cache dialog
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
 		 */
 		showClearCacheDialog() {
 			this.settingsStore.showClearCacheDialog()
@@ -470,6 +555,8 @@ export default {
 
 		/**
 		 * Hide clear cache dialog
+		 * @spec exclude UI plumbing — dialog visibility toggle via store
+		 * @return {void}
 		 */
 		hideClearCacheDialog() {
 			this.settingsStore.hideClearCacheDialog()
@@ -477,6 +564,8 @@ export default {
 
 		/**
 		 * Perform cache clearing
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {void}
 		 */
 		performClearCache() {
 			this.settingsStore.performClearCache()
@@ -486,6 +575,7 @@ export default {
 		 * Format bytes to human readable format
 		 *
 		 * @param {number} bytes Number of bytes
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted string
 		 */
 		formatBytes(bytes) {
@@ -502,6 +592,7 @@ export default {
 		 * Get service hit rate
 		 *
 		 * @param {object} service Service stats object
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {number} Hit rate percentage
 		 */
 		getServiceHitRate(service) {
@@ -515,6 +606,7 @@ export default {
 		 * Get CSS class for hit rate
 		 *
 		 * @param {number} hitRate Hit rate percentage
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} CSS class name
 		 */
 		getHitRateClass(hitRate) {
@@ -527,6 +619,7 @@ export default {
 		 * Get hit rate text
 		 *
 		 * @param {number} hitRate Hit rate percentage
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Status text
 		 */
 		getHitRateText(hitRate) {
@@ -538,6 +631,7 @@ export default {
 		/**
 		 * Get distributed cache backend name
 		 *
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Backend name
 		 */
 		getDistributedCacheBackend() {
@@ -551,6 +645,8 @@ export default {
 		 * Handle warmup interval change
 		 *
 		 * @param {object} option Selected option
+		 * @spec exclude UI plumbing — delegates to the settings store
+		 * @return {void}
 		 */
 		onWarmupIntervalChange(option) {
 			if (option) {
@@ -560,6 +656,8 @@ export default {
 
 		/**
 		 * Trigger manual cache warmup
+		 * @spec exclude UI plumbing — action delegates to the settings store
+		 * @return {void}
 		 */
 		triggerWarmup() {
 			this.settingsStore.warmupNamesCache()
@@ -569,6 +667,7 @@ export default {
 		 * Format date for display
 		 *
 		 * @param {string|null} dateString ISO date string
+		 * @spec exclude UI plumbing — pure presentation helper
 		 * @return {string} Formatted date
 		 */
 		formatDate(dateString) {

@@ -6,6 +6,9 @@
  * Service that wraps Nextcloud Mail message lookups and manages email-to-object links.
  * Emails are immutable; this service only creates/removes link references.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category  Service
  * @package   OCA\OpenRegister\Service
  * @author    Conduction Development Team <dev@conduction.nl>
@@ -14,10 +17,10 @@
  * @version   GIT: <git-id>
  * @link      https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+ * @spec openspec/specs/mail-sidebar/spec.md#requirement-reverse-lookup-api-to-find-objects-by-mail-message-id
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
+ * @spec openspec/specs/mail-sidebar/spec.md
  */
 
 declare(strict_types=1);
@@ -143,7 +146,7 @@ class EmailService
      *
      * @return array{results: array, total: int} Email links with total count.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-51
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function getEmailsForObject(string $objectUuid, ?int $limit=null, ?int $offset=null): array
     {
@@ -172,7 +175,7 @@ class EmailService
      *
      * @throws Exception If the email does not exist or is already linked.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-50
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function linkEmail(
         string $objectUuid,
@@ -223,6 +226,8 @@ class EmailService
      * @return void
      *
      * @throws Exception If the link is not found.
+     *
+     * @spec exclude Legacy link-table delete by id; email link infrastructure being removed per linked-entity-types.
      */
     public function unlinkEmail(int $linkId): void
     {
@@ -241,7 +246,7 @@ class EmailService
      *
      * @return array Array of email links with object UUIDs.
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-53
+     * @spec openspec/specs/mail-sidebar/spec.md
      */
     public function searchBySender(string $sender): array
     {
@@ -299,16 +304,26 @@ class EmailService
             return [];
         }
 
+        // IDOR guard: scope the scan to the caller's own Mail accounts. Without
+        // this any authenticated user could pass an arbitrary sender and learn
+        // which OpenRegister objects link to mail received by OTHER users'
+        // accounts (cross-account leak). oc_mail_accounts.user_id owns the account.
+        $user = $this->userSession->getUser();
+        if ($user === null) {
+            return [];
+        }
+
         try {
             // The mail_recipients.type=0 is "from"; mail_recipients.email is the address.
             $sql  = "SELECT mb.account_id, m.id AS message_id
                      FROM oc_mail_messages m
                      JOIN oc_mail_recipients r ON r.message_id = m.id AND r.type = 0
                      JOIN oc_mail_mailboxes mb ON mb.id = m.mailbox_id
-                     WHERE LOWER(r.email) = LOWER(?)
+                     JOIN oc_mail_accounts ma ON ma.id = mb.account_id
+                     WHERE LOWER(r.email) = LOWER(?) AND ma.user_id = ?
                      LIMIT 200";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$sender]);
+            $stmt->execute([$sender, $user->getUID()]);
             $ids = [];
             while (($row = $stmt->fetch()) !== false) {
                 $ids[] = ((int) $row['account_id']).'/'.((int) $row['message_id']);
@@ -318,7 +333,7 @@ class EmailService
         } catch (Exception $e) {
             $this->logger->warning('[EmailService] findMessageIdsBySender failed: '.$e->getMessage());
             return [];
-        }
+        }//end try
     }//end findMessageIdsBySender()
 
     /**
@@ -348,6 +363,8 @@ class EmailService
      * @param string $objectUuid The object UUID.
      *
      * @return int Number of deleted links.
+     *
+     * @spec exclude Legacy link-table bulk cleanup delegating to EmailLinkMapper; email link infrastructure being removed per linked-entity-types.
      */
     public function deleteLinksForObject(string $objectUuid): int
     {
@@ -362,7 +379,7 @@ class EmailService
      *
      * @return array|null Message data or null if not found.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-46
+     * @spec openspec/specs/mail-sidebar/spec.md#requirement-reverse-lookup-api-to-find-objects-by-mail-message-id
      */
     private function fetchMailMessage(int $messageId, int $accountId): ?array
     {

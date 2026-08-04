@@ -5,6 +5,9 @@
  *
  * This file contains the class for handling data export operations in the OpenRegister application.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service
  *
@@ -16,21 +19,25 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/data-import-export/spec.md
+ * @spec openspec/specs/export-pdf-format/spec.md
  */
 
 namespace OCA\OpenRegister\Service;
 
 use DateTime;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Exception;
 use InvalidArgumentException;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Exception\ExportTooLargeException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\CacheHandler;
 use OCA\OpenRegister\Service\PropertyRbacHandler;
@@ -46,6 +53,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use React\Async\PromiseInterface;
 use React\Promise\Promise;
 use React\EventLoop\Loop;
+use RuntimeException;
 
 /**
  * Service for exporting data to various formats
@@ -59,6 +67,20 @@ use React\EventLoop\Loop;
  */
 class ExportService
 {
+
+    /**
+     * Maximum number of objects a single PDF export may render.
+     *
+     * PDF rendering (Dompdf) builds a full in-memory HTML/CSS box-tree per
+     * row, unlike the streaming CSV writer or PhpSpreadsheet's XLSX writer,
+     * making it meaningfully more memory-heavy per row. Requests whose
+     * object count exceeds this cap MUST fail fast with
+     * {@see ExportTooLargeException} before any HTML construction or
+     * Dompdf rendering begins.
+     *
+     * @var int
+     */
+    public const MAX_PDF_EXPORT_ROWS = 5000;
 
     /**
      * Register mapper instance
@@ -175,8 +197,8 @@ class ExportService
      *
      * @SuppressWarnings(PHPMD.CyclomaticComplexity) Export requires handling multiple input combinations
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-11
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function exportToExcel(
         ?Register $register=null,
@@ -230,7 +252,7 @@ class ExportService
      *
      * @throws \InvalidArgumentException If trying to export multiple schemas to CSV
      *
-     * @spec openspec/changes/retrofit-2026-04-30-annotate-openregister/tasks.md#task-21
+     * @spec openspec/specs/data-import-export/spec.md
      */
     public function exportToCsv(
         ?Register $register=null,
@@ -256,6 +278,339 @@ class ExportService
     }//end exportToCsv()
 
     /**
+     * Export objects of a single schema to a JSON document
+     *
+     * Serialises every object (subject to the same RBAC + multi-tenancy + filter
+     * rules as the spreadsheet exporters) to its canonical `jsonSerialize()`
+     * representation — body properties at the top level plus the `@self`
+     * metadata block. The result is a JSON array re-importable via
+     * `ImportService::importFromJson()`, which upserts by `@self.id`.
+     *
+     * @param Register|null $register Register context (required)
+     * @param Schema|null   $schema   Schema whose objects are exported (required)
+     * @param array         $filters  Optional `@self.*` metadata filters
+     *
+     * @return string Pretty-printed JSON array of objects
+     *
+     * @throws InvalidArgumentException When no schema is given (JSON export is single-schema, like CSV)
+     *
+     * @spec exclude Retrofit — JSON object export added alongside the existing Excel/CSV exporters; no dedicated openspec change.
+     */
+    public function exportToJson(
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[]
+    ): string {
+        if ($schema === null) {
+            throw new InvalidArgumentException('JSON export requires a specific schema.');
+        }
+
+        $objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+
+        $rows = array_map(
+            static fn(ObjectEntity $object): array => $object->jsonSerialize(),
+            $objects
+        );
+
+        return json_encode($rows, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }//end exportToJson()
+
+    /**
+     * Export data to PDF format
+     *
+     * Renders the same tabular data the CSV/Excel exporters produce into an
+     * A4-landscape PDF via Dompdf (already an OpenRegister dependency, used
+     * by `PdfReportWriter`). Reuses the existing column/data-extraction
+     * pipeline (`fetchObjectsForExport()`, `getHeaders()`,
+     * `identifyNameCompanionColumns()`, `resolveUuidNameMap()`,
+     * `getObjectValue()`, `resolveUuidsToNames()`) — only the renderer is
+     * new. When `$register` is given without `$schema`, one table section
+     * per schema is rendered (the PDF analogue of `exportToExcel()`'s
+     * one-sheet-per-schema behaviour).
+     *
+     * @param Register|null $register    Optional register to export
+     * @param Schema|null   $schema      Optional schema to export
+     * @param array         $filters     Optional filters to apply
+     * @param IUser|null    $currentUser Current user for permission checks
+     *
+     * @return string Raw PDF bytes
+     *
+     * @throws ExportTooLargeException When the object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
+     *
+     * @spec openspec/specs/export-pdf-format/spec.md
+     */
+    public function exportToPdf(
+        ?Register $register=null,
+        ?Schema $schema=null,
+        array $filters=[],
+        ?IUser $currentUser=null
+    ): string {
+        // Capture register context so getHeaders/getObjectValue can emit
+        // per-language columns for translatable properties, same as the
+        // Excel/CSV pipeline.
+        $this->contextRegister = $register;
+
+        if ($register !== null && $schema === null) {
+            // Register-level export without a schema: one section per schema,
+            // mirroring exportToExcel()'s one-sheet-per-schema behaviour.
+            $sections = $this->buildPdfSectionsForRegister(
+                register: $register,
+                filters: $filters,
+                currentUser: $currentUser
+            );
+
+            return $this->renderPdfDocument(sections: $sections);
+        }
+
+        $objects = $this->fetchObjectsForExport(register: $register, schema: $schema, filters: $filters);
+
+        $this->guardPdfRowCap(rowCount: count($objects));
+
+        $section = $this->buildPdfSection(
+            register: $register,
+            schema: $schema,
+            objects: $objects,
+            currentUser: $currentUser
+        );
+
+        return $this->renderPdfDocument(sections: [$section]);
+    }//end exportToPdf()
+
+    /**
+     * Build one PDF section per schema for a register-level export (no
+     * single schema selected), mirroring `exportToExcel()`'s
+     * one-sheet-per-schema behaviour. The row-count cap is enforced on the
+     * combined total across all schemas before any section HTML is built.
+     *
+     * @param Register   $register    The register whose schemas are exported.
+     * @param array      $filters     Optional filters to apply to each schema's fetch.
+     * @param IUser|null $currentUser Current user for permission checks.
+     *
+     * @return string[] One HTML section fragment per schema.
+     *
+     * @throws ExportTooLargeException When the combined object count exceeds {@see self::MAX_PDF_EXPORT_ROWS}.
+     */
+    private function buildPdfSectionsForRegister(Register $register, array $filters, ?IUser $currentUser): array
+    {
+        $schemas      = $this->getSchemasForRegister(register: $register);
+        $sectionInput = [];
+        $totalRows    = 0;
+
+        foreach ($schemas as $schemaItem) {
+            $objects        = $this->fetchObjectsForExport(register: $register, schema: $schemaItem, filters: $filters);
+            $totalRows     += count($objects);
+            $sectionInput[] = ['schema' => $schemaItem, 'objects' => $objects];
+        }
+
+        $this->guardPdfRowCap(rowCount: $totalRows);
+
+        $sections = [];
+        foreach ($sectionInput as $input) {
+            $sections[] = $this->buildPdfSection(
+                register: $register,
+                schema: $input['schema'],
+                objects: $input['objects'],
+                currentUser: $currentUser
+            );
+        }
+
+        return $sections;
+    }//end buildPdfSectionsForRegister()
+
+    /**
+     * Guard the PDF row-count cap.
+     *
+     * Extracted as its own method (rather than inlined at each call site)
+     * so the boundary condition can be unit-tested directly without
+     * exercising the expensive Dompdf render path — Dompdf's table layout
+     * (`Cellmap`) has real per-row memory cost, so tests that need to
+     * assert "N rows over the cap throws" or "N rows at the cap doesn't
+     * throw" should call this method directly rather than rendering
+     * thousands of rows just to observe whether an exception was thrown.
+     *
+     * @param int $rowCount The object count to check against {@see self::MAX_PDF_EXPORT_ROWS}.
+     *
+     * @return void
+     *
+     * @throws ExportTooLargeException When `$rowCount` exceeds the configured cap.
+     */
+    private function guardPdfRowCap(int $rowCount): void
+    {
+        if ($rowCount > self::MAX_PDF_EXPORT_ROWS) {
+            throw new ExportTooLargeException(rowCount: $rowCount, maxRows: self::MAX_PDF_EXPORT_ROWS);
+        }
+    }//end guardPdfRowCap()
+
+    /**
+     * Build the escaped HTML for a single schema's export section.
+     *
+     * @param Register|null  $register    Optional register context (used for the title only).
+     * @param Schema|null    $schema      Optional schema context.
+     * @param ObjectEntity[] $objects     The already-fetched, already-capped object set for this section.
+     * @param IUser|null     $currentUser Current user for permission checks (drives header visibility).
+     *
+     * @return string Escaped HTML for the section (title, meta line, table).
+     */
+    private function buildPdfSection(
+        ?Register $register,
+        ?Schema $schema,
+        array $objects,
+        ?IUser $currentUser
+    ): string {
+        $headers       = $this->getHeaders(schema: $schema, currentUser: $currentUser);
+        $nameColumns   = $this->identifyNameCompanionColumns(headers: $headers);
+        $uuidToNameMap = $this->resolveUuidNameMap(objects: $objects, nameColumns: $nameColumns);
+
+        $titleParts = [];
+        if ($register !== null) {
+            $titleParts[] = $register->getTitle() ?? $register->getSlug() ?? 'Register';
+        }
+
+        if ($schema !== null) {
+            $titleParts[] = $schema->getTitle() ?? $schema->getSlug() ?? 'Schema';
+        }
+
+        $title = implode(' — ', $titleParts);
+        if ($title === '') {
+            $title = 'Export';
+        }
+
+        $timestamp = (new DateTime())->format('Y-m-d H:i:s');
+        $count     = count($objects);
+
+        $html  = '<div class="pdf-section">';
+        $html .= '<h1>'.htmlspecialchars($title, ENT_QUOTES, 'UTF-8').'</h1>';
+        $html .= '<p class="meta">'
+            .'Exported: '.htmlspecialchars($timestamp, ENT_QUOTES, 'UTF-8')
+            .' &middot; Objects: '.$count
+            .'</p>';
+        $html .= '<table><thead><tr>';
+
+        foreach ($headers as $header) {
+            $html .= '<th>'.htmlspecialchars((string) $header, ENT_QUOTES, 'UTF-8').'</th>';
+        }
+
+        $html .= '</tr></thead><tbody>';
+
+        foreach ($objects as $object) {
+            $objectData = $object->getObject();
+            $html      .= '<tr>';
+
+            foreach ($headers as $col => $header) {
+                $value = $this->getObjectValue(object: $object, header: $header);
+
+                if (isset($nameColumns[$col]) === true) {
+                    // This is a companion name column — resolve UUIDs to names,
+                    // same as writeObjectRows() does for the Excel/CSV pipeline.
+                    $sourceProperty = $nameColumns[$col];
+                    $rawValue       = $objectData[$sourceProperty] ?? null;
+                    $value          = $this->resolveUuidsToNames(value: $rawValue, uuidToNameMap: $uuidToNameMap);
+                }
+
+                $html .= '<td>'.htmlspecialchars($this->truncatePdfCellValue(value: $value), ENT_QUOTES, 'UTF-8').'</td>';
+            }
+
+            $html .= '</tr>';
+        }//end foreach
+
+        $html .= '</tbody></table></div>';
+
+        return $html;
+    }//end buildPdfSection()
+
+    /**
+     * Truncate a cell value for PDF display so a single long value cannot
+     * blow out the table layout or the render time.
+     *
+     * @param string|null $value The raw cell value.
+     *
+     * @return string The value, truncated to 200 characters with an ellipsis if longer.
+     */
+    private function truncatePdfCellValue(?string $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $maxLength = 200;
+        if (mb_strlen($value) > $maxLength) {
+            return mb_substr($value, 0, $maxLength).'…';
+        }
+
+        return $value;
+    }//end truncatePdfCellValue()
+
+    /**
+     * Render one or more section HTML fragments into a single A4-landscape PDF.
+     *
+     * Uses the same Dompdf sandboxing pattern established by
+     * `PdfReportWriter`: no remote fetches, no PHP execution. Page numbers
+     * are added via `Canvas::page_text()`'s safe `{PAGE_NUM}`/`{PAGE_COUNT}`
+     * placeholder substitution — not the PHP-script-in-HTML mechanism,
+     * which stays disabled for security.
+     *
+     * @param string[] $sections Escaped HTML fragments, one per schema section.
+     *
+     * @return string Raw PDF bytes.
+     */
+    private function renderPdfDocument(array $sections): string
+    {
+        $style = '@page { margin: 12mm; }'
+            ."body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: #1a1a1a; }"
+            .'h1 { font-size: 14pt; margin: 0 0 2mm 0; }'
+            .'p.meta { font-size: 8pt; color: #555555; margin: 0 0 4mm 0; }'
+            .'table { width: 100%; border-collapse: collapse; }'
+            .'th, td { border: 0.25pt solid #cccccc; padding: 1.5mm 2mm; text-align: left; word-wrap: break-word; }'
+            .'th { background-color: #2c3e50; color: #ffffff; font-weight: bold; }'
+            .'tbody tr:nth-child(even) { background-color: #f2f2f2; }'
+            .'.pdf-section { page-break-after: always; }'
+            .'.pdf-section:last-child { page-break-after: auto; }';
+
+        $body = implode('', $sections);
+        $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'.$style.'</style></head><body>'.$body.'</body></html>';
+
+        $options = new Options();
+        // No remote stylesheet/image fetches — keeps the renderer hermetic,
+        // same rationale as PdfReportWriter.
+        $options->set('isRemoteEnabled', false);
+        // PHP execution in templates stays disabled; page numbers use
+        // Canvas::page_text() placeholders instead (see below).
+        $options->set('isPhpEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('defaultPaperSize', 'A4');
+        $options->set('defaultPaperOrientation', 'landscape');
+
+        // SECURITY: assert sandbox flags didn't drift via a future refactor.
+        // Dompdf has a history of SSRF / file-disclosure CVEs
+        // (CVE-2022-41343, CVE-2023-23924); these flags are the primary
+        // mitigation and must stay false.
+        if ($options->getIsRemoteEnabled() !== false || $options->getIsPhpEnabled() !== false) {
+            throw new RuntimeException(
+                'ExportService PDF sandbox configuration drifted; remote-fetch / PHP execution must remain disabled.'
+            );
+        }
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $font   = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
+        $canvas->page_text(
+            $canvas->get_width() - 70,
+            $canvas->get_height() - 20,
+            'Page {PAGE_NUM} / {PAGE_COUNT}',
+            $font,
+            8,
+            [0.3, 0.3, 0.3]
+        );
+
+        $output = $dompdf->output();
+        return $output ?? '';
+    }//end renderPdfDocument()
+
+    /**
      * Build an empty import template spreadsheet for a schema
      *
      * Generates a spreadsheet that contains only the header row derived from the
@@ -267,6 +622,9 @@ class ExportService
      * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
      *
      * @return Spreadsheet Spreadsheet with a single sheet containing only header cells
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (builds a header-only
+     *       template spreadsheet from a schema's properties, with register-context per-language column expansion)
      */
     public function buildTemplateSpreadsheet(
         ?Register $register,
@@ -302,6 +660,9 @@ class ExportService
      * @param IUser|null    $currentUser Current user (drives admin metadata column inclusion)
      *
      * @return string CSV content with a UTF-8 BOM prefix and a single header row
+     *
+     * @spec openspec/specs/data-import-export/spec.md#import-templates-downloadable-per-schema (renders the per-schema
+     *       import template as a UTF-8 BOM-prefixed CSV so Excel opens it correctly)
      */
     public function buildTemplateCsv(
         ?Register $register,
@@ -487,7 +848,7 @@ class ExportService
      *
      * @return array Map of UUID string to human-readable name.
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function resolveUuidNameMap(array $objects, array $nameColumns): array
     {
@@ -593,7 +954,7 @@ class ExportService
      * @SuppressWarnings(PHPMD.NPathComplexity)
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-16
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function getHeaders(?Schema $schema=null, ?IUser $currentUser=null): array
     {
@@ -877,7 +1238,11 @@ class ExportService
         }
 
         $slotValue = $value[$lang];
-        return is_scalar($slotValue) === true ? (string) $slotValue : null;
+        if (is_scalar($slotValue) === true) {
+            return (string) $slotValue;
+        }
+
+        return null;
     }//end extractLanguageSlot()
 
     /**
@@ -1009,7 +1374,7 @@ class ExportService
      *
      * @return string|null The resolved name(s) in the same format as input
      *
-     * @spec openspec/changes/retrofit-2026-04-23-annotate-openregister/tasks.md#task-12
+     * @spec openspec/specs/data-import-export/spec.md
      */
     private function resolveUuidsToNames(mixed $value, array $uuidToNameMap): ?string
     {

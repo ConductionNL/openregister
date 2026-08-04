@@ -9,6 +9,9 @@
  * pipeline (retry, HMAC, dead-letter, multi-tenancy) handles
  * dispatch instead of the inline fire-and-forget POST.
  *
+ * SPDX-License-Identifier: EUPL-1.2
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ *
  * @category Service
  * @package  OCA\OpenRegister\Service\Notification
  *
@@ -60,6 +63,8 @@ class NotificationsAnnotationInstaller implements IEventListener
      * @param Event $event The event carrying the saved schema.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
     public function handle(Event $event): void
     {
@@ -83,6 +88,8 @@ class NotificationsAnnotationInstaller implements IEventListener
      * @param Schema $schema The schema whose annotations should be installed.
      *
      * @return void
+     *
+     * @spec openspec/changes/retrofit-2026-05-25-bw-svc-mid1/tasks.md#task-5
      */
     public function installSchema(Schema $schema): void
     {
@@ -143,13 +150,23 @@ class NotificationsAnnotationInstaller implements IEventListener
             $headers  = (array) ($hookSpec['headers'] ?? []);
             $secret   = ($hookSpec['secret'] ?? null);
 
+            $headersEncoded = null;
+            if (count($headers) > 0) {
+                $headersEncoded = json_encode($headers);
+            }
+
+            $secretValue = null;
+            if (is_string($secret) === true && $secret !== '') {
+                $secretValue = $secret;
+            }
+
             $payload = [
                 'name'        => $webhookName,
                 'url'         => (string) $hookSpec['url'],
                 'method'      => strtoupper((string) ($hookSpec['method'] ?? 'POST')),
                 'events'      => json_encode($events),
-                'headers'     => count($headers) > 0 ? json_encode($headers) : null,
-                'secret'      => is_string($secret) === true && $secret !== '' ? $secret : null,
+                'headers'     => $headersEncoded,
+                'secret'      => $secretValue,
                 'enabled'     => true,
                 'retryPolicy' => 'exponential',
                 'maxRetries'  => 5,

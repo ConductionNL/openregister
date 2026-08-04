@@ -7,9 +7,9 @@
 		<!-- Search Field -->
 		<div class="search-section">
 			<NcTextField
-				:value.sync="localSearch"
+				v-model="localSearch"
 				:placeholder="t('openregister', 'Search by name or URL')"
-				@input="handleSearchInput">
+				@update:modelValue="handleSearchInput">
 				<Magnify :size="20" />
 			</NcTextField>
 		</div>
@@ -19,24 +19,24 @@
 			<h4>{{ t('openregister', 'Status') }}</h4>
 			<div class="filter-options">
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === null"
+					:model-value="selectedEnabled === null"
 					type="radio"
 					value="all"
-					@update:checked="updateEnabled(null)">
+					@update:modelValue="updateEnabled(null)">
 					{{ t('openregister', 'All Webhooks') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === true"
+					:model-value="selectedEnabled === true"
 					type="radio"
 					value="enabled"
-					@update:checked="updateEnabled(true)">
+					@update:modelValue="updateEnabled(true)">
 					{{ t('openregister', 'Enabled') }}
 				</NcCheckboxRadioSwitch>
 				<NcCheckboxRadioSwitch
-					:checked="selectedEnabled === false"
+					:model-value="selectedEnabled === false"
 					type="radio"
 					value="disabled"
-					@update:checked="updateEnabled(false)">
+					@update:modelValue="updateEnabled(false)">
 					{{ t('openregister', 'Disabled') }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -45,7 +45,7 @@
 		<!-- Clear Filters Button -->
 		<div v-if="hasActiveFilters" class="clear-filters">
 			<NcButton
-				type="secondary"
+				variant="secondary"
 				@click="clearFilters">
 				{{ t('openregister', 'Clear filters') }}
 			</NcButton>
@@ -69,10 +69,16 @@ export default {
 	},
 
 	props: {
+		/**
+		 * @spec exclude two-way-bound search prop, UI plumbing
+		 */
 		search: {
 			type: String,
 			default: '',
 		},
+		/**
+		 * @spec exclude two-way-bound enabled-status filter prop, UI plumbing
+		 */
 		enabled: {
 			type: Boolean,
 			default: null,
@@ -99,9 +105,17 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
 		search(newVal) {
 			this.localSearch = newVal
 		},
+		/**
+		 * @param newVal
+		 * @spec exclude computed filter-state binding
+		 */
 		enabled(newVal) {
 			this.selectedEnabled = newVal
 		},
@@ -115,6 +129,7 @@ export default {
 		 *
 		 * @param {string} value - The search value
 		 * @return {void}
+		 * @spec openspec/changes/retrofit-2026-05-24-files-sidebar-tabs/tasks.md#task-1
 		 */
 		handleSearchInput(value) {
 			clearTimeout(this.searchTimeout)
@@ -128,6 +143,7 @@ export default {
 		 *
 		 * @param {boolean|null} enabled - The enabled status to filter by
 		 * @return {void}
+		 * @spec exclude filter-state writer emitting update:enabled, UI plumbing
 		 */
 		updateEnabled(enabled) {
 			this.selectedEnabled = enabled
@@ -138,6 +154,7 @@ export default {
 		 * Clear all filters
 		 *
 		 * @return {void}
+		 * @spec exclude filter-reset emitting cleared values, UI plumbing
 		 */
 		clearFilters() {
 			this.localSearch = ''
