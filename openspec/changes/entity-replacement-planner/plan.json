@@ -134,7 +134,7 @@
     {
       "id": "5.2",
       "title": "Office-container branch uses a text-node segment adapter",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "5.3",
@@ -154,7 +154,7 @@
     {
       "id": "5.6",
       "title": "docx fixture tests incl. cross-run entity and structure preservation",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "6.1",

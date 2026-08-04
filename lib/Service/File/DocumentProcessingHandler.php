@@ -1852,169 +1852,56 @@ class DocumentProcessingHandler
             return;
         }
 
-        $segments = [];
-        $full     = '';
+        // One paragraph is one text flow, so its text nodes are the segments an
+        // entity may be split across (`<text:span>` boundaries). Scoping the
+        // flatten to the paragraph — rather than the whole part — is what stops a
+        // match spanning two unrelated paragraphs.
+        $nodes  = [];
+        $values = [];
         foreach ($textNodes as $textNode) {
             $data = (string) $textNode->nodeValue;
             if ($data === '') {
                 continue;
             }
 
-            $segments[] = [
-                'node'   => $textNode,
-                'start'  => strlen($full),
-                'length' => strlen($data),
-            ];
-            $full      .= $data;
+            $nodes[]  = $textNode;
+            $values[] = $data;
         }
 
-        if ($full === '') {
+        if (empty($values) === true) {
             return;
         }
 
-        $ranges = $this->computeOdfReplacementRanges(haystack: $full, replacements: $replacements);
-        if (empty($ranges) === true) {
+        $map       = new SegmentMap(segments: $values);
+        $flattened = $map->flatten();
+        if (trim($flattened) === '') {
             return;
         }
 
-        $newValues = $this->rebuildOdfSegmentValues(full: $full, segments: $segments, ranges: $ranges);
-        foreach ($segments as $index => $segment) {
-            $node = $segment['node'];
+        if ($this->planner === null) {
+            $this->planner = new ReplacementPlanner();
+        }
+
+        $plan = $this->planner->plan(
+            text: $flattened,
+            substitutions: $replacements,
+            entityTypes: $this->entityTypesByNeedle
+        );
+
+        $this->recordPlanOutcome(plan: $plan);
+
+        if (empty($plan->getRanges()) === true) {
+            return;
+        }
+
+        $newValues = $map->scatter(plan: $plan);
+        foreach ($nodes as $index => $node) {
             if ($node instanceof \DOMNode && array_key_exists($index, $newValues) === true) {
                 $node->nodeValue = $newValues[$index];
             }
         }
 
     }//end replaceTextInOdfParagraph()
-
-    /**
-     * Compute non-overlapping replacement ranges over a concatenated string.
-     *
-     * Needles are processed longest-first so a shorter variant cannot pre-empt
-     * a longer one, and matching is case-insensitive to mirror the
-     * `str_ireplace` semantics used on the DOCX/text paths. Overlapping matches
-     * are skipped (first writer wins).
-     *
-     * @param string $haystack     The concatenated paragraph text.
-     * @param array  $replacements Map: entity-text (needle) => placeholder.
-     *
-     * @phpstan-param array<string, string> $replacements
-     * @psalm-param   array<string, string> $replacements
-     *
-     * @return array<int, array{start: int, end: int, text: string}> Sorted by start.
-     */
-    private function computeOdfReplacementRanges(string $haystack, array $replacements): array
-    {
-        $needles = array_keys($replacements);
-        usort(
-            $needles,
-            static function ($a, $b): int {
-                return (strlen((string) $b) <=> strlen((string) $a));
-            }
-        );
-
-        $ranges   = [];
-        $consumed = [];
-        foreach ($needles as $needle) {
-            $needleStr = (string) $needle;
-            if ($needleStr === '') {
-                continue;
-            }
-
-            $placeholder = (string) ($replacements[$needle] ?? '');
-            $length      = strlen($needleStr);
-            $offset      = 0;
-            while (($pos = stripos($haystack, $needleStr, $offset)) !== false) {
-                $end     = ($pos + $length);
-                $overlap = false;
-                for ($byte = $pos; $byte < $end; $byte++) {
-                    if (isset($consumed[$byte]) === true) {
-                        $overlap = true;
-                        break;
-                    }
-                }
-
-                if ($overlap === false) {
-                    for ($byte = $pos; $byte < $end; $byte++) {
-                        $consumed[$byte] = true;
-                    }
-
-                    $ranges[] = [
-                        'start' => $pos,
-                        'end'   => $end,
-                        'text'  => $placeholder,
-                    ];
-                }
-
-                $offset = ($pos + 1);
-            }//end while
-        }//end foreach
-
-        usort(
-            $ranges,
-            static function (array $a, array $b): int {
-                return ($a['start'] <=> $b['start']);
-            }
-        );
-
-        return $ranges;
-
-    }//end computeOdfReplacementRanges()
-
-    /**
-     * Rebuild each text-node string after applying replacement ranges.
-     *
-     * Walks the concatenated string byte by byte, attributing each surviving
-     * byte to its owning node and emitting each placeholder once on the node
-     * owning its range start. Bytes inside a replaced range are dropped from
-     * whichever nodes they belonged to.
-     *
-     * @param string $full     The concatenated paragraph text.
-     * @param array  $segments Ordered [node, start, length] segment descriptors.
-     * @param array  $ranges   Sorted replacement ranges [start, end, text].
-     *
-     * @phpstan-param array<int, array{node: \DOMNode, start: int, length: int}> $segments
-     * @phpstan-param array<int, array{start: int, end: int, text: string}>      $ranges
-     *
-     * @return array<int, string> Map of segment index => new text-node value.
-     */
-    private function rebuildOdfSegmentValues(string $full, array $segments, array $ranges): array
-    {
-        $owner = [];
-        foreach ($segments as $index => $segment) {
-            $end = ($segment['start'] + $segment['length']);
-            for ($byte = $segment['start']; $byte < $end; $byte++) {
-                $owner[$byte] = $index;
-            }
-        }
-
-        $newValues = [];
-        foreach (array_keys($segments) as $index) {
-            $newValues[$index] = '';
-        }
-
-        $firstIndex = (array_key_first($segments) ?? 0);
-        $total      = strlen($full);
-        $rangeCount = count($ranges);
-        $rangeIndex = 0;
-        $byte       = 0;
-        while ($byte < $total) {
-            if ($rangeIndex < $rangeCount && $byte === $ranges[$rangeIndex]['start']) {
-                $ownerIndex = ($owner[$byte] ?? $firstIndex);
-                $newValues[$ownerIndex] .= $ranges[$rangeIndex]['text'];
-                $byte = $ranges[$rangeIndex]['end'];
-                $rangeIndex++;
-                continue;
-            }
-
-            $ownerIndex = ($owner[$byte] ?? $firstIndex);
-            $newValues[$ownerIndex] .= $full[$byte];
-            $byte++;
-        }
-
-        return $newValues;
-
-    }//end rebuildOdfSegmentValues()
 
     /**
      * Fail-loud validation gate for the ODT writeback path.
