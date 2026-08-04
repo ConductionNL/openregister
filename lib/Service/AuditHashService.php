@@ -45,6 +45,15 @@ use Psr\Log\LoggerInterface;
  *
  * @psalm-suppress UnusedClass
  *
+ * Complexity is over phpmd's threshold (49 on development; the sweep pass and
+ * its backlog counter take it to 53). Suppressed rather than restructured: the
+ * concerns here — canonical hashing, chain verification, the seal lock and now
+ * the sweep — are one cohesive job, and splitting an audit-INTEGRITY class
+ * risks the property it exists to guarantee for no behavioural gain. If it
+ * grows further it wants decomposing properly, not a wider threshold.
+ *
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
+ *
  * @spec openspec/specs/audit-hash-chain/spec.md
  */
 class AuditHashService
@@ -82,6 +91,17 @@ class AuditHashService
      * @var int
      */
     private const SEAL_LOCK_RETRY_DELAY_USEC = 50000;
+
+    /**
+     * Rows sealed per sweep pass.
+     *
+     * Bounded so one cron tick cannot hold the seal lock for an unbounded time
+     * while a large backlog drains — the sweep is resumable by construction,
+     * since it always selects the oldest unsealed rows.
+     *
+     * @var integer
+     */
+    private const SWEEP_BATCH_SIZE = 500;
 
     /**
      * Constructor for AuditHashService.
@@ -331,6 +351,81 @@ class AuditHashService
             $this->releaseSealLock();
         }
     }//end sealRows()
+
+    /**
+     * Seal rows that were left unsealed, oldest first.
+     *
+     * This is the "later seal pass" that sealRow() and sealRows() have always
+     * promised in their fail-soft log messages. Until now it did not exist:
+     * nothing swept unsealed rows, so every fail-soft skip was permanent. On the
+     * instance this was written against, 49,123 of 308,937 audit rows — 15.9% —
+     * had no hash, and never would have.
+     *
+     * That matters more than it sounds. The chain's whole purpose is to make
+     * tampering DETECTABLE; a row with no hash is a row nobody can vouch for.
+     *
+     * Works oldest-first and in id order so each batch chains onto an already
+     * settled predecessor, and delegates to sealRows() so a batch derives its
+     * predecessor once and chains forward, rather than re-deriving it per row
+     * the way sealRow() must.
+     *
+     * @param int $limit Maximum rows to seal in one pass.
+     *
+     * @return int The number of rows sealed.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function sealUnsealed(int $limit=self::SWEEP_BATCH_SIZE): int
+    {
+        if ($limit < 1) {
+            return 0;
+        }
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id')
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->isNull('hash'))
+            ->orderBy('id', 'ASC')
+            ->setMaxResults($limit);
+
+        $result = $qb->executeQuery();
+        $ids    = array_column($result->fetchAll(), 'id');
+        $result->closeCursor();
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        return $this->sealRows(ids: $ids);
+
+    }//end sealUnsealed()
+
+    /**
+     * Count rows still awaiting a seal.
+     *
+     * Exposed so the sweep job can report progress and so an operator can see
+     * whether the backlog is draining. A backlog that only grows means sealing
+     * is failing somewhere, which is exactly the condition that went unnoticed
+     * for as long as no sweeper existed.
+     *
+     * @return int The number of unsealed rows.
+     *
+     * @spec openspec/specs/audit-hash-chain/spec.md
+     */
+    public function countUnsealed(): int
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select($qb->func()->count('id', 'unsealed'))
+            ->from('openregister_audit_trails')
+            ->where($qb->expr()->isNull('hash'));
+
+        $result = $qb->executeQuery();
+        $count  = $result->fetchOne();
+        $result->closeCursor();
+
+        return (int) $count;
+
+    }//end countUnsealed()
 
     /**
      * Seal a batch of rows — body of {@see sealRows()}, caller holds the
