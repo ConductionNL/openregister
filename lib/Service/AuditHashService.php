@@ -467,6 +467,33 @@ class AuditHashService
      * Iterates audit trail entries in order and validates that each entry's
      * stored hash matches the recomputed hash.
      *
+     * ## Retention tombstones
+     *
+     * A row purged under a retention policy keeps its `id`, `created`, `hash`
+     * and `previous_hash` and is stamped with `purged_at`; its payload is
+     * blanked (see {@see \OCA\OpenRegister\Db\AuditTrailMapper::clearLogs()}).
+     * Its content therefore no longer re-hashes to the stored value, but the
+     * stored value is still the link the NEXT row committed to — so the chain
+     * is carried forward across it and the row is counted as a declared
+     * tombstone rather than reported as a break.
+     *
+     * This is what makes a lawful purge distinguishable from tampering. Before
+     * tombstoning, a purge physically removed the row and verification failed
+     * at the row AFTER it, producing exactly the symptom an attacker would
+     * (or#2265): the audit trail could not tell the two apart.
+     *
+     * ⚠️ RESIDUAL LIMITATION, stated plainly: `purgedAt` is deliberately not
+     * part of the canonical JSON, because adding any key to it would change
+     * the hash of every row ever written and invalidate the whole existing
+     * chain. So the flag itself is not hash-protected: an attacker with direct
+     * table write access could set `purged_at` and blank a row's payload to
+     * suppress a record without breaking verification. That is strictly
+     * weaker and strictly more VISIBLE than the previous situation — the row,
+     * its timestamp and its position all remain, and `purgedTombstones` is
+     * reported and countable — but it is not cryptographic proof that a
+     * tombstone was lawful. Binding the flag into the hash requires a chain
+     * re-seal and is tracked separately.
+     *
      * @param int|null $from Start entry ID (inclusive), null for beginning
      * @param int|null $to   End entry ID (inclusive), null for end
      *
@@ -475,6 +502,7 @@ class AuditHashService
      *     entriesVerified: int,
      *     brokenAt: int|null,
      *     skippedNullHashes: int,
+     *     purgedTombstones: int,
      *     range?: array{from: int, to: int}
      * }
      *
@@ -508,6 +536,7 @@ class AuditHashService
 
         $entriesVerified   = 0;
         $skippedNullHashes = 0;
+        $purgedTombstones  = 0;
         $previousHash      = null;
 
         // If starting from a specific ID, get the previous entry's hash.
@@ -524,6 +553,17 @@ class AuditHashService
                 continue;
             }
 
+            // A retention tombstone: the payload was lawfully destroyed, so it
+            // cannot re-hash, but its stored hash is still the link the next
+            // row committed to. Carry it forward and count it. Reporting this
+            // as a break would recreate the exact ambiguity the tombstone
+            // exists to remove.
+            if (($row['purged_at'] ?? null) !== null) {
+                $purgedTombstones++;
+                $previousHash = $storedHash;
+                continue;
+            }
+
             $entry = new AuditTrail();
             $entry->hydrate(object: $this->mapRowToEntity(row: $row));
 
@@ -537,21 +577,14 @@ class AuditHashService
             if ($computedHash !== $storedHash) {
                 $result->closeCursor();
 
-                $response = [
-                    'valid'             => false,
-                    'entriesVerified'   => $entriesVerified,
-                    'brokenAt'          => (int) $row['id'],
-                    'skippedNullHashes' => $skippedNullHashes,
-                ];
-
-                if ($from !== null || $to !== null) {
-                    $response['range'] = [
-                        'from' => $from ?? (int) $row['id'],
-                        'to'   => $to ?? (int) $row['id'],
-                    ];
-                }
-
-                return $response;
+                return $this->buildChainReport(
+                    brokenAt: (int) $row['id'],
+                    entriesVerified: $entriesVerified,
+                    skippedNullHashes: $skippedNullHashes,
+                    purgedTombstones: $purgedTombstones,
+                    from: $from,
+                    to: $to
+                );
             }
 
             $previousHash = $storedHash;
@@ -560,22 +593,65 @@ class AuditHashService
 
         $result->closeCursor();
 
+        return $this->buildChainReport(
+            brokenAt: null,
+            entriesVerified: $entriesVerified,
+            skippedNullHashes: $skippedNullHashes,
+            purgedTombstones: $purgedTombstones,
+            from: $from,
+            to: $to
+        );
+    }//end verifyChain()
+
+    /**
+     * Assemble the verifyChain() result.
+     *
+     * Both exits of the walk return the same shape, differing only in whether
+     * `brokenAt` is set, so building it in one place keeps them from drifting
+     * apart — which for a tamper-evidence report would mean the "valid" and
+     * "broken" answers disagreeing about what they counted.
+     *
+     * @param int|null $brokenAt          Row id where verification failed, or null when the range is intact.
+     * @param int      $entriesVerified   Rows whose content re-hashed correctly.
+     * @param int      $skippedNullHashes Rows carrying no hash (pre-migration or fail-soft leftovers).
+     * @param int      $purgedTombstones  Rows lawfully purged under a retention policy.
+     * @param int|null $from              Requested range start, or null.
+     * @param int|null $to                Requested range end, or null.
+     *
+     * @return array{
+     *     valid: bool,
+     *     entriesVerified: int,
+     *     brokenAt: int|null,
+     *     skippedNullHashes: int,
+     *     purgedTombstones: int,
+     *     range?: array{from: int|null, to: int|null}
+     * }
+     */
+    private function buildChainReport(
+        ?int $brokenAt,
+        int $entriesVerified,
+        int $skippedNullHashes,
+        int $purgedTombstones,
+        ?int $from,
+        ?int $to
+    ): array {
         $response = [
-            'valid'             => true,
+            'valid'             => ($brokenAt === null),
             'entriesVerified'   => $entriesVerified,
-            'brokenAt'          => null,
+            'brokenAt'          => $brokenAt,
             'skippedNullHashes' => $skippedNullHashes,
+            'purgedTombstones'  => $purgedTombstones,
         ];
 
         if ($from !== null || $to !== null) {
             $response['range'] = [
-                'from' => $from,
-                'to'   => $to,
+                'from' => ($from ?? $brokenAt),
+                'to'   => ($to ?? $brokenAt),
             ];
         }
 
         return $response;
-    }//end verifyChain()
+    }//end buildChainReport()
 
     /**
      * Get the hash of the nearest SEALED entry before the given ID.

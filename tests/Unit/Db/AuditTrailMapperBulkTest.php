@@ -138,7 +138,13 @@ class AuditTrailMapperBulkTest extends TestCase
         $this->assertSame([], $trail->getChanged());
         $this->assertNotNull($trail->getUuid());
         $this->assertGreaterThanOrEqual(14, $trail->getSize());
-        $this->assertNotNull($trail->getExpires());
+
+        // A DELETE audit row is precisely the row or#2265 was losing: 311 of
+        // 330 soft-deleted procest cases had no surviving delete row. With no
+        // retention policy resolvable the row is now retained INDEFINITELY
+        // instead of being stamped `+30 days`.
+        $this->assertNull($trail->getExpires());
+        $this->assertNotNull($trail->getRetentionPeriod());
     }//end testBuildAuditTrailForDeleteProducesEmptyChangeSet()
 
     public function testBuildAuditTrailFoldsCascadeContextIntoChangedColumn(): void
