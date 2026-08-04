@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Unit\Service\Flow;
 
 use DateTimeImmutable;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCA\OpenRegister\Service\Flow\FlowScheduleService;
 use OCP\IAppConfig;
@@ -20,7 +20,7 @@ use PHPUnit\Framework\TestCase;
 class FlowScheduleServiceTest extends TestCase
 {
 
-    private FlowResolverRegistry&MockObject $registry;
+    private FlowLocator&MockObject $registry;
 
     private FlowRunService&MockObject $runs;
 
@@ -35,7 +35,7 @@ class FlowScheduleServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->registry = $this->createMock(FlowResolverRegistry::class);
+        $this->registry = $this->createMock(FlowLocator::class);
         $this->runs     = $this->createMock(FlowRunService::class);
         $this->config   = $this->createMock(IAppConfig::class);
 

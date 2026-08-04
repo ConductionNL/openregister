@@ -59,12 +59,18 @@ class FlowControllerTest extends TestCase
     private FlowNodePreflight $preflight;
 
     /**
+     * The flow CRUD surface, mocked.
+     *
+     * @var \OCA\OpenRegister\Service\Flow\FlowService
+     */
+    private $flows;
+
+    /**
      * The controller under test.
      *
      * @var FlowController
      */
     private FlowController $controller;
-
 
     /**
      * Build the controller over mocked collaborators.
@@ -79,17 +85,19 @@ class FlowControllerTest extends TestCase
         $this->nodes     = $this->createMock(FlowNodeRegistry::class);
         $this->preflight = $this->createMock(FlowNodePreflight::class);
 
+        $this->flows = $this->createMock(\OCA\OpenRegister\Service\Flow\FlowService::class);
+
         $this->controller = new FlowController(
             'openregister',
             $this->request,
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $this->createMock(originalClassName: \OCA\OpenRegister\Db\FlowStateMapper::class),
-            $this->preflight
+            $this->preflight,
+            $this->flows
         );
 
     }//end setUp()
-
 
     /**
      * The catalog surfaces the registry's palette in the documented envelope.
@@ -112,7 +120,6 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogReturnsThePaletteWithATotal()
 
-
     /**
      * An app-contributed leaf is visible — the whole point of the endpoint.
      *
@@ -130,7 +137,6 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogSurfacesAppContributedLeaves()
 
-
     /**
      * Admin scope is the default, so a builder never has to ask for it.
      *
@@ -147,7 +153,6 @@ class FlowControllerTest extends TestCase
         $this->controller->nodeCatalog();
 
     }//end testNodeCatalogDefaultsToAdminScope()
-
 
     /**
      * `?scope=user` filters to what a non-administrator may actually run —
@@ -168,7 +173,6 @@ class FlowControllerTest extends TestCase
 
     }//end testNodeCatalogHonoursTheUserScope()
 
-
     /**
      * An empty registry is a legal answer, not an error.
      *
@@ -185,6 +189,7 @@ class FlowControllerTest extends TestCase
         $this->assertSame(0, $data['total']);
 
     }//end testNodeCatalogHandlesAnEmptyRegistry()
+
     /**
      * `?list=slots` serves the slot table as rows a manifest table can render.
      *
@@ -218,7 +223,8 @@ class FlowControllerTest extends TestCase
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $mapper,
-            $this->preflight
+            $this->preflight,
+            $this->flows
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -234,7 +240,6 @@ class FlowControllerTest extends TestCase
         $this->assertArrayNotHasKey('holder', $data['results'][1]);
 
     }//end testStateCanServeOneKeyAsAList()
-
 
     /**
      * Without `?list=`, the payload is unchanged — no `results`, no `total`.
@@ -254,7 +259,8 @@ class FlowControllerTest extends TestCase
             $this->createMock(EventCatalogService::class),
             $this->nodes,
             $mapper,
-            $this->preflight
+            $this->preflight,
+            $this->flows
         );
 
         $data = $controller->state(flowId: 'flow-1')->getData();
@@ -263,7 +269,6 @@ class FlowControllerTest extends TestCase
         $this->assertArrayNotHasKey('results', $data);
 
     }//end testStateWithoutListIsUnchanged()
-
 
     /**
      * Preflighting a document that cannot run answers 200 with a verdict.
@@ -310,7 +315,6 @@ class FlowControllerTest extends TestCase
 
     }//end testValidateReportsBlockingFindings()
 
-
     /**
      * An absent optional app is a warning, and the document stays valid.
      *
@@ -341,7 +345,6 @@ class FlowControllerTest extends TestCase
         $this->assertArrayNotHasKey('message', $data);
 
     }//end testValidateTreatsAnAbsentAppAsAWarning()
-
 
     /**
      * A body that is not a graph is a 400, not a silent pass.

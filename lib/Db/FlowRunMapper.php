@@ -30,6 +30,13 @@ use OCP\IDBConnection;
 /**
  * Reads and writes flow runs.
  *
+ * A mapper's public methods are its query vocabulary: each one is a distinct
+ * question the scheduler, the worker or retention asks of the run table, and
+ * they exist as named methods precisely so those questions are not rebuilt as
+ * ad-hoc query builders at each call site.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods)
+ *
  * @template-extends QBMapper<FlowRun>
  *
  * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
@@ -73,17 +80,48 @@ class FlowRunMapper extends QBMapper
     /**
      * List runs, newest first.
      *
-     * @param string|null $flowId Restrict to one flow.
-     * @param string|null $status Restrict to one status.
-     * @param integer     $limit  Page size.
-     * @param integer     $offset Page offset.
+     * VISIBILITY. `$requesterUid` is the scoping switch, and it is deliberately
+     * required-by-convention rather than optional-by-default: passing null means
+     * "no scoping", which is correct only for an administrator or a system read.
+     * Until this parameter existed the method had no scoping at ALL, so
+     * `GET /api/flow-runs` returned every run on the instance to any
+     * authenticated caller — including each run's log, which records the subject
+     * data the flow touched. That is precisely what design D7 of
+     * `shared-credentials-and-flows` exists to prevent.
+     *
+     * When scoping IS applied, a run is visible if the caller triggered it OR it
+     * belongs to a flow the caller owns. The second disjunct matters because
+     * `triggered_by` is NULL for cron- and trigger-fired runs, so a
+     * "only runs you triggered" rule would hide every automated run from the
+     * flow's own owner.
+     *
+     * An empty `$ownedFlowIds` is NOT the same as null: it means "the caller owns
+     * no flows", and the predicate must then reduce to `triggered_by = uid`
+     * rather than silently dropping the whole disjunction and matching nothing —
+     * or, worse, matching everything.
+     *
+     * @param string|null        $flowId       Restrict to one flow.
+     * @param string|null        $status       Restrict to one status.
+     * @param integer            $limit        Page size.
+     * @param integer            $offset       Page offset.
+     * @param string|null        $requesterUid The caller, or null to apply NO scoping
+     *                                         (administrators and system reads only).
+     * @param array<int, string> $ownedFlowIds Flow ids the caller owns; runs of these
+     *                                         are visible regardless of who triggered them.
      *
      * @return array<int, FlowRun> The runs.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     * @spec openspec/changes/flow-engine-unification/specs/flow-storage/spec.md
      */
-    public function findAllRuns(?string $flowId=null, ?string $status=null, int $limit=50, int $offset=0): array
-    {
+    public function findAllRuns(
+        ?string $flowId=null,
+        ?string $status=null,
+        int $limit=50,
+        int $offset=0,
+        ?string $requesterUid=null,
+        array $ownedFlowIds=[]
+    ): array {
         $qb = $this->db->getQueryBuilder();
         $qb->select('*')
             ->from($this->getTableName())
@@ -99,9 +137,144 @@ class FlowRunMapper extends QBMapper
             $qb->andWhere($qb->expr()->eq('status', $qb->createNamedParameter($status)));
         }
 
+        if ($requesterUid !== null) {
+            $visible = $qb->expr()->orX(
+                $qb->expr()->eq('triggered_by', $qb->createNamedParameter($requesterUid))
+            );
+
+            if (empty($ownedFlowIds) === false) {
+                $visible->add(
+                    $qb->expr()->in(
+                        'flow_id',
+                        $qb->createNamedParameter($ownedFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+                    )
+                );
+            }
+
+            $qb->andWhere($visible);
+        }
+
         return $this->findEntities(query: $qb);
 
     }//end findAllRuns()
+
+    /**
+     * Delete terminal runs older than a cutoff, optionally for one flow only.
+     *
+     * Only TERMINAL runs are swept. A `queued` or `suspended` run is work that
+     * has not happened yet — a flow waiting on a timer can legitimately be
+     * older than the retention window, and deleting it would silently cancel
+     * it rather than expire its history.
+     *
+     * `$flowId` is what makes a per-flow override work: the sweep applies the
+     * instance cutoff to everything EXCEPT the flows declaring their own, then
+     * applies each of those flows' cutoff by id.
+     *
+     * @param DateTime    $cutoff Runs updated before this are removed.
+     * @param string|null $flowId Restrict the deletion to one flow.
+     *
+     * @return array<int, string> The uuids of the deleted runs, so their step
+     *                            rows can be removed too.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThan(DateTime $cutoff, ?string $flowId=null): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if ($flowId !== null && $flowId !== '') {
+            $qb->andWhere($qb->expr()->eq('flow_id', $qb->createNamedParameter($flowId)));
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThan()
+
+    /**
+     * Delete terminal runs older than a cutoff, EXCLUDING a set of flows.
+     *
+     * The instance-wide half of the sweep: every flow that does not declare its
+     * own retention.
+     *
+     * @param DateTime           $cutoff         Runs updated before this are removed.
+     * @param array<int, string> $excludeFlowIds Flow ids with their own retention.
+     *
+     * @return array<int, string> The uuids of the deleted runs.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-execution-history/spec.md
+     */
+    public function deleteTerminalOlderThanExcluding(DateTime $cutoff, array $excludeFlowIds): array
+    {
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('uuid')
+            ->from($this->getTableName())
+            ->where($qb->expr()->lt('updated', $qb->createNamedParameter($cutoff, IQueryBuilder::PARAM_DATE)))
+            ->andWhere(
+                $qb->expr()->in(
+                    'status',
+                    $qb->createNamedParameter(FlowRun::TERMINAL, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        if (empty($excludeFlowIds) === false) {
+            $qb->andWhere(
+                $qb->expr()->notIn(
+                    'flow_id',
+                    $qb->createNamedParameter($excludeFlowIds, IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+        }
+
+        $result = $qb->executeQuery();
+        $uuids  = [];
+        while (($row = $result->fetch()) !== false) {
+            $uuids[] = (string) $row['uuid'];
+        }
+
+        $result->closeCursor();
+
+        if (empty($uuids) === true) {
+            return [];
+        }
+
+        $del = $this->db->getQueryBuilder();
+        $del->delete($this->getTableName())
+            ->where(
+                $del->expr()->in('uuid', $del->createNamedParameter($uuids, IQueryBuilder::PARAM_STR_ARRAY))
+            );
+        $del->executeStatement();
+
+        return $uuids;
+
+    }//end deleteTerminalOlderThanExcluding()
 
     /**
      * The runs that are still going, newest first.

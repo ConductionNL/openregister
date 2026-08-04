@@ -31,6 +31,18 @@ concurrency:
   group: quality-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
+# Permission CEILING for the called quality pipeline. GitHub statically
+# validates the called workflow's declared job permissions against this
+# grant — even for jobs that are disabled — so it must cover the maximum
+# any nested job declares: journeydoc-capture (contents+actions write),
+# update-baseline / features-extract (contents write), and the Quality
+# Report PR comment (issues / pull-requests write).
+permissions:
+  contents: write
+  actions: write
+  issues: write
+  pull-requests: write
+
 jobs:
   quality:
     if: github.event_name != 'push' || github.event.created != true
@@ -54,5 +66,28 @@ jobs:
       # succeeded. The floor is green and it grows; see tests/e2e/ci/.
       enable-playwright: true
       playwright-test-path: tests/e2e/ci
+      # The object-sharing specs need two non-admin accounts: sharing something
+      # to yourself proves nothing, and task 4.0's whole point is that an OWNER
+      # who is not an admin can set their own object's scope.
+      #
+      # Created with `occ`, NOT through `/ocs/v2.php/cloud/users`. The specs used
+      # to provision them over OCS and that started returning 404 on this
+      # instance — `provisioning_api` is shipped but optional, and an e2e suite
+      # for object sharing should not go dark because a user-management app is
+      # absent. `|| true` because the accounts persist across re-runs on the same
+      # instance; the specs assert they can authenticate rather than assuming the
+      # seed ran, so a genuinely failed seed still fails loudly.
+      #
+      # A SCRIPT, not an inline command, and the shell operators are why. The
+      # shared workflow runs this through `eval <value>` UNQUOTED, so the outer
+      # bash parses whatever it expands to and any metacharacter is parsed at the
+      # wrong level. Measured, both wrong:
+      #   `( … ) && ( … )` -> "syntax error near unexpected token OC_PASS=…", and
+      #                       the seed silently never ran.
+      #   `sh -c '… ; …'`  -> no error, but the `;` still split at the OUTER level,
+      #                       so only part of it ran inside the sh -c.
+      # `bash <path>` is a single word with no metacharacters, so eval cannot
+      # mis-parse it. Path is relative to `server/`, which the step cd's into.
+      playwright-seed-command: bash apps/openregister/tests/e2e/ci/seed.sh
       enable-coverage-guard: true
       enable-sbom: true

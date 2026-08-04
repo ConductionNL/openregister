@@ -33,7 +33,7 @@ use DateTime;
 use OCA\OpenRegister\Cron\FlowRunWorker;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
@@ -49,7 +49,7 @@ class FlowRunWorkerExpiryTest extends TestCase
 
     private FlowRunService&MockObject $runner;
 
-    private FlowResolverRegistry&MockObject $resolvers;
+    private FlowLocator&MockObject $resolvers;
 
     private IAppConfig&MockObject $appConfig;
 
@@ -61,7 +61,7 @@ class FlowRunWorkerExpiryTest extends TestCase
 
         $this->mapper    = $this->createMock(FlowRunMapper::class);
         $this->runner    = $this->createMock(FlowRunService::class);
-        $this->resolvers = $this->createMock(FlowResolverRegistry::class);
+        $this->resolvers = $this->createMock(FlowLocator::class);
         $this->appConfig = $this->createMock(IAppConfig::class);
 
         // findStale/findDue/findQueued all declare `: array`, so an unstubbed

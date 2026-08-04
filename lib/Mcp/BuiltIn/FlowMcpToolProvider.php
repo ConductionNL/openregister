@@ -95,7 +95,8 @@ class FlowMcpToolProvider implements IMcpToolProvider
      * invoke-time gate.
      *
      * @return list<array{id: string, name: string, description: string, inputSchema: array,
-     *         readOnlyHint: bool, destructiveHint: bool, idempotentHint: bool, scope: string}> The tools.
+     *         readOnlyHint: bool, destructiveHint: bool, idempotentHint: bool, scope: string,
+     *         reach: string}> The tools.
      *
      * @spec openspec/changes/or-flow-mcp/specs/flow-mcp/spec.md
      */
@@ -120,6 +121,11 @@ class FlowMcpToolProvider implements IMcpToolProvider
                 'destructiveHint' => true,
                 'idempotentHint'  => false,
                 'scope'           => 'create',
+                // A flow can write objects other users read, and can drive an
+                // outbound integration. `instance` is the floor, not a ceiling:
+                // a consumer composing reach should take the MAX of this and
+                // whatever the flow's own steps reach.
+                'reach'           => 'instance',
             ],
             [
                 'id'              => 'openregister.flowRunStatus',
@@ -136,6 +142,12 @@ class FlowMcpToolProvider implements IMcpToolProvider
                 'destructiveHint' => false,
                 'idempotentHint'  => true,
                 'scope'           => 'read',
+                // Polling a run the caller already started, through the same
+                // RBAC as any other read. Nothing observes an effect, so `user`
+                // — and declaring it matters: a consumer that fails closed on an
+                // absent reach would otherwise gate the STATUS POLL of a flow it
+                // had just been granted permission to start.
+                'reach'           => 'user',
             ],
         ];
 

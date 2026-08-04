@@ -68,13 +68,13 @@ class FlowScheduleService
     /**
      * Constructor.
      *
-     * @param FlowResolverRegistry $resolvers Lists the scheduled flows every app owns.
-     * @param FlowRunService       $runs      Queues a run for a due flow.
-     * @param IAppConfig           $appConfig Remembers last-fire.
-     * @param LoggerInterface      $logger    The logger.
+     * @param FlowLocator     $resolvers Lists the scheduled flows every app owns.
+     * @param FlowRunService  $runs      Queues a run for a due flow.
+     * @param IAppConfig      $appConfig Remembers last-fire.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runs,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
