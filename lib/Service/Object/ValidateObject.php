@@ -45,9 +45,11 @@ use OCA\OpenRegister\Formats\BsnFormat;
 use OCA\OpenRegister\Formats\ExtendedFieldTypeValidator;
 use OCA\OpenRegister\Formats\Iso8601DateTimeFormat;
 use OCA\OpenRegister\Formats\SemVerFormat;
+use OCA\OpenRegister\Formats\UserFormat;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
 use OCP\IURLGenerator;
+use OCP\IUserManager;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\ValidationResult;
 use Opis\JsonSchema\Validator;
@@ -247,7 +249,8 @@ class ValidateObject
         private MagicMapper $objectMapper,
         private SchemaMapper $schemaMapper,
         private IURLGenerator $urlGenerator,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private IUserManager $userManager
     ) {
     }//end __construct()
 
@@ -1849,6 +1852,12 @@ class ValidateObject
         // Register custom format validators using our helper method that supports named parameters.
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'bsn', resolver: new BsnFormat());
         $this->registerCustomFormat(validator: $validator, type: 'string', format: 'semver', resolver: new SemVerFormat());
+        $this->registerCustomFormat(
+            validator: $validator,
+            type: 'string',
+            format: 'user',
+            resolver: new UserFormat(userManager: $this->userManager)
+        );
 
         // Accept ISO 8601 date-time input (optional seconds/timezone), overriding the
         // opis built-in date-time format whose regex mandates seconds. Storage still

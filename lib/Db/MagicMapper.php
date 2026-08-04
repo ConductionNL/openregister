@@ -5720,6 +5720,37 @@ class MagicMapper extends AbstractObjectMapper
                 _schema: $schema
             );
 
+            // convertRowToObjectEntity() is declared `?ObjectEntity` and does
+            // return null for a row it cannot hydrate. Every other call site
+            // checks (see the DoesNotExistException at the union-search path and
+            // the warning in the statistics path); this one did not, and the
+            // first thing it did with the result was dereference it — inside a
+            // DEBUG LOG.
+            //
+            // So an unconvertible row did not degrade the search, it killed the
+            // request with "Call to a member function getUuid() on null", from a
+            // line whose only job was to say what had been found. Live effect:
+            // 11 Shillinq RetentionRule objects failed to rematerialise on every
+            // repair, because a DocuDesk enrichment listener reached this lookup
+            // and one row would not hydrate.
+            //
+            // Skip the row and keep searching. A row we cannot read is not a
+            // reason to stop looking in the remaining tables — and if nothing
+            // matches, the DoesNotExistException below is the honest answer.
+            if ($object === null) {
+                $this->logger->warning(
+                    message: '[MagicMapper] findAcrossAllMagicTables: row matched but could not be hydrated; skipping it',
+                    context: [
+                        'file'       => __FILE__,
+                        'line'       => __LINE__,
+                        'identifier' => $identifier,
+                        'registerId' => $registerId,
+                        'schemaId'   => $schemaId,
+                    ]
+                );
+                continue;
+            }
+
             $this->logger->debug(
                 message: '[MagicMapper] findAcrossAllMagicTables: Found object',
                 context: [
@@ -7175,11 +7206,15 @@ class MagicMapper extends AbstractObjectMapper
             }//end try
         }//end foreach
 
-        $result = [];
+        $result    = [];
+        $suppress  = $this->suppressLifecycleEvents();
         foreach ($completed as $item) {
-            $this->eventDispatcher->dispatchTyped(
-                new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
-            );
+            if ($suppress === false) {
+                $this->eventDispatcher->dispatchTyped(
+                    new ObjectUpdatedEvent(newObject: $item['entity'], oldObject: $item['old'])
+                );
+            }
+
             $result[] = $item['entity'];
         }
 

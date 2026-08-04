@@ -1654,6 +1654,18 @@ class SaveObjects
             return;
         }
 
+        // A system operation withholds lifecycle events, exactly as the
+        // single-object path does in MagicMapper::suppressLifecycleEvents().
+        //
+        // This bulk path is the reason the first attempt at that gate did not
+        // work: gating MagicMapper's insert()/update() alone left the BULK
+        // dispatchers untouched, and a configuration import reaches objects
+        // through here too — so the fan-out carried on firing and the "fix"
+        // looked applied while eight apps kept waking per object.
+        if (\OCA\OpenRegister\Service\SystemOperationContext::isActive() === true) {
+            return;
+        }
+
         // Created objects → ObjectCreatedEvent.
         foreach ($createdEntities as $entity) {
             try {

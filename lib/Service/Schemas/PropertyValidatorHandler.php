@@ -40,6 +40,19 @@ class PropertyValidatorHandler
 {
 
     /**
+     * Constructor.
+     *
+     * The logger is OPTIONAL so the handler keeps constructing with no
+     * arguments, which several tests and callers rely on; the container injects
+     * a real one in normal operation.
+     *
+     * @param LoggerInterface|null $logger Used to report annotations we accept but do not enforce.
+     */
+    public function __construct(private readonly ?LoggerInterface $logger=null)
+    {
+    }//end __construct()
+
+    /**
      * Valid JSON Schema types
      *
      * @var array<string> List of valid JSON Schema types
@@ -115,6 +128,20 @@ class PropertyValidatorHandler
         'color-hsla',
         // Semantic versioning format.
         'semver',
+        // Dutch burgerservicenummer, checked with the 11-proef.
+        //
+        // BsnFormat has existed and been REGISTERED with the value validator all
+        // along (ValidateObject::registerCustomFormat), so OpenRegister could
+        // already checksum a BSN — it simply refused to accept a schema that
+        // said so, because this allowlist never got the entry. procest declares
+        // `format: bsn` on a burgerservicenummer, and that one missing word
+        // failed its schema import, then schema creation, then its "Load default
+        // ZGW API mapping configurations" repair step. A built and wired feature
+        // was unreachable because two lists disagreed.
+        'bsn',
+        // Nextcloud user id, checked against the user backend — the referenced
+        // user must exist. See UserFormat.
+        'user',
     ];
 
     /**
@@ -160,7 +187,10 @@ class PropertyValidatorHandler
             );
         }
 
-        // Validate string format if present.
+        // Validate string format if present. An unrecognised format is still
+        // rejected: a format this allowlist accepts is one ValidateObject can
+        // actually enforce, so the two lists must agree. See `bsn` and `user`
+        // in $validStringFormats for what that costs when they drift apart.
         if ($property['type'] === 'string' && (($property['format'] ?? null) !== null)) {
             if (in_array($property['format'], $this->validStringFormats) === false) {
                 $formatLabel = $property['format'];
