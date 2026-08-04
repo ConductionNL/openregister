@@ -308,7 +308,13 @@ class FlowNodePreflight
         $blocking = [];
         $warnings = [];
 
-        foreach (($flow['edges'] ?? []) as $index => $edge) {
+        // NODES, not edges. A node is the action that runs (or-flow-action-nodes),
+        // so a preflight still walking `edges[]` would inspect a list where
+        // nothing carries a `type` any more: every loop body skipped, zero
+        // findings, and a report that says "valid" about a document it never
+        // looked at. A validator that cannot fail is worse than none, because it
+        // is believed.
+        foreach (($flow['nodes'] ?? []) as $index => $edge) {
             if (is_array($edge) === false) {
                 continue;
             }
@@ -318,7 +324,7 @@ class FlowNodePreflight
                 continue;
             }
 
-            $edgeId = (string) ($edge['id'] ?? $edge['name'] ?? $index);
+            $stepId = (string) ($edge['id'] ?? $edge['name'] ?? $index);
             $node   = $this->resolve(type: $type);
             if ($node !== null) {
                 // The type resolving is only half the question. A node reads the
@@ -344,7 +350,7 @@ class FlowNodePreflight
                     $blocking[] = [
                         'type'   => $type,
                         'app'    => $this->ownerOf(type: $type),
-                        'edge'   => $edgeId,
+                        'step'   => $stepId,
                         'reason' => self::REASON_CONFIG_REJECTED,
                         'detail' => $rejection,
                     ];
@@ -355,14 +361,14 @@ class FlowNodePreflight
                 // for are invisible to it BY CONSTRUCTION, however careful its
                 // validateConfig() is. Only the node's declared vocabulary
                 // ({@see IFlowNodeConfigKeys}) can expose those.
-                $dialect  = $this->dialectFindings(node: $node, edge: $edge, type: $type, edgeId: $edgeId);
+                $dialect  = $this->dialectFindings(node: $node, edge: $edge, type: $type, stepId: $stepId);
                 $blocking = array_merge($blocking, $dialect['blocking']);
                 $warnings = array_merge($warnings, $dialect['warnings']);
 
                 continue;
             }//end if
 
-            $finding = $this->classify(type: $type, edge: $edgeId);
+            $finding = $this->classify(type: $type, edge: $stepId);
             if ($finding['reason'] === self::REASON_OWNER_NOT_ENABLED) {
                 $warnings[] = $finding;
                 continue;
@@ -399,11 +405,11 @@ class FlowNodePreflight
             if ($warning['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
                 $this->logger->warning(
                     message: sprintf(
-                        '[FlowNodePreflight] Flow "%s", edge "%s" (%s) sets config.onError="%s". '
-                        .'Nothing reads that: the engine takes the policy from the EDGE, beside "type". '
+                        '[FlowNodePreflight] Flow "%s", step "%s" (%s) sets config.onError="%s". '
+                        .'Nothing reads that: the engine takes the policy from the NODE, beside "type". '
                         .'It happens to match the default, so the run behaves the same — move it up one level.',
                         $name,
-                        $warning['edge'],
+                        $warning['step'],
                         $warning['type'],
                         ($warning['detail'] ?? '')
                     ),
@@ -412,7 +418,7 @@ class FlowNodePreflight
                         'line'   => __LINE__,
                         'flow'   => $name,
                         'type'   => $warning['type'],
-                        'edge'   => $warning['edge'],
+                        'step'   => $warning['step'],
                         'reason' => $warning['reason'],
                     ]
                 );
@@ -435,7 +441,7 @@ class FlowNodePreflight
                     'flow'   => $name,
                     'type'   => $warning['type'],
                     'app'    => $warning['app'],
-                    'edge'   => $warning['edge'],
+                    'step'   => $warning['step'],
                     'reason' => $warning['reason'],
                 ]
             );
@@ -476,10 +482,10 @@ class FlowNodePreflight
                 }
 
                 $lines[] = sprintf(
-                    '"%s" (edge %s) — config key(s) %s, which that node never reads; '
+                    '"%s" (step %s) — config key(s) %s, which that node never reads; '
                     .'it reads %s. Ignored keys make the step a pass-through that reports success',
                     $finding['type'],
-                    $finding['edge'],
+                    $finding['step'],
                     ($finding['detail'] ?? '?'),
                     $reads
                 );
@@ -488,10 +494,10 @@ class FlowNodePreflight
 
             if ($finding['reason'] === self::REASON_CONFIG_ONERROR_MISPLACED) {
                 $lines[] = sprintf(
-                    '"%s" (edge %s) — config.onError="%s" is read by nothing; the engine takes the policy '
+                    '"%s" (step %s) — config.onError="%s" is read by nothing; the engine takes the policy '
                     .'from the EDGE, beside "type". As written this step gets "%s"',
                     $finding['type'],
-                    $finding['edge'],
+                    $finding['step'],
                     ($finding['detail'] ?? '?'),
                     self::DEFAULT_ONERROR
                 );
@@ -500,10 +506,10 @@ class FlowNodePreflight
 
             if ($finding['reason'] === self::REASON_CONFIG_REJECTED) {
                 $lines[] = sprintf(
-                    '"%s" (edge %s) — the node exists but refuses this step\'s config: %s. '
+                    '"%s" (step %s) — the node exists but refuses this step\'s config: %s. '
                     .'A config it cannot read makes the step a pass-through that reports success',
                     $finding['type'],
-                    $finding['edge'],
+                    $finding['step'],
                     ($finding['detail'] ?? 'no detail')
                 );
                 continue;
@@ -511,19 +517,19 @@ class FlowNodePreflight
 
             if ($finding['reason'] === self::REASON_NOT_NAMESPACED) {
                 $lines[] = sprintf(
-                    '"%s" (edge %s) — not namespaced, so no app can provide it; '
+                    '"%s" (step %s) — not namespaced, so no app can provide it; '
                     .'step types are "<app>.<node>", e.g. "openregister.route"',
                     $finding['type'],
-                    $finding['edge']
+                    $finding['step']
                 );
                 continue;
             }
 
             $lines[] = sprintf(
-                '"%s" (edge %s) — app "%s" would own it and IS enabled here, but does not provide it; '
+                '"%s" (step %s) — app "%s" would own it and IS enabled here, but does not provide it; '
                 .'that app is behind the flow',
                 $finding['type'],
-                $finding['edge'],
+                $finding['step'],
                 $finding['app']
             );
         }//end foreach
@@ -603,13 +609,13 @@ class FlowNodePreflight
      * @param IFlowNode $node   The resolved node.
      * @param array     $edge   The edge declaring the step.
      * @param string    $type   The step type.
-     * @param string    $edgeId The edge's identifier, for the message.
+     * @param string    $stepId The edge's identifier, for the message.
      *
      * @return array{blocking: array<int, array<string, string>>, warnings: array<int, array<string, string>>}
      *
      * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
      */
-    private function dialectFindings(IFlowNode $node, array $edge, string $type, string $edgeId): array
+    private function dialectFindings(IFlowNode $node, array $edge, string $type, string $stepId): array
     {
         $report = [
             'blocking' => [],
@@ -626,7 +632,7 @@ class FlowNodePreflight
         $strays = $this->strayKeys(config: $config, known: $known);
 
         if ($strays['onError'] === true) {
-            $finding  = $this->onErrorFinding(config: $config, type: $type, app: $app, edgeId: $edgeId);
+            $finding  = $this->onErrorFinding(config: $config, type: $type, app: $app, stepId: $stepId);
             $severity = 'blocking';
             if ($finding['detail'] === self::DEFAULT_ONERROR) {
                 $severity = 'warnings';
@@ -645,7 +651,7 @@ class FlowNodePreflight
         $report['blocking'][] = [
             'type'   => $type,
             'app'    => $app,
-            'edge'   => $edgeId,
+            'step'   => $stepId,
             'reason' => self::REASON_CONFIG_UNKNOWN_KEY,
             'detail' => implode(', ', $strays['unknown']),
             'reads'  => implode(', ', $known),
@@ -736,18 +742,18 @@ class FlowNodePreflight
      * @param array  $config The step configuration.
      * @param string $type   The step type.
      * @param string $app    The app that owns the type.
-     * @param string $edgeId The edge's identifier.
+     * @param string $stepId The edge's identifier.
      *
      * @return array<string, string> The finding; its severity is the caller's call.
      *
      * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
      */
-    private function onErrorFinding(array $config, string $type, string $app, string $edgeId): array
+    private function onErrorFinding(array $config, string $type, string $app, string $stepId): array
     {
         return [
             'type'   => $type,
             'app'    => $app,
-            'edge'   => $edgeId,
+            'step'   => $stepId,
             'reason' => self::REASON_CONFIG_ONERROR_MISPLACED,
             'detail' => (string) ($config[self::EDGE_LEVEL_ONERROR] ?? ''),
         ];
@@ -791,7 +797,7 @@ class FlowNodePreflight
             return [
                 'type'   => $type,
                 'app'    => '',
-                'edge'   => $edge,
+                'step'   => $edge,
                 'reason' => self::REASON_NOT_NAMESPACED,
             ];
         }
@@ -805,7 +811,7 @@ class FlowNodePreflight
         return [
             'type'   => $type,
             'app'    => $app,
-            'edge'   => $edge,
+            'step'   => $edge,
             'reason' => $reason,
         ];
 

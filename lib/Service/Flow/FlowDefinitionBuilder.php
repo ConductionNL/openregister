@@ -1,30 +1,54 @@
 <?php
 
 /**
- * Builds a symfony/workflow Definition from a stored OpenRegister flow object.
+ * Lowers a stored OpenRegister flow document into a symfony/workflow Definition.
  *
- * This is the translation layer between what users author (a graph of nodes and
- * edges, drawn on CnGraphCanvas) and what executes (a Petri net). It is the only
+ * This is the translation layer between what users author (actions connected by
+ * sequence, drawn on a canvas) and what executes (a Petri net). It is the only
  * place that knows both shapes, so the engine never parses user JSON and the
  * stored document never mentions Symfony.
  *
- * Why a Petri net (ADR-065): it is a superset of the two flow models this fleet
- * already has. A single-token marking is a state machine (procest: `case.status`
- * is the marking); a multi-token marking expresses parallel splits and
- * synchronising joins, which no existing fleet engine can do — openconnector's
- * `order`-indexed step list explicitly cannot, and that limit is why a canvas
- * could not ship against it.
+ * ## What an author writes
  *
- * The vocabulary maps as:
+ *   node = an ACTION. Carries `type` and `config`. This is what runs.
+ *   edge = SEQUENCE.  Carries `from`/`to`, and optionally a display title.
  *
- *   flow node  -> place       (a position in the graph)
- *   flow edge  -> transition  (a move between positions)
- *   marking    -> where the run currently is (one token, or several)
+ * That is the model every flow tool uses, because it is how a diagram reads: a
+ * box is a thing that happens, an arrow is what happens next.
  *
- * A transition with several `from` places is a **join**: symfony/workflow will
- * not enable it until every one of them holds a token. A transition with several
- * `to` places is a **split**: firing it puts a token on each. That is the whole
- * mechanism behind parallel branches — we do not implement it, we declare it.
+ * ## What executes
+ *
+ * A Petri net (ADR-065): a superset of the two flow models this fleet already
+ * has. A single-token marking is a state machine (procest: `case.status` is the
+ * marking); a multi-token marking expresses parallel splits and synchronising
+ * joins, which no existing fleet engine can do — openconnector's `order`-indexed
+ * step list explicitly cannot, and that limit is why a canvas could not ship
+ * against it.
+ *
+ * The Petri net is an INTERNAL representation. It used to be the authoring
+ * format too — a node was a place and the step rode on the edge — and that is
+ * the design this change reverses. See `or-flow-action-nodes`.
+ *
+ * ## The lowering
+ *
+ *   node N            -> transition T_N (carrying N's type/config) + place in(N)
+ *   edge A -> B       -> in(B) added to T_A's targets
+ *   node with no out  -> terminal place end(N)
+ *   node with no in   -> in(N) joins the initial places
+ *   node with join    -> one input place per incoming edge, all required
+ *
+ * Every node yields exactly one transition and every edge exactly one place
+ * reference, so the construction is total: no document shape lowers to nothing.
+ *
+ * ## Merge is the default; join is opt-in
+ *
+ * Two edges arriving at one node could mean "run when EITHER finishes" (a merge)
+ * or "wait for BOTH" (a join). Petri nets express these differently, and the
+ * choice is not cosmetic: the Hydra sequencer reaches its exit from several
+ * mutually-exclusive paths, so lowering converging edges to a join would require
+ * all of them to fire and the flow would deadlock on every run — while still
+ * producing a valid definition. So `in(N)` is SHARED across incoming edges, and
+ * a synchronising join must say `join: true`.
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2
@@ -38,7 +62,7 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+ * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
  */
 
 declare(strict_types=1);
@@ -50,12 +74,53 @@ use Symfony\Component\Workflow\Definition;
 use Symfony\Component\Workflow\Transition;
 
 /**
- * Translates a stored flow document into an executable Petri-net definition.
+ * Lowers a stored flow document into an executable Petri-net definition.
  *
- * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+ * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
  */
 class FlowDefinitionBuilder
 {
+    /**
+     * Prefix for the terminal place of a node with no outgoing edge.
+     *
+     * @var string
+     */
+    private const PLACE_END = 'end:';
+
+    /**
+     * Separator between a join node and the incoming edge whose token it holds.
+     *
+     * @var string
+     */
+    private const PLACE_JOIN = '#';
+
+    /**
+     * A node's input place is named after the NODE ITSELF, with no prefix.
+     *
+     * This is deliberate and load-bearing in two places, both of which break
+     * silently if a prefix is introduced:
+     *
+     *  1. **Per-item routing.** `FlowEngine::itemsForOutput()` matches an item's
+     *     output tag against the output PLACE NAME. A routing step tags items
+     *     with the node it is routing to (`work`, `idle`), so a place called
+     *     `in:work` matches nothing and every routed item is dropped — no
+     *     error, just an empty branch.
+     *  2. **The marking is the user-visible answer to "where is this run?"**
+     *     Consumers render it directly (hermiq badges the node holding a
+     *     token). A prefixed marking reads as internal machinery leaking out.
+     *
+     * @param string $nodeId The node.
+     *
+     * @return string The place name.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function inPlace(string $nodeId): string
+    {
+        return $nodeId;
+
+    }//end inPlace()
+
     /**
      * Build a Definition from a stored flow document.
      *
@@ -63,43 +128,102 @@ class FlowDefinitionBuilder
      * reference is resolved against the declared nodes before it reaches
      * symfony/workflow, which would otherwise fail later and less legibly.
      *
-     * @param array $flow The flow document: `{nodes: [{id}], edges: [{id, from, to}], initial?}`.
+     * @param array $flow The flow document: `{nodes: [{id, type, config}], edges: [{id, from, to}], initial?}`.
      *
      * @return Definition The executable definition.
      *
-     * @throws InvalidArgumentException When the document does not describe a runnable graph.
+     * @throws InvalidArgumentException When the document does not describe a runnable flow.
      *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
      */
     public function build(array $flow): Definition
     {
-        $places = $this->extractPlaces(flow: $flow);
-        if (empty($places) === true) {
+        $this->refuseLegacyShape(flow: $flow);
+
+        $nodes = $this->extractNodes(flow: $flow);
+        if (empty($nodes) === true) {
             throw new InvalidArgumentException(message: 'Flow declares no nodes; nothing to run.');
         }
 
-        $transitions = $this->extractTransitions(flow: $flow, places: $places);
-        $initial     = $this->resolveInitialPlaces(flow: $flow, places: $places, transitions: $transitions);
+        $edges       = $this->extractEdges(flow: $flow, nodes: $nodes);
+        $places      = $this->buildPlaces(nodes: $nodes, edges: $edges);
+        $transitions = $this->buildTransitions(nodes: $nodes, edges: $edges);
+        $initial     = $this->resolveInitialPlaces(flow: $flow, nodes: $nodes, edges: $edges);
 
         return new Definition(places: $places, transitions: $transitions, initialPlaces: $initial);
 
     }//end build()
 
     /**
-     * Collect the node ids that become Petri-net places.
+     * Refuse a document authored in the pre-inversion shape.
+     *
+     * The predicate is deliberately narrow and total: a document is
+     * pre-inversion iff any EDGE carries a non-empty `type`. It cannot be true
+     * of a correctly migrated document, it never has to inspect node shape to
+     * decide, and a document carrying behaviour on both nodes and edges matches
+     * it — which is the safe direction.
+     *
+     * This replaces the old refusal of `nodes[].type`, which existed because a
+     * step on a node was a step nothing executed: dispatch returned items
+     * untouched, the run reported COMPLETED, and the trace was empty. That
+     * failure mode has not gone away, it has swapped sides — a step left on an
+     * EDGE is now the one nothing executes — so the refusal swaps with it.
+     * Reinterpreting instead of refusing would turn a loud migration into a
+     * silent, data-dependent one.
      *
      * @param array $flow The flow document.
      *
-     * @return array<string> The place names, in declaration order.
+     * @return void
+     *
+     * @throws InvalidArgumentException When an edge carries behaviour.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function refuseLegacyShape(array $flow): void
+    {
+        foreach (($flow['edges'] ?? []) as $index => $edge) {
+            if (is_array($edge) === false) {
+                continue;
+            }
+
+            if (trim((string) ($edge['type'] ?? '')) === '') {
+                continue;
+            }
+
+            throw new InvalidArgumentException(
+                message: sprintf(
+                    'Flow edge "%s" carries "type", which the engine no longer reads — an edge is sequence and a '
+                    .'NODE is the action. This flow is in the pre-inversion shape and has not been migrated; run '
+                    .'the or-flow-migrate-definitions migration. It is refused rather than reinterpreted because '
+                    .'a half-migrated flow would run, skip the step nobody claimed, and report success.',
+                    (string) ($edge['id'] ?? $edge['name'] ?? $index)
+                )
+            );
+        }//end foreach
+
+    }//end refuseLegacyShape()
+
+    /**
+     * Collect the declared action nodes, keyed by id.
+     *
+     * @param array $flow The flow document.
+     *
+     * @return array<string, array> Node id => node, in declaration order.
      *
      * @throws InvalidArgumentException When a node has no usable id, or ids collide.
      *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
      */
-    private function extractPlaces(array $flow): array
+    private function extractNodes(array $flow): array
     {
-        $places = [];
+        $nodes = [];
         foreach (($flow['nodes'] ?? []) as $index => $node) {
+            if (is_array($node) === false) {
+                throw new InvalidArgumentException(
+                    message: sprintf('Flow node at index %d is not an object.', $index)
+                );
+            }
+
             $id = trim((string) ($node['id'] ?? ''));
             if ($id === '') {
                 throw new InvalidArgumentException(
@@ -107,73 +231,118 @@ class FlowDefinitionBuilder
                 );
             }
 
-            // A duplicate id would silently merge two nodes into one place, so the
-            // graph would run but not be the graph the user drew.
-            if (in_array($id, $places, true) === true) {
+            // A duplicate id would silently merge two nodes into one transition,
+            // so the flow would run but not be the flow the user drew.
+            if (array_key_exists($id, $nodes) === true) {
                 throw new InvalidArgumentException(
                     message: sprintf('Flow declares node id "%s" more than once.', $id)
                 );
             }
 
-            // A node is a PLACE and carries no behaviour. The step is the EDGE:
-            // `FlowEngine::stepFor()` resolves a transition to the matching entry
-            // in `edges[]` and `RegistryStepDispatcher::dispatch()` reads `type`
-            // and `config` off that edge.
-            //
-            // So `type` on a node is not merely redundant — it is the entire
-            // behaviour of the flow, put where nothing looks. Accepting it means
-            // every transition becomes a pass-through (dispatch() returns items
-            // untouched when `type` is empty) and the run reports COMPLETED: no
-            // error, no warning, nothing in the trace, and an output key that is
-            // simply absent. That is indistinguishable from a flow whose steps
-            // all genuinely had nothing to do.
-            //
-            // Three graphs in the fleet were authored this way and none of them
-            // failed anywhere — one had shipped as a completed task, and one had
-            // unit tests that asserted on `nodes[].type` and therefore passed
-            // (or#2226). Node-shaped authoring is the natural mistake, because
-            // that is how a graph editor presents a flow. Refusing here is what
-            // turns "runs and does nothing" into a message naming the node.
-            if (array_key_exists('type', $node) === true || array_key_exists('config', $node) === true) {
+            // A node IS the step. One with no type resolves to nothing, runs,
+            // and reports COMPLETED having done nothing — the exact silent
+            // success this engine refuses to produce.
+            if (trim((string) ($node['type'] ?? '')) === '') {
                 throw new InvalidArgumentException(
                     message: sprintf(
-                        'Flow node "%s" carries "type"/"config", which the engine never reads — a node is a '
-                        .'place. Move the step onto the edge that leaves it: an edge takes "type" and "config" '
-                        .'and is what actually runs.',
+                        'Flow node "%s" declares no "type". A node is the action that runs, so a node without a '
+                        .'type is a step that does nothing while reporting success.',
                         $id
                     )
                 );
             }
 
-            $places[] = $id;
+            $this->assertExitsCanAlwaysBeTaken(node: $node, id: $id);
+
+            $nodes[$id] = $node;
         }//end foreach
 
-        return $places;
+        return $nodes;
 
-    }//end extractPlaces()
+    }//end extractNodes()
 
     /**
-     * Convert edges into Petri-net transitions.
+     * A branching node must always have somewhere to put its token.
      *
-     * Edges sharing a `name` are deliberately NOT merged: two edges named "approve"
-     * from different nodes are two transitions, exactly as drawn. Merging them
-     * would turn distinct user intent into an accidental join.
+     * A token is unique and exclusive: a node with several exits takes exactly
+     * one per firing. If every exit is conditioned and none of them holds, the
+     * token has nowhere to go — and that does not raise anything. The run just
+     * stops, reporting no failure, which is indistinguishable from a flow that
+     * finished its work.
      *
-     * @param array         $flow   The flow document.
-     * @param array<string> $places The known place names.
+     * So a node that conditions ANY exit must also declare an else: an exit with
+     * no condition. One is enough; a second would never be reachable, since the
+     * first unconditioned exit always matches.
      *
-     * @return array<Transition> The transitions.
+     * Refused at build time rather than warned about, for the same reason the
+     * engine refuses a step with no type — the failure it prevents is silent,
+     * and a silent stop in a scheduled flow is found weeks later by noticing
+     * work that never happened.
      *
-     * @throws InvalidArgumentException When an edge references an unknown node.
+     * @param array  $node The node.
+     * @param string $id   Its id, for the message.
      *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     * @return void
+     *
+     * @throws InvalidArgumentException When a branching node has no else.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
      */
-    private function extractTransitions(array $flow, array $places): array
+    private function assertExitsCanAlwaysBeTaken(array $node, string $id): void
     {
-        $transitions = [];
+        $exits = ($node['exits'] ?? []);
+        if (is_array($exits) === false || $exits === []) {
+            // No declared exits at all: the node does not branch, so every
+            // output place is taken and nothing can be stranded.
+            return;
+        }
+
+        // Deliberately NOT gated on having two or more exits. A single
+        // conditioned exit strands the token just as completely when its
+        // condition does not hold — there is simply no sibling to notice.
+        foreach ($exits as $exit) {
+            if (is_array($exit) === false) {
+                continue;
+            }
+
+            $condition = ($exit['condition'] ?? null);
+            if (is_array($condition) === false || $condition === []) {
+                // An unconditioned exit: the else. Nothing to refuse.
+                return;
+            }
+        }
+
+        throw new InvalidArgumentException(
+            message: sprintf(
+                'Flow node "%s" conditions all %d of its exits and declares no else. A token is exclusive and '
+                .'must always leave through exactly one exit, so if no condition holds the token has nowhere to '
+                .'go — and the run stops without reporting anything, which is indistinguishable from a flow that '
+                .'finished. Add an exit with no condition.',
+                $id,
+                count($exits)
+            )
+        );
+
+    }//end assertExitsCanAlwaysBeTaken()
+
+    /**
+     * Normalise the edges and resolve every endpoint against the declared nodes.
+     *
+     * @param array                $flow  The flow document.
+     * @param array<string, array> $nodes The declared nodes.
+     *
+     * @return array<int, array{id: string, from: array<string>, to: array<string>}> The edges.
+     *
+     * @throws InvalidArgumentException When an edge is malformed or dangling.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function extractEdges(array $flow, array $nodes): array
+    {
+        $edges = [];
         foreach (($flow['edges'] ?? []) as $index => $edge) {
-            $from = $this->normaliseEndpoints(value: ($edge['from'] ?? $edge['source'] ?? null));
-            $to   = $this->normaliseEndpoints(value: ($edge['to'] ?? $edge['target'] ?? null));
+            $from = $this->normaliseEndpoints(value: ($edge['from'] ?? null));
+            $to   = $this->normaliseEndpoints(value: ($edge['to'] ?? null));
 
             if (empty($from) === true || empty($to) === true) {
                 throw new InvalidArgumentException(
@@ -185,7 +354,7 @@ class FlowDefinitionBuilder
             // symfony/workflow surfaces as an opaque failure at run time; here we
             // can name the edge and the missing node.
             foreach (array_merge($from, $to) as $endpoint) {
-                if (in_array($endpoint, $places, true) === false) {
+                if (array_key_exists($endpoint, $nodes) === false) {
                     throw new InvalidArgumentException(
                         message: sprintf(
                             'Flow edge "%s" references unknown node "%s".',
@@ -196,29 +365,200 @@ class FlowDefinitionBuilder
                 }
             }
 
-            $name = trim((string) ($edge['name'] ?? $edge['id'] ?? ''));
-            if ($name === '') {
-                $name = sprintf('edge-%d', $index);
+            $edges[] = [
+                'id'   => (string) ($edge['id'] ?? sprintf('edge-%d', $index)),
+                'from' => $from,
+                'to'   => $to,
+            ];
+        }//end foreach
+
+        return $edges;
+
+    }//end extractEdges()
+
+    /**
+     * Every place the net needs.
+     *
+     * @param array<string, array> $nodes The declared nodes.
+     * @param array                $edges The normalised edges.
+     *
+     * @return array<string> The place names.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function buildPlaces(array $nodes, array $edges): array
+    {
+        $places = [];
+        foreach (array_keys($nodes) as $id) {
+            if ($this->isJoin(node: $nodes[$id]) === true) {
+                // A join needs one input place PER incoming edge, so it can
+                // require a token on each.
+                foreach ($this->incoming(nodeId: $id, edges: $edges) as $edge) {
+                    $places[] = $this->joinPlace(nodeId: $id, edgeId: $edge['id']);
+                }
             }
 
-            $transitions[] = new Transition(name: $name, froms: $from, tos: $to);
+            // The shared input place exists for every node regardless: a join
+            // with no incoming edges still needs somewhere to start.
+            $places[] = $this->inPlace(nodeId: $id);
+
+            if (empty($this->outgoing(nodeId: $id, edges: $edges)) === true) {
+                $places[] = self::PLACE_END.$id;
+            }
+        }//end foreach
+
+        return array_values(array_unique($places));
+
+    }//end buildPlaces()
+
+    /**
+     * One transition per action node, carrying that node's behaviour.
+     *
+     * @param array<string, array> $nodes The declared nodes.
+     * @param array                $edges The normalised edges.
+     *
+     * @return array<Transition> The transitions.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function buildTransitions(array $nodes, array $edges): array
+    {
+        $transitions = [];
+        foreach ($nodes as $id => $node) {
+            $incoming = $this->incoming(nodeId: $id, edges: $edges);
+            $outgoing = $this->outgoing(nodeId: $id, edges: $edges);
+
+            $froms = [$this->inPlace(nodeId: $id)];
+            if ($this->isJoin(node: $node) === true && empty($incoming) === false) {
+                $froms = [];
+                foreach ($incoming as $edge) {
+                    $froms[] = $this->joinPlace(nodeId: $id, edgeId: $edge['id']);
+                }
+            }
+
+            $tos = [];
+            foreach ($outgoing as $edge) {
+                foreach ($edge['to'] as $target) {
+                    $tos[] = $this->targetPlace(nodeId: $target, edgeId: $edge['id'], nodes: $nodes);
+                }
+            }
+
+            if (empty($tos) === true) {
+                $tos = [self::PLACE_END.$id];
+            }
+
+            $transitions[] = new Transition(
+                name: $id,
+                froms: array_values(array_unique($froms)),
+                tos: array_values(array_unique($tos))
+            );
         }//end foreach
 
         return $transitions;
 
-    }//end extractTransitions()
+    }//end buildTransitions()
 
     /**
-     * Normalise an edge endpoint to a list of place names.
+     * The place an edge deposits its token on when it reaches `$nodeId`.
      *
-     * A scalar endpoint is an ordinary edge; an array endpoint declares a split
-     * (several `to`) or a join (several `from`).
+     * A plain node shares one input place across every incoming edge, which is
+     * what makes converging edges a MERGE. A declared join takes one place per
+     * incoming edge instead, which is what makes it wait for all of them.
+     *
+     * @param string               $nodeId The target node.
+     * @param string               $edgeId The edge arriving at it.
+     * @param array<string, array> $nodes  The declared nodes.
+     *
+     * @return string The place name.
+     *
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
+     */
+    private function targetPlace(string $nodeId, string $edgeId, array $nodes): string
+    {
+        if ($this->isJoin(node: ($nodes[$nodeId] ?? [])) === true) {
+            return $this->joinPlace(nodeId: $nodeId, edgeId: $edgeId);
+        }
+
+        return $this->inPlace(nodeId: $nodeId);
+
+    }//end targetPlace()
+
+    /**
+     * The per-edge input place of a declared join.
+     *
+     * @param string $nodeId The join node.
+     * @param string $edgeId The incoming edge.
+     *
+     * @return string The place name.
+     */
+    private function joinPlace(string $nodeId, string $edgeId): string
+    {
+        return $this->inPlace(nodeId: $nodeId).self::PLACE_JOIN.$edgeId;
+
+    }//end joinPlace()
+
+    /**
+     * Whether a node synchronises its incoming edges.
+     *
+     * @param array $node The node.
+     *
+     * @return bool True when it is a join.
+     */
+    private function isJoin(array $node): bool
+    {
+        return ($node['join'] ?? false) === true;
+
+    }//end isJoin()
+
+    /**
+     * Edges arriving at a node.
+     *
+     * @param string $nodeId The node.
+     * @param array  $edges  The normalised edges.
+     *
+     * @return array<array> The edges.
+     */
+    private function incoming(string $nodeId, array $edges): array
+    {
+        return array_values(
+            array_filter(
+                $edges,
+                static fn (array $edge): bool => in_array($nodeId, $edge['to'], true)
+            )
+        );
+
+    }//end incoming()
+
+    /**
+     * Edges leaving a node.
+     *
+     * @param string $nodeId The node.
+     * @param array  $edges  The normalised edges.
+     *
+     * @return array<array> The edges.
+     */
+    private function outgoing(string $nodeId, array $edges): array
+    {
+        return array_values(
+            array_filter(
+                $edges,
+                static fn (array $edge): bool => in_array($nodeId, $edge['from'], true)
+            )
+        );
+
+    }//end outgoing()
+
+    /**
+     * Normalise an edge endpoint to a list of node ids.
+     *
+     * A scalar endpoint is an ordinary edge; an array endpoint fans out to
+     * several nodes at once.
      *
      * @param mixed $value The raw endpoint value.
      *
-     * @return array<string> The endpoint place names.
+     * @return array<string> The endpoint node ids.
      *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
      */
     private function normaliseEndpoints(mixed $value): array
     {
@@ -246,54 +586,50 @@ class FlowDefinitionBuilder
     /**
      * Decide which place(s) a run starts on.
      *
-     * Explicit `initial` wins. Otherwise the start is inferred as the nodes no
-     * edge points at — the graph's sources. Inference keeps simple flows free of
-     * boilerplate while still letting a user override it.
+     * Explicit `initial` wins and names NODES. Otherwise the start is inferred
+     * as the nodes no edge points at — the flow's sources. Inference keeps
+     * simple flows free of boilerplate while still letting a user override it.
      *
-     * @param array             $flow        The flow document.
-     * @param array<string>     $places      The known place names.
-     * @param array<Transition> $transitions The transitions.
+     * @param array                $flow  The flow document.
+     * @param array<string, array> $nodes The declared nodes.
+     * @param array                $edges The normalised edges.
      *
      * @return array<string> The initial place names.
      *
      * @throws InvalidArgumentException When `initial` names an unknown node.
      *
-     * @spec openspec/changes/or-flow-engine/specs/flow-engine/spec.md
+     * @spec openspec/changes/or-flow-action-nodes/specs/flow-engine/spec.md
      */
-    private function resolveInitialPlaces(array $flow, array $places, array $transitions): array
+    private function resolveInitialPlaces(array $flow, array $nodes, array $edges): array
     {
         $declared = $this->normaliseEndpoints(value: ($flow['initial'] ?? null));
         if (empty($declared) === false) {
-            foreach ($declared as $place) {
-                if (in_array($place, $places, true) === false) {
+            $initial = [];
+            foreach ($declared as $id) {
+                if (array_key_exists($id, $nodes) === false) {
                     throw new InvalidArgumentException(
-                        message: sprintf('Flow initial node "%s" is not a declared node.', $place)
+                        message: sprintf('Flow initial node "%s" is not a declared node.', $id)
                     );
                 }
+
+                $initial[] = $this->inPlace(nodeId: $id);
             }
 
-            return $declared;
+            return $initial;
         }
 
-        $targeted = [];
-        foreach ($transitions as $transition) {
-            foreach ($transition->getTos() as $to) {
-                $targeted[$to] = true;
+        $sources = [];
+        foreach (array_keys($nodes) as $id) {
+            if (empty($this->incoming(nodeId: $id, edges: $edges)) === true) {
+                $sources[] = $this->inPlace(nodeId: $id);
             }
         }
 
-        $sources = array_values(
-                array_filter(
-            $places,
-            static fn (string $place): bool => isset($targeted[$place]) === false
-        )
-                );
-
-        // A fully cyclic graph has no source. Rather than refuse to run it, start
-        // on the first declared node: the author drew a loop, which is legitimate,
-        // and declaration order is the only signal available.
+        // A fully cyclic flow has no source. Rather than refuse to run it, start
+        // on the first declared node: the author drew a loop, which is
+        // legitimate, and declaration order is the only signal available.
         if (empty($sources) === true) {
-            return [$places[0]];
+            return [$this->inPlace(nodeId: (string) array_key_first($nodes))];
         }
 
         return $sources;

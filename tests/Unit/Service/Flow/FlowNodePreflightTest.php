@@ -82,8 +82,16 @@ class FlowNodePreflightTest extends TestCase
     {
         return [
             'name'  => 'test-flow',
-            'nodes' => [['id' => 'a'], ['id' => 'b']],
-            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => $type]],
+            // The step is on the NODE (or-flow-action-nodes). The preflight
+            // walks nodes for the same reason: left on edges it would inspect a
+            // list where nothing carries a type, find nothing, and report the
+            // document valid without having looked at it.
+            // Only ONE typed node, so a fixture built for "is this one type
+            // resolvable" yields exactly one finding. A second typed node would
+            // add a second finding and make every count assertion below wrong
+            // for a reason that has nothing to do with what is being tested.
+            'nodes' => [['id' => 'a', 'type' => $type], ['id' => 'b']],
+            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
         ];
     }
 
@@ -142,10 +150,14 @@ class FlowNodePreflightTest extends TestCase
         $preflight = $this->preflight(known: [], enabled: ['openregister']);
         $flow      = [
             'name'  => 'multi',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
+            'nodes' => [
+                ['id' => 'a', 'type' => 'openregister.explode'],
+                ['id' => 'b', 'type' => 'openregister.teleport'],
+                ['id' => 'c', 'type' => 'openregister.stop'],
+            ],
             'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.explode'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'c', 'type' => 'openregister.teleport'],
+                ['id' => 'e1', 'from' => 'a', 'to' => 'b'],
+                ['id' => 'e2', 'from' => 'b', 'to' => 'c'],
             ],
         ];
 
@@ -160,18 +172,22 @@ class FlowNodePreflightTest extends TestCase
     }
 
     /**
-     * A registered type passes, and a typeless edge is a pass-through.
+     * A registered type passes, and a typeless node is left to the builder.
+     *
+     * The preflight's job is "can this instance run these step types", not "is
+     * this document well-formed" — `FlowDefinitionBuilder` refuses a typeless
+     * node, and duplicating that here would give one rule two owners.
      */
-    public function testKnownAndTypelessEdgesPass(): void
+    public function testKnownTypesPassAndATypelessNodeIsNotThePreflightsToJudge(): void
     {
         $preflight = $this->preflight(known: ['openregister.route'], enabled: ['openregister']);
         $flow      = [
             'name'  => 'ok',
-            'nodes' => [['id' => 'a'], ['id' => 'b'], ['id' => 'c']],
-            'edges' => [
-                ['id' => 'e1', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.route'],
-                ['id' => 'e2', 'from' => 'b', 'to' => 'c'],
+            'nodes' => [
+                ['id' => 'a', 'type' => 'openregister.route'],
+                ['id' => 'b'],
             ],
+            'edges' => [['id' => 'e1', 'from' => 'a', 'to' => 'b']],
         ];
 
         $preflight->assertRunnable(flow: $flow);
