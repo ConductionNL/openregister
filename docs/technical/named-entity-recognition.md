@@ -643,4 +643,5 @@ Links Created:
 ### Technical Documentation
 - **[Text Extraction Technical Documentation](./text-extraction.md)** - Text extraction implementation
 - **[Vectorization Technical Documentation](./vectorization.md)** - Vector embedding implementation
+- **[Entity Replacement (Anonymisation)](./entity-replacement.md)** - What happens after detection: how ranges are chosen, per-type boundary policy, and what the anonymise response reports
 

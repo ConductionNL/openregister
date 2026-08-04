@@ -1558,11 +1558,30 @@ class DocumentProcessingHandler
             //
             // The second pass descends exactly as the original did, so table,
             // list and nested-element coverage is unchanged.
-            $replaceInElements = function (array $elements, array $replacements) use (&$replaceInElements): void {
+            $replaceInElements = function (
+                array $elements,
+                array $replacements,
+                bool $groupLeaves=true
+            ) use (&$replaceInElements): void {
                 $group = [];
                 foreach ($elements as $element) {
                     if (method_exists($element, 'getText') === true && method_exists($element, 'setText') === true) {
                         $group[] = $element;
+                        // At SECTION level, consecutive leaves are separate
+                        // paragraphs, not runs of one paragraph. Grouping them
+                        // would concatenate unrelated text and could match across
+                        // a boundary that does not exist for a reader — this
+                        // document's own fixture concatenates to
+                        // "Kerkstraat 123512 GK Utrecht" across two paragraphs.
+                        // The Word2007 reader wraps paragraphs in TextRun so the
+                        // case was not observed, but PhpWord's addText() on a
+                        // section produces bare leaves, so the guard is
+                        // structural rather than trusting the reader.
+                        if ($groupLeaves === false) {
+                            $this->applyToRunGroup(group: $group, replacements: $replacements);
+                            $group = [];
+                        }
+
                         continue;
                     }
 
@@ -1599,19 +1618,19 @@ class DocumentProcessingHandler
             // Replace in headers.
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getHeaders() as $header) {
-                    $replaceInElements($header->getElements(), $replacements);
+                    $replaceInElements($header->getElements(), $replacements, false);
                 }
             }
 
             // Replace in main content.
             foreach ($phpWord->getSections() as $section) {
-                $replaceInElements($section->getElements(), $replacements);
+                $replaceInElements($section->getElements(), $replacements, false);
             }
 
             // Replace in footers.
             foreach ($phpWord->getSections() as $section) {
                 foreach ($section->getFooters() as $footer) {
-                    $replaceInElements($footer->getElements(), $replacements);
+                    $replaceInElements($footer->getElements(), $replacements, false);
                 }
             }
 

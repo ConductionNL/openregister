@@ -63,8 +63,8 @@
 
 - [x] 8.1 Add `@spec openspec/changes/entity-replacement-planner/specs/entity-replacement-planner/spec.md` annotations to every new class and to each modified method in `DocumentProcessingHandler` and `PdfTextReplacer` (ADR-003 / gate-16 spec-coverage).
 - [x] 8.2 SPDX + `@license`/`@copyright` PHPDoc headers on every new file (gate-1, gate-28 — value must agree with `composer.json`).
-- [ ] 8.3 Document the boundary-policy table and the residual-report semantics in the anonymisation section of the project docs, including that non-PDF formats can now legitimately return `complete: false`.
-- [ ] 8.4 Review existing anonymisation fixtures under `tests/Unit/Service/File/` for intentional expected-output drift (over-redaction removed, residue now covered). Each diff needs review, not blind re-baselining.
+- [x] 8.3 Document the boundary-policy table and the residual-report semantics in the anonymisation section of the project docs, including that non-PDF formats can now legitimately return `complete: false`.
+- [x] 8.4 Review existing anonymisation fixtures under `tests/Unit/Service/File/` for intentional expected-output drift (over-redaction removed, residue now covered). Each diff needs review, not blind re-baselining.
 - [x] 8.5 Run `composer check:strict` and `./scripts/run-hydra-gates.sh --scope-to-diff` and clear every finding. **Caveat:** `scripts/run-hydra-gates.sh` is not present in this repo and there is no container copy, so the gate suite could not be run — gates 1/2/16/21/28 were checked by hand instead. gate-28 FAILED and was fixed (see commit).
 - [x] 8.6 Spot-check performance on a document with pathologically many detections (order 1000 candidates) to confirm the DP does not regress against the current per-needle full-document `str_ireplace` passes. **Result: the planner is 3-13x SLOWER, not cheaper** — corrected in design.md Risks with the measured table.
 

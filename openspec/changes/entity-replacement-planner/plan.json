@@ -224,12 +224,12 @@
     {
       "id": "8.3",
       "title": "Document boundary policy and residual semantics",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.4",
       "title": "Review existing fixtures for intentional output drift",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "8.5",
