@@ -93,10 +93,38 @@ class MagicTableHandler
      */
     public function ensureTableForRegisterSchema(Register $register, Schema $schema, bool $force=false): bool
     {
-        $tableName  = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
         $registerId = $register->getId();
         $schemaId   = $schema->getId();
         $cacheKey   = $this->magicMapper->getCacheKey(registerId: $registerId, schemaId: $schemaId);
+
+        // Verified once per process, checked FIRST.
+        //
+        // Every insert, update and find path in MagicMapper calls this method, so
+        // it runs once per object operation rather than once per register+schema.
+        // Importing OpenCatalogi's configuration produced 1,137 calls for 225
+        // object saves — and each one built a table name, resolved two slugs, and
+        // wrote an info log before reaching the identical fast path inside
+        // handleExistingTable() and returning true.
+        //
+        // This is that exact predicate, hoisted: same two conditions, same
+        // meaning, evaluated before the work rather than after it. It does not
+        // reduce how often callers CALL this method; it makes the redundant calls
+        // cost two comparisons instead of a log write and an existence check.
+        //
+        // Both conditions are load-bearing and neither may be dropped.
+        // hasRegisterSchemaChanged() compares the stored schema VERSION, so a
+        // schema updated mid-process (an import bumping a version, then saving
+        // objects against it) still falls through and re-syncs its columns.
+        // isTableColumnsVerified() is process-scoped, so a fresh request always
+        // re-verifies at least once. `force` bypasses both, as before.
+        if ($force === false
+            && MagicMapper::isTableColumnsVerified(cacheKey: $cacheKey) === true
+            && $this->magicMapper->hasRegisterSchemaChanged(register: $register, schema: $schema) === false
+        ) {
+            return true;
+        }
+
+        $tableName = $this->getTableNameForRegisterSchema(register: $register, schema: $schema);
 
         $this->logger->info(
             message: '[MagicTableHandler] Creating/updating table for register+schema',
