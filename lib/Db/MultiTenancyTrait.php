@@ -680,11 +680,34 @@ trait MultiTenancyTrait
     protected function setOwnerOnCreate(Entity $entity): void
     {
         // Only set owner if the entity has an owner property.
-        if (method_exists($entity, 'getOwner') === false || method_exists($entity, 'setOwner') === false) {
+        //
+        // property_exists(), NOT method_exists() — for exactly the reason spelled
+        // out in setOrganisationOnCreate() thirty lines above: Nextcloud's Entity
+        // serves getters and setters through __call, declaring them only as
+        // `@method`, and method_exists() is FALSE for those.
+        //
+        // Every entity in lib/Db declares its owner accessors that way — not one
+        // has a real getOwner() — so this guard returned early for EVERY entity
+        // and this method had never once set an owner. It read as a safety net
+        // and was a no-op.
+        //
+        // Nothing visibly broke because the services that care set the owner
+        // explicitly (SaveObject, FlowService, ViewService, OrganisationService,
+        // …). The hazard is anything created straight through a mapper — repair
+        // steps, imports, new code — which silently got a NULL owner in the one
+        // field half the private-scope predicate is built on
+        // (owner OR admin OR granted).
+        if (property_exists($entity, 'owner') === false) {
             return;
         }
 
         // Only set owner if not already set (allow explicit owner assignment).
+        //
+        // The parameter is typed `Entity`, whose owner accessors exist only as
+        // `@method` on the subclasses, so static analysis cannot see them. The
+        // property_exists() guard above is what makes the call safe at runtime;
+        // this is the same false positive SystemEntityObjectAdapter documents.
+        // @phpstan-ignore-next-line Entity::getOwner() is dispatched via __call.
         if ($entity->getOwner() !== null && $entity->getOwner() !== '') {
             return;
         }
@@ -696,6 +719,7 @@ trait MultiTenancyTrait
 
         $user = $this->userSession->getUser();
         if ($user !== null) {
+            // @phpstan-ignore-next-line Entity::setOwner() is dispatched via __call.
             $entity->setOwner($user->getUID());
         }
     }//end setOwnerOnCreate()
