@@ -35,6 +35,7 @@ namespace OCA\OpenRegister\Command;
 
 use OCA\OpenRegister\Service\AuditHashService;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -99,7 +100,21 @@ class RechainAuditTrailCommand extends Command
         }
 
         if ($input->getOption('force') !== true) {
-            $helper   = $this->getHelper(name: 'question');
+            $helper = $this->getHelper(name: 'question');
+
+            // If we cannot prompt, we must not proceed. The alternative — assume
+            // consent because the helper is missing — would rewrite every stored
+            // audit hash on the strength of an environment quirk. --force is the
+            // supported way to say yes without a prompt.
+            if (($helper instanceof QuestionHelper) === false) {
+                $output->writeln(
+                    '<error>No question helper available to confirm with. '
+                    .'Re-run with --force if you really mean to rewrite every audit hash.</error>'
+                );
+
+                return Command::FAILURE;
+            }
+
             $question = new ConfirmationQuestion(
                 '<comment>This REWRITES every stored audit hash. Continue? [y/N] </comment>',
                 false
@@ -109,14 +124,14 @@ class RechainAuditTrailCommand extends Command
                 $output->writeln('Aborted.');
                 return Command::SUCCESS;
             }
-        }
+        }//end if
 
         $result = $this->hashes->rechainAll();
         $output->writeln(
             sprintf(
                 '<info>Re-chained %d row(s); left %d retention tombstone(s) untouched.</info>',
-                (int) $result['rechained'],
-                (int) ($result['tombstonesPreserved'] ?? 0)
+                $result['rechained'],
+                $result['tombstonesPreserved']
             )
         );
 
