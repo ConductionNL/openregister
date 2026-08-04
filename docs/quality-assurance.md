@@ -10,7 +10,7 @@ The authoritative pre-merge gate is:
 composer check:strict
 ```
 
-This runs `phpcs + phpmd + phpstan + psalm + test:all` in sequence. The same command runs in CI via `.forgejo/workflows/pre-merge-check-strict.yaml` on every PR targeting `development`, `main`, or `beta`. **All commands must exit 0 before pushing.**
+This runs `phpcs + phpmd + phpstan + psalm + test:all` in sequence. The equivalent gates run in CI via `.github/workflows/code-quality.yml` (which calls the shared `ConductionNL/.github` quality pipeline) on every PR targeting `development`, `main`, or `beta`. **All commands must exit 0 before pushing.**
 
 ### Current baseline state (2026-06-04)
 

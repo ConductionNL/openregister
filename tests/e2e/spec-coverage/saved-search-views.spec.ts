@@ -48,7 +48,9 @@ async function deleteView(request: APIRequestContext, id: number): Promise<void>
 
 /** Navigate to /tables page (SearchIndex + SearchSideBar). */
 async function gotoTablesPage(page: Page): Promise<void> {
-	await page.goto('/index.php/apps/openregister/tables', { waitUntil: 'domcontentloaded' })
+	// HASH form — the router runs in hash mode (src/main.js); the path-form
+	// URL renders the dashboard instead of the tables page.
+	await page.goto('/index.php/apps/openregister/#/tables', { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 	// NcAppSidebar renders as aside.app-sidebar (no complementary ARIA role in NC<34).

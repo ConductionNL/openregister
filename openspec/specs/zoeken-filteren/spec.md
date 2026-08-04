@@ -123,6 +123,52 @@ The system MUST support filtering on object metadata fields (register, schema, u
 - **THEN** `query['@self']['register']` MUST be `[1, 2, 3]`
 - **AND** `MagicSearchHandler.applyMetadataFilters()` MUST use `WHERE t._register IN (1, 2, 3)`
 
+### Requirement: @self metadata filters support comparison operators
+A `@self` metadata filter MUST accept the same comparison-operator vocabulary as a schema-property filter — the bare keys `gte`, `lte`, `gt`, `lt`, `in`, `notIn`, `ne` — so that the same comparison does not need different syntax depending on whether the field is metadata or a property. An array value carrying none of those keys MUST retain its IN-list meaning. Multiple operators on one field MUST combine with AND.
+
+This vocabulary MUST be applied identically on both query paths: the single-table `IQueryBuilder` path (`MagicSearchHandler.applyMetadataFilters()`) and the raw-SQL multi-table UNION path (`MagicSearchHandler.buildWhereConditionsSql()`). Neither path may silently ignore a `@self` filter.
+
+#### Scenario: Date cutoff selects objects created before a moment
+- **GIVEN** a schema whose objects were created between 2026-05-21 and 2026-08-02
+- **WHEN** the caller filters with `@self[created][lte]=2026-06-01T00:00:00Z`
+- **THEN** `MagicSearchHandler.applyMetadataFilters()` MUST emit `WHERE t._created <= '2026-06-01T00:00:00Z'`
+- **AND** only objects created at or before that moment MUST be returned
+
+#### Scenario: A cutoff in the future selects every object
+- **GIVEN** the same schema
+- **WHEN** the caller filters with `@self[created][lte]=2030-01-01T00:00:00Z`
+- **THEN** every non-deleted object MUST be returned
+- **AND** the result MUST NOT be empty — an empty result here indicates the operator key was discarded and the value compared for equality
+
+#### Scenario: Two operators bound a range
+- **GIVEN** objects with varying `_updated` timestamps
+- **WHEN** the caller filters with `@self[updated][gte]=2026-01-01&@self[updated][lte]=2026-02-01`
+- **THEN** the system MUST emit both `t._updated >= '2026-01-01'` and `t._updated <= '2026-02-01'`
+
+#### Scenario: A metadata filter is honoured on the multi-table UNION path
+- **GIVEN** a search spanning more than one register/schema table
+- **WHEN** the caller supplies a `@self` metadata filter
+- **THEN** `MagicSearchHandler.buildWhereConditionsSql()` MUST include a condition for that filter in every UNION arm
+- **AND** the filter MUST NOT be dropped — dropping it would return objects the caller explicitly excluded
+
+#### Scenario: A null-check does not also compare against the sentinel
+- **GIVEN** objects that all have an `_owner` value
+- **WHEN** the caller filters with `@self[owner]=IS NOT NULL`
+- **THEN** the system MUST emit only `t._owner IS NOT NULL`
+- **AND** it MUST NOT additionally emit `t._owner = 'IS NOT NULL'`, which would match nothing on a text column and raise a cast error on a timestamp column
+
+#### Scenario: A camelCase metadata field resolves to its snake_case column
+- **GIVEN** the metadata column `_schema_version`
+- **WHEN** the caller filters with `@self[schemaVersion]=1.0`
+- **THEN** the system MUST compare against `t._schema_version`
+
+#### Scenario: An unknown metadata field is refused by name
+- **GIVEN** a caller filtering with `@self[creatd]=…` (a misspelling)
+- **WHEN** the query is built
+- **THEN** the system MUST raise `UnknownMetadataFieldException` and respond HTTP 400
+- **AND** the message MUST name the offending field and list the filterable metadata fields
+- **AND** the system MUST NOT interpolate the name into SQL, which previously surfaced as an opaque HTTP 500
+
 ### Requirement: Fuzzy search with pg_trgm integration
 The system MUST support optional fuzzy (typo-tolerant) search when the `_fuzzy=true` parameter is explicitly set AND the PostgreSQL `pg_trgm` extension is available. Fuzzy search MUST use the `similarity()` function on the `_name` column with a threshold of `0.1`. When fuzzy search is active, a `_relevance` score column MUST be available for sorting.
 

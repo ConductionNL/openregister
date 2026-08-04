@@ -96,15 +96,101 @@ class FlowEngine
     /**
      * Constructor.
      *
-     * @param FlowDefinitionBuilder $builder The document -> Petri-net translator.
-     * @param LoggerInterface       $logger  The logger.
+     * @param FlowDefinitionBuilder      $builder   The document -> Petri-net translator.
+     * @param LoggerInterface            $logger    The logger.
+     * @param FlowOversightRegistry|null $oversight The pre-hop gate. Nullable so the
+     *                                              engine stays unit-testable without a
+     *                                              container; absent, nothing objects,
+     *                                              exactly as an empty registry does.
      */
     public function __construct(
         private readonly FlowDefinitionBuilder $builder,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly ?FlowOversightRegistry $oversight=null
     ) {
 
     }//end __construct()
+
+    /**
+     * Ask the oversight checks whether the next hop may run.
+     *
+     * Consulted BEFORE EACH HOP rather than once per run: a flow that suspends
+     * on a wait node and resumes an hour later, or one walking a long graph,
+     * would otherwise sail straight past a kill switch thrown mid-run — which
+     * is the case the switch exists for.
+     *
+     * NO registry CONSENTS, exactly as an empty registry does. The two are the
+     * same statement — nothing objects — and treating the absent one as a
+     * refusal would make the engine unrunnable wherever it is constructed
+     * without a container, which includes every unit test of the walk itself.
+     *
+     * The fail-closed property that actually matters lives one level down, in
+     * `FlowOversightRegistry::firstRefusal()`: a check that THROWS is a veto,
+     * never consent. That is the case where something was supposed to have an
+     * opinion and could not form one. "Nobody registered an opinion" is not
+     * that case.
+     *
+     * @param array<string, mixed> $context The run context.
+     * @param string               $name    The transition about to fire.
+     * @param string               $type    The step type about to run.
+     *
+     * @return array{checkId: string, reason: string}|null The refusal, or null to proceed.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    private function oversightRefusal(array $context, string $name, string $type): ?array
+    {
+        if (($context['oversight'] ?? true) === false) {
+            return null;
+        }
+
+        if ($this->oversight === null) {
+            return null;
+        }
+
+        return $this->oversight->firstRefusal(
+            context: array_merge(
+                $context,
+                ['transition' => $name, 'nodeType' => $type]
+            )
+        );
+
+    }//end oversightRefusal()
+
+    /**
+     * Raise a FlowStop when an oversight check refuses the next hop.
+     *
+     * Raising rather than returning is deliberate: `run()` already turns a
+     * FlowStop into a terminal `stopped` result, so a veto reuses the semantics
+     * an author's Stop step already has instead of adding a second, parallel way
+     * for a run to end early. The refusing check's id is carried in the reason
+     * because that is what an operator needs in order to know WHICH gate closed.
+     *
+     * @param array  $context The run context.
+     * @param string $name    The transition about to fire.
+     * @param string $type    The node type about to run.
+     *
+     * @return void
+     *
+     * @throws FlowStop When a check refuses the hop.
+     *
+     * @spec openspec/changes/flow-engine-unification/specs/flow-oversight/spec.md
+     */
+    private function assertOversightAllows(array $context, string $name, string $type): void
+    {
+        $refusal = $this->oversightRefusal(context: $context, name: $name, type: $type);
+        if ($refusal === null) {
+            return;
+        }
+
+        // Both keys are guaranteed by firstRefusal()'s return type, so no
+        // defaulting here: a `??` would be dead code that reads like a guard.
+        throw new FlowStop(
+            reason: $refusal['reason'],
+            checkId: $refusal['checkId']
+        );
+
+    }//end assertOversightAllows()
 
     /**
      * Run a flow document.
@@ -248,6 +334,13 @@ class FlowEngine
             $itemsIn = $this->itemsForTransition(transition: $transition, placeItems: $placeItems);
             $items   = $itemsIn;
 
+            // The step's catalogue id, carried onto every log entry so the run
+            // history can be queried BY NODE TYPE ("which node type fails")
+            // rather than only by run.
+            $stepType = (string) ($step['type'] ?? '');
+
+            $startedAt = microtime(true);
+
             // Pinned output (n8n's "pin data"): when a run supplies a pin for
             // this step, its stored output is used verbatim and the step is NOT
             // executed — the side effect is skipped. This is what makes iterating
@@ -260,9 +353,11 @@ class FlowEngine
                 $items = $pinned;
                 $log[] = [
                     'transition' => $name,
+                    'type'       => $stepType,
                     'status'     => 'pinned',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                    'durationMs' => 0,
                 ];
 
                 $placeItems = $this->advanceItems(transition: $transition, placeItems: $placeItems, items: $items);
@@ -271,13 +366,22 @@ class FlowEngine
             }
 
             try {
+                // OVERSIGHT, before the hop. A veto is raised as a FlowStop so it
+                // travels the same path as an author's Stop step: the run ENDS.
+                // It never skips the hop and carries on, because a skipped step
+                // inside a completed run is indistinguishable from one that ran
+                // and did nothing — the exact failure this change removes.
+                $this->assertOversightAllows(context: $context, name: $name, type: $stepType);
+
                 $produced = $dispatcher->dispatch(step: $step, items: $itemsIn, context: $context);
                 $items    = FlowItems::normalise(value: $produced);
                 $log[]    = [
                     'transition' => $name,
+                    'type'       => $stepType,
                     'status'     => 'completed',
                     'itemsIn'    => count($itemsIn),
                     'itemsOut'   => count($items),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
             } catch (FlowStop $stop) {
                 // A deliberate end, requested by a Stop step. Caught before the
@@ -286,8 +390,13 @@ class FlowEngine
                 // to end, and it ends with their message and their outcome.
                 $log[] = [
                     'transition' => $name,
+                    'type'       => $stepType,
                     'status'     => 'stopped',
                     'reason'     => $stop->getMessage(),
+                    // Null for an author's Stop step; set when an oversight
+                    // gate raised the stop, so the history records WHICH gate.
+                    'checkId'    => $stop->checkId(),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
                 ];
 
                 $stopStatus = self::STATUS_STOPPED;
@@ -325,7 +434,13 @@ class FlowEngine
                     'resumeAt' => $suspension->getResumeAt(),
                 ];
             } catch (Throwable $e) {
-                $log[]   = ['transition' => $name, 'status' => 'failed', 'error' => $e->getMessage()];
+                $log[]   = [
+                    'transition' => $name,
+                    'type'       => $stepType,
+                    'status'     => 'failed',
+                    'error'      => $e->getMessage(),
+                    'durationMs' => (int) round((microtime(true) - $startedAt) * 1000),
+                ];
                 $outcome = $this->outcomeForFailedStep(
                     step: $step,
                     error: $e,
@@ -619,6 +734,14 @@ class FlowEngine
     /**
      * Move a fired transition's items: onto its output places, off its inputs.
      *
+     * Per-item routing (n8n's If/Switch) lives here. An item that names an output
+     * ({@see FlowItems::OUTPUT}, set by a routing node) goes only to the output
+     * place with that name; an item that names none is broadcast to every output,
+     * which is the ordinary behaviour and what a parallel split relies on. So a
+     * step whose items carry no output tag distributes exactly as before — this
+     * is additive, not a change to any existing flow. The tag is stripped as the
+     * item lands, so it never lingers to misroute a later step.
+     *
      * Clearing the consumed inputs matters for a loop that re-enters the
      * transition — it must read fresh items, not a stale copy left behind.
      *
@@ -628,12 +751,12 @@ class FlowEngine
      *
      * @return array<string, array> The updated buffers.
      *
-     * @spec openspec/changes/or-flow-merge/specs/flow-merge/spec.md
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
      */
     private function advanceItems(object $transition, array $placeItems, array $items): array
     {
         foreach ($transition->getTos() as $to) {
-            $placeItems[(string) $to] = $items;
+            $placeItems[(string) $to] = $this->itemsForOutput(items: $items, output: (string) $to);
         }
 
         foreach ($transition->getFroms() as $from) {
@@ -643,4 +766,33 @@ class FlowEngine
         return $placeItems;
 
     }//end advanceItems()
+
+    /**
+     * The items that belong on one output place: those routed to it, plus the
+     * unrouted ones that go everywhere. The output tag is dropped on the way.
+     *
+     * @param array<int, array> $items  The produced items.
+     * @param string            $output The output place's name.
+     *
+     * @return array<int, array> The items for that output, tag removed.
+     *
+     * @spec openspec/changes/or-flow-per-item-routing/specs/flow-per-item-routing/spec.md
+     */
+    private function itemsForOutput(array $items, string $output): array
+    {
+        $out = [];
+        foreach ($items as $item) {
+            $tag = FlowItems::outputOf(member: (array) $item);
+            if ($tag !== null && $tag !== $output) {
+                // Routed elsewhere: not this output's item.
+                continue;
+            }
+
+            unset($item[FlowItems::OUTPUT]);
+            $out[] = $item;
+        }
+
+        return $out;
+
+    }//end itemsForOutput()
 }//end class

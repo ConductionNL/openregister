@@ -367,9 +367,22 @@ class ImportHandlerCoverageTest extends TestCase
     // =========================================================================
 
     /**
-     * importSchema resolves items.$ref from schemasMap.
+     * importSchema resolves items.$ref from schemasMap — INTO `items`, and
+     * without inventing a top-level `$ref` on the array property.
+     *
+     * 🔴 This used to assert only `instanceof Schema`, which is true whatever
+     * the branch writes, so it exercised the defect and reported green. The
+     * branch wrote the resolved id to `$property['$ref']` instead of
+     * `$property['items']['$ref']`, which left the items ref an unmapped slug
+     * AND grafted an INT `$ref` onto an array property. Opis rejects a
+     * non-string `$ref` with `$ref must be a non-empty string` the moment such
+     * a property appears in a written object — the 500 hermiq's clean-install
+     * e2e hit on `PUT /api/agents/{id}/tool-grants`.
+     *
+     * The assertions are on the payload handed to the mapper, because that is
+     * what gets persisted.
      */
-    public function testImportSchemaResolvesItemsRefFromSchemasMap(): void
+    public function testImportSchemaResolvesItemsRefIntoItemsAndNotOntoTheProperty(): void
     {
         $refSchema = $this->makeSchema(42, 'related-schema');
         $this->setProperty($this->handler, 'schemasMap', ['related-schema' => $refSchema]);
@@ -388,19 +401,40 @@ class ImportHandlerCoverageTest extends TestCase
         ];
 
         $createdSchema = $this->makeSchema(100, 'items-ref-schema');
+        $persisted     = null;
 
         $this->schemaMapper->method('find')
             ->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException(''));
         $this->schemaMapper->method('createFromArray')
-            ->willReturn($createdSchema);
+            ->willReturnCallback(
+                function (array $payload) use (&$persisted, $createdSchema): Schema {
+                    $persisted = $payload;
+                    return $createdSchema;
+                }
+            );
         $this->schemaMapper->method('update')
             ->willReturnArgument(0);
 
         $result = $this->handler->importSchema($data, [], null, null, '1.0.0');
 
         $this->assertInstanceOf(Schema::class, $result);
+        $this->assertIsArray($persisted, 'the schema payload must reach the mapper');
 
-    }//end testImportSchemaResolvesItemsRefFromSchemasMap()
+        $property = $persisted['properties']['items_prop'];
+
+        $this->assertSame(
+            42,
+            $property['items']['$ref'],
+            'the items $ref must be resolved to the referenced schema id'
+        );
+        $this->assertArrayNotHasKey(
+            '$ref',
+            $property,
+            'an ARRAY property must never gain a top-level $ref from its items — '
+            .'a non-string $ref makes Opis throw "$ref must be a non-empty string"'
+        );
+
+    }//end testImportSchemaResolvesItemsRefIntoItemsAndNotOntoTheProperty()
 
 
     // =========================================================================

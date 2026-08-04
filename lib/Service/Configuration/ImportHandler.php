@@ -1171,14 +1171,178 @@ class ImportHandler
     }//end normaliseForCompare()
 
     /**
+     * Resolve the existing schema (if any) for an incoming schema import.
+     *
+     * Dispatches to exactly one of three resolution strategies, most specific
+     * first: register-scoped (PER-REGISTER SLUG-UNIQUENESS, openspec/changes/
+     * per-register-schema-slug-uniqueness) when the caller knows which
+     * register(s) this slug targets, application-scoped as a fallback, and
+     * finally the historical global (organisation-scoped) lookup. Extracted
+     * from {@see importSchema()} as three guard-clause helpers (no branch
+     * falls through to another) so each strategy stays independently readable.
+     *
+     * @param array       $data              The schema data (MUST carry a non-empty `slug`).
+     * @param array|null  $registerSchemaIds Pre-import schema ids of the target register(s), or null.
+     * @param string|null $appId             The importing application id, or null.
+     * @param string|null $version           The configuration version (for duplicate-error reporting).
+     *
+     * @return Schema|null The resolved existing schema, or null when none matches.
+     */
+    private function resolveExistingSchemaForImport(
+        array $data,
+        ?array $registerSchemaIds,
+        ?string $appId,
+        ?string $version
+    ): ?Schema {
+        if ($registerSchemaIds !== null) {
+            return $this->resolveSchemaWithinRegisterScope(data: $data, registerSchemaIds: $registerSchemaIds);
+        }
+
+        if ($appId !== null && $appId !== '') {
+            return $this->resolveSchemaByApplication(data: $data, appId: $appId);
+        }
+
+        return $this->resolveSchemaGlobally(data: $data, appId: $appId, version: $version);
+    }//end resolveExistingSchemaForImport()
+
+    /**
+     * PER-REGISTER SLUG-UNIQUENESS: resolve strictly within the target
+     * register(s)' own (pre-import) schema id set via
+     * `SchemaMapper::findBySlugInIds()`. A same-slug schema owned elsewhere is
+     * only logged for visibility — it is never reused.
+     *
+     * @param array $data              The schema data (MUST carry a non-empty `slug`).
+     * @param array $registerSchemaIds Pre-import schema ids of the target register(s).
+     *
+     * @return Schema|null The schema already in scope, or null (create a new one).
+     */
+    private function resolveSchemaWithinRegisterScope(array $data, array $registerSchemaIds): ?Schema
+    {
+        $existingSchema = $this->schemaMapper->findBySlugInIds(slug: $data['slug'], schemaIds: $registerSchemaIds);
+        if ($existingSchema !== null) {
+            return $existingSchema;
+        }
+
+        // Visibility only: a same-slug row exists but is not (yet) in the
+        // target register's own set. The caller still (correctly) creates its
+        // own schema rather than binding to this one.
+        try {
+            $foreign = $this->schemaMapper->find($data['slug'], _multitenancy: false);
+            if ($foreign->getId() !== null) {
+                $this->logger->info(
+                    message: sprintf(
+                        "[ImportHandler] Schema slug '%s' already exists elsewhere (schema id %d) but ".
+                        "not in the target register's schema set; creating this register's OWN schema.",
+                        $data['slug'],
+                        $foreign->getId()
+                    ),
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
+                );
+            }
+        } catch (\Throwable $ignore) {
+            // No pre-existing schema anywhere (or ambiguous) — nothing to note.
+        }
+
+        return null;
+    }//end resolveSchemaWithinRegisterScope()
+
+    /**
+     * Application-scoped fallback: resolve via
+     * `SchemaMapper::findByApplicationAndSlug()`. Used only when the caller
+     * has no register context for this slug (see
+     * {@see resolveExistingSchemaForImport()}).
+     *
+     * @param array  $data  The schema data (MUST carry a non-empty `slug`).
+     * @param string $appId The importing application id.
+     *
+     * @return Schema|null The app-owned schema, or null (create a new one).
+     */
+    private function resolveSchemaByApplication(array $data, string $appId): ?Schema
+    {
+        $existingSchema = $this->schemaMapper->findByApplicationAndSlug(slug: $data['slug'], application: $appId);
+        if ($existingSchema !== null) {
+            return $existingSchema;
+        }
+
+        // Visibility: if we own none but a DIFFERENT app already owns the
+        // slug, surface the collision instead of silently forking. The
+        // caller still (correctly) creates its own schema.
+        try {
+            $foreign    = $this->schemaMapper->find($data['slug'], _multitenancy: false);
+            $foreignApp = $foreign->getApplication();
+            if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
+                $this->logger->warning(
+                    message: sprintf(
+                        "[ImportHandler] Schema slug '%s' is already owned by app '%s'; ".
+                        "app '%s' will create its OWN schema to avoid a cross-app collision.",
+                        $data['slug'],
+                        $foreignApp,
+                        $appId
+                    ),
+                    context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
+                );
+            }
+        } catch (\Throwable $ignore) {
+            // No pre-existing schema (or ambiguous) — nothing to warn about.
+        }
+
+        return null;
+    }//end resolveSchemaByApplication()
+
+    /**
+     * Historical global (organisation-scoped) fallback: resolve via
+     * `SchemaMapper::find()`. Used only when the caller has neither register
+     * nor application context for this slug (see
+     * {@see resolveExistingSchemaForImport()}) — manual/UI-driven single
+     * imports, preserved for backward compatibility.
+     *
+     * @param array       $data    The schema data (MUST carry a non-empty `slug`).
+     * @param string|null $appId   The importing application id, for duplicate-error reporting.
+     * @param string|null $version The configuration version, for duplicate-error reporting.
+     *
+     * @return Schema|null The globally-resolved schema, or null (create a new one).
+     */
+    private function resolveSchemaGlobally(array $data, ?string $appId, ?string $version): ?Schema
+    {
+        try {
+            return $this->schemaMapper->find($data['slug'], _multitenancy: false);
+        } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
+            $msg = "Schema '{$data['slug']}' not found, will create new one";
+            $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+        } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
+            $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
+            $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
+        } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
+            $this->handleDuplicateSchemaError(
+                slug: $data['slug'],
+                appId: $appId ?? 'unknown',
+                version: $version ?? 'unknown'
+            );
+        }
+
+        return null;
+    }//end resolveSchemaGlobally()
+
+    /**
      * Import a schema from configuration data.
      *
-     * @param array       $data           The schema data with slugs to be converted to IDs.
-     * @param array       $slugsAndIdsMap Slugs with their IDs for quick lookup.
-     * @param string|null $owner          The owner of the schema.
-     * @param string|null $appId          The application ID importing the schema.
-     * @param string|null $version        The version of the import.
-     * @param bool        $force          Force import even if version is not newer.
+     * @param array       $data              The schema data with slugs to be converted to IDs.
+     * @param array       $slugsAndIdsMap    Slugs with their IDs for quick lookup.
+     * @param string|null $owner             The owner of the schema.
+     * @param string|null $appId             The application ID importing the schema.
+     * @param string|null $version           The version of the import.
+     * @param bool        $force             Force import even if version is not newer.
+     * @param array|null  $registerSchemaIds PER-REGISTER SLUG-UNIQUENESS (openspec/changes/
+     *                                       per-register-schema-slug-uniqueness): when non-null,
+     *                                       the pre-import schema ids of the register(s) this
+     *                                       import declares this slug for. The existing schema is
+     *                                       resolved strictly within this set (not globally, not
+     *                                       merely per-application) so two different registers may
+     *                                       each own a distinct schema with the same slug, while a
+     *                                       schema legitimately shared by multiple registers stays
+     *                                       one row. `null` preserves the previous
+     *                                       application-scoped/global fallback for schemas with no
+     *                                       register context in this import.
      *
      * @return Schema The imported schema.
      *
@@ -1189,7 +1353,7 @@ class ImportHandler
      * @SuppressWarnings(PHPMD.CyclomaticComplexity)  Schema property processing has many type conditions
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength) Schema import involves complex property transformations
      *
-     * @spec openspec/specs/data-import-export/spec.md
+     * @spec openspec/changes/per-register-schema-slug-uniqueness/specs/data-import-export/spec.md#requirement-configuration-import-resolves-a-schema-by-slug-within-the-target-registers-existing-schema-set
      */
     public function importSchema(
         array $data,
@@ -1197,7 +1361,8 @@ class ImportHandler
         ?string $owner=null,
         ?string $appId=null,
         ?string $version=null,
-        bool $force=false
+        bool $force=false,
+        ?array $registerSchemaIds=null
     ): Schema {
         // Pre-validate the schema's shape against a minimal meta-schema
         // before we mutate it. Catches structurally-invalid imports
@@ -1325,11 +1490,34 @@ class ImportHandler
                         }
                     }
 
+                    // 🔴 Both branches write to `items.$ref`. The second one used to
+                    // write to `$property['$ref']` — the ARRAY's own ref — which did
+                    // two wrong things at once: it left `items.$ref` as an unmapped
+                    // slug, and it grafted a schema ID (an INT) onto the array
+                    // property as a top-level `$ref`.
+                    //
+                    // That second effect is not cosmetic. `ValidateObject` strips a
+                    // top-level `$ref` from string-typed properties and from
+                    // `items`, but never from an array-typed property, so the int
+                    // survived into the schema handed to Opis. Opis parses a
+                    // property's subschema lazily — only when that property is
+                    // PRESENT in the written data — and then throws
+                    // `$ref must be a non-empty string` because an int is not a
+                    // string. The message names neither the property nor the
+                    // schema, so it reads like a broken register.
+                    //
+                    // Only reachable on the `schemasMap` fallback, i.e. when the
+                    // referenced slug was not part of this import's own
+                    // slug->id map. That is the FIRST install of a configuration
+                    // whose cross-references resolve against already-present
+                    // schemas — which is why it never showed on a long-lived
+                    // instance and surfaced on every clean one (hermiq's `agent`
+                    // schema: skillInstalls / contextRefs / delegationAllowlist).
                     if (($property['items']['$ref'] ?? null) !== null) {
                         if (($slugsAndIdsMap[$property['items']['$ref']] ?? null) !== null) {
                             $property['items']['$ref'] = $slugsAndIdsMap[$property['items']['$ref']];
                         } else if (($this->schemasMap[$property['items']['$ref']] ?? null) !== null) {
-                            $property['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
+                            $property['items']['$ref'] = $this->schemasMap[$property['items']['$ref']]->getId();
                         }
                     }
 
@@ -1487,62 +1675,32 @@ class ImportHandler
 
             // Check if schema already exists by slug.
             //
-            // CROSS-APP SLUG-COLLISION FIX. Historically this did a GLOBAL slug
-            // lookup (`find($slug, _multitenancy:false)`) — a slug was unique
-            // INSTANCE-WIDE, not per app. On the shared instance that made a
-            // generic slug (e.g. 'conversation', 'order', 'task') shipped by app
-            // B silently BIND to app A's schema, and — if B's version was newer —
-            // OVERWRITE A's live schema via updateFromArray() below. When we have
-            // an app context, resolve the existing schema scoped to THIS app:
-            // an app only ever updates a schema it owns, so importing a colliding
-            // slug creates the app's OWN schema (see the create path below)
-            // instead of clobbering a foreign one. Without an app context
-            // (manual / UI-driven single imports) the historical global behaviour
-            // is preserved for backward compatibility.
-            $existingSchema = null;
-            if ($appId !== null && $appId !== '') {
-                $existingSchema = $this->schemaMapper->findByApplicationAndSlug(slug: $data['slug'], application: $appId);
-
-                // Visibility: if we own none but a DIFFERENT app already owns the
-                // slug, surface the collision instead of silently forking. We
-                // still (correctly) create our own schema below.
-                if ($existingSchema === null) {
-                    try {
-                        $foreign    = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-                        $foreignApp = $foreign->getApplication();
-                        if ($foreignApp !== null && $foreignApp !== '' && $foreignApp !== $appId) {
-                            $this->logger->warning(
-                                message: sprintf(
-                                    "[ImportHandler] Schema slug '%s' is already owned by app '%s'; ".
-                                    "app '%s' will create its OWN schema to avoid a cross-app collision.",
-                                    $data['slug'],
-                                    $foreignApp,
-                                    $appId
-                                ),
-                                context: ['file' => __FILE__, 'line' => __LINE__, 'slug' => $data['slug']]
-                            );
-                        }
-                    } catch (\Throwable $ignore) {
-                        // No pre-existing schema (or ambiguous) — nothing to warn about.
-                    }
-                }
-            } else {
-                try {
-                    $existingSchema = $this->schemaMapper->find($data['slug'], _multitenancy: false);
-                } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-                    $msg = "Schema '{$data['slug']}' not found, will create new one";
-                    $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                } catch (\OCA\OpenRegister\Exception\ValidationException $e) {
-                    $msg = "Schema '{$data['slug']}' not found (ValidationException), will create new one";
-                    $this->logger->info(message: '[ImportHandler] '.$msg, context: ['file' => __FILE__, 'line' => __LINE__]);
-                } catch (\OCP\AppFramework\Db\MultipleObjectsReturnedException $e) {
-                    $this->handleDuplicateSchemaError(
-                        slug: $data['slug'],
-                        appId: $appId ?? 'unknown',
-                        version: $version ?? 'unknown'
-                    );
-                }
-            }//end if
+            // PER-REGISTER SLUG-UNIQUENESS FIX (openspec/changes/
+            // per-register-schema-slug-uniqueness). A schema slug is unique
+            // WITHIN a register's own schema set — not globally, and not even
+            // per-application: an app can legitimately own several registers
+            // that each need their own schema under the same generic slug, and
+            // (the historical bug) an app-scoped or global lookup can still
+            // resolve to a schema owned by a completely different app/register
+            // that merely happens to share the slug (this is how OpenBuild's
+            // 'automation' import silently reused a CRM app's schema #71
+            // instead of creating its own). When the caller (importFromJson())
+            // knows which register(s) this slug is destined for, it passes
+            // their PRE-IMPORT schema-id set as $registerSchemaIds; resolution
+            // is then scoped to exactly that set via findBySlugInIds(). A slug
+            // shared by design across multiple registers still resolves (its id
+            // is already in every register that references it); a slug owned
+            // elsewhere but NOT in the target register's set is NOT reused —
+            // this register gets its own new schema instead (see the create
+            // path below). Without register context (a schema not declared by
+            // any register in this import) the previous application-scoped /
+            // global fallback is preserved for backward compatibility.
+            $existingSchema = $this->resolveExistingSchemaForImport(
+                data: $data,
+                registerSchemaIds: $registerSchemaIds,
+                appId: $appId,
+                version: $version
+            );
 
             if ($existingSchema !== null) {
                 // Compare versions using version_compare for proper semver comparison.
@@ -1645,6 +1803,106 @@ class ImportHandler
     }//end computeDefinitionHash()
 
     /**
+     * Compute, per schema slug, the union of the schema ids already attached
+     * (pre-import) to the register(s) this import declares that slug for.
+     *
+     * PER-REGISTER SLUG-UNIQUENESS (openspec/changes/per-register-schema-slug-uniqueness).
+     * Reads the RAW `components.registers.*.schemas` slug lists — this MUST run
+     * before the schema import pass mutates anything, since that pass is what
+     * later replaces those slug lists with resolved numeric ids (~:1975). For
+     * every register a slug is declared under, the register's CURRENT (i.e.
+     * pre-this-import) `Register::getSchemas()` id list contributes to that
+     * slug's candidate set; a register that does not exist yet contributes an
+     * empty set (nothing to resolve against — the slug must be created fresh).
+     * A slug declared by more than one register in this import unions all of
+     * their existing ids, so a schema intentionally shared across registers
+     * (the many-to-many case) still resolves correctly for either of them.
+     *
+     * A schema slug that no register in this import declares (rare: a schema
+     * defined standalone in `components.schemas` without any
+     * `components.registers.*.schemas` reference) is simply absent from the
+     * returned map; `importSchema()` treats a missing key the same as `null`
+     * and falls back to its previous application-scoped/global resolution.
+     *
+     * @param array $data The full configuration payload, pre-mutation.
+     *
+     * @return array<string, int[]> Lower-cased schema slug => candidate schema ids.
+     */
+    private function computeRegisterScopedSchemaIds(array $data): array
+    {
+        $registers = ($data['components']['registers'] ?? null);
+        if (is_array($registers) === false) {
+            return [];
+        }
+
+        // Lower(schemaSlug) => [lower(registerSlug), ...] this import's registers
+        // declare wanting that slug.
+        $registersForSlug = [];
+        foreach ($registers as $registerSlug => $registerData) {
+            if (is_array($registerData) === false) {
+                continue;
+            }
+
+            $schemaSlugs = ($registerData['schemas'] ?? null);
+            if (is_array($schemaSlugs) === false) {
+                continue;
+            }
+
+            $registerSlugLower = strtolower((string) $registerSlug);
+            foreach ($schemaSlugs as $schemaSlug) {
+                if (is_string($schemaSlug) === false || $schemaSlug === '') {
+                    continue;
+                }
+
+                $registersForSlug[strtolower($schemaSlug)][] = $registerSlugLower;
+            }
+        }//end foreach
+
+        if ($registersForSlug === []) {
+            return [];
+        }
+
+        // Lower(registerSlug) => its pre-import schema id list, fetched once and
+        // cached across every schema slug that references the same register.
+        $regSchemaIds = [];
+        $result       = [];
+        foreach ($registersForSlug as $schemaSlugLower => $registerSlugs) {
+            $ids = [];
+            foreach (array_unique($registerSlugs) as $registerSlugLower) {
+                if (array_key_exists($registerSlugLower, $regSchemaIds) === false) {
+                    try {
+                        // CRITICAL: disable RBAC and multitenancy, mirroring importRegister()'s
+                        // own lookup (~:764) — this precompute must see a register that exists
+                        // regardless of the importing context's current tenant/permissions, or a
+                        // real register would be misread as "doesn't exist yet" and this slug
+                        // would wrongly fork a duplicate schema instead of resolving to the
+                        // existing one.
+                        $existingRegister = $this->registerMapper->find(
+                            id: $registerSlugLower,
+                            _rbac: false,
+                            _multitenancy: false
+                        );
+                        $regSchemaIds[$registerSlugLower] = $existingRegister->getSchemas();
+                    } catch (\Throwable $ignore) {
+                        // Register does not exist yet (fresh import) — nothing to scope against.
+                        $regSchemaIds[$registerSlugLower] = [];
+                    }
+                }
+
+                foreach ($regSchemaIds[$registerSlugLower] as $candidateId) {
+                    if (is_numeric($candidateId) === true) {
+                        $ids[] = (int) $candidateId;
+                    }
+                }
+            }//end foreach
+
+            $result[$schemaSlugLower] = array_values(array_unique($ids));
+        }//end foreach
+
+        return $result;
+    }//end computeRegisterScopedSchemaIds()
+
+    /**
      * Import configuration data from JSON structure.
      *
      * This is the core import method that processes all configuration components
@@ -1721,23 +1979,39 @@ class ImportHandler
             $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
             $storedHash    = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_hash", '');
 
-            // Skip only when the app version is NOT newer AND the definitional content
-            // is byte-identical to the last import (#426). Comparing the app version
-            // alone made a schema-definition change silently no-op on existing installs
-            // whenever the app version was unchanged — even when the schema's OWN
-            // `version` was bumped — because this early-return fired BEFORE the per-schema
-            // version gate (importSchema) could run. Gating additionally on a content
-            // hash lets the import proceed to those per-entity gates whenever the config
-            // content changed; they then decide what actually updates. The truly-unchanged
-            // case still fast-skips. A never-stored hash ('' on first run after this fix)
-            // fails the equality and lets the import proceed once, healing existing installs.
-            if ($storedVersion !== ''
-                && version_compare($version, $storedVersion, '<=') === true
-                && $storedHash !== ''
-                && $storedHash === $definitionHash
-            ) {
+            // The CONTENT HASH decides, on its own. `$definitionHash` covers the
+            // fully-merged configuration — monolith plus every register.d
+            // fragment — so an identical hash means importing would write exactly
+            // what is already stored. There is nothing to do, whatever the
+            // version says.
+            //
+            // This used to require `version_compare($version, $storedVersion, '<=')`
+            // as well, and that made the skip unreliable in one direction and
+            // wasteful in the other. Three apps (opencatalogi, procest,
+            // softwarecatalog) fold a digest into the version they pass here —
+            // `1.2.3+frag.a1b2c3d4`, per ADR-037 — so that changing a fragment
+            // forces a re-import. But version_compare does NOT treat `+…` as
+            // semver build metadata; it compares it as further version parts,
+            // LEXICALLY. Whether the gate fired therefore depended on how two md5
+            // hashes happened to sort:
+            //
+            // incoming 1.0.0+frag.abc12345 vs stored 1.0.0+frag.def67890 -> no skip,
+            // and the same pair the other way round -> skip.
+            //
+            // Unchanged content re-imported the whole configuration roughly half
+            // the time — measured on the dev instance as the dominant cost of
+            // `occ maintenance:repair`, which stalls in OpenCatalogi's
+            // InitializeSettings step. A digest has no order, so version_compare
+            // was the wrong instrument for it.
+            //
+            // Correctness is unaffected: a CHANGED fragment changes the merged
+            // data, which changes the hash, which fails this equality and lets
+            // the import proceed to the per-entity gates exactly as before (#426).
+            // A never-stored hash ('' on an install predating the hash) also fails
+            // it, so those heal on the next run.
+            if ($storedHash !== '' && $storedHash === $definitionHash) {
                 $this->logger->info(
-                    message: "[ImportHandler] Skipping {$appId}: v{$version} <= {$storedVersion} and config content unchanged",
+                    message: "[ImportHandler] Skipping {$appId}: config content unchanged (v{$version}, stored v{$storedVersion})",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
@@ -1788,6 +2062,15 @@ class ImportHandler
             ],
         ];
 
+        // PER-REGISTER SLUG-UNIQUENESS (openspec/changes/per-register-schema-slug-uniqueness):
+        // computed ONCE, from the RAW (pre-mutation) `components.registers.*.schemas` slug
+        // lists, before the schema pass below touches anything. Maps each schema slug this
+        // import declares for a register to the UNION of that register's (or those
+        // registers') PRE-IMPORT schema ids, so importSchema() below can resolve "does the
+        // TARGET register already own this slug" instead of "does ANY app/register own this
+        // slug" (the latter is how a foreign same-slug schema gets silently reused).
+        $slugToSchemaIds = $this->computeRegisterScopedSchemaIds(data: $data);
+
         // Process and import schemas if present.
         // TWO-PASS APPROACH: First create all schemas without resolving cross-references,
         // then resolve cross-references after all schemas exist to avoid "Schema not found" errors.
@@ -1833,13 +2116,15 @@ class ImportHandler
                     $savedSchemasMap  = $this->schemasMap;
                     $this->schemasMap = [];
                     // Temporarily empty to prevent $ref resolution.
-                    $schema = $this->importSchema(
+                    $schemaSlugLower = strtolower((string) ($schemaData['slug'] ?? $key));
+                    $schema          = $this->importSchema(
                         data: $schemaData,
                         slugsAndIdsMap: $slugsAndIdsMap,
                         owner: $owner,
                         appId: $appId,
                         version: $version,
-                        force: $force
+                        force: $force,
+                        registerSchemaIds: $slugToSchemaIds[$schemaSlugLower] ?? null
                     );
 
                     // Restore schemasMap and add newly created schema.
@@ -1915,6 +2200,20 @@ class ImportHandler
                         context: ['file' => __FILE__, 'line' => __LINE__, 'schemaSlug' => $schemaSlug]
                     );
 
+                    // Pass 2 MUST resolve back to the EXACT same schema Pass 1 just
+                    // created/updated (schemasMap[$schemaSlug]) — not fork a second
+                    // one. $slugToSchemaIds was computed from PRE-IMPORT
+                    // register state, so a schema freshly CREATED in Pass 1 is not
+                    // in it yet; union that schema's own id in so findBySlugInIds()
+                    // below still finds it deterministically.
+                    $schemaSlugLower  = strtolower((string) $schemaSlug);
+                    $pass2SchemaIds   = $slugToSchemaIds[$schemaSlugLower] ?? null;
+                    $resolvedSchemaId = $this->schemasMap[$schemaSlug]->getId();
+                    if ($resolvedSchemaId !== null) {
+                        $pass2SchemaIds   = ($pass2SchemaIds ?? []);
+                        $pass2SchemaIds[] = (int) $resolvedSchemaId;
+                    }
+
                     // Re-import with schemasMap populated to resolve cross-references.
                     $schema = $this->importSchema(
                         data: $schemaData,
@@ -1922,8 +2221,9 @@ class ImportHandler
                         owner: $owner,
                         appId: $appId,
                         version: $version,
-                        force: true
+                        force: true,
                         // Force update to resolve cross-references.
+                        registerSchemaIds: $pass2SchemaIds
                     );
 
                     // Update in map with resolved version.

@@ -31,7 +31,7 @@ test.describe('frontend-app-bootstrap — navigation routes load', () => {
 		{ name: 'objects', hash: '/objects' },
 		{ name: 'audit-trails', hash: '/audit-trails' },
 		{ name: 'sources', hash: '/sources' },
-		{ name: 'agents', hash: '/agents' },
+		// 'agents' removed — OR chat/agents surface decommissioned (ffafd1c14).
 		{ name: 'configurations', hash: '/configurations' },
 	]
 

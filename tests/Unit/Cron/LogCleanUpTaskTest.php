@@ -74,10 +74,13 @@ class LogCleanUpTaskTest extends TestCase
             ->method('clearLogs')
             ->willReturn(true);
 
+        // Since or#2265 the sweep TOMBSTONES rather than deletes: the payload
+        // is destroyed but the row and its hash links survive, so the chain
+        // stays verifiable across a lawful purge. The log line says so.
         $this->logger->expects($this->once())
             ->method('info')
             ->with(
-                $this->stringContains('Successfully cleared expired audit trail logs'),
+                $this->stringContains('Tombstoned expired audit trail rows'),
                 $this->anything()
             );
 

@@ -96,9 +96,17 @@ class SchemaLinkedTypesCleanupTest extends TestCase
     }//end testLinkedTypesNullIsAccepted()
 
     /**
-     * setConfiguration throws when linkedTypes is not an array.
+     * validateLinkedTypesValue() (invoked directly — see NOTE) throws when
+     * linkedTypes is not an array.
      *
-     * @covers \OCA\OpenRegister\Db\Schema::setConfiguration
+     * NOTE: as of the #419 per-key configuration isolation fix,
+     * `setConfiguration()` no longer lets this exception escape — it catches
+     * it, drops just the `linkedTypes` key, and keeps the rest of the
+     * configuration (see `testLinkedTypesNotArrayDroppedNotThrown()`). This
+     * test exercises the validator directly via reflection so the rejection
+     * itself stays covered.
+     *
+     * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
      *
      * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
      */
@@ -107,13 +115,40 @@ class SchemaLinkedTypesCleanupTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches("/linkedTypes.*must be an array/");
 
-        $this->schema->setConfiguration(['linkedTypes' => 'not-an-array']);
+        $method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
+        $method->setAccessible(true);
+        $method->invoke($this->schema, 'not-an-array');
     }//end testLinkedTypesThrowsWhenNotArray()
 
     /**
-     * setConfiguration throws when linkedTypes contains non-string value.
+     * setConfiguration() drops (rather than throws for) a non-array
+     * linkedTypes value — public-surface counterpart to
+     * {@see testLinkedTypesThrowsWhenNotArray()}.
      *
      * @covers \OCA\OpenRegister\Db\Schema::setConfiguration
+     *
+     * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
+     */
+    public function testLinkedTypesNotArrayDroppedNotThrown(): void
+    {
+        $this->schema->setConfiguration(['linkedTypes' => 'not-an-array', 'objectNameField' => 'name']);
+        $config = $this->schema->getConfiguration();
+
+        $this->assertIsArray($config);
+        $this->assertArrayNotHasKey('linkedTypes', $config);
+        $this->assertSame('name', $config['objectNameField']);
+        $this->assertContains('linkedTypes', $this->schema->consumeDroppedAnnotationKeys());
+    }//end testLinkedTypesNotArrayDroppedNotThrown()
+
+    /**
+     * validateLinkedTypesValue() (invoked directly — see NOTE) throws when
+     * linkedTypes contains a non-string value.
+     *
+     * NOTE: as of the #419 per-key configuration isolation fix,
+     * `setConfiguration()` no longer lets this exception escape — see
+     * {@see testLinkedTypesThrowsWhenNotArray()} for the rationale.
+     *
+     * @covers \OCA\OpenRegister\Db\Schema::validateLinkedTypesValue
      *
      * @spec openspec/changes/cleanup-linked-entity-type-map/tasks.md#task-3
      */
@@ -122,7 +157,9 @@ class SchemaLinkedTypesCleanupTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessageMatches("/linkedTypes.*must be strings/");
 
-        $this->schema->setConfiguration(['linkedTypes' => ['files', 42]]);
+        $method = new \ReflectionMethod(Schema::class, 'validateLinkedTypesValue');
+        $method->setAccessible(true);
+        $method->invoke($this->schema, ['files', 42]);
     }//end testLinkedTypesThrowsWhenContainsNonString()
 
     /**

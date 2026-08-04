@@ -92,6 +92,16 @@ class AuditTrailMapperBulkInsertTest extends TestCase
         $queryBuilder->method('getTableName')->willReturn('"oc_openregister_audit_trails"');
         $this->db->method('getQueryBuilder')->willReturn($queryBuilder);
 
+        // BUG-SQL-1 fix coverage: insertAuditTrailChunk() now quotes every
+        // INSERT column via the platform (e.g. `user` is a reserved word in
+        // PostgreSQL and breaks an unquoted multi-row INSERT). Reuse the
+        // same platform mock pattern as the QueryBuilder above.
+        $platform = $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class);
+        $platform->method('quoteIdentifier')->willReturnCallback(
+            static fn (string $identifier): string => '"'.$identifier.'"'
+        );
+        $this->db->method('getDatabasePlatform')->willReturn($platform);
+
         $this->statements = [];
         $this->db->method('executeStatement')
             ->willReturnCallback(
@@ -217,8 +227,16 @@ class AuditTrailMapperBulkInsertTest extends TestCase
         $this->assertSame('obj-1', $trails[1]->getObjectUuid());
         $this->assertSame('System', $trails[0]->getUser());
         $this->assertNotNull($trails[0]->getCreated());
-        $this->assertNotNull($trails[0]->getExpires());
         $this->assertGreaterThanOrEqual(14, $trails[0]->getSize());
+
+        // Expiry follows the OBJECT's retention (or#2265). These fixtures carry
+        // no retention metadata and the container in this test resolves nothing
+        // but AuditHashService, so the resolver is unavailable — both routes
+        // land on the same fail-SAFE outcome: retain indefinitely. `null` here
+        // is the assertion, not the absence of one: it used to be a hardcoded
+        // `+30 days` on every row regardless of the object.
+        $this->assertNull($trails[0]->getExpires());
+        $this->assertSame('resolver-unavailable:indefinite', $trails[0]->getRetentionPeriod());
 
         // Ids read back and sealed in one batch.
         $this->assertSame(100, $trails[0]->getId());

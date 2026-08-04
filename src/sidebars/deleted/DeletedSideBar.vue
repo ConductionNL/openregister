@@ -29,7 +29,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:placeholder="t('openregister', 'All registers')"
 						:input-label="t('openregister', 'Register')"
 						:clearable="true"
-						@update:model-value="handleRegisterChange" />
+						@update:modelValue="handleRegisterChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="schemaSelect">{{ t('openregister', 'Schema') }}</label>
@@ -41,7 +41,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:input-label="t('openregister', 'Schema')"
 						:disabled="!registerStore.registerItem"
 						:clearable="true"
-						@update:model-value="handleSchemaChange" />
+						@update:modelValue="handleSchemaChange" />
 				</div>
 				<div class="filterGroup">
 					<label for="deletedBySelect">{{ t('openregister', 'Deleted By') }}</label>
@@ -52,7 +52,7 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						:placeholder="t('openregister', 'Any user')"
 						:input-label="t('openregister', 'Deleted By')"
 						:clearable="true"
-						@input="applyFilters">
+						@update:modelValue="applyFilters">
 						<template #option="{ label }">
 							{{ label }}
 						</template>
@@ -64,12 +64,12 @@ import { deletedStore, navigationStore, registerStore, schemaStore } from '../..
 						v-model="dateFrom"
 						:label="t('openregister', 'From date')"
 						type="date"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 					<NcDateTimePickerNative
 						v-model="dateTo"
 						:label="t('openregister', 'To date')"
 						type="date"
-						@input="applyFilters" />
+						@update:modelValue="applyFilters" />
 				</div>
 			</div>
 
@@ -170,6 +170,7 @@ import {
 import FilterOutline from 'vue-material-design-icons/FilterOutline.vue'
 import ChartLine from 'vue-material-design-icons/ChartLine.vue'
 import AccountCircle from 'vue-material-design-icons/AccountCircle.vue'
+import eventBus from '../../eventBus.js'
 
 export default {
 	name: 'DeletedSideBar',
@@ -340,12 +341,12 @@ export default {
 		this.applyQueryParamsFromRoute()
 
 		// Listen for filtered count updates
-		this.$root.$on('deleted-filtered-count', (count) => {
+		eventBus.on('deleted-filtered-count', (count) => {
 			this.filteredCount = count
 		})
 	},
-	beforeDestroy() {
-		this.$root.$off('deleted-filtered-count')
+	beforeUnmount() {
+		eventBus.off('deleted-filtered-count')
 	},
 	methods: {
 		/**
@@ -520,7 +521,7 @@ export default {
 				dateFrom: this.dateFrom || null,
 				dateTo: this.dateTo || null,
 			}
-			this.$root.$emit('deleted-filters-changed', filters)
+			eventBus.emit('deleted-filters-changed', filters)
 		},
 	},
 }

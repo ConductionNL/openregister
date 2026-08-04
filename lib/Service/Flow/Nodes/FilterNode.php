@@ -32,6 +32,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 use OCA\OpenRegister\Service\Flow\FlowExpression;
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -40,7 +41,7 @@ use UnexpectedValueException;
 /**
  * Drops items that do not match.
  */
-class FilterNode implements IFlowNode
+class FilterNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -111,6 +112,19 @@ class FilterNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a filter step.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['condition'];
+
+    }//end configKeys()
 
     /**
      * Reject a filter with no condition, or one that cannot be evaluated.

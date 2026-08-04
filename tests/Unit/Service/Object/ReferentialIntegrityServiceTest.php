@@ -86,8 +86,23 @@ class ReferentialIntegrityServiceTest extends TestCase
             $this->objectMapper,
             $this->auditTrailMapper,
             $this->logger,
-            $this->db
+            $this->db,
+            $this->createNullCacheFactory()
         );
+    }
+
+    /**
+     * Build a cache factory whose cache never reports a hit.
+     *
+     * @return \OCP\ICacheFactory
+     */
+    private function createNullCacheFactory(): \OCP\ICacheFactory
+    {
+        $factory = $this->createMock(\OCP\ICacheFactory::class);
+        $factory->method('createDistributed')
+            ->willReturn($this->createMock(\OCP\ICache::class));
+
+        return $factory;
     }
 
     // =========================================================================
@@ -2176,9 +2191,11 @@ class ReferentialIntegrityServiceTest extends TestCase
             ->method('findAll')
             ->willReturn([$schema, $schema2]);
 
-        $this->registerMapper->expects($this->once())
-            ->method('findAll')
-            ->willReturn([]);
+        // The register catalogue backs the schema-to-register map, which is only
+        // needed when APPLYING an integrity action. Answering "are there any
+        // incoming onDelete references?" must not hydrate it.
+        $this->registerMapper->expects($this->never())
+            ->method('findAll');
 
         // Call twice — should only load schemas once.
         $this->service->hasIncomingOnDeleteReferences('2');

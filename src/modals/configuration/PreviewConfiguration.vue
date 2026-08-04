@@ -56,8 +56,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isRegisterSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isRegisterSelected(change.slug)"
-								@update:checked="(checked) => toggleRegisterSelection(change.slug, checked)" />
+								:model-value="isRegisterSelected(change.slug)"
+								@update:modelValue="(checked) => toggleRegisterSelection(change.slug, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -107,8 +107,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isSchemaSelected(change.slug) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isSchemaSelected(change.slug)"
-								@update:checked="(checked) => toggleSchemaSelection(change.slug, checked)" />
+								:model-value="isSchemaSelected(change.slug)"
+								@update:modelValue="(checked) => toggleSchemaSelection(change.slug, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -158,8 +158,8 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 						:class="{ 'changeItem-selected': isObjectSelected(change) }">
 						<div class="changeHeader">
 							<NcCheckboxRadioSwitch
-								:checked="isObjectSelected(change)"
-								@update:checked="(checked) => toggleObjectSelection(change, checked)" />
+								:model-value="isObjectSelected(change)"
+								@update:modelValue="(checked) => toggleObjectSelection(change, checked)" />
 							<div class="changeTitle">
 								<strong>{{ change.title || change.slug }}</strong>
 								<span class="changeBadge" :class="'changeBadge-' + change.action">
@@ -219,7 +219,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="hasSelection"
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="importSelected">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

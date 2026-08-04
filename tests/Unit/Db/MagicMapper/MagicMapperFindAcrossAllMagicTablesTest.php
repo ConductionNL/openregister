@@ -320,8 +320,9 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase
     private function makeQueryBuilder(): IQueryBuilder
     {
         $state = [
-            'table' => null,
-            'id'    => null,
+            'table'  => null,
+            'id'     => null,
+            'select' => null,
         ];
 
         $expr = $this->createMock(IExpressionBuilder::class);
@@ -331,10 +332,16 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase
 
         $queryBuilder = $this->createMock(IQueryBuilder::class);
         $queryBuilder->method('expr')->willReturn($expr);
-        $queryBuilder->method('select')->willReturnSelf();
         $queryBuilder->method('where')->willReturnSelf();
         $queryBuilder->method('andWhere')->willReturnSelf();
         $queryBuilder->method('setMaxResults')->willReturnSelf();
+
+        $queryBuilder->method('select')->willReturnCallback(
+            function (...$cols) use (&$state, $queryBuilder): IQueryBuilder {
+                $state['select'] = $cols;
+                return $queryBuilder;
+            }
+        );
 
         $queryBuilder->method('from')->willReturnCallback(
             function (string $table) use (&$state, $queryBuilder): IQueryBuilder {
@@ -365,13 +372,26 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase
                     return $this->makeResult(rows: [], columns: $this->liveSchemaIds);
                 }
 
-                // A magic table: this is the phase-2 `SELECT *` fetch.
-                $this->magicTableSelects++;
-
                 $rows = ($this->tableRows[$state['table']] ?? []);
+
+                // The cross-org IDOR fix (openregister#2137) added a second,
+                // narrow query against the matched magic table — the
+                // access-control verification re-run via
+                // MagicSearchHandler::applyAccessControlToQuery(), which
+                // selects only the `_id` column (never `*`). Only a `SELECT
+                // *` is the phase-2 full-row fetch these tests are pinning;
+                // the searchHandler is stubbed to a pass-through allow below
+                // (see makeMapper()), so the verification query always finds
+                // the same row here — it must NOT double-count as a second
+                // full-row select.
+                $selectedFullRow = in_array('*', ($state['select'] ?? []), true);
+                if ($selectedFullRow === true) {
+                    $this->magicTableSelects++;
+                }
+
                 foreach ($rows as $row) {
                     if ($row['_id'] === $state['id']) {
-                        return $this->makeResult(rows: [$row]);
+                        return $this->makeResult(rows: [$selectedFullRow === true ? $row : ['_id' => $row['_id']]]);
                     }
                 }
 
@@ -485,6 +505,26 @@ class MagicMapperFindAcrossAllMagicTablesTest extends TestCase
         $property = new \ReflectionProperty(MagicMapper::class, 'statisticsHandler');
         $property->setAccessible(true);
         $property->setValue($mapper, $statisticsHandler);
+
+        // The cross-org IDOR fix (openregister#2137) re-verifies every hit
+        // through MagicSearchHandler::applyAccessControlToQuery(). These
+        // tests are about scan/locate mechanics (chunking, quoting, id
+        // binding), not access control, so stub it as a pass-through allow —
+        // the access-control semantics themselves are pinned separately in
+        // MagicMapperFindAcrossAllMagicTablesAccessControlTest.
+        $searchHandler = $this->createMock(\OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler::class);
+        $searchHandler->method('applyAccessControlToQuery')->willReturnCallback(
+            static function (IQueryBuilder $qb, Schema $schema, bool $_rbac=true, bool $_multitenancy=true): void {
+                // No-op: the fake DB driver already answers the verification
+                // query with the same row it located, so "no filtering
+                // applied" reproduces the pre-fix pass-through behaviour
+                // these tests expect.
+            }
+        );
+
+        $searchHandlerProperty = new \ReflectionProperty(MagicMapper::class, 'searchHandler');
+        $searchHandlerProperty->setAccessible(true);
+        $searchHandlerProperty->setValue($mapper, $searchHandler);
 
         // Register/schema hydration on the hit path.
         $this->registerMapper->method('find')->willReturnCallback(

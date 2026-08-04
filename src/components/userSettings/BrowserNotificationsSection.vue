@@ -32,10 +32,10 @@
 		<template v-else>
 			<NcCheckboxRadioSwitch
 				type="switch"
-				:checked="enabled"
+				:model-value="enabled"
 				:disabled="busy"
 				data-testid="browser-notifications-toggle"
-				@update:checked="onToggle">
+				@update:modelValue="onToggle">
 				{{ t('openregister', 'Enable browser notifications') }}
 			</NcCheckboxRadioSwitch>
 

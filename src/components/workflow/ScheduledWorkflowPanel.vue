@@ -33,7 +33,7 @@
 		<p v-else>
 			No scheduled workflows configured.
 		</p>
-		<NcButton type="primary" @click="showForm = !showForm">
+		<NcButton variant="primary" @click="showForm = !showForm">
 			{{ showForm ? 'Cancel' : 'Add Schedule' }}
 		</NcButton>
 		<div v-if="showForm" class="create-form">
@@ -53,7 +53,7 @@
 				<label>Interval (seconds)</label>
 				<input v-model.number="form.interval" type="number" class="input-field">
 			</div>
-			<NcButton type="primary" @click="createSchedule">
+			<NcButton variant="primary" @click="createSchedule">
 				Save
 			</NcButton>
 		</div>

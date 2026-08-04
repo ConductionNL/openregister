@@ -58,9 +58,7 @@ use OCP\IUserSession;
  * @method Application update(Entity $entity)
  * @method Application insertOrUpdate(Entity $entity)
  * @method Application delete(Entity $entity)
- * @method Application find(int|string $id)
  * @method Application findEntity(IQueryBuilder $query)
- * @method Application[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<Application> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<Application>
@@ -280,7 +278,7 @@ class ApplicationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Application>
+     * @psalm-return list<\OCA\OpenRegister\Db\Application>
      */
     public function findAll(
         ?int $limit=null,

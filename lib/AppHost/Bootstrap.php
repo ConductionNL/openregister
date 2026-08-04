@@ -77,6 +77,9 @@ class Bootstrap
     private const GENERIC_SETTINGS_SECTION       = 'OCA\\OpenRegister\\AppHost\\Settings\\GenericSettingsSection';
     private const GENERIC_DEEPLINK_LISTENER      = 'OCA\\OpenRegister\\AppHost\\Listener\\GenericDeepLinkRegistrationListener';
 
+    private const GENERIC_SETTINGS_PLANE_SERVICE = 'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService';
+    private const REGISTER_CONFIG_RESOLVER       = 'OCA\\OpenRegister\\AppHost\\Service\\RegisterConfigResolver';
+
     private const OBSERVABILITY_MANIFEST_LOADER = 'OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader';
     private const OBSERVABILITY_EXECUTOR        = 'OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor';
     private const OBSERVABILITY_METRICS_ENGINE  = 'OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine';
@@ -178,9 +181,10 @@ class Bootstrap
      */
     private static function registerControllers(IRegistrationContext $context, string $appId, string $controllerNs, bool $observability): void
     {
-        $context->registerService(
-            $controllerNs.'\\DashboardController',
-            static function (ContainerInterface $c) use ($appId) {
+        self::aliasControllerUnlessLeafDefinesIt(
+            context: $context,
+            leafClass: $controllerNs.'\\DashboardController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_DASHBOARD_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -189,9 +193,10 @@ class Bootstrap
             }
         );
 
-        $context->registerService(
-            $controllerNs.'\\PreferencesController',
-            static function (ContainerInterface $c) use ($appId) {
+        self::aliasControllerUnlessLeafDefinesIt(
+            context: $context,
+            leafClass: $controllerNs.'\\PreferencesController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_PREFERENCES_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -202,9 +207,10 @@ class Bootstrap
             }
         );
 
-        $context->registerService(
-            $controllerNs.'\\SettingsController',
-            static function (ContainerInterface $c) use ($appId) {
+        self::aliasControllerUnlessLeafDefinesIt(
+            context: $context,
+            leafClass: $controllerNs.'\\SettingsController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_SETTINGS_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -218,9 +224,10 @@ class Bootstrap
             return;
         }
 
-        $context->registerService(
-            $controllerNs.'\\HealthController',
-            static function (ContainerInterface $c) use ($appId) {
+        self::aliasControllerUnlessLeafDefinesIt(
+            context: $context,
+            leafClass: $controllerNs.'\\HealthController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_HEALTH_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -231,9 +238,10 @@ class Bootstrap
             }
         );
 
-        $context->registerService(
-            $controllerNs.'\\MetricsController',
-            static function (ContainerInterface $c) use ($appId) {
+        self::aliasControllerUnlessLeafDefinesIt(
+            context: $context,
+            leafClass: $controllerNs.'\\MetricsController',
+            factory: static function (ContainerInterface $c) use ($appId) {
                 $class = self::GENERIC_METRICS_CONTROLLER;
                 return new $class(
                     appName: $appId,
@@ -244,6 +252,47 @@ class Bootstrap
             }
         );
     }//end registerControllers()
+
+    /**
+     * Alias one leaf controller class name to a generic AppHost controller,
+     * but ONLY when the leaf app does not ship a controller of that name
+     * itself.
+     *
+     * `IRegistrationContext::registerService()` OVERRIDES the container's
+     * autowiring for the given class name. Registering unconditionally
+     * therefore SHADOWED any controller the consuming app already provided:
+     * the leaf's routes still resolved, but they dispatched to OpenRegister's
+     * generic controller instead of the leaf's own. Two symptoms were observed
+     * live on a consuming app:
+     *
+     *   1. Routes calling a method that only exists on the leaf's controller
+     *      (e.g. `dashboard#summary`) 500'd, because the generic controller
+     *      has no such method.
+     *   2. Response-level behaviour the leaf's controller applied — notably a
+     *      Content-Security-Policy built with `allowEvalWasm(true)` — never
+     *      ran, so the served CSP lacked `wasm-unsafe-eval` and every
+     *      WASM-backed feature (Argon2 share/export/import) was blocked.
+     *
+     * A leaf that defines the class wins; a leaf that does not still gets the
+     * generic implementation for free, which is the whole point of AppHost.
+     *
+     * @param IRegistrationContext $context   Leaf registration context.
+     * @param string               $leafClass Fully-qualified leaf controller class name.
+     * @param \Closure             $factory   Factory building the generic controller.
+     *
+     * @return void
+     */
+    private static function aliasControllerUnlessLeafDefinesIt(IRegistrationContext $context, string $leafClass, \Closure $factory): void
+    {
+        // `class_exists()` autoloads, so this resolves the leaf app's own
+        // controller through its composer autoloader when it has one.
+        if (class_exists($leafClass) === true) {
+            return;
+        }
+
+        $context->registerService($leafClass, $factory);
+
+    }//end aliasControllerUnlessLeafDefinesIt()
 
     /**
      * Register the app-scoped settings + action-auth services under both the
@@ -283,6 +332,37 @@ class Bootstrap
         };
         $context->registerService(self::GENERIC_ACTION_AUTH_SERVICE, $actionAuthFactory);
         $context->registerService($serviceNs.'\\ActionAuthService', $actionAuthFactory);
+
+        // ADR-066 settings-plane consumables. Appended AFTER the pre-existing
+        // registrations on purpose — the AppHost bootstrap load-order incident
+        // (listeners killed by a reorder) makes registration order here part of
+        // the contract: never reorder, only append. Both are lazy closures, so
+        // a disabled OpenRegister still never fatals NC bootstrap.
+        $settingsPlaneFactory = static function (ContainerInterface $c) use ($appId) {
+            $class = self::GENERIC_SETTINGS_PLANE_SERVICE;
+            return new $class(
+                appId: $appId,
+                appConfig: $c->get('OCP\\IAppConfig'),
+                appManager: $c->get('OCP\\App\\IAppManager'),
+                container: $c,
+                groupManager: $c->get('OCP\\IGroupManager'),
+                userSession: $c->get('OCP\\IUserSession'),
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            );
+        };
+        $context->registerService(self::GENERIC_SETTINGS_PLANE_SERVICE, $settingsPlaneFactory);
+
+        $registerConfigResolverFactory = static function (ContainerInterface $c) use ($appId) {
+            $class = self::REGISTER_CONFIG_RESOLVER;
+            return new $class(
+                appId: $appId,
+                appManager: $c->get('OCP\\App\\IAppManager'),
+                container: $c,
+                logger: $c->get('Psr\\Log\\LoggerInterface')
+            );
+        };
+        $context->registerService(self::REGISTER_CONFIG_RESOLVER, $registerConfigResolverFactory);
+        $context->registerService($serviceNs.'\\RegisterConfigResolver', $registerConfigResolverFactory);
     }//end registerServices()
 
     /**

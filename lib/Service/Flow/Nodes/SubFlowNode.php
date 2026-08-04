@@ -42,9 +42,11 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Service\Flow\FlowItems;
-use OCA\OpenRegister\Service\Flow\FlowResolverRegistry;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
+use OCA\OpenRegister\Service\Flow\FlowToken;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -55,7 +57,7 @@ use UnexpectedValueException;
 /**
  * Executes a named flow as a step, optionally waiting for its result.
  */
-class SubFlowNode implements IFlowNode
+class SubFlowNode implements IFlowNode, IFlowNodeConfigKeys
 {
 
     /**
@@ -79,13 +81,13 @@ class SubFlowNode implements IFlowNode
     /**
      * Constructor.
      *
-     * @param FlowResolverRegistry $resolvers Turns a flow id into a document.
-     * @param FlowRunService       $runs      Queues and executes the sub-run.
-     * @param IL10N                $l10n      Translations.
-     * @param IURLGenerator        $urls      For the palette icon.
+     * @param FlowLocator    $resolvers Turns a flow id into a document.
+     * @param FlowRunService $runs      Queues and executes the sub-run.
+     * @param IL10N          $l10n      Translations.
+     * @param IURLGenerator  $urls      For the palette icon.
      */
     public function __construct(
-        private readonly FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly FlowRunService $runs,
         private readonly IL10N $l10n,
         private readonly IURLGenerator $urls
@@ -152,6 +154,25 @@ class SubFlowNode implements IFlowNode
     }//end isAvailableForScope()
 
     /**
+     * The config vocabulary of a sub-flow step.
+     *
+     * `input` and `output` are NOT here, and their absence is the point. This
+     * node hands the child its items whole and returns the child's items
+     * whole; there is no mapping layer to configure. A step declaring them
+     * required only `flow`, so it saved, ran, and the author's intended
+     * mapping simply never happened — measured, in hydra#489.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['flow', 'flowId', 'wait'];
+
+    }//end configKeys()
+
+    /**
      * Reject a sub-flow step that names no flow.
      *
      * @param array $config The step configuration.
@@ -207,6 +228,19 @@ class SubFlowNode implements IFlowNode
         $childCtx = $context;
         $childCtx[self::STACK_KEY] = $stack;
 
+        // The child gets its OWN token, seeded with the parent's values rather
+        // than the parent's instance. Sharing one instance would let a
+        // fire-and-forget child write into a parent that has already moved on,
+        // and nothing orders those two writes. Seeding as plain values is also
+        // what the child's run persists and rehydrates, so the child sees a
+        // token identical in shape to any other run's.
+        $parentToken = ($context[FlowToken::CONTEXT_KEY] ?? null);
+        if ($parentToken instanceof FlowToken === false) {
+            $parentToken = FlowToken::fromArray($parentToken);
+        }
+
+        $childCtx[FlowToken::CONTEXT_KEY] = $parentToken->all();
+
         // Fire-and-forget: queue against the subject and carry on. The queued
         // run starts from its subject, not from these items — an independent
         // flow, kicked off, not a function whose result we read.
@@ -239,6 +273,12 @@ class SubFlowNode implements IFlowNode
             subject: new stdClass(),
             seedItems: $items
         );
+
+        // The child ran to a stop; hand what it gathered back to the parent.
+        // `$parentToken` is the parent's own instance, so merging here is what
+        // the parent's later steps read. The child wins on a conflicting key —
+        // it ran later and is the more specific writer.
+        $parentToken->merge((array) (($run->getContext() ?? [])[FlowToken::CONTEXT_KEY] ?? []));
 
         return $this->itemsFrom(run: $run, flowId: $flowId);
 

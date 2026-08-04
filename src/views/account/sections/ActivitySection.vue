@@ -7,7 +7,7 @@
 				input-label="Type Filter"
 				:options="typeOptions"
 				:placeholder="t('openregister', 'Filter by type')"
-				@input="loadActivity" />
+				@update:modelValue="loadActivity" />
 		</div>
 		<div v-if="loading && activities.length === 0" class="section__loading">
 			{{ t('openregister', 'Loading activity...') }}
@@ -34,8 +34,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
+import { NcButton, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'ActivitySection',

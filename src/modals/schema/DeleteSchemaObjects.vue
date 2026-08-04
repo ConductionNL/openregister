@@ -104,7 +104,7 @@ import SchemaStatsBlock from '../../components/SchemaStatsBlock.vue'
 			</NcButton>
 			<NcButton v-if="!success && !loading && !error && objectCount > 0"
 				:disabled="loading"
-				type="error"
+				variant="error"
 				@click="confirmDeletion()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

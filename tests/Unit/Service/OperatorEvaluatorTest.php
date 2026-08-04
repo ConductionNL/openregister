@@ -88,6 +88,89 @@ class OperatorEvaluatorTest extends TestCase
         $this->assertTrue($this->evaluator->valueMatchesOperator('a', ['$nin' => 'not-an-array']));
     }
 
+    // ── $contains ──
+    //
+    // The mirror image of $in: $in asks "is the object's scalar one of these
+    // literals?", $contains asks "is this value one of the object's array
+    // members?". Every case below is paired with the SQL the row-level path
+    // emits (COALESCE(col, '[]') containment), because a disagreement between
+    // the two is a silent access-control bug.
+
+    public function testContainsMatchesMemberOfObjectArray(): void
+    {
+        $this->assertTrue($this->evaluator->valueMatchesOperator(['alice', 'bob'], ['$contains' => 'alice']));
+    }
+
+    public function testContainsRejectsNonMember(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator(['alice', 'bob'], ['$contains' => 'carol']));
+    }
+
+    public function testContainsRejectsNullProperty(): void
+    {
+        // SQL: COALESCE(NULL, '[]') contains nothing.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(null, ['$contains' => 'alice']));
+    }
+
+    public function testContainsRejectsScalarProperty(): void
+    {
+        // SQL: a scalar jsonb value never contains a one-element array.
+        $this->assertFalse($this->evaluator->valueMatchesOperator('alice', ['$contains' => 'alice']));
+    }
+
+    public function testContainsRejectsEmptyObjectArray(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator([], ['$contains' => 'alice']));
+    }
+
+    public function testContainsRejectsNullOperand(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator(['alice'], ['$contains' => null]));
+    }
+
+    public function testContainsIsStrictAboutType(): void
+    {
+        // jsonb compares typed members: the string "1" is not the number 1.
+        $this->assertFalse($this->evaluator->valueMatchesOperator([1], ['$contains' => '1']));
+        $this->assertFalse($this->evaluator->valueMatchesOperator(['1'], ['$contains' => 1]));
+    }
+
+    public function testContainsWithArrayOperandIsAnyIntersection(): void
+    {
+        // $user.groups resolves to an array; the object matches when it lists ANY of them.
+        $this->assertTrue($this->evaluator->valueMatchesOperator(['finance', 'hr'], ['$contains' => ['legal', 'hr']]));
+    }
+
+    public function testContainsWithArrayOperandRejectsDisjointSets(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator(['finance'], ['$contains' => ['legal', 'hr']]));
+    }
+
+    public function testContainsRejectsEmptyArrayOperand(): void
+    {
+        // No principal to match. Deliberately NOT the '' fallback that
+        // MagicSearchHandler::buildArrayPropertyConditionSql uses for filters —
+        // for an access-control operator that would admit any object whose list
+        // happened to contain the empty string.
+        $this->assertFalse($this->evaluator->valueMatchesOperator(['alice'], ['$contains' => []]));
+    }
+
+    public function testContainsIgnoresNullMembersOfAnArrayOperand(): void
+    {
+        $this->assertFalse($this->evaluator->valueMatchesOperator([null], ['$contains' => [null]]));
+        $this->assertTrue($this->evaluator->valueMatchesOperator(['hr'], ['$contains' => [null, 'hr']]));
+    }
+
+    public function testContainsCombinesWithOtherOperatorsAsAnd(): void
+    {
+        $this->assertTrue(
+            $this->evaluator->valueMatchesOperator(['alice'], ['$contains' => 'alice', '$exists' => true])
+        );
+        $this->assertFalse(
+            $this->evaluator->valueMatchesOperator(['alice'], ['$contains' => 'carol', '$exists' => true])
+        );
+    }
+
     // ── $exists ──
 
     public function testExistsTrueMatchesNonNull(): void

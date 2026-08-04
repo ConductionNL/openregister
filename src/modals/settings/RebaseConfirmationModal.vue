@@ -23,7 +23,7 @@
 				Cancel
 			</NcButton>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="rebasing"
 				@click="$emit('confirm')">
 				<template #icon>
