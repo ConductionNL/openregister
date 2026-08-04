@@ -127,7 +127,7 @@ class McpToolsService
                 );
 
                 $tools[] = $descriptor;
-            }
+            }//end foreach
         }//end foreach
 
         return ['tools' => $tools];

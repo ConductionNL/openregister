@@ -88,7 +88,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						<DotsHorizontal :size="20" />
 					</template>
 					<NcActionButton
-						v-tooltip="isManagedByExternalConfig(row) ? 'Cannot edit: This schema is managed by external configuration ' + (getManagingConfiguration(row)?.title || '') : ''"
+						:title="isManagedByExternalConfig(row) ? 'Cannot edit: This schema is managed by external configuration ' + (getManagingConfiguration(row)?.title || '') : ''"
 						close-after-click
 						:disabled="isManagedByExternalConfig(row)"
 						@click="schemaStore.setSchemaItem(row); navigationStore.setModal('editSchema')">
@@ -97,7 +97,7 @@ import { schemaStore, navigationStore, configurationStore } from '../../store/st
 						</template>
 						Edit
 					</NcActionButton>
-					<NcActionButton v-tooltip="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
+					<NcActionButton :title="row.stats?.objects?.total > 0 ? 'Cannot delete: objects are still attached' : ''"
 						close-after-click
 						:disabled="row.stats?.objects?.total > 0"
 						@click="schemaStore.setSchemaItem(row); navigationStore.setDialog('deleteSchema')">

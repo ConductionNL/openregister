@@ -47,7 +47,9 @@ use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Exception\ObjectExistsException;
 use OCP\AppFramework\Db\Entity;
+use OCP\DB\Exception as DbException;
 use OCA\OpenRegister\Db\MagicMapper\MagicSearchHandler;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\AppFramework\Db\MultipleObjectsReturnedException;
@@ -172,6 +174,29 @@ class MagicMapper extends AbstractObjectMapper
     private const METADATA_PREFIX = '_';
 
     /**
+     * Whether the last single-object write INSERTED or UPDATED.
+     *
+     * The mapper is the only layer that knows. `SaveObject` performs its own
+     * existence lookup and labels the operation from that — but the mapper then
+     * looks again, and between the two lookups a concurrent writer can land the
+     * row, so the mapper takes the UPDATE branch on an operation the service
+     * has already called a create. The audit trail then records `create` for a
+     * write that updated somebody else's row.
+     *
+     * Measured while debugging #2212: three audit `create` entries against a
+     * single `_id` that was inserted once. The audit trail said three objects
+     * were created; one was.
+     *
+     * Read it with {@see getLastWriteAction()} immediately after the write.
+     * Per-request state on a per-request service, in the same spirit as the
+     * `lastRun*` fields elsewhere in the fleet — it is a report of what just
+     * happened, not a cache.
+     *
+     * @var string One of `create` or `update`; empty before any write.
+     */
+    private string $lastWriteAction = '';
+
+    /**
      * Number of magic tables probed per UNION ALL query in the locate phase.
      *
      * `findAcrossAllMagicTables` used to issue one `SELECT *` per magic table,
@@ -190,6 +215,31 @@ class MagicMapper extends AbstractObjectMapper
      *   2 at 500/chunk, while quadrupling the fallback cost and the SQL size.
      */
     private const MAGIC_TABLE_SCAN_CHUNK_SIZE = 100;
+
+    /**
+     * Request-scoped memo for {@see checkTableExistsInDatabase()}.
+     *
+     * Whether a magic table exists changes only when a register/schema pair is
+     * created or dropped, which cannot happen concurrently with the request that
+     * asks. Measured 2026-07-30: an object UPDATE issued 27
+     * `information_schema.tables` probes and a DELETE 27, against 9 for a
+     * create — all asking the same handful of questions repeatedly.
+     *
+     * @var array<string, boolean>
+     */
+    private array $tableExistsMemo = [];
+
+    /**
+     * Request-scoped memo for {@see getLiveMagicTables()}.
+     *
+     * That method lists EVERY magic table from `information_schema` and then
+     * fetches the full register and schema id lists to discard orphans — on this
+     * instance, 2,728 tables. Measured 2026-07-30: an object UPDATE called it 12
+     * times, ~60ms of the request, for an answer that cannot change mid-request.
+     *
+     * @var array<string, array<string, mixed>>|null
+     */
+    private ?array $liveMagicTablesMemo = null;
 
     /**
      * Cache timeout for table existence checks (5 minutes)
@@ -1878,7 +1928,36 @@ class MagicMapper extends AbstractObjectMapper
      */
     public function checkTableExistsInDatabase(string $tableName): bool
     {
+        if (isset($this->tableExistsMemo[$tableName]) === true) {
+            return $this->tableExistsMemo[$tableName];
+        }
+
+        $exists = $this->probeTableExistsInDatabase(tableName: $tableName);
+
+        // Only a POSITIVE answer is memoised. A negative one can legitimately
+        // become positive within the request — ensureTableExists() creates the
+        // table and then writes to it — and caching "no" would make that write
+        // fail against a table that now exists.
+        if ($exists === true) {
+            $this->tableExistsMemo[$tableName] = true;
+        }
+
+        return $exists;
+
+    }//end checkTableExistsInDatabase()
+
+    /**
+     * Ask the database whether a table exists, without memoisation.
+     *
+     * @param string $tableName The table name to check.
+     *
+     * @return boolean True if the table exists.
+     */
+    private function probeTableExistsInDatabase(string $tableName): bool
+    {
         try {
+            \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'tableExists.probe');
+
             // Check if table exists in information_schema.
             // NOTE: We use raw SQL here because information_schema is a system table.
             $fullTableName = $this->getFullTableName(tableName: $tableName);
@@ -1915,7 +1994,7 @@ class MagicMapper extends AbstractObjectMapper
 
             return false;
         }//end try
-    }//end checkTableExistsInDatabase()
+    }//end probeTableExistsInDatabase()
 
     /**
      * Invalidate table cache for specific register+schema
@@ -1976,6 +2055,11 @@ class MagicMapper extends AbstractObjectMapper
 
         // Create table with columns.
         $this->createTable(tableName: $tableName, columns: $columns);
+
+        // A new table invalidates both request-scoped memos: the existence memo
+        // may hold a stale "no" for this name, and the live-table enumeration no
+        // longer lists everything.
+        $this->invalidateTableMemos();
 
         // Create indexes for performance.
         $this->createTableIndexes(tableName: $tableName, _register: $register, _schema: $schema);
@@ -3305,10 +3389,11 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Save single object to register+schema-specific table
      *
-     * @param array    $objectData The object data to save
-     * @param Register $register   The register context
-     * @param Schema   $schema     The schema for validation and table selection
-     * @param string   $tableName  The table name to save to
+     * @param array    $objectData   The object data to save
+     * @param Register $register     The register context
+     * @param Schema   $schema       The schema for validation and table selection
+     * @param string   $tableName    The table name to save to
+     * @param bool     $failIfExists Insert-only: refuse instead of updating when the identifier is taken
      *
      * @throws Exception If save operation fails
      *
@@ -3318,7 +3403,8 @@ class MagicMapper extends AbstractObjectMapper
         array $objectData,
         Register $register,
         Schema $schema,
-        string $tableName
+        string $tableName,
+        bool $failIfExists=false
     ): string {
         // Prepare object data for table storage with register+schema context.
         $preparedData = $this->prepareObjectDataForTable(objectData: $objectData, register: $register, schema: $schema);
@@ -3343,8 +3429,55 @@ class MagicMapper extends AbstractObjectMapper
             $existingObject = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
 
             if ($existingObject === null) {
-                // Insert new object.
-                $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                // CONCURRENCY (openregister#2212). The lookup above and this
+                // insert are two operations, so N concurrent writers can all
+                // find nothing and all arrive here. Measured before this
+                // change: 12 simultaneous claims on one identifier produced up
+                // to 3 audit `create` entries against a single surviving row,
+                // each caller told 201 — writes lost, silently.
+                //
+                // The fix is not a better check. It is to let the DATABASE
+                // arbitrate: the `_uuid` unique constraint already exists, so
+                // exactly one INSERT can win. Catching its violation by reason
+                // (rather than emitting dialect-specific ON CONFLICT SQL) keeps
+                // this portable across the MySQL and PostgreSQL backends and
+                // matches the pattern already used in
+                // NotificationDedupeStateMapper and NotificationDispatchLogMapper.
+                try {
+                    $this->insertObjectInRegisterSchemaTable(data: $preparedData, tableName: $tableName);
+                } catch (DbException $e) {
+                    if ($e->getReason() !== DbException::REASON_UNIQUE_CONSTRAINT_VIOLATION) {
+                        throw $e;
+                    }
+
+                    // Someone else won the race for this identifier.
+                    if ($failIfExists === true) {
+                        // The caller asked to CLAIM. Losing is the answer, and
+                        // it must be reported rather than absorbed.
+                        throw new ObjectExistsException(
+                            message: sprintf('An object with identifier "%s" already exists.', $uuid),
+                            uuid: $uuid
+                        );
+                    }
+
+                    // Upsert intent: fall through to the update the outer
+                    // lookup would have chosen had it run a moment later. The
+                    // caller's data still lands, which is the behaviour every
+                    // existing caller depends on.
+                    $this->logger->debug(
+                        message: '[MagicMapper] Insert lost a race; applying as update',
+                        context: [
+                            'file'      => __FILE__,
+                            'line'      => __LINE__,
+                            'uuid'      => $uuid,
+                            'tableName' => $tableName,
+                        ]
+                    );
+                    $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+                    $this->lastWriteAction = 'update';
+                    return $uuid;
+                }//end try
+
                 $this->logger->debug(
                     message: '[MagicMapper] Inserted object in register+schema table',
                     context: [
@@ -3354,11 +3487,37 @@ class MagicMapper extends AbstractObjectMapper
                         'tableName' => $tableName,
                     ]
                 );
+                $this->lastWriteAction = 'create';
                 return $uuid;
+            }//end if
+
+            // THE ACTUAL LOST-UPDATE PATH (openregister#2212).
+            //
+            // The caller reached this method because the SERVICE-level lookup
+            // in SaveObject found nothing — so the operation is labelled a
+            // create, and the audit trail records `create`. By the time we look
+            // again here, a concurrent writer has landed the row, and without
+            // this guard we quietly UPDATE it instead: the caller's data
+            // overwrites the winner's, the response is 201, and the audit says
+            // `create`. Measured before this guard: 12 simultaneous claims
+            // produced up to 8 such "creates" against a single `_id`.
+            //
+            // This is not the same case as the constraint violation handled
+            // above. That one fires when two INSERTs truly collide; this one
+            // fires when the second writer's lookup is late enough to see the
+            // first writer's row and quietly downgrade to an update. The second
+            // case is the common one, which is why guarding only the first
+            // changed nothing.
+            if ($failIfExists === true) {
+                throw new ObjectExistsException(
+                    message: sprintf('An object with identifier "%s" already exists.', $uuid),
+                    uuid: $uuid
+                );
             }
 
             // Update existing object.
             $this->updateObjectInRegisterSchemaTable(uuid: $uuid, data: $preparedData, tableName: $tableName);
+            $this->lastWriteAction = 'update';
             $this->logger->debug(
                 message: '[MagicMapper] Updated object in register+schema table',
                 context: [
@@ -3384,6 +3543,25 @@ class MagicMapper extends AbstractObjectMapper
             throw $e;
         }//end try
     }//end saveObjectToRegisterSchemaTable()
+
+    /**
+     * What the last single-object write actually did.
+     *
+     * `create` or `update` — as decided by THIS layer's lookup, which is the
+     * one that ran last and therefore the one that matches the row. A caller
+     * that labelled the operation from its own earlier lookup should prefer
+     * this for anything it records, because between the two lookups a
+     * concurrent writer can turn a create into an update.
+     *
+     * Empty before any write in this request.
+     *
+     * @return string `create`, `update`, or ''.
+     */
+    public function getLastWriteAction(): string
+    {
+        return $this->lastWriteAction;
+
+    }//end getLastWriteAction()
 
     /**
      * Prepare object data for storage in register+schema table
@@ -3482,7 +3660,26 @@ class MagicMapper extends AbstractObjectMapper
             'files',
             'relations',
             'locked',
-            'authorization',
+            // `authorization` is DELIBERATELY absent from this list.
+            //
+            // The `unset($metadata['authorization'])` above says per-object RBAC
+            // must not be writable by ordinary create/update calls. But listing
+            // the field here undid that in the worst possible way: the loop below
+            // resolves every listed field as `$metadata[$field] ?? null`, so the
+            // stripped key came back as an explicit NULL and the UPDATE wrote it
+            // — DESTROYING the stored rules on the next save of that object.
+            //
+            // Measured: an object with `{"scope": "private"}` lost it as soon as
+            // anything resolved its folder, because that path calls update().
+            // A private object silently became visible again, which is the exact
+            // failure direction a privacy feature must not have. The same wipe hit
+            // the per-object action overrides shipped as Wave-12 Fix 5.
+            //
+            // Omitting the field means the column is never named in the INSERT or
+            // UPDATE at all — `updateObjectInRegisterSchemaTable()` only sets keys
+            // that are PRESENT — so the stored value is carried forward untouched,
+            // which is what "not writable by this path" has to mean. Writes go
+            // through the dedicated authorization-management path.
             'validation',
             'deleted',
             'geo',
@@ -3660,8 +3857,91 @@ class MagicMapper extends AbstractObjectMapper
             }//end foreach
         }//end if
 
+        $this->reportDroppedProperties(data: $data, schemaProperties: $schemaProperties, schema: $schema);
+
         return $preparedData;
     }//end prepareObjectDataForTable()
+
+    /**
+     * Say so when a property the caller sent is about to be thrown away.
+     *
+     * The loop above is a whitelist BY OMISSION: it walks the schema's declared
+     * properties and copies those out of `$data`. Anything the caller sent that
+     * the schema does not declare is simply never read — and there is no `object`
+     * JSON blob column to fall back on, so it is gone. No error, no warning, no
+     * trace: the write succeeds and the field is missing.
+     *
+     * Measured 2026-08-02: the hydra flow documents carry `description`, the
+     * agentflow schema had no such property, and every flow's description was
+     * discarded on save. The graphs table then showed "—" for all ten, which
+     * reads exactly like ten flows that were never given a description.
+     *
+     * This does not reject — rejecting at the DB write boundary is far too late
+     * for a clean 400 (the entity is built, folders may exist, cascades have
+     * run) and would break every caller that harmlessly posts an extra key. It
+     * makes the loss VISIBLE, which is the whole difference between a schema
+     * that needs a property added and a field that quietly evaporates.
+     *
+     * @param array<string, mixed> $data             The caller's data, minus `@self`.
+     * @param mixed                $schemaProperties The schema's declared properties.
+     * @param Schema               $schema           The schema being written to.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-silent-field-loss/specs/silent-field-loss/spec.md
+     */
+    private function reportDroppedProperties(array $data, mixed $schemaProperties, Schema $schema): void
+    {
+        if (is_array($schemaProperties) === false) {
+            return;
+        }
+
+        $dropped = [];
+        foreach (array_keys($data) as $key) {
+            $name = (string) $key;
+            if (array_key_exists($name, $schemaProperties) === true) {
+                continue;
+            }
+
+            // `@`-prefixed keys are envelope/metadata (`@self` is already gone),
+            // `_`-prefixed keys are OpenRegister's own metadata columns, and `id`
+            // is the caller echoing back an identifier. None of these are user
+            // data the schema was ever supposed to declare, so warning about them
+            // would drown the signal in noise on literally every save.
+            if ($name === '' || $name === 'id' || $name[0] === '@' || $name[0] === '_') {
+                continue;
+            }
+
+            $dropped[] = $name;
+        }
+
+        if ($dropped === []) {
+            return;
+        }
+
+        $plural = 'ies';
+        if (count($dropped) === 1) {
+            $plural = 'y';
+        }
+
+        $this->logger->warning(
+            message: sprintf(
+                '[MagicMapper] Discarding %d propert%s the schema "%s" does not declare: %s. '
+                .'They are NOT stored anywhere — add them to the schema or stop sending them.',
+                count($dropped),
+                $plural,
+                (string) ($schema->getTitle() ?? $schema->getSlug() ?? (string) $schema->getId()),
+                implode(', ', $dropped)
+            ),
+            context: [
+                'file'       => __FILE__,
+                'line'       => __LINE__,
+                'schema'     => $schema->getId(),
+                'schemaSlug' => $schema->getSlug(),
+                'dropped'    => $dropped,
+            ]
+        );
+    }//end reportDroppedProperties()
 
     /**
      * Convert database row to ObjectEntity.
@@ -4517,13 +4797,33 @@ class MagicMapper extends AbstractObjectMapper
                 $colType       = $this->mapColumnTypeToSQL(type: $columnDef['type'], column: $columnDef);
                 $sql           = 'ALTER TABLE '.$tableNameQuoted.' ADD COLUMN '.$colNameQuoted.' '.$colType;
 
-                // Add NOT NULL if specified.
-                if (($columnDef['nullable'] ?? true) === false) {
+                // This path retrofits a column onto an ALREADY-EXISTING table, which
+                // may already hold rows. `ADD COLUMN ... NOT NULL` without a DEFAULT
+                // is rejected by the database on a populated table ("column contains
+                // null values"), which is exactly why a required property added to an
+                // existing schema could never get its column and the change was lost.
+                // A NOT NULL is therefore only safe here when a DEFAULT backfills the
+                // existing rows; otherwise the column is added nullable. Required-ness
+                // is enforced by schema validation at write time, not by the physical
+                // column constraint (see #2082/#2075).
+                $hasDefault  = isset($columnDef['default']);
+                $wantNotNull = (($columnDef['nullable'] ?? true) === false);
+
+                if ($wantNotNull === true && $hasDefault === true) {
                     $sql .= ' NOT NULL';
+                } else if ($wantNotNull === true) {
+                    $this->logger->info(
+                        message: '[MagicMapper] Adding required column as NULLABLE on existing table (no default to backfill rows)',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'columnName' => $columnName,
+                        ]
+                    );
                 }
 
-                // Add DEFAULT if specified.
-                if (isset($columnDef['default']) === true) {
+                if ($hasDefault === true) {
                     $defaultValue = $this->formatDefaultValueForSQL(default: $columnDef['default']);
                     $sql         .= ' DEFAULT '.$defaultValue;
                 }
@@ -5180,21 +5480,31 @@ class MagicMapper extends AbstractObjectMapper
      * It's useful for operations like lock/unlock where the caller doesn't know
      * which storage backend contains the object.
      *
-     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
-     * @param bool       $includeDeleted Whether to include deleted objects.
-     * @param bool       $_rbac          Whether to apply RBAC checks.
-     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     * @param string|int $identifier      Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted  Whether to include deleted objects.
+     * @param bool       $_rbac           Whether to apply RBAC checks.
+     * @param bool       $_multitenancy   Whether to apply multitenancy filtering.
+     * @param int|null   $registerIdScope Restrict the scan to one register's tables.
+     *                                    A caller that named a register has already
+     *                                    said where the object lives; widening the
+     *                                    search past it is never a correct answer,
+     *                                    and it is what makes this method cost
+     *                                    seconds. Null keeps the historic
+     *                                    everything-everywhere behaviour.
      *
      * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
      *               The found object with its register and schema context.
      *
      * @throws DoesNotExistException If object not found in any magic table.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
      */
     public function findAcrossAllMagicTables(
         string|int $identifier,
         bool $includeDeleted=false,
         bool $_rbac=true,
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?int $registerIdScope=null
     ): array {
         $this->logger->debug(
             message: '[MagicMapper] findAcrossAllMagicTables: Starting search',
@@ -5207,6 +5517,26 @@ class MagicMapper extends AbstractObjectMapper
 
         // Live (non-orphaned) magic tables, keyed by unprefixed table name.
         $candidates = $this->getLiveMagicTables();
+
+        // A caller that named a register gets its tables ONLY. Scanning every
+        // register to answer "is this uuid one of mine?" is both wrong (another
+        // register's object is not an answer to that question) and ruinous: the
+        // union carries one branch per magic table, and on an instance with
+        // 2,728 of them that is 690 KB of SQL costing ~3.4s to PLAN before a
+        // single row is read. Measured 2026-07-29: this fallback, reached once
+        // per object create through the flow-resolver registry, was ~1.9s of a
+        // ~3.0s create — every resolver that does NOT own a flow paid a full
+        // instance-wide scan to say so.
+        if ($registerIdScope !== null) {
+            $scoped = [];
+            foreach ($candidates as $tableName => $meta) {
+                if ((int) $meta['registerId'] === $registerIdScope) {
+                    $scoped[$tableName] = $meta;
+                }
+            }
+
+            $candidates = $scoped;
+        }
 
         $this->logger->debug(
             message: '[MagicMapper] findAcrossAllMagicTables: Found magic tables',
@@ -5288,6 +5618,73 @@ class MagicMapper extends AbstractObjectMapper
                         );
             }
 
+            // SECURITY (cross-org IDOR fix, openregister#2137): this UUID/slug/uri
+            // fallback used to accept `_rbac`/`_multitenancy` and never apply them —
+            // a non-admin in org B could read an org-A object by UUID even though the
+            // register/schema-scoped primary path (findInRegisterSchemaTable, above)
+            // correctly enforces both. Mirror that path exactly: re-run the access
+            // control filters used by the list/search path against the ONE row we
+            // matched, scoped to this table. If the row disappears under those
+            // filters, the caller may not read it — treat it exactly like "not found
+            // in this table" (no distinct error, no existence leak) and keep scanning
+            // the remaining candidates instead of trusting this hit.
+            if ($_rbac === true || $_multitenancy === true) {
+                if ($schema === null) {
+                    // Can't resolve the schema that would tell us whether this read
+                    // is authorized (register/schema deleted mid-scan, or load
+                    // failed above) — fail closed rather than trust an unverifiable
+                    // row.
+                    $this->logger->warning(
+                        message: '[MagicMapper] findAcrossAllMagicTables: Denying unverifiable cross-table hit (schema unresolved)',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                        ]
+                    );
+                    continue;
+                }
+
+                $accessQb = $this->db->getQueryBuilder();
+                $accessQb->select('t.'.self::METADATA_PREFIX.'id')->from($tableName, 't');
+                $accessQb->where(
+                    $accessQb->expr()->eq(
+                        't.'.self::METADATA_PREFIX.'id',
+                        $accessQb->createNamedParameter($hit['id'], IQueryBuilder::PARAM_INT)
+                    )
+                );
+                if ($includeDeleted === false) {
+                    $accessQb->andWhere($accessQb->expr()->isNull('t.'.self::METADATA_PREFIX.'deleted'));
+                }
+
+                $this->searchHandler->applyAccessControlToQuery(
+                    qb: $accessQb,
+                    schema: $schema,
+                    _rbac: $_rbac,
+                    _multitenancy: $_multitenancy
+                );
+
+                $accessResult = $accessQb->executeQuery();
+                $accessRow    = $accessResult->fetch();
+                $accessResult->closeCursor();
+
+                if ($accessRow === false) {
+                    $this->logger->debug(
+                        message: '[MagicMapper] findAcrossAllMagicTables: Denying cross-org/unauthorized hit',
+                        context: [
+                            'file'       => __FILE__,
+                            'line'       => __LINE__,
+                            'tableName'  => $tableName,
+                            'registerId' => $registerId,
+                            'schemaId'   => $schemaId,
+                        ]
+                    );
+                    continue;
+                }
+            }//end if
+
             // Convert row to ObjectEntity.
             $object = $this->convertRowToObjectEntity(
                 row: $row,
@@ -5333,6 +5730,41 @@ class MagicMapper extends AbstractObjectMapper
      */
     private function getLiveMagicTables(): array
     {
+        if ($this->liveMagicTablesMemo !== null) {
+            return $this->liveMagicTablesMemo;
+        }
+
+        $this->liveMagicTablesMemo = $this->loadLiveMagicTables();
+
+        return $this->liveMagicTablesMemo;
+
+    }//end getLiveMagicTables()
+
+    /**
+     * Drop the request-scoped table memos.
+     *
+     * Called whenever a magic table is created, so a write that follows a table
+     * creation in the same request sees the new table rather than a cached
+     * "does not exist" / stale enumeration.
+     *
+     * @return void
+     */
+    private function invalidateTableMemos(): void
+    {
+        $this->tableExistsMemo     = [];
+        $this->liveMagicTablesMemo = null;
+
+    }//end invalidateTableMemos()
+
+    /**
+     * Enumerate the live magic tables from the database, without memoisation.
+     *
+     * @return array<string, array<string, mixed>> Live tables keyed by unprefixed name.
+     */
+    private function loadLiveMagicTables(): array
+    {
+        \OCA\OpenRegister\Service\WritePhaseProbe::count(event: 'magicTables.enumerate');
+
         // Get all magic tables from information_schema.
         // NOTE: We use raw SQL here because the query builder adds the table prefix.
         // to information_schema, which is a system schema and shouldn't be prefixed.
@@ -5378,7 +5810,7 @@ class MagicMapper extends AbstractObjectMapper
         }//end foreach
 
         return $liveTables;
-    }//end getLiveMagicTables()
+    }//end loadLiveMagicTables()
 
     /**
      * Locate which magic table in a chunk holds an identifier (phase 1 of the scan).
@@ -6255,6 +6687,7 @@ class MagicMapper extends AbstractObjectMapper
      * @param Register     $register       The register context.
      * @param Schema       $schema         The schema context.
      * @param bool         $dispatchEvents Whether to dispatch events.
+     * @param bool         $failIfExists   Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @throws Exception If insertion fails.
      *
@@ -6264,7 +6697,8 @@ class MagicMapper extends AbstractObjectMapper
         ObjectEntity $entity,
         Register $register,
         Schema $schema,
-        bool $dispatchEvents=true
+        bool $dispatchEvents=true,
+        bool $failIfExists=false
     ): ObjectEntity {
         // Dispatch creating event (pre-save hook).
         if ($dispatchEvents === true) {
@@ -6326,7 +6760,8 @@ class MagicMapper extends AbstractObjectMapper
             objectData: $objectArray,
             register: $register,
             schema: $schema,
-            tableName: $tableName
+            tableName: $tableName,
+            failIfExists: $failIfExists
         );
 
         // Update entity UUID if it was generated.
@@ -6348,16 +6783,43 @@ class MagicMapper extends AbstractObjectMapper
                 _multitenancy: false
             );
         } catch (\OCP\AppFramework\Db\DoesNotExistException $e) {
-            // Fallback: manually set ID if re-fetch fails.
-            $this->logger->warning(
-                message: '[MagicMapper] Failed to re-fetch inserted entity, using fallback',
-                context: ['file' => __FILE__, 'line' => __LINE__]
-            );
+            // The filtered read could not see the row. That has two very
+            // different causes and they must not share an outcome.
+            //
+            // The row IS there, and only the hydrating read could not reach it
+            // (scoping, an org/owner context still being established). Degraded
+            // but honest: the write landed, so return the in-memory entity with
+            // the id the row actually has.
+            //
+            // The row is NOT there. The write did not land, and returning the
+            // in-memory entity says it did — with a null id, to a caller that
+            // has no way to tell. That is the shape of a lost write reported as
+            // a success, which is exactly what #2212 turned out to be. It now
+            // throws.
             $row = $this->findObjectInRegisterSchemaTable(uuid: $uuid, tableName: $tableName);
-            if ($row !== null) {
-                $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
+            if ($row === null) {
+                $this->logger->error(
+                    message: '[MagicMapper] Inserted object is not in the table afterwards — refusing to report success',
+                    context: [
+                        'file'      => __FILE__,
+                        'line'      => __LINE__,
+                        'uuid'      => $uuid,
+                        'tableName' => $tableName,
+                    ]
+                );
+
+                throw new Exception(
+                    sprintf('Object "%s" was written to %s but is not there afterwards.', $uuid, $tableName)
+                );
             }
 
+            $this->logger->warning(
+                message: '[MagicMapper] Could not re-fetch the inserted entity through the filtered read; '
+                    .'the row exists, so the raw id is used',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            $entity->setId((int) $row[self::METADATA_PREFIX.'id']);
             $insertedEntity = $entity;
         }//end try
 
@@ -6773,6 +7235,16 @@ class MagicMapper extends AbstractObjectMapper
 
         $qb = $this->db->getQueryBuilder();
 
+        // PostgreSQL's CASE type-resolution infers the expression's overall
+        // type from its WHEN/THEN literals (here: text), so assigning the
+        // result straight into a jsonb column fails with SQLSTATE 42804
+        // ("column is of type jsonb but expression is of type text"). An
+        // explicit `::jsonb` cast on the whole CASE result fixes the
+        // mismatch; MySQL's JSON column accepts the string form as-is and
+        // does not need (nor understand) a Postgres-style cast.
+        $platform   = $this->db->getDatabasePlatform();
+        $isPostgres = stripos($platform::class, 'PostgreSQL') !== false;
+
         $caseSql = '(CASE '.$uuidCol;
         $uuids   = [];
         foreach ($items as $item) {
@@ -6784,6 +7256,9 @@ class MagicMapper extends AbstractObjectMapper
         }
 
         $caseSql .= ' END)';
+        if ($isPostgres === true) {
+            $caseSql .= '::jsonb';
+        }
 
         $qb->update($tableName)
             ->set($deletedCol, $qb->createFunction($caseSql))
@@ -8062,11 +8537,20 @@ class MagicMapper extends AbstractObjectMapper
             return $entity;
         }
 
+        // A register WITHOUT a schema still bounds the search: only that
+        // register's magic tables can hold the object. Passing it turns an
+        // instance-wide union into a handful of branches.
+        $scopeRegisterId = null;
+        if ($register !== null && $register->getId() !== null) {
+            $scopeRegisterId = (int) $register->getId();
+        }
+
         $result = $this->findAcrossAllMagicTables(
             identifier: $identifier,
             includeDeleted: $includeDeleted,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            registerIdScope: $scopeRegisterId
         );
         $result['object']->setSource('orm');
         return $result['object'];
@@ -8078,10 +8562,11 @@ class MagicMapper extends AbstractObjectMapper
      * Searches all magic tables to find an object by its identifier without
      * requiring register/schema context.
      *
-     * @param string|int $identifier     Object identifier (ID, UUID, slug, or URI).
-     * @param bool       $includeDeleted Whether to include deleted objects.
-     * @param bool       $_rbac          Whether to apply RBAC checks.
-     * @param bool       $_multitenancy  Whether to apply multitenancy filtering.
+     * @param string|int $identifier      Object identifier (ID, UUID, slug, or URI).
+     * @param bool       $includeDeleted  Whether to include deleted objects.
+     * @param bool       $_rbac           Whether to apply RBAC checks.
+     * @param bool       $_multitenancy   Whether to apply multitenancy filtering.
+     * @param int|null   $registerIdScope Restrict the scan to one register's tables.
      *
      * @return array{object: ObjectEntity, register: Register|null, schema: Schema|null}
      *
@@ -8095,13 +8580,15 @@ class MagicMapper extends AbstractObjectMapper
         // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
         bool $_rbac=true,
         // phpcs:ignore Squiz.NamingConventions.ValidVariableName.MemberNotCamelCaps -- named arg convention.
-        bool $_multitenancy=true
+        bool $_multitenancy=true,
+        ?int $registerIdScope=null
     ): array {
         return $this->findAcrossAllMagicTables(
             identifier: $identifier,
             includeDeleted: $includeDeleted,
             _rbac: $_rbac,
-            _multitenancy: $_multitenancy
+            _multitenancy: $_multitenancy,
+            registerIdScope: $registerIdScope
         );
     }//end findAcrossAllSources()
 
@@ -8258,15 +8745,16 @@ class MagicMapper extends AbstractObjectMapper
     /**
      * Insert a new object entity with event dispatching.
      *
-     * @param Entity        $entity   Entity to insert.
-     * @param Register|null $register Optional register for routing.
-     * @param Schema|null   $schema   Optional schema for routing.
+     * @param Entity        $entity       Entity to insert.
+     * @param Register|null $register     Optional register for routing.
+     * @param Schema|null   $schema       Optional schema for routing.
+     * @param bool          $failIfExists Insert-only: refuse instead of updating when the identifier is taken.
      *
      * @return ObjectEntity Inserted entity.
      *
      * @throws Exception If insertion fails.
      */
-    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null): Entity
+    public function insert(Entity $entity, ?Register $register=null, ?Schema $schema=null, bool $failIfExists=false): Entity
     {
         if ($entity instanceof ObjectEntity === false) {
             throw new Exception('Entity must be an instance of ObjectEntity');
@@ -8280,7 +8768,9 @@ class MagicMapper extends AbstractObjectMapper
             throw new Exception('Cannot insert object without register and schema context');
         }
 
-        $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:pre');
+        $insertedEntity = $this->insertObjectEntity(entity: $entity, register: $register, schema: $schema, failIfExists: $failIfExists);
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:DB-INSERT');
 
         $this->logger->debug(
             message: '[MagicMapper] Dispatching ObjectCreatedEvent',
@@ -8290,10 +8780,90 @@ class MagicMapper extends AbstractObjectMapper
                 'entityUuid' => $insertedEntity->getUuid(),
             ]
         );
-        $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        if ($this->dispatchCreatedDeferred(entity: $insertedEntity, register: $register, schema: $schema) === false) {
+            $this->eventDispatcher->dispatchTyped(new ObjectCreatedEvent(object: $insertedEntity));
+        }
+
+        \OCA\OpenRegister\Service\WritePhaseProbe::mark('mm:EVENT-DISPATCH');
 
         return $insertedEntity;
     }//end insert()
+
+    /**
+     * Hand the created-event off to a background job instead of dispatching it inline.
+     *
+     * `ObjectCreatedEvent` has roughly two dozen listeners across the fleet, and
+     * dispatched inline the caller waits for all of them. Measured 2026-07-29,
+     * that dispatch was 234-501 ms of a ~530 ms create, against a 76 ms insert.
+     * None of it is needed to tell the caller its object was saved.
+     *
+     * OPT-IN, and deliberately so. Deferring changes an observable contract: a
+     * 2xx stops meaning "and every side effect has been applied". A synchronous
+     * flow (`executionMode: sync`) in particular exists precisely so its effects
+     * land before the save returns, and deferring would silently break that
+     * promise. So this stays off until an instance decides it wants the trade,
+     * via `occ config:app:set openregister defer_object_events --value=1`.
+     *
+     * Returns false — meaning "dispatch it inline yourself" — whenever the
+     * deferral cannot be set up, so a misconfiguration degrades to the current
+     * behaviour rather than to silently losing every event.
+     *
+     * @param ObjectEntity  $entity   The object just inserted.
+     * @param Register|null $register Its register.
+     * @param Schema|null   $schema   Its schema.
+     *
+     * @return boolean True when the event was queued and must NOT be dispatched inline.
+     *
+     * @spec openspec/changes/object-write-sub-500ms/specs/object-write-performance/spec.md
+     */
+    private function dispatchCreatedDeferred(
+        ObjectEntity $entity,
+        ?Register $register,
+        ?Schema $schema
+    ): bool {
+        if ($this->appConfig->getValueString('openregister', 'defer_object_events', '') !== '1') {
+            return false;
+        }
+
+        $uuid = (string) $entity->getUuid();
+        if ($uuid === '') {
+            // Without an identifier the job cannot re-read the object, so there
+            // is nothing to defer TO. Dispatch inline.
+            return false;
+        }
+
+        try {
+            $jobList = $this->container->get(\OCP\BackgroundJob\IJobList::class);
+            $jobList->add(
+                \OCA\OpenRegister\BackgroundJob\DeferredObjectEventJob::class,
+                [
+                    'uuid'       => $uuid,
+                    'registerId' => (int) ($register?->getId() ?? 0),
+                    'schemaId'   => (int) ($schema?->getId() ?? 0),
+                    'action'     => 'created',
+                    // The acting user travels WITH the job. A background job has
+                    // no session, and OpenRegister reads are organisation-filtered
+                    // against the session user, so a listener that asks "are there
+                    // active subscriptions?" from an unauthenticated context is
+                    // told "no" and silently does nothing. Verified 2026-07-29:
+                    // without this the deferred dispatch ran clean, logged nothing,
+                    // and produced ZERO CloudEvents where the inline path produced
+                    // one — a perfectly green no-op.
+                    'user'       => ($this->userSession->getUser()?->getUID() ?? ''),
+                ]
+            );
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->logger->warning(
+                message: '[MagicMapper] Could not queue a deferred object event; dispatching inline instead: '.$e->getMessage(),
+                context: ['file' => __FILE__, 'line' => __LINE__, 'uuid' => $uuid]
+            );
+
+            return false;
+        }//end try
+
+    }//end dispatchCreatedDeferred()
 
     /**
      * Update an existing object entity with event dispatching.
@@ -9723,7 +10293,9 @@ class MagicMapper extends AbstractObjectMapper
                 schema: $schema,
                 action: 'read',
                 objectOwner: $object->getOwner(),
-                objectData: $objectData
+                objectData: $objectData,
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;

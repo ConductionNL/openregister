@@ -37,6 +37,12 @@ return [
         // against the session user. All owner-scoped, static errors, no secret leak.
         ['name' => 'credential#index',         'url' => '/api/credentials',                       'verb' => 'GET'],
         ['name' => 'credential#providers',     'url' => '/api/credentials/providers',             'verb' => 'GET'],
+        // Sharing (shared-credentials-and-flows). `shared-with-me` is a LITERAL
+        // segment and is registered next to `providers`, before the `{id}` routes,
+        // so a future `GET /api/credentials/{id}` cannot swallow it.
+        ['name' => 'credential#sharedWithMe',  'url' => '/api/credentials/shared-with-me',        'verb' => 'GET'],
+        ['name' => 'credential#shares',        'url' => '/api/credentials/{id}/shares',           'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'credential#updateShares',  'url' => '/api/credentials/{id}/shares',           'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#create',        'url' => '/api/credentials',                       'verb' => 'POST'],
         ['name' => 'credential#update',        'url' => '/api/credentials/{id}',                  'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
         ['name' => 'credential#destroy',       'url' => '/api/credentials/{id}',                  'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
@@ -65,6 +71,24 @@ return [
         ['name' => 'objectIntegrations#create',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+']],
         ['name' => 'objectIntegrations#update',  'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
         ['name' => 'objectIntegrations#destroy', 'url' => '/api/objects/{register}/{schema}/{id}/integrations/{integrationId}/{entityId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'integrationId' => '[^/]+', 'entityId' => '[^/]+']],
+
+        // Per-object scope and grants. `_authorization` is not writable through an
+        // ordinary object save — non-admin writes have it stripped and the write
+        // path omits the column so a routine update cannot destroy it — so
+        // changing an object's scope needs this owner-checked entry point.
+        ['name' => 'objectSharing#scope',        'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#setScope',     'url' => '/api/objects/{register}/{schema}/{id}/scope',            'verb' => 'PUT',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#shares',       'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'GET',    'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#createShare',  'url' => '/api/objects/{register}/{schema}/{id}/shares',           'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#destroyShare', 'url' => '/api/objects/{register}/{schema}/{id}/shares/{shareId}', 'verb' => 'DELETE', 'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+', 'shareId' => '[^/]+']],
+        ['name' => 'objectSharing#createLink',   'url' => '/api/objects/{register}/{schema}/{id}/links',            'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+        ['name' => 'objectSharing#inviteByEmail','url' => '/api/objects/{register}/{schema}/{id}/invitations',      'verb' => 'POST',   'requirements' => ['register' => '[^/]+', 'schema' => '[^/]+', 'id' => '[^/]+']],
+
+        // PUBLIC. A share token is a bearer capability: nobody is logged in, so
+        // there is no principal for RBAC to resolve and core's validation of the
+        // token IS the authorization. Read-only, addresses exactly one object,
+        // and deliberately offers no listing — see ObjectShareLinkController.
+        ['name' => 'objectShareLink#show', 'url' => '/api/shared/{token}', 'verb' => 'GET', 'requirements' => ['token' => '[^/]+']],
 
         // PATCH routes for resources (partial updates).
         ['name' => 'registers#patch', 'url' => '/api/registers/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
@@ -479,6 +503,34 @@ return [
         // is pinned to OR object Y" so the sidebar tab can show it.
         // Visual flow builder — trigger event catalog (read-only, all users).
         ['name' => 'flow#eventCatalog', 'url' => '/api/flow/event-catalog', 'verb' => 'GET'],
+        ['name' => 'flow#nodeCatalog',  'url' => '/api/flow/node-catalog',  'verb' => 'GET'],
+        // Preflight a flow document against the live node registry WITHOUT
+        // saving it — the question a CI job or a deploy check needs to ask
+        // about a document it is not writing. Must stay above `{flowId}` so
+        // "validate" is never captured as a flow uuid.
+        ['name' => 'flow#validate',     'url' => '/api/flow/validate',      'verb' => 'POST'],
+        // What a flow is holding between runs — the read side of flow state,
+        // so a dashboard can render slot occupancy (or#2216).
+        ['name' => 'flow#state',        'url' => '/api/flow/{flowId}/state', 'verb' => 'GET', 'requirements' => ['flowId' => '[^/]+']],
+
+        // Flow definitions — the one native store every app's builder reads and
+        // writes (flow-engine-unification). PLURAL `/api/flows`, deliberately
+        // distinct from the singular `/api/flow/...` catalog surface above, so
+        // neither can ever capture the other's paths.
+        //
+        // `{id}/run` is declared BEFORE `{id}` so a POST to a run URL is never
+        // matched as an update of a flow whose uuid happens to end in "/run".
+        //
+        // All six are `#[NoAdminRequired]`: flows are per-organisation, not
+        // per-instance, so admin-gating them would make the feature unusable
+        // for the tenants it exists for. The authorisation that matters is the
+        // organisation scoping and per-flow guard inside FlowService.
+        ['name' => 'flow#run',     'url' => '/api/flows/{id}/run', 'verb' => 'POST',   'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#index',   'url' => '/api/flows',          'verb' => 'GET'],
+        ['name' => 'flow#create',  'url' => '/api/flows',          'verb' => 'POST'],
+        ['name' => 'flow#show',    'url' => '/api/flows/{id}',     'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#update',  'url' => '/api/flows/{id}',     'verb' => 'PUT',    'requirements' => ['id' => '[^/]+']],
+        ['name' => 'flow#destroy', 'url' => '/api/flows/{id}',     'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
 
         ['name' => 'flowLinks#available', 'url' => '/api/integrations/flow/operations',                       'verb' => 'GET'],
         ['name' => 'flowLinks#index',     'url' => '/api/objects/{register}/{schema}/{id}/flow',              'verb' => 'GET',    'requirements' => ['id' => '[^/]+']],
@@ -761,6 +813,7 @@ return [
         ['name' => 'auditTrail#index', 'url' => '/api/audit-trails', 'verb' => 'GET'],
         ['name' => 'auditTrail#export', 'url' => '/api/audit-trails/export', 'verb' => 'GET'],
         ['name' => 'auditTrail#verify', 'url' => '/api/audit-trails/verify', 'verb' => 'GET'],
+        ['name' => 'auditTrail#integrity', 'url' => '/api/audit-trails/integrity', 'verb' => 'GET'],
         ['name' => 'auditTrail#verwerkingsregister', 'url' => '/api/audit-trails/verwerkingsregister', 'verb' => 'GET'],
         ['name' => 'auditTrail#inzageverzoek', 'url' => '/api/audit-trails/inzageverzoek', 'verb' => 'GET'],
         ['name' => 'auditTrail#clearAll', 'url' => '/api/audit-trails/clear-all', 'verb' => 'DELETE'],
@@ -980,6 +1033,11 @@ return [
 		['name' => 'views#update', 'url' => '/api/views/{id}', 'verb' => 'PUT', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#patch', 'url' => '/api/views/{id}', 'verb' => 'PATCH', 'requirements' => ['id' => '[^/]+']],
 		['name' => 'views#destroy', 'url' => '/api/views/{id}', 'verb' => 'DELETE', 'requirements' => ['id' => '[^/]+']],
+		// Read-only presentation data — drag-to-move goes through the existing
+		// guarded object PATCH/PUT (/api/objects/{register}/{schema}/{id}), never
+		// a bespoke endpoint here (REQ-VIEW-KANBAN-03).
+		['name' => 'views#kanban', 'url' => '/api/views/{id}/kanban', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
+		['name' => 'views#calendar', 'url' => '/api/views/{id}/calendar', 'verb' => 'GET', 'requirements' => ['id' => '[^/]+']],
 
 		// Chat - AI Assistant endpoints.
 		['name' => 'chat#sendMessage', 'url' => '/api/chat/send', 'verb' => 'POST'],
@@ -1229,5 +1287,28 @@ return [
 		// NoCSRFRequired attribute is declared in the controller for the create method.
 		['name' => 'gitHubIssues#index', 'url' => '/api/github/issues', 'verb' => 'GET'],
 		['name' => 'gitHubIssues#create', 'url' => '/api/github/issues', 'verb' => 'POST'],
+
+		// Flow-run tooling (or-flow-tooling): history, inspection, retry.
+		['name' => 'flowRun#index', 'url' => '/api/flow-runs', 'verb' => 'GET'],
+		// Live runs for the caller's organisation (or-flow-active-runs) — the read
+		// behind the shared "running flows" widget. MUST stay above the `{uuid}`
+		// route: that pattern also matches the literal `active`, and Nextcloud
+		// resolves routes in declaration order, so a later registration would be
+		// answered by `show('active')` → 404 for every request.
+		['name' => 'flowRun#active', 'url' => '/api/flow-runs/active', 'verb' => 'GET'],
+		['name' => 'flowRun#show', 'url' => '/api/flow-runs/{uuid}', 'verb' => 'GET', 'requirements' => ['uuid' => '[^/]+']],
+		['name' => 'flowRun#retry', 'url' => '/api/flow-runs/{uuid}/retry', 'verb' => 'POST', 'requirements' => ['uuid' => '[^/]+']],
+		// Interactive test run (or-flow-partial-run): run synchronously with optional startAt + pins + seed.
+		['name' => 'flowRun#test', 'url' => '/api/flow-runs/test', 'verb' => 'POST'],
+		// Federated configuration sharing (federated-config-sharing): declare types, bundle a selection, install/publish/discover a bundle.
+		['name' => 'federatedConfig#types', 'url' => '/api/federated-config/types', 'verb' => 'GET'],
+		['name' => 'federatedConfig#bundle', 'url' => '/api/federated-config/bundle', 'verb' => 'POST'],
+		['name' => 'federatedConfig#install', 'url' => '/api/federated-config/install', 'verb' => 'POST'],
+		['name' => 'federatedConfig#publish', 'url' => '/api/federated-config/publish', 'verb' => 'POST'],
+		['name' => 'federatedConfig#discover', 'url' => '/api/federated-config/discover', 'verb' => 'GET'],
+		['name' => 'federatedConfig#fetch', 'url' => '/api/federated-config/fetch', 'verb' => 'GET'],
+		['name' => 'federatedConfig#publicKey', 'url' => '/api/federated-config/public-key', 'verb' => 'GET'],
+		['name' => 'federatedConfig#trust', 'url' => '/api/federated-config/trust', 'verb' => 'GET'],
+		['name' => 'federatedConfig#setTrust', 'url' => '/api/federated-config/trust', 'verb' => 'PUT'],
     ],
 ];

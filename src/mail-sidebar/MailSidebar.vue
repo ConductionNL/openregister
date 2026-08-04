@@ -5,7 +5,7 @@
 			:name="sidebarTitle"
 			:subname="sidebarSubname"
 			:compact="true"
-			:active.sync="activeTab"
+			v-model:active="activeTab"
 			class="or-mail-sidebar"
 			@close="toggleCollapsed">
 			<template #description>
@@ -73,8 +73,7 @@
  * @spec openspec/specs/mail-sidebar/spec.md
  */
 import { translate as t } from '@nextcloud/l10n'
-import NcAppSidebar from '@nextcloud/vue/dist/Components/NcAppSidebar.js'
-import NcAppSidebarTab from '@nextcloud/vue/dist/Components/NcAppSidebarTab.js'
+import { NcAppSidebar, NcAppSidebarTab } from '@nextcloud/vue'
 import ActionsTab from './components/ActionsTab.vue'
 import ObjectsTab from './components/ObjectsTab.vue'
 import EntitiesTab from './components/EntitiesTab.vue'

@@ -191,6 +191,80 @@ Every leaf renders in up to four surfaces from the same registration. The widget
 
 The registration descriptor can pass surface-specific overrides (`widgetCompact`, `widgetExpanded`, `widgetEntity`); absent overrides fall back to the main `widget`.
 
+## Cross-app leaf registration (sibling apps)
+
+The 18 built-in leaves register inside Open Register's own `boot()`. A **sibling
+Nextcloud app** contributes its own leaf through a typed collect-event —
+`RegisterLeafProvidersEvent` — the same idiom Open Register already uses for MCP
+tool providers and flow nodes (ADR-066). This is the umbrella "apps hook
+themselves into Open Register" seam, and it is **render-and-read only** by
+construction: a leaf can contribute a render surface and/or app-local data, but
+never a command. Cross-app *commands* stay ADR-041 typed events.
+
+A leaf has two faces, correlated by a shared `id`:
+
+- **Server declaration** — a `LeafDescriptor` (id, label, icon, requiredApp,
+  group, surfaces, referenceType, requiresPermission, and a non-empty `kinds`
+  set) plus, when the leaf offers data, an `IntegrationProvider`. The descriptor
+  carries **no** Vue components.
+- **JS registration** — `registerIntegration({ id, tab, widget, … })` from
+  `@conduction/nextcloud-vue`, under the **same id**. The render components live
+  in the app's own bundle.
+
+The `kinds` set names each face independently:
+
+| Kind | Meaning |
+|---|---|
+| `render-surface` | The app mounts a tab + widget under the shared id (JS layer). |
+| `data-provider` | The app serves read/append data via an `IntegrationProvider` on the same registration. |
+| `agent-runner` | Reserved forward-reference (ADR-066); assigned no behaviour here — hermiq's change consumes it. |
+
+### The `app-local` storage strategy
+
+Data leaves declare a new storage strategy — **`app-local`** — alongside the
+existing `magic-column` / `link-table` / `external` / `query-time`. It means the
+data lives in the **contributing app's own store**; Open Register persists none
+of it and simply routes `list()` / optional `create()` to the provider, which
+runs in the sibling app's DI context because the app's listener constructed it
+there.
+
+### Worked example — a notes leaf
+
+```php
+// In the sibling app's Application::register():
+$context->registerEventListener(
+    RegisterLeafProvidersEvent::class,
+    AcmeLeafListener::class,
+);
+
+// AcmeLeafListener::handle():
+$event->registerLeaf(
+    new LeafDescriptor(
+        id: 'acme-notes',
+        label: $this->l10n->t('Notes'),
+        icon: 'NoteText',
+        kinds: [LeafDescriptor::KIND_DATA_PROVIDER, LeafDescriptor::KIND_RENDER_SURFACE],
+        requiredApp: 'acme',
+        surfaces: ['detail-page'],
+    ),
+    // A provider whose getStorageStrategy() returns 'app-local'.
+    // list() reads the app's notes for the object; create() appends one.
+    // A read-only leaf omits create() and lets the base class throw
+    // NotImplementedException — exactly as query-time providers do.
+    $this->container->get(AcmeNotesProvider::class),
+);
+```
+
+The leaf then appears in the OCS capabilities surface under
+`openregister.integrations.leaves` (id, label, requiredApp, surfaces, kinds,
+usability) so admin UI and manifest apps discover it **without loading the app's
+JS bundle**. A throwing listener costs only its own leaf; duplicate ids follow
+ADR-013 first-wins, which is why ids are namespaced (`acme-notes`, not `notes`).
+
+See ADR-019 (registry render/link), ADR-041 (cross-app commands via events),
+ADR-013 (first-wins collision), and ADR-066 (cross-app leaf registration — the
+render-and-read boundary).
+
 ## What to read next
 
 - **[xWiki leaf](./xwiki.md)** — the worked external example (OpenConnector-backed).

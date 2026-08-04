@@ -570,10 +570,18 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
      * allowlisted columns. Supports equality plus the in/notIn/gt/gte/lt/lte/ne
      * operator vocabulary (same set as the native magic-table path).
      *
-     * @param QueryBuilder         $qb         The query builder (mutated).
-     * @param Connection           $connection The DBAL connection.
-     * @param array<string, mixed> $filter     The filter map.
-     * @param array<int, string>   $columns    The allowlisted scalar columns.
+     * @param QueryBuilder             $qb         The query builder (mutated).
+     * @param Connection               $connection The DBAL connection.
+     * @param array<int|string, mixed> $filter     The filter map — keys are
+     *                                             not guaranteed to be strings
+     *                                             by the caller (e.g. a decoded
+     *                                             JSON object with
+     *                                             numeric-string keys can
+     *                                             surface as int keys); the
+     *                                             runtime `is_string()` guard
+     *                                             below is load-bearing, not
+     *                                             redundant.
+     * @param array<int, string>       $columns    The allowlisted scalar columns.
      *
      * @return void
      *
@@ -734,11 +742,25 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
     /**
      * Load the backing database source referenced by the config `sourceId`.
      *
+     * A `Source` referenced this way is a SYSTEM capability lookup, not a
+     * tenant-owned read: `sourceId` names shared infrastructure config (a
+     * database connection) that a schema's own `x-openregister-object-source`
+     * declares, and the schema's read RBAC is already enforced by
+     * `ObjectService::paginateObjectSource()` before this provider ever runs.
+     * Resolving the Source row itself via `SourceMapper::findForSystem()`
+     * deliberately skips the caller's active-organisation filter — scoping the
+     * Source row by the reader's org adds no isolation (the caller never sees
+     * the Source, only the objects it serves for a schema they were already
+     * cleared to read) and previously broke every dbal-backed schema whose
+     * Source lived in a different organisation, most visibly under
+     * `saasMode: true` (openregister#2089).
+     *
      * @param array<string, mixed> $config The object-source config block.
      *
      * @return Source|null The source, or null when not found / not a database source.
      *
      * @spec openspec/specs/dbal-virtual-registers/spec.md
+     * @spec openspec/changes/dbal-source-resolution-system-context/specs/dbal-source-resolution-system-context/spec.md
      */
     private function resolveSource(array $config): ?Source
     {
@@ -748,15 +770,7 @@ class DbalObjectSourceProvider implements WritableObjectSourceProvider
         }
 
         try {
-            $source = null;
-            if (ctype_digit($sourceId) === true) {
-                $source = $this->sourceMapper->find(id: (int) $sourceId);
-            }
-
-            if ($source === null) {
-                $matches = $this->sourceMapper->findAll(filters: ['uuid' => $sourceId]);
-                $source  = ($matches[0] ?? null);
-            }
+            $source = $this->sourceMapper->findForSystem(sourceId: $sourceId);
         } catch (Throwable $e) {
             $this->logger->warning('[ObjectSource:dbal-source] could not load source "'.$sourceId.'": '.$e->getMessage());
             return null;

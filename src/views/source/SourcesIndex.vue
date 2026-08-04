@@ -28,7 +28,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See sources as cards'"
+							title="See sources as cards"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -38,7 +38,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="viewMode"
-							v-tooltip="'See sources as a table'"
+							title="See sources as a table"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -89,7 +89,7 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 					<div class="cardGrid">
 						<div v-for="source in paginatedSources" :key="source.id" class="card">
 							<div class="cardHeader">
-								<h2 v-tooltip.bottom="source.description">
+								<h2 :title="source.description">
 									<DatabaseArrowRightOutline :size="20" />
 									{{ source.title }}
 								</h2>
@@ -147,9 +147,9 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Title') }}</th>
 									<th>{{ t('openregister', 'Type') }}</th>
@@ -169,8 +169,8 @@ import { sourceStore, navigationStore } from '../../store/store.js'
 									:class="{ viewTableRowSelected: selectedSources.includes(source.id) }">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedSources.includes(source.id)"
-											@update:checked="(checked) => toggleSourceSelection(source.id, checked)" />
+											:model-value="selectedSources.includes(source.id)"
+											@update:modelValue="(checked) => toggleSourceSelection(source.id, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">

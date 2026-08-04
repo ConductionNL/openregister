@@ -130,6 +130,65 @@ class ValidateObjectTest extends TestCase
         $this->assertTrue($result->isValid());
     }
 
+    /**
+     * Regression: a translatable string property MUST accept a language-keyed
+     * object body ({"nl": ..., "en": ...}) as well as a scalar. Before the
+     * prepareSchemaForValidation widening, the language-map was rejected as
+     * "should be type 'string' but is 'object'" — which broke the entire i18n
+     * write path (objects could never be created with a translated value).
+     *
+     * @return void
+     */
+    public function testValidateObjectTranslatablePropertyAcceptsLanguageKeyedObject(): void
+    {
+        $schema = $this->createSchema([
+            'type'       => 'object',
+            'properties' => ['title' => ['type' => 'string', 'translatable' => true]],
+        ]);
+
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->title = new stdClass();
+        $schemaObject->properties->title->type = 'string';
+        $schemaObject->properties->title->translatable = true;
+
+        // Language-keyed object shape.
+        $resultMap = $this->handler->validateObject(['title' => ['nl' => 'Welkom', 'en' => 'Welcome']], $schema, $schemaObject);
+        $this->assertTrue($resultMap->isValid(), 'Language-keyed object must be accepted for a translatable property');
+
+        // Scalar shape still valid (legacy / source-language / target-wrap path).
+        $resultScalar = $this->handler->validateObject(['title' => 'Welkom'], $schema, clone $schemaObject);
+        $this->assertTrue($resultScalar->isValid(), 'Scalar value must still be accepted for a translatable property');
+    }
+
+    /**
+     * Regression: the language-map branch still type-checks each language value.
+     * A non-string value inside the language map for a translatable STRING
+     * property must fail validation — the widening must not become an escape
+     * hatch that accepts arbitrary object payloads.
+     *
+     * @return void
+     */
+    public function testValidateObjectTranslatableLanguageValuesAreTypeChecked(): void
+    {
+        $schema = $this->createSchema([
+            'type'       => 'object',
+            'properties' => ['title' => ['type' => 'string', 'translatable' => true]],
+        ]);
+
+        $schemaObject = new stdClass();
+        $schemaObject->type = 'object';
+        $schemaObject->properties = new stdClass();
+        $schemaObject->properties->title = new stdClass();
+        $schemaObject->properties->title->type = 'string';
+        $schemaObject->properties->title->translatable = true;
+
+        // Inner value is an array/object, not a string -> invalid.
+        $result = $this->handler->validateObject(['title' => ['nl' => ['nested' => 'x']]], $schema, $schemaObject);
+        $this->assertFalse($result->isValid(), 'Non-string language values must still fail type validation');
+    }
+
     public function testValidateObjectWithRequiredFieldMissing(): void
     {
         $schema = $this->createSchema([

@@ -19,7 +19,7 @@
 					</span>
 				</div>
 				<div class="viewActions">
-					<NcButton type="primary" :disabled="loading" @click="refresh">
+					<NcButton variant="primary" :disabled="loading" @click="refresh">
 						<template #icon>
 							<NcLoadingIcon v-if="loading" :size="20" />
 							<Refresh v-else :size="20" />

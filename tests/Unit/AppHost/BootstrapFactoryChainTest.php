@@ -89,6 +89,15 @@ class BootstrapFactoryChainTest extends TestCase
         // calls it at run() time, never at construction.
         $map['OCA\\OpenRegister\\Service\\Credential\\CredentialAppTokenService']
             = $this->createMock(\OCA\OpenRegister\Service\Credential\CredentialAppTokenService::class);
+        $map['OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar']
+            = $this->createMock(\OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::class);
+
+        // The InitializeActions factory injects the Doriath application
+        // registrar for the D-G manifest auto-onboarding hook
+        // (credential-doriath-leaf); a mock is enough — the repair step only
+        // calls it at run() time, never at construction.
+        $map['OCA\\OpenRegister\\Service\\Credential\\DoriathApplicationRegistrar']
+            = $this->createMock(\OCA\OpenRegister\Service\Credential\DoriathApplicationRegistrar::class);
 
         $container = $this->createMock(ContainerInterface::class);
         $container->method('get')->willReturnCallback(
@@ -199,6 +208,9 @@ class BootstrapFactoryChainTest extends TestCase
             'OCA\\PetStore\\Settings\\AdminSettings'                     => GenericAdminSettings::class,
             'OCA\\PetStore\\Sections\\SettingsSection'                   => GenericSettingsSection::class,
             'OCA\\PetStore\\Listener\\DeepLinkRegistrationListener'      => GenericDeepLinkRegistrationListener::class,
+            // ADR-066 settings-plane consumables (apphost-settings-plane).
+            'OCA\\OpenRegister\\AppHost\\Service\\GenericSettingsService' => \OCA\OpenRegister\AppHost\Service\GenericSettingsService::class,
+            'OCA\\PetStore\\Service\\RegisterConfigResolver'             => \OCA\OpenRegister\AppHost\Service\RegisterConfigResolver::class,
         ];
 
         foreach ($expected as $alias => $class) {

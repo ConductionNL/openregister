@@ -37,7 +37,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 					v-model="searchTerm"
 					:label="t('openregister', 'Search objects')"
 					:placeholder="t('openregister', 'Type to search for objects...')"
-					@input="searchObjects" />
+					@update:modelValue="searchObjects" />
 			</div>
 
 			<div v-if="loading" class="loading-container">
@@ -109,7 +109,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 										label="label"
 										track-by="value"
 										:placeholder="'Choose value for ' + property"
-										@input="onPropertySelectionChange(property, $event)" />
+										@update:modelValue="onPropertySelectionChange(property, $event)" />
 									<NcTextField
 										v-if="mergedData[property] === 'custom'"
 										v-model="customValues[property]"
@@ -144,7 +144,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</div>
 
 				<div class="table-toggle">
-					<NcButton type="tertiary" @click="toggleFileList">
+					<NcButton variant="tertiary" @click="toggleFileList">
 						{{ showFileList ? 'Hide Files' : 'View Files' }}
 						<template #icon>
 							<ChevronUp v-if="showFileList" :size="20" />
@@ -201,7 +201,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</div>
 
 				<div class="table-toggle">
-					<NcButton type="tertiary" @click="toggleRelationList">
+					<NcButton variant="tertiary" @click="toggleRelationList">
 						{{ showRelationList ? 'Hide Relations' : 'View Relations' }}
 						<template #icon>
 							<ChevronUp v-if="showRelationList" :size="20" />
@@ -259,7 +259,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 				</div>
 
 				<div class="table-toggle">
-					<NcButton type="tertiary" @click="toggleReferenceList">
+					<NcButton variant="tertiary" @click="toggleReferenceList">
 						{{ showReferenceList ? 'Hide References' : 'View References' }}
 						<template #icon>
 							<ChevronUp v-if="showReferenceList" :size="20" />
@@ -408,7 +408,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 3 && mergeResult?.success"
-				type="secondary"
+				variant="secondary"
 				@click="viewMergedObject">
 				<template #icon>
 					<Eye :size="20" />
@@ -418,7 +418,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 1"
 				:disabled="!selectedTargetObject"
-				type="primary"
+				variant="primary"
 				@click="nextStep">
 				<template #icon>
 					<ArrowRight :size="20" />
@@ -427,7 +427,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</NcButton>
 
 			<NcButton v-if="step === 2"
-				type="secondary"
+				variant="secondary"
 				@click="previousStep">
 				<template #icon>
 					<ArrowLeft :size="20" />
@@ -437,7 +437,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 
 			<NcButton v-if="step === 2"
 				:disabled="loading || !canMerge"
-				type="primary"
+				variant="primary"
 				@click="performMerge">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

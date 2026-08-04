@@ -51,7 +51,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 			<NcButton
 				v-if="!success"
 				:disabled="loading || !canDelete"
-				type="error"
+				variant="error"
 				@click="deleteOrganisation()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

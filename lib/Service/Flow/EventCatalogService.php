@@ -58,6 +58,15 @@ class EventCatalogService
         ['id' => 'object.unlocked', 'label' => 'An object is unlocked', 'group' => 'Object'],
         ['id' => 'object.reverted', 'label' => 'An object is reverted', 'group' => 'Object'],
         ['id' => 'object.transitioned', 'label' => 'An object changes state', 'group' => 'Object'],
+        ['id' => 'file.created', 'label' => 'A file is created', 'group' => 'File'],
+        ['id' => 'file.updated', 'label' => 'A file is written', 'group' => 'File'],
+        ['id' => 'file.deleted', 'label' => 'A file is deleted', 'group' => 'File'],
+        ['id' => 'user.created', 'label' => 'A user is created', 'group' => 'User'],
+        ['id' => 'user.deleted', 'label' => 'A user is deleted', 'group' => 'User'],
+        ['id' => 'share.created', 'label' => 'A share is created', 'group' => 'Share'],
+        ['id' => 'share.deleted', 'label' => 'A share is deleted', 'group' => 'Share'],
+        ['id' => 'tag.assigned', 'label' => 'A tag is assigned', 'group' => 'Tag'],
+        ['id' => 'tag.unassigned', 'label' => 'A tag is removed', 'group' => 'Tag'],
     ];
 
     /**

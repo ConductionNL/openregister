@@ -10,7 +10,7 @@
 			<!-- Update Button -->
 			<NcButton
 				v-if="showUpdateButton"
-				:type="updateButtonType"
+				:variant="updateButtonType"
 				:disabled="updateButtonDisabled"
 				@click="handleUpdateClick">
 				<template #icon>

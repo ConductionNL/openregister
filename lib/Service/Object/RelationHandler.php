@@ -63,6 +63,7 @@ class RelationHandler
      * @param PerformanceHandler $performanceHandler Handler for performance operations.
      * @param MagicRbacHandler   $rbacHandler        Handler for RBAC operations.
      * @param LoggerInterface    $logger             Logger for logging operations.
+     * @param RegisterMapper     $registerMapper     Mapper for registers.
      *
      * @spec openspec/specs/linked-entity-types/spec.md
      */
@@ -831,7 +832,9 @@ class RelationHandler
                 schema: $schema,
                 action: 'read',
                 objectOwner: $object->getOwner(),
-                objectData: $objectData
+                objectData: $objectData,
+                objectAuthorization: $object->getAuthorization(),
+                objectUuid: $object->getUuid()
             ) === true
             ) {
                 $filtered[] = $object;

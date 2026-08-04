@@ -47,9 +47,13 @@
 import { test, expect } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { resolveBaseUrl } from '../base-url'
 
 const STORAGE_STATE = path.resolve(__dirname, '../.auth/admin.json')
-const BASE_URL = process.env.NEXTCLOUD_URL || 'http://localhost:8080'
+// ⚠️ Never `|| 'http://localhost:8080'` — that is the SHARED dev container.
+// This spec issues authenticated POSTs against the admin settings API, so a
+// silent retarget would mutate somebody else's instance. See ../base-url.ts.
+const BASE_URL = resolveBaseUrl()
 const ADMIN_SETTINGS_URL = `${BASE_URL}/index.php/settings/admin/openregister`
 
 // ─────────────────────────────────────────────────────────────────────────────

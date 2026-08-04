@@ -73,21 +73,32 @@ class AggregationQuery
     /**
      * Constructor — use the static factory.
      *
-     * @param string                    $metric     Aggregation metric.
-     * @param ?string                   $field      Field for sum/avg/min/max; required when metric != count.
-     * @param array<string, mixed>      $filter     Filter conditions (see class docblock for shapes).
-     * @param array<string, mixed>|null $groupBy    Optional grouping spec. Accepts a single-field shape
-     *                                              (`{field: 'status'}`), a multi-field cross-tab shape
-     *                                              (`{fields: ['vendorId', 'dueDateBucket']}`), or a plain
-     *                                              ordered list of field names (`['vendorId', 'dueDateBucket']`).
-     * @param array<string, mixed>|null $dateBucket Optional date-bucket spec; `{field, start, end, gap}`.
+     * @param string                                                  $metric     Aggregation metric.
+     * @param ?string                                                 $field      Field for sum/avg/min/max; required when metric != count.
+     * @param array<string, mixed>                                    $filter     Filter conditions (see class docblock for shapes).
+     * @param array<string, mixed>|null                               $groupBy    Optional grouping spec. Accepts a single-field shape
+     *                                                                            (`{field: 'status'}`), a multi-field cross-tab shape
+     *                                                                            (`{fields: ['vendorId', 'dueDateBucket']}`), or a
+     *                                                                            plain ordered list of field names (`['vendorId',
+     *                                                                            'dueDateBucket']`).
+     * @param array<string, mixed>|null                               $dateBucket Optional date-bucket spec; `{field, start, end, gap}`.
+     * @param array<int, array{metric: string, field?: ?string}>|null $metrics    Optional multi-metric list
+     *                                                                            — see {@see getMetrics()}
+     *                                                                            for the canonicalisation and
+     *                                                                            response-shape contract.
+     * @param bool                                                    $cumulative Optional running-total flag
+     *                                                                            (REQ-AGG-103) — only valid
+     *                                                                            alongside `$dateBucket`; see
+     *                                                                            {@see isCumulative()}.
      */
     private function __construct(
         public readonly string $metric,
         public readonly ?string $field,
         public readonly array $filter,
         public readonly ?array $groupBy,
-        public readonly ?array $dateBucket=null
+        public readonly ?array $dateBucket=null,
+        public readonly ?array $metrics=null,
+        public readonly bool $cumulative=false
     ) {
 
     }//end __construct()
@@ -95,14 +106,50 @@ class AggregationQuery
     /**
      * Construct an aggregation query — fails fast on bad input.
      *
-     * @param string                    $metric     One of METRIC_*.
-     * @param ?string                   $field      Field for non-count metrics; null for count.
-     * @param array<string, mixed>      $filter     Filter map.
-     * @param array<string, mixed>|null $groupBy    Optional groupBy. Single-field (`{field: 'x'}`),
-     *                                              multi-field (`{fields: ['a','b']}`), or a plain list
-     *                                              (`['a','b']`). Multi-field yields one grouped row per
-     *                                              distinct field tuple.
-     * @param array<string, mixed>|null $dateBucket Optional dateBucket spec `{field, start, end, gap}`.
+     * @param string                                                  $metric     One of METRIC_*.
+     * @param ?string                                                 $field      Field for non-count metrics; null for count.
+     * @param array<string, mixed>                                    $filter     Filter map.
+     * @param array<string, mixed>|null                               $groupBy    Optional groupBy. Single-field (`{field: 'x'}`),
+     *                                                                            multi-field (`{fields: ['a','b']}`), or a plain
+     *                                                                            list (`['a','b']`). Multi-field yields one
+     *                                                                            grouped row per distinct field tuple.
+     * @param array<string, mixed>|null                               $dateBucket Optional dateBucket spec `{field, start, end, gap}`.
+     * @param array<int, array{metric: string, field?: ?string}>|null $metrics    Optional multi-metric list
+     *                                                                            (`[{metric: 'count'},
+     *                                                                            {metric: 'sum', field:
+     *                                                                            'price'}]`). When supplied
+     *                                                                            (non-empty), every listed
+     *                                                                            pair is computed in one
+     *                                                                            request and the response
+     *                                                                            carries a `values` map
+     *                                                                            instead of a single scalar
+     *                                                                            `value`/per-group `value`.
+     *                                                                            The legacy
+     *                                                                            `$metric`/`$field` pair
+     *                                                                            remains the "primary"
+     *                                                                            metric (used by callers
+     *                                                                            that only look at
+     *                                                                            `->metric`/`->field`) and
+     *                                                                            SHOULD mirror
+     *                                                                            `$metrics[0]` when both
+     *                                                                            are supplied. Mutually
+     *                                                                            exclusive with
+     *                                                                            `$dateBucket` (not yet
+     *                                                                            supported — REQ-AGG-102
+     *                                                                            covers the categorical
+     *                                                                            value/grouped paths only).
+     * @param bool                                                    $cumulative Optional running-total
+     *                                                                            flag (REQ-AGG-103).
+     *                                                                            Only meaningful —
+     *                                                                            and only accepted —
+     *                                                                            alongside a
+     *                                                                            `$dateBucket` (the
+     *                                                                            time-bucket
+     *                                                                            primitive); a
+     *                                                                            categorical `$groupBy`
+     *                                                                            has no inherent bucket
+     *                                                                            ordering to accumulate
+     *                                                                            over.
      *
      * @return self
      *
@@ -123,7 +170,9 @@ class AggregationQuery
         ?string $field=null,
         array $filter=[],
         ?array $groupBy=null,
-        ?array $dateBucket=null
+        ?array $dateBucket=null,
+        ?array $metrics=null,
+        bool $cumulative=false
     ): self {
         if (in_array($metric, self::METRICS, true) === false) {
             throw new InvalidArgumentException(
@@ -140,6 +189,42 @@ class AggregationQuery
                 sprintf('aggregation metric "%s" MUST specify a field', $metric)
             );
         }
+
+        if ($metrics !== null) {
+            if (count($metrics) === 0) {
+                throw new InvalidArgumentException('metrics list, when supplied, MUST NOT be empty');
+            }
+
+            foreach ($metrics as $metricEntry) {
+                if (is_array($metricEntry) === false || array_key_exists('metric', $metricEntry) === false) {
+                    throw new InvalidArgumentException('each metrics entry MUST be an array with a `metric` key');
+                }
+
+                $entryMetric = (string) $metricEntry['metric'];
+                if (in_array($entryMetric, self::METRICS, true) === false) {
+                    throw new InvalidArgumentException(
+                        sprintf(
+                            'metrics entry has an invalid metric "%s" (MUST be one of: %s)',
+                            $entryMetric,
+                            implode(', ', self::METRICS)
+                        )
+                    );
+                }
+
+                $entryField = ($metricEntry['field'] ?? null);
+                if ($entryMetric !== self::METRIC_COUNT && ($entryField === null || $entryField === '')) {
+                    throw new InvalidArgumentException(
+                        sprintf('metrics entry "%s" MUST specify a field', $entryMetric)
+                    );
+                }
+            }//end foreach
+
+            if ($dateBucket !== null) {
+                throw new InvalidArgumentException(
+                    'a multi-metric `metrics` list MUST NOT be combined with dateBucket (time-bucket) aggregation'
+                );
+            }
+        }//end if
 
         if ($groupBy !== null) {
             $groupFields = self::normaliseGroupByFields(groupBy: $groupBy);
@@ -172,12 +257,20 @@ class AggregationQuery
             );
         }
 
+        if ($cumulative === true && $dateBucket === null) {
+            throw new InvalidArgumentException(
+                'cumulative MUST only be combined with a dateBucket (time-bucket) aggregation'
+            );
+        }
+
         return new self(
             metric: $metric,
             field: $field,
             filter: $filter,
             groupBy: $groupBy,
-            dateBucket: $dateBucket
+            dateBucket: $dateBucket,
+            metrics: $metrics,
+            cumulative: $cumulative
         );
 
     }//end create()
@@ -348,6 +441,92 @@ class AggregationQuery
     }//end hasDateBucket()
 
     /**
+     * Test whether the request asked for a running-total (cumulative)
+     * time-bucket result (REQ-AGG-103).
+     *
+     * @return bool
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public function isCumulative(): bool
+    {
+        return $this->cumulative;
+
+    }//end isCumulative()
+
+    /**
+     * Canonical, always-populated metrics list.
+     *
+     * Falls back to the legacy single `{metric, field}` pair (as a
+     * one-element list) when the caller didn't specify an explicit
+     * `metrics` list, so callers can treat every query uniformly as
+     * "one or more requested metrics" without a null-check.
+     *
+     * @return array<int, array{metric: string, field: ?string}> Ordered, normalised metric requests.
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public function getMetrics(): array
+    {
+        if ($this->metrics !== null && count($this->metrics) > 0) {
+            $out = [];
+            foreach ($this->metrics as $entry) {
+                $entryField = ($entry['field'] ?? null);
+                if ($entryField === '') {
+                    $entryField = null;
+                }
+
+                $out[] = [
+                    'metric' => (string) $entry['metric'],
+                    'field'  => $entryField,
+                ];
+            }
+
+            return $out;
+        }
+
+        return [['metric' => $this->metric, 'field' => $this->field]];
+
+    }//end getMetrics()
+
+    /**
+     * Test whether this is a multi-metric request (more than one metric
+     * requested in a single call).
+     *
+     * @return bool
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public function isMultiMetric(): bool
+    {
+        return (count($this->getMetrics()) > 1);
+
+    }//end isMultiMetric()
+
+    /**
+     * The response key for one metric entry: `count` for count (no field),
+     * else `metric_field` (e.g. `sum_price`). Shared by the native-SQL
+     * column aliasing and the PHP-fallback / grouped response building so
+     * both paths agree on key names for the multi-metric `values` map.
+     *
+     * @param string      $metric One of the METRIC_* constants.
+     * @param string|null $field  The metric's field, or null for count.
+     *
+     * @return string The response key.
+     *
+     * @spec openspec/specs/aggregation-api/spec.md
+     */
+    public static function metricResponseKey(string $metric, ?string $field): string
+    {
+        if ($metric === self::METRIC_COUNT || $field === null || $field === '') {
+            return $metric;
+        }
+
+        return $metric.'_'.$field;
+
+    }//end metricResponseKey()
+
+    /**
      * Serialise the query to a stable associative array.
      *
      * The output is the canonical input to the ad-hoc aggregation cache
@@ -361,10 +540,13 @@ class AggregationQuery
      *   field: ?string,
      *   filter: array<string, mixed>,
      *   groupBy: array<string, mixed>|null,
-     *   dateBucket: array<string, mixed>|null
+     *   dateBucket: array<string, mixed>|null,
+     *   metrics: array<int, mixed>|null,
+     *   cumulative: bool
      * } Canonical wire shape of the query.
      *
      * @spec openspec/specs/aggregations-backend-native/spec.md
+     * @spec openspec/specs/aggregation-api/spec.md
      */
     public function toArray(): array
     {
@@ -374,6 +556,12 @@ class AggregationQuery
             'filter'     => self::canonicaliseFilter(filter: $this->filter),
             'groupBy'    => $this->groupBy,
             'dateBucket' => $this->dateBucket,
+            'metrics'    => $this->metrics,
+            // REQ-AGG-103 / REQ-AGG-105: cumulative is part of the
+            // normalized query shape so the ad-hoc cache key
+            // differentiates a running-total request from a plain
+            // per-bucket request over otherwise-identical parameters.
+            'cumulative' => $this->cumulative,
         ];
 
     }//end toArray()

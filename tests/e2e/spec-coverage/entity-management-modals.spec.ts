@@ -11,15 +11,15 @@
  * assert the rendered DOM.  The OR REST API is used ONLY for test-data
  * setup/teardown, never as the thing-under-test.
  *
- * Scenarios covered (6/8 with passing UI tests; 2 excluded):
- *   open-edit-modal-hydrates-from-store            — UI test
- *   save-success-closes-the-dialog                 — UI test
- *   save-failure-keeps-the-dialog-open             — UI test
- *   confirm-delete-on-a-single-agent               — UI test
+ * Scenarios covered (3/8 with passing UI tests; 5 excluded/retired):
  *   copy-single-object-names-the-duplicate         — UI test
  *   delete-failure-preserves-dialog-and-selection  — UI test
  *   initialize-purge-selection-from-store          — UI test
  *   bulk-delete-reports-partial-success            — @e2e exclude (see bottom)
+ *   open-edit-modal-hydrates-from-store            — RETIRED: the agent SPA
+ *   save-success-closes-the-dialog                   page these four scenarios
+ *   save-failure-keeps-the-dialog-open               drove was decommissioned
+ *   confirm-delete-on-a-single-agent                 (ffafd1c14, moved to hermiq)
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test'
@@ -38,26 +38,6 @@ const SCHEMA_ID = '18'
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-/** Create a test agent via the API and return its id. */
-async function createTestAgent(request: APIRequestContext, name: string): Promise<number | null> {
-	const resp = await request.post('/index.php/apps/openregister/api/agents', {
-		headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-		data: { name, description: 'E2e test agent', type: 'chat', active: true },
-	})
-	if (!resp.ok()) {
-		// eslint-disable-next-line no-console
-		console.warn('[createTestAgent] POST failed:', resp.status(), await resp.text())
-		return null
-	}
-	const body = await resp.json()
-	return body?.id ?? null
-}
-
-/** Delete a test agent via the API. */
-async function deleteTestAgent(request: APIRequestContext, id: number): Promise<void> {
-	await request.delete(`/index.php/apps/openregister/api/agents/${id}`).catch(() => {})
-}
 
 /** Create a test object and return its @self.id. */
 async function createTestObject(request: APIRequestContext, name: string): Promise<string | null> {
@@ -81,210 +61,21 @@ async function deleteTestObject(request: APIRequestContext, id: string): Promise
 		.catch(() => {})
 }
 
-/** Navigate to the OR app subpath and wait for NC header. */
+/** Navigate to the OR app route (hash form) and wait for NC header. */
 async function gotoApp(page: import('@playwright/test').Page, subpath: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister${subpath}`, { waitUntil: 'domcontentloaded' })
+	// HASH form — the router runs in hash mode (src/main.js); path-form
+	// deep-links render the dashboard instead of the target page.
+	await page.goto(`/index.php/apps/openregister/#${subpath}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	// Wait for the app content — NC app uses #app-content-vue.
 	await page.waitForSelector('#app-content-vue, .app-content', { timeout: 20_000 })
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/specs/entity-management-modals/spec.md#open-edit-modal-hydrates-from-store
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('entity-management-modals — open-edit-modal-hydrates-from-store', () => {
-	test.use({ storageState: STORAGE_STATE })
-
-	const agentName = `${PREFIX}-hydrate`
-	let agentId: number | null = null
-
-	test.beforeAll(async ({ request }) => {
-		agentId = await createTestAgent(request, agentName)
-	})
-
-	test.afterAll(async ({ request }) => {
-		if (agentId) await deleteTestAgent(request, agentId)
-	})
-
-	// @e2e openspec/specs/entity-management-modals/spec.md#open-edit-modal-hydrates-from-store
-	test('opening the edit-agent modal pre-fills the agent name from the store', async ({ page }) => {
-		test.skip(!agentId, 'Agent creation failed — skipping')
-
-		await gotoApp(page, '/agents')
-
-		// Wait for the agent card to appear.
-		const agentName_loc = page.locator(`text="${agentName}"`).first()
-		await expect(agentName_loc).toBeVisible({ timeout: 20_000 })
-
-		// Click the Actions button that sits on the agent card.
-		// NC renders NcActions as a button with accessible name "Actions".
-		const actionsBtn = page.getByRole('button', { name: 'Actions' }).first()
-		await expect(actionsBtn).toBeVisible({ timeout: 10_000 })
-		await actionsBtn.click()
-
-		// Click Edit from the popup menu.
-		await page.getByRole('menuitem', { name: 'Edit' }).click({ timeout: 10_000 })
-
-		// EditAgent.vue renders as dialog "Edit Agent".
-		const dialog = page.getByRole('dialog', { name: 'Edit Agent' })
-		await expect(dialog).toBeVisible({ timeout: 15_000 })
-
-		// The Name field should be pre-populated with the agent's name.
-		const nameInput = dialog.getByRole('textbox', { name: 'Name *' })
-		await expect(nameInput).toHaveValue(agentName, { timeout: 10_000 })
-
-		// Close the dialog.
-		await dialog.getByRole('button', { name: 'Close' }).click()
-	})
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/specs/entity-management-modals/spec.md#save-success-closes-the-dialog
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('entity-management-modals — save-success-closes-the-dialog', () => {
-	test.use({ storageState: STORAGE_STATE })
-
-	const agentName = `${PREFIX}-save-ok`
-	let agentId: number | null = null
-
-	test.beforeAll(async ({ request }) => {
-		agentId = await createTestAgent(request, agentName)
-	})
-
-	test.afterAll(async ({ request }) => {
-		// The save test renames the agent; clean up by id.
-		if (agentId) await deleteTestAgent(request, agentId)
-	})
-
-	// @e2e openspec/specs/entity-management-modals/spec.md#save-success-closes-the-dialog
-	test('saving the edit-agent form closes the dialog', async ({ page }) => {
-		test.skip(!agentId, 'Agent creation failed — skipping')
-
-		await gotoApp(page, '/agents')
-
-		const agentName_loc = page.locator(`text="${agentName}"`).first()
-		await expect(agentName_loc).toBeVisible({ timeout: 20_000 })
-
-		// Open the Edit modal for this agent.
-		const actionsBtn = page.getByRole('button', { name: 'Actions' }).first()
-		await actionsBtn.click()
-		await page.getByRole('menuitem', { name: 'Edit' }).click({ timeout: 10_000 })
-
-		const dialog = page.getByRole('dialog', { name: 'Edit Agent' })
-		await expect(dialog).toBeVisible({ timeout: 15_000 })
-
-		// Change the name to a new value.
-		const nameInput = dialog.getByRole('textbox', { name: 'Name *' })
-		await nameInput.fill(`${agentName}-updated`)
-
-		// Click the "Update" button (save button when editing existing agent).
-		await dialog.getByRole('button', { name: 'Update' }).click({ timeout: 10_000 })
-
-		// After a successful save, the dialog auto-closes after 1.5s.
-		await expect(dialog).not.toBeVisible({ timeout: 10_000 })
-	})
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/specs/entity-management-modals/spec.md#save-failure-keeps-the-dialog-open
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('entity-management-modals — save-failure-keeps-the-dialog-open', () => {
-	test.use({ storageState: STORAGE_STATE })
-
-	const agentName = `${PREFIX}-save-fail`
-	let agentId: number | null = null
-
-	test.beforeAll(async ({ request }) => {
-		agentId = await createTestAgent(request, agentName)
-	})
-
-	test.afterAll(async ({ request }) => {
-		if (agentId) await deleteTestAgent(request, agentId)
-	})
-
-	// @e2e openspec/specs/entity-management-modals/spec.md#save-failure-keeps-the-dialog-open
-	test('clearing the required name field disables Save and keeps dialog open', async ({ page }) => {
-		test.skip(!agentId, 'Agent creation failed — skipping')
-
-		await gotoApp(page, '/agents')
-
-		const agentName_loc = page.locator(`text="${agentName}"`).first()
-		await expect(agentName_loc).toBeVisible({ timeout: 20_000 })
-
-		// Open Edit modal.
-		const actionsBtn = page.getByRole('button', { name: 'Actions' }).first()
-		await actionsBtn.click()
-		await page.getByRole('menuitem', { name: 'Edit' }).click({ timeout: 10_000 })
-
-		const dialog = page.getByRole('dialog', { name: 'Edit Agent' })
-		await expect(dialog).toBeVisible({ timeout: 15_000 })
-
-		// Clear the required Name field.
-		const nameInput = dialog.getByRole('textbox', { name: 'Name *' })
-		await nameInput.fill('')
-
-		// The Update button must be disabled when name is empty (isValid = false).
-		const updateBtn = dialog.getByRole('button', { name: 'Update' })
-		await expect(updateBtn).toBeDisabled({ timeout: 5_000 })
-
-		// Dialog must remain open.
-		await expect(dialog).toBeVisible()
-
-		// Close without saving.
-		await dialog.getByRole('button', { name: 'Close' }).click()
-	})
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// @e2e openspec/specs/entity-management-modals/spec.md#confirm-delete-on-a-single-agent
-// ─────────────────────────────────────────────────────────────────────────────
-test.describe('entity-management-modals — confirm-delete-on-a-single-agent', () => {
-	test.use({ storageState: STORAGE_STATE })
-
-	const agentName = `${PREFIX}-del-agent`
-	let agentId: number | null = null
-
-	test.beforeAll(async ({ request }) => {
-		agentId = await createTestAgent(request, agentName)
-	})
-
-	test.afterAll(async ({ request }) => {
-		if (agentId) await deleteTestAgent(request, agentId)
-	})
-
-	// @e2e openspec/specs/entity-management-modals/spec.md#confirm-delete-on-a-single-agent
-	test('confirming delete removes the agent from the list', async ({ page }) => {
-		test.skip(!agentId, 'Agent creation failed — skipping')
-
-		await gotoApp(page, '/agents')
-
-		const agentName_loc = page.locator(`text="${agentName}"`).first()
-		await expect(agentName_loc).toBeVisible({ timeout: 20_000 })
-
-		// Open Actions and click Delete.
-		const actionsBtn = page.getByRole('button', { name: 'Actions' }).first()
-		await actionsBtn.click()
-		await page.getByRole('menuitem', { name: 'Delete' }).click({ timeout: 10_000 })
-
-		// DeleteAgent.vue renders as dialog "Delete Agent".
-		const deleteDialog = page.getByRole('dialog', { name: 'Delete Agent' })
-		await expect(deleteDialog).toBeVisible({ timeout: 15_000 })
-
-		// The dialog should name the agent.
-		await expect(deleteDialog.locator(`text="${agentName}"`)).toBeVisible({ timeout: 5_000 })
-
-		// Click the "Delete" button inside the dialog (the destructive action).
-		await deleteDialog.getByRole('button', { name: 'Delete' }).click({ timeout: 10_000 })
-
-		// Dialog closes after successful delete.
-		await expect(deleteDialog).not.toBeVisible({ timeout: 15_000 })
-
-		// Agent should no longer appear in the list.
-		await expect(page.locator(`text="${agentName}"`)).not.toBeVisible({ timeout: 10_000 })
-
-		agentId = null
-	})
-})
+// NOTE: the four agent-modal scenarios (open-edit-modal-hydrates-from-store,
+// save-success-closes-the-dialog, save-failure-keeps-the-dialog-open,
+// confirm-delete-on-a-single-agent) were RETIRED with the OR chat/agents
+// product surface (ffafd1c14, or-chat-engine-decommission) — the /agents SPA
+// page no longer exists in the manifest; the agent UI moved to hermiq.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // @e2e openspec/specs/entity-management-modals/spec.md#copy-single-object-names-the-duplicate
@@ -329,10 +120,12 @@ test.describe('entity-management-modals — copy-single-object-names-the-duplica
 
 		// The Copy action is only available from the /tables (SearchIndex) view, where
 		// each row in CnIndexPage has a row-actions slot with Edit / Copy / Delete.
-		// Navigate to /tables with register+schema pre-selected in the URL query so the
-		// route watcher triggers applyQueryParamsFromRoute → performSearchWithFacets immediately.
+		// Navigate to /tables (hash form — router runs in hash mode, so the query
+		// must live INSIDE the hash for $route.query to see it) with
+		// register+schema pre-selected so the route watcher triggers
+		// applyQueryParamsFromRoute → performSearchWithFacets immediately.
 		await page.goto(
-			`/index.php/apps/openregister/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
+			`/index.php/apps/openregister/#/tables?register=${REGISTER_ID}&schema=${SCHEMA_ID}`,
 			{ waitUntil: 'domcontentloaded' },
 		)
 		await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
@@ -414,9 +207,8 @@ test.describe('entity-management-modals — delete-failure-preserves-dialog-and-
 
 	// @e2e openspec/specs/entity-management-modals/spec.md#delete-failure-preserves-dialog-and-selection
 	test('mass-delete with empty selection keeps the dialog showing empty state', async ({ page }) => {
-		// Navigate to the objects view via hash route (the `/objects` server path is not
-		// registered as a PHP page route and returns 404; use the hash-based SPA fallback).
-		await gotoApp(page, '/#/objects')
+		// Navigate to the objects view (gotoApp is hash-form).
+		await gotoApp(page, '/objects')
 		await expect(page.locator('#app-content-vue, .app-content').first()).toBeVisible({ timeout: 20_000 })
 
 		// The MassDeleteObject modal opens when `massDeleteObject` dialog is active.

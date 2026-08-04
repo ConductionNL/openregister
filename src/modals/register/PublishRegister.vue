@@ -89,7 +89,7 @@ import { registerStore, navigationStore } from '../../store/store.js'
 
 			<div class="formActions">
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!canPublish || loading"
 					@click="publishRegister">
 					<template #icon>

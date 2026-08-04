@@ -90,6 +90,8 @@ class TimeseriesRequestValidator
      *  - metric       (string, optional, default 'count')
      *  - metricField  (string, required when metric != count)
      *  - filter       (array<string, mixed>, optional)
+     *  - cumulative   (bool, optional, default false — REQ-AGG-103; only
+     *                  valid when `interval` is set)
      *
      * @param array<string, mixed> $input  The raw request shape.
      * @param Schema               $schema The schema being aggregated (for field allow-listing).
@@ -216,15 +218,54 @@ class TimeseriesRequestValidator
 
         $filter = (array) ($input['filter'] ?? []);
 
+        $cumulative = $this->toBool(raw: $input['cumulative'] ?? false);
+        if ($cumulative === true && $dateBucket === null) {
+            throw new InvalidArgumentException(
+                '`cumulative` requires `interval` (and `from`/`to`) to be set — it orders and accumulates over time buckets'
+            );
+        }
+
         return AggregationQuery::create(
             metric: $metric,
             field: $metricField,
             filter: $filter,
             groupBy: $groupBy,
-            dateBucket: $dateBucket
+            dateBucket: $dateBucket,
+            cumulative: $cumulative
         );
 
     }//end validate()
+
+    /**
+     * Normalise a raw `cumulative` query-param value to a strict bool.
+     *
+     * HTTP query params arrive as strings (`'true'`, `'1'`, `'false'`,
+     * `'0'`, `''`); the GraphQL resolver may pass an actual bool. Only
+     * `true`/`'true'`/`'1'`/`1` are truthy — everything else (including
+     * absent/`null`) is false, so an unrecognised value fails closed
+     * rather than silently turning cumulative on.
+     *
+     * @param mixed $raw The raw `cumulative` input value.
+     *
+     * @return bool The normalised flag.
+     */
+    private function toBool(mixed $raw): bool
+    {
+        if (is_bool($raw) === true) {
+            return $raw;
+        }
+
+        if (is_string($raw) === true) {
+            return in_array(strtolower($raw), ['true', '1'], true);
+        }
+
+        if (is_int($raw) === true) {
+            return ($raw === 1);
+        }
+
+        return false;
+
+    }//end toBool()
 
     /**
      * Compute the allow-list of fields the request may reference: every

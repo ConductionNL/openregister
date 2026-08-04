@@ -10,7 +10,7 @@ import { translate as t } from '@nextcloud/l10n'
 		:loading-message="t('openregister', 'Loading multitenancy settings...')">
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -20,7 +20,7 @@ import { translate as t } from '@nextcloud/l10n'
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -63,7 +63,7 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Enable Multitenancy Toggle -->
 		<div class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="multitenancyOptions.enabled"
+				v-model="multitenancyOptions.enabled"
 				:disabled="saving"
 				type="switch">
 				{{ multitenancyOptions.enabled ? 'Multitenancy enabled' : 'Multitenancy disabled' }}
@@ -73,7 +73,7 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Admin Override -->
 		<div v-if="multitenancyOptions.enabled" class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="multitenancyOptions.adminOverride"
+				v-model="multitenancyOptions.adminOverride"
 				:disabled="saving"
 				type="switch">
 				{{ multitenancyOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}

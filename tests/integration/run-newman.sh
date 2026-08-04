@@ -7,10 +7,17 @@
 # pattern: host-split base_url, --ignore-redirects, Accept: application/json +
 # OCS-APIRequest headers (set per-request inside the collection).
 #
-# The suite needs a NON-admin user `e2euser`/`e2epass`. This script creates it
+# The suite needs a NON-admin user `e2euser` with a password that satisfies
+# Nextcloud's default password_policy (minLength 10). This script creates it
 # idempotently (create-if-absent) via occ before running. The user is NOT
 # deleted afterwards — it is a reusable fixture. Test objects/schemas/register
 # are cleaned up by the collection's Teardown folder.
+#
+# NOTE: the collection ALSO self-provisions e2euser via the OCS user
+# provisioning API in its own "S0. Provision e2euser" setup request, so it is
+# runnable standalone (e.g. in CI, which does not run this script). The occ
+# step here is a local-run convenience/fallback and is safe to double up with
+# the collection's self-provisioning (both are create-if-absent).
 #
 # Usage:
 #   bash run-newman.sh
@@ -20,7 +27,7 @@
 #   ADMIN_USER     - Admin username   (default: admin)
 #   ADMIN_PASSWORD - Admin password   (default: admin)
 #   E2E_USER       - Non-admin user   (default: e2euser)
-#   E2E_PASSWORD   - Non-admin pass   (default: e2epass)
+#   E2E_PASSWORD   - Non-admin pass   (default: E2epass-1234; must satisfy password_policy minLength 10)
 #   CONTAINER_NAME - Docker container (default: nextcloud)
 ##
 
@@ -35,7 +42,7 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; NC
 ADMIN_USER=${ADMIN_USER:-"admin"}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-"admin"}
 E2E_USER=${E2E_USER:-"e2euser"}
-E2E_PASSWORD=${E2E_PASSWORD:-"e2epass"}
+E2E_PASSWORD=${E2E_PASSWORD:-"E2epass-1234"}
 CONTAINER_NAME=${CONTAINER_NAME:-"nextcloud"}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

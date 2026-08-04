@@ -33,19 +33,20 @@ deterministic or dropped — a flaky baseline is worse than none.
 
 ## CI wiring + PLATFORM CAVEAT (honest)
 
-The visual project is wired into the live-NC CI workflow
-(`.forgejo/workflows/tests-live.yml`, `run-visual` input) as a **NON-GATING**
-step (`continue-on-error: true`).
+The visual project is **not wired into CI**. Its only wiring was the
+Forgejo/Codeberg `tests-live.yml` `run-visual` input — a non-gating
+(`continue-on-error: true`) step that GitHub Actions never executed
+(`.forgejo/**` is ignored there) and that has been removed now that Codeberg
+is retired. Run the project locally instead.
 
 PNG baselines are rendered by the host's font stack + GPU. A baseline shot
 against the **local dev container** will **not** byte-match the same page
 rendered on a **CI Linux runner**. The committed baselines here are
-dev-container native. Therefore, before the CI visual step can gate:
+dev-container native. Therefore, before a GitHub-side visual step could gate:
 
-1. Run the workflow with `PLAYWRIGHT_UPDATE=1` so the step regenerates
-   CI-native baselines (`--update-snapshots`).
-2. Download the uploaded `visual-snapshots-<app>` artifact and commit the
-   CI-native PNGs.
-3. Drop `continue-on-error` on the visual step to make it gating.
+1. Run it with `PLAYWRIGHT_UPDATE=1` so the step regenerates CI-native
+   baselines (`--update-snapshots`).
+2. Download the uploaded snapshot artifact and commit the CI-native PNGs.
+3. Make the step gating (drop `continue-on-error`).
 
-Until then the CI step only surfaces diffs as an artifact and never blocks a PR.
+Until such a job exists on GitHub Actions, nothing surfaces these diffs in CI.

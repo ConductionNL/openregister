@@ -84,13 +84,13 @@
 				</div>
 
 				<div class="tabContainer">
-					<BTabs content-class="mt-3" justified>
-						<BTab :title="t('openregister', 'Data')" active>
+					<AppTabs content-class="mt-3" justified>
+						<AppTab :title="t('openregister', 'Data')" active>
 							<pre class="json-display"><!-- do not remove this comment
                                 -->{{ JSON.stringify(objectStore.objectItem.object, null, 2) }}
                             </pre>
-						</BTab>
-						<BTab :title="t('openregister', 'Uses')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Uses')">
 							<div v-if="objectStore.objectItem?.relations && Object.keys(objectStore.objectItem.relations).length > 0">
 								<NcListItem v-for="(relation, key) in objectStore.objectItem?.relations"
 									:key="key"
@@ -109,8 +109,8 @@
 							<div v-else class="tabPanel">
 								{{ t('openregister', 'No relations found') }}
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Used by')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Used by')">
 							<div v-if="objectStore.relations?.length">
 								<NcListItem v-for="(relation, key) in objectStore.relations"
 									:key="key"
@@ -125,17 +125,21 @@
 										{{ relation.uri }}
 									</template>
 								</NcListItem>
-								<BPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
-									v-model="pagination.relations.currentPage"
+								<CnPagination v-if="!relationsLoading && objectStore.relations?.total > pagination.relations.limit"
 									class="tabPagination"
-									:total-rows="objectStore.relations?.total"
-									:per-page="pagination.relations.limit" />
+									:current-page="pagination.relations.currentPage"
+									:total-pages="relationsTotalPages"
+									:total-items="objectStore.relations?.total"
+									:current-page-size="pagination.relations.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.relations.currentPage = $event"
+									@page-size-changed="onRelationsPageSizeChanged" />
 							</div>
 							<div v-else class="tabPanel">
 								No relations found
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Files')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Files')">
 							<NcButton @click="openFolder(objectStore.objectItem.folder)">
 								<template #icon>
 									<FolderOutline :size="20" />
@@ -185,11 +189,15 @@
 									</template>
 								</NcListItem>
 
-								<BPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
-									v-model="pagination.files.currentPage"
+								<CnPagination v-if="!fileLoading && objectStore.files?.total > pagination.files.limit"
 									class="tabPagination"
-									:total-rows="objectStore.files?.total"
-									:per-page="pagination.files.limit" />
+									:current-page="pagination.files.currentPage"
+									:total-pages="filesTotalPages"
+									:total-items="objectStore.files?.total"
+									:current-page-size="pagination.files.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.files.currentPage = $event"
+									@page-size-changed="onFilesPageSizeChanged" />
 							</div>
 
 							<div v-if="objectStore.files?.results?.length === 0">
@@ -203,43 +211,43 @@
 									appearance="dark"
 									name="Bijlagen aan het laden" />
 							</div>
-						</BTab>
-						<BTab :title="t('openregister', 'Syncs')">
+						</AppTab>
+						<AppTab :title="t('openregister', 'Syncs')">
 							<div class="tabPanel">
 								{{ t('openregister', 'No synchronizations found') }}
 							</div>
-						</BTab>
-						<BTab v-if="relationContext" title="Emails">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Emails">
 							<EmailsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Events">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Events">
 							<EventsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Contacts">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Contacts">
 							<ContactsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Deck">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Deck">
 							<DeckTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext" title="Relations">
+						</AppTab>
+						<AppTab v-if="relationContext" title="Relations">
 							<RelationsTab
 								:register="relationContext.register"
 								:schema="relationContext.schema"
 								:object-id="relationContext.id" />
-						</BTab>
-						<BTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
+						</AppTab>
+						<AppTab v-if="relationContext && (integrationProviders?.length || 0) > 0" :title="t('openregister', 'Integrations')">
 							<!--
 								Registry-driven integration surface. Renders the tabbed
 								CnIntegrationWidget (nc-vue, ADR-019/024) — one app-faithful
@@ -263,8 +271,30 @@
 								:schema="String(relationContext.schema)"
 								:object-id="String(relationContext.id)"
 								surface="detail-page" />
-						</BTab>
-						<BTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
+						</AppTab>
+						<!--
+							Shares (group 6.2). The tab is gated on relationContext
+							rather than rendered unconditionally: CnObjectAccessTab
+							declares register / schema / objectId as REQUIRED, and it
+							issues its first GET on mount. Rendered against a
+							half-populated object it would both throw the missing-prop
+							warnings and fire a request at
+							`/api/objects/undefined/undefined/undefined/shares`.
+
+							The component owns the scope switch as well as the grant
+							list, so this one tab is the whole per-object access
+							surface — the ceiling rule (a share never exceeds the
+							sharer's own access) and the file coupling (a grant on the
+							object also reaches the files in its folder) are enforced
+							server-side and explained in the component's own hints.
+						-->
+						<AppTab v-if="relationContext" :title="t('openregister', 'Shares')">
+							<CnObjectAccessTab
+								:register="String(relationContext.register)"
+								:schema="String(relationContext.schema)"
+								:object-id="String(relationContext.id)" />
+						</AppTab>
+						<AppTab v-if="objectStore.auditTrails" :title="t('openregister', 'Audit Trails')">
 							<div v-if="objectStore.auditTrails?.results?.length">
 								<NcListItem v-for="(auditTrail, key) in objectStore.auditTrails?.results"
 									:key="key"
@@ -289,17 +319,21 @@
 										</NcActionButton>
 									</template>
 								</NcListItem>
-								<BPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
-									v-model="pagination.auditTrails.currentPage"
+								<CnPagination v-if="!auditTrailLoading && objectStore.auditTrails?.total > pagination.auditTrails.limit"
 									class="tabPagination"
-									:total-rows="objectStore.auditTrails?.total"
-									:per-page="pagination.auditTrails.limit" />
+									:current-page="pagination.auditTrails.currentPage"
+									:total-pages="auditTrailsTotalPages"
+									:total-items="objectStore.auditTrails?.total"
+									:current-page-size="pagination.auditTrails.limit"
+									:min-items-to-show="10"
+									@page-changed="pagination.auditTrails.currentPage = $event"
+									@page-size-changed="onAuditTrailsPageSizeChanged" />
 							</div>
 							<div v-if="!objectStore.auditTrails?.results?.length">
 								No audit trails found
 							</div>
-						</BTab>
-					</BTabs>
+						</AppTab>
+					</AppTabs>
 				</div>
 			</div>
 		</div>
@@ -316,7 +350,8 @@ import {
 	NcCounterBubble,
 	NcLoadingIcon,
 } from '@nextcloud/vue'
-import { BTabs, BTab, BPagination } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import Pencil from 'vue-material-design-icons/Pencil.vue'
@@ -336,7 +371,7 @@ import ContactsTab from '../../components/object-relations/ContactsTab.vue'
 import DeckTab from '../../components/object-relations/DeckTab.vue'
 import RelationsTab from '../../components/object-relations/RelationsTab.vue'
 import { computed } from 'vue'
-import { CnIntegrationWidget, useIntegrationRegistry } from '@conduction/nextcloud-vue'
+import { CnIntegrationWidget, CnObjectAccessTab, CnPagination, useIntegrationRegistry } from '@conduction/nextcloud-vue'
 import { translate as t } from '@nextcloud/l10n'
 import { objectStore, navigationStore } from '../../store/store.js'
 
@@ -350,9 +385,9 @@ export default {
 		NcButton,
 		NcCounterBubble,
 		NcLoadingIcon,
-		BTabs,
-		BTab,
-		BPagination,
+		AppTabs,
+		AppTab,
+		CnPagination,
 		DotsHorizontal,
 		Pencil,
 		TrashCanOutline,
@@ -371,6 +406,7 @@ export default {
 		DeckTab,
 		RelationsTab,
 		CnIntegrationWidget,
+		CnObjectAccessTab,
 	},
 	/**
 	 * Composition-API setup: expose the integration-provider registry and
@@ -437,17 +473,14 @@ export default {
 				files: {
 					limit: 200,
 					currentPage: objectStore.files?.page || 1,
-					totalPages: objectStore.files?.total || 1,
 				},
 				auditTrails: {
 					limit: 200,
 					currentPage: objectStore.auditTrails?.page || 1,
-					totalPages: objectStore.auditTrails?.total || 1,
 				},
 				relations: {
 					limit: 200,
 					currentPage: objectStore.relations?.page || 1,
-					totalPages: objectStore.relations?.total || 1,
 				},
 			},
 		}
@@ -477,6 +510,35 @@ export default {
 			}
 
 			return { register, schema, id }
+		},
+		/**
+		 * Total page count for the Files tab paginator. CnPagination does not
+		 * derive this from totalItems/pageSize, unlike bootstrap-vue's
+		 * BPagination which took row/per-page counts only.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		filesTotalPages() {
+			return Math.ceil((objectStore.files?.total || 0) / this.pagination.files.limit) || 1
+		},
+		/**
+		 * Total page count for the Audit Trails tab paginator.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		auditTrailsTotalPages() {
+			return Math.ceil((objectStore.auditTrails?.total || 0) / this.pagination.auditTrails.limit) || 1
+		},
+		/**
+		 * Total page count for the Used by (relations) tab paginator.
+		 *
+		 * @spec exclude UI plumbing — derived pagination view state
+		 * @return {number}
+		 */
+		relationsTotalPages() {
+			return Math.ceil((objectStore.relations?.total || 0) / this.pagination.relations.limit) || 1
 		},
 	},
 	watch: {
@@ -550,7 +612,7 @@ export default {
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 * @return {void}
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
 	methods: {
@@ -723,6 +785,56 @@ export default {
 				.finally(() => {
 					this.relationsLoading = false
 				})
+		},
+		// Page-size handlers. Each mirrors the other paginated views'
+		// onPageSizeChanged: set the new limit, reset to page 1, refetch. The
+		// refetch normally rides the `pagination.<tab>.currentPage` watcher, so
+		// it is only issued directly when the page is already 1 and that
+		// watcher would not fire — issuing it unconditionally would double-fetch.
+		/**
+		 * Apply a new page size to the Files tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onFilesPageSizeChanged(pageSize) {
+			this.pagination.files.limit = pageSize
+			if (this.pagination.files.currentPage !== 1) {
+				this.pagination.files.currentPage = 1
+				return
+			}
+			this.getFiles()
+		},
+		/**
+		 * Apply a new page size to the Audit Trails tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onAuditTrailsPageSizeChanged(pageSize) {
+			this.pagination.auditTrails.limit = pageSize
+			if (this.pagination.auditTrails.currentPage !== 1) {
+				this.pagination.auditTrails.currentPage = 1
+				return
+			}
+			this.getAuditTrails()
+		},
+		/**
+		 * Apply a new page size to the Used by (relations) tab.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude UI plumbing — pagination page-size-change handler
+		 * @return {void}
+		 */
+		onRelationsPageSizeChanged(pageSize) {
+			this.pagination.relations.limit = pageSize
+			if (this.pagination.relations.currentPage !== 1) {
+				this.pagination.relations.currentPage = 1
+				return
+			}
+			this.getRelations()
 		},
 		/**
 		 * Opens the folder URL in a new tab after parsing the encoded URL and converting to Nextcloud format

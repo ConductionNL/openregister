@@ -20,7 +20,9 @@
 
 namespace OCA\OpenRegister\Controller;
 
+use InvalidArgumentException;
 use OCA\OpenRegister\Service\ViewService;
+use OCA\OpenRegister\Service\ViewPresentationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -57,6 +59,13 @@ class ViewsController extends Controller
     private ViewService $viewService;
 
     /**
+     * The view presentation service for kanban/calendar board data
+     *
+     * @var ViewPresentationService
+     */
+    private ViewPresentationService $viewPresentationService;
+
+    /**
      * The user session for getting current user
      *
      * @var IUserSession
@@ -73,21 +82,24 @@ class ViewsController extends Controller
     /**
      * Constructor for ViewsController
      *
-     * @param string          $appName     The app name
-     * @param IRequest        $request     The request object
-     * @param ViewService     $viewService The view service
-     * @param IUserSession    $userSession The user session
-     * @param LoggerInterface $logger      The logger
+     * @param string                  $appName                 The app name
+     * @param IRequest                $request                 The request object
+     * @param ViewService             $viewService             The view service
+     * @param ViewPresentationService $viewPresentationService The view presentation (kanban/calendar) service
+     * @param IUserSession            $userSession             The user session
+     * @param LoggerInterface         $logger                  The logger
      */
     public function __construct(
         string $appName,
         IRequest $request,
         ViewService $viewService,
+        ViewPresentationService $viewPresentationService,
         IUserSession $userSession,
         LoggerInterface $logger
     ) {
         parent::__construct(appName: $appName, request: $request);
         $this->viewService = $viewService;
+        $this->viewPresentationService = $viewPresentationService;
         $this->userSession = $userSession;
         $this->logger      = $logger;
     }//end __construct()
@@ -332,13 +344,19 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
+            $presentation = $data['presentation'] ?? null;
+            if (is_array($presentation) === false) {
+                $presentation = null;
+            }
+
             $view = $this->viewService->create(
                 name: $data['name'],
                 description: $data['description'] ?? '',
                 owner: $userId,
                 isPublic: $data['isPublic'] ?? false,
                 isDefault: $data['isDefault'] ?? false,
-                query: $query
+                query: $query,
+                presentation: $presentation
             );
 
             return new JSONResponse(
@@ -346,6 +364,13 @@ class ViewsController extends Controller
                     'view' => $view->jsonSerialize(),
                 ],
                 statusCode: 201
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => $e->getMessage(),
+                ],
+                statusCode: 400
             );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -448,6 +473,11 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
+            $presentation = $data['presentation'] ?? null;
+            if (is_array($presentation) === false) {
+                $presentation = null;
+            }
+
             $view = $this->viewService->update(
                 id: $id,
                 name: $data['name'],
@@ -455,7 +485,8 @@ class ViewsController extends Controller
                 owner: $userId,
                 isPublic: $data['isPublic'] ?? false,
                 isDefault: $data['isDefault'] ?? false,
-                query: $query
+                query: $query,
+                presentation: $presentation
             );
 
             return new JSONResponse(
@@ -469,6 +500,13 @@ class ViewsController extends Controller
                     'error' => 'View not found',
                 ],
                 statusCode: 404
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => $e->getMessage(),
+                ],
+                statusCode: 400
             );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -562,6 +600,14 @@ class ViewsController extends Controller
                 $query = $data['query'];
             }
 
+            // Handle presentation parameter — fall back to the existing stored
+            // value (not null) so a PATCH that omits presentation cannot
+            // silently wipe an existing kanban/calendar config.
+            $presentation = $view->getPresentation();
+            if (($data['presentation'] ?? null) !== null && is_array($data['presentation']) === true) {
+                $presentation = $data['presentation'];
+            }
+
             // Update view.
             $updatedView = $this->viewService->update(
                 id: $id,
@@ -571,7 +617,8 @@ class ViewsController extends Controller
                 isPublic: $isPublic,
                 isDefault: $isDefault,
                 query: $query,
-                favoredBy: $favoredBy
+                favoredBy: $favoredBy,
+                presentation: $presentation
             );
 
             return new JSONResponse(
@@ -585,6 +632,13 @@ class ViewsController extends Controller
                     'error' => 'View not found',
                 ],
                 statusCode: 404
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => $e->getMessage(),
+                ],
+                statusCode: 400
             );
         } catch (\Exception $e) {
             $this->logger->error(
@@ -682,4 +736,169 @@ class ViewsController extends Controller
             );
         }//end try
     }//end destroy()
+
+    /**
+     * Get the kanban board (columns + paginated cards) for a kanban view
+     *
+     * Read-only: this endpoint only derives columns and fetches cards. There
+     * is deliberately NO "move card" write here — moving a card between
+     * columns MUST go through the existing guarded object PATCH/PUT API
+     * (RBAC + `x-openregister-lifecycle`), never a bespoke endpoint
+     * (REQ-VIEW-KANBAN-03).
+     *
+     * @param string $id The view ID (UUID or numeric ID)
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with kanban board data or error
+     *
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-kanban-columns-and-cards-req-view-kanban-02
+     */
+    public function kanban(string $id): JSONResponse
+    {
+        try {
+            $user   = $this->userSession->getUser();
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
+
+            if (empty($userId) === true) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'User not authenticated',
+                    ],
+                    statusCode: 401
+                );
+            }
+
+            $view  = $this->viewService->find(id: $id, owner: $userId);
+            $board = $this->viewPresentationService->getKanbanBoard(
+                view: $view,
+                requestParams: $this->request->getParams()
+            );
+
+            return new JSONResponse(data: $board);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => 'View not found',
+                ],
+                statusCode: 404
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => $e->getMessage(),
+                ],
+                statusCode: 400
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: '[ViewsController] Error building kanban board',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Failed to build kanban board',
+                    'message' => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end kanban()
+
+    /**
+     * Get the objects for a calendar view within a visible date range
+     *
+     * @param string $id The view ID (UUID or numeric ID)
+     *
+     * @NoAdminRequired
+     *
+     * @NoCSRFRequired
+     *
+     * @return JSONResponse JSON response with calendar range data or error
+     *
+     * @spec openspec/specs/saved-search-views/spec.md#requirement-calendar-plots-objects-by-a-date-field-over-a-range-req-view-cal-04
+     */
+    public function calendar(string $id): JSONResponse
+    {
+        try {
+            $user   = $this->userSession->getUser();
+            $userId = '';
+            if ($user !== null) {
+                $userId = $user->getUID();
+            }
+
+            if (empty($userId) === true) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'User not authenticated',
+                    ],
+                    statusCode: 401
+                );
+            }
+
+            $params     = $this->request->getParams();
+            $rangeStart = $params['start'] ?? $params['rangeStart'] ?? null;
+            $rangeEnd   = $params['end'] ?? $params['rangeEnd'] ?? null;
+
+            if (empty($rangeStart) === true || empty($rangeEnd) === true) {
+                return new JSONResponse(
+                    data: [
+                        'error' => 'Both start and end (the visible date range) are required',
+                    ],
+                    statusCode: 400
+                );
+            }
+
+            $view   = $this->viewService->find(id: $id, owner: $userId);
+            $result = $this->viewPresentationService->getCalendarObjects(
+                view: $view,
+                rangeStart: $rangeStart,
+                rangeEnd: $rangeEnd,
+                requestParams: $params
+            );
+
+            return new JSONResponse(data: $result);
+        } catch (DoesNotExistException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => 'View not found',
+                ],
+                statusCode: 404
+            );
+        } catch (InvalidArgumentException $e) {
+            return new JSONResponse(
+                data: [
+                    'error' => $e->getMessage(),
+                ],
+                statusCode: 400
+            );
+        } catch (\Exception $e) {
+            $this->logger->error(
+                message: '[ViewsController] Error querying calendar range',
+                context: [
+                    'file'      => __FILE__,
+                    'line'      => __LINE__,
+                    'id'        => $id,
+                    'exception' => $e->getMessage(),
+                ]
+            );
+            return new JSONResponse(
+                data: [
+                    'error'   => 'Failed to query calendar range',
+                    'message' => $e->getMessage(),
+                ],
+                statusCode: 500
+            );
+        }//end try
+    }//end calendar()
 }//end class

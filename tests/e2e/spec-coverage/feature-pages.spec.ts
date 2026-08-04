@@ -3,16 +3,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
  * GENUINE behavioural UI e2e for OpenRegister's FEATURE pages that aren't
- * plain entity lists: AI Chat, Files, AVG / Verwerkingsregister, Reports,
+ * plain entity lists: Files, AVG / Verwerkingsregister, Reports,
  * My account, and Features & roadmap. Each asserts the real heading, the
  * primary action(s), tab/section switching where present, and that content
  * renders — data-independent.
+ *
+ * NOTE: the AI Chat page test was deleted — the OR chat product surface was
+ * decommissioned (ffafd1c14, or-chat-engine-decommission); the SPA page moved
+ * to hermiq.
  *
  * Only OR-origin console errors / >=500 responses fail; core-NC noise is
  * filtered. Known OR backend gaps (reports register not imported on a bare
  * dev env) are asserted-around, not asserted-on.
  *
- * @e2e openspec/specs/chat-ai/spec.md
  * @e2e openspec/specs/files-render-extension/spec.md
  * @e2e openspec/specs/avg-verwerkingsregister/spec.md
  * @e2e openspec/specs/built-in-dashboards/spec.md
@@ -53,7 +56,9 @@ function trackErrors(page: Page, extraNoise: string[] = []): { console: string[]
 }
 
 async function gotoPage(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister${route}`, { waitUntil: 'domcontentloaded' })
+	// HASH form — the router runs in hash mode (src/main.js); path-form
+	// deep-links render the dashboard instead of the target page.
+	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	await page.waitForSelector('#app-content-vue, .app-content, main', { timeout: 20_000 })
 	// Race a heading against a content button so feature pages whose top
@@ -79,18 +84,6 @@ async function expectButton(page: Page, name: RegExp): Promise<void> {
 
 test.describe('feature-pages — real UI render + actions', () => {
 	test.use({ storageState: STORAGE_STATE })
-
-	test('AI Chat: assistant heading + conversation tabs + New Conversation', async ({ page }) => {
-		const e = trackErrors(page)
-		await gotoPage(page, '/chat')
-		await expectHeading(page, /AI Assistant|Start a conversation/i)
-		await expectButton(page, /New Conversation|Start Conversation/i)
-		// Active / Archive conversation tabs render.
-		await expect(page.getByRole('tab', { name: /Active/i }).first()).toBeVisible({ timeout: 8_000 })
-		await page.getByRole('tab', { name: /Archive/i }).first().click()
-		expect(e.console, e.console.join(' | ')).toHaveLength(0)
-		expect(e.http, e.http.join(' | ')).toHaveLength(0)
-	})
 
 	test('Files: heading + Refresh + Filters toggle + content', async ({ page }) => {
 		const e = trackErrors(page)

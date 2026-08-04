@@ -8,8 +8,8 @@
         { "key": "base_url", "value": "http://localhost" },
         { "key": "admin_user", "value": "admin" },
         { "key": "admin_password", "value": "admin" },
-        { "key": "health_path", "value": "/apps/openregister/api/apphost/health" },
-        { "key": "metrics_path", "value": "/apps/openregister/api/apphost/metrics" },
+        { "key": "health_path", "value": "/index.php/apps/openregister/api/health" },
+        { "key": "metrics_path", "value": "/index.php/apps/openregister/api/metrics" },
         { "key": "app_prefix", "value": "openregister" }
     ],
     "item": [

@@ -23,6 +23,9 @@ declare(strict_types=1);
 namespace Unit\Service;
 
 use Exception;
+use InvalidArgumentException;
+use OCA\OpenRegister\Db\Schema;
+use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Db\View;
 use OCA\OpenRegister\Db\ViewMapper;
 use OCA\OpenRegister\Service\ViewService;
@@ -63,17 +66,43 @@ class ViewServiceTest extends TestCase
     private LoggerInterface&MockObject $logger;
 
     /**
+     * Mock schema mapper (used for presentation field validation).
+     *
+     * @var SchemaMapper&MockObject
+     */
+    private SchemaMapper&MockObject $schemaMapper;
+
+    /**
      * Set up test fixtures.
      *
      * @return void
      */
     protected function setUp(): void
     {
-        $this->viewMapper = $this->createMock(originalClassName: ViewMapper::class);
-        $this->logger     = $this->createMock(originalClassName: LoggerInterface::class);
+        $this->viewMapper   = $this->createMock(originalClassName: ViewMapper::class);
+        $this->logger       = $this->createMock(originalClassName: LoggerInterface::class);
+        $this->schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 
-        $this->service = new ViewService(viewMapper: $this->viewMapper, logger: $this->logger);
+        $this->service = new ViewService(
+            viewMapper: $this->viewMapper,
+            logger: $this->logger,
+            schemaMapper: $this->schemaMapper
+        );
     }//end setUp()
+
+    /**
+     * Build a Schema entity with the given properties (for presentation validation tests).
+     *
+     * @param array<string, mixed> $properties The schema's JSON-schema properties
+     *
+     * @return Schema The configured schema entity
+     */
+    private function createSchema(array $properties): Schema
+    {
+        $schema = new Schema();
+        $schema->setProperties($properties);
+        return $schema;
+    }//end createSchema()
 
     /**
      * Create a test View entity with the given properties.
@@ -471,4 +500,319 @@ class ViewServiceTest extends TestCase
 
         $this->service->delete(id: 999, owner: 'user1');
     }//end testDeleteThrowsAndLogsOnFailure()
+
+    // ── presentation config (REQ-VIEW-PRES-01) ──
+
+    /**
+     * Test that create() persists a valid kanban presentation and returns it.
+     *
+     * @return void
+     */
+    public function testCreatePersistsValidKanbanPresentation(): void
+    {
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['status' => ['type' => 'string', 'enum' => ['todo', 'doing', 'done']]])
+        );
+        $this->viewMapper->method('insert')->willReturnCallback(
+            function (View $view) {
+                return $view;
+            }
+        );
+
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+
+        $result = $this->service->create(
+            name: 'Kanban View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['status-schema']],
+            presentation: $presentation
+        );
+
+        $this->assertSame(expected: $presentation, actual: $result->getPresentation());
+    }//end testCreatePersistsValidKanbanPresentation()
+
+    /**
+     * Test that create() rejects a kanban presentation whose groupByField is
+     * not a property of the view's schema.
+     *
+     * @return void
+     */
+    public function testCreateRejectsKanbanGroupByFieldNotOnSchema(): void
+    {
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['title' => ['type' => 'string']])
+        );
+        $this->viewMapper->expects($this->never())->method('insert');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->create(
+            name: 'Kanban View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['some-schema']],
+            presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+        );
+    }//end testCreateRejectsKanbanGroupByFieldNotOnSchema()
+
+    /**
+     * Test that create() rejects a calendar presentation whose dateField is
+     * not a property of the view's schema.
+     *
+     * @return void
+     */
+    public function testCreateRejectsCalendarDateFieldNotOnSchema(): void
+    {
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['title' => ['type' => 'string']])
+        );
+        $this->viewMapper->expects($this->never())->method('insert');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->create(
+            name: 'Calendar View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['some-schema']],
+            presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'dueDate']]
+        );
+    }//end testCreateRejectsCalendarDateFieldNotOnSchema()
+
+    /**
+     * Test that create() accepts a valid calendar presentation with an endDateField.
+     *
+     * @return void
+     */
+    public function testCreatePersistsValidCalendarPresentationWithEndDateField(): void
+    {
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(
+                [
+                    'startDate' => ['type' => 'string', 'format' => 'date'],
+                    'endDate'   => ['type' => 'string', 'format' => 'date'],
+                ]
+            )
+        );
+        $this->viewMapper->method('insert')->willReturnCallback(
+            function (View $view) {
+                return $view;
+            }
+        );
+
+        $presentation = [
+            'viewType' => 'calendar',
+            'calendar' => ['dateField' => 'startDate', 'endDateField' => 'endDate'],
+        ];
+
+        $result = $this->service->create(
+            name: 'Calendar View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['event-schema']],
+            presentation: $presentation
+        );
+
+        $this->assertSame(expected: $presentation, actual: $result->getPresentation());
+    }//end testCreatePersistsValidCalendarPresentationWithEndDateField()
+
+    /**
+     * Test that create() rejects a calendar presentation whose configured
+     * endDateField is not a property of the view's schema.
+     *
+     * @return void
+     */
+    public function testCreateRejectsCalendarEndDateFieldNotOnSchema(): void
+    {
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['startDate' => ['type' => 'string', 'format' => 'date']])
+        );
+        $this->viewMapper->expects($this->never())->method('insert');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->create(
+            name: 'Calendar View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['event-schema']],
+            presentation: ['viewType' => 'calendar', 'calendar' => ['dateField' => 'startDate', 'endDateField' => 'missingField']]
+        );
+    }//end testCreateRejectsCalendarEndDateFieldNotOnSchema()
+
+    /**
+     * Test that create() rejects a kanban presentation when the view has no schema configured.
+     *
+     * @return void
+     */
+    public function testCreateRejectsPresentationWithNoSchemaConfigured(): void
+    {
+        $this->viewMapper->expects($this->never())->method('insert');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->create(
+            name: 'Kanban View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: [],
+            presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+        );
+    }//end testCreateRejectsPresentationWithNoSchemaConfigured()
+
+    /**
+     * Test that a null presentation is always accepted (default table view, REQ-VIEW-PRES-01).
+     *
+     * @return void
+     */
+    public function testCreateAcceptsNullPresentation(): void
+    {
+        $this->schemaMapper->expects($this->never())->method('find');
+        $this->viewMapper->method('insert')->willReturnCallback(
+            function (View $view) {
+                return $view;
+            }
+        );
+
+        $result = $this->service->create(
+            name: 'Plain View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: [],
+            presentation: null
+        );
+
+        $this->assertNull(actual: $result->getPresentation());
+    }//end testCreateAcceptsNullPresentation()
+
+    /**
+     * Test that update() persists a valid presentation change.
+     *
+     * @return void
+     */
+    public function testUpdatePersistsValidPresentation(): void
+    {
+        $view = $this->createView(id: 1, owner: 'user1');
+        $view->setQuery(['schemas' => ['status-schema']]);
+        $this->viewMapper->method('find')->willReturn(value: $view);
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['status' => ['type' => 'string', 'enum' => ['todo', 'done']]])
+        );
+        $this->viewMapper->method('update')->willReturnCallback(
+            function (View $v) {
+                return $v;
+            }
+        );
+
+        $presentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+
+        $result = $this->service->update(
+            id: 1,
+            name: 'View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['status-schema']],
+            presentation: $presentation
+        );
+
+        $this->assertSame(expected: $presentation, actual: $result->getPresentation());
+    }//end testUpdatePersistsValidPresentation()
+
+    /**
+     * Test that update() rejects an invalid presentation before touching the mapper.
+     *
+     * @return void
+     */
+    public function testUpdateRejectsInvalidPresentation(): void
+    {
+        $view = $this->createView(id: 1, owner: 'user1');
+        $this->viewMapper->method('find')->willReturn(value: $view);
+        $this->schemaMapper->method('find')->willReturn(
+            value: $this->createSchema(['title' => ['type' => 'string']])
+        );
+        $this->viewMapper->expects($this->never())->method('update');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->update(
+            id: 1,
+            name: 'View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: ['schemas' => ['some-schema']],
+            presentation: ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']]
+        );
+    }//end testUpdateRejectsInvalidPresentation()
+
+    /**
+     * Test that update() with a null presentation leaves the existing stored
+     * presentation untouched (mirrors favoredBy's preserve-if-null semantics).
+     *
+     * @return void
+     */
+    public function testUpdateWithNullPresentationPreservesExisting(): void
+    {
+        $existingPresentation = ['viewType' => 'kanban', 'kanban' => ['groupByField' => 'status']];
+        $view                 = $this->createView(id: 1, owner: 'user1');
+        $view->setPresentation($existingPresentation);
+        $this->viewMapper->method('find')->willReturn(value: $view);
+        $this->viewMapper->method('update')->willReturnCallback(
+            function (View $v) {
+                return $v;
+            }
+        );
+
+        $result = $this->service->update(
+            id: 1,
+            name: 'View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: []
+        );
+
+        $this->assertSame(expected: $existingPresentation, actual: $result->getPresentation());
+    }//end testUpdateWithNullPresentationPreservesExisting()
+
+    /**
+     * Test that an unknown viewType is rejected.
+     *
+     * @return void
+     */
+    public function testCreateRejectsUnknownViewType(): void
+    {
+        $this->viewMapper->expects($this->never())->method('insert');
+
+        $this->expectException(exception: InvalidArgumentException::class);
+
+        $this->service->create(
+            name: 'View',
+            description: 'Desc',
+            owner: 'user1',
+            isPublic: false,
+            isDefault: false,
+            query: [],
+            presentation: ['viewType' => 'gallery']
+        );
+    }//end testCreateRejectsUnknownViewType()
 }//end class

@@ -12,7 +12,6 @@ use OCA\OpenRegister\Service\OrganisationService;
 use OCA\OpenRegister\Service\ToolRegistry;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
-use OCP\AppFramework\Http\TemplateResponse;
 use OCP\IRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -48,12 +47,10 @@ class AgentsControllerTest extends TestCase
         );
     }
 
-    public function testPage(): void
-    {
-        $result = $this->controller->page();
-
-        $this->assertInstanceOf(TemplateResponse::class, $result);
-    }
+    // NOTE: testPage() (AgentsController::page()) removed — the Agents SPA
+    // page moved to hermiq (or-chat-engine-decommission); the method no
+    // longer exists on AgentsController (see appinfo/routes.php comment at
+    // the former agents#page route).
 
     public function testIndexSuccess(): void
     {

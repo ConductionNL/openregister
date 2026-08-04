@@ -83,7 +83,7 @@
 							<span class="stat-badge">{{ selectedViewsCount }} / {{ views.length }} {{ t('openregister', 'views selected') }}</span>
 							<NcButton
 								v-if="config.enabledViews.length > 0"
-								type="tertiary"
+								variant="tertiary"
 								@click="config.enabledViews = []">
 								{{ t('openregister', 'Clear all') }}
 							</NcButton>
@@ -210,7 +210,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="saving"
 				@click="saveConfiguration">
 				<template #icon>

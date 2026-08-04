@@ -45,7 +45,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 					<div class="audit-trail-linked-items-container">
 						<div>
 							<p><b>{{ t('openregister', 'Schema:') }}</b> {{ schemaLoading ? t('openregister', 'Loading...') : schemaItem?.title }}</p>
-							<NcButton type="tertiary"
+							<NcButton variant="tertiary"
 								:aria-label="t('openregister', 'Go to linked Schema')"
 								@click="goToSchema">
 								<template #icon>
@@ -57,7 +57,7 @@ import { objectStore, navigationStore, schemaStore, registerStore } from '../../
 
 						<div>
 							<p><b>{{ t('openregister', 'Register:') }}</b> {{ registerLoading ? t('openregister', 'Loading...') : registerItem?.title }}</p>
-							<NcButton type="tertiary"
+							<NcButton variant="tertiary"
 								:aria-label="t('openregister', 'Go to linked Register')"
 								@click="goToRegister">
 								<template #icon>

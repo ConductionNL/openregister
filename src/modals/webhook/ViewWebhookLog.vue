@@ -110,7 +110,7 @@
 			</NcButton>
 			<NcButton
 				v-if="logItem && !logItem.success"
-				type="primary"
+				variant="primary"
 				:disabled="retrying"
 				@click="retryWebhook">
 				<template #icon>

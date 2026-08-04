@@ -80,6 +80,8 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The discovery results.
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/specs/schema-import/spec.md
      */
     public function types(string $dialect): JSONResponse
@@ -101,6 +103,8 @@ class SchemaImportController extends Controller
      *
      * @return JSONResponse The snapshot info.
      *
+     * @NoCSRFRequired
+     *
      * @spec openspec/specs/schema-import/spec.md
      */
     public function snapshot(string $dialect): JSONResponse
@@ -120,6 +124,8 @@ class SchemaImportController extends Controller
      * @param string $dialect The dialect key (schema.org | ggm).
      *
      * @return JSONResponse The created schema, or a structured error.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-import/spec.md
      */
@@ -169,6 +175,8 @@ class SchemaImportController extends Controller
      * @param int $id The schema id.
      *
      * @return JSONResponse The classified diff (preview) or the updated schema.
+     *
+     * @NoCSRFRequired
      *
      * @spec openspec/specs/schema-import/spec.md
      *
@@ -247,12 +255,11 @@ class SchemaImportController extends Controller
      */
     private function persistNewSchema(ImportedSchema $imported): Schema
     {
-        $payload = $imported->toSchemaArray();
-
-        $schema = new Schema();
-        $schema->hydrate($payload);
-
-        return $this->schemaMapper->insert($schema);
+        // Use the canonical creation path so the schema gets its uuid, slug,
+        // version, facet configuration and delta extraction. Hand-rolling
+        // hydrate()+insert() bypasses cleanObject() and inserts a NULL uuid,
+        // which the NOT NULL constraint on oc_openregister_schemas rejects.
+        return $this->schemaMapper->createFromArray($imported->toSchemaArray());
 
     }//end persistNewSchema()
 

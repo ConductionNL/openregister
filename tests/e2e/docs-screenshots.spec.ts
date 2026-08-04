@@ -83,9 +83,11 @@ async function dismissOverlays(page: Page): Promise<void> {
 
 /** Navigate to an OR (or absolute) route and settle. */
 async function go(page: Page, route: string): Promise<void> {
+	// OR routes use HASH form — the router runs in hash mode (src/main.js);
+	// path-form deep-links render the dashboard instead of the target page.
 	const url = route.startsWith('/apps/') || route.startsWith('/settings/')
 		? `/index.php${route}`
-		: `/index.php${APP}${route}`
+		: `/index.php${APP}/#${route}`
 	await page.goto(url).catch(() => { /* tolerate a 404 — caller decides */ })
 	await page.waitForLoadState('networkidle').catch(() => { /* idle never fires on some pages */ })
 	await dismissOverlays(page)
