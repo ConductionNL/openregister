@@ -161,7 +161,7 @@ class FolderManagementHandler
                 ]
             );
             return null;
-        }//end try
+        }
     }//end createEntityFolder()
 
     /**
