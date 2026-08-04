@@ -23,6 +23,7 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
 import * as fs from 'fs'
 import * as path from 'path'
+import { resolveBaseUrl } from '../base-url'
 
 interface ProviderReport {
 	id: string
@@ -208,7 +209,9 @@ test.describe('Leaf verification harness', () => {
 
 		fs.writeFileSync(REPORT_PATH, JSON.stringify({
 			generated: new Date().toISOString(),
-			baseUrl: process.env.NEXTCLOUD_URL || 'http://localhost:8080',
+			// ⚠️ No `|| 'http://localhost:8080'` — that literal is the SHARED
+			// dev container. See ../base-url.ts.
+			baseUrl: resolveBaseUrl(),
 			objectTriple: { register, schema, objectId },
 			providerCount: reports.length,
 			passCount: reports.filter(r => r.verdict === 'pass').length,

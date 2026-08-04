@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "55f2a9133d8b9e31346d27035e35bf7a",
+    "content-hash": "72696fc0f53b246c09d535200d2d0fea",
     "packages": [
         {
             "name": "adbario/php-dot-notation",
@@ -309,8 +309,14 @@
             "version": "dev-feat/chained-filter-text-replace",
             "source": {
                 "type": "git",
-                "url": "https://codeberg.org/Conduction/sapp",
+                "url": "git@github.com:ConductionNL/sapp.git",
                 "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ConductionNL/sapp/zipball/5c406e91254d6936f44372db35f1cc15e5a06c56",
+                "reference": "5c406e91254d6936f44372db35f1cc15e5a06c56",
+                "shasum": ""
             },
             "require": {
                 "ext-mbstring": "*",
@@ -339,7 +345,7 @@
                 "sign",
                 "signature"
             ],
-            "time": "2026-06-16T13:52:30+00:00"
+            "time": "2026-07-09T14:51:10+00:00"
         },
         {
             "name": "dompdf/dompdf",
@@ -677,16 +683,16 @@
         },
         {
             "name": "guzzlehttp/guzzle",
-            "version": "7.15.1",
+            "version": "7.15.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
-                "reference": "61443dfb33c62f308ee8add20f45b4d6e4bf8d2f"
+                "reference": "744101956d78b7c1384d0cbf379db13e859167bf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/61443dfb33c62f308ee8add20f45b4d6e4bf8d2f",
-                "reference": "61443dfb33c62f308ee8add20f45b4d6e4bf8d2f",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/744101956d78b7c1384d0cbf379db13e859167bf",
+                "reference": "744101956d78b7c1384d0cbf379db13e859167bf",
                 "shasum": ""
             },
             "require": {
@@ -785,7 +791,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/guzzle/issues",
-                "source": "https://github.com/guzzle/guzzle/tree/7.15.1"
+                "source": "https://github.com/guzzle/guzzle/tree/7.15.2"
             },
             "funding": [
                 {
@@ -801,7 +807,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-07-18T11:23:11+00:00"
+            "time": "2026-07-26T23:23:20+00:00"
         },
         {
             "name": "guzzlehttp/promises",
@@ -11632,29 +11638,28 @@
         },
         {
             "name": "sabre/uri",
-            "version": "3.1.0",
+            "version": "2.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sabre-io/uri.git",
-                "reference": "a926c749dddfb289b8a9b5218d16ac06affdc631"
+                "reference": "b76524c22de90d80ca73143680a8e77b1266c291"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sabre-io/uri/zipball/a926c749dddfb289b8a9b5218d16ac06affdc631",
-                "reference": "a926c749dddfb289b8a9b5218d16ac06affdc631",
+                "url": "https://api.github.com/repos/sabre-io/uri/zipball/b76524c22de90d80ca73143680a8e77b1266c291",
+                "reference": "b76524c22de90d80ca73143680a8e77b1266c291",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.2"
+                "php": "^7.4 || ^8.0"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.95",
+                "friendsofphp/php-cs-fixer": "^3.63",
                 "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan": "^2.1",
-                "phpstan/phpstan-phpunit": "^2.0",
-                "phpstan/phpstan-strict-rules": "^2.0",
-                "phpunit/phpunit": "^10.5",
-                "rector/rector": "^2.4"
+                "phpstan/phpstan": "^1.12",
+                "phpstan/phpstan-phpunit": "^1.4",
+                "phpstan/phpstan-strict-rules": "^1.6",
+                "phpunit/phpunit": "^9.6"
             },
             "type": "library",
             "autoload": {
@@ -11689,7 +11694,7 @@
                 "issues": "https://github.com/sabre-io/uri/issues",
                 "source": "https://github.com/fruux/sabre-uri"
             },
-            "time": "2026-04-26T04:19:03+00:00"
+            "time": "2024-08-27T12:18:16+00:00"
         },
         {
             "name": "sabre/vobject",
@@ -11797,16 +11802,16 @@
         },
         {
             "name": "sabre/xml",
-            "version": "4.1.0",
+            "version": "2.2.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sabre-io/xml.git",
-                "reference": "bec83cbe2f4e1e1ca4254ed8d7caa7e32cc74b05"
+                "reference": "01a7927842abf3e10df3d9c2d9b0cc9d813a3fcc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sabre-io/xml/zipball/bec83cbe2f4e1e1ca4254ed8d7caa7e32cc74b05",
-                "reference": "bec83cbe2f4e1e1ca4254ed8d7caa7e32cc74b05",
+                "url": "https://api.github.com/repos/sabre-io/xml/zipball/01a7927842abf3e10df3d9c2d9b0cc9d813a3fcc",
+                "reference": "01a7927842abf3e10df3d9c2d9b0cc9d813a3fcc",
                 "shasum": ""
             },
             "require": {
@@ -11814,17 +11819,13 @@
                 "ext-xmlreader": "*",
                 "ext-xmlwriter": "*",
                 "lib-libxml": ">=2.6.20",
-                "php": "^8.2",
-                "sabre/uri": ">=2.0,<4.0.0"
+                "php": "^7.1 || ^8.0",
+                "sabre/uri": ">=1.0,<3.0.0"
             },
             "require-dev": {
-                "friendsofphp/php-cs-fixer": "^3.95",
-                "phpstan/extension-installer": "^1.4",
-                "phpstan/phpstan": "^2.1",
-                "phpstan/phpstan-phpunit": "^2.0",
-                "phpstan/phpstan-strict-rules": "^2.0",
-                "phpunit/phpunit": "^10.5",
-                "rector/rector": "^2.4"
+                "friendsofphp/php-cs-fixer": "~2.17.1||3.63.2",
+                "phpstan/phpstan": "^0.12",
+                "phpunit/phpunit": "^7.5 || ^8.5 || ^9.6"
             },
             "type": "library",
             "autoload": {
@@ -11866,7 +11867,7 @@
                 "issues": "https://github.com/sabre-io/xml/issues",
                 "source": "https://github.com/fruux/sabre-xml"
             },
-            "time": "2026-04-27T10:56:01+00:00"
+            "time": "2024-09-06T07:37:46+00:00"
         },
         {
             "name": "sebastian/cli-parser",

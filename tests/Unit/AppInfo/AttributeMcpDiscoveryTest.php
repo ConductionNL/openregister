@@ -106,6 +106,52 @@ class RecordingApplication extends Application
 class AttributeMcpDiscoveryTest extends TestCase
 {
 
+    /**
+     * `\OC::$server` as it was before a test swapped it.
+     *
+     * @var object|null
+     */
+    private ?object $originalServer = null;
+
+
+    /**
+     * Remember the real service locator before any test replaces it.
+     *
+     * @return void
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->originalServer = (\OC::$server ?? null);
+
+    }//end setUp()
+
+
+    /**
+     * Put `\OC::$server` back.
+     *
+     * `invokeRealSeam()` installs a bare OC_FakeServer subclass that overrides
+     * one method and registers NO services. Leaving it in place made every
+     * later test in the run see a locator whose `get()` returns null — and
+     * `OCP\AppFramework\Http\Response::getHeaders()` calls
+     * `\OC::$server->get(IRequest::class)->getId()` unconditionally. That is
+     * what produced 21 "Call to a member function getId() on null" errors, plus
+     * the getSystemValueBool()/findLanguage() ones, in tests that pass perfectly
+     * well on their own. Restoring in tearDown (not at the end of the test)
+     * means a failing test cannot leak the fake either.
+     *
+     * @return void
+     */
+    protected function tearDown(): void
+    {
+        if ($this->originalServer !== null) {
+            \OC::$server = $this->originalServer;
+        }
+
+        parent::tearDown();
+
+    }//end tearDown()
+
 
     /**
      * Reflect-invoke `collectAttributeMcpProviders()` on a RecordingApplication

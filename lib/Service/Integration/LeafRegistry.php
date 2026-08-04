@@ -47,9 +47,9 @@ use Psr\Log\LoggerInterface;
  * Registry of all leaves contributed by sibling apps on this NC instance.
  *
  * Duplicate leaf id: first registration wins, second logs a warning (ADR-013).
- * Descriptor validation (non-empty kinds, valid kinds, kebab-case id,
- * data-provider-requires-provider) rejects and skips a bad leaf without breaking
- * the catalogue.
+ * Descriptor validation (non-empty kinds, valid kinds, kebab-case id, valid
+ * renderMode, data-provider-requires-provider) rejects and skips a bad leaf
+ * without breaking the catalogue.
  */
 class LeafRegistry
 {
@@ -144,6 +144,8 @@ class LeafRegistry
      * Validation rules (a failing leaf is skipped, never fatal):
      *   - id MUST be non-empty kebab-case;
      *   - kinds MUST be a non-empty subset of `LeafDescriptor::VALID_KINDS`;
+     *   - renderMode MUST be one of `LeafDescriptor::VALID_RENDER_MODES`
+     *     (`component` — the default — or `mount`);
      *   - a `data-provider` kind MUST carry an accompanying provider;
      *   - duplicate id: first registration wins (ADR-013).
      *
@@ -180,6 +182,18 @@ class LeafRegistry
                     '[LeafRegistry] leaf "%s" declares unknown kind(s) "%s" — skipping',
                     $id,
                     implode(', ', $unknown)
+                )
+            );
+            return;
+        }
+
+        $renderMode = $descriptor->getRenderMode();
+        if (in_array($renderMode, LeafDescriptor::VALID_RENDER_MODES, true) === false) {
+            $this->logger->warning(
+                sprintf(
+                    '[LeafRegistry] leaf "%s" declares unknown renderMode "%s" — skipping',
+                    $id,
+                    $renderMode
                 )
             );
             return;
@@ -246,9 +260,10 @@ class LeafRegistry
     /**
      * Render the discovery rows for the OCS capabilities surface.
      *
-     * Each row carries the leaf's id, label, requiredApp, surfaces, kinds and
-     * current usability — everything a manifest app or admin UI needs to
-     * discover the leaf WITHOUT loading its JS bundle. Usability is derived from
+     * Each row carries the leaf's id, label, requiredApp, surfaces, kinds,
+     * renderMode and current usability — everything a manifest app or admin UI
+     * needs to discover the leaf (including HOW a render-surface leaf renders)
+     * WITHOUT loading its JS bundle. Usability is derived from
      * the installed/enabled state of the required app: a leaf whose required app
      * is disabled is reported present but not currently usable.
      *

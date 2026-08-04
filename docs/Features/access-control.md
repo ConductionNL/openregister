@@ -25,7 +25,8 @@ The access control system integrates with:
 Access can be controlled at multiple levels:
 - Register level - Control access to entire registers
 - Schema level - Manage permissions for specific register/schema combinations
-- Object level - Set permissions on individual objects
+- Object level - Set permissions on individual objects, make one object `private`,
+  and invite a principal to it (see [Object Sharing](./object-sharing.md))
 - Property level - Fine-grained, conditional control over specific object properties (see [Property Authorization](./property-authorization.md))
 
 ## Permission Types

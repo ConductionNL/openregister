@@ -667,10 +667,15 @@ Request → PermissionHandler → SaveObject/RenderObject → Response
 | Operation | Schema RBAC | Property RBAC |
 |-----------|------------|---------------|
 | **Create** | `SaveObject` calls `PermissionHandler.checkPermission()` | `PropertyRbacHandler.getUnauthorizedProperties()` validates incoming data |
-| **Read** | `PermissionHandler.hasPermission()` filters the result set | `PropertyRbacHandler.filterReadableProperties()` strips unauthorized fields from response |
+| **Read** | `MagicRbacHandler.buildRbacConditionsSql(action: 'read')` filters in SQL, before rows are loaded | `PropertyRbacHandler.filterReadableProperties()` strips unauthorized fields from response |
 | **Update** | `SaveObject` calls `PermissionHandler.checkPermission()` | `PropertyRbacHandler.getUnauthorizedProperties()` validates incoming data |
 | **Delete** | `SaveObject` calls `PermissionHandler.checkPermission()` | N/A |
-| **List** | `PermissionHandler.filterObjectsForPermissions()` filters results | Property filtering applied per-object during rendering |
+| **List** | Same SQL gate as Read — `MagicRbacHandler.buildRbacConditionsSql(action: 'read')` via `MagicSearchHandler` | Property filtering applied per-object during rendering |
+
+> Read and List share one enforcement point, and it is in SQL. There is no
+> post-load object filter in `PermissionHandler` — see the note where one used
+> to be. `PermissionHandler` owns the single-object verdict (`hasPermission()` /
+> `checkPermission()`), which is what Create, Update and Delete call.
 
 ### Database-Level Enforcement
 

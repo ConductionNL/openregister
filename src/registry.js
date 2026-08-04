@@ -24,6 +24,8 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
+import { defineAsyncComponent } from 'vue'
+
 /**
  * Wrap a Vue component (or async-component loader) into the v2 registry shape
  * required by CnAppRoot's `registry` prop (`kind: "page"` is the discriminator
@@ -31,13 +33,25 @@
  * `"form-field"`/`"cell-renderer"` entries with the same name are NOT used for
  * page dispatch).
  *
+ * ⚠️ Vue 3: a bare `() => import('...')` loader is NOT an async component here.
+ * CnPageRenderer renders each entry through `<component :is="…">`, and Vue 3
+ * treats a plain function passed to `:is` as a FUNCTIONAL component — it calls
+ * it once per render and uses the return value as the vnode tree. The return
+ * value is a Promise, so every one of these ~60 pages would render as nothing,
+ * with no error. (Vue 2 accepted the bare loader because it sniffed for a
+ * thenable.) `defineAsyncComponent` is what restores the lazy-chunk behaviour
+ * the code-splitting work depends on.
+ *
  * @param {(object|Function)} component Vue component options, or an async
  *   component loader `() => import(...)`.
  *
  * @return {object} A `{ kind: "page", component }` registry entry.
  */
 function page(component) {
-	return { kind: 'page', component }
+	return {
+		kind: 'page',
+		component: typeof component === 'function' ? defineAsyncComponent(component) : component,
+	}
 }
 
 export default {
@@ -58,6 +72,9 @@ export default {
 	AuditTrailIndex: page(() => import('./views/logs/AuditTrailIndex.vue')),
 	SearchTrailIndex: page(() => import('./views/logs/SearchTrailIndex.vue')),
 	WebhooksIndex: page(() => import('./views/webhooks/WebhooksIndex.vue')),
+	FlowsIndex: page(() => import('./views/flows/FlowsIndex.vue')),
+	FlowDetailPage: page(() => import('./views/flows/FlowDetailPage.vue')),
+	FlowDetailSidebar: page(() => import('./views/flows/FlowDetailSidebar.vue')),
 	WebhookLogsIndex: page(() => import('./views/webhooks/WebhookLogsIndex.vue')),
 	EndpointsIndex: page(() => import('./views/Endpoint/EndpointsIndex.vue')),
 	EntitiesIndex: page(() => import('./views/entities/EntitiesIndex.vue')),

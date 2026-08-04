@@ -37,15 +37,20 @@ use DateTime;
 use OCA\OpenRegister\Db\FlowRun;
 use OCA\OpenRegister\Db\FlowRunMapper;
 use OCA\OpenRegister\Service\Flow\FlowItems;
+use OCA\OpenRegister\Service\Flow\FlowLocator;
 use OCA\OpenRegister\Service\Flow\FlowRunService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
+use stdClass;
 use Throwable;
 
 /**
  * Executes queued runs, resumes due ones, and prunes old ones.
+ *
+ * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+ * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
  */
 class FlowRunWorker extends TimedJob
 {
@@ -68,26 +73,72 @@ class FlowRunWorker extends TimedJob
     private const DEFAULT_RETENTION_DAYS = 30;
 
     /**
+     * How long a run may sit in `running` before it counts as abandoned.
+     *
+     * A run executes synchronously inside ONE worker pass, so a pass that is
+     * still going has touched its row far more recently than this. Fifteen
+     * minutes is therefore generous rather than tight — it exists to be
+     * unambiguous, not to be quick.
+     *
+     * @var int
+     */
+    private const DEFAULT_STALE_MINUTES = 15;
+
+    /**
+     * How long a run may sit in `queued` before it is too late to run it.
+     *
+     * A queued run says "do this now". Twenty-four hours later that is no
+     * longer what it says, and a schedule tick, a poll or a reminder that
+     * fires a day late is usually worse than one that never fired at all.
+     *
+     * Set to 0 to keep queued runs forever, for an instance whose cron is
+     * deliberately intermittent and which wants every tick eventually run.
+     *
+     * @var int
+     */
+    private const DEFAULT_QUEUED_TTL_HOURS = 24;
+
+    /**
+     * How many stale queued runs one pass may expire.
+     *
+     * Higher than BATCH because expiry is a status change and nothing else —
+     * no flow is resolved, no node runs, nothing outside the database is
+     * touched — so it costs a fraction of advancing a run. It is still capped:
+     * a backlog of tens of thousands should not become one enormous
+     * transaction on the cron slot it happens to land in.
+     *
+     * @var int
+     */
+    private const EXPIRE_BATCH = 500;
+
+    /**
      * Constructor.
      *
-     * @param ITimeFactory         $time      Job scheduling clock.
-     * @param FlowRunMapper        $mapper    Reads and prunes runs.
-     * @param FlowRunService       $runner    Executes a run.
-     * @param FlowResolverRegistry $resolvers Loads a run's flow and subject.
-     * @param IAppConfig           $appConfig Reads the retention setting.
-     * @param LoggerInterface      $logger    The logger.
+     * @param ITimeFactory    $time      Job scheduling clock.
+     * @param FlowRunMapper   $mapper    Reads and prunes runs.
+     * @param FlowRunService  $runner    Executes a run.
+     * @param FlowLocator     $resolvers Loads a run's flow and subject.
+     * @param IAppConfig      $appConfig Reads the retention setting.
+     * @param LoggerInterface $logger    The logger.
      */
     public function __construct(
         ITimeFactory $time,
         private readonly FlowRunMapper $mapper,
         private readonly FlowRunService $runner,
-        private readonly \OCA\OpenRegister\Service\Flow\FlowResolverRegistry $resolvers,
+        private readonly FlowLocator $resolvers,
         private readonly IAppConfig $appConfig,
         private readonly LoggerInterface $logger
     ) {
         parent::__construct(time: $time);
-        // Every minute: a Wait step's resolution is bounded by this, and a
-        // queued run should feel immediate to the person who triggered it.
+        // A FLOOR, not a schedule. `setInterval` says "not more often than
+        // this"; how often the job actually runs is how often Nextcloud's cron
+        // is invoked, and the stock system cron is every FIVE minutes.
+        //
+        // Worth being explicit about, because reading this line as "every
+        // minute" overstates the queue's throughput by 5x: measured on the dev
+        // instance 2026-08-02, the drain was a flat 25 runs per five minutes —
+        // 300/hour — not 25 per minute. Capacity planning that starts from
+        // BATCH alone will be wrong by whatever the cron period is.
         $this->setInterval(seconds: 60);
 
     }//end __construct()
@@ -102,10 +153,14 @@ class FlowRunWorker extends TimedJob
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
+     * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
      */
     protected function run($argument): void
     {
         $now = new DateTime();
+
+        $this->reapStale(now: $now);
+        $this->expireStaleQueued(now: $now);
 
         foreach ($this->mapper->findQueued(limit: self::BATCH) as $run) {
             $this->advance(run: $run);
@@ -120,11 +175,148 @@ class FlowRunWorker extends TimedJob
     }//end run()
 
     /**
+     * Fail runs abandoned in `running` by a pass that never came back.
+     *
+     * FAILED, not requeued. A run that died mid-walk may already have written
+     * an object, sent a mail, or called a webhook; restarting it would repeat
+     * those silently. The existing retry endpoint turns it back into a run when
+     * a person decides that is right — which is exactly the kind of decision
+     * that should not be made by a cron job.
+     *
+     * Left alone, such a row is unreachable: the worker reads only `queued` and
+     * due `suspended` runs, so nothing ever touches it again, and every surface
+     * that shows live runs shows it as running forever.
+     *
+     * @param DateTime $now The current time.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-flow-stale-runs/specs/flow-stale-runs/spec.md
+     */
+    private function reapStale(DateTime $now): void
+    {
+        $minutes = (int) $this->appConfig->getValueString(
+            'openregister',
+            'flow_run_stale_minutes',
+            (string) self::DEFAULT_STALE_MINUTES
+        );
+
+        if ($minutes <= 0) {
+            // An operator who runs very long single steps can switch the reaper
+            // off rather than have it fail work that is still going.
+            return;
+        }
+
+        $cutoff = (clone $now)->modify('-'.$minutes.' minutes');
+
+        foreach ($this->mapper->findStale(before: $cutoff, limit: self::BATCH) as $run) {
+            $run->setStatus(FlowRun::STATUS_FAILED);
+            $run->setError(
+                sprintf(
+                    'Abandoned: no worker pass has touched this run for over %d minutes, '
+                    .'so the pass that started it did not finish (a fatal, a timeout or a restart). '
+                    .'Retry it to run it again from the start.',
+                    $minutes
+                )
+            );
+            $run->setUpdated($now);
+            $this->mapper->update($run);
+
+            $this->logger->warning(
+                message: '[FlowRunWorker] Failed a run abandoned in `running`',
+                context: [
+                    'file' => __FILE__,
+                    'line' => __LINE__,
+                    'run'  => $run->getUuid(),
+                    'flow' => $run->getFlowId(),
+                ]
+            );
+        }//end foreach
+
+    }//end reapStale()
+
+    /**
+     * Abandon queued runs that waited so long that running them is wrong.
+     *
+     * Two things go wrong without this, and only one of them is the obvious
+     * one.
+     *
+     * The obvious one: a queue that only ever drains is a queue that will
+     * eventually execute a week-old intention. A schedule tick from last
+     * Tuesday does not catch anything up; it replays a decision against a
+     * world that has moved on.
+     *
+     * The one that actually bites: `hasActiveRun()` counts `queued`, so the
+     * scheduler's singleton guard ({@see FlowScheduleService}) refuses to fire
+     * a flow that still has a queued run. One starved run therefore stops that
+     * flow's ENTIRE schedule, silently and for as long as the run sits there.
+     * Expiry is what breaks that deadlock — fairness alone would not, because
+     * a flow whose only run is stuck never gets a second one to be fair to.
+     *
+     * @param DateTime $now The current time.
+     *
+     * @return void
+     *
+     * @spec openspec/changes/or-flow-queue-fairness/specs/flow-queue-fairness/spec.md
+     */
+    private function expireStaleQueued(DateTime $now): void
+    {
+        $hours = (int) $this->appConfig->getValueString(
+            'openregister',
+            'flow_run_queued_ttl_hours',
+            (string) self::DEFAULT_QUEUED_TTL_HOURS
+        );
+
+        if ($hours <= 0) {
+            return;
+        }
+
+        $reason = sprintf(
+            'Expired: this run waited in the queue for more than %d hours, so whatever it was '
+            .'meant to do now is no longer what it would do. Retry it to run it again from the start.',
+            $hours
+        );
+
+        try {
+            $cutoff  = (clone $now)->modify('-'.$hours.' hours');
+            $expired = $this->mapper->expireQueuedBefore(
+                before: $cutoff,
+                reason: $reason,
+                limit: self::EXPIRE_BATCH
+            );
+
+            if ($expired !== []) {
+                $this->logger->warning(
+                    message: '[FlowRunWorker] Expired queued runs that waited past their TTL',
+                    context: [
+                        'file'     => __FILE__,
+                        'line'     => __LINE__,
+                        'expired'  => count($expired),
+                        'ttlHours' => $hours,
+                    ]
+                );
+            }
+        } catch (Throwable $e) {
+            // Expiry is housekeeping; it must never cost the pass its ability
+            // to actually run the queue.
+            $this->logger->error(
+                message: '[FlowRunWorker] Queued-run expiry pass failed',
+                context: ['file' => __FILE__, 'line' => __LINE__, 'error' => $e->getMessage()]
+            );
+        }//end try
+
+    }//end expireStaleQueued()
+
+    /**
      * Advance one run, never letting its failure stop the batch.
      *
      * @param FlowRun $run The run.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) FlowItems::item is a pure value
+     * constructor with no state to inject; a factory collaborator would add a
+     * dependency to say the same thing.
      *
      * @spec openspec/changes/or-flow-runs/specs/flow-runs/spec.md
      */
@@ -169,7 +361,7 @@ class FlowRunWorker extends TimedJob
             // user's id exactly as it would an object's fields.
             $seed = null;
             if ($subject === null) {
-                $subject = new \stdClass();
+                $subject = new stdClass();
                 $payload = (array) (($run->getContext() ?? [])['payload'] ?? []);
                 if ($payload !== []) {
                     $seed = [FlowItems::item(json: $payload)];

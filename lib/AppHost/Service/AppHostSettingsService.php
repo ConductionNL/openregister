@@ -71,13 +71,13 @@ class AppHostSettingsService
      * @param LoggerInterface    $logger       PSR logger.
      */
     public function __construct(
-        private readonly string $appId,
-        private readonly IAppConfig $appConfig,
-        private readonly IAppManager $appManager,
-        private readonly ContainerInterface $container,
-        private readonly IGroupManager $groupManager,
-        private readonly IUserSession $userSession,
-        private readonly LoggerInterface $logger
+        protected readonly string $appId,
+        protected readonly IAppConfig $appConfig,
+        protected readonly IAppManager $appManager,
+        protected readonly ContainerInterface $container,
+        protected readonly IGroupManager $groupManager,
+        protected readonly IUserSession $userSession,
+        protected readonly LoggerInterface $logger
     ) {
     }//end __construct()
 
@@ -251,7 +251,7 @@ class AppHostSettingsService
      *
      * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
      */
-    private function resolveRegisterConfiguration(): array
+    protected function resolveRegisterConfiguration(): array
     {
         try {
             $appPath = $this->appManager->getAppPath($this->appId);
@@ -321,7 +321,7 @@ class AppHostSettingsService
      *
      * @spec openspec/changes/apphost-boilerplate-controllers/tasks.md#task-2.1
      */
-    private static function deepMergeConfig(array $base, array $overlay): array
+    protected static function deepMergeConfig(array $base, array $overlay): array
     {
         foreach ($overlay as $key => $value) {
             $bothArrays = (is_array($value) === true

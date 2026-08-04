@@ -6,7 +6,7 @@
 		</div>
 		<div v-else class="notifications-section">
 			<div v-for="(label, key) in toggleLabels" :key="key" class="notifications-section__toggle">
-				<NcCheckboxRadioSwitch :checked.sync="prefs[key]" @update:checked="save">
+				<NcCheckboxRadioSwitch v-model="prefs[key]" @update:modelValue="save">
 					{{ label }}
 				</NcCheckboxRadioSwitch>
 			</div>
@@ -17,7 +17,7 @@
 					input-label="Prefs Email Digest"
 					:options="digestOptions"
 					input-id="email-digest"
-					@input="save" />
+					@update:modelValue="save" />
 			</div>
 			<p v-if="message" :class="{ 'section__error': isError, 'section__success': !isError }">
 				{{ message }}
@@ -30,8 +30,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcCheckboxRadioSwitch from '@nextcloud/vue/dist/Components/NcCheckboxRadioSwitch.js'
-import NcSelect from '@nextcloud/vue/dist/Components/NcSelect.js'
+import { NcCheckboxRadioSwitch, NcSelect } from '@nextcloud/vue'
 
 export default {
 	name: 'NotificationsSection',

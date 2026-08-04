@@ -93,6 +93,35 @@ final class LeafDescriptor
     ];
 
     /**
+     * Render mode: the render surface is a Single File Component (tab + widget)
+     * interpreted under the host's own Vue runtime. The default — same-major and
+     * built-in leaves keep the existing SFC contract unchanged.
+     *
+     * @var string
+     */
+    public const RENDER_MODE_COMPONENT = 'component';
+
+    /**
+     * Render mode: the render surface is a `mount(el, props)` / `unmount(el)`
+     * pair the host invokes against a bare, host-owned DOM element, so a leaf
+     * built against a different Vue major than the host still renders (the DOM
+     * element is the neutral hand-off boundary).
+     *
+     * @var string
+     */
+    public const RENDER_MODE_MOUNT = 'mount';
+
+    /**
+     * Every render mode a render-surface descriptor MAY declare.
+     *
+     * @var array<int,string>
+     */
+    public const VALID_RENDER_MODES = [
+        self::RENDER_MODE_COMPONENT,
+        self::RENDER_MODE_MOUNT,
+    ];
+
+    /**
      * Constructor.
      *
      * @param string            $id                 Stable kebab-case id, unique across the registry and
@@ -108,6 +137,14 @@ final class LeafDescriptor
      * @param string|null       $referenceType      Optional marker so a schema reference property can target
      *                                              this leaf's single-entity widget (ADR-019 / AD-18).
      * @param string|null       $requiresPermission Optional permission string gating visibility.
+     * @param string            $renderMode         How a render-surface leaf renders: `component` (default —
+     *                                              an SFC tab/widget interpreted by the host's Vue runtime)
+     *                                              or `mount` (a `mount`/`unmount` pair the host invokes
+     *                                              against a bare DOM element, crossing a Vue major). One of
+     *                                              VALID_RENDER_MODES; validated at registration.
+     *
+     * @SuppressWarnings(PHPMD.ExcessiveParameterList) A flat immutable value object: each parameter is one
+     * independent, optional piece of leaf discovery metadata, not a collaborator to bundle into an object.
      *
      * @return void
      */
@@ -121,6 +158,7 @@ final class LeafDescriptor
         private array $surfaces=[],
         private ?string $referenceType=null,
         private ?string $requiresPermission=null,
+        private string $renderMode=self::RENDER_MODE_COMPONENT,
     ) {
     }//end __construct()
 
@@ -237,11 +275,29 @@ final class LeafDescriptor
     }//end requiresPermission()
 
     /**
+     * How a render-surface leaf renders: `component` (default) or `mount`.
+     *
+     * A `component` leaf ships an SFC tab/widget the host interprets under its
+     * own Vue runtime; a `mount` leaf ships a `mount`/`unmount` pair the host
+     * invokes against a bare DOM element so the leaf renders with its own Vue
+     * major. The value is validated against VALID_RENDER_MODES at registration.
+     *
+     * @return string One of the RENDER_MODE_* constants.
+     */
+    public function getRenderMode(): string
+    {
+        return $this->renderMode;
+
+    }//end getRenderMode()
+
+    /**
      * Render the discovery-facing shape for the OCS capabilities surface.
      *
      * Carries only availability + capability metadata (no components, no verb):
-     * id, label, requiredApp, surfaces, kinds. Usability is derived by
-     * `LeafRegistry` from the installed state of `requiredApp`.
+     * id, label, requiredApp, surfaces, kinds, renderMode. Usability is derived
+     * by `LeafRegistry` from the installed state of `requiredApp`. `renderMode`
+     * lets a manifest app or admin UI learn HOW a render-surface leaf renders
+     * (SFC component vs mount hand-off) without loading its JS bundle.
      *
      * @return array<string,mixed> The discovery descriptor.
      */
@@ -255,6 +311,7 @@ final class LeafDescriptor
             'group'       => $this->group,
             'surfaces'    => $this->surfaces,
             'kinds'       => $this->kinds,
+            'renderMode'  => $this->renderMode,
         ];
 
     }//end toArray()

@@ -9,7 +9,7 @@
 			:placeholder="t('openregister', 'Select a register')"
 			:clearable="false"
 			label="label"
-			@input="handleRegisterChange" />
+			@update:modelValue="handleRegisterChange" />
 		<NcSelect
 			v-model="schemaModel"
 			class="qualitySelectorField"
@@ -20,7 +20,7 @@
 			:disabled="!registerModel"
 			:clearable="false"
 			label="label"
-			@input="handleSchemaChange" />
+			@update:modelValue="handleSchemaChange" />
 	</div>
 </template>
 

@@ -37,7 +37,7 @@ import { navigationStore, schemaStore, objectStore, registerStore } from '../../
 				v-if="success === null"
 				:disabled="loading || !canDelete"
 				icon="Delete"
-				type="error"
+				variant="error"
 				@click="deleteProperty()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

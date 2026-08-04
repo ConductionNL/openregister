@@ -12,9 +12,9 @@ import { translate as t } from '@nextcloud/l10n'
 		<!-- Enable toggle -->
 		<div class="fieldRow">
 			<NcCheckboxRadioSwitch
-				:checked="localConfig.enabled"
+				:model-value="localConfig.enabled"
 				type="switch"
-				@update:checked="localConfig.enabled = $event">
+				@update:modelValue="localConfig.enabled = $event">
 				{{ t('openregister', 'Enable calendar provider') }}
 			</NcCheckboxRadioSwitch>
 		</div>
@@ -25,7 +25,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<label for="cal-displayName">{{ t('openregister', 'Display Name') }}</label>
 				<NcTextField
 					id="cal-displayName"
-					:value.sync="localConfig.displayName"
+					v-model="localConfig.displayName"
 					:placeholder="schema?.title || t('openregister', 'Calendar name')"
 					:label-outside="true" />
 			</div>
@@ -70,7 +70,7 @@ import { translate as t } from '@nextcloud/l10n'
 				<label for="cal-title">{{ t('openregister', 'Title Template') }} *</label>
 				<NcTextField
 					id="cal-title"
-					:value.sync="localConfig.titleTemplate"
+					v-model="localConfig.titleTemplate"
 					:placeholder="t('openregister', '{property} - {other}')" />
 				<small class="hint">
 					{{ t('openregister', 'Available placeholders:') }}
@@ -105,10 +105,10 @@ import { translate as t } from '@nextcloud/l10n'
 			<!-- All day toggle -->
 			<div class="fieldRow">
 				<NcCheckboxRadioSwitch
-					:checked="localConfig.allDay"
+					:model-value="localConfig.allDay"
 					:indeterminate="localConfig.allDay === null || localConfig.allDay === undefined"
 					type="switch"
-					@update:checked="localConfig.allDay = $event">
+					@update:modelValue="localConfig.allDay = $event">
 					{{ t('openregister', 'All-day events') }}
 				</NcCheckboxRadioSwitch>
 				<small class="hint">
@@ -119,7 +119,7 @@ import { translate as t } from '@nextcloud/l10n'
 			<!-- Save button -->
 			<div class="fieldRow actions">
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!isValid || saving"
 					@click="save">
 					<template #icon>

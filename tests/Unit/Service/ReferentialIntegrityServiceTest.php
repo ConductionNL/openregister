@@ -118,11 +118,31 @@ class ReferentialIntegrityServiceTest extends TestCase
             objectEntityMapper: $this->objectMapper,
             auditTrailMapper: $this->auditTrailMapper,
             logger: $this->logger,
-            db: $this->createMock(IDBConnection::class)
+            db: $this->createMock(IDBConnection::class),
+            cacheFactory: $this->createNullCacheFactory()
         );
 
         $this->reflection = new \ReflectionClass($this->service);
     }//end setUp()
+
+
+    /**
+     * Build a cache factory whose cache never reports a hit.
+     *
+     * Keeps these tests exercising a freshly built relation index, which is the
+     * behaviour they were originally written against.
+     *
+     * @return \OCP\ICacheFactory
+     */
+    private function createNullCacheFactory(): \OCP\ICacheFactory
+    {
+        $factory = $this->createMock(\OCP\ICacheFactory::class);
+        $factory->method('createDistributed')
+            ->willReturn($this->createMock(\OCP\ICache::class));
+
+        return $factory;
+
+    }//end createNullCacheFactory()
 
     // ─── Helper methods ──────────────────────────────────────────────
 

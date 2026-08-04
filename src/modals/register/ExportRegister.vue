@@ -39,7 +39,7 @@ import axios from '@nextcloud/axios'
 			</NcButton>
 			<NcButton
 				:disabled="loading"
-				type="primary"
+				variant="primary"
 				@click="exportObjects">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

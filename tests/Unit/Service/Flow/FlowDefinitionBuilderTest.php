@@ -132,6 +132,51 @@ class FlowDefinitionBuilderTest extends TestCase
         ]);
     }
 
+    public function testANodeCarryingStepConfigIsRejected(): void
+    {
+        // The step is the EDGE. A `type` on a node is never read, so accepting
+        // this yields a graph where every transition is a pass-through and the
+        // run reports COMPLETED having done nothing — silently. Three graphs in
+        // the fleet were authored this way and none of them failed anywhere
+        // (or#2226).
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Flow node "a" carries "type"/"config", which the engine never reads');
+
+        $this->builder->build([
+            'nodes' => [['id' => 'a', 'type' => 'openregister.stop'], ['id' => 'b']],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
+        ]);
+    }
+
+    public function testANodeCarryingOnlyConfigIsAlsoRejected(): void
+    {
+        // `config` without `type` is the same authoring mistake half-made, and
+        // it is just as invisible at run time.
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Flow node "a" carries "type"/"config"');
+
+        $this->builder->build([
+            'nodes' => [['id' => 'a', 'config' => ['error' => false]], ['id' => 'b']],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b']],
+        ]);
+    }
+
+    public function testANodeMayCarryPresentationalKeys(): void
+    {
+        // The rejection is about EXECUTABLE config only. A canvas legitimately
+        // stores position, label and styling on a node, and refusing those
+        // would make every drawn graph unbuildable.
+        $definition = $this->builder->build([
+            'nodes' => [
+                ['id' => 'a', 'position' => ['x' => 0, 'y' => 0], 'label' => 'Start', 'colour' => '#21468B'],
+                ['id' => 'b', 'position' => ['x' => 100, 'y' => 0]],
+            ],
+            'edges' => [['id' => 'go', 'from' => 'a', 'to' => 'b', 'type' => 'openregister.stop']],
+        ]);
+
+        $this->assertNotNull($definition);
+    }
+
     public function testANodeWithoutAnIdIsRejected(): void
     {
         $this->expectException(InvalidArgumentException::class);

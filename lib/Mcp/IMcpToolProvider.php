@@ -63,11 +63,34 @@ interface IMcpToolProvider
      * fail this check are silently dropped with a warning-level log entry and
      * MUST NOT be passed to the LLM.
      *
+     * `scope` and the three annotation hint keys are OPTIONAL and were missing
+     * from this contract, which described a closed four-key shape. Real
+     * providers have always emitted them — FlowMcpToolProvider sets `scope`,
+     * AttributeToolScanner copies it off the #[McpTool] attribute, and
+     * AttributeToolProvider copies every McpAnnotationValidator::HINT_KEYS
+     * entry — and consumers have always read them back
+     * (McpProviderBridge::getFunctions()). Because the declared shape omitted
+     * them, PHPStan resolved those reads against a shape that could not
+     * contain the key and reported the live `scope` forwarding as dead code
+     * ("array_key_exists() with 'scope' and array{...} will always evaluate to
+     * false"). The code was right and the contract was wrong.
+     *
+     * The hint keys below are exactly McpAnnotationValidator::HINT_KEYS, which
+     * has three entries — no more.
+     *
+     * These keys are ADVISORY metadata only. ObjectService RBAC remains the
+     * sole authoritative invoke-time gate (ADR-063), so `scope` never widens
+     * access on its own.
+     *
      * @return list<array{
      *   id: string,
      *   name: string,
      *   description: string,
-     *   inputSchema: array
+     *   inputSchema: array,
+     *   scope?: string,
+     *   readOnlyHint?: bool,
+     *   destructiveHint?: bool,
+     *   idempotentHint?: bool
      * }> Tool descriptors
      */
     public function getTools(): array;

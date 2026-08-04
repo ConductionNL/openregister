@@ -4,12 +4,12 @@
 			<h2>{{ t('openregister', 'Golden record') }}</h2>
 			<div class="goldenRecordHeader__actions">
 				<NcButton v-if="object"
-					type="secondary"
+					variant="secondary"
 					data-testid="mdm-resolve-conflicts"
 					@click="openConflicts">
 					{{ t('openregister', 'Resolve conflicts') }}
 				</NcButton>
-				<NcButton type="tertiary" @click="$emit('close')">
+				<NcButton variant="tertiary" @click="$emit('close')">
 					{{ t('openregister', 'Close') }}
 				</NcButton>
 			</div>

@@ -67,6 +67,14 @@ class MagicMapperBatchSoftDeleteTest extends TestCase
     {
         parent::setUp();
         $this->db = $this->createMock(IDBConnection::class);
+        // BUG-DB-8 fix coverage: executeBatchSoftDeleteUpdate() now reads the
+        // platform to decide whether the CASE result needs a Postgres
+        // `::jsonb` cast. A mock platform whose class name does not contain
+        // "PostgreSQL" keeps these tests on the pre-fix (no-cast) code path,
+        // matching what they assert.
+        $this->db->method('getDatabasePlatform')->willReturn(
+            $this->createMock(\Doctrine\DBAL\Platforms\AbstractPlatform::class)
+        );
         $this->eventDispatcher  = $this->createMock(IEventDispatcher::class);
         $this->dispatchedEvents = [];
     }//end setUp()

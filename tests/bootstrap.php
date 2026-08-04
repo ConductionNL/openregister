@@ -134,6 +134,18 @@ if ($skipNc === false && !defined('OC_CONSOLE')) {
             "[openregister/tests/bootstrap] Nextcloud root not found; running with composer autoload only.\n"
             . "  Set OPENREGISTER_TEST_NC_ROOT to the NC server source root if you need integration/DB tests.\n"
         );
+
+        // Say it once, then silence any child process.
+        //
+        // A `@runInSeparateProcess` test re-runs this bootstrap in a forked
+        // PHPUnit worker, and ANY output from that worker corrupts the channel
+        // PHPUnit uses to read the child's result back — the test then fails
+        // with this very notice as its error message rather than on its own
+        // merits (BootstrapTest::testRegistrationIsLazyAndDoesNotAutoloadGenerics).
+        // The child inherits this process's environment, so setting the
+        // harness's existing skip switch here keeps the diagnostic for the human
+        // running the suite while making every forked worker quiet.
+        putenv('OPENREGISTER_TEST_SKIP_NC=1');
     }
 }
 
@@ -182,3 +194,10 @@ if (interface_exists(\OCP\IUser::class) === false) {
 // Load the Doriath contract stubs + test fixtures for the credential-broker
 // Doriath custody leaf (class_exists-guarded — a real Doriath install wins).
 require_once __DIR__ . '/stubs/DoriathStubs.php';
+
+// Load the ContextChat contract stubs. `OCP\ContextChat\*` ships with the
+// context_chat app, which is an OPTIONAL seam here (ContentProvider implements
+// its interface, ContextChatService resolves the manager lazily) and therefore
+// absent from a bare composer install — same situation as Doriath above.
+// Guarded, so a real context_chat install always wins.
+require_once __DIR__ . '/stubs/ContextChatStubs.php';

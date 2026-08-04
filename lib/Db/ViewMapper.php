@@ -58,9 +58,7 @@ use Symfony\Component\Uid\Uuid;
  * @method View update(Entity $entity)
  * @method View insertOrUpdate(Entity $entity)
  * @method View delete(Entity $entity)
- * @method View find(int|string $id)
  * @method View findEntity(IQueryBuilder $query)
- * @method View[] findAll(int|null $limit=null, int|null $offset=null)
  * @method list<View> findEntities(IQueryBuilder $query)
  *
  * @template-extends QBMapper<View>
@@ -206,7 +204,7 @@ class ViewMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\View>
+     * @psalm-return list<\OCA\OpenRegister\Db\View>
      */
     public function findAll(?string $owner=null): array
     {

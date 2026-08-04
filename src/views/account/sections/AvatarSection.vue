@@ -7,10 +7,10 @@
 		<div v-else class="avatar-section">
 			<NcAvatar :user="userId" :size="128" :show-user-status="false" />
 			<div class="avatar-section__actions">
-				<NcButton type="primary" @click="triggerUpload">
+				<NcButton variant="primary" @click="triggerUpload">
 					{{ t('openregister', 'Upload new avatar') }}
 				</NcButton>
-				<NcButton type="error" @click="deleteAvatar">
+				<NcButton variant="error" @click="deleteAvatar">
 					{{ t('openregister', 'Remove avatar') }}
 				</NcButton>
 				<input ref="fileInput"
@@ -30,8 +30,7 @@
 import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import NcAvatar from '@nextcloud/vue/dist/Components/NcAvatar.js'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
+import { NcAvatar, NcButton } from '@nextcloud/vue'
 
 export default {
 	name: 'AvatarSection',

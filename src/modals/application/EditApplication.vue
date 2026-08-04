@@ -18,8 +18,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 		<div v-if="!success">
 			<!-- Tabs -->
 			<div class="tabContainer">
-				<BTabs v-model="activeTab" content-class="mt-3" justified>
-					<BTab active>
+				<AppTabs v-model="activeTab" content-class="mt-3" justified>
+					<AppTab active>
 						<template #title>
 							<Cog :size="16" />
 							<span>Settings</span>
@@ -28,14 +28,14 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 							<NcTextField
 								:disabled="loading"
 								:label="t('openregister', 'Name *')"
-								:value.sync="applicationItem.name"
+								v-model="applicationItem.name"
 								:error="!applicationItem.name.trim()"
 								:placeholder="t('openregister', 'Enter application name')" />
 
 							<NcTextArea
 								:disabled="loading"
 								:label="t('openregister', 'Description')"
-								:value.sync="applicationItem.description"
+								v-model="applicationItem.description"
 								:placeholder="t('openregister', 'Enter application description (optional)')"
 								:rows="4" />
 
@@ -55,7 +55,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 									:filterable="false"
 									:placeholder="t('openregister', 'Search groups...')"
 									@search-change="searchGroups"
-									@input="updateGroups">
+									@update:modelValue="updateGroups">
 									<template #option="{ name }">
 										<div class="group-option">
 											<span class="group-name">{{ name }}</span>
@@ -71,9 +71,9 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								</p>
 							</div>
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Database :size="16" />
 							<span>Quota</span>
@@ -84,44 +84,44 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								label="Storage Quota (MB)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="storageQuotaMB"
-								@update:value="updateStorageQuota" />
+								:model-value="storageQuotaMB"
+								@update:modelValue="updateStorageQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Bandwidth Quota (MB/month)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="bandwidthQuotaMB"
-								@update:value="updateBandwidthQuota" />
+								:model-value="bandwidthQuotaMB"
+								@update:modelValue="updateBandwidthQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="API Request Quota (requests/day)"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.requests || 0"
-								@update:value="updateRequestQuota" />
+								:model-value="applicationItem.quota?.requests || 0"
+								@update:modelValue="updateRequestQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="User Quota"
 								type="number"
 								placeholder="0 = unlimited (not applicable for applications)"
-								:value="applicationItem.quota?.users || 0"
-								@update:value="updateUserQuota" />
+								:model-value="applicationItem.quota?.users || 0"
+								@update:modelValue="updateUserQuota" />
 
 							<NcTextField
 								:disabled="loading"
 								label="Group Quota"
 								type="number"
 								placeholder="0 = unlimited"
-								:value="applicationItem.quota?.groups || 0"
-								@update:value="updateGroupQuota" />
+								:model-value="applicationItem.quota?.groups || 0"
+								@update:modelValue="updateGroupQuota" />
 						</div>
-					</BTab>
+					</AppTab>
 
-					<BTab>
+					<AppTab>
 						<template #title>
 							<Shield :size="16" />
 							<span>Security</span>
@@ -144,8 +144,8 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 								</div>
 							</div>
 						</div>
-					</BTab>
-				</BTabs>
+					</AppTab>
+				</AppTabs>
 			</div>
 		</div>
 
@@ -158,7 +158,7 @@ import { applicationStore, organisationStore, navigationStore } from '../../stor
 			</NcButton>
 			<NcButton v-if="!success"
 				:disabled="loading || !applicationItem.name.trim()"
-				type="primary"
+				variant="primary"
 				@click="saveApplication()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />
@@ -181,7 +181,8 @@ import {
 	NcLoadingIcon,
 	NcNoteCard,
 } from '@nextcloud/vue'
-import { BTabs, BTab } from 'bootstrap-vue'
+import AppTabs from '../../components/tabs/AppTabs.vue'
+import AppTab from '../../components/tabs/AppTab.vue'
 
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import Cancel from 'vue-material-design-icons/Cancel.vue'
@@ -202,8 +203,8 @@ export default {
 		NcButton,
 		NcLoadingIcon,
 		NcNoteCard,
-		BTabs,
-		BTab,
+		AppTabs,
+		AppTab,
 		RbacTable,
 		// Icons
 		ContentSaveOutline,
@@ -478,7 +479,7 @@ export default {
 			}
 
 			// Force Vue to detect the change
-			this.$set(this.applicationItem, 'authorization', { ...this.applicationItem.authorization })
+			this.applicationItem.authorization = { ...this.applicationItem.authorization }
 		},
 
 		/**

@@ -25,6 +25,7 @@ use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
 use OCP\WorkflowEngine\IManager;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Workflow\Marking;
 
@@ -83,11 +84,55 @@ class WaitingNode implements IFlowNode
     }
 }
 
+/** Records the context it was handed, so attribution can be asserted. */
+class ContextCapturingNode implements IFlowNode
+{
+    public array $seenContext = [];
+
+    public function getId(): string
+    {
+        return 'test.capture';
+    }
+
+    public function getDisplayName(): string
+    {
+        return 'Capture';
+    }
+
+    public function getDescription(): string
+    {
+        return 'Captures its context.';
+    }
+
+    public function getIcon(): string
+    {
+        return 'i.svg';
+    }
+
+    public function isAvailableForScope(int $scope): bool
+    {
+        return true;
+    }
+
+    public function validateConfig(array $config): void
+    {
+    }
+
+    public function execute(array $items, array $config, array $context): array
+    {
+        $this->seenContext = $context;
+
+        return $items;
+    }
+}
+
 class FlowRunServiceTest extends TestCase
 {
     private FlowRunMapper $mapper;
     private FlowRunService $service;
     private WaitingNode $waiter;
+
+    private ContextCapturingNode $capturer;
 
     protected function setUp(): void
     {
@@ -96,13 +141,15 @@ class FlowRunServiceTest extends TestCase
         $this->mapper->method('insert')->willReturnArgument(0);
         $this->mapper->method('update')->willReturnArgument(0);
 
-        $this->waiter = new WaitingNode();
+        $this->waiter    = new WaitingNode();
+        $this->capturer  = new ContextCapturingNode();
 
         $dispatcher = $this->createMock(IEventDispatcher::class);
         $dispatcher->method('dispatchTyped')->willReturnCallback(
             function (Event $event): void {
                 if ($event instanceof RegisterFlowNodesEvent) {
                     $event->registerNode($this->waiter);
+                    $event->registerNode($this->capturer);
                 }
             }
         );
@@ -110,11 +157,18 @@ class FlowRunServiceTest extends TestCase
         $registry = new FlowNodeRegistry($dispatcher, $this->createMock(LoggerInterface::class));
         $engine = new FlowEngine(new FlowDefinitionBuilder(), $this->createMock(LoggerInterface::class));
 
+        // No OrganisationService in the container — the cron/unit case, where a
+        // queued run is recorded with no organisation rather than a guessed one.
+        $container = $this->createMock(ContainerInterface::class);
+        $container->method('get')->willThrowException(new \RuntimeException('not available'));
+
         $this->service = new FlowRunService(
             $this->mapper,
+            $this->createMock(\OCA\OpenRegister\Db\FlowStateMapper::class),
             $engine,
             $registry,
-            $this->createMock(LoggerInterface::class)
+            $this->createMock(LoggerInterface::class),
+            $container
         );
     }
 
@@ -221,6 +275,54 @@ class FlowRunServiceTest extends TestCase
 
         $this->assertSame(FlowRun::STATUS_FAILED, $run->getStatus());
         $this->assertNotNull($run->getError());
+    }
+
+    /**
+     * A flow definition whose single hop runs the context-capturing node.
+     *
+     * @return array<string,mixed>
+     */
+    private function captureFlow(): array
+    {
+        return [
+            'id' => 'f1',
+            'nodes' => [['id' => 'a'], ['id' => 'b']],
+            'edges' => [['id' => 'hop', 'from' => 'a', 'to' => 'b', 'type' => 'test.capture']],
+        ];
+    }
+
+    /**
+     * FAILING PATH (or#2158): nodes read `context['triggeredBy']` to attribute
+     * what they do — ObjectWriteNode REFUSES to write without it, SubFlowNode
+     * propagates it to child runs, and Hermiq's agent node runs the turn as
+     * that user. Before this fix `execute()` set only `runUuid` and `resuming`,
+     * so the key was never populated from the run and EVERY trigger reached its
+     * nodes ownerless; only hand-injected contexts (tests, harnesses) worked.
+     *
+     * @return void
+     */
+    public function testTheRunsOwnerReachesTheNodeContext(): void
+    {
+        $run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', [], 'alice');
+
+        $this->service->execute($run, $this->captureFlow(), new RunSubject());
+
+        $this->assertSame('alice', ($this->capturer->seenContext['triggeredBy'] ?? null));
+    }
+
+    /**
+     * An explicit context value wins, so a caller can attribute a run to
+     * somebody other than whoever queued it.
+     *
+     * @return void
+     */
+    public function testAnExplicitContextOwnerIsNotOverwrittenByTheRunsOwner(): void
+    {
+        $run = $this->service->queue('f1', ['uuid' => 'u1'], 'object.created', ['triggeredBy' => 'bob'], 'alice');
+
+        $this->service->execute($run, $this->captureFlow(), new RunSubject());
+
+        $this->assertSame('bob', ($this->capturer->seenContext['triggeredBy'] ?? null));
     }
 }
 

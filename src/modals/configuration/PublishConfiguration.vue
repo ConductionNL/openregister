@@ -69,7 +69,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-if="selectedBranch" class="formSection">
 				<h3>{{ t('openregister', 'File Path') }}</h3>
 				<NcTextField
-					:value.sync="filePath"
+					v-model="filePath"
 					:placeholder="t('openregister', 'e.g., lib/settings/config.json')"
 					:disabled="loading"
 					:label="t('openregister', 'Path in repository')" />
@@ -81,7 +81,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 			<div v-if="filePath" class="formSection">
 				<h3>{{ t('openregister', 'Commit Message') }}</h3>
 				<NcTextField
-					:value.sync="commitMessage"
+					v-model="commitMessage"
 					:placeholder="t('openregister', 'Update configuration: ...')"
 					:disabled="loading"
 					:label="t('openregister', 'Commit message')" />
@@ -89,7 +89,7 @@ import { configurationStore, navigationStore } from '../../store/store.js'
 
 			<div class="formActions">
 				<NcButton
-					type="primary"
+					variant="primary"
 					:disabled="!canPublish || loading"
 					@click="publishConfiguration">
 					<template #icon>

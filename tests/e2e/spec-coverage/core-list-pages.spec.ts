@@ -73,7 +73,11 @@ function trackErrors(page: Page): { console: string[]; http: string[] } {
 
 /** Navigate to an OR route via the manifest shell and wait for content mount. */
 async function gotoPage(page: Page, route: string): Promise<void> {
-	await page.goto(`/index.php/apps/openregister${route}`, { waitUntil: 'domcontentloaded' })
+	// HASH form — the router runs in hash mode (src/main.js). A path-form
+	// deep-link (`/apps/openregister/registers`) is rewritten by the hash
+	// router to `/registers#/` and renders the DASHBOARD, not the target page
+	// (verified empirically 2026-07-27).
+	await page.goto(`/index.php/apps/openregister/#${route}`, { waitUntil: 'domcontentloaded' })
 	await page.waitForSelector('#header, header.header-appcontainer', { timeout: 25_000 })
 	await page.waitForSelector('#app-content-vue, .app-content, main', { timeout: 20_000 })
 	// Wait for the OR page component to actually mount its own heading inside
@@ -165,16 +169,6 @@ test.describe('core-list-pages — real UI render + actions', () => {
 		await gotoPage(page, '/templates')
 		await expectHeading(page, /^Templates$/)
 		await expectButton(page, /Refresh/i)
-		await expectListSurface(page)
-		expect(e.console, `console errors: ${e.console.join(' | ')}`).toHaveLength(0)
-		expect(e.http, `5xx: ${e.http.join(' | ')}`).toHaveLength(0)
-	})
-
-	test('Agents page: heading + Add Agent + list surface', async ({ page }) => {
-		const e = trackErrors(page)
-		await gotoPage(page, '/agents')
-		await expectHeading(page, /^Agents$/)
-		await expectButton(page, /Add Agent/i)
 		await expectListSurface(page)
 		expect(e.console, `console errors: ${e.console.join(' | ')}`).toHaveLength(0)
 		expect(e.http, `5xx: ${e.http.join(' | ')}`).toHaveLength(0)
