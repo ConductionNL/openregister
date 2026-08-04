@@ -62,6 +62,13 @@ class FlowEngineRegistrationListener implements IEventListener
      * @param Event $event The dispatched registration event.
      *
      * @return void
+     *
+     * @SuppressWarnings(PHPMD.StaticAccess) \OCP\Util::addScript is the
+     *     canonical Nextcloud API for enqueuing scripts and has no injectable
+     *     DI equivalent in the AppFramework — a listener is handed only the
+     *     event, and Nextcloud ships no service form of the asset API. Wrapping
+     *     the call in a seam class would relocate the identical static call
+     *     rather than remove it. Mirrors ScriptManifestLoader::addEntryScripts().
      */
     public function handle(Event $event): void
     {
