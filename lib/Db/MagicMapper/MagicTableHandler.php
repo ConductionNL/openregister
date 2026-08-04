@@ -215,15 +215,6 @@ class MagicTableHandler
 
             if (empty($missingColumns) === true && empty($retypeColumns) === true) {
                 MagicMapper::setTableColumnsVerified(cacheKey: $cacheKey);
-                $this->logger->debug(
-                    message: '[MagicTableHandler] Table exists and schema unchanged, skipping',
-                    context: [
-                        'file'      => __FILE__,
-                        'line'      => __LINE__,
-                        'tableName' => $tableName,
-                        'cacheKey'  => $cacheKey,
-                    ]
-                );
                 return true;
             }
 
@@ -298,17 +289,6 @@ class MagicTableHandler
         $cachedTime = MagicMapper::getTableExistsCache(key: $cacheKey);
         if ($cachedTime !== null) {
             if ((time() - $cachedTime) < MagicMapper::TABLE_CACHE_TIMEOUT) {
-                $this->logger->debug(
-                    message: '[MagicTableHandler] Table existence check: cache hit',
-                    context: [
-                        'file'       => __FILE__,
-                        'line'       => __LINE__,
-                        'registerId' => $registerId,
-                        'schemaId'   => $schemaId,
-                        'cacheKey'   => $cacheKey,
-                        'exists'     => true,
-                    ]
-                );
                 return true;
             }
 
@@ -323,33 +303,7 @@ class MagicTableHandler
         if ($exists === true) {
             // Cache positive result.
             MagicMapper::setTableExistsCache(key: $cacheKey, value: time());
-
-            $this->logger->debug(
-                message: '[MagicTableHandler] Table existence check: database hit - exists',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                    'cacheKey'   => $cacheKey,
-                ]
-            );
         }
-
-        if ($exists === false) {
-            $this->logger->debug(
-                message: '[MagicTableHandler] Table existence check: database hit - not exists',
-                context: [
-                    'file'       => __FILE__,
-                    'line'       => __LINE__,
-                    'registerId' => $registerId,
-                    'schemaId'   => $schemaId,
-                    'tableName'  => $tableName,
-                    'cacheKey'   => $cacheKey,
-                ]
-            );
-        }//end if
 
         return $exists;
     }//end existsTableForRegisterSchema()
