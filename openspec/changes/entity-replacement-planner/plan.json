@@ -244,17 +244,17 @@
     {
       "id": "9.1",
       "title": "Notify DocuDesk that non-PDF residual lists can be non-empty",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "9.2",
       "title": "Decide if grondslagen-summary distinguishes unmatched from partial",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "9.3",
       "title": "Coordinate with text-extraction-eml so EML consumes the planner",
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "9.4",

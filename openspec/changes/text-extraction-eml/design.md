@@ -39,6 +39,30 @@ The capability scope follows the precedent set by `entity-relation-grondslagen`:
 - Async extraction. Synchronous in v1.
 - Storage of structured parse results. The structured-parse method is read-on-demand; callers cache themselves if needed.
 
+## Interaction with entity replacement (added 2026-08-03)
+
+This change is about **extraction**, not redaction — but the two meet on EML, so
+one constraint applies to whoever implements it.
+
+EML **redaction** already runs through the shared replacement planner:
+`DocumentProcessingHandler::redactText()` calls `applyPlanned()`, which plans
+non-overlapping ranges against the immutable original and builds the output once
+(see `entity-replacement-planner`, and `docs/technical/entity-replacement.md`).
+
+So this change MUST NOT introduce a second replacement mechanism for EML content
+— no `str_ireplace` loop over the substitution map, however local it looks. Four
+such loops existed across the formats and each carried the same four defects
+(overlapping entities clobbering each other, text split across segments being
+unreachable, no word boundaries, nothing reported). Adding a fifth would
+reintroduce them on the one format that has just been fixed.
+
+If a newly extracted EML part needs redacting, route it through the same
+`applyPlanned()` helper so it inherits the boundary policy, the deterministic
+range selection and the residual reporting. Note the planner's match state is
+accumulated ACROSS passes on purpose — a needle absent from the subject is
+routinely present in the body — so per-part reporting must not be computed
+independently.
+
 ## Decisions
 
 ### D1. `zbateson/mail-mime-parser` over alternatives

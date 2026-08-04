@@ -52,6 +52,8 @@
 
 ## 7. Cross-app coordination
 
+- [ ] 7.0 Do NOT add any `str_ireplace` (or equivalent) replacement loop for EML content. EML redaction already routes through the shared planner via `DocumentProcessingHandler::applyPlanned()`; any newly extracted part that needs redacting must use the same helper so it inherits boundary policy, deterministic range selection and residual reporting. See `entity-replacement-planner` and `docs/technical/entity-replacement.md`.
+
 - [ ] 7.1 Notify DocuDesk team: structured-parse method available; the paired `eml-pdf-assembly` change can now be implemented.
 - [ ] 7.2 No DocuDesk-side change is part of this OR change. The DocuDesk EmlBackend in `pdf-conversion` (Change A) does NOT need updating until the paired `eml-pdf-assembly` change ships — Change A's EmlBackend currently reports `isAvailable: false` until OR's EML support exists. After this change ships, that backend's `isAvailable` returns true; DocuDesk's `eml-pdf-assembly` then upgrades the EmlBackend's `convert()` to use the structured parse.
 

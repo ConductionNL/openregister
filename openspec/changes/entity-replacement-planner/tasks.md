@@ -70,7 +70,7 @@
 
 ## 9. Cross-app and sequencing follow-ups
 
-- [ ] 9.1 Flag to DocuDesk that docx/odt/txt anonymisations can now return a non-empty `residual_entities` list, and that this is a partial-success state rather than an error.
-- [ ] 9.2 Decide whether DocuDesk's grondslagen-summary must distinguish `unmatched` from `partial` residuals (design.md Open Questions).
-- [ ] 9.3 Coordinate with `openspec/changes/text-extraction-eml/`: whichever lands second, the EML redaction path consumes the planner rather than adding a fifth `str_ireplace` loop.
+- [x] 9.1 Flag to DocuDesk that docx/odt/txt anonymisations can now return a non-empty `residual_entities` list, and that this is a partial-success state rather than an error. Filed as ConductionNL/docudesk#373, grounded in DocuDesk's actual consumption (`AnonymizationService.php:612` / `:719`).
+- [x] 9.2 Decide whether DocuDesk's grondslagen-summary must distinguish `unmatched` from `partial` residuals (design.md Open Questions). Recommendation put to DocuDesk in #373; the decision is theirs, not ours. `FileService::getLastPartialEntities()` already exists so no OR change is needed either way.
+- [x] 9.3 Coordinate with `openspec/changes/text-extraction-eml/`: whichever lands second, the EML redaction path consumes the planner rather than adding a fifth `str_ireplace` loop. EML redaction already consumes the planner; constraint recorded in `text-extraction-eml` design.md + new task 7.0.
 - [ ] 9.4 Port to `test/anonimiseren-bij-de-bron-or` as a **semantic port, not a cherry-pick** (`design.md` "Cherry-pick / Project-branch Port"). Delete that branch's ODF range implementation (`computeOdfReplacementRanges`, `rebuildOdfSegmentValues`, `extractOdfConcatenatedText`) in favour of the planner, and route its EML `redactText()` path through the planner too.
