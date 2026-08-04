@@ -1979,23 +1979,39 @@ class ImportHandler
             $storedVersion = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_version", '');
             $storedHash    = $this->appConfig->getValueString('openregister', "imported_config_{$appId}_hash", '');
 
-            // Skip only when the app version is NOT newer AND the definitional content
-            // is byte-identical to the last import (#426). Comparing the app version
-            // alone made a schema-definition change silently no-op on existing installs
-            // whenever the app version was unchanged — even when the schema's OWN
-            // `version` was bumped — because this early-return fired BEFORE the per-schema
-            // version gate (importSchema) could run. Gating additionally on a content
-            // hash lets the import proceed to those per-entity gates whenever the config
-            // content changed; they then decide what actually updates. The truly-unchanged
-            // case still fast-skips. A never-stored hash ('' on first run after this fix)
-            // fails the equality and lets the import proceed once, healing existing installs.
-            if ($storedVersion !== ''
-                && version_compare($version, $storedVersion, '<=') === true
-                && $storedHash !== ''
-                && $storedHash === $definitionHash
-            ) {
+            // The CONTENT HASH decides, on its own. `$definitionHash` covers the
+            // fully-merged configuration — monolith plus every register.d
+            // fragment — so an identical hash means importing would write exactly
+            // what is already stored. There is nothing to do, whatever the
+            // version says.
+            //
+            // This used to require `version_compare($version, $storedVersion, '<=')`
+            // as well, and that made the skip unreliable in one direction and
+            // wasteful in the other. Three apps (opencatalogi, procest,
+            // softwarecatalog) fold a digest into the version they pass here —
+            // `1.2.3+frag.a1b2c3d4`, per ADR-037 — so that changing a fragment
+            // forces a re-import. But version_compare does NOT treat `+…` as
+            // semver build metadata; it compares it as further version parts,
+            // LEXICALLY. Whether the gate fired therefore depended on how two md5
+            // hashes happened to sort:
+            //
+            // incoming 1.0.0+frag.abc12345 vs stored 1.0.0+frag.def67890 -> no skip,
+            // and the same pair the other way round -> skip.
+            //
+            // Unchanged content re-imported the whole configuration roughly half
+            // the time — measured on the dev instance as the dominant cost of
+            // `occ maintenance:repair`, which stalls in OpenCatalogi's
+            // InitializeSettings step. A digest has no order, so version_compare
+            // was the wrong instrument for it.
+            //
+            // Correctness is unaffected: a CHANGED fragment changes the merged
+            // data, which changes the hash, which fails this equality and lets
+            // the import proceed to the per-entity gates exactly as before (#426).
+            // A never-stored hash ('' on an install predating the hash) also fails
+            // it, so those heal on the next run.
+            if ($storedHash !== '' && $storedHash === $definitionHash) {
                 $this->logger->info(
-                    message: "[ImportHandler] Skipping {$appId}: v{$version} <= {$storedVersion} and config content unchanged",
+                    message: "[ImportHandler] Skipping {$appId}: config content unchanged (v{$version}, stored v{$storedVersion})",
                     context: ['file' => __FILE__, 'line' => __LINE__]
                 );
 
