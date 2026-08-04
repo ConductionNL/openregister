@@ -12,6 +12,17 @@ status: implemented
 
 @e2e exclude cryptographic backend service — covered by PHPUnit
 Cryptographic SHA-256 hash chaining on audit trail entries with genesis hash, verification endpoint, and tamper detection reporting. Each entry's hash chains to the previous entry, making any tampering detectable by auditors.
+
+## OpenSpec changes
+
+- `audit-seal-backlog-repair` (in-progress) — builds the bulk seal pass that the
+  fail-soft write path has assumed since `harden-audit-seal-concurrency`: a
+  bounded, resumable, idempotent driver (`occ` command + capped background job)
+  that drains unsealed rows in ascending chain order, one lock per window rather
+  than one per row, never re-hashing an already-sealed row. Adds a partial index
+  for the backlog cursor and a cutover marker so `verifyChain()` stops reporting
+  `valid: true` over rows it silently skipped.
+
 ## Requirements
 ### Requirement: Every audit trail entry MUST include a SHA-256 hash chained to the previous entry
 Each audit trail entry MUST contain a `hash` field computed as `SHA-256(previous_hash + canonical_json(entry_data))`. The `previous_hash` field links to the preceding entry's hash, forming a tamper-evident chain.

@@ -33,7 +33,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 								{{ t('openregister', 'ID: {id}', { id: obj.id || obj['@self']?.id }) }}
 							</p>
 						</div>
-						<NcButton type="tertiary"
+						<NcButton variant="tertiary"
 							:aria-label="t('openregister', 'Remove {title}', { title: obj['@self']?.name || obj.name || obj.title || obj['@self']?.title || obj.id })"
 							@click="removeObject(obj.id)">
 							<template #icon>
@@ -67,7 +67,7 @@ import { objectStore, navigationStore } from '../../store/store.js'
 			</NcButton>
 			<NcButton v-if="success === null"
 				:disabled="loading || selectedObjects.length === 0"
-				type="error"
+				variant="error"
 				@click="deleteObject()">
 				<template #icon>
 					<NcLoadingIcon v-if="loading" :size="20" />

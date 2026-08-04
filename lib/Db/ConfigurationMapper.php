@@ -50,9 +50,7 @@ use OCP\IUserSession;
  * @method           Configuration update(Entity $entity)
  * @method           Configuration insertOrUpdate(Entity $entity)
  * @method           Configuration delete(Entity $entity)
- * @method           Configuration find(int|string $id)
  * @method           Configuration findEntity(IQueryBuilder $query)
- * @method           Configuration[] findAll(int|null $limit=null, int|null $offset=null)
  * @method           list<Configuration> findEntities(IQueryBuilder $query)
  *
  * @extends QBMapper<Configuration>
@@ -495,7 +493,7 @@ class ConfigurationMapper extends QBMapper
      *
      * @throws \Exception If user doesn't have read permission
      *
-     * @psalm-return list<OCA\OpenRegister\Db\Configuration>
+     * @psalm-return list<\OCA\OpenRegister\Db\Configuration>
      *
      * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Multitenancy toggle is intentional
      */

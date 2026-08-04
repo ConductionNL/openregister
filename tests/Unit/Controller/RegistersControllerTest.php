@@ -486,15 +486,24 @@ class RegistersControllerTest extends TestCase
         $this->assertArrayHasKey('error', $data);
     }
 
-    public function testShowThrowsWhenNotFound(): void
+    public function testShowReturns404WhenNotFound(): void
     {
-        // show() has no try/catch, so DoesNotExistException propagates
+        // Regression guard: show() previously had no try/catch, so an
+        // unknown id/uuid/slug let DoesNotExistException propagate
+        // uncaught, surfacing to callers as Nextcloud's HTML 500 error
+        // page instead of a clean JSON 404 (caught live via the
+        // openregister-register-resolver Newman collection). show() now
+        // mirrors SchemasController::show()'s catch(DoesNotExistException)
+        // -> 404 pattern.
         $this->request->method('getParam')->willReturn([]);
         $this->registerService->method('find')
             ->willThrowException(new DoesNotExistException('Not found'));
 
-        $this->expectException(DoesNotExistException::class);
-        $this->controller->show(999);
+        $result = $this->controller->show(999);
+
+        $this->assertInstanceOf(\OCP\AppFramework\Http\JSONResponse::class, $result);
+        $this->assertEquals(404, $result->getStatus());
+        $this->assertArrayHasKey('error', $result->getData());
     }
 
     public function testExportReturns400OnException(): void

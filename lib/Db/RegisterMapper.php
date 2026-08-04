@@ -998,4 +998,52 @@ class RegisterMapper extends QBMapper
 
         return $mappings;
     }//end getSlugToIdMap()
+
+    /**
+     * Resolve a bounded set of register slugs to their primary-key ids.
+     *
+     * The register twin of {@see SchemaMapper::findIdsBySlugs()}; see that
+     * docblock for why filtered event subscription must not use
+     * {@see getSlugToIdMap()} on the write path.
+     *
+     * @param array<int,string> $slugs Register slugs to resolve.
+     *
+     * @return array<string,array<int,string>> Lower-cased slug => matching ids.
+     *                                         Empty when $slugs is empty.
+     *
+     * @spec openspec/specs/event-driven-architecture/spec.md
+     */
+    public function findIdsBySlugs(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $lowered = array_values(array_unique(array_map('strtolower', $slugs)));
+
+        $qb = $this->db->getQueryBuilder();
+        $qb->select('id', 'slug')
+            ->from($this->getTableName())
+            ->where(
+                $qb->expr()->in(
+                    $qb->func()->lower('slug'),
+                    $qb->createNamedParameter(value: $lowered, type: IQueryBuilder::PARAM_STR_ARRAY)
+                )
+            );
+
+        $result = $qb->executeQuery();
+        $map    = array_fill_keys($lowered, []);
+        while (($row = $result->fetch()) !== false) {
+            $key = strtolower((string) $row['slug']);
+            if (isset($map[$key]) === false) {
+                $map[$key] = [];
+            }
+
+            $map[$key][] = (string) $row['id'];
+        }
+
+        $result->closeCursor();
+
+        return $map;
+    }//end findIdsBySlugs()
 }//end class

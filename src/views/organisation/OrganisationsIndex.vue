@@ -24,7 +24,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					</span>
 				</div>
 				<NcButton v-if="organisationStore.userStats.total > 1"
-					type="secondary"
+					variant="secondary"
 					@click="showOrganisationSwitcher = true">
 					<template #icon>
 						<SwapHorizontal :size="20" />
@@ -47,7 +47,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 					<div class="viewModeSwitchContainer">
 						<NcCheckboxRadioSwitch
 							v-model="organisationStore.viewMode"
-							v-tooltip="t('openregister', 'See organisations as cards')"
+							:title="t('openregister', 'See organisations as cards')"
 							:button-variant="true"
 							value="cards"
 							name="view_mode_radio"
@@ -57,7 +57,7 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
 							v-model="organisationStore.viewMode"
-							v-tooltip="t('openregister', 'See organisations as a table')"
+							:title="t('openregister', 'See organisations as a table')"
 							:button-variant="true"
 							value="table"
 							name="view_mode_radio"
@@ -207,9 +207,9 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 								<tr>
 									<th class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="allSelected"
+											:model-value="allSelected"
 											:indeterminate="someSelected"
-											@update:checked="toggleSelectAll" />
+											@update:modelValue="toggleSelectAll" />
 									</th>
 									<th>{{ t('openregister', 'Name') }}</th>
 									<th>{{ t('openregister', 'Members') }}</th>
@@ -232,8 +232,8 @@ import { organisationStore, navigationStore } from '../../store/store.js'
 									}">
 									<td class="tableColumnCheckbox">
 										<NcCheckboxRadioSwitch
-											:checked="selectedOrganisations.includes(organisation.uuid)"
-											@update:checked="(checked) => toggleOrganisationSelection(organisation.uuid, checked)" />
+											:model-value="selectedOrganisations.includes(organisation.uuid)"
+											@update:modelValue="(checked) => toggleOrganisationSelection(organisation.uuid, checked)" />
 									</td>
 									<td class="tableColumnTitle">
 										<div class="titleContent">

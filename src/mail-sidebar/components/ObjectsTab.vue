@@ -12,7 +12,7 @@
 				<LinkVariant :size="48" />
 			</template>
 			<template #action>
-				<NcButton type="primary" @click="$emit('switch-tab', 'actions')">
+				<NcButton variant="primary" @click="$emit('switch-tab', 'actions')">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -42,7 +42,7 @@
 							</a>
 						</div>
 						<NcButton
-							type="tertiary"
+							variant="tertiary"
 							:aria-label="t('openregister', 'Remove connection to {name}', { name: displayName(obj) })"
 							@click="promptUnlink(obj)">
 							<template #icon>
@@ -56,7 +56,7 @@
 				</div>
 			</div>
 			<div class="or-tab-objects__actions">
-				<NcButton type="secondary" wide @click="$emit('switch-tab', 'actions')">
+				<NcButton variant="secondary" wide @click="$emit('switch-tab', 'actions')">
 					<template #icon>
 						<Plus :size="20" />
 					</template>
@@ -87,9 +87,7 @@ import { translate as t } from '@nextcloud/l10n'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { showSuccess, showError } from '@nextcloud/dialogs'
-import NcButton from '@nextcloud/vue/dist/Components/NcButton.js'
-import NcEmptyContent from '@nextcloud/vue/dist/Components/NcEmptyContent.js'
-import NcLoadingIcon from '@nextcloud/vue/dist/Components/NcLoadingIcon.js'
+import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
 
 import Plus from 'vue-material-design-icons/Plus.vue'
 import Close from 'vue-material-design-icons/Close.vue'

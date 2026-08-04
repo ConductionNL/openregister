@@ -662,6 +662,114 @@ class MagicMapperTest extends TestCase
 
 
     /**
+     * A property the schema does not declare is dropped — and now SAYS SO.
+     *
+     * The loop in prepareObjectDataForTable is a whitelist by omission: it walks
+     * the schema's declared properties and copies those out of the payload.
+     * Anything else is never read, and there is no `object` JSON blob column to
+     * fall back on, so it is gone. Until now that happened with no error, no
+     * warning and no trace — the write succeeded and the field was simply
+     * missing.
+     *
+     * Measured 2026-08-02 on the live agentflow schema: the hydra flow documents
+     * carry `$bindings` and `$comment`, the schema declares neither, and the
+     * table has no column for either. Both were being discarded on every save
+     * with nothing anywhere recording it.
+     *
+     * @return void
+     */
+    public function testUndeclaredPropertiesAreDroppedButReported(): void
+    {
+        $schema = new TestableSchema();
+        $schema->setId(42);
+        $schema->setTitle('Agent flow');
+        $schema->testProperties = [
+            'name'  => ['type' => 'string'],
+            'nodes' => ['type' => 'array'],
+        ];
+
+        $dropped = [];
+        $this->mockLogger->method('warning')->willReturnCallback(
+            static function (string $message, array $context=[]) use (&$dropped): void {
+                if (str_contains($message, 'does not declare') === true) {
+                    $dropped = ($context['dropped'] ?? []);
+                }
+            }
+        );
+
+        $objectData = [
+            '@self'     => ['uuid' => 'flow-uuid-1'],
+            'name'      => 'hydra-file-findings',
+            'nodes'     => [['id' => 'in']],
+            // Undeclared, and load-bearing-looking. These are the real ones.
+            '$bindings' => ['forgeCredential' => 'abc'],
+            '$comment'  => 'why this flow exists',
+            // Envelope/metadata keys must NOT be reported — they are not user
+            // data the schema was ever meant to declare, and warning about them
+            // would fire on literally every save.
+            'id'        => 'flow-uuid-1',
+            '_version'  => 3,
+        ];
+
+        $reflection = new \ReflectionClass($this->magicMapper);
+        $method     = $reflection->getMethod('prepareObjectDataForTable');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($this->magicMapper, $objectData, $this->mockRegister, $schema);
+
+        // Still dropped — this change makes the loss visible, it does not store
+        // the field. Rejecting at the DB write boundary would be far too late.
+        $this->assertArrayNotHasKey('$bindings', $result);
+        $this->assertArrayNotHasKey('$comment', $result);
+        $this->assertSame('hydra-file-findings', $result['name']);
+
+        // ...and now it is reported, naming exactly the user-data keys.
+        sort($dropped);
+        $this->assertSame(['$bindings', '$comment'], $dropped);
+
+    }//end testUndeclaredPropertiesAreDroppedButReported()
+
+
+    /**
+     * POSITIVE CONTROL: a payload the schema fully declares warns about nothing.
+     *
+     * Without this, the test above is satisfied by a warning that fires always.
+     *
+     * @return void
+     */
+    public function testAFullyDeclaredPayloadReportsNoDrop(): void
+    {
+        $schema = new TestableSchema();
+        $schema->setId(42);
+        $schema->setTitle('Agent flow');
+        $schema->testProperties = ['name' => ['type' => 'string']];
+
+        $warned = false;
+        $this->mockLogger->method('warning')->willReturnCallback(
+            static function (string $message) use (&$warned): void {
+                if (str_contains($message, 'does not declare') === true) {
+                    $warned = true;
+                }
+            }
+        );
+
+        $reflection = new \ReflectionClass($this->magicMapper);
+        $method     = $reflection->getMethod('prepareObjectDataForTable');
+        $method->setAccessible(true);
+
+        $method->invoke(
+            $this->magicMapper,
+            ['@self' => ['uuid' => 'u'], 'name' => 'ok', 'id' => 'u'],
+            $this->mockRegister,
+            $schema
+        );
+
+        $this->assertFalse($warned, 'A fully declared payload must not warn.');
+
+    }//end testAFullyDeclaredPayloadReportsNoDrop()
+
+
+    /**
      * Test clear cache functionality
      *
      * @return void

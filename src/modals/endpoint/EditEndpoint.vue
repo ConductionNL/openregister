@@ -12,16 +12,16 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 		<div class="formContainer">
 			<div class="form">
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.name"
+					v-model="endpointStore.endpointItem.name"
 					:label="t('openregister', 'Name*')"
 					required
 					maxlength="255" />
 				<NcTextArea
-					:value.sync="endpointStore.endpointItem.description"
+					v-model="endpointStore.endpointItem.description"
 					:label="t('openregister', 'Description')"
 					rows="3" />
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.endpoint"
+					v-model="endpointStore.endpointItem.endpoint"
 					:label="t('openregister', 'Endpoint Path*')"
 					:placeholder="endpointPlaceholder"
 					required
@@ -39,19 +39,19 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 					:label="t('openregister', 'Target Type*')"
 					:placeholder="t('openregister', 'Select target type')" />
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.targetId"
+					v-model="endpointStore.endpointItem.targetId"
 					:label="t('openregister', 'Target ID')"
 					:placeholder="t('openregister', 'ID of the target resource')" />
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.version"
+					v-model="endpointStore.endpointItem.version"
 					:label="t('openregister', 'Version')"
 					placeholder="0.0.0" />
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.inputMapping"
+					v-model="endpointStore.endpointItem.inputMapping"
 					:label="t('openregister', 'Input Mapping')"
 					:placeholder="t('openregister', 'ID of input mapping (optional)')" />
 				<NcTextField
-					:value.sync="endpointStore.endpointItem.outputMapping"
+					v-model="endpointStore.endpointItem.outputMapping"
 					:label="t('openregister', 'Output Mapping')"
 					:placeholder="t('openregister', 'ID of output mapping (optional)')" />
 			</div>
@@ -64,7 +64,7 @@ import { endpointStore, navigationStore } from '../../store/store.js'
 				</NcButton>
 				<NcButton
 					:disabled="!endpointStore.endpointItem.name || !endpointStore.endpointItem.endpoint || !endpointStore.endpointItem.method || !endpointStore.endpointItem.targetType"
-					type="primary"
+					variant="primary"
 					@click="saveEndpoint()">
 					<template #icon>
 						<ContentSaveOutline :size="20" />

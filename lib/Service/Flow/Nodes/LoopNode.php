@@ -31,6 +31,7 @@ namespace OCA\OpenRegister\Service\Flow\Nodes;
 
 use OCA\OpenRegister\Service\Flow\FlowItems;
 use OCA\OpenRegister\Service\Flow\IFlowNode;
+use OCA\OpenRegister\Service\Flow\IFlowNodeConfigKeys;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\WorkflowEngine\IManager;
@@ -39,7 +40,7 @@ use UnexpectedValueException;
 /**
  * Batches an item list into slices of a configured size.
  */
-class LoopNode implements IFlowNode
+class LoopNode implements IFlowNode, IFlowNodeConfigKeys
 {
     /**
      * Constructor.
@@ -61,7 +62,7 @@ class LoopNode implements IFlowNode
      */
     public function getId(): string
     {
-        return 'openregister.loop';
+        return 'openregister.batch';
 
     }//end getId()
 
@@ -72,7 +73,7 @@ class LoopNode implements IFlowNode
      */
     public function getDisplayName(): string
     {
-        return $this->l10n->t('Loop over items');
+        return $this->l10n->t('Batch items');
 
     }//end getDisplayName()
 
@@ -110,6 +111,19 @@ class LoopNode implements IFlowNode
         return in_array($scope, [IManager::SCOPE_ADMIN, IManager::SCOPE_USER], true);
 
     }//end isAvailableForScope()
+
+    /**
+     * The config vocabulary of a loop step.
+     *
+     * @return array<int, string> The accepted config keys.
+     *
+     * @spec openspec/changes/or-flow-preflight/specs/flow-preflight/spec.md
+     */
+    public function configKeys(): array
+    {
+        return ['batchSize'];
+
+    }//end configKeys()
 
     /**
      * Reject a non-positive batch size.

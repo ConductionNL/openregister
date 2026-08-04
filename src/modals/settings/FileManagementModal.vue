@@ -62,7 +62,7 @@
 				{{ t('openregister', 'Cancel') }}
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="saving"
 				@click="saveConfiguration">
 				<template #icon>

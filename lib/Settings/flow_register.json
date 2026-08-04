@@ -3,7 +3,7 @@
   "info": {
     "title": "Flows",
     "description": "OpenRegister-native flow definitions. A flow is an object with nodes and edges the flow engine walks (ADR-022, ADR-065). Storing flows as ordinary OpenRegister objects is what lets OpenRegister author and run its own flows — the OpenRegisterFlowResolver resolves this register/schema by default (flow_register / flow_schema app-config), so triggers, sub-flows and the /test endpoint all work with a flow authored here. Materialised by the ImportFlowRegister Repair step (OR does not self-import its own register JSON at boot — ADR-037).",
-    "version": "1.0.0"
+    "version": "1.4.0"
   },
   "x-openregister": {
     "type": "core",
@@ -17,10 +17,12 @@
       "flows": {
         "slug": "flows",
         "title": "Flows",
-        "version": "1.0.0",
+        "version": "1.3.0",
         "description": "OpenRegister-native flow definitions (nodes + edges) the flow engine runs.",
         "published": true,
-        "schemas": ["flow"],
+        "schemas": [
+          "flow"
+        ],
         "folder": "Flows"
       }
     },
@@ -28,11 +30,28 @@
       "flow": {
         "slug": "flow",
         "title": "Flow",
-        "version": "1.0.0",
+        "version": "1.4.0",
         "published": true,
         "summary": "A flow definition the OpenRegister flow engine walks.",
         "description": "A flow is a graph of nodes and edges. Each edge carries the step to run (its `type` names a registered flow node such as openregister.set-fields, openregister.route or openregister.sub-flow, and `config` its options); the engine walks the graph, threading an item list from step to step. `trigger` (with optional `triggerRegister` / `triggerSchema`) wires the flow to an event so it runs automatically; `enabled` must be true for a trigger to fire it.",
-        "required": ["name"],
+        "authorization": {
+          "scope": "private",
+          "read": [
+            "authenticated"
+          ],
+          "create": [
+            "authenticated"
+          ],
+          "update": [
+            "authenticated"
+          ],
+          "delete": [
+            "authenticated"
+          ]
+        },
+        "required": [
+          "name"
+        ],
         "properties": {
           "name": {
             "type": "string",
@@ -55,9 +74,89 @@
           },
           "trigger": {
             "type": "string",
-            "description": "The event that starts the flow (a catalog trigger id such as object.created, file.created, tag.assigned, or manual for a flow run only on request).",
+            "description": "The event that starts the flow (a catalog trigger id such as object.created, file.created, tag.assigned; manual for a flow run only on request; or schedule to run it on a cron).",
             "facetable": true,
             "title": "Trigger"
+          },
+          "cron": {
+            "type": "string",
+            "description": "For a schedule trigger: the cron expression that decides when the flow runs (e.g. \"0 9 * * 1\" = 09:00 every Monday). Ignored for other triggers.",
+            "title": "Cron schedule"
+          },
+          "executionMode": {
+            "type": "string",
+            "enum": [
+              "async",
+              "sync"
+            ],
+            "default": "async",
+            "description": "When to run the flow relative to what triggered it. async (the default) queues the run and a background worker picks it up within a minute. sync runs the flow inside the triggering action, so its effects are complete before that action returns — choose it only when a caller genuinely depends on that, because the flow then runs on someone's critical path and a slow flow means a slow save. A sync flow that hits a wait is left for the worker rather than blocking.",
+            "title": "Execution mode"
+          },
+          "sharedWith": {
+            "type": "array",
+            "description": "Principals this flow is shared with. `read` lets the recipient see the flow; `run` lets them trigger it and implies `read`. A share NEVER grants edit, so a recipient can change neither the flow's definition, nor this list, nor `credentialIdentity` — a share cannot be used to widen itself or to redirect the flow at other credentials. Only the owner manages it. A share does not carry the flow's run history: a recipient sees only the runs they triggered themselves, because a run log records the subject data the flow touched. A `group` entry is an RBAC permission principal only, never a tenant discriminator (ADR-002 Rule 1).",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "id"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "user",
+                    "group"
+                  ],
+                  "description": "Whether `id` names a Nextcloud user or a Nextcloud group."
+                },
+                "id": {
+                  "type": "string",
+                  "maxLength": 255,
+                  "description": "The Nextcloud user id or group id."
+                },
+                "permission": {
+                  "type": "string",
+                  "enum": [
+                    "read",
+                    "run"
+                  ],
+                  "default": "read",
+                  "description": "What the share grants. `run` implies `read`. Enforced in TWO places by necessity: RBAC grants visibility of the object, and the trigger endpoint enforces the verb — `run` is not an object RBAC action (those are create/read/update/delete), so a read-only recipient who can see the flow must still be refused at the trigger."
+                }
+              }
+            },
+            "title": "Shared With"
+          },
+          "sharedUsers": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — do not set directly; the server recomputes it on every write and ignores any client-supplied value. The RBAC match operator `$contains` compares SCALARS, so it cannot test membership of the object-shaped `sharedWith` entries, and a match clause resolves whole tokens and cannot build `\"user:\" + $userId` from a prefixed list. Holding bare uids lets a rule say `{\"sharedUsers\": {\"$contains\": \"$userId\"}}`. A stale value here is an access-control bug in either direction, which is why it is never client-writable.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Users"
+          },
+          "sharedGroups": {
+            "type": "array",
+            "description": "DERIVED from `sharedWith` — see `sharedUsers`. Holds bare group ids so a rule can say `{\"sharedGroups\": {\"$contains\": \"$user.groups\"}}`, which matches when the object lists any one of the caller's groups.",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "title": "Shared Groups"
+          },
+          "credentialIdentity": {
+            "type": "string",
+            "enum": [
+              "runner",
+              "owner"
+            ],
+            "default": "runner",
+            "description": "Whose credentials a run of this flow resolves as. `runner` (the default, and what happens today when absent): credentials resolve as the user who triggered the run, so a share recipient runs it with their OWN credentials and the run fails closed if they hold none. `owner`: the flow LENDS the owner's credential — it resolves as the flow owner whatever who triggered it. `owner` is a deliberate delegation of the owner's authority, so only the owner may set it and a share recipient can never flip it. It grants USE of the credential, never sight: resolution still goes through the broker, which returns no plaintext secret on its routed path. Every run records the identity it resolved as, separately from the identity that triggered it, so a lent-credential call stays attributable.",
+            "facetable": true,
+            "title": "Credential identity"
           },
           "triggerRegister": {
             "type": "string",
@@ -72,13 +171,17 @@
           "nodes": {
             "type": "array",
             "description": "The flow's nodes; each carries an id.",
-            "items": { "type": "object" },
+            "items": {
+              "type": "object"
+            },
             "title": "Nodes"
           },
           "edges": {
             "type": "array",
             "description": "The flow's edges; each carries from/to plus the step type and config to run.",
-            "items": { "type": "object" },
+            "items": {
+              "type": "object"
+            },
             "title": "Edges"
           }
         }

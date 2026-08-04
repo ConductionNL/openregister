@@ -28,9 +28,15 @@ declare(strict_types=1);
 
 namespace OCA\OpenRegister\Listener;
 
+use OCA\OpenRegister\Service\Flow\Nodes\ExplodeNode;
 use OCA\OpenRegister\Service\Flow\Nodes\FilterNode;
+use OCA\OpenRegister\Service\Flow\Nodes\IterateNode;
+use OCA\OpenRegister\Service\Flow\Nodes\MapNode;
+use OCA\OpenRegister\Service\Flow\Nodes\FlowStateNode;
 use OCA\OpenRegister\Service\Flow\Nodes\LoopNode;
 use OCA\OpenRegister\Service\Flow\Nodes\MergeNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectReadNode;
+use OCA\OpenRegister\Service\Flow\Nodes\ObjectWriteNode;
 use OCA\OpenRegister\Service\Flow\Nodes\RouterNode;
 use OCA\OpenRegister\Service\Flow\Nodes\SetFieldsNode;
 use OCA\OpenRegister\Service\Flow\Nodes\StopNode;
@@ -51,18 +57,25 @@ class FlowNodeRegistrationListener implements IEventListener
     /**
      * Constructor.
      *
-     * @param SetFieldsNode $setFields The built-in "Edit fields" node.
-     * @param FilterNode    $filter    The built-in "Filter" node.
-     * @param WaitNode      $wait      The built-in "Wait" node.
-     * @param SwitchNode    $switch    The built-in "Switch" node.
-     * @param StopNode      $stop      The built-in "Stop" node.
-     * @param MergeNode     $merge     The built-in "Merge" node.
-     * @param LoopNode      $loop      The built-in "Loop over items" node.
-     * @param SubFlowNode   $subFlow   The built-in "Run a flow" node.
-     * @param RouterNode    $router    The built-in "Route items" node.
+     * @param SetFieldsNode   $setFields   The built-in "Edit fields" node.
+     * @param ExplodeNode     $explode     The built-in "Explode" node.
+     * @param FilterNode      $filter      The built-in "Filter" node.
+     * @param WaitNode        $wait        The built-in "Wait" node.
+     * @param SwitchNode      $switch      The built-in "Switch" node.
+     * @param StopNode        $stop        The built-in "Stop" node.
+     * @param MergeNode       $merge       The built-in "Merge" node.
+     * @param LoopNode        $loop        The built-in "Loop over items" node.
+     * @param SubFlowNode     $subFlow     The built-in "Run a flow" node.
+     * @param RouterNode      $router      The built-in "Route items" node.
+     * @param ObjectWriteNode $objectWrite The built-in "Write an object" node.
+     * @param ObjectReadNode  $objectRead  The built-in "Read objects" node.
+     * @param FlowStateNode   $flowState   The built-in "Flow state" node.
+     * @param MapNode         $map         The built-in "Map" node.
+     * @param IterateNode     $iterate     The built-in "Repeat until done" node.
      */
     public function __construct(
         private readonly SetFieldsNode $setFields,
+        private readonly ExplodeNode $explode,
         private readonly FilterNode $filter,
         private readonly WaitNode $wait,
         private readonly SwitchNode $switch,
@@ -70,7 +83,12 @@ class FlowNodeRegistrationListener implements IEventListener
         private readonly MergeNode $merge,
         private readonly LoopNode $loop,
         private readonly SubFlowNode $subFlow,
-        private readonly RouterNode $router
+        private readonly RouterNode $router,
+        private readonly ObjectWriteNode $objectWrite,
+        private readonly ObjectReadNode $objectRead,
+        private readonly FlowStateNode $flowState,
+        private readonly MapNode $map,
+        private readonly IterateNode $iterate
     ) {
 
     }//end __construct()
@@ -91,6 +109,7 @@ class FlowNodeRegistrationListener implements IEventListener
         }
 
         $event->registerNode(node: $this->setFields);
+        $event->registerNode(node: $this->explode);
         $event->registerNode(node: $this->filter);
         $event->registerNode(node: $this->wait);
         $event->registerNode(node: $this->switch);
@@ -99,6 +118,11 @@ class FlowNodeRegistrationListener implements IEventListener
         $event->registerNode(node: $this->loop);
         $event->registerNode(node: $this->subFlow);
         $event->registerNode(node: $this->router);
+        $event->registerNode(node: $this->objectWrite);
+        $event->registerNode(node: $this->objectRead);
+        $event->registerNode(node: $this->flowState);
+        $event->registerNode(node: $this->map);
+        $event->registerNode(node: $this->iterate);
 
     }//end handle()
 }//end class

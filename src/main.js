@@ -1,9 +1,7 @@
-import Vue from 'vue'
+import { createApp, h } from 'vue'
 // eslint-disable-next-line n/no-unpublished-import
-import VueRouter from 'vue-router'
-import { PiniaVuePlugin } from 'pinia'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { translate as t, translatePlural as n } from '@nextcloud/l10n'
-import Tooltip from '@nextcloud/vue/dist/Directives/Tooltip.js'
 import pinia from './pinia.js'
 import App from './App.vue'
 import {
@@ -11,45 +9,18 @@ import {
 	defaultPageTypes,
 	registerIcons,
 	buildManifest,
+	registerBuiltinDashboardWidgets,
 } from '@conduction/nextcloud-vue'
 import '@conduction/nextcloud-vue/css/index.css'
-import { Fragment } from 'vue-frag'
+import 'gridstack/dist/gridstack.min.css'
 import { ensureIntegrationRegistry } from './integrations/bootstrap.js'
 import bundledManifest from './manifest.json'
 import menuLayout from './menu-layout.json'
 import registry from './registry.js'
-
-import AccountGroupOutline from 'vue-material-design-icons/AccountGroupOutline.vue'
-import FileDocumentOutline from 'vue-material-design-icons/FileDocumentOutline.vue'
-import Cog from 'vue-material-design-icons/Cog.vue'
-import CogOutline from 'vue-material-design-icons/CogOutline.vue'
+import appIcons from './icons.js'
 
 // Navigation icons — registered by name so CnAppNav (manifest-driven
 // MainMenu) can resolve each menu item's `icon` against ICON_MAP.
-import MessageTextOutline from 'vue-material-design-icons/MessageTextOutline.vue'
-import DatabaseOutline from 'vue-material-design-icons/DatabaseOutline.vue'
-import FileTreeOutline from 'vue-material-design-icons/FileTreeOutline.vue'
-import FileOutline from 'vue-material-design-icons/FileOutline.vue'
-import Magnify from 'vue-material-design-icons/Magnify.vue'
-import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
-import RobotOutline from 'vue-material-design-icons/RobotOutline.vue'
-import InformationOutline from 'vue-material-design-icons/InformationOutline.vue'
-import MapMarkerPath from 'vue-material-design-icons/MapMarkerPath.vue'
-import OfficeBuildingOutline from 'vue-material-design-icons/OfficeBuildingOutline.vue'
-import ApplicationOutline from 'vue-material-design-icons/ApplicationOutline.vue'
-import DatabaseArrowRightOutline from 'vue-material-design-icons/DatabaseArrowRightOutline.vue'
-import AccountOutline from 'vue-material-design-icons/AccountOutline.vue'
-import DeleteRestore from 'vue-material-design-icons/DeleteRestore.vue'
-import TextBoxOutline from 'vue-material-design-icons/TextBoxOutline.vue'
-import MagnifyPlus from 'vue-material-design-icons/MagnifyPlus.vue'
-import Webhook from 'vue-material-design-icons/Webhook.vue'
-import ShieldLockOutline from 'vue-material-design-icons/ShieldLockOutline.vue'
-import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
-import Api from 'vue-material-design-icons/Api.vue'
-import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
-import ContentDuplicate from 'vue-material-design-icons/ContentDuplicate.vue'
-import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
-import Merge from 'vue-material-design-icons/Merge.vue'
 
 // Install the in-page integration registry on window.OCA.OpenRegister and
 // pre-register the 5 always-on built-ins (files/notes/tags/tasks/audit) plus
@@ -90,52 +61,19 @@ try {
 	console.error('[main] xwiki registry guard failed', e)
 }
 
-registerIcons({
-	AccountGroupOutline,
-	FileDocumentOutline,
-	Cog,
-	CogOutline,
-	// Navigation icons (manifest menu items resolve these by name)
-	MessageTextOutline,
-	DatabaseOutline,
-	FileTreeOutline,
-	FileOutline,
-	Magnify,
-	FileDocumentMultipleOutline,
-	RobotOutline,
-	InformationOutline,
-	MapMarkerPath,
-	OfficeBuildingOutline,
-	ApplicationOutline,
-	DatabaseArrowRightOutline,
-	AccountOutline,
-	DeleteRestore,
-	TextBoxOutline,
-	MagnifyPlus,
-	Webhook,
-	ShieldLockOutline,
-	ChartBoxOutline,
-	Api,
-	ViewDashboardOutline,
-	ContentDuplicate,
-	AccountMultipleOutline,
-	Merge,
-})
+registerIcons(appIcons)
 
-Vue.mixin({ methods: { t, n } })
-
-Vue.use(PiniaVuePlugin)
-Vue.use(VueRouter)
-Vue.directive('tooltip', Tooltip)
-
-Vue.component('Fragment', Fragment)
+// nc-vue declares `sideEffects: ["**/*.css", …]`, which lets webpack drop the
+// bare imports that register the built-in dashboard widgets. Without this call
+// the `stat` and `object-table` widgets render "Widget not available" while
+// `chart` (registered inline) still works — an asymmetry that took a while to
+// identify on larpingapp. Call it explicitly at bootstrap.
+registerBuiltinDashboardWidgets()
 
 // Shallow-clone CnPageRenderer because the lib's barrel exports are
-// non-extensible (webpack ESM module records). Vue 2's `Vue.extend()` adds an
-// internal `_Ctor` cache to the component definition; mutating a non-extensible
-// export throws "Cannot add property _Ctor, object is not extensible". Cloning
-// gives Vue Router an extensible component-options object without altering the
-// lib's internals.
+// non-extensible (webpack ESM module records) and vue-router stores the
+// component options object it is handed. Cloning gives the router an
+// extensible object without altering the lib's internals.
 const RoutePageRenderer = { ...CnPageRenderer }
 
 // The manifest→menu pipeline (fragment merge, canonical relocations, duplicate
@@ -158,7 +96,7 @@ const mergedManifest = buildManifest(bundledManifest, fragments, menuLayout)
  * `props: true` so route params reach the dispatched component.
  *
  * @param {object} manifest The bundled manifest (with `pages[]`).
- * @return {Array<object>} vue-router 3 routes config.
+ * @return {Array<object>} vue-router 4/5 routes config.
  */
 function routesFromManifest(manifest) {
 	const routes = manifest.pages.map((page) => ({
@@ -168,7 +106,12 @@ function routesFromManifest(manifest) {
 		props: page.route.includes(':'),
 	}))
 	// Catch-all redirect to the dashboard, preserving prior router behaviour.
-	routes.push({ path: '*', redirect: '/' })
+	//
+	// ⚠️ vue-router 4 REMOVED the bare `path: '*'` wildcard. It does not error —
+	// it simply never matches, so an unknown route renders the shell with an
+	// empty <main> and no console output. The named-param form is the
+	// replacement.
+	routes.push({ path: '/:pathMatch(.*)*', redirect: '/' })
 	return routes
 }
 
@@ -182,31 +125,37 @@ function routesFromManifest(manifest) {
 // route, so `#/registers` etc. resolve client-side to their correct index
 // surface. This also matches the e2e harness contract (tests deep-link via
 // `/index.php/apps/openregister/#/<route>`).
-const router = new VueRouter({
-	mode: 'hash',
+const router = createRouter({
+	history: createWebHashHistory(),
 	routes: routesFromManifest(mergedManifest),
 })
 
 // Pass shallow copies of the registry maps to App.vue → CnAppRoot. The lib
-// exports `defaultPageTypes` (and our `registry`) as frozen module objects in
-// some bundle shapes — Vue 2's `Vue.extend()` mutates component definitions to
-// attach an internal `_Ctor` cache, which throws "Cannot add property _Ctor,
-// object is not extensible" against a frozen source map. Cloning here yields
-// extensible objects without changing the values the lib resolves at render
-// time.
+// exports `defaultPageTypes` (and our `registry`) FROZEN in some bundle shapes,
+// and anything that later attaches per-component caches to them throws
+// "object is not extensible". Cloning here yields extensible objects without
+// changing the values the lib resolves at render time.
 const registryProp = { ...registry }
 const pageTypesProp = { ...defaultPageTypes }
 
-new Vue(
-	{
-		pinia,
-		router,
-		render: h => h(App, {
-			props: {
-				manifest: mergedManifest,
-				registry: registryProp,
-				pageTypes: pageTypesProp,
-			},
-		}),
-	},
-).$mount('#content')
+const app = createApp({
+	render: () => h(App, {
+		manifest: mergedManifest,
+		registry: registryProp,
+		pageTypes: pageTypesProp,
+	}),
+})
+
+app.mixin({ methods: { t, n } })
+app.use(pinia)
+app.use(router)
+
+// ⚠️ Mount on the app's OWN host element (templates/index.php renders
+// `<div id="openregister">`), NOT on `#content`.
+//
+// Vue 2's `$mount('#content')` REPLACED Nextcloud's own `layout.user.php`
+// wrapper. Vue 3's `mount()` renders INSIDE the matched element instead, so
+// mounting `#content` would nest the whole app inside core's wrapper and leave
+// the template's own container empty. Naming the app's element sidesteps the
+// question of which div wins entirely.
+app.mount('#openregister')

@@ -6,7 +6,7 @@
 			'configurationCard--external': isImported && !isLocalConfiguration
 		}">
 		<div class="cardHeader">
-			<h2 v-tooltip.bottom="configuration.description || configuration.config?.description">
+			<h2 :title="configuration.description || configuration.config?.description">
 				<CogOutline :size="20" />
 				{{ configuration.title || configuration.config?.title }}
 				<!-- Status Badges -->
@@ -108,7 +108,7 @@
 				</template>
 				<!-- Actions for discovered/external configurations -->
 				<template v-else>
-					<NcActionButton type="primary" close-after-click @click="$emit('import', configuration)">
+					<NcActionButton close-after-click @click="$emit('import', configuration)">
 						<template #icon>
 							<CloudUpload :size="20" />
 						</template>

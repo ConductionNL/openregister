@@ -8,7 +8,7 @@
 						{{ t('openregister', 'Files') }}
 					</h1>
 					<NcButton
-						type="tertiary"
+						variant="tertiary"
 						:aria-label="t('openregister', 'Toggle search sidebar')"
 						@click="toggleSidebar">
 						<template #icon>
@@ -176,9 +176,9 @@
 		<!-- Search Sidebar -->
 		<template #details>
 			<FilesSidebar
-				:search.sync="searchQuery"
-				:status.sync="statusFilter"
-				:risk-level.sync="riskLevelFilter"
+				v-model:search="searchQuery"
+				v-model:status="statusFilter"
+				v-model:risk-level="riskLevelFilter"
 				@update:search="handleSearchUpdate"
 				@update:status="handleStatusUpdate"
 				@update:riskLevel="handleRiskLevelUpdate" />

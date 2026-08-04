@@ -18,7 +18,7 @@
 			</NcButton>
 			<NcButton
 				:disabled="removing"
-				type="error"
+				variant="error"
 				@click="$emit('confirm')">
 				<template #icon>
 					<NcLoadingIcon v-if="removing" :size="20" />

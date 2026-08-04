@@ -8,7 +8,7 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 		<div class="listHeader">
 			<div class="searchListHeader">
 				<NcTextField
-					:value.sync="search"
+					v-model="search"
 					:show-trailing-button="search !== ''"
 					:label="t('openregister', 'Search')"
 					class="searchField"
@@ -39,10 +39,14 @@ import { objectStore, navigationStore, registerStore, schemaStore } from '../../
 			</div>
 			<div v-if="objectStore.getCollection(objectStore.currentType).length > 0 && objectStore.getPagination(objectStore.currentType).total > limit">
 				<span>Page {{ currentPage }} of {{ objectStore.getPagination(objectStore.currentType).pages }}</span>
-				<BPagination v-model="currentPage"
-					class="listPagination"
-					:total-rows="objectStore.getPagination(objectStore.currentType).total"
-					:per-page="limit" />
+				<CnPagination class="listPagination"
+					:current-page="currentPage"
+					:total-pages="objectStore.getPagination(objectStore.currentType).pages"
+					:total-items="objectStore.getPagination(objectStore.currentType).total"
+					:current-page-size="limit"
+					:min-items-to-show="10"
+					@page-changed="currentPage = $event"
+					@page-size-changed="onPageSizeChanged" />
 			</div>
 		</div>
 		<ul v-if="objectStore.getCollection(objectStore.currentType) && objectStore.getCollection(objectStore.currentType).length > 0 && !loading">
@@ -116,7 +120,7 @@ import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Upload from 'vue-material-design-icons/Upload.vue'
 import LockOutline from 'vue-material-design-icons/LockOutline.vue'
 import LockOpenOutline from 'vue-material-design-icons/LockOpenOutline.vue'
-import { BPagination } from 'bootstrap-vue'
+import { CnPagination } from '@conduction/nextcloud-vue'
 
 export default {
 	name: 'ObjectsList',
@@ -127,6 +131,7 @@ export default {
 		NcAppContentList,
 		NcTextField,
 		NcLoadingIcon,
+		CnPagination,
 		Magnify,
 		CubeOutline,
 		Refresh,
@@ -225,7 +230,7 @@ export default {
 	 * @spec openspec/specs/realtime-updates/spec.md
 	 * @return {void}
 	 */
-	beforeDestroy() {
+	beforeUnmount() {
 		this.releaseLiveSubscription()
 	},
 	methods: {
@@ -309,6 +314,30 @@ export default {
 			}
 			this.liveHandle = null
 			this.liveType = ''
+		},
+		/**
+		 * Apply a new page size from the paginator.
+		 *
+		 * Matches the onPageSizeChanged of the other paginated views: the page
+		 * resets to 1 and the list refetches with the new limit. Here the
+		 * refetch normally rides the `currentPage` watcher, so it is only
+		 * issued directly when the page is already 1 and that watcher would
+		 * not fire — issuing it unconditionally would double-fetch.
+		 *
+		 * @param {number} pageSize - The new page size
+		 * @spec exclude list-view pagination page-size-change handler
+		 * @return {void}
+		 */
+		onPageSizeChanged(pageSize) {
+			this.limit = pageSize
+			if (this.currentPage !== 1) {
+				this.currentPage = 1
+				return
+			}
+			this.loading = true
+			objectStore.refreshObjectList({ limit: this.limit, page: 1, search: this.search }).finally(() => {
+				this.loading = false
+			})
 		},
 		/**
 		 * @spec exclude list-view action; opens the add-object modal with register/schema context (object-lifecycle contract)

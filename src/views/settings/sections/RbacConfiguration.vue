@@ -6,7 +6,7 @@
 		:loading-message="t('openregister', 'Loading RBAC settings...')">
 		<template #actions>
 			<NcButton
-				type="error"
+				variant="error"
 				:disabled="loading || saving || rebasing"
 				@click="showRebaseDialog">
 				<template #icon>
@@ -16,7 +16,7 @@
 				Rebase
 			</NcButton>
 			<NcButton
-				type="primary"
+				variant="primary"
 				:disabled="loading || saving || rebasing"
 				@click="saveSettings">
 				<template #icon>
@@ -60,7 +60,7 @@
 		<!-- Enable RBAC Toggle -->
 		<div class="option-section">
 			<NcCheckboxRadioSwitch
-				:checked.sync="rbacOptions.enabled"
+				v-model="rbacOptions.enabled"
 				:disabled="saving"
 				type="switch">
 				{{ rbacOptions.enabled ? 'Role Based Access Control enabled' : 'Role Based Access Control disabled' }}
@@ -69,7 +69,7 @@
 			<!-- Admin Override -->
 			<div v-if="rbacOptions.enabled">
 				<NcCheckboxRadioSwitch
-					:checked.sync="rbacOptions.adminOverride"
+					v-model="rbacOptions.adminOverride"
 					:disabled="saving"
 					type="switch">
 					{{ rbacOptions.adminOverride ? 'Admin override enabled' : 'Admin override disabled' }}

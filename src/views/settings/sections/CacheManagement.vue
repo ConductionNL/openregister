@@ -7,7 +7,7 @@
 			:loading-message="t('openregister', 'Loading cache statistics...')">
 			<template #actions>
 				<NcButton
-					type="secondary"
+					variant="secondary"
 					:disabled="loading || clearingCache || loadingCache"
 					@click="loadCacheStats">
 					<template #icon>
@@ -17,7 +17,7 @@
 					Refresh
 				</NcButton>
 				<NcButton
-					type="error"
+					variant="error"
 					:disabled="loading || clearingCache || loadingCache || cacheStats.unavailable"
 					@click="showClearCacheDialog">
 					<template #icon>
@@ -250,17 +250,17 @@
 							<NcSelect
 								input-label="Warmup Interval"
 								input-id="warmup-interval"
-								:value="selectedWarmupOption"
+								:model-value="selectedWarmupOption"
 								:options="warmupIntervalOptions"
 								:clearable="false"
 								:disabled="savingWarmupInterval"
 								label="label"
 								track-by="value"
-								@input="onWarmupIntervalChange" />
+								@update:modelValue="onWarmupIntervalChange" />
 						</div>
 						<div class="warmup-actions">
 							<NcButton
-								type="secondary"
+								variant="secondary"
 								:disabled="warmingUpCache || savingWarmupInterval"
 								@click="triggerWarmup">
 								<template #icon>
@@ -300,35 +300,35 @@
 					<div class="cache-type-selection">
 						<h4>Cache Type:</h4>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="all"
 							type="radio">
 							Clear All Cache (Recommended)
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="object"
 							type="radio">
 							Object Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="schema"
 							type="radio">
 							Schema Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="facet"
 							type="radio">
 							Facet Cache Only
 						</NcCheckboxRadioSwitch>
 						<NcCheckboxRadioSwitch
-							:checked.sync="clearCacheType"
+							v-model="clearCacheType"
 							name="cache_type"
 							value="distributed"
 							type="radio">
@@ -343,7 +343,7 @@
 						Cancel
 					</NcButton>
 					<NcButton
-						type="error"
+						variant="error"
 						:disabled="clearingCache"
 						@click="performClearCache">
 						<template #icon>

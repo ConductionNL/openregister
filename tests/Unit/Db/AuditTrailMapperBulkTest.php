@@ -138,7 +138,13 @@ class AuditTrailMapperBulkTest extends TestCase
         $this->assertSame([], $trail->getChanged());
         $this->assertNotNull($trail->getUuid());
         $this->assertGreaterThanOrEqual(14, $trail->getSize());
-        $this->assertNotNull($trail->getExpires());
+
+        // A DELETE audit row is precisely the row or#2265 was losing: 311 of
+        // 330 soft-deleted procest cases had no surviving delete row. With no
+        // retention policy resolvable the row is now retained INDEFINITELY
+        // instead of being stamped `+30 days`.
+        $this->assertNull($trail->getExpires());
+        $this->assertNotNull($trail->getRetentionPeriod());
     }//end testBuildAuditTrailForDeleteProducesEmptyChangeSet()
 
     public function testBuildAuditTrailFoldsCascadeContextIntoChangedColumn(): void
@@ -316,4 +322,55 @@ class AuditTrailMapperBulkTest extends TestCase
         $qb->method('getTableName')->willReturn('*PREFIX*openregister_audit_trails');
         $this->db->method('getQueryBuilder')->willReturn($qb);
     }//end mockQueryBuilderTableName()
+    /**
+     * An explicitly-named `update` survives, even with no `old` entity.
+     *
+     * The inference used to fire on `$action === 'update'`, which is both the
+     * default AND a legitimate explicit value — so a caller that KNEW the write
+     * was an update could not say so, and got `create` in the row. That is
+     * exactly the case MagicMapper hits when its own lookup takes the UPDATE
+     * branch on an operation the service labelled a create (#2217), and it is
+     * why a fix passing an explicit action would have looked applied while
+     * changing nothing.
+     *
+     * @return void
+     */
+    public function testAnExplicitUpdateSurvivesWithNoOldEntity(): void
+    {
+        $trail = $this->mapper->buildAuditTrail(
+            old: null,
+            new: $this->makeObject('obj-upd'),
+            action: 'update'
+        );
+
+        $this->assertSame('update', $trail->getAction());
+    }//end testAnExplicitUpdateSurvivesWithNoOldEntity()
+
+    /**
+     * With no action named, a missing `old` still infers a create.
+     *
+     * The guard tests above are only meaningful next to this one: a change that
+     * simply stopped inferring would pass them and break every caller that
+     * relies on the inference — which is most of them.
+     *
+     * @return void
+     */
+    public function testAnOmittedActionStillInfersCreate(): void
+    {
+        $trail = $this->mapper->buildAuditTrail(old: null, new: $this->makeObject('obj-new'));
+
+        $this->assertSame('create', $trail->getAction());
+    }//end testAnOmittedActionStillInfersCreate()
+
+    /**
+     * With no action named, a missing `new` still infers a delete.
+     *
+     * @return void
+     */
+    public function testAnOmittedActionStillInfersDelete(): void
+    {
+        $trail = $this->mapper->buildAuditTrail(old: $this->makeObject('obj-gone'), new: null);
+
+        $this->assertSame('delete', $trail->getAction());
+    }//end testAnOmittedActionStillInfersDelete()
 }//end class

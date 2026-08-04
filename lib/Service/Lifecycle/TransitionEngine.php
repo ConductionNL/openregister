@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\OpenRegister\Service\Lifecycle;
 
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
@@ -36,8 +37,11 @@ use OCA\OpenRegister\Exception\NotAuthorizedException;
 use OCA\OpenRegister\Service\ObjectService;
 use OCA\OpenRegister\Service\Object\PermissionHandler;
 use OCP\EventDispatcher\IEventDispatcher;
+use OCP\IAppConfig;
 use OCP\IUserSession;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * Apply named lifecycle transitions and report which actions are
@@ -50,6 +54,16 @@ use RuntimeException;
 class TransitionEngine
 {
     /**
+     * App-config key opting an instance into the documented slug contract.
+     *
+     * Default 'no' — see {@see transitionEventScope()} for why a contract fix
+     * ships disabled.
+     *
+     * @var string
+     */
+    public const SLUG_CONTRACT_FLAG = 'transition_event_slug_contract';
+
+    /**
      * Constructor.
      *
      * @param ObjectService     $objectService     Object CRUD service used to load + save the entity.
@@ -57,6 +71,9 @@ class TransitionEngine
      * @param IEventDispatcher  $eventDispatcher   Dispatcher used to fire ObjectTransitionedEvent.
      * @param IUserSession      $userSession       Current user session, for actor attribution.
      * @param PermissionHandler $permissionHandler RBAC verdict on the object's `update`/`read` actions (F03).
+     * @param RegisterMapper    $registerMapper    Mapper used to resolve the register slug.
+     * @param IAppConfig        $appConfig         App config, for the slug-contract opt-in.
+     * @param LoggerInterface   $logger            Logger for post-commit listener failures.
      *
      * @spec openspec/specs/object-lifecycle/spec.md
      */
@@ -65,9 +82,151 @@ class TransitionEngine
         private readonly SchemaMapper $schemaMapper,
         private readonly IEventDispatcher $eventDispatcher,
         private readonly IUserSession $userSession,
-        private readonly PermissionHandler $permissionHandler
+        private readonly PermissionHandler $permissionHandler,
+        private readonly RegisterMapper $registerMapper,
+        private readonly IAppConfig $appConfig,
+        private readonly LoggerInterface $logger
     ) {
     }//end __construct()
+
+    /**
+     * Dispatch `ObjectTransitionedEvent` without letting a listener undo the write.
+     *
+     * `ObjectTransitionedEvent` is a POST event: by the time it is dispatched the
+     * lifecycle mutation has already been saved and committed. Propagating a
+     * listener's exception out of here therefore reports failure for work that
+     * succeeded — the caller sees a 500 (or a 422 "transition refused", when the
+     * listener happens to throw a `RuntimeException` that
+     * {@see \OCA\OpenRegister\Controller\TransitionController::transition()}
+     * maps to that status) while the object sits in its NEW state. Retrying then
+     * fails a second time with "not allowed from the current state", because the
+     * transition it is being asked to repeat has in fact already happened.
+     *
+     * So a post-event listener MUST NOT be able to fail a committed transition.
+     * That is deliberately NOT extended to the pre-event (`*ing`) family: those
+     * exist precisely so a listener can veto, they are dispatched before the
+     * save, and their exceptions must keep propagating. Nothing here touches
+     * them — the veto path for a transition is `HookStoppedException` raised
+     * inside `saveObject()`, which is upstream of this method and unaffected.
+     *
+     * Swallowing silently would trade a loud wrong answer for a quiet one, so
+     * the failure is logged at ERROR with the exception attached: a listener
+     * that throws here is a real bug, and the side effect it owns (a legal hold,
+     * a ledger posting, an outbound notification) did not happen.
+     *
+     * @param ObjectEntity $object The saved object, in its post-transition state.
+     * @param string       $action The transition action that was applied.
+     * @param string       $from   The lifecycle value before the transition.
+     * @param string       $to     The lifecycle value after the transition.
+     * @param string|null  $userId The acting user, when there is a session.
+     *
+     * @return void
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function dispatchTransitioned(
+        ObjectEntity $object,
+        string $action,
+        string $from,
+        string $to,
+        ?string $userId
+    ): void {
+        $scope = $this->transitionEventScope(object: $object);
+
+        try {
+            $this->eventDispatcher->dispatchTyped(
+                new ObjectTransitionedEvent(
+                    object: $object,
+                    action: $action,
+                    from: $from,
+                    to: $to,
+                    userId: $userId,
+                    register: $scope['register'],
+                    schema: $scope['schema']
+                )
+            );
+        } catch (Throwable $e) {
+            $this->logger->error(
+                '[TransitionEngine] A listener threw on ObjectTransitionedEvent. '
+                .'The transition itself is COMMITTED; the listener\'s side effect did not run.',
+                [
+                    'app'       => 'openregister',
+                    'uuid'      => $object->getUuid(),
+                    'register'  => $scope['register'],
+                    'schema'    => $scope['schema'],
+                    'action'    => $action,
+                    'from'      => $from,
+                    'to'        => $to,
+                    'exception' => $e,
+                ]
+            );
+        }//end try
+
+    }//end dispatchTransitioned()
+
+    /**
+     * Resolve the register/schema pair to advertise on ObjectTransitionedEvent.
+     *
+     * ObjectTransitionedEvent documents both params as SLUGS, but this engine has
+     * always passed `(string) $object->getRegister()` / `getSchema()`, which are
+     * numeric ids. Every listener comparing them to a slug literal has therefore
+     * never matched and never run — 44 of them across scholiq, shillinq and
+     * openbuild.
+     *
+     * Honouring the documented contract is a one-line change and a very large
+     * behaviour change: it simultaneously activates dormant general-ledger
+     * posting, outbound HTTP to external parties, and bulk-write handlers that
+     * have never executed against this data. So the corrected contract ships
+     * DISABLED and is opted into per instance, after that instance has assessed
+     * its own listeners. See `docs/transition-event-slug-contract.md`.
+     *
+     * Resolution failures fall back to the id rather than throwing: a lifecycle
+     * transition must not start failing because a slug lookup missed.
+     *
+     * @param ObjectEntity $object The object being transitioned.
+     *
+     * @return array{register: string, schema: string} Values for the event.
+     *
+     * @spec openspec/specs/object-lifecycle/spec.md
+     */
+    private function transitionEventScope(ObjectEntity $object): array
+    {
+        $registerRef = (string) $object->getRegister();
+        $schemaRef   = (string) $object->getSchema();
+
+        if ($this->appConfig->getValueString('openregister', self::SLUG_CONTRACT_FLAG, 'no') !== 'yes') {
+            return [
+                'register' => $registerRef,
+                'schema'   => $schemaRef,
+            ];
+        }
+
+        try {
+            $register = $this->registerMapper->find($registerRef);
+            $slug     = $register->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $registerRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        try {
+            $schema = $this->schemaMapper->find($schemaRef, _multitenancy: false);
+            $slug   = $schema->getSlug();
+            if ($slug !== null && $slug !== '') {
+                $schemaRef = $slug;
+            }
+        } catch (\Throwable $e) {
+            // Keep the id; a missing slug must not break the transition.
+        }
+
+        return [
+            'register' => $registerRef,
+            'schema'   => $schemaRef,
+        ];
+
+    }//end transitionEventScope()
 
     /**
      * Apply a named transition to an object.
@@ -194,16 +353,12 @@ class TransitionEngine
 
         $userId = $actingUser?->getUID();
 
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectTransitionedEvent(
-                object: $saved,
-                action: $action,
-                from: $currentValue,
-                to: $targetState,
-                userId: $userId,
-                register: (string) $object->getRegister(),
-                schema: (string) $object->getSchema()
-            )
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $currentValue,
+            to: $targetState,
+            userId: $userId
         );
 
         return $saved;
@@ -560,16 +715,12 @@ class TransitionEngine
             currentUser: $actingUser
         );
 
-        $this->eventDispatcher->dispatchTyped(
-            new ObjectTransitionedEvent(
-                object: $saved,
-                action: $action,
-                from: $from,
-                to: $targetState,
-                userId: $actingUser?->getUID(),
-                register: (string) $object->getRegister(),
-                schema: (string) $object->getSchema()
-            )
+        $this->dispatchTransitioned(
+            object: $saved,
+            action: $action,
+            from: $from,
+            to: $targetState,
+            userId: $actingUser?->getUID()
         );
 
         return $saved;
