@@ -929,16 +929,54 @@ class SaveObject
                     $ref = $propertyConfig['items']['$ref'];
                 }
 
-                // Parse the schema slug from the $ref (e.g., "#/components/schemas/organisatie" -> "organisatie").
+                // A property with NO $ref at all is not a relation — `data`,
+                // `subject`, `payload` and friends are free-form blobs. Skip them
+                // silently: they are the common case, and warning about them
+                // would bury the one message that matters below.
+                if (empty($ref) === true) {
+                    continue;
+                }
+
+                // Parse the schema slug from the $ref. BOTH forms are accepted,
+                // because both are in real use across the fleet:
+                //
+                // "#/components/schemas/organisatie" (JSON-Pointer form) and
+                // "organisatie" (bare slug).
+                //
+                // Only the pointer form used to be recognised, so a bare slug
+                // resolved to nothing and the relation was skipped — no inverse
+                // relation written, reported at debug level where nobody saw it.
+                // Counted across the app register definitions the bare form is
+                // the MAJORITY (204 refs vs 114), so this affected opencatalogi,
+                // procest, pipelinq and larpingapp rather than one app.
                 $targetSchemaSlug = '';
                 if (preg_match('~^\#/components/schemas/(.+)$~', $ref, $matches) === 1) {
                     $targetSchemaSlug = $matches[1];
+                } else if (preg_match('~^[A-Za-z][A-Za-z0-9_-]*$~', $ref) === 1) {
+                    // A bare slug. Constrained to slug-shaped values so a
+                    // malformed pointer (a URL, "#/x/y") still falls through and
+                    // is reported, rather than being mistaken for a schema name
+                    // that will never resolve.
+                    $targetSchemaSlug = $ref;
                 }
 
                 if (empty($targetSchemaSlug) === true) {
-                    $this->logger->debug(
-                        message: '[SaveObject] No target schema in $ref for relation',
-                        context: ['file' => __FILE__, 'line' => __LINE__, 'property' => $baseProperty]
+                    // WARNING, not debug — and only reachable when a $ref was
+                    // actually authored and could not be understood. That means a
+                    // declared relation will NOT be maintained: the inverse side
+                    // never gets written, and the only symptom is data that
+                    // quietly fails to relate.
+                    $this->logger->warning(
+                        message: '[SaveObject] Relation skipped: $ref is neither a '
+                            .'"#/components/schemas/<slug>" pointer nor a bare schema slug. '
+                            .'The inverse relation for this property will NOT be maintained.',
+                        context: [
+                            'file'     => __FILE__,
+                            'line'     => __LINE__,
+                            'property' => $baseProperty,
+                            'ref'      => $ref,
+                            'schema'   => $schema->getSlug(),
+                        ]
                     );
                     continue;
                 }
